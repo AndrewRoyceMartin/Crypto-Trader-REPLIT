@@ -1,8 +1,6 @@
-
-ccxt
-flask
-numpy
 pandas
-python-dateutil
-pytz
-requests
+numpy
+yfinance
+ccxt
+PyYAML
+python-dotenv
