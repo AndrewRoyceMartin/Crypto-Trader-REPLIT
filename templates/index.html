@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Algorithmic Trading System</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">
+                <i class="fas fa-chart-line me-2"></i>
+                Algorithmic Trading System
+            </a>
+            
+            <div class="navbar-nav ms-auto">
+                <div class="nav-item">
+                    <span class="navbar-text" id="connection-status">
+                        <i class="fas fa-circle text-success me-1"></i>
+                        Connected
+                    </span>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid py-4">
+        <!-- System Status Row -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="fas fa-tachometer-alt me-2"></i>
+                            System Status
+                        </h5>
+                        <div>
+                            <button class="btn btn-success btn-sm me-2" onclick="startTrading('paper')">
+                                <i class="fas fa-play me-1"></i>Paper Trade
+                            </button>
+                            <button class="btn btn-warning btn-sm me-2" onclick="startTrading('live')">
+                                <i class="fas fa-play me-1"></i>Live Trade
+                            </button>
+                            <button class="btn btn-danger btn-sm me-2" onclick="stopTrading()">
+                                <i class="fas fa-stop me-1"></i>Stop
+                            </button>
+                            <button class="btn btn-danger btn-sm" onclick="emergencyStop()">
+                                <i class="fas fa-exclamation-triangle me-1"></i>Emergency Stop
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="status-item">
+                                    <label>Trading Mode:</label>
+                                    <span id="trading-mode" class="badge bg-secondary">Stopped</span>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="status-item">
+                                    <label>Symbol:</label>
+                                    <span id="trading-symbol">-</span>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="status-item">
+                                    <label>Running Since:</label>
+                                    <span id="trading-start-time">-</span>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="status-item">
+                                    <label>Status:</label>
+                                    <span id="trading-status" class="badge bg-secondary">Idle</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Portfolio and Controls Row -->
+        <div class="row mb-4">
+            <!-- Portfolio Summary -->
+            <div class="col-lg-8">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-wallet me-2"></i>
+                            Portfolio Overview
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row mb-3">
+                            <div class="col-md-3">
+                                <div class="portfolio-metric">
+                                    <h6>Total Value</h6>
+                                    <h4 id="portfolio-value" class="text-primary">$0.00</h4>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="portfolio-metric">
+                                    <h6>Cash</h6>
+                                    <h5 id="portfolio-cash" class="text-success">$0.00</h5>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="portfolio-metric">
+                                    <h6>Positions</h6>
+                                    <h5 id="portfolio-positions" class="text-info">$0.00</h5>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="portfolio-metric">
+                                    <h6>Daily P&L</h6>
+                                    <h5 id="portfolio-pnl" class="text-warning">$0.00</h5>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Portfolio Chart -->
+                        <div class="chart-container">
+                            <canvas id="portfolioChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Trading Controls -->
+            <div class="col-lg-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-cog me-2"></i>
+                            Trading Controls
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="trading-form">
+                            <div class="mb-3">
+                                <label for="symbol-select" class="form-label">Symbol</label>
+                                <select class="form-select" id="symbol-select">
+                                    <option value="BTC/USDT">BTC/USDT</option>
+                                    <option value="ETH/USDT">ETH/USDT</option>
+                                    <option value="BTC/USD">BTC/USD</option>
+                                    <option value="ETH/USD">ETH/USD</option>
+                                </select>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="timeframe-select" class="form-label">Timeframe</label>
+                                <select class="form-select" id="timeframe-select">
+                                    <option value="1m">1 Minute</option>
+                                    <option value="5m">5 Minutes</option>
+                                    <option value="15m">15 Minutes</option>
+                                    <option value="30m">30 Minutes</option>
+                                    <option value="1h" selected>1 Hour</option>
+                                    <option value="4h">4 Hours</option>
+                                    <option value="1d">1 Day</option>
+                                </select>
+                            </div>
+                            
+                            <hr>
+                            
+                            <h6>Backtest</h6>
+                            <div class="mb-3">
+                                <label for="backtest-days" class="form-label">Days to Test</label>
+                                <input type="number" class="form-control" id="backtest-days" value="30" min="1" max="365">
+                            </div>
+                            
+                            <button type="button" class="btn btn-primary w-100" onclick="runBacktest()">
+                                <i class="fas fa-chart-area me-1"></i>
+                                Run Backtest
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Data Tables Row -->
+        <div class="row">
+            <!-- Recent Trades -->
+            <div class="col-lg-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-exchange-alt me-2"></i>
+                            Recent Trades
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Time</th>
+                                        <th>Symbol</th>
+                                        <th>Action</th>
+                                        <th>Size</th>
+                                        <th>Price</th>
+                                        <th>P&L</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="trades-table">
+                                    <tr>
+                                        <td colspan="6" class="text-center text-muted">No trades yet</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Current Positions -->
+            <div class="col-lg-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-list me-2"></i>
+                            Open Positions
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Symbol</th>
+                                        <th>Size</th>
+                                        <th>Entry Price</th>
+                                        <th>Current P&L</th>
+                                        <th>Duration</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="positions-table">
+                                    <tr>
+                                        <td colspan="5" class="text-center text-muted">No open positions</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    
+    <!-- Live Trading Confirmation Modal -->
+    <div class="modal fade" id="liveConfirmModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-warning">
+                    <h5 class="modal-title">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Live Trading Warning
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-danger">
+                        <strong>WARNING:</strong> You are about to start live trading with real money!
+                    </div>
+                    <p>This will execute real trades on the live exchange. Make sure you understand the risks involved.</p>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="live-confirm-checkbox">
+                        <label class="form-check-label" for="live-confirm-checkbox">
+                            I understand the risks and want to proceed with live trading
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-danger" onclick="confirmLiveTrading()">Start Live Trading</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Backtest Results Modal -->
+    <div class="modal fade" id="backtestModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-chart-area me-2"></i>
+                        Backtest Results
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="backtest-results">
+                        <!-- Results will be populated here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Modal -->
+    <div class="modal fade" id="loadingModal" tabindex="-1" data-bs-backdrop="static">
+        <div class="modal-dialog modal-sm">
+            <div class="modal-content">
+                <div class="modal-body text-center">
+                    <div class="spinner-border text-primary mb-3" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p id="loading-message">Processing...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Custom JS -->
+    <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>

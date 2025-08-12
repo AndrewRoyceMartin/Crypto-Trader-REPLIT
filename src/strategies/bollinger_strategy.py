@@ -1,0 +1,266 @@
+"""
+Bollinger Bands trading strategy implementation.
+"""
+
+import pandas as pd
+import numpy as np
+from typing import List
+from .base import BaseStrategy, Signal
+from ..indicators.technical import TechnicalIndicators
+
+
+class BollingerBandsStrategy(BaseStrategy):
+    """Bollinger Bands mean reversion strategy."""
+    
+    def __init__(self, config):
+        """
+        Initialize Bollinger Bands strategy.
+        
+        Args:
+            config: Configuration object
+        """
+        super().__init__(config)
+        
+        # Strategy parameters
+        self.bb_period = config.get_int('strategy', 'bb_period', 20)
+        self.bb_std_dev = config.get_float('strategy', 'bb_std_dev', 2.0)
+        self.atr_period = config.get_int('strategy', 'atr_period', 14)
+        self.volume_threshold = config.get_float('strategy', 'volume_threshold', 1000000)
+        
+        # Risk parameters
+        self.position_size_percent = config.get_float('trading', 'position_size_percent', 5.0)
+        self.stop_loss_percent = config.get_float('trading', 'stop_loss_percent', 2.0)
+        self.take_profit_percent = config.get_float('trading', 'take_profit_percent', 4.0)
+        
+        self.indicators = TechnicalIndicators()
+        
+        self.logger.info(f"Bollinger Bands strategy initialized with period={self.bb_period}, std_dev={self.bb_std_dev}")
+    
+    def generate_signals(self, data: pd.DataFrame) -> List[Signal]:
+        """
+        Generate trading signals based on Bollinger Bands.
+        
+        Args:
+            data: OHLCV DataFrame
+            
+        Returns:
+            List of trading signals
+        """
+        signals = []
+        
+        if len(data) < self.bb_period + 1:
+            self.logger.warning("Insufficient data for Bollinger Bands calculation")
+            return signals
+        
+        try:
+            # Calculate technical indicators
+            upper_band, middle_band, lower_band = self.indicators.bollinger_bands(
+                data['close'], self.bb_period, self.bb_std_dev
+            )
+            
+            atr = self.indicators.atr(
+                data['high'], data['low'], data['close'], self.atr_period
+            )
+            
+            # Get latest values
+            current_price = data['close'].iloc[-1]
+            current_volume = data['volume'].iloc[-1]
+            current_upper = upper_band.iloc[-1]
+            current_middle = middle_band.iloc[-1]
+            current_lower = lower_band.iloc[-1]
+            current_atr = atr.iloc[-1]
+            
+            # Skip if we don't have valid indicator values
+            if pd.isna(current_upper) or pd.isna(current_lower) or pd.isna(current_atr):
+                return signals
+            
+            # Calculate band width for volatility filter
+            band_width = (current_upper - current_lower) / current_middle
+            
+            # Volume filter
+            volume_ok = current_volume >= self.volume_threshold
+            
+            # Volatility filter (avoid trading in low volatility periods)
+            volatility_ok = band_width > 0.02  # 2% minimum band width
+            
+            if not (volume_ok and volatility_ok):
+                return signals
+            
+            # Generate signals based on Bollinger Bands
+            # Buy signal: price touches or goes below lower band
+            if current_price <= current_lower:
+                confidence = min(1.0, (current_lower - current_price) / current_atr + 0.5)
+                
+                # Calculate stop loss and take profit
+                stop_loss = current_price * (1 - self.stop_loss_percent / 100)
+                take_profit = current_price * (1 + self.take_profit_percent / 100)
+                
+                signal = Signal(
+                    action='buy',
+                    price=current_price,
+                    size=self.position_size_percent / 100,
+                    confidence=confidence,
+                    stop_loss=stop_loss,
+                    take_profit=take_profit
+                )
+                
+                if self.validate_signal(signal):
+                    signals.append(signal)
+                    self.logger.info(f"Buy signal generated at {current_price:.2f} (Lower Band: {current_lower:.2f})")
+            
+            # Sell signal: price touches or goes above upper band
+            elif current_price >= current_upper:
+                confidence = min(1.0, (current_price - current_upper) / current_atr + 0.5)
+                
+                # Calculate stop loss and take profit
+                stop_loss = current_price * (1 + self.stop_loss_percent / 100)
+                take_profit = current_price * (1 - self.take_profit_percent / 100)
+                
+                signal = Signal(
+                    action='sell',
+                    price=current_price,
+                    size=self.position_size_percent / 100,
+                    confidence=confidence,
+                    stop_loss=stop_loss,
+                    take_profit=take_profit
+                )
+                
+                if self.validate_signal(signal):
+                    signals.append(signal)
+                    self.logger.info(f"Sell signal generated at {current_price:.2f} (Upper Band: {current_upper:.2f})")
+            
+            # Mean reversion exit signals
+            elif len(data) >= 2:
+                prev_price = data['close'].iloc[-2]
+                
+                # Exit long positions when price reaches middle band from below
+                if prev_price < current_middle and current_price >= current_middle:
+                    signal = Signal(
+                        action='sell',
+                        price=current_price,
+                        size=self.position_size_percent / 100,
+                        confidence=0.7
+                    )
+                    signals.append(signal)
+                    self.logger.info(f"Mean reversion exit (long) at {current_price:.2f}")
+                
+                # Exit short positions when price reaches middle band from above
+                elif prev_price > current_middle and current_price <= current_middle:
+                    signal = Signal(
+                        action='buy',
+                        price=current_price,
+                        size=self.position_size_percent / 100,
+                        confidence=0.7
+                    )
+                    signals.append(signal)
+                    self.logger.info(f"Mean reversion exit (short) at {current_price:.2f}")
+            
+        except Exception as e:
+            self.logger.error(f"Error generating signals: {str(e)}")
+        
+        return signals
+    
+    def calculate_position_size(self, signal: Signal, portfolio_value: float, 
+                              current_price: float) -> float:
+        """
+        Calculate position size based on Kelly Criterion and risk management.
+        
+        Args:
+            signal: Trading signal
+            portfolio_value: Current portfolio value
+            current_price: Current market price
+            
+        Returns:
+            Position size in base currency units
+        """
+        try:
+            # Base position size from signal
+            base_size_value = portfolio_value * signal.size
+            
+            # Adjust by confidence
+            adjusted_size_value = base_size_value * signal.confidence
+            
+            # Apply maximum position size limit
+            max_position_value = portfolio_value * (self.position_size_percent / 100)
+            final_size_value = min(adjusted_size_value, max_position_value)
+            
+            # Convert to units
+            position_size = final_size_value / current_price
+            
+            # Ensure minimum position size
+            min_position_size = 0.001  # Minimum 0.001 units
+            position_size = max(position_size, min_position_size)
+            
+            self.logger.debug(f"Position size calculated: {position_size:.6f} units (${final_size_value:.2f})")
+            
+            return position_size
+            
+        except Exception as e:
+            self.logger.error(f"Error calculating position size: {str(e)}")
+            return 0.0
+    
+    def should_exit_position(self, position: dict, current_price: float, 
+                           current_data: pd.Series) -> Signal:
+        """
+        Enhanced exit logic with trailing stops and additional conditions.
+        
+        Args:
+            position: Position dictionary
+            current_price: Current market price
+            current_data: Current market data
+            
+        Returns:
+            Exit signal if position should be closed, None otherwise
+        """
+        # First check base exit conditions
+        base_exit = super().should_exit_position(position, current_price, current_data)
+        if base_exit:
+            return base_exit
+        
+        try:
+            # Calculate current P&L percentage
+            entry_price = position['entry_price']
+            
+            if position['side'] == 'long':
+                pnl_percent = (current_price - entry_price) / entry_price * 100
+            else:
+                pnl_percent = (entry_price - current_price) / entry_price * 100
+            
+            # Trailing stop logic
+            if pnl_percent > self.take_profit_percent / 2:  # If profit > 50% of target
+                trailing_stop_percent = self.stop_loss_percent / 2  # Tighter trailing stop
+                
+                if position['side'] == 'long':
+                    trailing_stop_price = current_price * (1 - trailing_stop_percent / 100)
+                    if 'trailing_stop' not in position or trailing_stop_price > position.get('trailing_stop', 0):
+                        position['trailing_stop'] = trailing_stop_price
+                    
+                    if current_price <= position['trailing_stop']:
+                        return Signal('sell', current_price, position['size'], 1.0)
+                
+                else:  # short position
+                    trailing_stop_price = current_price * (1 + trailing_stop_percent / 100)
+                    if 'trailing_stop' not in position or trailing_stop_price < position.get('trailing_stop', float('inf')):
+                        position['trailing_stop'] = trailing_stop_price
+                    
+                    if current_price >= position['trailing_stop']:
+                        return Signal('buy', current_price, position['size'], 1.0)
+            
+        except Exception as e:
+            self.logger.error(f"Error in exit logic: {str(e)}")
+        
+        return None
+    
+    def get_strategy_parameters(self) -> dict:
+        """Get strategy parameters."""
+        params = super().get_strategy_parameters()
+        params.update({
+            'bb_period': self.bb_period,
+            'bb_std_dev': self.bb_std_dev,
+            'atr_period': self.atr_period,
+            'volume_threshold': self.volume_threshold,
+            'position_size_percent': self.position_size_percent,
+            'stop_loss_percent': self.stop_loss_percent,
+            'take_profit_percent': self.take_profit_percent
+        })
+        return params

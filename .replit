@@ -1,2 +1,31 @@
+modules = ["python-3.11"]
 [agent]
 expertMode = true
+
+[nix]
+channel = "stable-25_05"
+packages = ["glibcLocales"]
+
+[workflows]
+runButton = "Project"
+
+[[workflows.workflow]]
+name = "Project"
+mode = "parallel"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Trading System"
+
+[[workflows.workflow]]
+name = "Trading System"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pip install -r requirements.txt && python main.py web"
+waitForPort = 5000
+
+[workflows.workflow.metadata]
+outputType = "webview"
