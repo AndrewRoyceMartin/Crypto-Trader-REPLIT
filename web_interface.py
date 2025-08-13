@@ -355,6 +355,59 @@ def get_crypto_portfolio():
         app.logger.error("Error getting crypto portfolio: %s", e)
         return jsonify({"error": str(e)}), 500
 
+@app.route("/api/price-source-status")
+def get_price_source_status():
+    """Get live price data source connection status."""
+    try:
+        initialize_system()
+        if not crypto_portfolio:
+            return jsonify({"error": "Crypto portfolio not initialized"}), 500
+            
+        api_status = crypto_portfolio.get_api_status()
+        return jsonify({
+            'success': True,
+            'status': api_status
+        })
+    except Exception as e:
+        app.logger.error("Error getting price source status: %s", e)
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'status': {
+                'status': 'error',
+                'error': 'Failed to check API status',
+                'api_provider': 'Unknown'
+            }
+        }), 500
+
+@app.route("/api/update-live-prices", methods=["POST"])
+def update_live_prices():
+    """Manually trigger live price updates from CoinGecko API."""
+    try:
+        initialize_system()
+        if not crypto_portfolio:
+            return jsonify({"error": "Crypto portfolio not initialized"}), 500
+        
+        # Get list of symbols to update (default: all)
+        data = request.get_json() or {}
+        symbols = data.get('symbols', None)
+        
+        updated_prices = crypto_portfolio.update_live_prices(symbols)
+        
+        return jsonify({
+            'success': True,
+            'message': f'Updated {len(updated_prices)} cryptocurrency prices',
+            'updated_symbols': list(updated_prices.keys()),
+            'updated_prices': updated_prices
+        })
+        
+    except Exception as e:
+        app.logger.error("Error updating live prices: %s", e)
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
 @app.route("/api/rebalance-portfolio", methods=["POST"])
 def rebalance_crypto_portfolio():
     """Rebalance the cryptocurrency portfolio to equal weights."""

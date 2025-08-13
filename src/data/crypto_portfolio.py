@@ -10,6 +10,7 @@ from typing import Dict, List, Optional
 import logging
 import json
 import os
+from .price_api import CryptoPriceAPI
 
 class CryptoPortfolioManager:
     """Manages a portfolio of 100 different cryptocurrencies."""
@@ -24,8 +25,16 @@ class CryptoPortfolioManager:
         self.initial_value = initial_value_per_crypto
         self.logger = logging.getLogger(__name__)
         self.crypto_list = self._get_top_100_cryptos()
+        self.price_api = CryptoPriceAPI()
         self.portfolio_data = self._initialize_portfolio()
         self.price_history = {}
+        
+        # Test API connection on startup
+        api_status = self.price_api.test_connection()
+        if api_status['status'] == 'connected':
+            self.logger.info(f"Live price API connected: {api_status['api_provider']}")
+        else:
+            self.logger.warning(f"Price API connection failed: {api_status.get('error', 'Unknown error')}")
         
     def _get_top_100_cryptos(self) -> List[Dict]:
         """Get list of top 100 highest-performing cryptocurrencies based on past 6 months data."""
@@ -157,10 +166,20 @@ class CryptoPortfolioManager:
         """Initialize portfolio with starting values for each cryptocurrency."""
         portfolio = {}
         
+        # Get all live prices in batches to avoid rate limiting
+        symbols = [crypto["symbol"] for crypto in self.crypto_list]
+        live_prices = self.price_api.get_multiple_prices(symbols[:20])  # Start with top 20 to avoid rate limits
+        
         for crypto in self.crypto_list:
             symbol = crypto["symbol"]
-            # Simulate realistic starting prices based on rank
-            base_price = self._generate_realistic_price(crypto["rank"])
+            # Use live price if available, otherwise fallback to realistic simulation
+            if symbol in live_prices:
+                base_price = live_prices[symbol]
+                self.logger.info(f"Using live price for {symbol}: ${base_price:.6f}")
+            else:
+                base_price = self._generate_realistic_price(crypto["rank"])
+                self.logger.info(f"Using simulated price for {symbol}: ${base_price:.6f}")
+            
             # Ensure base_price is not zero to prevent division by zero
             if base_price <= 0:
                 base_price = 0.000001  # Use a very small number as fallback
@@ -182,6 +201,25 @@ class CryptoPortfolioManager:
             }
             
         return portfolio
+    
+    def _get_live_price(self, symbol: str) -> Optional[float]:
+        """Get live price from CoinGecko API with fallback to simulated price."""
+        try:
+            live_price = self.price_api.get_price(symbol)
+            if live_price is not None:
+                self.logger.info(f"Retrieved live price for {symbol}: ${live_price:.6f}")
+                return live_price
+        except Exception as e:
+            self.logger.warning(f"Failed to get live price for {symbol}: {e}")
+        
+        # Fallback to simulated realistic price
+        crypto_data = next((c for c in self.crypto_list if c["symbol"] == symbol), None)
+        if crypto_data:
+            fallback_price = self._generate_realistic_price(crypto_data["rank"])
+            self.logger.info(f"Using fallback price for {symbol}: ${fallback_price:.6f}")
+            return fallback_price
+        
+        return 100.0  # Default fallback
     
     def _generate_realistic_price(self, rank: int) -> float:
         """Generate realistic cryptocurrency prices based on CURRENT market cap rank and August 2025 prices."""
@@ -370,6 +408,42 @@ class CryptoPortfolioManager:
     def get_portfolio_data(self) -> Dict:
         """Get detailed portfolio data for all cryptocurrencies."""
         return self.portfolio_data
+    
+    def get_api_status(self) -> Dict:
+        """Get live API connection status and information."""
+        return self.price_api.test_connection()
+    
+    def update_live_prices(self, symbols: List[str] = None) -> Dict[str, float]:
+        """Update portfolio with live prices from API."""
+        if symbols is None:
+            symbols = [crypto["symbol"] for crypto in self.crypto_list]
+        
+        # Get live prices for all symbols
+        live_prices = self.price_api.get_multiple_prices(symbols)
+        
+        # Update portfolio with live prices
+        updated_count = 0
+        for symbol, price in live_prices.items():
+            if symbol in self.portfolio_data:
+                crypto = self.portfolio_data[symbol]
+                crypto["current_price"] = price
+                crypto["current_value"] = crypto["quantity"] * price
+                crypto["pnl"] = crypto["current_value"] - crypto["initial_value"]
+                crypto["pnl_percent"] = (crypto["pnl"] / crypto["initial_value"]) * 100
+                
+                # Update target prices
+                crypto["target_sell_price"] = self._calculate_target_sell_price(price, crypto["rank"])
+                crypto["target_buy_price"] = self._calculate_target_buy_price(price, crypto["rank"])
+                
+                # Update projected P&L
+                if crypto.get("target_sell_price"):
+                    sell_value = crypto["target_sell_price"] * crypto["quantity"]
+                    crypto["projected_sell_pnl"] = sell_value - crypto["initial_value"]
+                
+                updated_count += 1
+        
+        self.logger.info(f"Updated {updated_count} cryptocurrencies with live prices")
+        return live_prices
     
     def get_crypto_history(self, symbol: str, hours: int = 24) -> List[Dict]:
         """Get price history for a specific cryptocurrency."""
