@@ -401,6 +401,7 @@ class TradingApp {
                     <td>${crypto.quantity.toFixed(4)}</td>
                     <td>$${priceDisplay}</td>
                     <td class="text-warning">$${crypto.target_sell_price ? crypto.target_sell_price.toFixed(crypto.target_sell_price < 1 ? 6 : 2) : 'N/A'}</td>
+                    <td class="text-success">$${crypto.target_buy_price ? crypto.target_buy_price.toFixed(crypto.target_buy_price < 1 ? 6 : 2) : 'N/A'}</td>
                     <td>$${crypto.current_value.toFixed(2)}</td>
                     <td class="${pnlClass}">$${crypto.pnl.toFixed(2)}</td>
                     <td class="${pnlClass}">${crypto.pnl_percent.toFixed(2)}%</td>
@@ -1229,6 +1230,14 @@ function applySortToCryptoData() {
             case 'value':
                 valueA = parseFloat(a.current_value || 0);
                 valueB = parseFloat(b.current_value || 0);
+                break;
+            case 'target_sell':
+                valueA = parseFloat(a.target_sell_price || 0);
+                valueB = parseFloat(b.target_sell_price || 0);
+                break;
+            case 'target_buy':
+                valueA = parseFloat(a.target_buy_price || 0);
+                valueB = parseFloat(b.target_buy_price || 0);
                 break;
             default:
                 return 0;

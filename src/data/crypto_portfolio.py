@@ -173,7 +173,8 @@ class CryptoPortfolioManager:
                 "current_value": self.initial_value,
                 "pnl": 0.0,
                 "pnl_percent": 0.0,
-                "target_sell_price": self._calculate_target_sell_price(base_price, crypto["rank"])
+                "target_sell_price": self._calculate_target_sell_price(base_price, crypto["rank"]),
+                "target_buy_price": self._calculate_target_buy_price(base_price, crypto["rank"])
             }
             
         return portfolio
@@ -277,15 +278,41 @@ class CryptoPortfolioManager:
         
         return current_price * (1 + profit_target)
     
+    def _calculate_target_buy_price(self, current_price: float, rank: int) -> float:
+        """Calculate target buy price based on risk appetite and support levels."""
+        # Target buy prices are typically 10-25% below current price for good entry points
+        if rank <= 2:   # BTC, ETH - conservative dip buying
+            discount = 0.08    # 8% below current price
+        elif rank <= 10:  # Top performers - moderate dips
+            discount = 0.12    # 12% below current price  
+        elif rank <= 20:  # High-growth winners - bigger dips for better entries
+            discount = 0.18    # 18% below current price
+        elif rank <= 40:  # Strong altcoins - volatility opportunities
+            discount = 0.15    # 15% below current price
+        elif rank <= 60:  # DeFi leaders - moderate entries
+            discount = 0.14    # 14% below current price
+        elif rank <= 80:  # Infrastructure - bigger swings
+            discount = 0.20    # 20% below current price
+        else:  # Micro-cap moonshots - maximum discount for high-risk entries
+            discount = 0.25    # 25% below current price for speculative plays
+        
+        return current_price * (1 - discount)
+    
     def _migrate_portfolio_data(self) -> None:
-        """Migrate old portfolio data to include new fields like target_sell_price."""
+        """Migrate old portfolio data to include new fields like target_sell_price and target_buy_price."""
         for symbol, crypto in self.portfolio_data.items():
+            current_price = crypto.get("current_price", crypto.get("initial_price", 100))
+            rank = crypto.get("rank", 50)
+            
             # Add target_sell_price if it doesn't exist
             if "target_sell_price" not in crypto:
-                current_price = crypto.get("current_price", crypto.get("initial_price", 100))
-                rank = crypto.get("rank", 50)
                 crypto["target_sell_price"] = self._calculate_target_sell_price(current_price, rank)
                 self.logger.info(f"Added target sell price for {symbol}: ${crypto['target_sell_price']:.4f}")
+            
+            # Add target_buy_price if it doesn't exist
+            if "target_buy_price" not in crypto:
+                crypto["target_buy_price"] = self._calculate_target_buy_price(current_price, rank)
+                self.logger.info(f"Added target buy price for {symbol}: ${crypto['target_buy_price']:.4f}")
     
     def get_portfolio_summary(self) -> Dict:
         """Get complete portfolio summary statistics."""
