@@ -10,29 +10,29 @@
     --light-color: #f8f9fa;
 }
 
-/* Target Price Proximity Backgrounds */
-.target-proximity-cold {
-    background-color: rgba(52, 58, 64, 0.05) !important; /* Very light gray - far from target */
+/* Target Price Proximity Backgrounds - Enhanced visibility */
+tbody tr.target-proximity-cold {
+    background-color: rgba(52, 58, 64, 0.15) !important; /* Gray - far from target */
 }
 
-.target-proximity-cool {
-    background-color: rgba(23, 162, 184, 0.1) !important; /* Light blue - 60-80% to target */
+tbody tr.target-proximity-cool {
+    background-color: rgba(23, 162, 184, 0.25) !important; /* Blue - 60-80% to target */
 }
 
-.target-proximity-warm {
-    background-color: rgba(255, 193, 7, 0.15) !important; /* Light yellow - 80-90% to target */
+tbody tr.target-proximity-warm {
+    background-color: rgba(255, 193, 7, 0.35) !important; /* Yellow - 80-90% to target */
 }
 
-.target-proximity-hot {
-    background-color: rgba(255, 108, 55, 0.2) !important; /* Light orange - 90-95% to target */
+tbody tr.target-proximity-hot {
+    background-color: rgba(255, 108, 55, 0.4) !important; /* Orange - 90-95% to target */
 }
 
-.target-proximity-very-hot {
-    background-color: rgba(220, 53, 69, 0.25) !important; /* Light red - 95%+ to target */
+tbody tr.target-proximity-very-hot {
+    background-color: rgba(220, 53, 69, 0.45) !important; /* Red - 95%+ to target */
 }
 
-.target-proximity-achieved {
-    background-color: rgba(40, 167, 69, 0.2) !important; /* Light green - target reached */
+tbody tr.target-proximity-achieved {
+    background-color: rgba(40, 167, 69, 0.35) !important; /* Green - target reached */
 }
 
 body {

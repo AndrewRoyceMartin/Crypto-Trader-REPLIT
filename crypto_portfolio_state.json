@@ -5,1200 +5,1200 @@
       "rank": 1,
       "quantity": 0.0018541508107937227,
       "initial_price": 53933.04547713253,
-      "current_price": 55917.720506715516,
+      "current_price": 55260.107219045516,
       "initial_value": 100.0,
-      "current_value": 103.67988681526334,
-      "pnl": 3.6798868152633446,
-      "pnl_percent": 3.6798868152633446,
-      "target_sell_price": 58713.60653205129
+      "current_value": 102.46057260474129,
+      "pnl": 2.4605726047412873,
+      "pnl_percent": 2.4605726047412873,
+      "target_sell_price": 58023.112579997796
     },
     "ETH": {
       "name": "Ethereum",
       "rank": 2,
       "quantity": 0.0019208158095408896,
       "initial_price": 52061.21248236802,
-      "current_price": 51724.61885535424,
+      "current_price": 51932.01425565615,
       "initial_value": 100.0,
-      "current_value": 99.35346563984122,
-      "pnl": -0.6465343601587819,
-      "pnl_percent": -0.6465343601587819,
-      "target_sell_price": 54310.849798121955
+      "current_value": 99.75183400356718,
+      "pnl": -0.24816599643281734,
+      "pnl_percent": -0.24816599643281734,
+      "target_sell_price": 54528.61496843896
     },
     "SOL": {
       "name": "Solana",
       "rank": 3,
       "quantity": 0.050640910445878616,
       "initial_price": 1974.688036204895,
-      "current_price": 1813.9034645298063,
+      "current_price": 1721.736468031022,
       "initial_value": 100.0,
-      "current_value": 91.85772290472288,
-      "pnl": -8.142277095277123,
-      "pnl_percent": -8.142277095277123,
-      "target_sell_price": 1959.0157416921909
+      "current_value": 87.19030228896234,
+      "pnl": -12.809697711037657,
+      "pnl_percent": -12.809697711037657,
+      "target_sell_price": 1859.4753854735038
     },
     "XRP": {
       "name": "XRP",
       "rank": 4,
       "quantity": 0.028681764404419816,
       "initial_price": 3486.5358556738634,
-      "current_price": 3557.901014496342,
+      "current_price": 3737.60192713904,
       "initial_value": 100.0,
-      "current_value": 102.04687867203033,
-      "pnl": 2.0468786720303314,
-      "pnl_percent": 2.0468786720303314,
-      "target_sell_price": 3842.5330956560497
+      "current_value": 107.20101791170742,
+      "pnl": 7.2010179117074244,
+      "pnl_percent": 7.2010179117074244,
+      "target_sell_price": 4036.6100813101634
     },
     "DOGE": {
       "name": "Dogecoin",
       "rank": 5,
       "quantity": 0.07979007182060585,
       "initial_price": 1253.2887578398559,
-      "current_price": 1188.3982078575345,
+      "current_price": 1184.2640172328854,
       "initial_value": 100.0,
-      "current_value": 94.82237835643197,
-      "pnl": -5.177621643568031,
-      "pnl_percent": -5.177621643568031,
-      "target_sell_price": 1283.4700644861373
+      "current_value": 94.49251098957113,
+      "pnl": -5.50748901042887,
+      "pnl_percent": -5.50748901042887,
+      "target_sell_price": 1279.0051386115163
     },
     "BNB": {
       "name": "BNB",
       "rank": 6,
       "quantity": 0.027999003458743756,
       "initial_price": 3571.555685806781,
-      "current_price": 3115.5806779366617,
+      "current_price": 3144.6763741461104,
       "initial_value": 100.0,
-      "current_value": 87.23315417754381,
-      "pnl": -12.76684582245619,
-      "pnl_percent": -12.76684582245619,
-      "target_sell_price": 3364.8271321715947
+      "current_value": 88.04780467634671,
+      "pnl": -11.952195323653285,
+      "pnl_percent": -11.952195323653285,
+      "target_sell_price": 3396.2504840777997
     },
     "ADA": {
       "name": "Cardano",
       "rank": 7,
       "quantity": 0.024273535056442495,
       "initial_price": 4119.713085361202,
-      "current_price": 3737.132535341012,
+      "current_price": 3858.4022053379163,
       "initial_value": 100.0,
-      "current_value": 90.71341760717188,
-      "pnl": -9.286582392828123,
-      "pnl_percent": -9.286582392828123,
-      "target_sell_price": 4036.1031381682933
+      "current_value": 93.65706119312495,
+      "pnl": -6.342938806875054,
+      "pnl_percent": -6.342938806875054,
+      "target_sell_price": 4167.07438176495
     },
     "AVAX": {
       "name": "Avalanche",
       "rank": 8,
       "quantity": 0.03806686420726161,
       "initial_price": 2626.9565955192093,
-      "current_price": 2612.4047958576352,
+      "current_price": 2519.933451580298,
       "initial_value": 100.0,
-      "current_value": 99.44605861831158,
-      "pnl": -0.5539413816884178,
-      "pnl_percent": -0.5539413816884178,
-      "target_sell_price": 2821.3971795262464
+      "current_value": 95.92596451264325,
+      "pnl": -4.074035487356753,
+      "pnl_percent": -4.074035487356753,
+      "target_sell_price": 2721.528127706722
     },
     "LINK": {
       "name": "Chainlink",
       "rank": 9,
       "quantity": 0.04502141984734043,
       "initial_price": 2221.164955238686,
-      "current_price": 2174.777567111377,
+      "current_price": 2014.656456685016,
       "initial_value": 100.0,
-      "current_value": 97.91157392349886,
-      "pnl": -2.088426076501136,
-      "pnl_percent": -2.088426076501136,
-      "target_sell_price": 2348.759772480287
+      "current_value": 90.70269418457133,
+      "pnl": -9.297305815428672,
+      "pnl_percent": -9.297305815428672,
+      "target_sell_price": 2175.8289732198177
     },
     "UNI": {
       "name": "Uniswap",
       "rank": 10,
       "quantity": 0.49152923433602896,
       "initial_price": 203.44669861820674,
-      "current_price": 186.51894103578613,
+      "current_price": 188.24721231935064,
       "initial_value": 100.0,
-      "current_value": 91.67951227648689,
-      "pnl": -8.32048772351311,
-      "pnl_percent": -8.32048772351311,
-      "target_sell_price": 201.44045631864904
+      "current_value": 92.52900813722229,
+      "pnl": -7.4709918627777085,
+      "pnl_percent": -7.470991862777708,
+      "target_sell_price": 203.3069893048987
     },
     "SAROS": {
       "name": "Saros Finance",
       "rank": 11,
       "quantity": 0.3767552669814115,
       "initial_price": 265.42429201111565,
-      "current_price": 271.18332568382266,
+      "current_price": 287.4647387010446,
       "initial_value": 100.0,
-      "current_value": 102.16974626891567,
-      "pnl": 2.1697462689156737,
-      "pnl_percent": 2.1697462689156737,
-      "target_sell_price": 303.7253247658814
+      "current_value": 108.30385437705375,
+      "pnl": 8.303854377053753,
+      "pnl_percent": 8.303854377053753,
+      "target_sell_price": 321.96050734517
     },
     "XCN": {
       "name": "Onyxcoin",
       "rank": 12,
       "quantity": 1.7579774747567527,
       "initial_price": 56.8835502365221,
-      "current_price": 71.89784939914111,
+      "current_price": 86.41479214051155,
       "initial_value": 100.0,
-      "current_value": 126.3947997271434,
-      "pnl": 26.394799727143393,
-      "pnl_percent": 26.394799727143393,
-      "target_sell_price": 80.52559132703804
+      "current_value": 151.91525806880617,
+      "pnl": 51.91525806880617,
+      "pnl_percent": 51.91525806880617,
+      "target_sell_price": 96.78456719737295
     },
     "ZBCN": {
       "name": "Zebec Network",
       "rank": 13,
       "quantity": 0.86007779813739,
       "initial_price": 116.26855177120368,
-      "current_price": 123.40707713504828,
+      "current_price": 163.01414024945473,
       "initial_value": 100.0,
-      "current_value": 106.13968717688338,
-      "pnl": 6.139687176883385,
-      "pnl_percent": 6.139687176883385,
-      "target_sell_price": 138.2159263912541
+      "current_value": 140.2048428110107,
+      "pnl": 40.20484281101071,
+      "pnl_percent": 40.20484281101071,
+      "target_sell_price": 182.57583707938932
     },
     "SYRUP": {
       "name": "Maple Finance",
       "rank": 14,
       "quantity": 0.5827445054102678,
       "initial_price": 171.60178958632534,
-      "current_price": 283.8006410581856,
+      "current_price": 258.34410382306663,
       "initial_value": 100.0,
-      "current_value": 165.3832642085693,
-      "pnl": 65.3832642085693,
-      "pnl_percent": 65.3832642085693,
-      "target_sell_price": 317.8567179851679
+      "current_value": 150.54860700803184,
+      "pnl": 50.54860700803184,
+      "pnl_percent": 50.54860700803183,
+      "target_sell_price": 289.34539628183467
     },
     "TOSHI": {
       "name": "Toshi",
       "rank": 15,
       "quantity": 0.2830412981982805,
       "initial_price": 353.3053326018398,
-      "current_price": 467.3380740505849,
+      "current_price": 469.09985079378015,
       "initial_value": 100.0,
-      "current_value": 132.2759751767617,
-      "pnl": 32.275975176761705,
-      "pnl_percent": 32.275975176761705,
-      "target_sell_price": 523.4186429366551
+      "current_value": 132.7746307532912,
+      "pnl": 32.774630753291206,
+      "pnl_percent": 32.774630753291206,
+      "target_sell_price": 525.3918328890338
     },
     "VENOM": {
       "name": "Venom",
       "rank": 16,
       "quantity": 0.2917936729807985,
       "initial_price": 342.70791062210765,
-      "current_price": 283.3450311506332,
+      "current_price": 228.36188447325307,
       "initial_value": 100.0,
-      "current_value": 82.67828736030202,
-      "pnl": -17.321712639697978,
-      "pnl_percent": -17.321712639697978,
-      "target_sell_price": 317.3464348887092
+      "current_value": 66.63455303926729,
+      "pnl": -33.36544696073271,
+      "pnl_percent": -33.36544696073271,
+      "target_sell_price": 255.76531061004346
     },
     "EUL": {
       "name": "Euler",
       "rank": 17,
       "quantity": 0.21441393368896164,
       "initial_price": 466.38760028098005,
-      "current_price": 372.0044610441231,
+      "current_price": 384.8826350584546,
       "initial_value": 100.0,
-      "current_value": 79.76293984231252,
-      "pnl": -20.23706015768748,
-      "pnl_percent": -20.23706015768748,
-      "target_sell_price": 416.6449963694179
+      "current_value": 82.5241997914563,
+      "pnl": -17.475800208543703,
+      "pnl_percent": -17.475800208543703,
+      "target_sell_price": 431.0685512654692
     },
     "WBT": {
       "name": "WhiteBIT Coin",
       "rank": 18,
       "quantity": 0.3059908449105769,
       "initial_price": 326.807163231384,
-      "current_price": 335.9192652220414,
+      "current_price": 315.4473745437296,
       "initial_value": 100.0,
-      "current_value": 102.78821978703262,
-      "pnl": 2.7882197870326166,
-      "pnl_percent": 2.7882197870326166,
-      "target_sell_price": 376.22957704868645
+      "current_value": 96.52400866145902,
+      "pnl": -3.475991338540979,
+      "pnl_percent": -3.475991338540979,
+      "target_sell_price": 353.3010594889772
     },
     "HYPE": {
       "name": "Hyperliquid",
       "rank": 19,
       "quantity": 0.6898881238879166,
       "initial_price": 144.95103849076636,
-      "current_price": 80.15667506842189,
+      "current_price": 72.17011935381329,
       "initial_value": 100.0,
-      "current_value": 55.299138180046924,
-      "pnl": -44.700861819953076,
-      "pnl_percent": -44.700861819953076,
-      "target_sell_price": 89.77547607663253
+      "current_value": 49.78930824176928,
+      "pnl": -50.21069175823072,
+      "pnl_percent": -50.210691758230716,
+      "target_sell_price": 80.83053367627089
     },
     "XMR": {
       "name": "Monero",
       "rank": 20,
       "quantity": 3.626960626126195,
       "initial_price": 27.571294620533507,
-      "current_price": 29.006770572228444,
+      "current_price": 26.376465189877358,
       "initial_value": 100.0,
-      "current_value": 105.20641475654855,
-      "pnl": 5.206414756548554,
-      "pnl_percent": 5.206414756548554,
-      "target_sell_price": 32.48758304089586
+      "current_value": 95.66640070007337,
+      "pnl": -4.333599299926632,
+      "pnl_percent": -4.333599299926632,
+      "target_sell_price": 29.541641012662645
     },
     "SUI": {
       "name": "Sui Network",
       "rank": 21,
       "quantity": 2.270723234568171,
       "initial_price": 44.03883242028712,
-      "current_price": 54.12718844770485,
+      "current_price": 53.00078077098302,
       "initial_value": 100.0,
-      "current_value": 122.9078644300533,
-      "pnl": 22.907864430053294,
-      "pnl_percent": 22.907864430053294,
-      "target_sell_price": 59.53990729247534
+      "current_value": 120.35010434692508,
+      "pnl": 20.35010434692508,
+      "pnl_percent": 20.35010434692508,
+      "target_sell_price": 58.300858848081326
     },
     "RNDR": {
       "name": "Render Token",
       "rank": 22,
       "quantity": 2.0264944337957593,
       "initial_price": 49.346298875686195,
-      "current_price": 44.93736211647031,
+      "current_price": 50.50146347771,
       "initial_value": 100.0,
-      "current_value": 91.0653141984915,
-      "pnl": -8.934685801508493,
-      "pnl_percent": -8.934685801508493,
-      "target_sell_price": 49.43109832811734
+      "current_value": 102.34093463611914,
+      "pnl": 2.340934636119144,
+      "pnl_percent": 2.340934636119144,
+      "target_sell_price": 55.551609825481
     },
     "PEPE": {
       "name": "Pepe",
       "rank": 23,
       "quantity": 1.8434694540678198,
       "initial_price": 54.24554216471497,
-      "current_price": 58.358889093771666,
+      "current_price": 59.96513368550159,
       "initial_value": 100.0,
-      "current_value": 107.5828294176997,
-      "pnl": 7.582829417699699,
-      "pnl_percent": 7.582829417699699,
-      "target_sell_price": 64.19477800314884
+      "current_value": 110.54389225831545,
+      "pnl": 10.543892258315452,
+      "pnl_percent": 10.543892258315452,
+      "target_sell_price": 65.96164705405175
     },
     "TON": {
       "name": "Toncoin",
       "rank": 24,
       "quantity": 1.3659903662174675,
       "initial_price": 73.20695846260446,
-      "current_price": 63.50962226799975,
+      "current_price": 66.08295139371471,
       "initial_value": 100.0,
-      "current_value": 86.75353218019801,
-      "pnl": -13.246467819801993,
-      "pnl_percent": -13.246467819801994,
-      "target_sell_price": 69.86058449479974
+      "current_value": 90.26867497503146,
+      "pnl": -9.731325024968541,
+      "pnl_percent": -9.731325024968541,
+      "target_sell_price": 72.69124653308619
     },
     "LTC": {
       "name": "Litecoin",
       "rank": 25,
       "quantity": 2.575087131474228,
       "initial_price": 38.833637424435565,
-      "current_price": 27.352085860728867,
+      "current_price": 25.897658233794534,
       "initial_value": 100.0,
-      "current_value": 70.43400431894108,
-      "pnl": -29.565995681058922,
-      "pnl_percent": -29.565995681058922,
-      "target_sell_price": 30.087294446801756
+      "current_value": 66.68872645316189,
+      "pnl": -33.31127354683811,
+      "pnl_percent": -33.31127354683811,
+      "target_sell_price": 28.48742405717399
     },
     "SHIB": {
       "name": "Shiba Inu",
       "rank": 26,
       "quantity": 1.214275802145741,
       "initial_price": 82.35361342397705,
-      "current_price": 73.28585096121672,
+      "current_price": 70.36137145268835,
       "initial_value": 100.0,
-      "current_value": 88.98923546186465,
-      "pnl": -11.010764538135348,
-      "pnl_percent": -11.010764538135348,
-      "target_sell_price": 80.61443605733841
+      "current_value": 85.43811076078758,
+      "pnl": -14.56188923921242,
+      "pnl_percent": -14.56188923921242,
+      "target_sell_price": 77.39750859795718
     },
     "DOT": {
       "name": "Polkadot",
       "rank": 27,
       "quantity": 2.340540513743957,
       "initial_price": 42.72517369931734,
-      "current_price": 33.45591819086742,
+      "current_price": 33.48697929746943,
       "initial_value": 100.0,
-      "current_value": 78.30493195022864,
-      "pnl": -21.695068049771365,
-      "pnl_percent": -21.695068049771365,
-      "target_sell_price": 36.801510009954164
+      "current_value": 78.37763172863235,
+      "pnl": -21.622368271367648,
+      "pnl_percent": -21.622368271367648,
+      "target_sell_price": 36.83567722721638
     },
     "TRX": {
       "name": "TRON",
       "rank": 28,
       "quantity": 5.797352060423919,
       "initial_price": 17.24925430743768,
-      "current_price": 15.142062909237628,
+      "current_price": 16.7439127501582,
       "initial_value": 100.0,
-      "current_value": 87.78386960593737,
-      "pnl": -12.216130394062631,
-      "pnl_percent": -12.216130394062631,
-      "target_sell_price": 16.656269200161393
+      "current_value": 97.07035708168796,
+      "pnl": -2.929642918312041,
+      "pnl_percent": -2.929642918312041,
+      "target_sell_price": 18.41830402517402
     },
     "MATIC": {
       "name": "Polygon",
       "rank": 29,
       "quantity": 4.709603484857028,
       "initial_price": 21.233210040194233,
-      "current_price": 19.786146934872573,
+      "current_price": 18.865835285442554,
       "initial_value": 100.0,
-      "current_value": 93.18490655636907,
-      "pnl": -6.8150934436309285,
-      "pnl_percent": -6.815093443630929,
-      "target_sell_price": 21.76476162835983
+      "current_value": 88.85060360505894,
+      "pnl": -11.149396394941064,
+      "pnl_percent": -11.149396394941064,
+      "target_sell_price": 20.75241881398681
     },
     "APT": {
       "name": "Aptos",
       "rank": 30,
       "quantity": 3.7582510740389474,
       "initial_price": 26.608121179230103,
-      "current_price": 19.35841317069838,
+      "current_price": 17.962608027098014,
       "initial_value": 100.0,
-      "current_value": 72.7537770904669,
-      "pnl": -27.246222909533103,
-      "pnl_percent": -27.246222909533103,
-      "target_sell_price": 21.29425448776822
+      "current_value": 67.50799091038174,
+      "pnl": -32.492009089618264,
+      "pnl_percent": -32.492009089618264,
+      "target_sell_price": 19.758868829807817
     },
     "AAVE": {
       "name": "Aave",
       "rank": 31,
       "quantity": 1.0839156479691472,
       "initial_price": 92.25810162198749,
-      "current_price": 70.96748726473629,
+      "current_price": 73.7710837930757,
       "initial_value": 100.0,
-      "current_value": 76.92276994329883,
-      "pnl": -23.07723005670117,
-      "pnl_percent": -23.07723005670117,
-      "target_sell_price": 78.06423599120993
+      "current_value": 79.9616320909579,
+      "pnl": -20.038367909042094,
+      "pnl_percent": -20.038367909042094,
+      "target_sell_price": 81.14819217238328
     },
     "MKR": {
       "name": "Maker",
       "rank": 32,
       "quantity": 1.7215705628093205,
       "initial_price": 58.08649506460915,
-      "current_price": 57.7362507515293,
+      "current_price": 59.2378260096508,
       "initial_value": 100.0,
-      "current_value": 99.39702970081035,
-      "pnl": -0.60297029918965,
-      "pnl_percent": -0.60297029918965,
-      "target_sell_price": 63.50987582668223
+      "current_value": 101.98209746303515,
+      "pnl": 1.9820974630351458,
+      "pnl_percent": 1.9820974630351458,
+      "target_sell_price": 65.16160861061589
     },
     "COMP": {
       "name": "Compound",
       "rank": 33,
       "quantity": 1.3187159097396925,
       "initial_price": 75.83134415944028,
-      "current_price": 70.01325337630006,
+      "current_price": 73.40780104984346,
       "initial_value": 100.0,
-      "current_value": 92.32759111996313,
-      "pnl": -7.672408880036869,
-      "pnl_percent": -7.672408880036868,
-      "target_sell_price": 77.01457871393006
+      "current_value": 96.80403514343467,
+      "pnl": -3.1959648565653254,
+      "pnl_percent": -3.1959648565653254,
+      "target_sell_price": 80.7485811548278
     },
     "CRV": {
       "name": "Curve DAO",
       "rank": 34,
       "quantity": 1.4517089187263625,
       "initial_price": 68.88433260280144,
-      "current_price": 76.73194534095087,
+      "current_price": 74.39144061069045,
       "initial_value": 100.0,
-      "current_value": 111.39244940268215,
-      "pnl": 11.392449402682146,
-      "pnl_percent": 11.392449402682146,
-      "target_sell_price": 84.40513987504596
+      "current_value": 107.99471781144184,
+      "pnl": 7.994717811441845,
+      "pnl_percent": 7.994717811441846,
+      "target_sell_price": 81.83058467175951
     },
     "SNX": {
       "name": "Synthetix",
       "rank": 35,
       "quantity": 1.1075657049025427,
       "initial_price": 90.28809718227889,
-      "current_price": 112.60352878239792,
+      "current_price": 112.57957882203381,
       "initial_value": 100.0,
-      "current_value": 124.7158067303903,
-      "pnl": 24.715806730390298,
-      "pnl_percent": 24.715806730390298,
-      "target_sell_price": 123.86388166063772
+      "current_value": 124.68928057565725,
+      "pnl": 24.68928057565725,
+      "pnl_percent": 24.68928057565725,
+      "target_sell_price": 123.8375367042372
     },
     "SUSHI": {
       "name": "SushiSwap",
       "rank": 36,
       "quantity": 1.6024752243001343,
       "initial_price": 62.40346089823263,
-      "current_price": 87.3839096111324,
+      "current_price": 94.39813554966125,
       "initial_value": 100.0,
-      "current_value": 140.03055015432204,
-      "pnl": 40.03055015432204,
-      "pnl_percent": 40.03055015432204,
-      "target_sell_price": 96.12230057224565
+      "current_value": 151.2706734384579,
+      "pnl": 51.27067343845789,
+      "pnl_percent": 51.27067343845789,
+      "target_sell_price": 103.83794910462738
     },
     "1INCH": {
       "name": "1inch",
       "rank": 37,
       "quantity": 2.42879514768176,
       "initial_price": 41.1726777762415,
-      "current_price": 36.75736335748439,
+      "current_price": 34.69642228334699,
       "initial_value": 100.0,
-      "current_value": 89.2761057642334,
-      "pnl": -10.723894235766593,
-      "pnl_percent": -10.723894235766593,
-      "target_sell_price": 40.433099693232826
+      "current_value": 84.27050208371047,
+      "pnl": -15.729497916289532,
+      "pnl_percent": -15.729497916289532,
+      "target_sell_price": 38.16606451168169
     },
     "SAND": {
       "name": "The Sandbox",
       "rank": 38,
       "quantity": 6.018979588482775,
       "initial_price": 16.614111832402365,
-      "current_price": 17.26786866612697,
+      "current_price": 17.19047219630477,
       "initial_value": 100.0,
-      "current_value": 103.93494903801951,
-      "pnl": 3.9349490380195107,
-      "pnl_percent": 3.9349490380195107,
-      "target_sell_price": 18.994655532739667
+      "current_value": 103.46910126593909,
+      "pnl": 3.469101265939088,
+      "pnl_percent": 3.4691012659390874,
+      "target_sell_price": 18.90951941593525
     },
     "MANA": {
       "name": "Decentraland",
       "rank": 39,
       "quantity": 2.391144324100453,
       "initial_price": 41.82098043689602,
-      "current_price": 54.19317954242427,
+      "current_price": 50.968496639674925,
       "initial_value": 100.0,
-      "current_value": 129.58371366782455,
-      "pnl": 29.583713667824554,
-      "pnl_percent": 29.58371366782455,
-      "target_sell_price": 59.6124974966667
+      "current_value": 121.8730314478917,
+      "pnl": 21.873031447891705,
+      "pnl_percent": 21.873031447891705,
+      "target_sell_price": 56.06534630364242
     },
     "AXS": {
       "name": "Axie Infinity",
       "rank": 40,
       "quantity": 3.1541265934265286,
       "initial_price": 31.704497913434615,
-      "current_price": 27.062132286470955,
+      "current_price": 26.82491732509158,
       "initial_value": 100.0,
-      "current_value": 85.3573911195847,
-      "pnl": -14.642608880415295,
-      "pnl_percent": -14.642608880415295,
-      "target_sell_price": 29.768345515118053
+      "current_value": 84.60918510153937,
+      "pnl": -15.390814898460633,
+      "pnl_percent": -15.390814898460633,
+      "target_sell_price": 29.50740905760074
     },
     "ATOM": {
       "name": "Cosmos",
       "rank": 41,
       "quantity": 7.451882963944603,
       "initial_price": 13.419427074182831,
-      "current_price": 11.81445517556941,
+      "current_price": 11.985417892852212,
       "initial_value": 100.0,
-      "current_value": 88.03993725111283,
-      "pnl": -11.960062748887168,
-      "pnl_percent": -11.960062748887168,
-      "target_sell_price": 12.877756141370659
+      "current_value": 89.31393141150221,
+      "pnl": -10.68606858849779,
+      "pnl_percent": -10.68606858849779,
+      "target_sell_price": 13.064105503208912
     },
     "FTM": {
       "name": "Fantom",
       "rank": 42,
       "quantity": 2.1265352742177908,
       "initial_price": 47.02484892322478,
-      "current_price": 43.388521335405784,
+      "current_price": 44.290206668335905,
       "initial_value": 100.0,
-      "current_value": 92.2672211158916,
-      "pnl": -7.732778884108399,
-      "pnl_percent": -7.732778884108399,
-      "target_sell_price": 47.29348825559231
+      "current_value": 94.18468678261232,
+      "pnl": -5.815313217387683,
+      "pnl_percent": -5.815313217387683,
+      "target_sell_price": 48.27632526848614
     },
     "ALGO": {
       "name": "Algorand",
       "rank": 43,
       "quantity": 10.768802316424264,
       "initial_price": 9.286083731659083,
-      "current_price": 9.894734296823426,
+      "current_price": 9.62137003562398,
       "initial_value": 100.0,
-      "current_value": 106.55443761603472,
-      "pnl": 6.554437616034718,
-      "pnl_percent": 6.554437616034718,
-      "target_sell_price": 10.785260383537535
+      "current_value": 103.61063192680253,
+      "pnl": 3.610631926802526,
+      "pnl_percent": 3.610631926802526,
+      "target_sell_price": 10.48729333883014
     },
     "FLOW": {
       "name": "Flow",
       "rank": 44,
       "quantity": 14.968729383369782,
       "initial_price": 6.680593752406248,
-      "current_price": 6.279887074078534,
+      "current_price": 6.208105298025825,
       "initial_value": 100.0,
-      "current_value": 94.00193017000343,
-      "pnl": -5.998069829996567,
-      "pnl_percent": -5.998069829996567,
-      "target_sell_price": 6.845076910745602
+      "current_value": 92.92744818961279,
+      "pnl": -7.0725518103872105,
+      "pnl_percent": -7.0725518103872105,
+      "target_sell_price": 6.766834774848149
     },
     "ICP": {
       "name": "Internet Computer",
       "rank": 45,
       "quantity": 6.560458519887104,
       "initial_price": 15.242837020745442,
-      "current_price": 12.259234592660661,
+      "current_price": 12.190900399897094,
       "initial_value": 100.0,
-      "current_value": 80.42620003071534,
-      "pnl": -19.573799969284664,
-      "pnl_percent": -19.573799969284664,
-      "target_sell_price": 13.362565706000122
+      "current_value": 79.97789639359999,
+      "pnl": -20.02210360640001,
+      "pnl_percent": -20.02210360640001,
+      "target_sell_price": 13.288081435887834
     },
     "THETA": {
       "name": "Theta Network",
       "rank": 46,
       "quantity": 3.256861101792706,
       "initial_price": 30.70441043523656,
-      "current_price": 35.748955936949685,
+      "current_price": 37.282655225570736,
       "initial_value": 100.0,
-      "current_value": 116.42938402075285,
-      "pnl": 16.42938402075285,
-      "pnl_percent": 16.42938402075285,
-      "target_sell_price": 38.96636197127516
+      "current_value": 121.4244295757099,
+      "pnl": 21.424429575709894,
+      "pnl_percent": 21.424429575709894,
+      "target_sell_price": 40.63809419587211
     },
     "FIL": {
       "name": "Filecoin",
       "rank": 47,
       "quantity": 6.617540969640374,
       "initial_price": 15.11135336506038,
-      "current_price": 12.024387064017,
+      "current_price": 12.282374366216143,
       "initial_value": 100.0,
-      "current_value": 79.57187403094623,
-      "pnl": -20.428125969053767,
-      "pnl_percent": -20.428125969053767,
-      "target_sell_price": 13.106581899778531
+      "current_value": 81.27911557289605,
+      "pnl": -18.720884427103954,
+      "pnl_percent": -18.720884427103954,
+      "target_sell_price": 13.387788059175596
     },
     "VET": {
       "name": "VeChain",
       "rank": 48,
       "quantity": 6.788293637703479,
       "initial_price": 14.731242538563876,
-      "current_price": 12.835747617767595,
+      "current_price": 12.78001664063917,
       "initial_value": 100.0,
-      "current_value": 87.13282388885935,
-      "pnl": -12.867176111140651,
-      "pnl_percent": -12.867176111140651,
-      "target_sell_price": 13.99096490336668
+      "current_value": 86.75450565139546,
+      "pnl": -13.245494348604538,
+      "pnl_percent": -13.24549434860454,
+      "target_sell_price": 13.930218138296697
     },
     "HBAR": {
       "name": "Hedera",
       "rank": 49,
       "quantity": 2.0294396953631852,
       "initial_price": 49.27468415468446,
-      "current_price": 59.72858396766865,
+      "current_price": 60.52001587956164,
       "initial_value": 100.0,
-      "current_value": 121.2155592518199,
-      "pnl": 21.215559251819897,
-      "pnl_percent": 21.215559251819897,
-      "target_sell_price": 65.10415652475884
+      "current_value": 122.8217225899927,
+      "pnl": 22.821722589992703,
+      "pnl_percent": 22.821722589992703,
+      "target_sell_price": 65.9668173087222
     },
     "EGLD": {
       "name": "MultiversX",
       "rank": 50,
       "quantity": 2.2323905612765493,
       "initial_price": 44.79502903059084,
-      "current_price": 45.26302911200579,
+      "current_price": 46.60205170309453,
       "initial_value": 100.0,
-      "current_value": 101.0447589644274,
-      "pnl": 1.0447589644274018,
-      "pnl_percent": 1.0447589644274018,
-      "target_sell_price": 49.33670173208631
+      "current_value": 104.03398035810997,
+      "pnl": 4.033980358109972,
+      "pnl_percent": 4.033980358109972,
+      "target_sell_price": 50.79623635637304
     },
     "GRT": {
       "name": "The Graph",
       "rank": 51,
       "quantity": 3.2655015482106657,
       "initial_price": 30.62316722979203,
-      "current_price": 28.016446287538212,
+      "current_price": 26.723948515020123,
       "initial_value": 100.0,
-      "current_value": 91.48774872731698,
-      "pnl": -8.512251272683017,
-      "pnl_percent": -8.512251272683017,
-      "target_sell_price": 30.537926453416652
+      "current_value": 87.26709525010033,
+      "pnl": -12.732904749899674,
+      "pnl_percent": -12.732904749899673,
+      "target_sell_price": 29.129103881371936
     },
     "FET": {
       "name": "Fetch.ai",
       "rank": 52,
       "quantity": 4.32696307370163,
       "initial_price": 23.11089748090963,
-      "current_price": 30.428944565263723,
+      "current_price": 27.9982876291143,
       "initial_value": 100.0,
-      "current_value": 131.66491950561002,
-      "pnl": 31.664919505610015,
-      "pnl_percent": 31.66491950561002,
-      "target_sell_price": 33.16754957613746
+      "current_value": 121.14755669805473,
+      "pnl": 21.14755669805473,
+      "pnl_percent": 21.14755669805473,
+      "target_sell_price": 30.51813351573459
     },
     "LRC": {
       "name": "Loopring",
       "rank": 53,
       "quantity": 2.054148075308372,
       "initial_price": 48.68198218134194,
-      "current_price": 43.256899320578036,
+      "current_price": 42.1845130317758,
       "initial_value": 100.0,
-      "current_value": 88.8560764831734,
-      "pnl": -11.143923516826604,
-      "pnl_percent": -11.143923516826604,
-      "target_sell_price": 47.150020259430065
+      "current_value": 86.6532362520432,
+      "pnl": -13.3467637479568,
+      "pnl_percent": -13.3467637479568,
+      "target_sell_price": 45.981119204635625
     },
     "ENJ": {
       "name": "Enjin Coin",
       "rank": 54,
       "quantity": 3.859152699233084,
       "initial_price": 25.912423734845387,
-      "current_price": 22.666260653843903,
+      "current_price": 21.911349196681556,
       "initial_value": 100.0,
-      "current_value": 87.47256098380234,
-      "pnl": -12.527439016197661,
-      "pnl_percent": -12.527439016197661,
-      "target_sell_price": 24.706224112689856
+      "current_value": 84.55924239621228,
+      "pnl": -15.440757603787716,
+      "pnl_percent": -15.440757603787716,
+      "target_sell_price": 23.8833706243829
     },
     "CHZ": {
       "name": "Chiliz",
       "rank": 55,
       "quantity": 3.373272279520844,
       "initial_price": 29.64480531473863,
-      "current_price": 28.340679222507315,
+      "current_price": 26.118939130328407,
       "initial_value": 100.0,
-      "current_value": 95.60082760407627,
-      "pnl": -4.399172395923728,
-      "pnl_percent": -4.399172395923728,
-      "target_sell_price": 30.891340352532975
+      "current_value": 88.10629333882908,
+      "pnl": -11.893706661170924,
+      "pnl_percent": -11.893706661170924,
+      "target_sell_price": 28.469643652057965
     },
     "BAT": {
       "name": "Basic Attention Token",
       "rank": 56,
       "quantity": 2.3316866220564867,
       "initial_price": 42.88740993496056,
-      "current_price": 52.30262776329446,
+      "current_price": 48.203717144198656,
       "initial_value": 100.0,
-      "current_value": 121.95333745407387,
-      "pnl": 21.953337454073875,
-      "pnl_percent": 21.953337454073875,
-      "target_sell_price": 57.00986426199096
+      "current_value": 112.39596239852293,
+      "pnl": 12.395962398522926,
+      "pnl_percent": 12.395962398522926,
+      "target_sell_price": 52.54205168717654
     },
     "XTZ": {
       "name": "Tezos",
       "rank": 57,
       "quantity": 2.965343954606573,
       "initial_price": 33.72290079356662,
-      "current_price": 34.80817938701397,
+      "current_price": 34.85291667016581,
       "initial_value": 100.0,
-      "current_value": 103.21822431614302,
-      "pnl": 3.218224316143022,
-      "pnl_percent": 3.218224316143022,
-      "target_sell_price": 37.940915531845235
+      "current_value": 103.35088574828285,
+      "pnl": 3.350885748282849,
+      "pnl_percent": 3.350885748282849,
+      "target_sell_price": 37.989679170480734
     },
     "MINA": {
       "name": "Mina Protocol",
       "rank": 58,
       "quantity": 6.65976967826591,
       "initial_price": 15.015534294879442,
-      "current_price": 15.574049236517585,
+      "current_price": 16.64871990092313,
       "initial_value": 100.0,
-      "current_value": 103.71958087318015,
-      "pnl": 3.719580873180149,
-      "pnl_percent": 3.719580873180149,
-      "target_sell_price": 16.97571366780417
+      "current_value": 110.87663997811008,
+      "pnl": 10.876639978110077,
+      "pnl_percent": 10.876639978110077,
+      "target_sell_price": 18.147104692006213
     },
     "KCS": {
       "name": "KuCoin Shares",
       "rank": 59,
       "quantity": 6.890536136842675,
       "initial_price": 14.512658814067432,
-      "current_price": 13.709582445235121,
+      "current_price": 14.751466783954209,
       "initial_value": 100.0,
-      "current_value": 94.46637325991657,
-      "pnl": -5.5336267400834345,
-      "pnl_percent": -5.5336267400834345,
-      "target_sell_price": 14.943444865306283
+      "current_value": 101.64551494627088,
+      "pnl": 1.645514946270879,
+      "pnl_percent": 1.645514946270879,
+      "target_sell_price": 16.079098794510088
     },
     "YFI": {
       "name": "yearn.finance",
       "rank": 60,
       "quantity": 8.384452356542887,
       "initial_price": 11.926837406615359,
-      "current_price": 11.058214106120104,
+      "current_price": 10.242054895820052,
       "initial_value": 100.0,
-      "current_value": 92.71706932121451,
-      "pnl": -7.28293067878549,
-      "pnl_percent": -7.28293067878549,
-      "target_sell_price": 12.053453375670914
+      "current_value": 85.87402130710005,
+      "pnl": -14.125978692899949,
+      "pnl_percent": -14.125978692899949,
+      "target_sell_price": 11.163839836443858
     },
     "ZEC": {
       "name": "Zcash",
       "rank": 61,
       "quantity": 9.929835095874715,
       "initial_price": 10.070660694208744,
-      "current_price": 8.35226371173606,
+      "current_price": 10.007261959947378,
       "initial_value": 100.0,
-      "current_value": 82.93660133479753,
-      "pnl": -17.06339866520247,
-      "pnl_percent": -17.06339866520247,
-      "target_sell_price": 9.605103268496467
+      "current_value": 99.37046102349747,
+      "pnl": -0.6295389765025305,
+      "pnl_percent": -0.6295389765025305,
+      "target_sell_price": 11.508351253939484
     },
     "DASH": {
       "name": "Dash",
       "rank": 62,
       "quantity": 18.611773969731523,
       "initial_price": 5.372942964095245,
-      "current_price": 5.01984680983271,
+      "current_price": 4.930533059715265,
       "initial_value": 100.0,
-      "current_value": 93.42825418728425,
-      "pnl": -6.571745812715747,
-      "pnl_percent": -6.571745812715747,
-      "target_sell_price": 5.7728238313076154
+      "current_value": 91.76596685770929,
+      "pnl": -8.234033142290713,
+      "pnl_percent": -8.234033142290713,
+      "target_sell_price": 5.670113018672555
     },
     "DCR": {
       "name": "Decred",
       "rank": 63,
       "quantity": 20.397157991764214,
       "initial_price": 4.902643791864392,
-      "current_price": 3.670968419109398,
+      "current_price": 3.1277505052307015,
       "initial_value": 100.0,
-      "current_value": 74.8773228273513,
-      "pnl": -25.122677172648693,
-      "pnl_percent": -25.122677172648693,
-      "target_sell_price": 4.221613681975808
+      "current_value": 63.79722121401096,
+      "pnl": -36.20277878598904,
+      "pnl_percent": -36.20277878598904,
+      "target_sell_price": 3.5969130810153063
     },
     "WAVES": {
       "name": "Waves",
       "rank": 64,
       "quantity": 6.470126354300811,
       "initial_price": 15.455648703603472,
-      "current_price": 13.34789531826832,
+      "current_price": 14.214808543594275,
       "initial_value": 100.0,
-      "current_value": 86.36256927317628,
-      "pnl": -13.637430726823723,
-      "pnl_percent": -13.637430726823723,
-      "target_sell_price": 15.350079616008566
+      "current_value": 91.97160737924965,
+      "pnl": -8.028392620750353,
+      "pnl_percent": -8.028392620750353,
+      "target_sell_price": 16.347029825133415
     },
     "ZIL": {
       "name": "Zilliqa",
       "rank": 65,
       "quantity": 10.987295648990214,
       "initial_price": 9.101420694835902,
-      "current_price": 5.9687791903119445,
+      "current_price": 6.328683970751853,
       "initial_value": 100.0,
-      "current_value": 65.58074162749776,
-      "pnl": -34.41925837250224,
-      "pnl_percent": -34.41925837250224,
-      "target_sell_price": 6.864096068858736
+      "current_value": 69.53512185567594,
+      "pnl": -30.46487814432406,
+      "pnl_percent": -30.46487814432406,
+      "target_sell_price": 7.27798656636463
     },
     "BAL": {
       "name": "Balancer",
       "rank": 66,
       "quantity": 5.218397478481679,
       "initial_price": 19.16297108688155,
-      "current_price": 16.32788930480785,
+      "current_price": 15.995977918717573,
       "initial_value": 100.0,
-      "current_value": 85.20541637713725,
-      "pnl": -14.794583622862746,
-      "pnl_percent": -14.794583622862746,
-      "target_sell_price": 18.777072700529025
+      "current_value": 83.4733708368844,
+      "pnl": -16.5266291631156,
+      "pnl_percent": -16.5266291631156,
+      "target_sell_price": 18.39537460652521
     },
     "BAND": {
       "name": "Band Protocol",
       "rank": 67,
       "quantity": 36.30222406177796,
       "initial_price": 2.7546521620775413,
-      "current_price": 2.1902693799282944,
+      "current_price": 1.9717402212828192,
       "initial_value": 100.0,
-      "current_value": 79.51164978580843,
-      "pnl": -20.48835021419157,
-      "pnl_percent": -20.48835021419157,
-      "target_sell_price": 2.5188097869175383
+      "current_value": 71.57855530462857,
+      "pnl": -28.421444695371434,
+      "pnl_percent": -28.421444695371434,
+      "target_sell_price": 2.267501254475242
     },
     "OCEAN": {
       "name": "Ocean Protocol",
       "rank": 68,
       "quantity": 5.650921076674902,
       "initial_price": 17.696230161975947,
-      "current_price": 16.348690392342352,
+      "current_price": 16.857033980903033,
       "initial_value": 100.0,
-      "current_value": 92.38515911411987,
-      "pnl": -7.6148408858801275,
-      "pnl_percent": -7.614840885880128,
-      "target_sell_price": 18.800993951193703
+      "current_value": 95.25776861290998,
+      "pnl": -4.7422313870900155,
+      "pnl_percent": -4.7422313870900155,
+      "target_sell_price": 19.385589078038485
     },
     "UMA": {
       "name": "UMA Protocol",
       "rank": 69,
       "quantity": 15.43942989827527,
       "initial_price": 6.476923089703652,
-      "current_price": 7.841557183945318,
+      "current_price": 7.667017635417789,
       "initial_value": 100.0,
-      "current_value": 121.06917243484058,
-      "pnl": 21.06917243484058,
-      "pnl_percent": 21.06917243484058,
-      "target_sell_price": 9.017790761537116
+      "current_value": 118.37438131087318,
+      "pnl": 18.374381310873176,
+      "pnl_percent": 18.374381310873176,
+      "target_sell_price": 8.817070280730457
     },
     "ALPHA": {
       "name": "Alpha Finance",
       "rank": 70,
       "quantity": 15.502848054550382,
       "initial_price": 6.450427666460169,
-      "current_price": 8.55315835569433,
+      "current_price": 8.01484884013266,
       "initial_value": 100.0,
-      "current_value": 132.5983143748372,
-      "pnl": 32.5983143748372,
-      "pnl_percent": 32.5983143748372,
-      "target_sell_price": 9.83613210904848
+      "current_value": 124.25298374876598,
+      "pnl": 24.252983748765985,
+      "pnl_percent": 24.252983748765985,
+      "target_sell_price": 9.217076166152557
     },
     "ANKR": {
       "name": "Ankr",
       "rank": 71,
       "quantity": 15.407778203615745,
       "initial_price": 6.490228420898023,
-      "current_price": 5.896078047508768,
+      "current_price": 5.920445049506294,
       "initial_value": 100.0,
-      "current_value": 90.84546282722287,
-      "pnl": -9.154537172777125,
-      "pnl_percent": -9.154537172777125,
-      "target_sell_price": 6.780489754635083
+      "current_value": 91.22090418948783,
+      "pnl": -8.779095810512175,
+      "pnl_percent": -8.779095810512175,
+      "target_sell_price": 6.808511806932238
     },
     "SKL": {
       "name": "SKALE Network",
       "rank": 72,
       "quantity": 5.02572440923359,
       "initial_price": 19.897629049510442,
-      "current_price": 16.107191995140703,
+      "current_price": 15.966192145736919,
       "initial_value": 100.0,
-      "current_value": 80.95030797419052,
-      "pnl": -19.049692025809478,
-      "pnl_percent": -19.049692025809478,
-      "target_sell_price": 18.523270794411808
+      "current_value": 80.24168158934367,
+      "pnl": -19.75831841065633,
+      "pnl_percent": -19.75831841065633,
+      "target_sell_price": 18.361120967597454
     },
     "CTSI": {
       "name": "Cartesi",
       "rank": 73,
       "quantity": 323.1104683071124,
       "initial_price": 0.30949167485638773,
-      "current_price": 0.3379090778902183,
+      "current_price": 0.3394132973855294,
       "initial_value": 100.0,
-      "current_value": 109.18196040233295,
-      "pnl": 9.181960402332948,
-      "pnl_percent": 9.181960402332948,
-      "target_sell_price": 0.388595439573751
+      "current_value": 109.6679894678996,
+      "pnl": 9.667989467899602,
+      "pnl_percent": 9.667989467899602,
+      "target_sell_price": 0.39032529199335875
     },
     "CELR": {
       "name": "Celer Network",
       "rank": 74,
       "quantity": 6.850596048790294,
       "initial_price": 14.59726997297679,
-      "current_price": 15.918657095872732,
+      "current_price": 19.266018851766518,
       "initial_value": 100.0,
-      "current_value": 109.05228940303331,
-      "pnl": 9.052289403033313,
-      "pnl_percent": 9.052289403033313,
-      "target_sell_price": 18.30645566025364
+      "current_value": 131.98371262183102,
+      "pnl": 31.983712621831017,
+      "pnl_percent": 31.983712621831017,
+      "target_sell_price": 22.155921679531495
     },
     "STORJ": {
       "name": "Storj",
       "rank": 75,
       "quantity": 5.728212191813476,
       "initial_price": 17.457453853213725,
-      "current_price": 20.93575791088095,
+      "current_price": 22.97142682758078,
       "initial_value": 100.0,
-      "current_value": 119.9244637099637,
-      "pnl": 19.924463709963703,
-      "pnl_percent": 19.924463709963703,
-      "target_sell_price": 24.076121597513094
+      "current_value": 131.58520721709937,
+      "pnl": 31.585207217099367,
+      "pnl_percent": 31.585207217099367,
+      "target_sell_price": 26.417140851717893
     },
     "RSR": {
       "name": "Reserve Rights",
       "rank": 76,
       "quantity": 22.07039832030264,
       "initial_price": 4.53095583272775,
-      "current_price": 5.086710230248438,
+      "current_price": 4.870644802978007,
       "initial_value": 100.0,
-      "current_value": 112.26572092154139,
-      "pnl": 12.265720921541387,
-      "pnl_percent": 12.265720921541387,
-      "target_sell_price": 5.849716764785703
+      "current_value": 107.49707087843659,
+      "pnl": 7.497070878436588,
+      "pnl_percent": 7.497070878436589,
+      "target_sell_price": 5.601241523424708
     },
     "REN": {
       "name": "Ren Protocol",
       "rank": 77,
       "quantity": 5.948876099646469,
       "initial_price": 16.809897924406734,
-      "current_price": 21.100272658113255,
+      "current_price": 19.3441756982934,
       "initial_value": 100.0,
-      "current_value": 125.52290771187381,
-      "pnl": 25.522907711873813,
-      "pnl_percent": 25.522907711873817,
-      "target_sell_price": 24.26531355683024
+      "current_value": 115.07610447893967,
+      "pnl": 15.07610447893967,
+      "pnl_percent": 15.07610447893967,
+      "target_sell_price": 22.24580205303741
     },
     "KNC": {
       "name": "Kyber Network",
       "rank": 78,
       "quantity": 20.21732920431747,
       "initial_price": 4.946251752117917,
-      "current_price": 4.628439811308848,
+      "current_price": 4.826043044288875,
       "initial_value": 100.0,
-      "current_value": 93.57469136760001,
-      "pnl": -6.4253086323999895,
-      "pnl_percent": -6.4253086323999895,
-      "target_sell_price": 5.3227057830051745
+      "current_value": 97.56970098059466,
+      "pnl": -2.4302990194053393,
+      "pnl_percent": -2.4302990194053393,
+      "target_sell_price": 5.549949500932206
     },
     "NMR": {
       "name": "Numeraire",
       "rank": 79,
       "quantity": 10.25195994952273,
       "initial_price": 9.754232409448244,
-      "current_price": 6.733051443017558,
+      "current_price": 5.859784458874113,
       "initial_value": 100.0,
-      "current_value": 69.02697373189223,
-      "pnl": -30.973026268107773,
-      "pnl_percent": -30.973026268107773,
-      "target_sell_price": 7.7430091594701915
+      "current_value": 60.07427558521313,
+      "pnl": -39.92572441478687,
+      "pnl_percent": -39.92572441478687,
+      "target_sell_price": 6.738752127705229
     },
     "BNT": {
       "name": "Bancor",
       "rank": 80,
       "quantity": 15.450294950599,
       "initial_price": 6.472368347642648,
-      "current_price": 7.321221359961507,
+      "current_price": 7.954719316160307,
       "initial_value": 100.0,
-      "current_value": 113.11502941003081,
-      "pnl": 13.115029410030814,
-      "pnl_percent": 13.115029410030814,
-      "target_sell_price": 8.419404563955732
+      "current_value": 122.90275968390392,
+      "pnl": 22.902759683903923,
+      "pnl_percent": 22.902759683903923,
+      "target_sell_price": 9.147927213584351
     },
     "KAVA": {
       "name": "Kava",
       "rank": 81,
       "quantity": 26.969481985636676,
       "initial_price": 3.707894725351332,
-      "current_price": 4.437891095770252,
+      "current_price": 3.0490238338432034,
       "initial_value": 100.0,
-      "current_value": 119.68762396159322,
-      "pnl": 19.687623961593218,
-      "pnl_percent": 19.687623961593218,
-      "target_sell_price": 5.325469314924302
+      "current_value": 82.23059336061115,
+      "pnl": -17.769406639388848,
+      "pnl_percent": -17.769406639388848,
+      "target_sell_price": 3.658828600611844
     },
     "COTI": {
       "name": "COTI",
       "rank": 82,
       "quantity": 23.11912100849102,
       "initial_price": 4.325423962410714,
-      "current_price": 5.014583021625668,
+      "current_price": 5.500450930979033,
       "initial_value": 100.0,
-      "current_value": 115.93275168408837,
-      "pnl": 15.932751684088373,
-      "pnl_percent": 15.932751684088373,
-      "target_sell_price": 6.017499625950802
+      "current_value": 127.16559067457136,
+      "pnl": 27.165590674571362,
+      "pnl_percent": 27.165590674571362,
+      "target_sell_price": 6.600541117174839
     },
     "NKN": {
       "name": "NKN",
       "rank": 83,
       "quantity": 23.407645836135366,
       "initial_price": 4.27210838287829,
-      "current_price": 4.266913781639337,
+      "current_price": 4.5902851128590765,
       "initial_value": 100.0,
-      "current_value": 99.87840661393864,
-      "pnl": -0.12159338606136316,
-      "pnl_percent": -0.12159338606136316,
-      "target_sell_price": 5.120296537967204
+      "current_value": 107.44776820868992,
+      "pnl": 7.447768208689922,
+      "pnl_percent": 7.447768208689923,
+      "target_sell_price": 5.508342135430891
     },
     "OGN": {
       "name": "Origin Protocol",
       "rank": 84,
       "quantity": 20.0548071182423,
       "initial_price": 4.98633566557904,
-      "current_price": 4.401730099919982,
+      "current_price": 3.6960215030671333,
       "initial_value": 100.0,
-      "current_value": 88.27584814045666,
-      "pnl": -11.72415185954334,
-      "pnl_percent": -11.72415185954334,
-      "target_sell_price": 5.282076119903978
+      "current_value": 74.12299834888735,
+      "pnl": -25.87700165111265,
+      "pnl_percent": -25.877001651112653,
+      "target_sell_price": 4.435225803680559
     },
     "NANO": {
       "name": "Nano",
       "rank": 85,
       "quantity": 34.65930998375354,
       "initial_price": 2.8852276645690504,
-      "current_price": 1.9386365112025492,
+      "current_price": 2.19784909011063,
       "initial_value": 100.0,
-      "current_value": 67.19180378759164,
-      "pnl": -32.80819621240836,
-      "pnl_percent": -32.80819621240836,
-      "target_sell_price": 2.326363813443059
+      "current_value": 76.17593291165498,
+      "pnl": -23.824067088345018,
+      "pnl_percent": -23.824067088345018,
+      "target_sell_price": 2.6374189081327555
     },
     "RVN": {
       "name": "Ravencoin",
       "rank": 86,
       "quantity": 44.31036951253317,
       "initial_price": 2.2568080812712483,
-      "current_price": 2.884748313127981,
+      "current_price": 1.9612282702031825,
       "initial_value": 100.0,
-      "current_value": 127.82426370535758,
-      "pnl": 27.82426370535758,
-      "pnl_percent": 27.824263705357584,
-      "target_sell_price": 3.461697975753577
+      "current_value": 86.90274935112926,
+      "pnl": -13.097250648870741,
+      "pnl_percent": -13.09725064887074,
+      "target_sell_price": 2.353473924243819
     },
     "DGB": {
       "name": "DigiByte",
       "rank": 87,
       "quantity": 105.26170633586442,
       "initial_price": 0.950013100499477,
-      "current_price": 1.0701872856931685,
+      "current_price": 1.0275089450989898,
       "initial_value": 100.0,
-      "current_value": 112.64973979101013,
-      "pnl": 12.649739791010134,
-      "pnl_percent": 12.649739791010134,
-      "target_sell_price": 1.284224742831802
+      "current_value": 108.1573448364837,
+      "pnl": 8.157344836483702,
+      "pnl_percent": 8.157344836483702,
+      "target_sell_price": 1.2330107341187877
     },
     "SC": {
       "name": "Siacoin",
       "rank": 88,
       "quantity": 150.44223226947955,
       "initial_price": 0.6647069675280746,
-      "current_price": 0.8721593766157448,
+      "current_price": 0.900165599207821,
       "initial_value": 100.0,
-      "current_value": 131.20960351283037,
-      "pnl": 31.20960351283037,
-      "pnl_percent": 31.20960351283037,
-      "target_sell_price": 1.0465912519388938
+      "current_value": 135.42292215701823,
+      "pnl": 35.422922157018235,
+      "pnl_percent": 35.422922157018235,
+      "target_sell_price": 1.0801987190493851
     },
     "HOT": {
       "name": "Holo",
       "rank": 89,
       "quantity": 38.84512695734059,
       "initial_price": 2.574325477422669,
-      "current_price": 1.0493755319184326,
+      "current_price": 1.2913336513004292,
       "initial_value": 100.0,
-      "current_value": 40.763125763298326,
-      "pnl": -59.236874236701674,
-      "pnl_percent": -59.236874236701674,
-      "target_sell_price": 1.2592506383021191
+      "current_value": 50.16201962905136,
+      "pnl": -49.83798037094864,
+      "pnl_percent": -49.83798037094864,
+      "target_sell_price": 1.549600381560515
     },
     "IOST": {
       "name": "IOST",
       "rank": 90,
       "quantity": 37.73561967364914,
       "initial_price": 2.6500161085159073,
-      "current_price": 2.805084048409053,
+      "current_price": 3.5033918600016003,
       "initial_value": 100.0,
-      "current_value": 105.85158480338404,
-      "pnl": 5.851584803384043,
-      "pnl_percent": 5.851584803384043,
-      "target_sell_price": 3.3661008580908636
+      "current_value": 132.20266279677864,
+      "pnl": 32.20266279677864,
+      "pnl_percent": 32.20266279677864,
+      "target_sell_price": 4.2040702320019205
     },
     "DUSK": {
       "name": "Dusk Network",
       "rank": 91,
       "quantity": 43.944513845192795,
       "initial_price": 2.2755969118757076,
-      "current_price": 1.689768762135202,
+      "current_price": 1.776848109839701,
       "initial_value": 100.0,
-      "current_value": 74.25606676282467,
-      "pnl": -25.743933237175327,
-      "pnl_percent": -25.743933237175327,
-      "target_sell_price": 2.0277225145622424
+      "current_value": 78.0827263636554,
+      "pnl": -21.917273636344603,
+      "pnl_percent": -21.917273636344603,
+      "target_sell_price": 2.1322177318076414
     },
     "WIN": {
       "name": "WINkLink",
       "rank": 92,
       "quantity": 90.31819151247721,
       "initial_price": 1.1071966602230434,
-      "current_price": 0.4751144135223522,
+      "current_price": 0.4599551711639916,
       "initial_value": 100.0,
-      "current_value": 42.9114745908501,
-      "pnl": -57.0885254091499,
-      "pnl_percent": -57.0885254091499,
-      "target_sell_price": 0.5701372962268226
+      "current_value": 41.54231923634363,
+      "pnl": -58.45768076365637,
+      "pnl_percent": -58.45768076365637,
+      "target_sell_price": 0.5519462053967898
     },
     "BTT": {
       "name": "BitTorrent",
       "rank": 93,
       "quantity": 657.6499678210082,
       "initial_price": 0.1520565724823648,
-      "current_price": 0.14485073145006605,
+      "current_price": 0.15414564655028531,
       "initial_value": 100.0,
-      "current_value": 95.26107887698544,
-      "pnl": -4.738921123014563,
-      "pnl_percent": -4.738921123014563,
-      "target_sell_price": 0.17382087774007926
+      "current_value": 101.37387949354364,
+      "pnl": 1.3738794935436403,
+      "pnl_percent": 1.3738794935436403,
+      "target_sell_price": 0.18497477586034236
     },
     "TWT": {
       "name": "Trust Wallet Token",
       "rank": 94,
       "quantity": 147.663155847492,
       "initial_price": 0.6772170039713971,
-      "current_price": 0.7535105455736884,
+      "current_price": 1.0099220948983763,
       "initial_value": 100.0,
-      "current_value": 111.26574512377626,
-      "pnl": 11.265745123776256,
-      "pnl_percent": 11.265745123776256,
-      "target_sell_price": 0.9042126546884259
+      "current_value": 149.12828369280453,
+      "pnl": 49.12828369280453,
+      "pnl_percent": 49.12828369280453,
+      "target_sell_price": 1.2119065138780514
     },
     "JST": {
       "name": "JUST",
       "rank": 95,
       "quantity": 48.318988789380974,
       "initial_price": 2.069579734706222,
-      "current_price": 2.2097650729043106,
+      "current_price": 2.3207719906849205,
       "initial_value": 100.0,
-      "current_value": 106.77361378482901,
-      "pnl": 6.77361378482901,
-      "pnl_percent": 6.773613784829009,
-      "target_sell_price": 2.6517180874851727
+      "current_value": 112.13735580061403,
+      "pnl": 12.137355800614031,
+      "pnl_percent": 12.137355800614031,
+      "target_sell_price": 2.7849263888219045
     },
     "SXP": {
       "name": "Solar",
       "rank": 96,
       "quantity": 60.059933027821614,
       "initial_price": 1.6650035216269208,
-      "current_price": 1.9334667964449996,
+      "current_price": 1.6964613561060597,
       "initial_value": 100.0,
-      "current_value": 116.12388630600348,
-      "pnl": 16.123886306003484,
-      "pnl_percent": 16.123886306003484,
-      "target_sell_price": 2.3201601557339995
+      "current_value": 101.88935543201738,
+      "pnl": 1.889355432017382,
+      "pnl_percent": 1.8893554320173822,
+      "target_sell_price": 2.0357536273272716
     },
     "HARD": {
       "name": "Kava Lend",
       "rank": 97,
       "quantity": 31.261996687239932,
       "initial_price": 3.1987720106443662,
-      "current_price": 3.5350281810016018,
+      "current_price": 5.01720208608167,
       "initial_value": 100.0,
-      "current_value": 110.51203928377188,
-      "pnl": 10.512039283771884,
-      "pnl_percent": 10.512039283771884,
-      "target_sell_price": 4.242033817201922
+      "current_value": 156.84775499429844,
+      "pnl": 56.84775499429844,
+      "pnl_percent": 56.84775499429844,
+      "target_sell_price": 6.020642503298004
     },
     "SUN": {
       "name": "Sun Token",
       "rank": 98,
       "quantity": 23.79293154837227,
       "initial_price": 4.202928915955345,
-      "current_price": 4.340674032543948,
+      "current_price": 5.0682060978963,
       "initial_value": 100.0,
-      "current_value": 103.27736013011518,
-      "pnl": 3.2773601301151842,
-      "pnl_percent": 3.277360130115184,
-      "target_sell_price": 5.208808839052737
+      "current_value": 120.5874807602896,
+      "pnl": 20.587480760289594,
+      "pnl_percent": 20.587480760289594,
+      "target_sell_price": 6.081847317475559
     },
     "ICX": {
       "name": "ICON",
       "rank": 99,
       "quantity": 38.184474288065374,
       "initial_price": 2.6188654384919783,
-      "current_price": 4.644756231567747,
+      "current_price": 4.403072304843691,
       "initial_value": 100.0,
-      "current_value": 177.35757489863008,
-      "pnl": 77.35757489863008,
-      "pnl_percent": 77.35757489863008,
-      "target_sell_price": 5.573707477881297
+      "current_value": 168.12900121279665,
+      "pnl": 68.12900121279665,
+      "pnl_percent": 68.12900121279665,
+      "target_sell_price": 5.283686765812429
     },
     "ONT": {
       "name": "Ontology",
       "rank": 100,
       "quantity": 32.72744295719661,
       "initial_price": 3.0555396622579853,
-      "current_price": 3.188779881289474,
+      "current_price": 3.67267493354531,
       "initial_value": 100.0,
-      "current_value": 104.36061166795743,
-      "pnl": 4.3606116679574285,
-      "pnl_percent": 4.3606116679574285,
-      "target_sell_price": 3.826535857547369
+      "current_value": 120.19725938792998,
+      "pnl": 20.197259387929975,
+      "pnl_percent": 20.197259387929975,
+      "target_sell_price": 4.407209920254372
     }
   },
   "price_history": {
@@ -1287,6 +1287,26 @@
         "timestamp": "2025-08-13T03:00:00.099070",
         "price": 55917.720506715516,
         "volume": 6949346.794103037
+      },
+      {
+        "timestamp": "2025-08-13T03:01:00.137017",
+        "price": 56322.87457129488,
+        "volume": 5939724.868114381
+      },
+      {
+        "timestamp": "2025-08-13T03:02:00.165193",
+        "price": 56030.35702722925,
+        "volume": 5584606.275319136
+      },
+      {
+        "timestamp": "2025-08-13T03:03:00.194251",
+        "price": 56325.92274836285,
+        "volume": 5391411.38355507
+      },
+      {
+        "timestamp": "2025-08-13T03:03:23.514531",
+        "price": 55260.107219045516,
+        "volume": 4455999.390683558
       }
     ],
     "ETH": [
@@ -1374,6 +1394,26 @@
         "timestamp": "2025-08-13T03:00:00.099070",
         "price": 51724.61885535424,
         "volume": 9164635.522608709
+      },
+      {
+        "timestamp": "2025-08-13T03:01:00.137017",
+        "price": 51789.25443156335,
+        "volume": 6352095.503140126
+      },
+      {
+        "timestamp": "2025-08-13T03:02:00.165193",
+        "price": 52111.07938368415,
+        "volume": 8651376.720725145
+      },
+      {
+        "timestamp": "2025-08-13T03:03:00.194251",
+        "price": 51889.25664106113,
+        "volume": 4992484.709534959
+      },
+      {
+        "timestamp": "2025-08-13T03:03:23.514531",
+        "price": 51932.01425565615,
+        "volume": 9183379.697529253
       }
     ],
     "SOL": [
@@ -1461,6 +1501,26 @@
         "timestamp": "2025-08-13T03:00:00.099070",
         "price": 1813.9034645298063,
         "volume": 8238952.492449155
+      },
+      {
+        "timestamp": "2025-08-13T03:01:00.137017",
+        "price": 1767.649839575083,
+        "volume": 5473292.283119075
+      },
+      {
+        "timestamp": "2025-08-13T03:02:00.165193",
+        "price": 1754.9699395091266,
+        "volume": 1059790.9974176358
+      },
+      {
+        "timestamp": "2025-08-13T03:03:00.194251",
+        "price": 1758.8355087092655,
+        "volume": 7806230.187205558
+      },
+      {
+        "timestamp": "2025-08-13T03:03:23.514531",
+        "price": 1721.736468031022,
+        "volume": 2666034.0889650667
       }
     ],
     "XRP": [
@@ -1548,6 +1608,26 @@
         "timestamp": "2025-08-13T03:00:00.099070",
         "price": 3557.901014496342,
         "volume": 8410955.689544687
+      },
+      {
+        "timestamp": "2025-08-13T03:01:00.137017",
+        "price": 3698.725544298712,
+        "volume": 3985690.1170591037
+      },
+      {
+        "timestamp": "2025-08-13T03:02:00.165193",
+        "price": 3679.3993579497974,
+        "volume": 7211351.043887843
+      },
+      {
+        "timestamp": "2025-08-13T03:03:00.194251",
+        "price": 3756.6196027524834,
+        "volume": 9153135.480919918
+      },
+      {
+        "timestamp": "2025-08-13T03:03:23.514531",
+        "price": 3737.60192713904,
+        "volume": 2567283.193411815
       }
     ],
     "DOGE": [
@@ -1635,6 +1715,26 @@
         "timestamp": "2025-08-13T03:00:00.099070",
         "price": 1188.3982078575345,
         "volume": 3409556.8527162476
+      },
+      {
+        "timestamp": "2025-08-13T03:01:00.137017",
+        "price": 1197.4825181688982,
+        "volume": 3057072.837338053
+      },
+      {
+        "timestamp": "2025-08-13T03:02:00.165193",
+        "price": 1185.4548044693652,
+        "volume": 5343438.907731603
+      },
+      {
+        "timestamp": "2025-08-13T03:03:00.194251",
+        "price": 1238.96192900227,
+        "volume": 8097100.315516006
+      },
+      {
+        "timestamp": "2025-08-13T03:03:23.514531",
+        "price": 1184.2640172328854,
+        "volume": 9142758.657381753
       }
     ],
     "BNB": [
@@ -1722,6 +1822,26 @@
         "timestamp": "2025-08-13T03:00:00.099070",
         "price": 3115.5806779366617,
         "volume": 4225738.027462697
+      },
+      {
+        "timestamp": "2025-08-13T03:01:00.137017",
+        "price": 3129.033760117293,
+        "volume": 7006981.420262669
+      },
+      {
+        "timestamp": "2025-08-13T03:02:00.165193",
+        "price": 3102.685932088973,
+        "volume": 2623148.7908340837
+      },
+      {
+        "timestamp": "2025-08-13T03:03:00.194251",
+        "price": 3140.326040559409,
+        "volume": 7791044.960302371
+      },
+      {
+        "timestamp": "2025-08-13T03:03:23.514531",
+        "price": 3144.6763741461104,
+        "volume": 5774551.1143492395
       }
     ],
     "ADA": [
@@ -1809,6 +1929,26 @@
         "timestamp": "2025-08-13T03:00:00.099070",
         "price": 3737.132535341012,
         "volume": 9796777.591204138
+      },
+      {
+        "timestamp": "2025-08-13T03:01:00.137017",
+        "price": 3877.5256549192723,
+        "volume": 915614.4499442626
+      },
+      {
+        "timestamp": "2025-08-13T03:02:00.165193",
+        "price": 3862.084930486606,
+        "volume": 1644274.4484863924
+      },
+      {
+        "timestamp": "2025-08-13T03:03:00.194251",
+        "price": 3841.418339690613,
+        "volume": 3609920.4656175575
+      },
+      {
+        "timestamp": "2025-08-13T03:03:23.514531",
+        "price": 3858.4022053379163,
+        "volume": 127137.01444619056
       }
     ],
     "AVAX": [
@@ -1896,6 +2036,26 @@
         "timestamp": "2025-08-13T03:00:00.099070",
         "price": 2612.4047958576352,
         "volume": 9037192.504749717
+      },
+      {
+        "timestamp": "2025-08-13T03:01:00.137017",
+        "price": 2656.9136531692507,
+        "volume": 7124256.108353874
+      },
+      {
+        "timestamp": "2025-08-13T03:02:00.165193",
+        "price": 2571.7050561870606,
+        "volume": 8251486.929062157
+      },
+      {
+        "timestamp": "2025-08-13T03:03:00.194251",
+        "price": 2598.711674156436,
+        "volume": 5384620.713433595
+      },
+      {
+        "timestamp": "2025-08-13T03:03:23.514531",
+        "price": 2519.933451580298,
+        "volume": 7115945.289286362
       }
     ],
     "LINK": [
@@ -1983,6 +2143,26 @@
         "timestamp": "2025-08-13T03:00:00.099070",
         "price": 2174.777567111377,
         "volume": 1988365.926208682
+      },
+      {
+        "timestamp": "2025-08-13T03:01:00.137017",
+        "price": 2137.4239843407236,
+        "volume": 821099.9129616177
+      },
+      {
+        "timestamp": "2025-08-13T03:02:00.165193",
+        "price": 2163.8314474984995,
+        "volume": 1892935.722479895
+      },
+      {
+        "timestamp": "2025-08-13T03:03:00.194251",
+        "price": 2059.378175600211,
+        "volume": 9045152.265689062
+      },
+      {
+        "timestamp": "2025-08-13T03:03:23.514531",
+        "price": 2014.656456685016,
+        "volume": 3321572.9477915824
       }
     ],
     "UNI": [
@@ -2070,6 +2250,26 @@
         "timestamp": "2025-08-13T03:00:00.099070",
         "price": 186.51894103578613,
         "volume": 1561658.5817648345
+      },
+      {
+        "timestamp": "2025-08-13T03:01:00.137017",
+        "price": 184.78168680048088,
+        "volume": 6057228.336976762
+      },
+      {
+        "timestamp": "2025-08-13T03:02:00.165193",
+        "price": 189.67246861138383,
+        "volume": 2866091.6171237766
+      },
+      {
+        "timestamp": "2025-08-13T03:03:00.194251",
+        "price": 188.96865356083515,
+        "volume": 4068125.0810430152
+      },
+      {
+        "timestamp": "2025-08-13T03:03:23.514531",
+        "price": 188.24721231935064,
+        "volume": 5661592.155612193
       }
     ],
     "SAROS": [
@@ -2157,6 +2357,26 @@
         "timestamp": "2025-08-13T03:00:00.099070",
         "price": 271.18332568382266,
         "volume": 6833646.349429715
+      },
+      {
+        "timestamp": "2025-08-13T03:01:00.137017",
+        "price": 263.0960031650343,
+        "volume": 7934673.123488088
+      },
+      {
+        "timestamp": "2025-08-13T03:02:00.165193",
+        "price": 278.72186384966926,
+        "volume": 9700150.613022247
+      },
+      {
+        "timestamp": "2025-08-13T03:03:00.194251",
+        "price": 291.6779042047243,
+        "volume": 570276.7268945661
+      },
+      {
+        "timestamp": "2025-08-13T03:03:23.514531",
+        "price": 287.4647387010446,
+        "volume": 3292154.205614839
       }
     ],
     "XCN": [
@@ -2244,6 +2464,26 @@
         "timestamp": "2025-08-13T03:00:00.099070",
         "price": 71.89784939914111,
         "volume": 1167764.033029462
+      },
+      {
+        "timestamp": "2025-08-13T03:01:00.137017",
+        "price": 77.41839242399027,
+        "volume": 9134851.064447122
+      },
+      {
+        "timestamp": "2025-08-13T03:02:00.165193",
+        "price": 76.94549909732923,
+        "volume": 3176181.56778256
+      },
+      {
+        "timestamp": "2025-08-13T03:03:00.194251",
+        "price": 84.50941754903263,
+        "volume": 2686560.0707973326
+      },
+      {
+        "timestamp": "2025-08-13T03:03:23.514531",
+        "price": 86.41479214051155,
+        "volume": 3077535.9514466375
       }
     ],
     "ZBCN": [
@@ -2331,6 +2571,26 @@
         "timestamp": "2025-08-13T03:00:00.099070",
         "price": 123.40707713504828,
         "volume": 3161710.2282602466
+      },
+      {
+        "timestamp": "2025-08-13T03:01:00.137017",
+        "price": 126.36005447170942,
+        "volume": 7863631.87204224
+      },
+      {
+        "timestamp": "2025-08-13T03:02:00.165193",
+        "price": 134.09110737955282,
+        "volume": 7326368.409411929
+      },
+      {
+        "timestamp": "2025-08-13T03:03:00.194251",
+        "price": 147.99407669276601,
+        "volume": 6470768.826855663
+      },
+      {
+        "timestamp": "2025-08-13T03:03:23.514531",
+        "price": 163.01414024945473,
+        "volume": 2997350.613114054
       }
     ],
     "SYRUP": [
@@ -2418,6 +2678,26 @@
         "timestamp": "2025-08-13T03:00:00.099070",
         "price": 283.8006410581856,
         "volume": 2958798.594424366
+      },
+      {
+        "timestamp": "2025-08-13T03:01:00.137017",
+        "price": 283.8520682579663,
+        "volume": 6691063.664866501
+      },
+      {
+        "timestamp": "2025-08-13T03:02:00.165193",
+        "price": 276.59515256209636,
+        "volume": 395081.70513031003
+      },
+      {
+        "timestamp": "2025-08-13T03:03:00.194251",
+        "price": 263.8481426391883,
+        "volume": 4623503.140587485
+      },
+      {
+        "timestamp": "2025-08-13T03:03:23.514531",
+        "price": 258.34410382306663,
+        "volume": 3050174.418047294
       }
     ],
     "TOSHI": [
@@ -2505,6 +2785,26 @@
         "timestamp": "2025-08-13T03:00:00.099070",
         "price": 467.3380740505849,
         "volume": 1538607.978991155
+      },
+      {
+        "timestamp": "2025-08-13T03:01:00.137017",
+        "price": 467.7191554724901,
+        "volume": 2121851.0561160007
+      },
+      {
+        "timestamp": "2025-08-13T03:02:00.165193",
+        "price": 478.2814069158754,
+        "volume": 8875916.777550843
+      },
+      {
+        "timestamp": "2025-08-13T03:03:00.194251",
+        "price": 472.8723229475507,
+        "volume": 6264197.788749388
+      },
+      {
+        "timestamp": "2025-08-13T03:03:23.514531",
+        "price": 469.09985079378015,
+        "volume": 1350030.523715594
       }
     ],
     "VENOM": [
@@ -2592,6 +2892,26 @@
         "timestamp": "2025-08-13T03:00:00.099070",
         "price": 283.3450311506332,
         "volume": 5352580.001634466
+      },
+      {
+        "timestamp": "2025-08-13T03:01:00.137017",
+        "price": 282.7758917318593,
+        "volume": 7646666.376527468
+      },
+      {
+        "timestamp": "2025-08-13T03:02:00.165193",
+        "price": 271.2524306897948,
+        "volume": 7534087.282644435
+      },
+      {
+        "timestamp": "2025-08-13T03:03:00.194251",
+        "price": 257.7805544322199,
+        "volume": 4788784.336244403
+      },
+      {
+        "timestamp": "2025-08-13T03:03:23.514531",
+        "price": 228.36188447325307,
+        "volume": 9500881.704362864
       }
     ],
     "EUL": [
@@ -2679,6 +2999,26 @@
         "timestamp": "2025-08-13T03:00:00.099070",
         "price": 372.0044610441231,
         "volume": 197756.94473813835
+      },
+      {
+        "timestamp": "2025-08-13T03:01:00.137017",
+        "price": 382.2478771668296,
+        "volume": 7591978.211499596
+      },
+      {
+        "timestamp": "2025-08-13T03:02:00.165193",
+        "price": 389.73638465360955,
+        "volume": 9898873.623377211
+      },
+      {
+        "timestamp": "2025-08-13T03:03:00.194251",
+        "price": 388.448750090845,
+        "volume": 2168753.6548200566
+      },
+      {
+        "timestamp": "2025-08-13T03:03:23.514531",
+        "price": 384.8826350584546,
+        "volume": 1302615.5442903035
       }
     ],
     "WBT": [
@@ -2766,6 +3106,26 @@
         "timestamp": "2025-08-13T03:00:00.099070",
         "price": 335.9192652220414,
         "volume": 2202140.915049664
+      },
+      {
+        "timestamp": "2025-08-13T03:01:00.137017",
+        "price": 333.6467738048602,
+        "volume": 6810898.867784059
+      },
+      {
+        "timestamp": "2025-08-13T03:02:00.165193",
+        "price": 317.3028499000178,
+        "volume": 134248.4338325931
+      },
+      {
+        "timestamp": "2025-08-13T03:03:00.194251",
+        "price": 316.9038635799099,
+        "volume": 5940538.56254426
+      },
+      {
+        "timestamp": "2025-08-13T03:03:23.514531",
+        "price": 315.4473745437296,
+        "volume": 2906713.6527979597
       }
     ],
     "HYPE": [
@@ -2853,6 +3213,26 @@
         "timestamp": "2025-08-13T03:00:00.099070",
         "price": 80.15667506842189,
         "volume": 427632.13101225795
+      },
+      {
+        "timestamp": "2025-08-13T03:01:00.137017",
+        "price": 76.27115225330405,
+        "volume": 8257355.511624814
+      },
+      {
+        "timestamp": "2025-08-13T03:02:00.165193",
+        "price": 74.08747877111249,
+        "volume": 6277899.449701573
+      },
+      {
+        "timestamp": "2025-08-13T03:03:00.194251",
+        "price": 73.07637035699052,
+        "volume": 3359283.2483361107
+      },
+      {
+        "timestamp": "2025-08-13T03:03:23.514531",
+        "price": 72.17011935381329,
+        "volume": 5365975.067574041
       }
     ],
     "XMR": [
@@ -2940,6 +3320,26 @@
         "timestamp": "2025-08-13T03:00:00.099070",
         "price": 29.006770572228444,
         "volume": 4439436.280034335
+      },
+      {
+        "timestamp": "2025-08-13T03:01:00.137017",
+        "price": 27.030329864447086,
+        "volume": 4998012.428394692
+      },
+      {
+        "timestamp": "2025-08-13T03:02:00.165193",
+        "price": 27.223446414160243,
+        "volume": 5400649.1070661135
+      },
+      {
+        "timestamp": "2025-08-13T03:03:00.194251",
+        "price": 24.77186416358235,
+        "volume": 977600.2271225539
+      },
+      {
+        "timestamp": "2025-08-13T03:03:23.514531",
+        "price": 26.376465189877358,
+        "volume": 8743174.90807013
       }
     ],
     "SUI": [
@@ -3027,6 +3427,26 @@
         "timestamp": "2025-08-13T03:00:00.099070",
         "price": 54.12718844770485,
         "volume": 9007968.19365604
+      },
+      {
+        "timestamp": "2025-08-13T03:01:00.137017",
+        "price": 56.58553154336194,
+        "volume": 6910464.079286456
+      },
+      {
+        "timestamp": "2025-08-13T03:02:00.165193",
+        "price": 55.19842107597671,
+        "volume": 1889038.233786869
+      },
+      {
+        "timestamp": "2025-08-13T03:03:00.194251",
+        "price": 55.98171029706856,
+        "volume": 2121963.9219245557
+      },
+      {
+        "timestamp": "2025-08-13T03:03:23.514531",
+        "price": 53.00078077098302,
+        "volume": 5442843.901472771
       }
     ],
     "RNDR": [
@@ -3114,6 +3534,26 @@
         "timestamp": "2025-08-13T03:00:00.099070",
         "price": 44.93736211647031,
         "volume": 5336206.779556335
+      },
+      {
+        "timestamp": "2025-08-13T03:01:00.137017",
+        "price": 46.21037101214277,
+        "volume": 2655790.4539655675
+      },
+      {
+        "timestamp": "2025-08-13T03:02:00.165193",
+        "price": 46.26721921010525,
+        "volume": 4298201.569128631
+      },
+      {
+        "timestamp": "2025-08-13T03:03:00.194251",
+        "price": 48.83433492591844,
+        "volume": 6537835.466673402
+      },
+      {
+        "timestamp": "2025-08-13T03:03:23.514531",
+        "price": 50.50146347771,
+        "volume": 2094716.397423776
       }
     ],
     "PEPE": [
@@ -3201,6 +3641,26 @@
         "timestamp": "2025-08-13T03:00:00.099070",
         "price": 58.358889093771666,
         "volume": 2657047.18847362
+      },
+      {
+        "timestamp": "2025-08-13T03:01:00.137017",
+        "price": 56.172948368960554,
+        "volume": 179107.67244739673
+      },
+      {
+        "timestamp": "2025-08-13T03:02:00.165193",
+        "price": 58.113739875282214,
+        "volume": 8226552.794627617
+      },
+      {
+        "timestamp": "2025-08-13T03:03:00.194251",
+        "price": 61.905710428122305,
+        "volume": 5101672.049743417
+      },
+      {
+        "timestamp": "2025-08-13T03:03:23.514531",
+        "price": 59.96513368550159,
+        "volume": 4429312.8910510875
       }
     ],
     "TON": [
@@ -3288,6 +3748,26 @@
         "timestamp": "2025-08-13T03:00:00.099070",
         "price": 63.50962226799975,
         "volume": 864625.5952687877
+      },
+      {
+        "timestamp": "2025-08-13T03:01:00.137017",
+        "price": 63.31308153170486,
+        "volume": 650775.930287785
+      },
+      {
+        "timestamp": "2025-08-13T03:02:00.165193",
+        "price": 64.11932629350073,
+        "volume": 9115758.182356158
+      },
+      {
+        "timestamp": "2025-08-13T03:03:00.194251",
+        "price": 63.84569652335581,
+        "volume": 4318653.100814499
+      },
+      {
+        "timestamp": "2025-08-13T03:03:23.514531",
+        "price": 66.08295139371471,
+        "volume": 2525469.951029858
       }
     ],
     "LTC": [
@@ -3375,6 +3855,26 @@
         "timestamp": "2025-08-13T03:00:00.099070",
         "price": 27.352085860728867,
         "volume": 865584.6725728632
+      },
+      {
+        "timestamp": "2025-08-13T03:01:00.137017",
+        "price": 28.18812298401274,
+        "volume": 7308911.402304446
+      },
+      {
+        "timestamp": "2025-08-13T03:02:00.165193",
+        "price": 26.83375631881662,
+        "volume": 4678526.042691808
+      },
+      {
+        "timestamp": "2025-08-13T03:03:00.194251",
+        "price": 27.275066180338836,
+        "volume": 5910478.691742122
+      },
+      {
+        "timestamp": "2025-08-13T03:03:23.514531",
+        "price": 25.897658233794534,
+        "volume": 3931831.572045899
       }
     ],
     "SHIB": [
@@ -3462,6 +3962,26 @@
         "timestamp": "2025-08-13T03:00:00.099070",
         "price": 73.28585096121672,
         "volume": 594817.0512077268
+      },
+      {
+        "timestamp": "2025-08-13T03:01:00.137017",
+        "price": 74.86527219407371,
+        "volume": 2593742.484925427
+      },
+      {
+        "timestamp": "2025-08-13T03:02:00.165193",
+        "price": 72.81473513247622,
+        "volume": 9736818.58923866
+      },
+      {
+        "timestamp": "2025-08-13T03:03:00.194251",
+        "price": 70.68916872267924,
+        "volume": 415298.77853496704
+      },
+      {
+        "timestamp": "2025-08-13T03:03:23.514531",
+        "price": 70.36137145268835,
+        "volume": 3424840.5071081077
       }
     ],
     "DOT": [
@@ -3549,6 +4069,26 @@
         "timestamp": "2025-08-13T03:00:00.099070",
         "price": 33.45591819086742,
         "volume": 7093990.413839587
+      },
+      {
+        "timestamp": "2025-08-13T03:01:00.137017",
+        "price": 34.20527875666431,
+        "volume": 7497331.995976112
+      },
+      {
+        "timestamp": "2025-08-13T03:02:00.165193",
+        "price": 35.621802038054554,
+        "volume": 1313398.8825301982
+      },
+      {
+        "timestamp": "2025-08-13T03:03:00.194251",
+        "price": 34.360976873286674,
+        "volume": 5442320.428713218
+      },
+      {
+        "timestamp": "2025-08-13T03:03:23.514531",
+        "price": 33.48697929746943,
+        "volume": 5564501.161413656
       }
     ],
     "TRX": [
@@ -3636,6 +4176,26 @@
         "timestamp": "2025-08-13T03:00:00.099070",
         "price": 15.142062909237628,
         "volume": 1218154.5525103554
+      },
+      {
+        "timestamp": "2025-08-13T03:01:00.137017",
+        "price": 16.289980708943002,
+        "volume": 3456334.0751574915
+      },
+      {
+        "timestamp": "2025-08-13T03:02:00.165193",
+        "price": 15.175410684807867,
+        "volume": 6577339.073416035
+      },
+      {
+        "timestamp": "2025-08-13T03:03:00.194251",
+        "price": 15.579224775428646,
+        "volume": 2364255.438229637
+      },
+      {
+        "timestamp": "2025-08-13T03:03:23.514531",
+        "price": 16.7439127501582,
+        "volume": 413136.1915490379
       }
     ],
     "MATIC": [
@@ -3723,6 +4283,26 @@
         "timestamp": "2025-08-13T03:00:00.099070",
         "price": 19.786146934872573,
         "volume": 6692362.023948462
+      },
+      {
+        "timestamp": "2025-08-13T03:01:00.137017",
+        "price": 18.633379062701877,
+        "volume": 5323081.291460346
+      },
+      {
+        "timestamp": "2025-08-13T03:02:00.165193",
+        "price": 19.13550173392388,
+        "volume": 808960.0350439511
+      },
+      {
+        "timestamp": "2025-08-13T03:03:00.194251",
+        "price": 19.339716367283472,
+        "volume": 1517186.7851499165
+      },
+      {
+        "timestamp": "2025-08-13T03:03:23.514531",
+        "price": 18.865835285442554,
+        "volume": 6474415.749005994
       }
     ],
     "APT": [
@@ -3810,6 +4390,26 @@
         "timestamp": "2025-08-13T03:00:00.099070",
         "price": 19.35841317069838,
         "volume": 8423919.39059891
+      },
+      {
+        "timestamp": "2025-08-13T03:01:00.137017",
+        "price": 18.851673283062066,
+        "volume": 7965323.967834223
+      },
+      {
+        "timestamp": "2025-08-13T03:02:00.165193",
+        "price": 18.146992873239526,
+        "volume": 3620821.2540609096
+      },
+      {
+        "timestamp": "2025-08-13T03:03:00.194251",
+        "price": 17.925590520412577,
+        "volume": 4173463.8695031586
+      },
+      {
+        "timestamp": "2025-08-13T03:03:23.514531",
+        "price": 17.962608027098014,
+        "volume": 6127953.347580569
       }
     ],
     "AAVE": [
@@ -3897,6 +4497,26 @@
         "timestamp": "2025-08-13T03:00:00.099070",
         "price": 70.96748726473629,
         "volume": 6336115.212943131
+      },
+      {
+        "timestamp": "2025-08-13T03:01:00.137017",
+        "price": 76.34064849726136,
+        "volume": 5668205.746110337
+      },
+      {
+        "timestamp": "2025-08-13T03:02:00.165193",
+        "price": 81.77325224764601,
+        "volume": 9719822.303352827
+      },
+      {
+        "timestamp": "2025-08-13T03:03:00.194251",
+        "price": 79.25338751089008,
+        "volume": 2463376.415133258
+      },
+      {
+        "timestamp": "2025-08-13T03:03:23.514531",
+        "price": 73.7710837930757,
+        "volume": 6375972.643038286
       }
     ],
     "MKR": [
@@ -3984,6 +4604,26 @@
         "timestamp": "2025-08-13T03:00:00.099070",
         "price": 57.7362507515293,
         "volume": 729655.5329188333
+      },
+      {
+        "timestamp": "2025-08-13T03:01:00.137017",
+        "price": 58.82983259414855,
+        "volume": 357536.433902291
+      },
+      {
+        "timestamp": "2025-08-13T03:02:00.165193",
+        "price": 58.759158184971135,
+        "volume": 8471214.345803678
+      },
+      {
+        "timestamp": "2025-08-13T03:03:00.194251",
+        "price": 58.86488487326891,
+        "volume": 1775472.3411009535
+      },
+      {
+        "timestamp": "2025-08-13T03:03:23.514531",
+        "price": 59.2378260096508,
+        "volume": 2405325.431458451
       }
     ],
     "COMP": [
@@ -4071,6 +4711,26 @@
         "timestamp": "2025-08-13T03:00:00.099070",
         "price": 70.01325337630006,
         "volume": 1930915.7550042444
+      },
+      {
+        "timestamp": "2025-08-13T03:01:00.137017",
+        "price": 71.83450868503935,
+        "volume": 429069.11524922226
+      },
+      {
+        "timestamp": "2025-08-13T03:02:00.165193",
+        "price": 75.66699426715708,
+        "volume": 9945660.401344433
+      },
+      {
+        "timestamp": "2025-08-13T03:03:00.194251",
+        "price": 71.97380711425255,
+        "volume": 3622202.6388184675
+      },
+      {
+        "timestamp": "2025-08-13T03:03:23.514531",
+        "price": 73.40780104984346,
+        "volume": 2675280.509093622
       }
     ],
     "CRV": [
@@ -4158,6 +4818,26 @@
         "timestamp": "2025-08-13T03:00:00.099070",
         "price": 76.73194534095087,
         "volume": 8636399.785765162
+      },
+      {
+        "timestamp": "2025-08-13T03:01:00.137017",
+        "price": 72.93571432787971,
+        "volume": 8184977.564319346
+      },
+      {
+        "timestamp": "2025-08-13T03:02:00.165193",
+        "price": 75.72966505169657,
+        "volume": 3464250.1052726894
+      },
+      {
+        "timestamp": "2025-08-13T03:03:00.194251",
+        "price": 77.70294275512465,
+        "volume": 1785462.854025704
+      },
+      {
+        "timestamp": "2025-08-13T03:03:23.514531",
+        "price": 74.39144061069045,
+        "volume": 4897323.56829334
       }
     ],
     "SNX": [
@@ -4245,6 +4925,26 @@
         "timestamp": "2025-08-13T03:00:00.099070",
         "price": 112.60352878239792,
         "volume": 4139803.619386433
+      },
+      {
+        "timestamp": "2025-08-13T03:01:00.137017",
+        "price": 110.74673373566702,
+        "volume": 8645260.884271635
+      },
+      {
+        "timestamp": "2025-08-13T03:02:00.165193",
+        "price": 114.9621637587083,
+        "volume": 7606029.792481499
+      },
+      {
+        "timestamp": "2025-08-13T03:03:00.194251",
+        "price": 112.35149590269057,
+        "volume": 6714053.760754908
+      },
+      {
+        "timestamp": "2025-08-13T03:03:23.514531",
+        "price": 112.57957882203381,
+        "volume": 5943398.334337573
       }
     ],
     "SUSHI": [
@@ -4332,6 +5032,26 @@
         "timestamp": "2025-08-13T03:00:00.099070",
         "price": 87.3839096111324,
         "volume": 542918.0878817269
+      },
+      {
+        "timestamp": "2025-08-13T03:01:00.137017",
+        "price": 91.01561927266476,
+        "volume": 8501964.554698907
+      },
+      {
+        "timestamp": "2025-08-13T03:02:00.165193",
+        "price": 88.86208996680018,
+        "volume": 6713790.554017312
+      },
+      {
+        "timestamp": "2025-08-13T03:03:00.194251",
+        "price": 94.66298334258474,
+        "volume": 9131742.659480553
+      },
+      {
+        "timestamp": "2025-08-13T03:03:23.514531",
+        "price": 94.39813554966125,
+        "volume": 6399254.952106561
       }
     ],
     "1INCH": [
@@ -4419,6 +5139,26 @@
         "timestamp": "2025-08-13T03:00:00.099070",
         "price": 36.75736335748439,
         "volume": 4167812.9924205025
+      },
+      {
+        "timestamp": "2025-08-13T03:01:00.137017",
+        "price": 37.4077657966851,
+        "volume": 3366627.268337525
+      },
+      {
+        "timestamp": "2025-08-13T03:02:00.165193",
+        "price": 36.952099192439846,
+        "volume": 1023454.8120222983
+      },
+      {
+        "timestamp": "2025-08-13T03:03:00.194251",
+        "price": 36.18266501200666,
+        "volume": 870719.4684027649
+      },
+      {
+        "timestamp": "2025-08-13T03:03:23.514531",
+        "price": 34.69642228334699,
+        "volume": 4382917.80498373
       }
     ],
     "SAND": [
@@ -4506,6 +5246,26 @@
         "timestamp": "2025-08-13T03:00:00.099070",
         "price": 17.26786866612697,
         "volume": 3851813.918148444
+      },
+      {
+        "timestamp": "2025-08-13T03:01:00.137017",
+        "price": 17.19879400699996,
+        "volume": 1013332.3206700599
+      },
+      {
+        "timestamp": "2025-08-13T03:02:00.165193",
+        "price": 16.214999802458895,
+        "volume": 9276378.55888719
+      },
+      {
+        "timestamp": "2025-08-13T03:03:00.194251",
+        "price": 17.063489352338557,
+        "volume": 1412898.3731476027
+      },
+      {
+        "timestamp": "2025-08-13T03:03:23.514531",
+        "price": 17.19047219630477,
+        "volume": 2430945.6949557625
       }
     ],
     "MANA": [
@@ -4593,6 +5353,26 @@
         "timestamp": "2025-08-13T03:00:00.099070",
         "price": 54.19317954242427,
         "volume": 8054600.830562282
+      },
+      {
+        "timestamp": "2025-08-13T03:01:00.137017",
+        "price": 53.974546292326664,
+        "volume": 5569119.486041183
+      },
+      {
+        "timestamp": "2025-08-13T03:02:00.165193",
+        "price": 51.80300926681622,
+        "volume": 1842359.372938682
+      },
+      {
+        "timestamp": "2025-08-13T03:03:00.194251",
+        "price": 51.091453193993516,
+        "volume": 6402864.94987456
+      },
+      {
+        "timestamp": "2025-08-13T03:03:23.514531",
+        "price": 50.968496639674925,
+        "volume": 6429818.905318868
       }
     ],
     "AXS": [
@@ -4680,6 +5460,26 @@
         "timestamp": "2025-08-13T03:00:00.099070",
         "price": 27.062132286470955,
         "volume": 5973856.274570592
+      },
+      {
+        "timestamp": "2025-08-13T03:01:00.137017",
+        "price": 28.804361286519132,
+        "volume": 6980703.654814633
+      },
+      {
+        "timestamp": "2025-08-13T03:02:00.165193",
+        "price": 28.565209741752682,
+        "volume": 2735214.110447533
+      },
+      {
+        "timestamp": "2025-08-13T03:03:00.194251",
+        "price": 27.14948936430189,
+        "volume": 4652513.734027262
+      },
+      {
+        "timestamp": "2025-08-13T03:03:23.514531",
+        "price": 26.82491732509158,
+        "volume": 5263771.187749477
       }
     ],
     "ATOM": [
@@ -4767,6 +5567,26 @@
         "timestamp": "2025-08-13T03:00:00.099070",
         "price": 11.81445517556941,
         "volume": 4160289.5477612903
+      },
+      {
+        "timestamp": "2025-08-13T03:01:00.137017",
+        "price": 12.048823000843504,
+        "volume": 1271288.2570892086
+      },
+      {
+        "timestamp": "2025-08-13T03:02:00.165193",
+        "price": 11.43578515679314,
+        "volume": 485100.61391593085
+      },
+      {
+        "timestamp": "2025-08-13T03:03:00.194251",
+        "price": 11.780740129531775,
+        "volume": 9872274.939365387
+      },
+      {
+        "timestamp": "2025-08-13T03:03:23.514531",
+        "price": 11.985417892852212,
+        "volume": 8370342.771375825
       }
     ],
     "FTM": [
@@ -4854,6 +5674,26 @@
         "timestamp": "2025-08-13T03:00:00.099070",
         "price": 43.388521335405784,
         "volume": 9333162.021066008
+      },
+      {
+        "timestamp": "2025-08-13T03:01:00.137017",
+        "price": 42.45242031620509,
+        "volume": 5282099.059380035
+      },
+      {
+        "timestamp": "2025-08-13T03:02:00.165193",
+        "price": 41.572322339374814,
+        "volume": 2430018.2122314083
+      },
+      {
+        "timestamp": "2025-08-13T03:03:00.194251",
+        "price": 41.6570849465255,
+        "volume": 2011583.7565819072
+      },
+      {
+        "timestamp": "2025-08-13T03:03:23.514531",
+        "price": 44.290206668335905,
+        "volume": 7990312.830474423
       }
     ],
     "ALGO": [
@@ -4941,6 +5781,26 @@
         "timestamp": "2025-08-13T03:00:00.099070",
         "price": 9.894734296823426,
         "volume": 927404.9328401955
+      },
+      {
+        "timestamp": "2025-08-13T03:01:00.137017",
+        "price": 9.573877994957162,
+        "volume": 450636.12869704847
+      },
+      {
+        "timestamp": "2025-08-13T03:02:00.165193",
+        "price": 9.685721260228245,
+        "volume": 3240848.10802686
+      },
+      {
+        "timestamp": "2025-08-13T03:03:00.194251",
+        "price": 9.795773408645342,
+        "volume": 9535362.92469995
+      },
+      {
+        "timestamp": "2025-08-13T03:03:23.514531",
+        "price": 9.62137003562398,
+        "volume": 5563260.207232408
       }
     ],
     "FLOW": [
@@ -5028,6 +5888,26 @@
         "timestamp": "2025-08-13T03:00:00.099070",
         "price": 6.279887074078534,
         "volume": 1778528.8961738728
+      },
+      {
+        "timestamp": "2025-08-13T03:01:00.137017",
+        "price": 6.38649430115253,
+        "volume": 8421893.76669306
+      },
+      {
+        "timestamp": "2025-08-13T03:02:00.165193",
+        "price": 6.191774277253772,
+        "volume": 1057541.8152350606
+      },
+      {
+        "timestamp": "2025-08-13T03:03:00.194251",
+        "price": 6.34838327847444,
+        "volume": 7797653.83625632
+      },
+      {
+        "timestamp": "2025-08-13T03:03:23.514531",
+        "price": 6.208105298025825,
+        "volume": 812852.5400423986
       }
     ],
     "ICP": [
@@ -5115,6 +5995,26 @@
         "timestamp": "2025-08-13T03:00:00.099070",
         "price": 12.259234592660661,
         "volume": 8161118.820392099
+      },
+      {
+        "timestamp": "2025-08-13T03:01:00.137017",
+        "price": 12.417574410058778,
+        "volume": 8628793.163706888
+      },
+      {
+        "timestamp": "2025-08-13T03:02:00.165193",
+        "price": 12.231661407188184,
+        "volume": 152225.45256837597
+      },
+      {
+        "timestamp": "2025-08-13T03:03:00.194251",
+        "price": 12.962862457950193,
+        "volume": 4454930.669445262
+      },
+      {
+        "timestamp": "2025-08-13T03:03:23.514531",
+        "price": 12.190900399897094,
+        "volume": 7252287.90393835
       }
     ],
     "THETA": [
@@ -5202,6 +6102,26 @@
         "timestamp": "2025-08-13T03:00:00.099070",
         "price": 35.748955936949685,
         "volume": 744842.1876750224
+      },
+      {
+        "timestamp": "2025-08-13T03:01:00.137017",
+        "price": 37.27141374608197,
+        "volume": 4575593.648954907
+      },
+      {
+        "timestamp": "2025-08-13T03:02:00.165193",
+        "price": 34.760984086174005,
+        "volume": 4485573.055251595
+      },
+      {
+        "timestamp": "2025-08-13T03:03:00.194251",
+        "price": 36.29519890225043,
+        "volume": 6308453.101658876
+      },
+      {
+        "timestamp": "2025-08-13T03:03:23.514531",
+        "price": 37.282655225570736,
+        "volume": 7497451.135397397
       }
     ],
     "FIL": [
@@ -5289,6 +6209,26 @@
         "timestamp": "2025-08-13T03:00:00.099070",
         "price": 12.024387064017,
         "volume": 275707.7728230435
+      },
+      {
+        "timestamp": "2025-08-13T03:01:00.137017",
+        "price": 12.188269129268777,
+        "volume": 6090272.714028509
+      },
+      {
+        "timestamp": "2025-08-13T03:02:00.165193",
+        "price": 12.0166015666452,
+        "volume": 3979042.16682461
+      },
+      {
+        "timestamp": "2025-08-13T03:03:00.194251",
+        "price": 12.306510219349798,
+        "volume": 4902476.721808153
+      },
+      {
+        "timestamp": "2025-08-13T03:03:23.514531",
+        "price": 12.282374366216143,
+        "volume": 3057033.369614929
       }
     ],
     "VET": [
@@ -5376,6 +6316,26 @@
         "timestamp": "2025-08-13T03:00:00.099070",
         "price": 12.835747617767595,
         "volume": 3002926.4811644373
+      },
+      {
+        "timestamp": "2025-08-13T03:01:00.137017",
+        "price": 12.685990924912728,
+        "volume": 6035814.296205946
+      },
+      {
+        "timestamp": "2025-08-13T03:02:00.165193",
+        "price": 12.144210096128438,
+        "volume": 7226941.635566569
+      },
+      {
+        "timestamp": "2025-08-13T03:03:00.194251",
+        "price": 12.492806712406702,
+        "volume": 4144212.0869381744
+      },
+      {
+        "timestamp": "2025-08-13T03:03:23.514531",
+        "price": 12.78001664063917,
+        "volume": 9067833.858436365
       }
     ],
     "HBAR": [
@@ -5463,6 +6423,26 @@
         "timestamp": "2025-08-13T03:00:00.099070",
         "price": 59.72858396766865,
         "volume": 9516987.37789105
+      },
+      {
+        "timestamp": "2025-08-13T03:01:00.137017",
+        "price": 61.28035634590627,
+        "volume": 8484851.219631743
+      },
+      {
+        "timestamp": "2025-08-13T03:02:00.165193",
+        "price": 63.49062038170263,
+        "volume": 4205012.981780705
+      },
+      {
+        "timestamp": "2025-08-13T03:03:00.194251",
+        "price": 62.809879113808364,
+        "volume": 7351909.285955631
+      },
+      {
+        "timestamp": "2025-08-13T03:03:23.514531",
+        "price": 60.52001587956164,
+        "volume": 4067808.6669120076
       }
     ],
     "EGLD": [
@@ -5550,6 +6530,26 @@
         "timestamp": "2025-08-13T03:00:00.099070",
         "price": 45.26302911200579,
         "volume": 3781205.316179417
+      },
+      {
+        "timestamp": "2025-08-13T03:01:00.137017",
+        "price": 46.3532639490574,
+        "volume": 1924700.8721952953
+      },
+      {
+        "timestamp": "2025-08-13T03:02:00.165193",
+        "price": 45.57727806897507,
+        "volume": 2916281.2031354317
+      },
+      {
+        "timestamp": "2025-08-13T03:03:00.194251",
+        "price": 46.51415041576808,
+        "volume": 7405391.262556318
+      },
+      {
+        "timestamp": "2025-08-13T03:03:23.514531",
+        "price": 46.60205170309453,
+        "volume": 6558149.101160549
       }
     ],
     "GRT": [
@@ -5637,6 +6637,26 @@
         "timestamp": "2025-08-13T03:00:00.099070",
         "price": 28.016446287538212,
         "volume": 7022293.708840341
+      },
+      {
+        "timestamp": "2025-08-13T03:01:00.137017",
+        "price": 27.784355614259425,
+        "volume": 7736793.295908484
+      },
+      {
+        "timestamp": "2025-08-13T03:02:00.165193",
+        "price": 26.094304447592485,
+        "volume": 2341182.9985263185
+      },
+      {
+        "timestamp": "2025-08-13T03:03:00.194251",
+        "price": 25.89067168028575,
+        "volume": 3248884.7182657477
+      },
+      {
+        "timestamp": "2025-08-13T03:03:23.514531",
+        "price": 26.723948515020123,
+        "volume": 7034883.781336163
       }
     ],
     "FET": [
@@ -5724,6 +6744,26 @@
         "timestamp": "2025-08-13T03:00:00.099070",
         "price": 30.428944565263723,
         "volume": 2897834.5162758343
+      },
+      {
+        "timestamp": "2025-08-13T03:01:00.137017",
+        "price": 28.142256653739242,
+        "volume": 2558084.9481804175
+      },
+      {
+        "timestamp": "2025-08-13T03:02:00.165193",
+        "price": 26.991610982593887,
+        "volume": 4356633.289336952
+      },
+      {
+        "timestamp": "2025-08-13T03:03:00.194251",
+        "price": 27.660581650274974,
+        "volume": 6649661.2271218235
+      },
+      {
+        "timestamp": "2025-08-13T03:03:23.514531",
+        "price": 27.9982876291143,
+        "volume": 3879266.7789806975
       }
     ],
     "LRC": [
@@ -5811,6 +6851,26 @@
         "timestamp": "2025-08-13T03:00:00.099070",
         "price": 43.256899320578036,
         "volume": 9599348.331882233
+      },
+      {
+        "timestamp": "2025-08-13T03:01:00.137017",
+        "price": 41.55152830586042,
+        "volume": 6146876.520663675
+      },
+      {
+        "timestamp": "2025-08-13T03:02:00.165193",
+        "price": 42.934197128065755,
+        "volume": 7223968.6805462325
+      },
+      {
+        "timestamp": "2025-08-13T03:03:00.194251",
+        "price": 43.773448131854,
+        "volume": 5915303.714105814
+      },
+      {
+        "timestamp": "2025-08-13T03:03:23.514531",
+        "price": 42.1845130317758,
+        "volume": 5880506.433716781
       }
     ],
     "ENJ": [
@@ -5898,6 +6958,26 @@
         "timestamp": "2025-08-13T03:00:00.099070",
         "price": 22.666260653843903,
         "volume": 8006287.993497599
+      },
+      {
+        "timestamp": "2025-08-13T03:01:00.137017",
+        "price": 22.89874384567575,
+        "volume": 3122688.074602273
+      },
+      {
+        "timestamp": "2025-08-13T03:02:00.165193",
+        "price": 24.11525356263409,
+        "volume": 6837196.4367572125
+      },
+      {
+        "timestamp": "2025-08-13T03:03:00.194251",
+        "price": 22.67904175561544,
+        "volume": 184110.7273278751
+      },
+      {
+        "timestamp": "2025-08-13T03:03:23.514531",
+        "price": 21.911349196681556,
+        "volume": 9256874.834023308
       }
     ],
     "CHZ": [
@@ -5985,6 +7065,26 @@
         "timestamp": "2025-08-13T03:00:00.099070",
         "price": 28.340679222507315,
         "volume": 9280637.235205097
+      },
+      {
+        "timestamp": "2025-08-13T03:01:00.137017",
+        "price": 27.964247969650746,
+        "volume": 2587807.337450215
+      },
+      {
+        "timestamp": "2025-08-13T03:02:00.165193",
+        "price": 27.441790504513406,
+        "volume": 6368928.438623753
+      },
+      {
+        "timestamp": "2025-08-13T03:03:00.194251",
+        "price": 27.58269694762877,
+        "volume": 3350434.8680176493
+      },
+      {
+        "timestamp": "2025-08-13T03:03:23.514531",
+        "price": 26.118939130328407,
+        "volume": 9482248.708757335
       }
     ],
     "BAT": [
@@ -6072,6 +7172,26 @@
         "timestamp": "2025-08-13T03:00:00.099070",
         "price": 52.30262776329446,
         "volume": 1112085.18109887
+      },
+      {
+        "timestamp": "2025-08-13T03:01:00.137017",
+        "price": 52.56753325812125,
+        "volume": 2055719.9494429347
+      },
+      {
+        "timestamp": "2025-08-13T03:02:00.165193",
+        "price": 49.68090345246122,
+        "volume": 1654385.3045348607
+      },
+      {
+        "timestamp": "2025-08-13T03:03:00.194251",
+        "price": 51.10595370677597,
+        "volume": 3477533.802885541
+      },
+      {
+        "timestamp": "2025-08-13T03:03:23.514531",
+        "price": 48.203717144198656,
+        "volume": 3511680.333540305
       }
     ],
     "XTZ": [
@@ -6159,6 +7279,26 @@
         "timestamp": "2025-08-13T03:00:00.099070",
         "price": 34.80817938701397,
         "volume": 7808797.161589097
+      },
+      {
+        "timestamp": "2025-08-13T03:01:00.137017",
+        "price": 34.111643063945706,
+        "volume": 8509780.570624879
+      },
+      {
+        "timestamp": "2025-08-13T03:02:00.165193",
+        "price": 34.23194359237281,
+        "volume": 3037825.6438394887
+      },
+      {
+        "timestamp": "2025-08-13T03:03:00.194251",
+        "price": 34.847209248615066,
+        "volume": 1641338.141757711
+      },
+      {
+        "timestamp": "2025-08-13T03:03:23.514531",
+        "price": 34.85291667016581,
+        "volume": 5943780.143870855
       }
     ],
     "MINA": [
@@ -6246,6 +7386,26 @@
         "timestamp": "2025-08-13T03:00:00.099070",
         "price": 15.574049236517585,
         "volume": 5256351.315413225
+      },
+      {
+        "timestamp": "2025-08-13T03:01:00.137017",
+        "price": 16.755005451885136,
+        "volume": 9201052.425973391
+      },
+      {
+        "timestamp": "2025-08-13T03:02:00.165193",
+        "price": 16.380973713516628,
+        "volume": 1388932.7416819097
+      },
+      {
+        "timestamp": "2025-08-13T03:03:00.194251",
+        "price": 16.053511456739304,
+        "volume": 480819.15059920703
+      },
+      {
+        "timestamp": "2025-08-13T03:03:23.514531",
+        "price": 16.64871990092313,
+        "volume": 9100209.005012698
       }
     ],
     "KCS": [
@@ -6333,6 +7493,26 @@
         "timestamp": "2025-08-13T03:00:00.099070",
         "price": 13.709582445235121,
         "volume": 2529909.18670446
+      },
+      {
+        "timestamp": "2025-08-13T03:01:00.137017",
+        "price": 14.575136858220688,
+        "volume": 5653169.102155566
+      },
+      {
+        "timestamp": "2025-08-13T03:02:00.165193",
+        "price": 14.844058833883068,
+        "volume": 6078138.867386787
+      },
+      {
+        "timestamp": "2025-08-13T03:03:00.194251",
+        "price": 14.020751432924206,
+        "volume": 7306471.435801905
+      },
+      {
+        "timestamp": "2025-08-13T03:03:23.514531",
+        "price": 14.751466783954209,
+        "volume": 7959964.721170025
       }
     ],
     "YFI": [
@@ -6420,6 +7600,26 @@
         "timestamp": "2025-08-13T03:00:00.099070",
         "price": 11.058214106120104,
         "volume": 3281243.3068304337
+      },
+      {
+        "timestamp": "2025-08-13T03:01:00.137017",
+        "price": 11.004707714011492,
+        "volume": 9385581.446605945
+      },
+      {
+        "timestamp": "2025-08-13T03:02:00.165193",
+        "price": 10.980045060820341,
+        "volume": 8154283.398718683
+      },
+      {
+        "timestamp": "2025-08-13T03:03:00.194251",
+        "price": 10.57854403270825,
+        "volume": 7386812.133165668
+      },
+      {
+        "timestamp": "2025-08-13T03:03:23.514531",
+        "price": 10.242054895820052,
+        "volume": 825450.2334783782
       }
     ],
     "ZEC": [
@@ -6507,6 +7707,26 @@
         "timestamp": "2025-08-13T03:00:00.099070",
         "price": 8.35226371173606,
         "volume": 5388081.999562397
+      },
+      {
+        "timestamp": "2025-08-13T03:01:00.137017",
+        "price": 9.17364023115459,
+        "volume": 5530957.290319381
+      },
+      {
+        "timestamp": "2025-08-13T03:02:00.165193",
+        "price": 9.50265335605527,
+        "volume": 1789565.9364175724
+      },
+      {
+        "timestamp": "2025-08-13T03:03:00.194251",
+        "price": 9.258414433093506,
+        "volume": 7124363.617055566
+      },
+      {
+        "timestamp": "2025-08-13T03:03:23.514531",
+        "price": 10.007261959947378,
+        "volume": 3770530.7652073535
       }
     ],
     "DASH": [
@@ -6594,6 +7814,26 @@
         "timestamp": "2025-08-13T03:00:00.099070",
         "price": 5.01984680983271,
         "volume": 4446072.69539431
+      },
+      {
+        "timestamp": "2025-08-13T03:01:00.137017",
+        "price": 4.516817609231813,
+        "volume": 1942642.5070815156
+      },
+      {
+        "timestamp": "2025-08-13T03:02:00.165193",
+        "price": 4.508819366248392,
+        "volume": 5493281.838565709
+      },
+      {
+        "timestamp": "2025-08-13T03:03:00.194251",
+        "price": 4.601395057739616,
+        "volume": 1444113.201976865
+      },
+      {
+        "timestamp": "2025-08-13T03:03:23.514531",
+        "price": 4.930533059715265,
+        "volume": 2714917.1836527647
       }
     ],
     "DCR": [
@@ -6681,6 +7921,26 @@
         "timestamp": "2025-08-13T03:00:00.099070",
         "price": 3.670968419109398,
         "volume": 5051869.404038567
+      },
+      {
+        "timestamp": "2025-08-13T03:01:00.137017",
+        "price": 3.687508505442144,
+        "volume": 2079695.916493731
+      },
+      {
+        "timestamp": "2025-08-13T03:02:00.165193",
+        "price": 3.4092709652811193,
+        "volume": 790662.6802107338
+      },
+      {
+        "timestamp": "2025-08-13T03:03:00.194251",
+        "price": 3.2891902792262613,
+        "volume": 5334943.399148694
+      },
+      {
+        "timestamp": "2025-08-13T03:03:23.514531",
+        "price": 3.1277505052307015,
+        "volume": 1172815.7591880297
       }
     ],
     "WAVES": [
@@ -6768,6 +8028,26 @@
         "timestamp": "2025-08-13T03:00:00.099070",
         "price": 13.34789531826832,
         "volume": 5170785.8884234
+      },
+      {
+        "timestamp": "2025-08-13T03:01:00.137017",
+        "price": 13.789768093703136,
+        "volume": 3171322.1726106787
+      },
+      {
+        "timestamp": "2025-08-13T03:02:00.165193",
+        "price": 14.06576407768211,
+        "volume": 5409837.002486656
+      },
+      {
+        "timestamp": "2025-08-13T03:03:00.194251",
+        "price": 13.534982915637253,
+        "volume": 5801779.819894433
+      },
+      {
+        "timestamp": "2025-08-13T03:03:23.514531",
+        "price": 14.214808543594275,
+        "volume": 1562779.5142371107
       }
     ],
     "ZIL": [
@@ -6855,6 +8135,26 @@
         "timestamp": "2025-08-13T03:00:00.099070",
         "price": 5.9687791903119445,
         "volume": 9240718.769309003
+      },
+      {
+        "timestamp": "2025-08-13T03:01:00.137017",
+        "price": 6.145485433842344,
+        "volume": 4757286.050688235
+      },
+      {
+        "timestamp": "2025-08-13T03:02:00.165193",
+        "price": 5.877818462569995,
+        "volume": 7582436.710725935
+      },
+      {
+        "timestamp": "2025-08-13T03:03:00.194251",
+        "price": 6.584542343197753,
+        "volume": 8963269.704849318
+      },
+      {
+        "timestamp": "2025-08-13T03:03:23.514531",
+        "price": 6.328683970751853,
+        "volume": 924949.8061571567
       }
     ],
     "BAL": [
@@ -6942,6 +8242,26 @@
         "timestamp": "2025-08-13T03:00:00.099070",
         "price": 16.32788930480785,
         "volume": 6910814.400095314
+      },
+      {
+        "timestamp": "2025-08-13T03:01:00.137017",
+        "price": 16.333902735916606,
+        "volume": 5186195.550321112
+      },
+      {
+        "timestamp": "2025-08-13T03:02:00.165193",
+        "price": 15.847571489711767,
+        "volume": 4377778.424548405
+      },
+      {
+        "timestamp": "2025-08-13T03:03:00.194251",
+        "price": 15.374462849321766,
+        "volume": 9322064.849257264
+      },
+      {
+        "timestamp": "2025-08-13T03:03:23.514531",
+        "price": 15.995977918717573,
+        "volume": 6227782.3994567515
       }
     ],
     "BAND": [
@@ -7029,6 +8349,26 @@
         "timestamp": "2025-08-13T03:00:00.099070",
         "price": 2.1902693799282944,
         "volume": 3190091.3052410916
+      },
+      {
+        "timestamp": "2025-08-13T03:01:00.137017",
+        "price": 2.139816965648673,
+        "volume": 643370.9046945155
+      },
+      {
+        "timestamp": "2025-08-13T03:02:00.165193",
+        "price": 2.2561774796441267,
+        "volume": 4305199.423842711
+      },
+      {
+        "timestamp": "2025-08-13T03:03:00.194251",
+        "price": 2.2328822058255975,
+        "volume": 8177202.558101649
+      },
+      {
+        "timestamp": "2025-08-13T03:03:23.514531",
+        "price": 1.9717402212828192,
+        "volume": 5423816.942566845
       }
     ],
     "OCEAN": [
@@ -7116,6 +8456,26 @@
         "timestamp": "2025-08-13T03:00:00.099070",
         "price": 16.348690392342352,
         "volume": 5057675.254155406
+      },
+      {
+        "timestamp": "2025-08-13T03:01:00.137017",
+        "price": 16.85090349068738,
+        "volume": 6471332.327078558
+      },
+      {
+        "timestamp": "2025-08-13T03:02:00.165193",
+        "price": 16.455272980291625,
+        "volume": 1584299.6863741092
+      },
+      {
+        "timestamp": "2025-08-13T03:03:00.194251",
+        "price": 16.886620508862507,
+        "volume": 6588509.564182787
+      },
+      {
+        "timestamp": "2025-08-13T03:03:23.514531",
+        "price": 16.857033980903033,
+        "volume": 4893250.5646150075
       }
     ],
     "UMA": [
@@ -7203,6 +8563,26 @@
         "timestamp": "2025-08-13T03:00:00.099070",
         "price": 7.841557183945318,
         "volume": 6669323.846439515
+      },
+      {
+        "timestamp": "2025-08-13T03:01:00.137017",
+        "price": 7.6870956993501025,
+        "volume": 8947401.430681445
+      },
+      {
+        "timestamp": "2025-08-13T03:02:00.165193",
+        "price": 7.762228179724268,
+        "volume": 6475867.490449469
+      },
+      {
+        "timestamp": "2025-08-13T03:03:00.194251",
+        "price": 7.495482420748326,
+        "volume": 5057183.53978836
+      },
+      {
+        "timestamp": "2025-08-13T03:03:23.514531",
+        "price": 7.667017635417789,
+        "volume": 3210800.72932979
       }
     ],
     "ALPHA": [
@@ -7290,6 +8670,26 @@
         "timestamp": "2025-08-13T03:00:00.099070",
         "price": 8.55315835569433,
         "volume": 8717556.100364193
+      },
+      {
+        "timestamp": "2025-08-13T03:01:00.137017",
+        "price": 8.739286232648073,
+        "volume": 1404935.9779993582
+      },
+      {
+        "timestamp": "2025-08-13T03:02:00.165193",
+        "price": 8.417708641324184,
+        "volume": 1848598.5565369749
+      },
+      {
+        "timestamp": "2025-08-13T03:03:00.194251",
+        "price": 8.140604870046598,
+        "volume": 6437386.927314881
+      },
+      {
+        "timestamp": "2025-08-13T03:03:23.514531",
+        "price": 8.01484884013266,
+        "volume": 586687.6831409726
       }
     ],
     "ANKR": [
@@ -7377,6 +8777,26 @@
         "timestamp": "2025-08-13T03:00:00.099070",
         "price": 5.896078047508768,
         "volume": 4547982.922419561
+      },
+      {
+        "timestamp": "2025-08-13T03:01:00.137017",
+        "price": 5.974463330525165,
+        "volume": 4533195.175571022
+      },
+      {
+        "timestamp": "2025-08-13T03:02:00.165193",
+        "price": 5.957010218740723,
+        "volume": 4544684.254496036
+      },
+      {
+        "timestamp": "2025-08-13T03:03:00.194251",
+        "price": 6.185601502249635,
+        "volume": 3899160.43143271
+      },
+      {
+        "timestamp": "2025-08-13T03:03:23.514531",
+        "price": 5.920445049506294,
+        "volume": 2251417.109565438
       }
     ],
     "SKL": [
@@ -7464,6 +8884,26 @@
         "timestamp": "2025-08-13T03:00:00.099070",
         "price": 16.107191995140703,
         "volume": 2359764.614394722
+      },
+      {
+        "timestamp": "2025-08-13T03:01:00.137017",
+        "price": 15.93774859208861,
+        "volume": 7243515.866109602
+      },
+      {
+        "timestamp": "2025-08-13T03:02:00.165193",
+        "price": 16.520230608576636,
+        "volume": 6297608.879464365
+      },
+      {
+        "timestamp": "2025-08-13T03:03:00.194251",
+        "price": 16.548784874104758,
+        "volume": 292571.99336200894
+      },
+      {
+        "timestamp": "2025-08-13T03:03:23.514531",
+        "price": 15.966192145736919,
+        "volume": 8198015.434301554
       }
     ],
     "CTSI": [
@@ -7551,6 +8991,26 @@
         "timestamp": "2025-08-13T03:00:00.099070",
         "price": 0.3379090778902183,
         "volume": 4457030.105267627
+      },
+      {
+        "timestamp": "2025-08-13T03:01:00.137017",
+        "price": 0.34076247004214993,
+        "volume": 7268046.018295102
+      },
+      {
+        "timestamp": "2025-08-13T03:02:00.165193",
+        "price": 0.342014796729768,
+        "volume": 5673412.340501626
+      },
+      {
+        "timestamp": "2025-08-13T03:03:00.194251",
+        "price": 0.3354814447198337,
+        "volume": 8343935.683028812
+      },
+      {
+        "timestamp": "2025-08-13T03:03:23.514531",
+        "price": 0.3394132973855294,
+        "volume": 7817884.076737178
       }
     ],
     "CELR": [
@@ -7638,6 +9098,26 @@
         "timestamp": "2025-08-13T03:00:00.099070",
         "price": 15.918657095872732,
         "volume": 9068801.494179964
+      },
+      {
+        "timestamp": "2025-08-13T03:01:00.137017",
+        "price": 16.184632180641085,
+        "volume": 4562061.0597710395
+      },
+      {
+        "timestamp": "2025-08-13T03:02:00.165193",
+        "price": 15.76708762012368,
+        "volume": 3728075.438032044
+      },
+      {
+        "timestamp": "2025-08-13T03:03:00.194251",
+        "price": 17.4137412066662,
+        "volume": 1125688.3778140277
+      },
+      {
+        "timestamp": "2025-08-13T03:03:23.514531",
+        "price": 19.266018851766518,
+        "volume": 9946049.846869793
       }
     ],
     "STORJ": [
@@ -7725,6 +9205,26 @@
         "timestamp": "2025-08-13T03:00:00.099070",
         "price": 20.93575791088095,
         "volume": 452899.3498909241
+      },
+      {
+        "timestamp": "2025-08-13T03:01:00.137017",
+        "price": 20.21313942105221,
+        "volume": 7847560.911041885
+      },
+      {
+        "timestamp": "2025-08-13T03:02:00.165193",
+        "price": 22.980388298371167,
+        "volume": 9895093.311776273
+      },
+      {
+        "timestamp": "2025-08-13T03:03:00.194251",
+        "price": 22.145721668371948,
+        "volume": 8571917.131920416
+      },
+      {
+        "timestamp": "2025-08-13T03:03:23.514531",
+        "price": 22.97142682758078,
+        "volume": 5209149.395766612
       }
     ],
     "RSR": [
@@ -7812,6 +9312,26 @@
         "timestamp": "2025-08-13T03:00:00.099070",
         "price": 5.086710230248438,
         "volume": 4576197.990212147
+      },
+      {
+        "timestamp": "2025-08-13T03:01:00.137017",
+        "price": 5.140945649266636,
+        "volume": 4205871.578623739
+      },
+      {
+        "timestamp": "2025-08-13T03:02:00.165193",
+        "price": 5.387852089361138,
+        "volume": 2971489.391880038
+      },
+      {
+        "timestamp": "2025-08-13T03:03:00.194251",
+        "price": 4.973322492995269,
+        "volume": 9684852.810076518
+      },
+      {
+        "timestamp": "2025-08-13T03:03:23.514531",
+        "price": 4.870644802978007,
+        "volume": 9988935.37412418
       }
     ],
     "REN": [
@@ -7899,6 +9419,26 @@
         "timestamp": "2025-08-13T03:00:00.099070",
         "price": 21.100272658113255,
         "volume": 8235606.467282779
+      },
+      {
+        "timestamp": "2025-08-13T03:01:00.137017",
+        "price": 20.9183254237199,
+        "volume": 9663196.453281296
+      },
+      {
+        "timestamp": "2025-08-13T03:02:00.165193",
+        "price": 20.42002155417337,
+        "volume": 5935436.313862717
+      },
+      {
+        "timestamp": "2025-08-13T03:03:00.194251",
+        "price": 20.065034772268135,
+        "volume": 999277.8678499907
+      },
+      {
+        "timestamp": "2025-08-13T03:03:23.514531",
+        "price": 19.3441756982934,
+        "volume": 2529739.0562817003
       }
     ],
     "KNC": [
@@ -7986,6 +9526,26 @@
         "timestamp": "2025-08-13T03:00:00.099070",
         "price": 4.628439811308848,
         "volume": 781739.1364304984
+      },
+      {
+        "timestamp": "2025-08-13T03:01:00.137017",
+        "price": 4.731572644636233,
+        "volume": 3988431.945134987
+      },
+      {
+        "timestamp": "2025-08-13T03:02:00.165193",
+        "price": 4.840884443273722,
+        "volume": 3101251.980209683
+      },
+      {
+        "timestamp": "2025-08-13T03:03:00.194251",
+        "price": 4.706965923107592,
+        "volume": 7653162.748843204
+      },
+      {
+        "timestamp": "2025-08-13T03:03:23.514531",
+        "price": 4.826043044288875,
+        "volume": 3120069.563718907
       }
     ],
     "NMR": [
@@ -8073,6 +9633,26 @@
         "timestamp": "2025-08-13T03:00:00.099070",
         "price": 6.733051443017558,
         "volume": 6538266.784057026
+      },
+      {
+        "timestamp": "2025-08-13T03:01:00.137017",
+        "price": 6.475639238377438,
+        "volume": 8781972.131193759
+      },
+      {
+        "timestamp": "2025-08-13T03:02:00.165193",
+        "price": 6.768961398616269,
+        "volume": 7962565.309344549
+      },
+      {
+        "timestamp": "2025-08-13T03:03:00.194251",
+        "price": 6.205034524437325,
+        "volume": 8145977.506224908
+      },
+      {
+        "timestamp": "2025-08-13T03:03:23.514531",
+        "price": 5.859784458874113,
+        "volume": 177510.93409709225
       }
     ],
     "BNT": [
@@ -8160,6 +9740,26 @@
         "timestamp": "2025-08-13T03:00:00.099070",
         "price": 7.321221359961507,
         "volume": 1765318.4102895502
+      },
+      {
+        "timestamp": "2025-08-13T03:01:00.137017",
+        "price": 7.004850254501449,
+        "volume": 181731.4245401777
+      },
+      {
+        "timestamp": "2025-08-13T03:02:00.165193",
+        "price": 7.536453334919833,
+        "volume": 7927159.150617034
+      },
+      {
+        "timestamp": "2025-08-13T03:03:00.194251",
+        "price": 7.379350885592535,
+        "volume": 3198377.3964433004
+      },
+      {
+        "timestamp": "2025-08-13T03:03:23.514531",
+        "price": 7.954719316160307,
+        "volume": 9621087.146244274
       }
     ],
     "KAVA": [
@@ -8247,6 +9847,26 @@
         "timestamp": "2025-08-13T03:00:00.099070",
         "price": 4.437891095770252,
         "volume": 9334291.71581804
+      },
+      {
+        "timestamp": "2025-08-13T03:01:00.137017",
+        "price": 4.244881678501103,
+        "volume": 2871319.664516212
+      },
+      {
+        "timestamp": "2025-08-13T03:02:00.165193",
+        "price": 3.401931158125128,
+        "volume": 6871245.31792999
+      },
+      {
+        "timestamp": "2025-08-13T03:03:00.194251",
+        "price": 2.909375769501191,
+        "volume": 9913334.101533921
+      },
+      {
+        "timestamp": "2025-08-13T03:03:23.514531",
+        "price": 3.0490238338432034,
+        "volume": 6041487.37293955
       }
     ],
     "COTI": [
@@ -8334,6 +9954,26 @@
         "timestamp": "2025-08-13T03:00:00.099070",
         "price": 5.014583021625668,
         "volume": 1739965.0380711267
+      },
+      {
+        "timestamp": "2025-08-13T03:01:00.137017",
+        "price": 5.404107761186602,
+        "volume": 4869582.854416406
+      },
+      {
+        "timestamp": "2025-08-13T03:02:00.165193",
+        "price": 6.132749527332904,
+        "volume": 4022323.4458587663
+      },
+      {
+        "timestamp": "2025-08-13T03:03:00.194251",
+        "price": 5.92577532472738,
+        "volume": 3083983.7534464654
+      },
+      {
+        "timestamp": "2025-08-13T03:03:23.514531",
+        "price": 5.500450930979033,
+        "volume": 2650469.023547002
       }
     ],
     "NKN": [
@@ -8421,6 +10061,26 @@
         "timestamp": "2025-08-13T03:00:00.099070",
         "price": 4.266913781639337,
         "volume": 3274813.2723255367
+      },
+      {
+        "timestamp": "2025-08-13T03:01:00.137017",
+        "price": 4.288682173365172,
+        "volume": 4824964.535757878
+      },
+      {
+        "timestamp": "2025-08-13T03:02:00.165193",
+        "price": 4.976506276124967,
+        "volume": 225589.72400187328
+      },
+      {
+        "timestamp": "2025-08-13T03:03:00.194251",
+        "price": 4.966707750600045,
+        "volume": 5077673.448283632
+      },
+      {
+        "timestamp": "2025-08-13T03:03:23.514531",
+        "price": 4.5902851128590765,
+        "volume": 1598950.721613687
       }
     ],
     "OGN": [
@@ -8508,6 +10168,26 @@
         "timestamp": "2025-08-13T03:00:00.099070",
         "price": 4.401730099919982,
         "volume": 5750910.750523933
+      },
+      {
+        "timestamp": "2025-08-13T03:01:00.137017",
+        "price": 4.190478394380653,
+        "volume": 9239914.911287328
+      },
+      {
+        "timestamp": "2025-08-13T03:02:00.165193",
+        "price": 3.7518682284788962,
+        "volume": 1488222.5600079144
+      },
+      {
+        "timestamp": "2025-08-13T03:03:00.194251",
+        "price": 4.114415142160954,
+        "volume": 6367146.358024917
+      },
+      {
+        "timestamp": "2025-08-13T03:03:23.514531",
+        "price": 3.6960215030671333,
+        "volume": 4992716.147536829
       }
     ],
     "NANO": [
@@ -8595,6 +10275,26 @@
         "timestamp": "2025-08-13T03:00:00.099070",
         "price": 1.9386365112025492,
         "volume": 6921750.581122209
+      },
+      {
+        "timestamp": "2025-08-13T03:01:00.137017",
+        "price": 1.8373931090420177,
+        "volume": 6661525.047357364
+      },
+      {
+        "timestamp": "2025-08-13T03:02:00.165193",
+        "price": 1.9274384586902795,
+        "volume": 5713824.246872577
+      },
+      {
+        "timestamp": "2025-08-13T03:03:00.194251",
+        "price": 1.9965067957124536,
+        "volume": 223812.52773779363
+      },
+      {
+        "timestamp": "2025-08-13T03:03:23.514531",
+        "price": 2.19784909011063,
+        "volume": 4645506.344605844
       }
     ],
     "RVN": [
@@ -8682,6 +10382,26 @@
         "timestamp": "2025-08-13T03:00:00.099070",
         "price": 2.884748313127981,
         "volume": 5914273.464772037
+      },
+      {
+        "timestamp": "2025-08-13T03:01:00.137017",
+        "price": 2.614239319461429,
+        "volume": 3991583.395888297
+      },
+      {
+        "timestamp": "2025-08-13T03:02:00.165193",
+        "price": 2.5730076149850754,
+        "volume": 2080569.7386247215
+      },
+      {
+        "timestamp": "2025-08-13T03:03:00.194251",
+        "price": 2.5283535784085096,
+        "volume": 3118324.7270903285
+      },
+      {
+        "timestamp": "2025-08-13T03:03:23.514531",
+        "price": 1.9612282702031825,
+        "volume": 1824006.9064272693
       }
     ],
     "DGB": [
@@ -8769,6 +10489,26 @@
         "timestamp": "2025-08-13T03:00:00.099070",
         "price": 1.0701872856931685,
         "volume": 5342668.421945033
+      },
+      {
+        "timestamp": "2025-08-13T03:01:00.137017",
+        "price": 1.0256149727097783,
+        "volume": 7928701.691183246
+      },
+      {
+        "timestamp": "2025-08-13T03:02:00.165193",
+        "price": 0.9323214786541264,
+        "volume": 4280218.876143709
+      },
+      {
+        "timestamp": "2025-08-13T03:03:00.194251",
+        "price": 0.911879816994294,
+        "volume": 2675098.2681946587
+      },
+      {
+        "timestamp": "2025-08-13T03:03:23.514531",
+        "price": 1.0275089450989898,
+        "volume": 2431402.376736329
       }
     ],
     "SC": [
@@ -8856,6 +10596,26 @@
         "timestamp": "2025-08-13T03:00:00.099070",
         "price": 0.8721593766157448,
         "volume": 2102788.6998464023
+      },
+      {
+        "timestamp": "2025-08-13T03:01:00.137017",
+        "price": 0.8116207380147287,
+        "volume": 9432766.801364405
+      },
+      {
+        "timestamp": "2025-08-13T03:02:00.165193",
+        "price": 0.8893296025863263,
+        "volume": 5429461.372479585
+      },
+      {
+        "timestamp": "2025-08-13T03:03:00.194251",
+        "price": 0.8401794285000327,
+        "volume": 8312729.1987221865
+      },
+      {
+        "timestamp": "2025-08-13T03:03:23.514531",
+        "price": 0.900165599207821,
+        "volume": 2763301.592196863
       }
     ],
     "HOT": [
@@ -8943,6 +10703,26 @@
         "timestamp": "2025-08-13T03:00:00.099070",
         "price": 1.0493755319184326,
         "volume": 2606028.730368758
+      },
+      {
+        "timestamp": "2025-08-13T03:01:00.137017",
+        "price": 1.1836744590943307,
+        "volume": 6641937.808569113
+      },
+      {
+        "timestamp": "2025-08-13T03:02:00.165193",
+        "price": 1.2876017121896064,
+        "volume": 232911.4085219404
+      },
+      {
+        "timestamp": "2025-08-13T03:03:00.194251",
+        "price": 1.2056946183317676,
+        "volume": 1568112.7140664135
+      },
+      {
+        "timestamp": "2025-08-13T03:03:23.514531",
+        "price": 1.2913336513004292,
+        "volume": 8652531.033304485
       }
     ],
     "IOST": [
@@ -9030,6 +10810,26 @@
         "timestamp": "2025-08-13T03:00:00.099070",
         "price": 2.805084048409053,
         "volume": 352901.1006088203
+      },
+      {
+        "timestamp": "2025-08-13T03:01:00.137017",
+        "price": 3.226558463356254,
+        "volume": 3836855.5801627454
+      },
+      {
+        "timestamp": "2025-08-13T03:02:00.165193",
+        "price": 3.488415085688763,
+        "volume": 2390621.569519863
+      },
+      {
+        "timestamp": "2025-08-13T03:03:00.194251",
+        "price": 3.8361510034270863,
+        "volume": 8881058.611266138
+      },
+      {
+        "timestamp": "2025-08-13T03:03:23.514531",
+        "price": 3.5033918600016003,
+        "volume": 1108816.671492901
       }
     ],
     "DUSK": [
@@ -9117,6 +10917,26 @@
         "timestamp": "2025-08-13T03:00:00.099070",
         "price": 1.689768762135202,
         "volume": 5060983.388426801
+      },
+      {
+        "timestamp": "2025-08-13T03:01:00.137017",
+        "price": 1.8435466990030058,
+        "volume": 7716206.575411782
+      },
+      {
+        "timestamp": "2025-08-13T03:02:00.165193",
+        "price": 1.7681644265657266,
+        "volume": 6804050.015309364
+      },
+      {
+        "timestamp": "2025-08-13T03:03:00.194251",
+        "price": 1.6902401164669207,
+        "volume": 6128535.563737615
+      },
+      {
+        "timestamp": "2025-08-13T03:03:23.514531",
+        "price": 1.776848109839701,
+        "volume": 9253325.368382053
       }
     ],
     "WIN": [
@@ -9204,6 +11024,26 @@
         "timestamp": "2025-08-13T03:00:00.099070",
         "price": 0.4751144135223522,
         "volume": 1526339.077507195
+      },
+      {
+        "timestamp": "2025-08-13T03:01:00.137017",
+        "price": 0.4975583740016203,
+        "volume": 1390944.659244539
+      },
+      {
+        "timestamp": "2025-08-13T03:02:00.165193",
+        "price": 0.46812411426285966,
+        "volume": 2668853.789230038
+      },
+      {
+        "timestamp": "2025-08-13T03:03:00.194251",
+        "price": 0.476060737610783,
+        "volume": 9767505.010518622
+      },
+      {
+        "timestamp": "2025-08-13T03:03:23.514531",
+        "price": 0.4599551711639916,
+        "volume": 8773371.34129097
       }
     ],
     "BTT": [
@@ -9291,6 +11131,26 @@
         "timestamp": "2025-08-13T03:00:00.099070",
         "price": 0.14485073145006605,
         "volume": 4392941.984079799
+      },
+      {
+        "timestamp": "2025-08-13T03:01:00.137017",
+        "price": 0.17320991369484315,
+        "volume": 4417399.732348277
+      },
+      {
+        "timestamp": "2025-08-13T03:02:00.165193",
+        "price": 0.18401746788008044,
+        "volume": 3100293.614405111
+      },
+      {
+        "timestamp": "2025-08-13T03:03:00.194251",
+        "price": 0.16968236941111606,
+        "volume": 6922287.00075858
+      },
+      {
+        "timestamp": "2025-08-13T03:03:23.514531",
+        "price": 0.15414564655028531,
+        "volume": 8056565.475461168
       }
     ],
     "TWT": [
@@ -9378,6 +11238,26 @@
         "timestamp": "2025-08-13T03:00:00.099070",
         "price": 0.7535105455736884,
         "volume": 2015127.2432628013
+      },
+      {
+        "timestamp": "2025-08-13T03:01:00.137017",
+        "price": 0.8487378454359465,
+        "volume": 7530720.626686441
+      },
+      {
+        "timestamp": "2025-08-13T03:02:00.165193",
+        "price": 0.9641017760966747,
+        "volume": 6497191.26555236
+      },
+      {
+        "timestamp": "2025-08-13T03:03:00.194251",
+        "price": 1.0060824257147223,
+        "volume": 527697.4535097368
+      },
+      {
+        "timestamp": "2025-08-13T03:03:23.514531",
+        "price": 1.0099220948983763,
+        "volume": 2148052.3566092295
       }
     ],
     "JST": [
@@ -9465,6 +11345,26 @@
         "timestamp": "2025-08-13T03:00:00.099070",
         "price": 2.2097650729043106,
         "volume": 9849797.13560813
+      },
+      {
+        "timestamp": "2025-08-13T03:01:00.137017",
+        "price": 2.3900727191340083,
+        "volume": 9558397.312305814
+      },
+      {
+        "timestamp": "2025-08-13T03:02:00.165193",
+        "price": 2.450761892785849,
+        "volume": 8698599.345666355
+      },
+      {
+        "timestamp": "2025-08-13T03:03:00.194251",
+        "price": 2.4892812144780803,
+        "volume": 2694920.014614188
+      },
+      {
+        "timestamp": "2025-08-13T03:03:23.514531",
+        "price": 2.3207719906849205,
+        "volume": 2783934.269631707
       }
     ],
     "SXP": [
@@ -9552,6 +11452,26 @@
         "timestamp": "2025-08-13T03:00:00.099070",
         "price": 1.9334667964449996,
         "volume": 1407579.6281111364
+      },
+      {
+        "timestamp": "2025-08-13T03:01:00.137017",
+        "price": 1.9022508720329128,
+        "volume": 2941408.4173025335
+      },
+      {
+        "timestamp": "2025-08-13T03:02:00.165193",
+        "price": 2.026148551807142,
+        "volume": 2942386.860654637
+      },
+      {
+        "timestamp": "2025-08-13T03:03:00.194251",
+        "price": 1.9140003640119838,
+        "volume": 6887363.512506604
+      },
+      {
+        "timestamp": "2025-08-13T03:03:23.514531",
+        "price": 1.6964613561060597,
+        "volume": 8423436.826019347
       }
     ],
     "HARD": [
@@ -9639,6 +11559,26 @@
         "timestamp": "2025-08-13T03:00:00.099070",
         "price": 3.5350281810016018,
         "volume": 2948460.0306766136
+      },
+      {
+        "timestamp": "2025-08-13T03:01:00.137017",
+        "price": 3.5802760188532075,
+        "volume": 4418980.880418062
+      },
+      {
+        "timestamp": "2025-08-13T03:02:00.165193",
+        "price": 4.167463859762106,
+        "volume": 6390363.562551869
+      },
+      {
+        "timestamp": "2025-08-13T03:03:00.194251",
+        "price": 4.848985282783437,
+        "volume": 4439347.428508444
+      },
+      {
+        "timestamp": "2025-08-13T03:03:23.514531",
+        "price": 5.01720208608167,
+        "volume": 2191382.1700096885
       }
     ],
     "SUN": [
@@ -9726,6 +11666,26 @@
         "timestamp": "2025-08-13T03:00:00.099070",
         "price": 4.340674032543948,
         "volume": 4835351.653388575
+      },
+      {
+        "timestamp": "2025-08-13T03:01:00.137017",
+        "price": 4.0550623568043065,
+        "volume": 2956124.548703672
+      },
+      {
+        "timestamp": "2025-08-13T03:02:00.165193",
+        "price": 5.130830751821235,
+        "volume": 7175686.89076717
+      },
+      {
+        "timestamp": "2025-08-13T03:03:00.194251",
+        "price": 5.313108319013947,
+        "volume": 5523012.758492929
+      },
+      {
+        "timestamp": "2025-08-13T03:03:23.514531",
+        "price": 5.0682060978963,
+        "volume": 2583881.8172911988
       }
     ],
     "ICX": [
@@ -9813,6 +11773,26 @@
         "timestamp": "2025-08-13T03:00:00.099070",
         "price": 4.644756231567747,
         "volume": 257339.45423757515
+      },
+      {
+        "timestamp": "2025-08-13T03:01:00.137017",
+        "price": 4.173243834131673,
+        "volume": 216922.22986658185
+      },
+      {
+        "timestamp": "2025-08-13T03:02:00.165193",
+        "price": 4.60297347116019,
+        "volume": 3734782.3411981803
+      },
+      {
+        "timestamp": "2025-08-13T03:03:00.194251",
+        "price": 4.470811548773534,
+        "volume": 1672339.7812098223
+      },
+      {
+        "timestamp": "2025-08-13T03:03:23.514531",
+        "price": 4.403072304843691,
+        "volume": 3584606.0484626237
       }
     ],
     "ONT": [
@@ -9900,8 +11880,28 @@
         "timestamp": "2025-08-13T03:00:00.099070",
         "price": 3.188779881289474,
         "volume": 4167480.6021155496
+      },
+      {
+        "timestamp": "2025-08-13T03:01:00.137017",
+        "price": 3.276985357224026,
+        "volume": 6416571.940462681
+      },
+      {
+        "timestamp": "2025-08-13T03:02:00.165193",
+        "price": 3.517880206700098,
+        "volume": 1808081.5098692211
+      },
+      {
+        "timestamp": "2025-08-13T03:03:00.194251",
+        "price": 3.7735769839577036,
+        "volume": 8097655.330997254
+      },
+      {
+        "timestamp": "2025-08-13T03:03:23.514531",
+        "price": 3.67267493354531,
+        "volume": 5640301.367326834
       }
     ]
   },
-  "last_updated": "2025-08-13T03:00:00.102842"
+  "last_updated": "2025-08-13T03:03:23.519192"
 }

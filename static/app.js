@@ -379,10 +379,18 @@ class TradingApp {
             // Calculate proximity to target sell price  
             const proximityClass = calculateTargetProximity(crypto.current_price, crypto.target_sell_price);
             
-            // Debug logging for color calculation
+            // Debug logging for color calculation and CSS check
             if (crypto.symbol === 'ICX') {
                 console.log(`Color debug for ${crypto.symbol}: current=${crypto.current_price}, target=${crypto.target_sell_price}, class=${proximityClass}`);
                 console.log(`Generated HTML will have class: ${proximityClass}`);
+                // Test if CSS is applied
+                setTimeout(() => {
+                    const icxRow = document.querySelector(`tr.${proximityClass}`);
+                    if (icxRow) {
+                        const bgColor = window.getComputedStyle(icxRow).backgroundColor;
+                        console.log(`ICX row background color: ${bgColor}`);
+                    }
+                }, 100);
             }
             
             return `
