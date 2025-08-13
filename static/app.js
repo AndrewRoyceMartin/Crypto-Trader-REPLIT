@@ -377,7 +377,7 @@ class TradingApp {
             const priceDisplay = crypto.current_price < 1 ? crypto.current_price.toFixed(6) : crypto.current_price.toFixed(2);
             
             // Calculate proximity to target sell price
-            const proximityClass = this.calculateTargetProximity(crypto.current_price, crypto.target_sell_price);
+            const proximityClass = calculateTargetProximity(crypto.current_price, crypto.target_sell_price);
             
             return `
                 <tr class="${proximityClass}">
@@ -402,8 +402,9 @@ class TradingApp {
             `;
         }).join('');
     }
-    
-    calculateTargetProximity(currentPrice, targetPrice) {
+
+// Calculate proximity to target sell price for color coding
+function calculateTargetProximity(currentPrice, targetPrice) {
         if (!targetPrice || !currentPrice || targetPrice <= currentPrice) {
             // Target already reached or invalid data
             if (targetPrice && currentPrice >= targetPrice) {
@@ -426,7 +427,7 @@ class TradingApp {
         } else {
             return 'target-proximity-cold'; // <60% to target - gray
         }
-    }
+}
     
     updateTradingStatus(status) {
         const modeElement = document.getElementById('trading-mode');
