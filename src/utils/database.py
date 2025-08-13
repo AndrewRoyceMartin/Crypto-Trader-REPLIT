@@ -205,7 +205,7 @@ class DatabaseManager:
                 conn.commit()
                 
                 self.logger.debug(f"Trade saved with ID: {trade_id}")
-                return trade_id
+                return trade_id or 0
                 
         except Exception as e:
             self.logger.error(f"Error saving trade: {str(e)}")
@@ -293,7 +293,7 @@ class DatabaseManager:
                 position_id = cursor.lastrowid
                 conn.commit()
                 
-                return position_id
+                return position_id or 0
                 
         except Exception as e:
             self.logger.error(f"Error saving position: {str(e)}")
