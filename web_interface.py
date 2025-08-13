@@ -483,12 +483,38 @@ def get_crypto_chart(symbol):
                         base_price = current_price / (1 + (crypto_data.get('pnl_percent', 0) / 100))
                         
                         # Generate realistic price fluctuations leading to current state
-                        data_points = min(hours, 200)  # Limit data points for performance
+                        # Adjust data points based on duration for realistic granularity
+                        if hours <= 1:
+                            data_points = 60  # 1 minute intervals for 1 hour
+                            base_volatility = 0.005  # Lower volatility for shorter periods
+                        elif hours <= 4:
+                            data_points = 48  # 5 minute intervals for 4 hours  
+                            base_volatility = 0.008
+                        elif hours <= 24:
+                            data_points = 72  # 20 minute intervals for 1 day
+                            base_volatility = 0.015
+                        elif hours <= 168:  # 7 days
+                            data_points = 84  # 2 hour intervals for 7 days
+                            base_volatility = 0.025
+                        else:  # 30 days
+                            data_points = 120  # 6 hour intervals for 30 days
+                            base_volatility = 0.035
+                        
+                        # Create unique seed based on symbol and duration for consistent but different patterns
+                        seed = hash(f"{symbol}_{duration}_{current_price}") % 10000
+                        np.random.seed(seed)
+                        
                         for i in range(data_points):
                             # Create realistic crypto volatility pattern
-                            volatility = 0.03 + (i * 0.001)  # Increasing volatility over time
+                            progress = i / data_points
+                            volatility = base_volatility * (1 + progress * 0.5)  # Increasing volatility over time
                             price_change = np.random.normal(0, volatility)
                             trend = (crypto_data.get('pnl_percent', 0) / 100) / data_points  # Gradual trend
+                            
+                            # Add some market cycles for longer periods
+                            if hours > 24:
+                                cycle = np.sin(progress * 2 * np.pi * (hours / 168)) * base_volatility * 0.3
+                                price_change += cycle
                             
                             if i == 0:
                                 price = base_price
@@ -496,6 +522,9 @@ def get_crypto_chart(symbol):
                                 price = price_history[-1] * (1 + price_change + trend)
                             
                             price_history.append(max(price, base_price * 0.1))  # Prevent negative prices
+                        
+                        # Reset random seed
+                        np.random.seed()
                     
                     # Generate meaningful time-based labels based on duration
                     time_labels = []
