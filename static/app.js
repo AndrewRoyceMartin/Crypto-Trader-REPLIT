@@ -1369,26 +1369,43 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
 // API Status Display Functions
-function updateCryptoStatusDisplay(apiStatus) {
+function updateConnectionStatusDisplay(apiStatus) {
+    const connectionIcon = document.getElementById("connection-icon");
+    const connectionText = document.getElementById("connection-text");
     const cryptoStatus = document.getElementById("crypto-status");
-    if (!cryptoStatus) {
-        console.log('crypto-status element not found');
+    
+    if (!connectionIcon || !connectionText) {
+        console.log('Connection status elements not found');
         return;
     }
     
-    console.log('Updating status display with:', apiStatus);
+    console.log('Updating connection status display with:', apiStatus);
     
     if (apiStatus.status === "connected") {
-        cryptoStatus.className = "badge bg-success";
-        cryptoStatus.textContent = `Connected to ${apiStatus.api_provider}`;
+        // Update top-right corner connection status
+        connectionIcon.className = "fas fa-circle text-success me-1";
+        connectionText.textContent = `Connected to ${apiStatus.api_provider}`;
+        
+        // Update crypto portfolio status badge
+        if (cryptoStatus) {
+            cryptoStatus.className = "badge bg-success";
+            cryptoStatus.textContent = `Connected to ${apiStatus.api_provider}`;
+        }
         
         // Clear any previous disconnection warning
         window.connectionLost = false;
         
         console.log('Status updated: Connected to', apiStatus.api_provider);
     } else {
-        cryptoStatus.className = "badge bg-danger";
-        cryptoStatus.textContent = "Connection Lost";
+        // Update top-right corner connection status
+        connectionIcon.className = "fas fa-circle text-danger me-1";
+        connectionText.textContent = "Connection Lost";
+        
+        // Update crypto portfolio status badge
+        if (cryptoStatus) {
+            cryptoStatus.className = "badge bg-danger";
+            cryptoStatus.textContent = "Connection Lost";
+        }
         
         // Show warning popup if connection was lost
         if (!window.connectionLost) {
@@ -1454,11 +1471,11 @@ function checkApiStatusAndDisplay() {
     fetch("/api/price-source-status")
         .then(response => response.json())
         .then(data => {
-            updateCryptoStatusDisplay(data.status);
+            updateConnectionStatusDisplay(data.status);
         })
         .catch(error => {
             console.error("Error checking API status:", error);
-            updateCryptoStatusDisplay({
+            updateConnectionStatusDisplay({
                 status: "error",
                 error: "Connection failed",
                 api_provider: "Unknown"
@@ -1471,11 +1488,17 @@ document.addEventListener("DOMContentLoaded", function() {
     // Initialize connection status tracking
     window.connectionLost = false;
     
+    const connectionText = document.getElementById('connection-text');
     const cryptoStatus = document.getElementById('crypto-status');
+    
+    if (connectionText) {
+        connectionText.textContent = 'Connecting...';
+    }
     if (cryptoStatus) {
         cryptoStatus.textContent = 'Connecting...';
-        console.log('API status display initialized');
     }
+    
+    console.log('Connection status display initialized');
     
     setTimeout(checkApiStatusAndDisplay, 2000); // Wait for page to load
     setInterval(checkApiStatusAndDisplay, 30000); // Check every 30 seconds
