@@ -382,6 +382,7 @@ class TradingApp {
             // Debug logging for color calculation
             if (crypto.symbol === 'ICX') {
                 console.log(`Color debug for ${crypto.symbol}: current=${crypto.current_price}, target=${crypto.target_sell_price}, class=${proximityClass}`);
+                console.log(`Generated HTML will have class: ${proximityClass}`);
             }
             
             return `
