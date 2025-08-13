@@ -637,16 +637,17 @@ class TradingApp {
 }
 
 // Global functions for button actions
-async function startTrading(mode) {
+async function startTrading(mode, tradingMode = 'single') {
     if (mode === 'live') {
         // Show confirmation modal for live trading
         const modal = new bootstrap.Modal(document.getElementById('liveConfirmModal'));
         modal.show();
         window.tradingApp.isLiveConfirmationPending = true;
+        window.tradingApp.pendingTradingMode = tradingMode;
         return;
     }
     
-    await executeStartTrading(mode);
+    await executeStartTrading(mode, tradingMode);
 }
 
 async function confirmLiveTrading() {
@@ -660,15 +661,16 @@ async function confirmLiveTrading() {
     const modal = bootstrap.Modal.getInstance(document.getElementById('liveConfirmModal'));
     modal.hide();
     
-    await executeStartTrading('live');
+    await executeStartTrading('live', window.tradingApp.pendingTradingMode || 'single');
 }
 
-async function executeStartTrading(mode) {
+async function executeStartTrading(mode, tradingMode = 'single') {
     const symbol = document.getElementById('symbol-select').value;
     const timeframe = document.getElementById('timeframe-select').value;
     
     const loadingModal = new bootstrap.Modal(document.getElementById('loadingModal'));
-    document.getElementById('loading-message').textContent = `Starting ${mode} trading...`;
+    const tradingModeText = tradingMode === 'portfolio' ? 'portfolio' : 'single asset';
+    document.getElementById('loading-message').textContent = `Starting ${mode} ${tradingModeText} trading...`;
     loadingModal.show();
     
     try {
@@ -681,6 +683,7 @@ async function executeStartTrading(mode) {
                 mode: mode,
                 symbol: symbol,
                 timeframe: timeframe,
+                trading_mode: tradingMode,
                 confirmation: mode === 'live'
             })
         });
@@ -742,13 +745,22 @@ async function emergencyStop() {
     }
 }
 
-async function runBacktest() {
+async function runSingleBacktest() {
+    await runBacktest('single');
+}
+
+async function runPortfolioBacktest() {
+    await runBacktest('portfolio');
+}
+
+async function runBacktest(mode = 'single') {
     const symbol = document.getElementById('symbol-select').value;
     const timeframe = document.getElementById('timeframe-select').value;
     const days = parseInt(document.getElementById('backtest-days').value);
     
     const loadingModal = new bootstrap.Modal(document.getElementById('loadingModal'));
-    document.getElementById('loading-message').textContent = 'Running backtest...';
+    const modeText = mode === 'portfolio' ? 'portfolio backtest (100 cryptos)' : `single asset backtest (${symbol})`;
+    document.getElementById('loading-message').textContent = `Running ${modeText}...`;
     loadingModal.show();
     
     try {
@@ -760,7 +772,8 @@ async function runBacktest() {
             body: JSON.stringify({
                 symbol: symbol,
                 timeframe: timeframe,
-                days: days
+                days: days,
+                mode: mode
             })
         });
         
@@ -768,6 +781,23 @@ async function runBacktest() {
         
         if (response.ok) {
             showBacktestResults(result.results);
+            
+            // Show different toast messages for portfolio vs single asset
+            if (mode === 'portfolio') {
+                const portfolioSummary = result.results.portfolio_summary;
+                const totalReturn = (portfolioSummary.total_portfolio_return * 100).toFixed(2);
+                const totalTrades = portfolioSummary.total_trades;
+                const profitableAssets = portfolioSummary.profitable_assets;
+                const totalAssets = portfolioSummary.total_assets_tested;
+                
+                window.tradingApp.showToast(
+                    `Portfolio backtest completed: ${totalReturn}% return, ${totalTrades} trades across ${totalAssets} assets, ${profitableAssets} profitable`, 
+                    'success'
+                );
+            } else {
+                const totalReturn = (result.results.total_return * 100).toFixed(2);
+                window.tradingApp.showToast(`Backtest completed: ${totalReturn}% return`, 'success');
+            }
         } else {
             window.tradingApp.showToast(result.error, 'danger');
         }

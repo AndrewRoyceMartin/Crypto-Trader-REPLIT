@@ -134,6 +134,75 @@ def start_trader_thread(mode: str, symbol: str, timeframe: str):
     trading_thread.start()
     app.logger.info("Started %s trading for %s (%s)", mode, symbol, timeframe)
 
+def start_portfolio_trader_thread(mode: str, timeframe: str):
+    """Start portfolio trader for multiple assets in a separate background thread."""
+    global current_trader, trading_thread
+    initialize_system()
+    
+    # Get all crypto symbols from portfolio
+    portfolio_data = crypto_portfolio.get_portfolio_data()
+    symbols = []
+    for symbol in portfolio_data.keys():
+        if '/' not in symbol:
+            symbols.append(f"{symbol}/USDT")
+        else:
+            symbols.append(symbol)
+    
+    strategy = BollingerBandsStrategy(config)
+
+    with state_lock:
+        if mode == "paper":
+            current_trader = PaperTrader(config, strategy)
+        elif mode == "live":
+            current_trader = LiveTrader(config, strategy)
+        else:
+            raise ValueError(f"Invalid trading mode: {mode}")
+
+        trading_status.update(
+            {
+                "mode": f"{mode}_portfolio",
+                "symbol": f"Portfolio_{len(symbols)}assets",
+                "start_time": datetime.now(),
+                "is_running": True,
+            }
+        )
+
+    def _run_portfolio():
+        try:
+            # Start trading for each symbol in parallel
+            import concurrent.futures
+            
+            def trade_single_asset(symbol):
+                try:
+                    current_trader.start_trading(symbol, timeframe)
+                except Exception as e:
+                    app.logger.error(f"Portfolio trading error for {symbol}: {e}")
+            
+            # Use ThreadPoolExecutor to trade multiple assets simultaneously
+            with concurrent.futures.ThreadPoolExecutor(max_workers=min(20, len(symbols))) as executor:
+                futures = []
+                for symbol in symbols[:10]:  # Start with top 10 assets to avoid overwhelming
+                    future = executor.submit(trade_single_asset, symbol)
+                    futures.append(future)
+                
+                # Wait for all to complete or until stopped
+                concurrent.futures.wait(futures, timeout=None)
+                
+        except Exception as e:
+            app.logger.error("Portfolio trading thread error: %s", e)
+        finally:
+            with state_lock:
+                trading_status.update({
+                    "mode": "stopped",
+                    "symbol": None,
+                    "start_time": None,
+                    "is_running": False,
+                })
+
+    trading_thread = threading.Thread(target=_run_portfolio, daemon=True)
+    trading_thread.start()
+    app.logger.info("Started %s portfolio trader for %d assets", mode, len(symbols))
+
 # Ensure initialization even if app is imported (e.g. main.py -> from web_interface import app)
 initialize_system()
 
@@ -438,12 +507,25 @@ def start_trading():
         mode = data.get("mode", "paper").lower()
         symbol = data.get("symbol", "BTC/USDT")
         timeframe = data.get("timeframe", "1h")
+        trading_mode = data.get("trading_mode", "single")  # "single" or "portfolio"
+        
         if trading_status["is_running"]:
             return jsonify({"error": "Trading is already running"}), 400
         if mode == "live" and not data.get("confirmation", False):
             return jsonify({"error": "Live trading requires explicit confirmation"}), 400
-        start_trader_thread(mode, symbol, timeframe)
-        return jsonify({"success": True, "message": f"{mode.title()} trading started for {symbol}"})
+        
+        if trading_mode == "portfolio":
+            # Start portfolio-wide trading
+            if not crypto_portfolio:
+                return jsonify({"error": "Crypto portfolio not initialized"}), 500
+            
+            start_portfolio_trader_thread(mode, timeframe)
+            return jsonify({"success": True, "message": f"{mode.title()} portfolio trading started for {len(crypto_portfolio.get_portfolio_data())} assets"})
+        else:
+            # Start single asset trading
+            start_trader_thread(mode, symbol, timeframe)
+            return jsonify({"success": True, "message": f"{mode.title()} trading started for {symbol}"})
+            
     except ValueError as ve:
         return jsonify({"error": str(ve)}), 400
     except Exception as e:
@@ -472,42 +554,78 @@ def run_backtest():
         symbol = data.get("symbol", "BTC/USDT")
         days = int(data.get("days", 30))
         timeframe = data.get("timeframe", "1h")
+        mode = data.get("mode", "single")  # "single" or "portfolio"
 
         strategy = BollingerBandsStrategy(config)
-        engine = BacktestEngine(config, strategy)
-
-        end_date = datetime.now()
-        start_date = end_date - timedelta(days=days)
-
-        results = engine.run_backtest(symbol=symbol, start_date=start_date, end_date=end_date, timeframe=timeframe)
+        
+        if mode == "portfolio":
+            # Run portfolio-wide backtest
+            from src.backtesting.multi_asset_engine import MultiAssetBacktestEngine
+            
+            if not crypto_portfolio:
+                return jsonify({"error": "Crypto portfolio not initialized"}), 500
+            
+            multi_engine = MultiAssetBacktestEngine(config, strategy)
+            results = multi_engine.run_portfolio_backtest(
+                crypto_portfolio, days=days, timeframe=timeframe
+            )
+        else:
+            # Run single asset backtest
+            engine = BacktestEngine(config, strategy)
+            end_date = datetime.now()
+            start_date = end_date - timedelta(days=days)
+            results = engine.run_backtest(symbol=symbol, start_date=start_date, end_date=end_date, timeframe=timeframe)
 
         # Clean up infinite and NaN values for JSON serialization
-        cleaned_results = {}
-        for key, value in results.items():
-            if isinstance(value, float):
-                import math
-                if math.isinf(value) or math.isnan(value):
-                    if key in ['profit_factor', 'sharpe_ratio']:
-                        cleaned_results[key] = 0.0  # Set to 0 for ratios
-                    else:
-                        cleaned_results[key] = 0.0
-                else:
-                    cleaned_results[key] = round(value, 6)  # Round to 6 decimal places
+        def clean_float_values(obj):
+            """Recursively clean float values in nested dictionaries."""
+            import math
+            if isinstance(obj, dict):
+                cleaned = {}
+                for key, value in obj.items():
+                    cleaned[key] = clean_float_values(value)
+                return cleaned
+            elif isinstance(obj, list):
+                return [clean_float_values(item) for item in obj]
+            elif isinstance(obj, float):
+                if math.isinf(obj) or math.isnan(obj):
+                    return 0.0
+                return round(obj, 6)
             else:
-                cleaned_results[key] = value
+                return obj
+        
+        cleaned_results = clean_float_values(results)
 
-        performance_data = {
-            "strategy_name": "BollingerBands",
-            "symbol": symbol,
-            "start_date": start_date.date(),
-            "end_date": end_date.date(),
-            "total_return": cleaned_results.get("total_return", 0),
-            "sharpe_ratio": cleaned_results.get("sharpe_ratio", 0),
-            "max_drawdown": cleaned_results.get("max_drawdown", 0),
-            "total_trades": cleaned_results.get("total_trades", 0),
-            "win_rate": cleaned_results.get("win_rate", 0),
-            "mode": "backtest",
-        }
+        if mode == "portfolio":
+            # For portfolio backtests, save summary performance
+            portfolio_summary = cleaned_results.get('portfolio_summary', {})
+            performance_data = {
+                "strategy_name": "BollingerBands_Portfolio",
+                "symbol": f"Portfolio_{len(cleaned_results.get('asset_performances', []))}assets",
+                "start_date": (datetime.now() - timedelta(days=days)).date(),
+                "end_date": datetime.now().date(),
+                "total_return": portfolio_summary.get("total_portfolio_return", 0),
+                "sharpe_ratio": 0,  # Calculate if needed
+                "max_drawdown": 0,  # Calculate if needed
+                "total_trades": portfolio_summary.get("total_trades", 0),
+                "win_rate": portfolio_summary.get("portfolio_win_rate", 0),
+                "mode": "portfolio_backtest",
+            }
+        else:
+            # For single asset backtests
+            performance_data = {
+                "strategy_name": "BollingerBands",
+                "symbol": symbol,
+                "start_date": (datetime.now() - timedelta(days=days)).date(),
+                "end_date": datetime.now().date(),
+                "total_return": cleaned_results.get("total_return", 0),
+                "sharpe_ratio": cleaned_results.get("sharpe_ratio", 0),
+                "max_drawdown": cleaned_results.get("max_drawdown", 0),
+                "total_trades": cleaned_results.get("total_trades", 0),
+                "win_rate": cleaned_results.get("win_rate", 0),
+                "mode": "backtest",
+            }
+        
         db_manager.save_strategy_performance(performance_data)
         
         # Store backtest results in global status for frontend display
