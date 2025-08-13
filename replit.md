@@ -35,6 +35,7 @@ Preferred communication style: Simple, everyday language.
 - ✅ **COMPLETE TRADING SYSTEM**: Fixed trade window sizing, replaced meaningless "Point" labels with time-based chart labels, populated 105 initial $100 purchase trades and 100 open positions with proper P&L tracking
 - ✅ **DURATION-SPECIFIC CHART PATTERNS**: Fixed cryptocurrency chart duration selection - each time period (1H, 4H, 1D, 7D, 30D) now displays dramatically different price patterns with appropriate volatility ranges and data granularity
 - ✅ **REAL-TIME PRICE DATA INTEGRATION**: Integrated CoinGecko API for live cryptocurrency prices with automatic fallback to simulated data, API status monitoring, manual price update controls, and rate limit management
+- ✅ **CONNECTION STATUS DISPLAY**: Fixed JavaScript caching and conflicting functions - top-right corner now consistently displays "Connected to CoinGecko" with proper provider identification and warning popups for connection failures
 
 **Next Enhancement Opportunities**: 
 - Individual crypto price charts and trading history  
