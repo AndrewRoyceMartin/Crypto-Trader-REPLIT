@@ -427,8 +427,8 @@ function calculateTargetProximity(currentPrice, targetPrice) {
         } else {
             return 'target-proximity-cold'; // <60% to target - gray
         }
-}
-    
+    }
+
     updateTradingStatus(status) {
         const modeElement = document.getElementById('trading-mode');
         const symbolElement = document.getElementById('trading-symbol');
