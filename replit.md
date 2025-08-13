@@ -36,6 +36,7 @@ Preferred communication style: Simple, everyday language.
 - ✅ **DURATION-SPECIFIC CHART PATTERNS**: Fixed cryptocurrency chart duration selection - each time period (1H, 4H, 1D, 7D, 30D) now displays dramatically different price patterns with appropriate volatility ranges and data granularity
 - ✅ **REAL-TIME PRICE DATA INTEGRATION**: Integrated CoinGecko API for live cryptocurrency prices with automatic fallback to simulated data, API status monitoring, manual price update controls, and rate limit management
 - ✅ **CONNECTION STATUS DISPLAY**: Fixed JavaScript caching and conflicting functions - top-right corner now consistently displays "Connected to CoinGecko" with proper provider identification and warning popups for connection failures
+- ✅ **TARGET BUY PRICE DISPLAY FIX**: Resolved $0.00 target buy price display issue by adding missing target_buy_price field to API response and updating table rendering to properly show calculated discount prices (8-25% below current market price)
 
 **Next Enhancement Opportunities**: 
 - Individual crypto price charts and trading history  
