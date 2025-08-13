@@ -250,7 +250,12 @@ class BacktestEngine:
             
             # Risk metrics
             volatility = daily_returns.std() * np.sqrt(365 * 24)  # Annualized for hourly data
-            sharpe_ratio = (daily_returns.mean() * 365 * 24) / volatility if volatility > 0 else 0
+            if volatility > 0 and not np.isnan(volatility) and not np.isinf(volatility):
+                sharpe_ratio = (daily_returns.mean() * 365 * 24) / volatility
+                if np.isnan(sharpe_ratio) or np.isinf(sharpe_ratio):
+                    sharpe_ratio = 0.0
+            else:
+                sharpe_ratio = 0.0
             
             # Maximum drawdown
             rolling_max = portfolio_values.expanding().max()
@@ -278,7 +283,12 @@ class BacktestEngine:
                 avg_loss = 0
             
             # Calmar ratio (return / max drawdown)
-            calmar_ratio = abs(total_return / max_drawdown) if max_drawdown < 0 else 0
+            if max_drawdown < 0 and not np.isnan(max_drawdown) and not np.isinf(max_drawdown):
+                calmar_ratio = abs(total_return / max_drawdown)
+                if np.isnan(calmar_ratio) or np.isinf(calmar_ratio):
+                    calmar_ratio = 0.0
+            else:
+                calmar_ratio = 0.0
             
             metrics = {
                 'initial_capital': self.initial_capital,
@@ -294,7 +304,7 @@ class BacktestEngine:
                 'avg_trade_pnl': avg_trade_pnl,
                 'avg_win': avg_win,
                 'avg_loss': avg_loss,
-                'profit_factor': abs(avg_win / avg_loss) if avg_loss < 0 else float('inf')
+                'profit_factor': abs(avg_win / avg_loss) if avg_loss < 0 else 0.0
             }
             
             return metrics

@@ -294,20 +294,35 @@ def run_backtest():
 
         results = engine.run_backtest(symbol=symbol, start_date=start_date, end_date=end_date, timeframe=timeframe)
 
+        # Clean up infinite and NaN values for JSON serialization
+        cleaned_results = {}
+        for key, value in results.items():
+            if isinstance(value, float):
+                import math
+                if math.isinf(value) or math.isnan(value):
+                    if key in ['profit_factor', 'sharpe_ratio']:
+                        cleaned_results[key] = 0.0  # Set to 0 for ratios
+                    else:
+                        cleaned_results[key] = 0.0
+                else:
+                    cleaned_results[key] = round(value, 6)  # Round to 6 decimal places
+            else:
+                cleaned_results[key] = value
+
         performance_data = {
             "strategy_name": "BollingerBands",
             "symbol": symbol,
             "start_date": start_date.date(),
             "end_date": end_date.date(),
-            "total_return": results.get("total_return", 0),
-            "sharpe_ratio": results.get("sharpe_ratio", 0),
-            "max_drawdown": results.get("max_drawdown", 0),
-            "total_trades": results.get("total_trades", 0),
-            "win_rate": results.get("win_rate", 0),
+            "total_return": cleaned_results.get("total_return", 0),
+            "sharpe_ratio": cleaned_results.get("sharpe_ratio", 0),
+            "max_drawdown": cleaned_results.get("max_drawdown", 0),
+            "total_trades": cleaned_results.get("total_trades", 0),
+            "win_rate": cleaned_results.get("win_rate", 0),
             "mode": "backtest",
         }
         db_manager.save_strategy_performance(performance_data)
-        return jsonify({"success": True, "results": results})
+        return jsonify({"success": True, "results": cleaned_results})
     except ValueError as ve:
         return jsonify({"error": str(ve)}), 400
     except Exception as e:
