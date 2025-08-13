@@ -376,8 +376,13 @@ class TradingApp {
             const pnlClass = crypto.pnl >= 0 ? 'text-success' : 'text-danger';
             const priceDisplay = crypto.current_price < 1 ? crypto.current_price.toFixed(6) : crypto.current_price.toFixed(2);
             
-            // Calculate proximity to target sell price
+            // Calculate proximity to target sell price  
             const proximityClass = calculateTargetProximity(crypto.current_price, crypto.target_sell_price);
+            
+            // Debug logging for color calculation
+            if (crypto.symbol === 'ICX') {
+                console.log(`Color debug for ${crypto.symbol}: current=${crypto.current_price}, target=${crypto.target_sell_price}, class=${proximityClass}`);
+            }
             
             return `
                 <tr class="${proximityClass}">
