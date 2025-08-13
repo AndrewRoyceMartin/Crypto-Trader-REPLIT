@@ -45,6 +45,10 @@
                         <h5 class="mb-0">
                             <i class="fas fa-tachometer-alt me-2"></i>
                             System Status
+                            <i class="fas fa-info-circle text-muted ms-2" 
+                               data-bs-toggle="tooltip" 
+                               data-bs-placement="top" 
+                               title="Monitor your trading system status and control paper/live trading operations"></i>
                         </h5>
                         <div>
                             <div class="btn-group me-2" role="group">
@@ -112,6 +116,10 @@
                         <h5 class="mb-0">
                             <i class="fas fa-wallet me-2"></i>
                             Portfolio Overview
+                            <i class="fas fa-info-circle text-muted ms-2" 
+                               data-bs-toggle="tooltip" 
+                               data-bs-placement="top" 
+                               title="Track your trading portfolio value, performance charts, and recent trading activity"></i>
                         </h5>
                     </div>
                     <div class="card-body">
@@ -189,6 +197,10 @@
                         <h5 class="mb-0">
                             <i class="fas fa-cog me-2"></i>
                             Trading Controls
+                            <i class="fas fa-info-circle text-muted ms-2" 
+                               data-bs-toggle="tooltip" 
+                               data-bs-placement="top" 
+                               title="Configure trading parameters and run backtests on single assets or entire portfolio"></i>
                         </h5>
                     </div>
                     <div class="card-body">
@@ -254,7 +266,12 @@
                             
                             <hr>
                             
-                            <h6>Backtest</h6>
+                            <h6>Backtest 
+                                <i class="fas fa-info-circle text-muted ms-1" 
+                                   data-bs-toggle="tooltip" 
+                                   data-bs-placement="top" 
+                                   title="Test your trading strategy on historical data to analyze performance without risking real money"></i>
+                            </h6>
                             <div class="mb-3">
                                 <label for="backtest-days" class="form-label">Days to Test</label>
                                 <input type="number" class="form-control" id="backtest-days" value="30" min="1" max="365">
@@ -288,6 +305,10 @@
                         <h5 class="mb-0">
                             <i class="fas fa-coins me-2"></i>
                             Cryptocurrency Portfolio (100 Assets)
+                            <i class="fas fa-info-circle text-muted ms-2" 
+                               data-bs-toggle="tooltip" 
+                               data-bs-placement="top" 
+                               title="Live simulation of 100 cryptocurrencies with real price movements and P&L tracking"></i>
                         </h5>
                         <button class="btn btn-outline-primary btn-sm" onclick="refreshCryptoPortfolio()">
                             <i class="fas fa-sync-alt me-1"></i>Refresh
@@ -405,6 +426,10 @@
                         <h5 class="mb-0">
                             <i class="fas fa-exchange-alt me-2"></i>
                             Recent Trades
+                            <i class="fas fa-info-circle text-muted ms-2" 
+                               data-bs-toggle="tooltip" 
+                               data-bs-placement="top" 
+                               title="Shows completed buy/sell orders from your algorithmic trading strategy with profit/loss results"></i>
                         </h5>
                     </div>
                     <div class="card-body">
@@ -438,6 +463,10 @@
                         <h5 class="mb-0">
                             <i class="fas fa-list me-2"></i>
                             Open Positions
+                            <i class="fas fa-info-circle text-muted ms-2" 
+                               data-bs-toggle="tooltip" 
+                               data-bs-placement="top" 
+                               title="Current cryptocurrency holdings from your trading algorithm with live profit/loss tracking"></i>
                         </h5>
                     </div>
                     <div class="card-body">
@@ -534,6 +563,15 @@
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Initialize Bootstrap Tooltips -->
+    <script>
+        // Enable all tooltips
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+    </script>
     
     <!-- Custom JS -->
     <script src="{{ url_for('static', filename='app.js') }}"></script>
