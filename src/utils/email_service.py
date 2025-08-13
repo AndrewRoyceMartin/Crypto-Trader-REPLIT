@@ -84,6 +84,7 @@ class EmailService:
             price = trade_data.get('price', 0)
             total_value = trade_data.get('total_value', quantity * price)
             timestamp = trade_data.get('timestamp', datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+            pnl = trade_data.get('pnl', 0)
             
             # Create email subject
             subject = f"🔔 Trade Alert: {action.upper()} {symbol}"
@@ -104,6 +105,7 @@ class EmailService:
                         <p style="margin: 5px 0;"><strong>Quantity:</strong> {quantity:.6f}</p>
                         <p style="margin: 5px 0;"><strong>Price:</strong> ${price:.6f}</p>
                         <p style="margin: 5px 0;"><strong>Total Value:</strong> ${total_value:.2f}</p>
+                        {f'<p style="margin: 5px 0;"><strong>Profit/Loss:</strong> <span style="color: {"#28a745" if pnl >= 0 else "#dc3545"};">${pnl:.2f} ({("+" if pnl >= 0 else "")}{(pnl/total_value*100):.1f}%)</span></p>' if action.upper() == 'SELL' and pnl != 0 else ''}
                         <p style="margin: 5px 0;"><strong>Time:</strong> {timestamp}</p>
                     </div>
                     
@@ -118,6 +120,7 @@ class EmailService:
             """
             
             # Create plain text version
+            pnl_text = f"\nProfit/Loss: ${pnl:.2f} ({(''+'' if pnl >= 0 else '')}{(pnl/total_value*100):.1f}%)" if action.upper() == 'SELL' and pnl != 0 else ''
             text_content = f"""
 Trade Executed!
 
@@ -125,7 +128,7 @@ Action: {action.upper()}
 Cryptocurrency: {symbol}
 Quantity: {quantity:.6f}
 Price: ${price:.6f}
-Total Value: ${total_value:.2f}
+Total Value: ${total_value:.2f}{pnl_text}
 Time: {timestamp}
 
 This is an automated notification from your Algorithmic Trading System.
