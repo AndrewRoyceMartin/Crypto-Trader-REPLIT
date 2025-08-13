@@ -21,16 +21,24 @@ class BollingerBandsStrategy(BaseStrategy):
         """
         super().__init__(config)
         
-        # Strategy parameters
+        # Optimized strategy parameters
         self.bb_period = config.get_int('strategy', 'bb_period', 20)
         self.bb_std_dev = config.get_float('strategy', 'bb_std_dev', 2.0)
         self.atr_period = config.get_int('strategy', 'atr_period', 14)
         self.volume_threshold = config.get_float('strategy', 'volume_threshold', 1000000)
+        self.rsi_period = config.get_int('strategy', 'rsi_period', 14)
         
-        # Risk parameters
-        self.position_size_percent = config.get_float('trading', 'position_size_percent', 5.0)
-        self.stop_loss_percent = config.get_float('trading', 'stop_loss_percent', 2.0)
-        self.take_profit_percent = config.get_float('trading', 'take_profit_percent', 4.0)
+        # Optimized risk parameters for maximum profit/loss ratio
+        self.position_size_percent = config.get_float('trading', 'position_size_percent', 10.0)  # Aggressive position sizing
+        self.stop_loss_percent = config.get_float('trading', 'stop_loss_percent', 1.2)  # Very tight stop loss
+        self.take_profit_percent = config.get_float('trading', 'take_profit_percent', 8.0)  # High profit targets
+        
+        # Advanced optimization parameters - more aggressive for better results
+        self.trend_confirmation_period = 3  # Shorter confirmation period
+        self.volatility_multiplier = 1.5  # Higher multiplier for profit potential
+        self.min_band_distance = 0.002  # Tighter distance threshold for more trades
+        self.profit_target_scaling = True  # Dynamic profit targets based on volatility
+        self.use_enhanced_filters = config.get_bool('strategy', 'use_enhanced_filters', False)  # Toggle enhanced mode
         
         self.indicators = TechnicalIndicators()
         
@@ -53,7 +61,7 @@ class BollingerBandsStrategy(BaseStrategy):
             return signals
         
         try:
-            # Calculate technical indicators
+            # Calculate enhanced technical indicators
             upper_band, middle_band, lower_band = self.indicators.bollinger_bands(
                 data['close'], self.bb_period, self.bb_std_dev
             )
@@ -62,6 +70,13 @@ class BollingerBandsStrategy(BaseStrategy):
                 data['high'], data['low'], data['close'], self.atr_period
             )
             
+            # Add RSI for momentum confirmation
+            rsi = self.indicators.rsi(data['close'], self.rsi_period)
+            
+            # Calculate price momentum and trend strength
+            price_momentum = data['close'].pct_change(5).iloc[-1]  # 5-period momentum
+            trend_strength = (data['close'].iloc[-1] - data['close'].iloc[-10]) / data['close'].iloc[-10]
+            
             # Get latest values
             current_price = data['close'].iloc[-1]
             current_volume = data['volume'].iloc[-1]
@@ -69,9 +84,10 @@ class BollingerBandsStrategy(BaseStrategy):
             current_middle = middle_band.iloc[-1]
             current_lower = lower_band.iloc[-1]
             current_atr = atr.iloc[-1]
+            current_rsi = rsi.iloc[-1]
             
             # Skip if we don't have valid indicator values
-            if pd.isna(current_upper) or pd.isna(current_lower) or pd.isna(current_atr):
+            if pd.isna(current_upper) or pd.isna(current_lower) or pd.isna(current_atr) or pd.isna(current_rsi):
                 return signals
             
             # Calculate band width for volatility filter
@@ -89,19 +105,43 @@ class BollingerBandsStrategy(BaseStrategy):
             if not (volume_ok and volatility_ok):
                 return signals
             
-            # Generate signals based on Bollinger Bands
-            # Buy signal: price touches or goes below lower band
-            if current_price <= current_lower:
-                confidence = min(1.0, (current_lower - current_price) / current_atr + 0.5)
+            # Calculate additional filters for better entry points
+            distance_to_lower = abs(current_price - current_lower) / current_price
+            distance_to_upper = abs(current_price - current_upper) / current_price
+            
+            # Dynamic position sizing based on volatility and confidence
+            base_position_size = self.position_size_percent / 100
+            volatility_adjusted_size = base_position_size * (1 + band_width * self.volatility_multiplier)
+            volatility_adjusted_size = min(volatility_adjusted_size, 0.15)  # Cap at 15%
+            
+            # Smart Buy signal with adaptive thresholds
+            enhanced_buy_conditions = (
+                current_price <= current_lower * (1 + self.min_band_distance) and 
+                current_rsi < 60 and  # Even more permissive RSI
+                distance_to_lower < 0.03  # More generous distance
+            )
+            
+            # Check enhanced buy conditions first
+            if self.use_enhanced_filters and enhanced_buy_conditions:
                 
-                # Calculate stop loss and take profit
-                stop_loss = current_price * (1 - self.stop_loss_percent / 100)
-                take_profit = current_price * (1 + self.take_profit_percent / 100)
+                # Calculate dynamic confidence based on multiple factors
+                rsi_factor = (50 - current_rsi) / 50  # Higher confidence for lower RSI
+                momentum_factor = min(1.0, abs(price_momentum) * 10)  # Stronger momentum = higher confidence
+                band_factor = (current_lower - current_price) / current_atr
+                confidence = min(0.95, (rsi_factor + momentum_factor + band_factor) / 3 + 0.3)
+                
+                # Optimized dynamic stop loss and take profit based on volatility and market conditions
+                volatility_factor = min(2.0, 1 + band_width * 3)  # Scale with volatility
+                dynamic_stop_loss = max(0.8, self.stop_loss_percent * volatility_factor)  # Minimum 0.8% stop
+                dynamic_take_profit = self.take_profit_percent * (1.5 + band_width * 2)  # Aggressive profit targets
+                
+                stop_loss = current_price * (1 - dynamic_stop_loss / 100)
+                take_profit = current_price * (1 + dynamic_take_profit / 100)
                 
                 signal = Signal(
                     action='buy',
                     price=current_price,
-                    size=self.position_size_percent / 100,
+                    size=volatility_adjusted_size,
                     confidence=confidence,
                     stop_loss=stop_loss,
                     take_profit=take_profit
@@ -109,20 +149,29 @@ class BollingerBandsStrategy(BaseStrategy):
                 
                 if self.validate_signal(signal):
                     signals.append(signal)
-                    self.logger.info(f"Buy signal generated at {current_price:.2f} (Lower Band: {current_lower:.2f})")
+                    self.logger.info(f"Enhanced BUY signal: Price={current_price:.2f}, RSI={current_rsi:.1f}, Confidence={confidence:.2f}")
             
-            # Sell signal: price touches or goes above upper band
-            elif current_price >= current_upper:
-                confidence = min(1.0, (current_price - current_upper) / current_atr + 0.5)
+            # Smart Sell signal with adaptive thresholds  
+            elif self.use_enhanced_filters and enhanced_sell_conditions:
                 
-                # Calculate stop loss and take profit
-                stop_loss = current_price * (1 + self.stop_loss_percent / 100)
-                take_profit = current_price * (1 - self.take_profit_percent / 100)
+                # Calculate dynamic confidence
+                rsi_factor = (current_rsi - 50) / 50
+                momentum_factor = min(1.0, price_momentum * 10)
+                band_factor = (current_price - current_upper) / current_atr
+                confidence = min(0.95, (rsi_factor + momentum_factor + band_factor) / 3 + 0.3)
+                
+                # Optimized dynamic stop loss and take profit for short positions
+                volatility_factor = min(2.0, 1 + band_width * 3)
+                dynamic_stop_loss = max(0.8, self.stop_loss_percent * volatility_factor)
+                dynamic_take_profit = self.take_profit_percent * (1.5 + band_width * 2)
+                
+                stop_loss = current_price * (1 + dynamic_stop_loss / 100)
+                take_profit = current_price * (1 - dynamic_take_profit / 100)
                 
                 signal = Signal(
                     action='sell',
                     price=current_price,
-                    size=self.position_size_percent / 100,
+                    size=volatility_adjusted_size,
                     confidence=confidence,
                     stop_loss=stop_loss,
                     take_profit=take_profit
@@ -130,33 +179,99 @@ class BollingerBandsStrategy(BaseStrategy):
                 
                 if self.validate_signal(signal):
                     signals.append(signal)
-                    self.logger.info(f"Sell signal generated at {current_price:.2f} (Upper Band: {current_upper:.2f})")
+                    self.logger.info(f"Enhanced SELL signal: Price={current_price:.2f}, RSI={current_rsi:.1f}, Confidence={confidence:.2f}")
             
-            # Mean reversion exit signals
-            elif len(data) >= 2:
-                prev_price = data['close'].iloc[-2]
+            # Fallback to original Bollinger Bands logic if enhanced filters are too restrictive
+            elif current_price <= current_lower:
+                confidence = min(1.0, (current_lower - current_price) / current_atr + 0.5)
                 
-                # Exit long positions when price reaches middle band from below
-                if prev_price < current_middle and current_price >= current_middle:
+                signal = Signal(
+                    action='buy',
+                    price=current_price,
+                    size=base_position_size,
+                    confidence=confidence,
+                    stop_loss=current_price * (1 - self.stop_loss_percent / 100),
+                    take_profit=current_price * (1 + self.take_profit_percent / 100)
+                )
+                
+                if self.validate_signal(signal):
+                    signals.append(signal)
+                    self.logger.info(f"Fallback BUY signal at {current_price:.2f} (Lower Band: {current_lower:.2f})")
+            
+            elif current_price >= current_upper:
+                confidence = min(1.0, (current_price - current_upper) / current_atr + 0.5)
+                
+                signal = Signal(
+                    action='sell',
+                    price=current_price,
+                    size=base_position_size,
+                    confidence=confidence,
+                    stop_loss=current_price * (1 + self.stop_loss_percent / 100),
+                    take_profit=current_price * (1 - self.take_profit_percent / 100)
+                )
+                
+                if self.validate_signal(signal):
+                    signals.append(signal)
+                    self.logger.info(f"Fallback SELL signal at {current_price:.2f} (Upper Band: {current_upper:.2f})")
+            
+            # Smart mean reversion exit signals with profit protection
+            elif len(data) >= 3:
+                prev_price = data['close'].iloc[-2]
+                prev_rsi = rsi.iloc[-2] if not pd.isna(rsi.iloc[-2]) else current_rsi
+                
+                # Exit long positions with profit protection and trend reversal detection
+                if (prev_price < current_middle and current_price >= current_middle and
+                    current_rsi > 50 and trend_strength > 0.01):  # Positive trend
+                    
+                    # Calculate exit confidence based on profit potential
+                    price_distance_from_entry = (current_price - current_lower) / current_lower
+                    exit_confidence = min(0.9, 0.5 + price_distance_from_entry * 10)
+                    
                     signal = Signal(
                         action='sell',
                         price=current_price,
-                        size=self.position_size_percent / 100,
-                        confidence=0.7
+                        size=base_position_size,
+                        confidence=exit_confidence
                     )
                     signals.append(signal)
-                    self.logger.info(f"Mean reversion exit (long) at {current_price:.2f}")
+                    self.logger.info(f"Smart long exit at {current_price:.2f} (Middle band reached, profit={price_distance_from_entry:.2%})")
                 
-                # Exit short positions when price reaches middle band from above
-                elif prev_price > current_middle and current_price <= current_middle:
+                # Exit short positions with profit protection
+                elif (prev_price > current_middle and current_price <= current_middle and
+                      current_rsi < 50 and trend_strength < -0.01):  # Negative trend
+                    
+                    price_distance_from_entry = (current_upper - current_price) / current_upper
+                    exit_confidence = min(0.9, 0.5 + price_distance_from_entry * 10)
+                    
                     signal = Signal(
                         action='buy',
                         price=current_price,
-                        size=self.position_size_percent / 100,
-                        confidence=0.7
+                        size=base_position_size,
+                        confidence=exit_confidence
                     )
                     signals.append(signal)
-                    self.logger.info(f"Mean reversion exit (short) at {current_price:.2f}")
+                    self.logger.info(f"Smart short exit at {current_price:.2f} (Middle band reached, profit={price_distance_from_entry:.2%})")
+                
+                # Additional profit-taking signals for strong moves
+                elif (current_price > current_upper * 1.02 and current_rsi > 80):  # Very overbought
+                    signal = Signal(
+                        action='sell',
+                        price=current_price,
+                        size=base_position_size * 0.5,  # Partial exit
+                        confidence=0.85
+                    )
+                    signals.append(signal)
+                    self.logger.info(f"Profit-taking SELL at {current_price:.2f} (Extreme overbought)")
+                
+                elif (current_price < current_lower * 0.98 and current_rsi < 20):  # Very oversold
+                    signal = Signal(
+                        action='buy',
+                        price=current_price,
+                        size=base_position_size * 0.5,  # Partial exit
+                        confidence=0.85
+                    )
+                    signals.append(signal)
+                    self.logger.info(f"Profit-taking BUY at {current_price:.2f} (Extreme oversold)")
             
         except Exception as e:
             self.logger.error(f"Error generating signals: {str(e)}")
