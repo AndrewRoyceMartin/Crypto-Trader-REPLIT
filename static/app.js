@@ -1371,44 +1371,54 @@ document.addEventListener('DOMContentLoaded', function() {
 // API Status Tooltip Functions
 function updateCryptoStatusTooltip(apiStatus) {
     const cryptoStatus = document.getElementById("crypto-status");
-    if (!cryptoStatus) return;
+    if (!cryptoStatus) {
+        console.log('crypto-status element not found');
+        return;
+    }
+    
+    console.log('Updating tooltip with status:', apiStatus);
     
     if (apiStatus.status === "connected") {
         cryptoStatus.className = "badge bg-success";
         cryptoStatus.style.cursor = "pointer";
         
-        const tooltipContent = `
-            <div class="text-start">
-                <strong>🔗 Live Data Connection</strong><br>
-                <strong>Provider:</strong> ${apiStatus.api_provider}<br>
-                <strong>Response Time:</strong> ${apiStatus.response_time_ms}ms<br>
-                <strong>Rate Limit:</strong> ${apiStatus.rate_limit}<br>
-                <strong>Coverage:</strong> 18,000+ cryptocurrencies<br>
-                <strong>Last Updated:</strong> ${new Date(apiStatus.last_updated).toLocaleTimeString()}
-            </div>
-        `;
+        const tooltipContent = `Live API Connection<br>
+Provider: ${apiStatus.api_provider}<br>
+Response: ${apiStatus.response_time_ms}ms<br>
+Rate Limit: ${apiStatus.rate_limit}<br>
+Last Updated: ${new Date(apiStatus.last_updated).toLocaleTimeString()}`;
         
-        cryptoStatus.setAttribute("title", tooltipContent);
-        cryptoStatus.setAttribute("data-bs-html", "true");
-        
-        // Dispose existing tooltip and create new one
+        // Dispose existing tooltip first
         const existingTooltip = bootstrap.Tooltip.getInstance(cryptoStatus);
         if (existingTooltip) {
             existingTooltip.dispose();
         }
-        new bootstrap.Tooltip(cryptoStatus, {
+        
+        // Set title and create new tooltip
+        cryptoStatus.setAttribute("title", tooltipContent);
+        const newTooltip = new bootstrap.Tooltip(cryptoStatus, {
             html: true,
-            placement: "top"
+            placement: "top",
+            trigger: 'hover focus'
         });
+        
+        console.log('Tooltip updated successfully for connected status');
     } else {
         cryptoStatus.className = "badge bg-danger";
-        cryptoStatus.setAttribute("title", `API Error: ${apiStatus.error || "Connection failed"}`);
+        const errorTitle = `API Error: ${apiStatus.error || "Connection failed"}`;
         
         const existingTooltip = bootstrap.Tooltip.getInstance(cryptoStatus);
         if (existingTooltip) {
             existingTooltip.dispose();
         }
-        new bootstrap.Tooltip(cryptoStatus);
+        
+        cryptoStatus.setAttribute("title", errorTitle);
+        new bootstrap.Tooltip(cryptoStatus, {
+            placement: "top",
+            trigger: 'hover focus'
+        });
+        
+        console.log('Tooltip updated for error status');
     }
 }
 
@@ -1431,6 +1441,25 @@ function checkApiStatusAndTooltip() {
 
 // Initialize API status tooltip on page load and update periodically
 document.addEventListener("DOMContentLoaded", function() {
-    setTimeout(checkApiStatusAndTooltip, 1000); // Wait for page to load
+    // Initialize tooltip with a simple approach
+    const cryptoStatus = document.getElementById('crypto-status');
+    if (cryptoStatus) {
+        // Add basic tooltip attributes
+        cryptoStatus.setAttribute('data-bs-toggle', 'tooltip');
+        cryptoStatus.setAttribute('data-bs-placement', 'top');
+        cryptoStatus.setAttribute('data-bs-html', 'true');
+        cryptoStatus.style.cursor = 'pointer';
+        
+        // Initialize the tooltip
+        new bootstrap.Tooltip(cryptoStatus, {
+            html: true,
+            placement: 'top',
+            title: 'Loading API connection status...'
+        });
+        
+        console.log('Tooltip initialized for crypto-status element');
+    }
+    
+    setTimeout(checkApiStatusAndTooltip, 2000); // Wait for page to load
     setInterval(checkApiStatusAndTooltip, 30000); // Check every 30 seconds
 });
