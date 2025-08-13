@@ -40,6 +40,8 @@ Preferred communication style: Simple, everyday language.
 - ✅ **RESET FUNCTIONALITY ENHANCEMENT**: Fixed reset operations to automatically populate Recent Trades and Open Positions sections with 100 sample trades and positions, ensuring interface remains functional and informative after data clearing
 - ✅ **TRADING DATA POPULATION**: Created /api/populate-initial-trades endpoint for generating realistic trading history, integrated automatic population into reset and rebalance functions
 - ✅ **COMPLETE INTERFACE FUNCTIONALITY**: All sections now display data immediately after reset operations - Recent Trades shows 100 purchase transactions, Open Positions displays 100 active positions with proper P&L calculations
+- ✅ **APPROACHING SELL PERCENTAGE COLUMN**: Added new sortable "Approaching Sell %" column to cryptocurrency portfolio table showing proximity to target sell prices with color-coded indicators (red 95%+, yellow 90-95%, blue 80-90%, gray <80%)
+- ✅ **ENHANCED TABLE READABILITY**: Fixed text colors for better contrast - Target Sell column now uses dark bold text instead of hard-to-read yellow, Approaching Sell % column features proper background colors with contrasting text for optimal visibility
 
 **Next Enhancement Opportunities**: 
 - Individual crypto price charts and trading history  
