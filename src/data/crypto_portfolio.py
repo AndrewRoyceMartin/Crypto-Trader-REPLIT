@@ -277,6 +277,16 @@ class CryptoPortfolioManager:
         
         return current_price * (1 + profit_target)
     
+    def _migrate_portfolio_data(self) -> None:
+        """Migrate old portfolio data to include new fields like target_sell_price."""
+        for symbol, crypto in self.portfolio_data.items():
+            # Add target_sell_price if it doesn't exist
+            if "target_sell_price" not in crypto:
+                current_price = crypto.get("current_price", crypto.get("initial_price", 100))
+                rank = crypto.get("rank", 50)
+                crypto["target_sell_price"] = self._calculate_target_sell_price(current_price, rank)
+                self.logger.info(f"Added target sell price for {symbol}: ${crypto['target_sell_price']:.4f}")
+    
     def get_portfolio_summary(self) -> Dict:
         """Get complete portfolio summary statistics."""
         total_initial_value = sum(crypto["initial_value"] for crypto in self.portfolio_data.values())
@@ -388,6 +398,9 @@ class CryptoPortfolioManager:
                 state = json.load(f)
             
             self.portfolio_data = state["portfolio_data"]
+            
+            # Migrate old portfolio data to include target_sell_price
+            self._migrate_portfolio_data()
             
             # Convert timestamp strings back to datetime objects
             self.price_history = {}
