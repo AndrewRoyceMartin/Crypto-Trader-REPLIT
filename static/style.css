@@ -10,6 +10,31 @@
     --light-color: #f8f9fa;
 }
 
+/* Target Price Proximity Backgrounds */
+.target-proximity-cold {
+    background-color: rgba(52, 58, 64, 0.05) !important; /* Very light gray - far from target */
+}
+
+.target-proximity-cool {
+    background-color: rgba(23, 162, 184, 0.1) !important; /* Light blue - 60-80% to target */
+}
+
+.target-proximity-warm {
+    background-color: rgba(255, 193, 7, 0.15) !important; /* Light yellow - 80-90% to target */
+}
+
+.target-proximity-hot {
+    background-color: rgba(255, 108, 55, 0.2) !important; /* Light orange - 90-95% to target */
+}
+
+.target-proximity-very-hot {
+    background-color: rgba(220, 53, 69, 0.25) !important; /* Light red - 95%+ to target */
+}
+
+.target-proximity-achieved {
+    background-color: rgba(40, 167, 69, 0.2) !important; /* Light green - target reached */
+}
+
 body {
     background-color: #f5f5f5;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;

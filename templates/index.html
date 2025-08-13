@@ -317,8 +317,11 @@
                                data-bs-placement="top" 
                                title="Live simulation of 100 cryptocurrencies with real price movements and P&L tracking"></i>
                         </h5>
-                        <button class="btn btn-outline-primary btn-sm" onclick="refreshCryptoPortfolio()">
+                        <button class="btn btn-outline-primary btn-sm me-2" onclick="refreshCryptoPortfolio()">
                             <i class="fas fa-sync-alt me-1"></i>Refresh
+                        </button>
+                        <button class="btn btn-outline-info btn-sm" onclick="toggleColorLegend()">
+                            <i class="fas fa-palette me-1"></i>Color Guide
                         </button>
                     </div>
                     <div class="card-body">
@@ -357,6 +360,31 @@
                                 <div class="text-center">
                                     <h6 class="text-muted mb-1">Status</h6>
                                     <span id="crypto-status" class="badge bg-success">Live</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Color Legend (Hidden by default) -->
+                        <div id="color-legend" class="alert alert-info" style="display: none;">
+                            <h6 class="mb-2"><i class="fas fa-info-circle me-1"></i>Table Color Guide - Proximity to Target Sell Price:</h6>
+                            <div class="row">
+                                <div class="col-md-2 mb-1">
+                                    <span class="badge target-proximity-cold p-2 text-dark">Cold (&lt;60%)</span>
+                                </div>
+                                <div class="col-md-2 mb-1">
+                                    <span class="badge target-proximity-cool p-2 text-dark">Cool (60-80%)</span>
+                                </div>
+                                <div class="col-md-2 mb-1">
+                                    <span class="badge target-proximity-warm p-2 text-dark">Warm (80-90%)</span>
+                                </div>
+                                <div class="col-md-2 mb-1">
+                                    <span class="badge target-proximity-hot p-2 text-dark">Hot (90-95%)</span>
+                                </div>
+                                <div class="col-md-2 mb-1">
+                                    <span class="badge target-proximity-very-hot p-2 text-dark">Very Hot (95%+)</span>
+                                </div>
+                                <div class="col-md-2 mb-1">
+                                    <span class="badge target-proximity-achieved p-2 text-dark">Target Reached!</span>
                                 </div>
                             </div>
                         </div>

@@ -376,8 +376,11 @@ class TradingApp {
             const pnlClass = crypto.pnl >= 0 ? 'text-success' : 'text-danger';
             const priceDisplay = crypto.current_price < 1 ? crypto.current_price.toFixed(6) : crypto.current_price.toFixed(2);
             
+            // Calculate proximity to target sell price
+            const proximityClass = this.calculateTargetProximity(crypto.current_price, crypto.target_sell_price);
+            
             return `
-                <tr>
+                <tr class="${proximityClass}">
                     <td class="fw-bold">${crypto.rank}</td>
                     <td class="fw-semibold">${crypto.symbol}</td>
                     <td class="text-muted">${crypto.name}</td>
@@ -398,6 +401,31 @@ class TradingApp {
                 </tr>
             `;
         }).join('');
+    }
+    
+    calculateTargetProximity(currentPrice, targetPrice) {
+        if (!targetPrice || !currentPrice || targetPrice <= currentPrice) {
+            // Target already reached or invalid data
+            if (targetPrice && currentPrice >= targetPrice) {
+                return 'target-proximity-achieved';
+            }
+            return 'target-proximity-cold';
+        }
+        
+        // Calculate how close current price is to target (as percentage)
+        const proximityPercent = (currentPrice / targetPrice) * 100;
+        
+        if (proximityPercent >= 95) {
+            return 'target-proximity-very-hot'; // 95%+ to target - red
+        } else if (proximityPercent >= 90) {
+            return 'target-proximity-hot'; // 90-95% to target - orange
+        } else if (proximityPercent >= 80) {
+            return 'target-proximity-warm'; // 80-90% to target - yellow
+        } else if (proximityPercent >= 60) {
+            return 'target-proximity-cool'; // 60-80% to target - blue
+        } else {
+            return 'target-proximity-cold'; // <60% to target - gray
+        }
     }
     
     updateTradingStatus(status) {
@@ -821,6 +849,16 @@ function refreshCryptoPortfolio() {
 }
 
 // Trade a specific cryptocurrency from the portfolio
+// Toggle the color legend visibility
+function toggleColorLegend() {
+    const legend = document.getElementById('color-legend');
+    if (legend.style.display === 'none') {
+        legend.style.display = 'block';
+    } else {
+        legend.style.display = 'none';
+    }
+}
+
 function tradeCrypto(symbol) {
     try {
         // Set the trading symbol to the selected crypto
