@@ -511,23 +511,30 @@ class TradingApp {
         const tbody = document.getElementById('positions-table');
         
         if (!positions || positions.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">No open positions</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No open positions</td></tr>';
             return;
         }
         
         tbody.innerHTML = positions.map(position => {
-            const entryTime = new Date(position.entry_time);
-            const duration = this.formatDuration(Date.now() - entryTime.getTime());
             const pnl = position.unrealized_pnl || 0;
             const pnlClass = pnl > 0 ? 'pnl-positive' : pnl < 0 ? 'pnl-negative' : 'pnl-neutral';
             
+            // Calculate percentage change from entry price to current price
+            const currentPrice = position.current_price || position.avg_price;
+            const percentChange = ((currentPrice - position.avg_price) / position.avg_price * 100);
+            const percentClass = percentChange > 0 ? 'pnl-positive' : percentChange < 0 ? 'pnl-negative' : 'pnl-neutral';
+            
+            // Calculate market value
+            const marketValue = position.size * currentPrice;
+            
             return `
                 <tr>
-                    <td>${position.symbol}</td>
-                    <td>${parseFloat(position.size).toFixed(6)}</td>
-                    <td>$${parseFloat(position.avg_price).toFixed(2)}</td>
-                    <td><span class="${pnlClass}">$${pnl.toFixed(2)}</span></td>
-                    <td>${duration}</td>
+                    <td><strong>${position.symbol}</strong></td>
+                    <td>${parseFloat(position.size).toFixed(4)}</td>
+                    <td>$${parseFloat(currentPrice).toFixed(currentPrice < 1 ? 6 : 2)}</td>
+                    <td>$${marketValue.toFixed(2)}</td>
+                    <td><span class="${pnlClass}">$${pnl >= 0 ? '+' : ''}${pnl.toFixed(2)}</span></td>
+                    <td><span class="${percentClass}">${percentChange >= 0 ? '+' : ''}${percentChange.toFixed(1)}%</span></td>
                 </tr>
             `;
         }).join('');

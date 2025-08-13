@@ -1065,7 +1065,33 @@ def get_positions():
     try:
         mode = request.args.get("mode", trading_status["mode"])
         positions_df = db_manager.get_positions(mode=mode)
-        return jsonify(positions_df.to_dict("records") if not positions_df.empty else [])
+        
+        if positions_df.empty:
+            return jsonify([])
+            
+        # Enrich positions with current crypto portfolio data
+        if crypto_portfolio:
+            portfolio_data = crypto_portfolio.get_portfolio_data()
+            positions_list = positions_df.to_dict("records")
+            
+            for position in positions_list:
+                symbol = position['symbol']
+                if symbol in portfolio_data:
+                    crypto_data = portfolio_data[symbol]
+                    position['current_price'] = crypto_data['current_price']
+                    position['market_value'] = position['size'] * crypto_data['current_price']
+                    # Recalculate P&L based on current portfolio value
+                    initial_value = position['size'] * position['avg_price']
+                    current_value = position['market_value']
+                    position['unrealized_pnl'] = current_value - initial_value
+                else:
+                    # Fallback if symbol not in portfolio
+                    position['current_price'] = position.get('avg_price', 0)
+                    position['market_value'] = position['size'] * position['current_price']
+            
+            return jsonify(positions_list)
+        else:
+            return jsonify(positions_df.to_dict("records"))
     except Exception as e:
         app.logger.error("Error getting positions: %s", e)
         return jsonify({"error": str(e)}), 500
