@@ -911,6 +911,9 @@ function showCryptoChart(symbol) {
                                 </div>
                             </div>
                             <div class="modal-footer">
+                                <button type="button" class="btn btn-outline-secondary" onclick="showMainDashboard(); bootstrap.Modal.getInstance(document.getElementById('cryptoChartModal')).hide();">
+                                    <i class="fas fa-home me-1"></i>Dashboard
+                                </button>
                                 <button type="button" class="btn btn-primary" onclick="tradeCrypto('${data.symbol}'); bootstrap.Modal.getInstance(document.getElementById('cryptoChartModal')).hide();">
                                     <i class="fas fa-exchange-alt me-1"></i>Trade ${data.symbol}
                                 </button>
@@ -1181,6 +1184,35 @@ function renderCryptoTable() {
             </tr>
         `;
     }).join('');
+}
+
+// Home/Dashboard navigation function
+function showMainDashboard() {
+    // Close any open modals
+    const modals = document.querySelectorAll('.modal.show');
+    modals.forEach(modal => {
+        const modalInstance = bootstrap.Modal.getInstance(modal);
+        if (modalInstance) {
+            modalInstance.hide();
+        }
+    });
+    
+    // Reset to main dashboard view
+    // Activate portfolio tab if tabs exist
+    const portfolioTab = document.getElementById('portfolio-tab');
+    if (portfolioTab) {
+        portfolioTab.click();
+    }
+    
+    // Scroll to top smoothly
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    
+    // Refresh dashboard data
+    if (window.tradingApp) {
+        window.tradingApp.updateDashboard();
+    }
+    
+    console.log('Returned to main dashboard');
 }
 
 // Initialize the app when DOM is loaded
