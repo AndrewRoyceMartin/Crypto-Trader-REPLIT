@@ -76,11 +76,11 @@ class TradingApp {
             this.updatePositions(data.positions);
             this.updateCryptoPortfolio();
             
-            this.updateConnectionStatus(true);
+            // Connection status managed by updateConnectionStatusDisplay()
             
         } catch (error) {
             console.error('Error updating dashboard:', error);
-            this.updateConnectionStatus(false);
+            // Connection status managed by updateConnectionStatusDisplay()
         }
     }
 
@@ -529,7 +529,7 @@ class TradingApp {
         const statusElement = document.getElementById('connection-status');
         
         if (connected) {
-            statusElement.innerHTML = '<i class="fas fa-circle text-success me-1"></i>Connected';
+            // Don't override the connection status display - it's handled by updateConnectionStatusDisplay()
         } else {
             statusElement.innerHTML = '<i class="fas fa-circle text-danger me-1"></i>Disconnected';
         }
