@@ -1102,12 +1102,12 @@ function updateChartDuration(symbol, duration) {
 
 // Portfolio management functions
 function rebalancePortfolio() {
-    if (confirm('Are you sure you want to rebalance the portfolio? This will reset all positions to equal $100 values.')) {
+    if (confirm('Are you sure you want to rebalance the portfolio? This will reset all positions to equal $100 values and clear all trades and open positions from the database.')) {
         fetch('/api/rebalance-portfolio', { method: 'POST' })
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    window.tradingApp.showToast('Portfolio rebalanced successfully', 'success');
+                    window.tradingApp.showToast('Portfolio rebalanced and trading history cleared successfully', 'success');
                     refreshCryptoPortfolio();
                 } else {
                     window.tradingApp.showToast('Failed to rebalance portfolio: ' + data.error, 'danger');
@@ -1124,12 +1124,12 @@ function exportPortfolio() {
 }
 
 function resetPortfolio() {
-    if (confirm('Are you sure you want to reset all cryptocurrency positions to $100 each? This will lose all current price history.')) {
+    if (confirm('Are you sure you want to reset all cryptocurrency positions to $100 each? This will lose all current price history and clear all trades and open positions from the database.')) {
         fetch('/api/reset-portfolio', { method: 'POST' })
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    window.tradingApp.showToast('Portfolio reset successfully', 'success');
+                    window.tradingApp.showToast('Portfolio, trades, and positions reset successfully', 'success');
                     refreshCryptoPortfolio();
                 } else {
                     window.tradingApp.showToast('Failed to reset portfolio: ' + data.error, 'danger');

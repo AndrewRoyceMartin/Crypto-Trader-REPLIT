@@ -419,6 +419,12 @@ def rebalance_crypto_portfolio():
         if not crypto_portfolio:
             return jsonify({"error": "Crypto portfolio not initialized"}), 500
         
+        # Clear all trades and positions from database since we're rebalancing
+        if db_manager:
+            db_manager.reset_all_trades(mode='paper')  # Clear paper trading data
+            db_manager.reset_all_positions(mode='paper')  # Clear paper trading positions
+            db_manager.reset_portfolio_snapshots(mode='paper')  # Clear portfolio history
+        
         # Reset all positions to $100 each but keep price history
         portfolio_data = crypto_portfolio.get_portfolio_data()
         for symbol, data in portfolio_data.items():
@@ -432,7 +438,7 @@ def rebalance_crypto_portfolio():
             crypto_portfolio.portfolio_data[symbol]["pnl_percent"] = (crypto_portfolio.portfolio_data[symbol]["pnl"] / 100.0) * 100
         
         crypto_portfolio.save_portfolio_state()
-        return jsonify({"success": True, "message": "Portfolio rebalanced successfully"})
+        return jsonify({"success": True, "message": "Portfolio rebalanced and trading history cleared successfully"})
         
     except Exception as e:
         app.logger.error("Error rebalancing portfolio: %s", e)
@@ -447,14 +453,40 @@ def reset_crypto_portfolio():
         if not crypto_portfolio:
             return jsonify({"error": "Crypto portfolio not initialized"}), 500
         
+        # Clear all trades and positions from database
+        if db_manager:
+            db_manager.reset_all_trades(mode='paper')  # Clear paper trading data
+            db_manager.reset_all_positions(mode='paper')  # Clear paper trading positions
+            db_manager.reset_portfolio_snapshots(mode='paper')  # Clear portfolio history
+        
         # Reinitialize the entire portfolio
         crypto_portfolio = CryptoPortfolioManager(initial_value_per_crypto=100.0)
         crypto_portfolio.save_portfolio_state()
         
-        return jsonify({"success": True, "message": "Portfolio reset successfully"})
+        return jsonify({"success": True, "message": "Portfolio, trades, and positions reset successfully"})
         
     except Exception as e:
         app.logger.error("Error resetting portfolio: %s", e)
+        return jsonify({"success": False, "error": str(e)}), 500
+
+@app.route("/api/clear-trading-data", methods=["POST"])
+def clear_trading_data():
+    """Clear all trades and positions from database without affecting portfolio."""
+    try:
+        initialize_system()
+        
+        # Clear all trades and positions from database
+        if db_manager:
+            db_manager.reset_all_trades(mode='paper')  # Clear paper trading data
+            db_manager.reset_all_positions(mode='paper')  # Clear paper trading positions
+            db_manager.reset_portfolio_snapshots(mode='paper')  # Clear portfolio history
+            
+            return jsonify({"success": True, "message": "All trading data, trades, and positions cleared successfully"})
+        else:
+            return jsonify({"error": "Database not initialized"}), 500
+        
+    except Exception as e:
+        app.logger.error("Error clearing trading data: %s", e)
         return jsonify({"success": False, "error": str(e)}), 500
 
 @app.route("/api/export-portfolio")
