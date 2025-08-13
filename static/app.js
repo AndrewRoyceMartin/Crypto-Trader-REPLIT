@@ -366,7 +366,13 @@ class TradingApp {
         window.sortColumn = window.sortColumn || null;
         window.sortDirection = window.sortDirection || 'asc';
         
-        tbody.innerHTML = cryptos.map(crypto => {
+        // Apply existing sort if one is active
+        if (window.sortColumn) {
+            applySortToCryptoData();
+            updateSortIcons(window.sortColumn);
+        }
+        
+        tbody.innerHTML = window.cryptoPortfolioData.map(crypto => {
             const pnlClass = crypto.pnl >= 0 ? 'text-success' : 'text-danger';
             const priceDisplay = crypto.current_price < 1 ? crypto.current_price.toFixed(6) : crypto.current_price.toFixed(2);
             
@@ -914,27 +920,40 @@ function sortPortfolio(column) {
         window.sortDirection = 'asc';
     }
     
+    // Apply the sort
+    applySortToCryptoData();
+    
+    // Update sort icons
+    updateSortIcons(column);
+    
+    // Re-render table
+    renderCryptoTable();
+}
+
+function applySortToCryptoData() {
+    if (!window.cryptoPortfolioData || !window.sortColumn) return;
+    
     // Sort the data
     window.cryptoPortfolioData.sort((a, b) => {
         let valueA, valueB;
         
-        switch(column) {
+        switch(window.sortColumn) {
             case 'rank':
                 valueA = parseInt(a.rank);
                 valueB = parseInt(b.rank);
                 break;
             case 'symbol':
             case 'name':
-                valueA = a[column].toLowerCase();
-                valueB = b[column].toLowerCase();
+                valueA = a[window.sortColumn].toLowerCase();
+                valueB = b[window.sortColumn].toLowerCase();
                 break;
             case 'quantity':
             case 'current_price':
             case 'current_value':
             case 'pnl':
             case 'pnl_percent':
-                valueA = parseFloat(a[column] || 0);
-                valueB = parseFloat(b[column] || 0);
+                valueA = parseFloat(a[window.sortColumn] || 0);
+                valueB = parseFloat(b[window.sortColumn] || 0);
                 break;
             case 'price':
                 valueA = parseFloat(a.current_price || 0);
@@ -952,12 +971,6 @@ function sortPortfolio(column) {
         if (valueA > valueB) return window.sortDirection === 'asc' ? 1 : -1;
         return 0;
     });
-    
-    // Update sort icons
-    updateSortIcons(column);
-    
-    // Re-render table
-    renderCryptoTable();
 }
 
 function updateSortIcons(activeColumn) {
