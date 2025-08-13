@@ -184,25 +184,29 @@ class CryptoPortfolioManager:
         return portfolio
     
     def _generate_realistic_price(self, rank: int) -> float:
-        """Generate realistic cryptocurrency prices based on market cap rank and performance potential."""
+        """Generate realistic cryptocurrency prices based on CURRENT market cap rank and August 2025 prices."""
         if rank == 1:  # BTC
-            return np.random.uniform(65000, 75000)  # Bitcoin range
+            return np.random.uniform(118000, 121000)  # Bitcoin: ~$119,400 current
         elif rank == 2:  # ETH
-            return np.random.uniform(3000, 4000)    # Ethereum range
-        elif rank <= 5:  # Top 3-5 (SOL, XRP, DOGE)
-            return np.random.uniform(50, 250)      # Major alts
-        elif rank <= 10:  # Top 6-10
-            return np.random.uniform(10, 100)      # Established alts
-        elif rank <= 20:  # High-growth winners (SAROS, XCN, etc.)
-            return np.random.uniform(1, 50)        # Mid-range alts
+            return np.random.uniform(4400, 4700)      # Ethereum: ~$4,584 current
+        elif rank == 3:  # SOL
+            return np.random.uniform(170, 180)        # Solana: ~$175 current
+        elif rank == 4:  # XRP
+            return np.random.uniform(0.50, 0.65)      # XRP: typically $0.50-0.60
+        elif rank == 5:  # DOGE
+            return np.random.uniform(0.08, 0.12)      # Dogecoin: typically $0.08-0.12
+        elif rank <= 10:  # Top 6-10 (BNB, USDC, ADA, AVAX, SHIB)
+            return np.random.uniform(20, 600)         # Major alts range
+        elif rank <= 20:  # Established alts
+            return np.random.uniform(1, 150)          # Mid-tier established
         elif rank <= 40:  # Strong altcoins
-            return np.random.uniform(0.50, 20)     # Mid-cap range
+            return np.random.uniform(0.50, 50)        # Mid-cap range
         elif rank <= 60:  # DeFi leaders
-            return np.random.uniform(0.20, 10)     # Established DeFi
+            return np.random.uniform(0.20, 20)        # Established DeFi
         elif rank <= 80:  # Infrastructure tokens
-            return np.random.uniform(0.05, 5)      # Growing projects
+            return np.random.uniform(0.05, 10)        # Growing projects
         else:  # Micro-cap moonshots
-            return np.random.uniform(0.001, 2)     # Small caps
+            return np.random.uniform(0.001, 5)        # Small caps
     
     def simulate_price_movements(self, hours_elapsed: int = 1) -> None:
         """Simulate realistic price movements for all cryptocurrencies."""
