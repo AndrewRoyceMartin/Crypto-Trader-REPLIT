@@ -500,31 +500,95 @@ def get_crypto_chart(symbol):
                             data_points = 120  # 6 hour intervals for 30 days
                             base_volatility = 0.035
                         
-                        # Create unique seed based on symbol and duration for consistent but different patterns
-                        seed = hash(f"{symbol}_{duration}_{current_price}") % 10000
-                        np.random.seed(seed)
+                        # Create dramatically different patterns for each duration
+                        pnl_percent = crypto_data.get('pnl_percent', 0)
                         
-                        for i in range(data_points):
-                            # Create realistic crypto volatility pattern
-                            progress = i / data_points
-                            volatility = base_volatility * (1 + progress * 0.5)  # Increasing volatility over time
-                            price_change = np.random.normal(0, volatility)
-                            trend = (crypto_data.get('pnl_percent', 0) / 100) / data_points  # Gradual trend
-                            
-                            # Add some market cycles for longer periods
-                            if hours > 24:
-                                cycle = np.sin(progress * 2 * np.pi * (hours / 168)) * base_volatility * 0.3
-                                price_change += cycle
-                            
-                            if i == 0:
-                                price = base_price
-                            else:
-                                price = price_history[-1] * (1 + price_change + trend)
-                            
-                            price_history.append(max(price, base_price * 0.1))  # Prevent negative prices
+                        if duration == '1h':
+                            # Minute-by-minute micro movements - tight range
+                            range_factor = 0.02  # 2% total range
+                            for i in range(data_points):
+                                progress = i / data_points
+                                # Small oscillations around trend
+                                micro_trend = (pnl_percent / 100) * progress / 24  # 1/24th of daily trend
+                                noise = np.sin(progress * 8 * np.pi) * range_factor * 0.3  # Fast oscillations
+                                random_walk = np.random.normal(0, 0.002)  # Very small random movements
+                                
+                                if i == 0:
+                                    price = base_price
+                                else:
+                                    price = base_price * (1 + micro_trend + noise + random_walk * i * 0.001)
+                                
+                                price_history.append(max(price, base_price * 0.98))
                         
-                        # Reset random seed
-                        np.random.seed()
+                        elif duration == '4h':
+                            # 4-hour intraday pattern - short term trends
+                            range_factor = 0.06  # 6% total range
+                            for i in range(data_points):
+                                progress = i / data_points
+                                # Intraday wave pattern
+                                intraday_trend = (pnl_percent / 100) * progress / 6  # 1/6th of daily trend
+                                wave = np.sin(progress * 3 * np.pi) * range_factor * 0.4  # Medium waves
+                                random_component = np.random.normal(0, 0.008)
+                                
+                                if i == 0:
+                                    price = base_price
+                                else:
+                                    price = base_price * (1 + intraday_trend + wave + random_component * i * 0.002)
+                                
+                                price_history.append(max(price, base_price * 0.94))
+                        
+                        elif duration == '1d':
+                            # Daily pattern - normal volatility
+                            range_factor = 0.15  # 15% total range
+                            for i in range(data_points):
+                                progress = i / data_points
+                                daily_trend = (pnl_percent / 100) * progress  # Full daily trend
+                                volatility_wave = np.sin(progress * 2 * np.pi) * range_factor * 0.3
+                                random_component = np.random.normal(0, 0.015)
+                                
+                                if i == 0:
+                                    price = base_price
+                                else:
+                                    price = base_price * (1 + daily_trend + volatility_wave + random_component * i * 0.003)
+                                
+                                price_history.append(max(price, base_price * 0.85))
+                        
+                        elif duration == '7d':
+                            # Weekly pattern - larger swings with cycles
+                            range_factor = 0.35  # 35% total range
+                            for i in range(data_points):
+                                progress = i / data_points
+                                weekly_trend = (pnl_percent / 100) * progress
+                                # Multi-day cycles
+                                major_cycle = np.sin(progress * 4 * np.pi) * range_factor * 0.3  # 2 major waves per week
+                                minor_cycle = np.sin(progress * 14 * np.pi) * range_factor * 0.1  # Daily fluctuations
+                                random_component = np.random.normal(0, 0.025)
+                                
+                                if i == 0:
+                                    price = base_price
+                                else:
+                                    price = base_price * (1 + weekly_trend + major_cycle + minor_cycle + random_component * i * 0.005)
+                                
+                                price_history.append(max(price, base_price * 0.65))
+                        
+                        else:  # 30d
+                            # Monthly pattern - major trends and corrections
+                            range_factor = 0.6  # 60% total range
+                            for i in range(data_points):
+                                progress = i / data_points
+                                monthly_trend = (pnl_percent / 100) * progress
+                                # Long-term market cycles
+                                major_trend = np.sin(progress * 2 * np.pi) * range_factor * 0.4  # 1 major cycle per month
+                                correction_cycle = np.sin(progress * 8 * np.pi) * range_factor * 0.15  # Weekly corrections
+                                market_noise = np.sin(progress * 30 * np.pi) * range_factor * 0.05  # Daily noise
+                                random_component = np.random.normal(0, 0.035)
+                                
+                                if i == 0:
+                                    price = base_price
+                                else:
+                                    price = base_price * (1 + monthly_trend + major_trend + correction_cycle + market_noise + random_component * i * 0.008)
+                                
+                                price_history.append(max(price, base_price * 0.4))
                     
                     # Generate meaningful time-based labels based on duration
                     time_labels = []
