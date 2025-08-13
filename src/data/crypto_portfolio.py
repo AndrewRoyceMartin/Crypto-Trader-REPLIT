@@ -445,6 +445,139 @@ class CryptoPortfolioManager:
         self.logger.info(f"Updated {updated_count} cryptocurrencies with live prices")
         return live_prices
     
+    def check_auto_trading_opportunities(self) -> List[Dict]:
+        """Check for automatic buy/sell opportunities based on target prices."""
+        opportunities = []
+        
+        for symbol, crypto in self.portfolio_data.items():
+            current_price = crypto["current_price"]
+            target_buy_price = crypto.get("target_buy_price", 0)
+            target_sell_price = crypto.get("target_sell_price", 0)
+            
+            # Check for auto-buy opportunities
+            if target_buy_price > 0 and current_price <= target_buy_price:
+                # Calculate buy amount based on available cash (assuming some spare cash)
+                buy_amount = min(100, self.cash_balance * 0.05)  # 5% of cash or $100 max
+                if buy_amount >= 10:  # Minimum $10 trade
+                    opportunities.append({
+                        'type': 'BUY',
+                        'symbol': symbol,
+                        'current_price': current_price,
+                        'target_price': target_buy_price,
+                        'recommended_amount': buy_amount,
+                        'quantity': buy_amount / current_price,
+                        'reason': f'Price ${current_price:.4f} reached target buy ${target_buy_price:.4f}'
+                    })
+            
+            # Check for auto-sell opportunities
+            if target_sell_price > 0 and current_price >= target_sell_price:
+                quantity = crypto.get("quantity", 0)
+                if quantity > 0:
+                    opportunities.append({
+                        'type': 'SELL',
+                        'symbol': symbol,
+                        'current_price': current_price,
+                        'target_price': target_sell_price,
+                        'quantity': quantity,
+                        'estimated_value': quantity * current_price,
+                        'reason': f'Price ${current_price:.4f} reached target sell ${target_sell_price:.4f}'
+                    })
+        
+        return opportunities
+    
+    def execute_auto_trade(self, opportunity: Dict, db_manager=None) -> bool:
+        """Execute an automatic trade opportunity."""
+        try:
+            import time
+            from datetime import datetime
+            
+            symbol = opportunity['symbol']
+            trade_type = opportunity['type']
+            current_price = opportunity['current_price']
+            
+            if trade_type == 'BUY':
+                amount = opportunity['recommended_amount']
+                quantity = opportunity['quantity']
+                
+                # Check if we have enough cash
+                if self.cash_balance >= amount:
+                    # Execute buy
+                    self.cash_balance -= amount
+                    
+                    if symbol in self.portfolio_data:
+                        # Add to existing position
+                        existing_qty = self.portfolio_data[symbol]['quantity']
+                        existing_value = self.portfolio_data[symbol]['current_value']
+                        
+                        new_quantity = existing_qty + quantity
+                        new_value = existing_value + amount
+                        avg_price = new_value / new_quantity
+                        
+                        self.portfolio_data[symbol]['quantity'] = new_quantity
+                        self.portfolio_data[symbol]['current_value'] = new_value
+                        self.portfolio_data[symbol]['initial_value'] += amount  # Add to initial investment
+                    
+                    # Record trade if database manager available
+                    if db_manager:
+                        trade_data = {
+                            'timestamp': datetime.now(),
+                            'symbol': symbol,
+                            'action': 'BUY',
+                            'size': quantity,
+                            'price': current_price,
+                            'commission': amount * 0.001,
+                            'order_id': f"AUTO_BUY_{symbol}_{int(time.time())}",
+                            'strategy': 'AUTO_TARGET_BUY',
+                            'confidence': 0.8,
+                            'pnl': 0,
+                            'mode': 'paper'
+                        }
+                        db_manager.save_trade(trade_data)
+                    
+                    self.logger.info(f"AUTO BUY executed: {symbol} - {quantity:.4f} @ ${current_price:.4f}")
+                    return True
+                    
+            elif trade_type == 'SELL':
+                quantity = opportunity['quantity']
+                estimated_value = opportunity['estimated_value']
+                
+                if symbol in self.portfolio_data and self.portfolio_data[symbol]['quantity'] >= quantity:
+                    # Execute sell
+                    initial_value = self.portfolio_data[symbol]['initial_value']
+                    pnl = estimated_value - initial_value
+                    
+                    # Add cash from sale
+                    self.cash_balance += estimated_value
+                    
+                    # Record trade if database manager available
+                    if db_manager:
+                        trade_data = {
+                            'timestamp': datetime.now(),
+                            'symbol': symbol,
+                            'action': 'SELL',
+                            'size': quantity,
+                            'price': current_price,
+                            'commission': estimated_value * 0.001,
+                            'order_id': f"AUTO_SELL_{symbol}_{int(time.time())}",
+                            'strategy': 'AUTO_TARGET_SELL',
+                            'confidence': 0.8,
+                            'pnl': pnl,
+                            'mode': 'paper'
+                        }
+                        db_manager.save_trade(trade_data)
+                    
+                    # Remove position (full sell)
+                    del self.portfolio_data[symbol]
+                    
+                    self.logger.info(f"AUTO SELL executed: {symbol} - {quantity:.4f} @ ${current_price:.4f} (P&L: ${pnl:.2f})")
+                    return True
+            
+            return False
+            
+        except Exception as e:
+            self.logger.error(f"Error executing auto trade for {symbol}: {str(e)}")
+            return False
+    
     def get_crypto_history(self, symbol: str, hours: int = 24) -> List[Dict]:
         """Get price history for a specific cryptocurrency."""
         if symbol not in self.price_history:

@@ -320,6 +320,22 @@ def get_crypto_portfolio():
         summary = crypto_portfolio.get_portfolio_summary()
         portfolio_data = crypto_portfolio.get_portfolio_data()
         
+        # Check for auto-trading opportunities and execute them
+        opportunities = crypto_portfolio.check_auto_trading_opportunities()
+        if opportunities:
+            app.logger.info(f"Found {len(opportunities)} auto-trading opportunities")
+            
+            executed_count = 0
+            for opportunity in opportunities:
+                if crypto_portfolio.execute_auto_trade(opportunity, db_manager):
+                    executed_count += 1
+                    
+            if executed_count > 0:
+                app.logger.info(f"Executed {executed_count} automatic trades")
+                # Refresh portfolio data after trades
+                summary = crypto_portfolio.get_portfolio_summary()
+                portfolio_data = crypto_portfolio.get_portfolio_data()
+        
         # Convert to list format for easier frontend consumption
         crypto_list = []
         for symbol, data in portfolio_data.items():
