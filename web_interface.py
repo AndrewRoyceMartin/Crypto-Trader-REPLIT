@@ -36,6 +36,7 @@ current_trader = None
 trading_thread: threading.Thread | None = None
 crypto_portfolio: CryptoPortfolioManager | None = None
 portfolio_update_thread: threading.Thread | None = None
+backtest_results: dict = {}
 
 state_lock = threading.RLock()
 _initialized = False
@@ -172,6 +173,7 @@ def get_status():
                 "portfolio": portfolio_data,
                 "recent_trades": trades_data,
                 "positions": positions_data,
+                "backtest_results": backtest_results,
                 "timestamp": datetime.now().isoformat(),
             }
         )
@@ -507,6 +509,11 @@ def run_backtest():
             "mode": "backtest",
         }
         db_manager.save_strategy_performance(performance_data)
+        
+        # Store backtest results in global status for frontend display
+        global backtest_results
+        backtest_results = cleaned_results
+        
         return jsonify({"success": True, "results": cleaned_results})
     except ValueError as ve:
         return jsonify({"error": str(ve)}), 400

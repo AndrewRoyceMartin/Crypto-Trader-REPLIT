@@ -96,6 +96,7 @@ class BacktestEngine:
         # Initialize simulation state
         cash = self.initial_capital
         position = 0.0
+        position_cost = 0.0  # Initialize position cost
         portfolio_value = self.initial_capital
         
         results = []
@@ -177,6 +178,7 @@ class BacktestEngine:
                         cash += position * execution_price - commission_cost
                         trade_pnl = position * (execution_price - position_cost)
                         position = 0
+                        position_cost = 0.0
                         
                         self.trades.append({
                             'timestamp': current_timestamp,

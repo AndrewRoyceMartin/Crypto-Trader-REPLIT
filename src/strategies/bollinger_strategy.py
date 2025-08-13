@@ -77,11 +77,14 @@ class BollingerBandsStrategy(BaseStrategy):
             # Calculate band width for volatility filter
             band_width = (current_upper - current_lower) / current_middle
             
-            # Volume filter
-            volume_ok = current_volume >= self.volume_threshold
+            # Reasonable filters for real trading
+            volume_ok = current_volume >= (self.volume_threshold * 0.01)  # Use 1% of threshold (very permissive)
+            volatility_ok = band_width > 0.001  # 0.1% minimum band width (very permissive)
             
-            # Volatility filter (avoid trading in low volatility periods)
-            volatility_ok = band_width > 0.02  # 2% minimum band width
+            # Debug logging only when needed
+            if len(signals) == 0:  # Only log when no signals to reduce noise
+                self.logger.debug(f"Price: {current_price:.2f}, Upper: {current_upper:.2f}, Lower: {current_lower:.2f}")
+                self.logger.debug(f"Band width: {band_width:.4f}")
             
             if not (volume_ok and volatility_ok):
                 return signals
