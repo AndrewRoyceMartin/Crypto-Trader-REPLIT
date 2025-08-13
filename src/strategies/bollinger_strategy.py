@@ -38,7 +38,7 @@ class BollingerBandsStrategy(BaseStrategy):
         self.volatility_multiplier = 1.5  # Higher multiplier for profit potential
         self.min_band_distance = 0.002  # Tighter distance threshold for more trades
         self.profit_target_scaling = True  # Dynamic profit targets based on volatility
-        self.use_enhanced_filters = config.get_bool('strategy', 'use_enhanced_filters', False)  # Toggle enhanced mode
+        self.use_enhanced_filters = config.get_bool('strategy', 'use_enhanced_filters', True)  # Enable enhanced mode by default
         
         self.indicators = TechnicalIndicators()
         
@@ -114,11 +114,11 @@ class BollingerBandsStrategy(BaseStrategy):
             volatility_adjusted_size = base_position_size * (1 + band_width * self.volatility_multiplier)
             volatility_adjusted_size = min(volatility_adjusted_size, 0.15)  # Cap at 15%
             
-            # Smart Buy signal with adaptive thresholds
+            # Smart Buy signal with very permissive thresholds for shorter backtests
             enhanced_buy_conditions = (
-                current_price <= current_lower * (1 + self.min_band_distance) and 
-                current_rsi < 60 and  # Even more permissive RSI
-                distance_to_lower < 0.03  # More generous distance
+                current_price <= current_lower * 1.01 and  # 1% above lower band
+                current_rsi < 70 and  # Very permissive RSI
+                distance_to_lower < 0.05  # Very generous distance
             )
             
             # Check enhanced buy conditions first
@@ -151,8 +151,15 @@ class BollingerBandsStrategy(BaseStrategy):
                     signals.append(signal)
                     self.logger.info(f"Enhanced BUY signal: Price={current_price:.2f}, RSI={current_rsi:.1f}, Confidence={confidence:.2f}")
             
-            # Smart Sell signal with adaptive thresholds  
-            elif self.use_enhanced_filters and enhanced_sell_conditions:
+            # Smart Sell signal with permissive thresholds  
+            enhanced_sell_conditions = (
+                current_price >= current_upper * 0.99 and  # 1% below upper band
+                current_rsi > 30 and  # Very permissive RSI  
+                distance_to_upper < 0.05  # Very generous distance
+            )
+            
+            # Check enhanced sell conditions
+            if self.use_enhanced_filters and enhanced_sell_conditions:
                 
                 # Calculate dynamic confidence
                 rsi_factor = (current_rsi - 50) / 50
@@ -182,7 +189,8 @@ class BollingerBandsStrategy(BaseStrategy):
                     self.logger.info(f"Enhanced SELL signal: Price={current_price:.2f}, RSI={current_rsi:.1f}, Confidence={confidence:.2f}")
             
             # Fallback to original Bollinger Bands logic if enhanced filters are too restrictive
-            elif current_price <= current_lower:
+            # More permissive fallback for low-volatility periods
+            elif current_price <= current_lower * 1.02:  # 2% above lower band for fallback
                 confidence = min(1.0, (current_lower - current_price) / current_atr + 0.5)
                 
                 signal = Signal(
@@ -198,7 +206,7 @@ class BollingerBandsStrategy(BaseStrategy):
                     signals.append(signal)
                     self.logger.info(f"Fallback BUY signal at {current_price:.2f} (Lower Band: {current_lower:.2f})")
             
-            elif current_price >= current_upper:
+            elif current_price >= current_upper * 0.98:  # 2% below upper band for fallback
                 confidence = min(1.0, (current_price - current_upper) / current_atr + 0.5)
                 
                 signal = Signal(

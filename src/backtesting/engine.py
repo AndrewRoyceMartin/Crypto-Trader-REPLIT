@@ -106,8 +106,8 @@ class BacktestEngine:
             current_price = data['close'].iloc[i]
             current_timestamp = data.index[i]
             
-            # Skip if insufficient data for strategy
-            if len(current_data) < 50:  # Minimum data points
+            # Skip if insufficient data for strategy (need enough for Bollinger Bands + RSI)
+            if len(current_data) < 30:  # Reduced minimum for shorter backtests
                 results.append({
                     'timestamp': current_timestamp,
                     'price': current_price,
