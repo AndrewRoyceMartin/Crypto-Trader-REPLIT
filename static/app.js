@@ -400,8 +400,8 @@ class TradingApp {
                     <td class="text-muted">${crypto.name}</td>
                     <td>${crypto.quantity.toFixed(4)}</td>
                     <td>$${priceDisplay}</td>
-                    <td>$${crypto.current_value.toFixed(2)}</td>
                     <td class="text-warning">$${crypto.target_sell_price ? crypto.target_sell_price.toFixed(crypto.target_sell_price < 1 ? 6 : 2) : 'N/A'}</td>
+                    <td>$${crypto.current_value.toFixed(2)}</td>
                     <td class="${pnlClass}">$${crypto.pnl.toFixed(2)}</td>
                     <td class="${pnlClass}">${crypto.pnl_percent.toFixed(2)}%</td>
                     <td>
