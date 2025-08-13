@@ -1030,11 +1030,19 @@ function updateChartDuration(symbol, duration) {
             
             // Update chart data
             if (currentCryptoChart) {
+                // Debug logging
+                console.log(`Updating chart for ${symbol} with duration ${duration}`);
+                console.log(`Data points: ${data.price_history.length}, Labels: ${data.labels.length}`);
+                console.log(`Price range: ${Math.min(...data.price_history).toFixed(4)} - ${Math.max(...data.price_history).toFixed(4)}`);
+                
                 currentCryptoChart.data.labels = data.labels;
                 currentCryptoChart.data.datasets[0].data = data.price_history;
                 currentCryptoChart.data.datasets[0].borderColor = data.pnl_percent >= 0 ? '#28a745' : '#dc3545';
                 currentCryptoChart.data.datasets[0].backgroundColor = data.pnl_percent >= 0 ? 'rgba(40, 167, 69, 0.1)' : 'rgba(220, 53, 69, 0.1)';
-                currentCryptoChart.update();
+                
+                // Force a complete refresh
+                currentCryptoChart.update('none');
+                currentCryptoChart.resize();
             }
             
             // Update modal title with current price

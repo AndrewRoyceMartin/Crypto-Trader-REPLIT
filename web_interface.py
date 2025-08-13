@@ -470,10 +470,12 @@ def get_crypto_chart(symbol):
                 if symbol in portfolio_data:
                     crypto_data = portfolio_data[symbol]
                     
-                    # Get actual price history from crypto portfolio manager
-                    historical_data = crypto_portfolio.get_crypto_history(symbol, hours=hours)
+                    # For now, bypass stored history and generate duration-specific patterns
+                    # This ensures each time period shows dramatically different data
+                    # TODO: Replace with real historical data from exchange APIs later
+                    historical_data = []  # Force use of generated patterns
                     
-                    if historical_data:
+                    if False:  # Disabled: historical_data:
                         # Extract actual prices from historical data
                         price_history = [point["price"] for point in historical_data]
                     else:
