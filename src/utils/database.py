@@ -602,9 +602,11 @@ class DatabaseManager:
                 stats = {}
                 
                 # Count records in each table
-                tables = ['trades', 'positions', 'portfolio_snapshots', 'signals', 'strategy_performance']
+                # Using hardcoded table names to prevent SQL injection
+                valid_tables = ['trades', 'positions', 'portfolio_snapshots', 'signals', 'strategy_performance']
                 
-                for table in tables:
+                for table in valid_tables:
+                    # Table names cannot be parameterized, but we validate against known safe values
                     cursor.execute(f'SELECT COUNT(*) as count FROM {table}')
                     result = cursor.fetchone()
                     stats[f'{table}_count'] = result['count']
