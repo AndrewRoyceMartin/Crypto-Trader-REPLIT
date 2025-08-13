@@ -174,7 +174,8 @@ class CryptoPortfolioManager:
                 "pnl": 0.0,
                 "pnl_percent": 0.0,
                 "target_sell_price": self._calculate_target_sell_price(base_price, crypto["rank"]),
-                "target_buy_price": self._calculate_target_buy_price(base_price, crypto["rank"])
+                "target_buy_price": self._calculate_target_buy_price(base_price, crypto["rank"]),
+                "projected_sell_pnl": self._calculate_target_sell_price(base_price, crypto["rank"]) * quantity - self.initial_value
             }
             
         return portfolio
@@ -224,8 +225,14 @@ class CryptoPortfolioManager:
             crypto["pnl"] = crypto["current_value"] - crypto["initial_value"]
             crypto["pnl_percent"] = (crypto["pnl"] / crypto["initial_value"]) * 100
             
-            # Update target sell price based on current price
+            # Update projected sell P&L
+            if crypto.get("target_sell_price"):
+                sell_value = crypto["target_sell_price"] * crypto["quantity"]
+                crypto["projected_sell_pnl"] = sell_value - crypto["initial_value"]
+            
+            # Update target prices based on current price
             crypto["target_sell_price"] = self._calculate_target_sell_price(new_price, crypto["rank"])
+            crypto["target_buy_price"] = self._calculate_target_buy_price(new_price, crypto["rank"])
             
             # Store price history
             if symbol not in self.price_history:
@@ -313,6 +320,14 @@ class CryptoPortfolioManager:
             if "target_buy_price" not in crypto:
                 crypto["target_buy_price"] = self._calculate_target_buy_price(current_price, rank)
                 self.logger.info(f"Added target buy price for {symbol}: ${crypto['target_buy_price']:.4f}")
+            
+            # Add projected_sell_pnl if it doesn't exist
+            if "projected_sell_pnl" not in crypto:
+                if crypto.get("target_sell_price") and crypto.get("quantity"):
+                    sell_value = crypto["target_sell_price"] * crypto["quantity"]
+                    crypto["projected_sell_pnl"] = sell_value - crypto["initial_value"]
+                else:
+                    crypto["projected_sell_pnl"] = 0.0
     
     def get_portfolio_summary(self) -> Dict:
         """Get complete portfolio summary statistics."""

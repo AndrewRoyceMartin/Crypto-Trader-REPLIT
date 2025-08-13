@@ -426,16 +426,19 @@
                                             Quantity <i id="sort-quantity" class="fas fa-sort text-muted"></i>
                                         </th>
                                         <th class="sortable" onclick="sortPortfolio('price')" style="cursor: pointer;">
-                                            Price <i id="sort-price" class="fas fa-sort text-muted"></i>
-                                        </th>
-                                        <th class="sortable" onclick="sortPortfolio('target_sell')" style="cursor: pointer;">
-                                            Target Sell <i id="sort-target_sell" class="fas fa-sort text-muted"></i>
-                                        </th>
-                                        <th class="sortable" onclick="sortPortfolio('target_buy')" style="cursor: pointer;">
-                                            Target Buy <i id="sort-target_buy" class="fas fa-sort text-muted"></i>
+                                            Current Price <i id="sort-price" class="fas fa-sort text-muted"></i>
                                         </th>
                                         <th class="sortable" onclick="sortPortfolio('value')" style="cursor: pointer;">
                                             Value <i id="sort-value" class="fas fa-sort text-muted"></i>
+                                        </th>
+                                        <th class="bg-light sortable" onclick="sortPortfolio('target_sell')" style="cursor: pointer;">
+                                            Target Sell <i id="sort-target_sell" class="fas fa-sort text-muted"></i>
+                                        </th>
+                                        <th class="bg-light sortable" onclick="sortPortfolio('target_buy')" style="cursor: pointer;">
+                                            Target Buy <i id="sort-target_buy" class="fas fa-sort text-muted"></i>
+                                        </th>
+                                        <th class="bg-light sortable" onclick="sortPortfolio('projected_pnl')" style="cursor: pointer;">
+                                            Projected P&L <i id="sort-projected_pnl" class="fas fa-sort text-muted"></i>
                                         </th>
                                         <th class="sortable" onclick="sortPortfolio('pnl')" style="cursor: pointer;">
                                             P&L <i id="sort-pnl" class="fas fa-sort text-muted"></i>
@@ -448,7 +451,7 @@
                                 </thead>
                                 <tbody id="crypto-portfolio-table">
                                     <tr>
-                                        <td colspan="11" class="text-center text-muted">Loading cryptocurrency portfolio...</td>
+                                        <td colspan="12" class="text-center text-muted">Loading cryptocurrency portfolio...</td>
                                     </tr>
                                 </tbody>
                             </table>
