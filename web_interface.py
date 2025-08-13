@@ -231,9 +231,16 @@ def get_status():
         with state_lock:
             mode = trading_status["mode"]
         portfolio_data = get_portfolio_data()
-        recent_trades = db_manager.get_trades(mode=mode, start_date=datetime.now() - timedelta(days=1))
+        # Get trades with broader timeframe and normalize mode
+        if mode in ["paper", "paper_portfolio"]:
+            trade_mode = "paper"
+        elif mode in ["live", "live_portfolio"]:
+            trade_mode = "live"
+        else:
+            trade_mode = "paper"  # Default to paper for stopped or other modes
+        recent_trades = db_manager.get_trades(mode=trade_mode, start_date=datetime.now() - timedelta(days=8))
         trades_data = recent_trades.tail(10).to_dict("records") if not recent_trades.empty else []
-        positions_df = db_manager.get_positions(mode=mode)
+        positions_df = db_manager.get_positions(mode=trade_mode)
         positions_data = positions_df.to_dict("records") if not positions_df.empty else []
         with state_lock:
             status_copy = dict(trading_status)
