@@ -575,39 +575,87 @@ class TradingApp {
     updateRecentTrades(trades) {
         const tbody = document.getElementById('trades-table');
         
+        // Clear existing content
+        tbody.innerHTML = '';
+        
         if (!trades || trades.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No trades yet</td></tr>';
+            const row = document.createElement('tr');
+            const cell = document.createElement('td');
+            cell.setAttribute('colspan', '6');
+            cell.className = 'text-center text-muted';
+            cell.textContent = 'No trades yet';
+            row.appendChild(cell);
+            tbody.appendChild(row);
             return;
         }
         
-        tbody.innerHTML = trades.slice(0, 10).map(trade => {
-            const timestamp = new Date(trade.timestamp).toLocaleString();
+        trades.slice(0, 10).forEach(trade => {
+            const row = document.createElement('tr');
+            
+            // Timestamp cell
+            const timestampCell = document.createElement('td');
+            timestampCell.className = 'text-xs';
+            timestampCell.textContent = new Date(trade.timestamp).toLocaleString();
+            row.appendChild(timestampCell);
+            
+            // Symbol cell
+            const symbolCell = document.createElement('td');
+            symbolCell.textContent = trade.symbol;
+            row.appendChild(symbolCell);
+            
+            // Action cell
+            const actionCell = document.createElement('td');
+            const actionSpan = document.createElement('span');
             const actionClass = trade.action === 'buy' ? 'trade-buy' : 'trade-sell';
+            actionSpan.className = actionClass;
+            actionSpan.textContent = String(trade.action).toUpperCase();
+            actionCell.appendChild(actionSpan);
+            row.appendChild(actionCell);
+            
+            // Size cell
+            const sizeCell = document.createElement('td');
+            sizeCell.textContent = parseFloat(trade.size).toFixed(6);
+            row.appendChild(sizeCell);
+            
+            // Price cell
+            const priceCell = document.createElement('td');
+            priceCell.textContent = '$' + parseFloat(trade.price).toFixed(2);
+            row.appendChild(priceCell);
+            
+            // PnL cell
+            const pnlCell = document.createElement('td');
+            const pnlSpan = document.createElement('span');
             const pnl = trade.pnl || 0;
             const pnlClass = pnl > 0 ? 'pnl-positive' : pnl < 0 ? 'pnl-negative' : 'pnl-neutral';
+            pnlSpan.className = pnlClass;
+            pnlSpan.textContent = '$' + pnl.toFixed(2);
+            pnlCell.appendChild(pnlSpan);
+            row.appendChild(pnlCell);
             
-            return `
-                <tr>
-                    <td class="text-xs">${timestamp}</td>
-                    <td>${trade.symbol}</td>
-                    <td><span class="${actionClass}">${trade.action.toUpperCase()}</span></td>
-                    <td>${parseFloat(trade.size).toFixed(6)}</td>
-                    <td>$${parseFloat(trade.price).toFixed(2)}</td>
-                    <td><span class="${pnlClass}">$${pnl.toFixed(2)}</span></td>
-                </tr>
-            `;
-        }).join('');
+            tbody.appendChild(row);
+        });
     }
     
     updatePositions(positions) {
         const tbody = document.getElementById('positions-table');
         
+        // Clear existing content
+        tbody.innerHTML = '';
+        
         if (!positions || positions.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No open positions</td></tr>';
+            const row = document.createElement('tr');
+            const cell = document.createElement('td');
+            cell.setAttribute('colspan', '6');
+            cell.className = 'text-center text-muted';
+            cell.textContent = 'No open positions';
+            row.appendChild(cell);
+            tbody.appendChild(row);
             return;
         }
         
-        tbody.innerHTML = positions.map(position => {
+        positions.forEach(position => {
+            const row = document.createElement('tr');
+            
             const pnl = position.unrealized_pnl || 0;
             const pnlClass = pnl > 0 ? 'pnl-positive' : pnl < 0 ? 'pnl-negative' : 'pnl-neutral';
             
@@ -619,17 +667,46 @@ class TradingApp {
             // Calculate market value
             const marketValue = position.size * currentPrice;
             
-            return `
-                <tr>
-                    <td><strong>${position.symbol}</strong></td>
-                    <td>${parseFloat(position.size).toFixed(4)}</td>
-                    <td>$${parseFloat(currentPrice).toFixed(currentPrice < 1 ? 6 : 2)}</td>
-                    <td>$${marketValue.toFixed(2)}</td>
-                    <td><span class="${pnlClass}">$${pnl >= 0 ? '+' : ''}${pnl.toFixed(2)}</span></td>
-                    <td><span class="${percentClass}">${percentChange >= 0 ? '+' : ''}${percentChange.toFixed(1)}%</span></td>
-                </tr>
-            `;
-        }).join('');
+            // Symbol cell
+            const symbolCell = document.createElement('td');
+            const symbolStrong = document.createElement('strong');
+            symbolStrong.textContent = position.symbol;
+            symbolCell.appendChild(symbolStrong);
+            row.appendChild(symbolCell);
+            
+            // Size cell
+            const sizeCell = document.createElement('td');
+            sizeCell.textContent = parseFloat(position.size).toFixed(4);
+            row.appendChild(sizeCell);
+            
+            // Current Price cell
+            const priceCell = document.createElement('td');
+            priceCell.textContent = '$' + parseFloat(currentPrice).toFixed(currentPrice < 1 ? 6 : 2);
+            row.appendChild(priceCell);
+            
+            // Market Value cell
+            const valueCell = document.createElement('td');
+            valueCell.textContent = '$' + marketValue.toFixed(2);
+            row.appendChild(valueCell);
+            
+            // PnL cell
+            const pnlCell = document.createElement('td');
+            const pnlSpan = document.createElement('span');
+            pnlSpan.className = pnlClass;
+            pnlSpan.textContent = '$' + (pnl >= 0 ? '+' : '') + pnl.toFixed(2);
+            pnlCell.appendChild(pnlSpan);
+            row.appendChild(pnlCell);
+            
+            // Percent Change cell
+            const percentCell = document.createElement('td');
+            const percentSpan = document.createElement('span');
+            percentSpan.className = percentClass;
+            percentSpan.textContent = (percentChange >= 0 ? '+' : '') + percentChange.toFixed(1) + '%';
+            percentCell.appendChild(percentSpan);
+            row.appendChild(percentCell);
+            
+            tbody.appendChild(row);
+        });
     }
     
     updateConnectionStatus(connected) {
