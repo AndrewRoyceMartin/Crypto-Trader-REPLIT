@@ -1368,70 +1368,97 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 
-// API Status Tooltip Functions
-function updateCryptoStatusTooltip(apiStatus) {
+// API Status Display Functions
+function updateCryptoStatusDisplay(apiStatus) {
     const cryptoStatus = document.getElementById("crypto-status");
     if (!cryptoStatus) {
         console.log('crypto-status element not found');
         return;
     }
     
-    console.log('Updating tooltip with status:', apiStatus);
+    console.log('Updating status display with:', apiStatus);
     
     if (apiStatus.status === "connected") {
         cryptoStatus.className = "badge bg-success";
-        cryptoStatus.style.cursor = "pointer";
+        cryptoStatus.textContent = `Connected to ${apiStatus.api_provider}`;
         
-        const tooltipContent = `Live API Connection<br>
-Provider: ${apiStatus.api_provider}<br>
-Response: ${apiStatus.response_time_ms}ms<br>
-Rate Limit: ${apiStatus.rate_limit}<br>
-Last Updated: ${new Date(apiStatus.last_updated).toLocaleTimeString()}`;
+        // Clear any previous disconnection warning
+        window.connectionLost = false;
         
-        // Dispose existing tooltip first
-        const existingTooltip = bootstrap.Tooltip.getInstance(cryptoStatus);
-        if (existingTooltip) {
-            existingTooltip.dispose();
-        }
-        
-        // Set title and create new tooltip
-        cryptoStatus.setAttribute("title", tooltipContent);
-        const newTooltip = new bootstrap.Tooltip(cryptoStatus, {
-            html: true,
-            placement: "top",
-            trigger: 'hover focus'
-        });
-        
-        console.log('Tooltip updated successfully for connected status');
+        console.log('Status updated: Connected to', apiStatus.api_provider);
     } else {
         cryptoStatus.className = "badge bg-danger";
-        const errorTitle = `API Error: ${apiStatus.error || "Connection failed"}`;
+        cryptoStatus.textContent = "Connection Lost";
         
-        const existingTooltip = bootstrap.Tooltip.getInstance(cryptoStatus);
-        if (existingTooltip) {
-            existingTooltip.dispose();
+        // Show warning popup if connection was lost
+        if (!window.connectionLost) {
+            window.connectionLost = true;
+            showConnectionWarning(apiStatus.error || "Connection failed");
         }
         
-        cryptoStatus.setAttribute("title", errorTitle);
-        new bootstrap.Tooltip(cryptoStatus, {
-            placement: "top",
-            trigger: 'hover focus'
-        });
-        
-        console.log('Tooltip updated for error status');
+        console.log('Status updated: Connection Lost');
     }
 }
 
-// Check API status and update tooltip
-function checkApiStatusAndTooltip() {
+// Show connection warning popup
+function showConnectionWarning(errorMessage) {
+    // Create a Bootstrap alert modal
+    const alertHtml = `
+        <div class="modal fade" id="connectionWarningModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content border-warning">
+                    <div class="modal-header bg-warning text-dark">
+                        <h5 class="modal-title">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            Connection Warning
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="alert alert-warning mb-3">
+                            <strong>API Connection Lost!</strong>
+                        </div>
+                        <p>The connection to the cryptocurrency price API has been interrupted.</p>
+                        <p><strong>Error:</strong> ${errorMessage}</p>
+                        <p class="mb-0">The system will continue using simulated prices and automatically retry the connection.</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-warning" data-bs-dismiss="modal">
+                            <i class="fas fa-check me-1"></i>
+                            Understood
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Remove existing modal if present
+    const existingModal = document.getElementById('connectionWarningModal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    // Add modal to page
+    document.body.insertAdjacentHTML('beforeend', alertHtml);
+    
+    // Show the modal
+    const modal = new bootstrap.Modal(document.getElementById('connectionWarningModal'));
+    modal.show();
+    
+    console.log('Connection warning popup displayed');
+}
+
+// Check API status and update display
+function checkApiStatusAndDisplay() {
     fetch("/api/price-source-status")
         .then(response => response.json())
         .then(data => {
-            updateCryptoStatusTooltip(data.status);
+            updateCryptoStatusDisplay(data.status);
         })
         .catch(error => {
             console.error("Error checking API status:", error);
-            updateCryptoStatusTooltip({
+            updateCryptoStatusDisplay({
                 status: "error",
                 error: "Connection failed",
                 api_provider: "Unknown"
@@ -1439,27 +1466,17 @@ function checkApiStatusAndTooltip() {
         });
 }
 
-// Initialize API status tooltip on page load and update periodically
+// Initialize API status display on page load and update periodically
 document.addEventListener("DOMContentLoaded", function() {
-    // Initialize tooltip with a simple approach
+    // Initialize connection status tracking
+    window.connectionLost = false;
+    
     const cryptoStatus = document.getElementById('crypto-status');
     if (cryptoStatus) {
-        // Add basic tooltip attributes
-        cryptoStatus.setAttribute('data-bs-toggle', 'tooltip');
-        cryptoStatus.setAttribute('data-bs-placement', 'top');
-        cryptoStatus.setAttribute('data-bs-html', 'true');
-        cryptoStatus.style.cursor = 'pointer';
-        
-        // Initialize the tooltip
-        new bootstrap.Tooltip(cryptoStatus, {
-            html: true,
-            placement: 'top',
-            title: 'Loading API connection status...'
-        });
-        
-        console.log('Tooltip initialized for crypto-status element');
+        cryptoStatus.textContent = 'Connecting...';
+        console.log('API status display initialized');
     }
     
-    setTimeout(checkApiStatusAndTooltip, 2000); // Wait for page to load
-    setInterval(checkApiStatusAndTooltip, 30000); // Check every 30 seconds
+    setTimeout(checkApiStatusAndDisplay, 2000); // Wait for page to load
+    setInterval(checkApiStatusAndDisplay, 30000); // Check every 30 seconds
 });
