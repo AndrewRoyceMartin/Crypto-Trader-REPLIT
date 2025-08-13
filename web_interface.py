@@ -437,6 +437,30 @@ def export_crypto_portfolio():
         app.logger.error("Error exporting portfolio: %s", e)
         return jsonify({"error": str(e)}), 500
 
+@app.route("/api/crypto-chart/<symbol>")
+def get_crypto_chart(symbol):
+    """Return price history for a specific cryptocurrency."""
+    try:
+        initialize_system()
+        if crypto_portfolio and symbol in crypto_portfolio.portfolio:
+            crypto_data = crypto_portfolio.portfolio[symbol]
+            # Get the last 50 price points for the chart
+            price_history = crypto_data.get('price_history', [])[-50:]
+            chart_data = {
+                'symbol': symbol,
+                'name': crypto_data.get('name', symbol),
+                'current_price': crypto_data.get('current_price', 0),
+                'price_history': price_history,
+                'labels': [f"Point {i+1}" for i in range(len(price_history))],
+                'pnl_percent': crypto_data.get('pnl_percent', 0)
+            }
+            return jsonify(chart_data)
+        else:
+            return jsonify({"error": f"Cryptocurrency {symbol} not found"}), 404
+    except Exception as e:
+        app.logger.error("Error getting crypto chart for %s: %s", symbol, e)
+        return jsonify({"error": str(e)}), 500
+
 def get_portfolio_data():
     """Assemble portfolio snapshot and last-7-days equity series."""
     initialize_system()

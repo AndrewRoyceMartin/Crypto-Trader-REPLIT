@@ -90,22 +90,7 @@ class BollingerBandsStrategy(BaseStrategy):
             if pd.isna(current_upper) or pd.isna(current_lower) or pd.isna(current_atr) or pd.isna(current_rsi):
                 return signals
             
-            # TEMPORARY: Force trade generation for testing - simple buy every few periods
-            if len(data) > 40 and len(data) % 20 == 0:  # Every 20th data point after enough data
-                test_signal = Signal(
-                    action='buy',
-                    price=current_price,
-                    size=0.05,  # 5% of portfolio
-                    confidence=0.8,
-                    stop_loss=current_price * 0.98,
-                    take_profit=current_price * 1.04
-                )
-                if self.validate_signal(test_signal):
-                    signals.append(test_signal)
-                    self.logger.info(f"FORCED TEST BUY signal: Price={current_price:.2f}, Size={test_signal.size}")
-                else:
-                    self.logger.warning(f"FORCED signal FAILED validation: Price={current_price:.2f}")
-                return signals
+
             
             # Calculate band width for volatility filter
             band_width = (current_upper - current_lower) / current_middle

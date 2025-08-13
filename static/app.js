@@ -387,8 +387,11 @@ class TradingApp {
                     <td class="${pnlClass}">$${crypto.pnl.toFixed(2)}</td>
                     <td class="${pnlClass}">${crypto.pnl_percent.toFixed(2)}%</td>
                     <td>
-                        <button class="btn btn-outline-primary btn-sm" onclick="tradeCrypto('${crypto.symbol}')" title="Trade ${crypto.symbol}">
+                        <button class="btn btn-outline-primary btn-sm me-1" onclick="showCryptoChart('${crypto.symbol}')" title="View ${crypto.symbol} Chart">
                             <i class="fas fa-chart-line"></i>
+                        </button>
+                        <button class="btn btn-outline-success btn-sm" onclick="tradeCrypto('${crypto.symbol}')" title="Trade ${crypto.symbol}">
+                            <i class="fas fa-exchange-alt"></i>
                         </button>
                     </td>
                 </tr>
@@ -855,6 +858,123 @@ function tradeCrypto(symbol) {
     if (window.tradingApp) {
         window.tradingApp.showToast(`Trading pair set to ${tradingPair}`, 'info');
     }
+}
+
+// New function to show individual crypto chart
+function showCryptoChart(symbol) {
+    // Fetch individual crypto chart data
+    fetch(`/api/crypto-chart/${symbol}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                if (window.tradingApp) {
+                    window.tradingApp.showToast(`Error: ${data.error}`, 'error');
+                }
+                return;
+            }
+            
+            // Create modal for individual crypto chart
+            const modalHtml = `
+                <div class="modal fade" id="cryptoChartModal" tabindex="-1" aria-labelledby="cryptoChartModalLabel" aria-hidden="true">
+                    <div class="modal-dialog modal-lg">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="cryptoChartModalLabel">
+                                    ${data.name} (${data.symbol}) - $${data.current_price.toFixed(data.current_price < 1 ? 6 : 2)}
+                                </h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <h6>Current Price</h6>
+                                        <span class="h4">$${data.current_price.toFixed(data.current_price < 1 ? 6 : 2)}</span>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <h6>Performance</h6>
+                                        <span class="h4 ${data.pnl_percent >= 0 ? 'text-success' : 'text-danger'}">
+                                            ${data.pnl_percent >= 0 ? '+' : ''}${data.pnl_percent.toFixed(2)}%
+                                        </span>
+                                    </div>
+                                </div>
+                                <canvas id="individualCryptoChart" width="400" height="200"></canvas>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-primary" onclick="tradeCrypto('${data.symbol}')">
+                                    <i class="fas fa-exchange-alt me-1"></i>Trade ${data.symbol}
+                                </button>
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Remove existing modal if any
+            const existingModal = document.getElementById('cryptoChartModal');
+            if (existingModal) {
+                existingModal.remove();
+            }
+            
+            // Add modal to page
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+            
+            // Show modal
+            const modal = new bootstrap.Modal(document.getElementById('cryptoChartModal'));
+            modal.show();
+            
+            // Create chart after modal is shown
+            modal._element.addEventListener('shown.bs.modal', () => {
+                const ctx = document.getElementById('individualCryptoChart').getContext('2d');
+                new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: data.labels,
+                        datasets: [{
+                            label: `${data.symbol} Price`,
+                            data: data.price_history,
+                            borderColor: data.pnl_percent >= 0 ? '#28a745' : '#dc3545',
+                            backgroundColor: data.pnl_percent >= 0 ? 'rgba(40, 167, 69, 0.1)' : 'rgba(220, 53, 69, 0.1)',
+                            borderWidth: 2,
+                            fill: true,
+                            tension: 0.4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: false,
+                                ticks: {
+                                    callback: function(value) {
+                                        return '$' + value.toFixed(value < 1 ? 6 : 2);
+                                    }
+                                }
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                display: false
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return `${data.symbol}: $${context.parsed.y.toFixed(context.parsed.y < 1 ? 6 : 2)}`;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            });
+        })
+        .catch(error => {
+            console.error('Error fetching crypto chart:', error);
+            if (window.tradingApp) {
+                window.tradingApp.showToast('Error loading chart data', 'error');
+            }
+        });
 }
 
 // Portfolio management functions
