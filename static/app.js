@@ -7,6 +7,8 @@ class TradingApp {
         this.returnsChart = null;
         this.tradesChart = null;
         this.isLiveConfirmationPending = false;
+        this.countdownInterval = null;
+        this.countdown = 5;
         this.chartData = {
             portfolio: [],
             returns: [],
@@ -28,6 +30,9 @@ class TradingApp {
         this.updateInterval = setInterval(() => {
             this.updateDashboard();
         }, 5000);
+        
+        // Start countdown timer
+        this.startCountdown();
         
         // Handle page visibility change
         document.addEventListener('visibilitychange', () => {
@@ -63,6 +68,40 @@ class TradingApp {
         if (this.updateInterval) {
             clearInterval(this.updateInterval);
             this.updateInterval = null;
+        }
+        if (this.countdownInterval) {
+            clearInterval(this.countdownInterval);
+            this.countdownInterval = null;
+        }
+    }
+    
+    startCountdown() {
+        this.countdown = 5;
+        this.updateCountdownDisplay();
+        
+        if (this.countdownInterval) {
+            clearInterval(this.countdownInterval);
+        }
+        
+        this.countdownInterval = setInterval(() => {
+            this.countdown--;
+            if (this.countdown <= 0) {
+                this.countdown = 5; // Reset for next cycle
+            }
+            this.updateCountdownDisplay();
+        }, 1000);
+    }
+    
+    updateCountdownDisplay() {
+        const countdownElement = document.getElementById('trading-countdown');
+        if (countdownElement) {
+            if (this.countdown === 5) {
+                countdownElement.textContent = 'Checking trades...';
+                countdownElement.className = 'badge bg-primary ms-2';
+            } else {
+                countdownElement.textContent = `Next check: ${this.countdown}s`;
+                countdownElement.className = 'badge bg-secondary ms-2';
+            }
         }
     }
     
