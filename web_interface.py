@@ -453,12 +453,29 @@ def get_crypto_chart(symbol):
                         current_price = crypto_data.get('current_price', 100)
                         price_history = [current_price + (i * 0.1) for i in range(-25, 25)]
                     
+                    # Generate meaningful time-based labels
+                    time_labels = []
+                    if len(price_history) > 0:
+                        for i in range(len(price_history)):
+                            hours_ago = len(price_history) - i - 1
+                            if hours_ago == 0:
+                                time_labels.append("Now")
+                            elif hours_ago == 1:
+                                time_labels.append("1h ago")
+                            elif hours_ago < 24:
+                                time_labels.append(f"{hours_ago}h ago")
+                            else:
+                                days_ago = hours_ago // 24
+                                time_labels.append(f"{days_ago}d ago")
+                    else:
+                        time_labels = ["No data"]
+                    
                     chart_data = {
                         'symbol': symbol,
                         'name': crypto_data.get('name', symbol),
                         'current_price': crypto_data.get('current_price', 0),
                         'price_history': price_history,
-                        'labels': [f"Point {i+1}" for i in range(len(price_history))],
+                        'labels': time_labels,
                         'pnl_percent': crypto_data.get('pnl_percent', 0)
                     }
                     return jsonify(chart_data)
@@ -470,7 +487,7 @@ def get_crypto_chart(symbol):
                     'name': symbol,
                     'current_price': 100.0,
                     'price_history': [100.0, 101.0, 99.0, 102.0, 98.0],
-                    'labels': ['Point 1', 'Point 2', 'Point 3', 'Point 4', 'Point 5'],
+                    'labels': ['4h ago', '3h ago', '2h ago', '1h ago', 'Now'],
                     'pnl_percent': 0.0
                 })
         else:
