@@ -1287,19 +1287,32 @@ function renderCryptoTable() {
         const pnlClass = crypto.pnl >= 0 ? 'text-success' : 'text-danger';
         const priceDisplay = crypto.current_price < 1 ? crypto.current_price.toFixed(6) : crypto.current_price.toFixed(2);
         
+        // Calculate proximity to target sell price  
+        const proximityClass = calculateTargetProximity(crypto.current_price, crypto.target_sell_price);
+        
+        const projectedPnl = crypto.projected_sell_pnl || 0;
+        const projectedPnlClass = projectedPnl >= 0 ? 'text-success' : 'text-danger';
+        const targetBuyDisplay = crypto.target_buy_price ? crypto.target_buy_price.toFixed(crypto.target_buy_price < 1 ? 6 : 2) : '0.00';
+        
         return `
-            <tr>
+            <tr class="${proximityClass}">
                 <td class="fw-bold">${crypto.rank}</td>
                 <td class="fw-semibold">${crypto.symbol}</td>
                 <td class="text-muted">${crypto.name}</td>
                 <td>${crypto.quantity.toFixed(4)}</td>
                 <td>$${priceDisplay}</td>
                 <td>$${crypto.current_value.toFixed(2)}</td>
+                <td class="bg-light text-warning">$${crypto.target_sell_price ? crypto.target_sell_price.toFixed(crypto.target_sell_price < 1 ? 6 : 2) : 'N/A'}</td>
+                <td class="bg-light text-success">$${targetBuyDisplay}</td>
+                <td class="bg-light ${projectedPnlClass}">$${projectedPnl >= 0 ? '+' : ''}${projectedPnl.toFixed(2)}</td>
                 <td class="${pnlClass}">$${crypto.pnl.toFixed(2)}</td>
                 <td class="${pnlClass}">${crypto.pnl_percent.toFixed(2)}%</td>
                 <td>
-                    <button class="btn btn-outline-primary btn-sm" onclick="tradeCrypto('${crypto.symbol}')" title="Trade ${crypto.symbol}">
+                    <button class="btn btn-outline-primary btn-sm me-1" onclick="showCryptoChart('${crypto.symbol}')" title="View ${crypto.symbol} Chart">
                         <i class="fas fa-chart-line"></i>
+                    </button>
+                    <button class="btn btn-outline-success btn-sm" onclick="tradeCrypto('${crypto.symbol}')" title="Trade ${crypto.symbol}">
+                        <i class="fas fa-exchange-alt"></i>
                     </button>
                 </td>
             </tr>

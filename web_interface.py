@@ -333,7 +333,8 @@ def get_crypto_portfolio():
                 "initial_value": data["initial_value"],
                 "pnl": round(data["pnl"], 2),
                 "pnl_percent": round(data["pnl_percent"], 2),
-                "target_sell_price": round(data.get("target_sell_price", 0), 4) if data.get("target_sell_price") is not None else 0
+                "target_sell_price": round(data.get("target_sell_price", 0), 4) if data.get("target_sell_price") is not None else 0,
+                "target_buy_price": round(data.get("target_buy_price", 0), 4) if data.get("target_buy_price") is not None else 0
             })
         
         # Sort by current value (largest positions first)
