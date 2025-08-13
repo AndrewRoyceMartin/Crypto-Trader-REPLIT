@@ -403,32 +403,6 @@ class TradingApp {
         }).join('');
     }
 
-// Calculate proximity to target sell price for color coding
-function calculateTargetProximity(currentPrice, targetPrice) {
-        if (!targetPrice || !currentPrice || targetPrice <= currentPrice) {
-            // Target already reached or invalid data
-            if (targetPrice && currentPrice >= targetPrice) {
-                return 'target-proximity-achieved';
-            }
-            return 'target-proximity-cold';
-        }
-        
-        // Calculate how close current price is to target (as percentage)
-        const proximityPercent = (currentPrice / targetPrice) * 100;
-        
-        if (proximityPercent >= 95) {
-            return 'target-proximity-very-hot'; // 95%+ to target - red
-        } else if (proximityPercent >= 90) {
-            return 'target-proximity-hot'; // 90-95% to target - orange
-        } else if (proximityPercent >= 80) {
-            return 'target-proximity-warm'; // 80-90% to target - yellow
-        } else if (proximityPercent >= 60) {
-            return 'target-proximity-cool'; // 60-80% to target - blue
-        } else {
-            return 'target-proximity-cold'; // <60% to target - gray
-        }
-    }
-
     updateTradingStatus(status) {
         const modeElement = document.getElementById('trading-mode');
         const symbolElement = document.getElementById('trading-symbol');
@@ -1328,6 +1302,32 @@ function showMainDashboard() {
     }
     
     console.log('Returned to main dashboard');
+}
+
+// Calculate proximity to target sell price for color coding
+function calculateTargetProximity(currentPrice, targetPrice) {
+    if (!targetPrice || !currentPrice || targetPrice <= currentPrice) {
+        // Target already reached or invalid data
+        if (targetPrice && currentPrice >= targetPrice) {
+            return 'target-proximity-achieved';
+        }
+        return 'target-proximity-cold';
+    }
+    
+    // Calculate how close current price is to target (as percentage)
+    const proximityPercent = (currentPrice / targetPrice) * 100;
+    
+    if (proximityPercent >= 95) {
+        return 'target-proximity-very-hot'; // 95%+ to target - red
+    } else if (proximityPercent >= 90) {
+        return 'target-proximity-hot'; // 90-95% to target - orange
+    } else if (proximityPercent >= 80) {
+        return 'target-proximity-warm'; // 80-90% to target - yellow
+    } else if (proximityPercent >= 60) {
+        return 'target-proximity-cool'; // 60-80% to target - blue
+    } else {
+        return 'target-proximity-cold'; // <60% to target - gray
+    }
 }
 
 // Initialize the app when DOM is loaded
