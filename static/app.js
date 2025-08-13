@@ -1373,18 +1373,21 @@ function updateConnectionStatusDisplay(apiStatus) {
     const connectionIcon = document.getElementById("connection-icon");
     const connectionText = document.getElementById("connection-text");
     const cryptoStatus = document.getElementById("crypto-status");
-    
-    if (!connectionIcon || !connectionText) {
-        console.log('Connection status elements not found');
-        return;
-    }
+    const connectionStatus = document.getElementById("connection-status");
     
     console.log('Updating connection status display with:', apiStatus);
     
     if (apiStatus.status === "connected") {
-        // Update top-right corner connection status
-        connectionIcon.className = "fas fa-circle text-success me-1";
-        connectionText.textContent = `Connected to ${apiStatus.api_provider}`;
+        // Update new top-right corner connection status (if elements exist)
+        if (connectionIcon && connectionText) {
+            connectionIcon.className = "fas fa-circle text-success me-1";
+            connectionText.textContent = `Connected to ${apiStatus.api_provider}`;
+        }
+        
+        // Update old top-right corner connection status (fallback)
+        if (connectionStatus && (!connectionIcon || !connectionText)) {
+            connectionStatus.innerHTML = `<i class="fas fa-circle text-success me-1"></i>Connected to ${apiStatus.api_provider}`;
+        }
         
         // Update crypto portfolio status badge
         if (cryptoStatus) {
@@ -1397,9 +1400,16 @@ function updateConnectionStatusDisplay(apiStatus) {
         
         console.log('Status updated: Connected to', apiStatus.api_provider);
     } else {
-        // Update top-right corner connection status
-        connectionIcon.className = "fas fa-circle text-danger me-1";
-        connectionText.textContent = "Connection Lost";
+        // Update new top-right corner connection status (if elements exist)
+        if (connectionIcon && connectionText) {
+            connectionIcon.className = "fas fa-circle text-danger me-1";
+            connectionText.textContent = "Connection Lost";
+        }
+        
+        // Update old top-right corner connection status (fallback)
+        if (connectionStatus && (!connectionIcon || !connectionText)) {
+            connectionStatus.innerHTML = `<i class="fas fa-circle text-danger me-1"></i>Connection Lost`;
+        }
         
         // Update crypto portfolio status badge
         if (cryptoStatus) {
