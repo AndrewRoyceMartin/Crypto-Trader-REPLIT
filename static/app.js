@@ -397,6 +397,13 @@ class TradingApp {
             const projectedPnlClass = projectedPnl >= 0 ? 'text-success' : 'text-danger';
             const targetBuyDisplay = crypto.target_buy_price ? crypto.target_buy_price.toFixed(crypto.target_buy_price < 1 ? 6 : 2) : '0.00';
             
+            // Calculate approaching sell percentage
+            const approachingSellPercentage = crypto.target_sell_price ? 
+                Math.min(100, Math.max(0, (crypto.current_price / crypto.target_sell_price) * 100)) : 0;
+            const approachingClass = approachingSellPercentage >= 95 ? 'text-danger fw-bold' : 
+                                   approachingSellPercentage >= 90 ? 'text-warning fw-semibold' : 
+                                   approachingSellPercentage >= 80 ? 'text-info' : 'text-muted';
+            
             return `
                 <tr class="${proximityClass}">
                     <td class="fw-bold">${crypto.rank}</td>
@@ -406,6 +413,7 @@ class TradingApp {
                     <td>$${priceDisplay}</td>
                     <td>$${crypto.current_value.toFixed(2)}</td>
                     <td class="bg-light text-warning">$${crypto.target_sell_price ? crypto.target_sell_price.toFixed(crypto.target_sell_price < 1 ? 6 : 2) : 'N/A'}</td>
+                    <td class="bg-warning bg-opacity-25 ${approachingClass}">${approachingSellPercentage.toFixed(1)}%</td>
                     <td class="bg-light text-success">$${targetBuyDisplay}</td>
                     <td class="bg-light ${projectedPnlClass}">$${projectedPnl >= 0 ? '+' : ''}${projectedPnl.toFixed(2)}</td>
                     <td class="${pnlClass}">$${crypto.pnl.toFixed(2)}</td>
@@ -1239,6 +1247,10 @@ function applySortToCryptoData() {
             case 'target_sell':
                 valueA = parseFloat(a.target_sell_price || 0);
                 valueB = parseFloat(b.target_sell_price || 0);
+                break;
+            case 'approaching_sell':
+                valueA = a.target_sell_price ? Math.min(100, Math.max(0, (a.current_price / a.target_sell_price) * 100)) : 0;
+                valueB = b.target_sell_price ? Math.min(100, Math.max(0, (b.current_price / b.target_sell_price) * 100)) : 0;
                 break;
             case 'target_buy':
                 valueA = parseFloat(a.target_buy_price || 0);
