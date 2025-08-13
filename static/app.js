@@ -400,9 +400,9 @@ class TradingApp {
             // Calculate approaching sell percentage
             const approachingSellPercentage = crypto.target_sell_price ? 
                 Math.min(100, Math.max(0, (crypto.current_price / crypto.target_sell_price) * 100)) : 0;
-            const approachingClass = approachingSellPercentage >= 95 ? 'text-danger fw-bold' : 
-                                   approachingSellPercentage >= 90 ? 'text-warning fw-semibold' : 
-                                   approachingSellPercentage >= 80 ? 'text-info' : 'text-muted';
+            const approachingClass = approachingSellPercentage >= 95 ? 'text-white fw-bold bg-danger bg-opacity-75' : 
+                                   approachingSellPercentage >= 90 ? 'text-dark fw-semibold bg-warning bg-opacity-50' : 
+                                   approachingSellPercentage >= 80 ? 'text-white fw-normal bg-info bg-opacity-75' : 'text-dark';
             
             return `
                 <tr class="${proximityClass}">
@@ -413,7 +413,7 @@ class TradingApp {
                     <td>$${priceDisplay}</td>
                     <td>$${crypto.current_value.toFixed(2)}</td>
                     <td class="bg-light text-warning">$${crypto.target_sell_price ? crypto.target_sell_price.toFixed(crypto.target_sell_price < 1 ? 6 : 2) : 'N/A'}</td>
-                    <td class="bg-warning bg-opacity-25 ${approachingClass}">${approachingSellPercentage.toFixed(1)}%</td>
+                    <td class="${approachingClass}" style="padding: 8px; border-radius: 4px;">${approachingSellPercentage.toFixed(1)}%</td>
                     <td class="bg-light text-success">$${targetBuyDisplay}</td>
                     <td class="bg-light ${projectedPnlClass}">$${projectedPnl >= 0 ? '+' : ''}${projectedPnl.toFixed(2)}</td>
                     <td class="${pnlClass}">$${crypto.pnl.toFixed(2)}</td>
