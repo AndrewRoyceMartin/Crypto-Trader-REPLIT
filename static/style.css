@@ -253,6 +253,41 @@ body {
     border-left: 4px solid var(--info-color);
 }
 
+/* Trade Action Styling */
+.trade-buy {
+    color: var(--success-color);
+    font-weight: 600;
+    background-color: rgba(40, 167, 69, 0.1);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.875rem;
+}
+
+.trade-sell {
+    color: var(--danger-color);
+    font-weight: 600;
+    background-color: rgba(220, 53, 69, 0.1);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.875rem;
+}
+
+/* P&L Styling */
+.pnl-positive {
+    color: var(--success-color);
+    font-weight: 500;
+}
+
+.pnl-negative {
+    color: var(--danger-color);
+    font-weight: 500;
+}
+
+.pnl-neutral {
+    color: #6c757d;
+    font-weight: 500;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
     .portfolio-metric {
