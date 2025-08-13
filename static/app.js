@@ -357,7 +357,7 @@ class TradingApp {
         const tbody = document.getElementById('crypto-portfolio-table');
         
         if (!cryptos || cryptos.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted">No cryptocurrency data available</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="10" class="text-center text-muted">No cryptocurrency data available</td></tr>';
             return;
         }
         
@@ -384,6 +384,7 @@ class TradingApp {
                     <td>${crypto.quantity.toFixed(4)}</td>
                     <td>$${priceDisplay}</td>
                     <td>$${crypto.current_value.toFixed(2)}</td>
+                    <td class="text-warning">$${crypto.target_sell_price ? crypto.target_sell_price.toFixed(crypto.target_sell_price < 1 ? 6 : 2) : 'N/A'}</td>
                     <td class="${pnlClass}">$${crypto.pnl.toFixed(2)}</td>
                     <td class="${pnlClass}">${crypto.pnl_percent.toFixed(2)}%</td>
                     <td>

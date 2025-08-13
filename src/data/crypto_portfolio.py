@@ -172,7 +172,8 @@ class CryptoPortfolioManager:
                 "initial_value": self.initial_value,
                 "current_value": self.initial_value,
                 "pnl": 0.0,
-                "pnl_percent": 0.0
+                "pnl_percent": 0.0,
+                "target_sell_price": self._calculate_target_sell_price(base_price, crypto["rank"])
             }
             
         return portfolio
@@ -222,6 +223,9 @@ class CryptoPortfolioManager:
             crypto["pnl"] = crypto["current_value"] - crypto["initial_value"]
             crypto["pnl_percent"] = (crypto["pnl"] / crypto["initial_value"]) * 100
             
+            # Update target sell price based on current price
+            crypto["target_sell_price"] = self._calculate_target_sell_price(new_price, crypto["rank"])
+            
             # Store price history
             if symbol not in self.price_history:
                 self.price_history[symbol] = []
@@ -252,6 +256,26 @@ class CryptoPortfolioManager:
             return 0.07    # 7% for emerging projects
         else:  # Micro-cap moonshots
             return 0.12    # 12% extreme volatility for small caps
+    
+    def _calculate_target_sell_price(self, current_price: float, rank: int) -> float:
+        """Calculate target sell price based on Bollinger Bands strategy and crypto tier."""
+        # Base profit target varies by crypto tier
+        if rank <= 2:  # BTC, ETH - conservative targets
+            profit_target = 0.05    # 5% profit target
+        elif rank <= 10:  # Top performers - moderate targets
+            profit_target = 0.08    # 8% profit target
+        elif rank <= 20:  # High-growth winners - aggressive targets
+            profit_target = 0.12    # 12% profit target
+        elif rank <= 40:  # Strong altcoins - high targets
+            profit_target = 0.10    # 10% profit target
+        elif rank <= 60:  # DeFi leaders - moderate targets
+            profit_target = 0.09    # 9% profit target
+        elif rank <= 80:  # Infrastructure - high risk/reward
+            profit_target = 0.15    # 15% profit target
+        else:  # Micro-cap moonshots - maximum targets
+            profit_target = 0.20    # 20% profit target for high-risk plays
+        
+        return current_price * (1 + profit_target)
     
     def get_portfolio_summary(self) -> Dict:
         """Get complete portfolio summary statistics."""
