@@ -429,3 +429,36 @@ body {
         color: black;
     }
 }
+
+/* Responsive Chart Container for Modal */
+.chart-container-responsive {
+    position: relative;
+    height: 350px;
+    width: 100%;
+    margin: 1rem 0;
+}
+
+.chart-container-responsive canvas {
+    max-width: 100% !important;
+    height: auto !important;
+}
+
+/* Modal sizing fixes */
+.modal-xl {
+    max-width: 90vw;
+}
+
+.modal-dialog-centered {
+    min-height: calc(100vh - 2rem);
+}
+
+@media (max-width: 768px) {
+    .modal-xl {
+        max-width: 95vw;
+        margin: 0.5rem;
+    }
+    
+    .chart-container-responsive {
+        height: 250px;
+    }
+}

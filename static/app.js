@@ -885,7 +885,7 @@ function showCryptoChart(symbol) {
             // Create modal for individual crypto chart
             const modalHtml = `
                 <div class="modal fade" id="cryptoChartModal" tabindex="-1" aria-labelledby="cryptoChartModalLabel" aria-hidden="true">
-                    <div class="modal-dialog modal-lg">
+                    <div class="modal-dialog modal-xl modal-dialog-centered">
                         <div class="modal-content">
                             <div class="modal-header">
                                 <h5 class="modal-title" id="cryptoChartModalLabel">
@@ -906,10 +906,12 @@ function showCryptoChart(symbol) {
                                         </span>
                                     </div>
                                 </div>
-                                <canvas id="individualCryptoChart" width="400" height="200"></canvas>
+                                <div class="chart-container-responsive">
+                                    <canvas id="individualCryptoChart"></canvas>
+                                </div>
                             </div>
                             <div class="modal-footer">
-                                <button type="button" class="btn btn-primary" onclick="tradeCrypto('${data.symbol}')">
+                                <button type="button" class="btn btn-primary" onclick="tradeCrypto('${data.symbol}'); bootstrap.Modal.getInstance(document.getElementById('cryptoChartModal')).hide();">
                                     <i class="fas fa-exchange-alt me-1"></i>Trade ${data.symbol}
                                 </button>
                                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
