@@ -821,42 +821,51 @@ function refreshCryptoPortfolio() {
 
 // Trade a specific cryptocurrency from the portfolio
 function tradeCrypto(symbol) {
-    // Set the trading symbol to the selected crypto
-    const symbolSelect = document.getElementById('symbol-select');
-    const tradingPair = symbol + '/USDT';
-    
-    // Check if this trading pair exists in our options
-    let optionExists = false;
-    for (let option of symbolSelect.options) {
-        if (option.value === tradingPair) {
+    try {
+        // Set the trading symbol to the selected crypto
+        const symbolSelect = document.getElementById('symbol-select');
+        const tradingPair = symbol + '/USDT';
+        
+        // Check if this trading pair exists in our options
+        let optionExists = false;
+        for (let option of symbolSelect.options) {
+            if (option.value === tradingPair) {
+                symbolSelect.value = tradingPair;
+                optionExists = true;
+                break;
+            }
+        }
+        
+        // If the pair doesn't exist, add it dynamically
+        if (!optionExists) {
+            const newOption = new Option(tradingPair, tradingPair);
+            // Add to the "Popular Alts" group or create a new group
+            const altGroup = symbolSelect.querySelector('optgroup[label="Popular Alts"]');
+            if (altGroup) {
+                altGroup.appendChild(newOption);
+            } else {
+                symbolSelect.appendChild(newOption);
+            }
             symbolSelect.value = tradingPair;
-            optionExists = true;
-            break;
         }
-    }
-    
-    // If the pair doesn't exist, add it dynamically
-    if (!optionExists) {
-        const newOption = new Option(tradingPair, tradingPair);
-        // Add to the "Popular Alts" group or create a new group
-        const altGroup = symbolSelect.querySelector('optgroup[label="Popular Alts"]');
-        if (altGroup) {
-            altGroup.appendChild(newOption);
+        
+        // Scroll to trading controls
+        document.querySelector('#trading-form').scrollIntoView({ 
+            behavior: 'smooth',
+            block: 'center'
+        });
+        
+        // Show notification
+        if (window.tradingApp && window.tradingApp.showToast) {
+            window.tradingApp.showToast(`Trading pair set to ${tradingPair}`, 'info');
         } else {
-            symbolSelect.appendChild(newOption);
+            console.log(`Trading pair set to ${tradingPair}`);
         }
-        symbolSelect.value = tradingPair;
-    }
-    
-    // Scroll to trading controls
-    document.querySelector('#trading-form').scrollIntoView({ 
-        behavior: 'smooth',
-        block: 'center'
-    });
-    
-    // Show notification
-    if (window.tradingApp) {
-        window.tradingApp.showToast(`Trading pair set to ${tradingPair}`, 'info');
+    } catch (error) {
+        console.error('Error in tradeCrypto function:', error);
+        if (window.tradingApp && window.tradingApp.showToast) {
+            window.tradingApp.showToast('Error setting trading pair', 'error');
+        }
     }
 }
 
