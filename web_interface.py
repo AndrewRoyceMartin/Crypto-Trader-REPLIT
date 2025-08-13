@@ -275,6 +275,97 @@ def get_crypto_portfolio():
         app.logger.error("Error getting crypto portfolio: %s", e)
         return jsonify({"error": str(e)}), 500
 
+@app.route("/api/rebalance-portfolio", methods=["POST"])
+def rebalance_crypto_portfolio():
+    """Rebalance the cryptocurrency portfolio to equal weights."""
+    try:
+        initialize_system()
+        if not crypto_portfolio:
+            return jsonify({"error": "Crypto portfolio not initialized"}), 500
+        
+        # Reset all positions to $100 each but keep price history
+        portfolio_data = crypto_portfolio.get_portfolio_data()
+        for symbol, data in portfolio_data.items():
+            current_price = data["current_price"]
+            new_quantity = 100.0 / current_price
+            
+            crypto_portfolio.portfolio_data[symbol]["quantity"] = new_quantity
+            crypto_portfolio.portfolio_data[symbol]["initial_value"] = 100.0
+            crypto_portfolio.portfolio_data[symbol]["current_value"] = new_quantity * current_price
+            crypto_portfolio.portfolio_data[symbol]["pnl"] = crypto_portfolio.portfolio_data[symbol]["current_value"] - 100.0
+            crypto_portfolio.portfolio_data[symbol]["pnl_percent"] = (crypto_portfolio.portfolio_data[symbol]["pnl"] / 100.0) * 100
+        
+        crypto_portfolio.save_portfolio_state()
+        return jsonify({"success": True, "message": "Portfolio rebalanced successfully"})
+        
+    except Exception as e:
+        app.logger.error("Error rebalancing portfolio: %s", e)
+        return jsonify({"success": False, "error": str(e)}), 500
+
+@app.route("/api/reset-portfolio", methods=["POST"])
+def reset_crypto_portfolio():
+    """Reset the cryptocurrency portfolio to initial state."""
+    global crypto_portfolio
+    try:
+        initialize_system()
+        if not crypto_portfolio:
+            return jsonify({"error": "Crypto portfolio not initialized"}), 500
+        
+        # Reinitialize the entire portfolio
+        crypto_portfolio = CryptoPortfolioManager(initial_value_per_crypto=100.0)
+        crypto_portfolio.save_portfolio_state()
+        
+        return jsonify({"success": True, "message": "Portfolio reset successfully"})
+        
+    except Exception as e:
+        app.logger.error("Error resetting portfolio: %s", e)
+        return jsonify({"success": False, "error": str(e)}), 500
+
+@app.route("/api/export-portfolio")
+def export_crypto_portfolio():
+    """Export cryptocurrency portfolio data as CSV."""
+    try:
+        initialize_system()
+        if not crypto_portfolio:
+            return jsonify({"error": "Crypto portfolio not initialized"}), 500
+        
+        import csv
+        from io import StringIO
+        
+        output = StringIO()
+        writer = csv.writer(output)
+        
+        # Write header
+        writer.writerow(['Rank', 'Symbol', 'Name', 'Quantity', 'Current Price', 'Current Value', 'Initial Value', 'PnL', 'PnL %'])
+        
+        # Write data
+        portfolio_data = crypto_portfolio.get_portfolio_data()
+        for symbol, data in sorted(portfolio_data.items(), key=lambda x: x[1]['rank']):
+            writer.writerow([
+                data['rank'],
+                symbol,
+                data['name'],
+                round(data['quantity'], 6),
+                round(data['current_price'], 6),
+                round(data['current_value'], 2),
+                data['initial_value'],
+                round(data['pnl'], 2),
+                round(data['pnl_percent'], 2)
+            ])
+        
+        output.seek(0)
+        
+        from flask import Response
+        return Response(
+            output.getvalue(),
+            mimetype='text/csv',
+            headers={'Content-Disposition': 'attachment; filename=crypto_portfolio.csv'}
+        )
+        
+    except Exception as e:
+        app.logger.error("Error exporting portfolio: %s", e)
+        return jsonify({"error": str(e)}), 500
+
 def get_portfolio_data():
     """Assemble portfolio snapshot and last-7-days equity series."""
     initialize_system()

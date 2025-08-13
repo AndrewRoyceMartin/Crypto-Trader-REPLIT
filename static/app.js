@@ -357,7 +357,7 @@ class TradingApp {
         const tbody = document.getElementById('crypto-portfolio-table');
         
         if (!cryptos || cryptos.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted">No cryptocurrency data available</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted">No cryptocurrency data available</td></tr>';
             return;
         }
         
@@ -375,6 +375,11 @@ class TradingApp {
                     <td>$${crypto.current_value.toFixed(2)}</td>
                     <td class="${pnlClass}">$${crypto.pnl.toFixed(2)}</td>
                     <td class="${pnlClass}">${crypto.pnl_percent.toFixed(2)}%</td>
+                    <td>
+                        <button class="btn btn-outline-primary btn-sm" onclick="tradeCrypto('${crypto.symbol}')" title="Trade ${crypto.symbol}">
+                            <i class="fas fa-chart-line"></i>
+                        </button>
+                    </td>
                 </tr>
             `;
         }).join('');
@@ -767,6 +772,88 @@ async function runBacktest() {
 function refreshCryptoPortfolio() {
     if (window.tradingDashboard) {
         window.tradingDashboard.updateCryptoPortfolio();
+    }
+}
+
+// Trade a specific cryptocurrency from the portfolio
+function tradeCrypto(symbol) {
+    // Set the trading symbol to the selected crypto
+    const symbolSelect = document.getElementById('symbol-select');
+    const tradingPair = symbol + '/USDT';
+    
+    // Check if this trading pair exists in our options
+    let optionExists = false;
+    for (let option of symbolSelect.options) {
+        if (option.value === tradingPair) {
+            symbolSelect.value = tradingPair;
+            optionExists = true;
+            break;
+        }
+    }
+    
+    // If the pair doesn't exist, add it dynamically
+    if (!optionExists) {
+        const newOption = new Option(tradingPair, tradingPair);
+        // Add to the "Popular Alts" group or create a new group
+        const altGroup = symbolSelect.querySelector('optgroup[label="Popular Alts"]');
+        if (altGroup) {
+            altGroup.appendChild(newOption);
+        } else {
+            symbolSelect.appendChild(newOption);
+        }
+        symbolSelect.value = tradingPair;
+    }
+    
+    // Scroll to trading controls
+    document.querySelector('#trading-form').scrollIntoView({ 
+        behavior: 'smooth',
+        block: 'center'
+    });
+    
+    // Show notification
+    if (window.tradingApp) {
+        window.tradingApp.showToast(`Trading pair set to ${tradingPair}`, 'info');
+    }
+}
+
+// Portfolio management functions
+function rebalancePortfolio() {
+    if (confirm('Are you sure you want to rebalance the portfolio? This will reset all positions to equal $100 values.')) {
+        fetch('/api/rebalance-portfolio', { method: 'POST' })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    window.tradingApp.showToast('Portfolio rebalanced successfully', 'success');
+                    refreshCryptoPortfolio();
+                } else {
+                    window.tradingApp.showToast('Failed to rebalance portfolio: ' + data.error, 'danger');
+                }
+            })
+            .catch(error => {
+                window.tradingApp.showToast('Error rebalancing portfolio: ' + error.message, 'danger');
+            });
+    }
+}
+
+function exportPortfolio() {
+    window.open('/api/export-portfolio', '_blank');
+}
+
+function resetPortfolio() {
+    if (confirm('Are you sure you want to reset all cryptocurrency positions to $100 each? This will lose all current price history.')) {
+        fetch('/api/reset-portfolio', { method: 'POST' })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    window.tradingApp.showToast('Portfolio reset successfully', 'success');
+                    refreshCryptoPortfolio();
+                } else {
+                    window.tradingApp.showToast('Failed to reset portfolio: ' + data.error, 'danger');
+                }
+            })
+            .catch(error => {
+                window.tradingApp.showToast('Error resetting portfolio: ' + error.message, 'danger');
+            });
     }
 }
 

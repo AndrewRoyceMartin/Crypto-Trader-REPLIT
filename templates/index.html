@@ -186,10 +186,28 @@
                             <div class="mb-3">
                                 <label for="symbol-select" class="form-label">Symbol</label>
                                 <select class="form-select" id="symbol-select">
-                                    <option value="BTC/USDT">BTC/USDT</option>
-                                    <option value="ETH/USDT">ETH/USDT</option>
-                                    <option value="BTC/USD">BTC/USD</option>
-                                    <option value="ETH/USD">ETH/USD</option>
+                                    <optgroup label="Major Pairs">
+                                        <option value="BTC/USDT">BTC/USDT</option>
+                                        <option value="ETH/USDT">ETH/USDT</option>
+                                        <option value="BTC/USD">BTC/USD</option>
+                                        <option value="ETH/USD">ETH/USD</option>
+                                    </optgroup>
+                                    <optgroup label="Top 10 Portfolio Cryptos">
+                                        <option value="BNB/USDT">BNB/USDT</option>
+                                        <option value="SOL/USDT">SOL/USDT</option>
+                                        <option value="XRP/USDT">XRP/USDT</option>
+                                        <option value="DOGE/USDT">DOGE/USDT</option>
+                                        <option value="ADA/USDT">ADA/USDT</option>
+                                        <option value="AVAX/USDT">AVAX/USDT</option>
+                                    </optgroup>
+                                    <optgroup label="Popular Alts">
+                                        <option value="LINK/USDT">LINK/USDT</option>
+                                        <option value="MATIC/USDT">MATIC/USDT</option>
+                                        <option value="DOT/USDT">DOT/USDT</option>
+                                        <option value="UNI/USDT">UNI/USDT</option>
+                                        <option value="LTC/USDT">LTC/USDT</option>
+                                        <option value="BCH/USDT">BCH/USDT</option>
+                                    </optgroup>
                                 </select>
                             </div>
                             
@@ -277,6 +295,25 @@
                             </div>
                         </div>
                         
+                        <!-- Portfolio Actions -->
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <button class="btn btn-outline-success btn-sm w-100" onclick="rebalancePortfolio()">
+                                    <i class="fas fa-balance-scale me-1"></i>Rebalance Portfolio
+                                </button>
+                            </div>
+                            <div class="col-md-4">
+                                <button class="btn btn-outline-info btn-sm w-100" onclick="exportPortfolio()">
+                                    <i class="fas fa-download me-1"></i>Export Data
+                                </button>
+                            </div>
+                            <div class="col-md-4">
+                                <button class="btn btn-outline-warning btn-sm w-100" onclick="resetPortfolio()">
+                                    <i class="fas fa-undo me-1"></i>Reset to $100 Each
+                                </button>
+                            </div>
+                        </div>
+                        
                         <!-- Crypto Portfolio Table -->
                         <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
                             <table class="table table-sm table-hover">
@@ -290,11 +327,12 @@
                                         <th>Value</th>
                                         <th>P&L</th>
                                         <th>P&L %</th>
+                                        <th>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody id="crypto-portfolio-table">
                                     <tr>
-                                        <td colspan="8" class="text-center text-muted">Loading cryptocurrency portfolio...</td>
+                                        <td colspan="9" class="text-center text-muted">Loading cryptocurrency portfolio...</td>
                                     </tr>
                                 </tbody>
                             </table>
