@@ -21,6 +21,7 @@ from src.strategies.bollinger_strategy import BollingerBandsStrategy
 from src.exchanges.okx_adapter import OKXAdapter  # (kept for future use)
 from src.exchanges.kraken_adapter import KrakenAdapter  # (kept for future use)
 from src.data.crypto_portfolio import CryptoPortfolioManager
+from src.utils.email_service import email_service
 
 # -----------------------------------------------------------------------------
 # Flask app
@@ -1137,6 +1138,63 @@ def get_config():
         )
     except Exception as e:
         app.logger.error("Error getting config: %s", e)
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/api/email-settings", methods=["GET"])
+def get_email_settings():
+    """Get current email notification settings."""
+    try:
+        return jsonify(email_service.settings.get("email_notifications", {}))
+    except Exception as e:
+        app.logger.error("Error getting email settings: %s", e)
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/api/email-settings", methods=["POST"])
+def update_email_settings():
+    """Update email notification settings."""
+    try:
+        data = request.json
+        enabled = data.get('enabled')
+        recipient_email = data.get('recipient_email')
+        sender_email = data.get('sender_email')
+        
+        success = email_service.update_email_settings(
+            enabled=enabled,
+            recipient_email=recipient_email, 
+            sender_email=sender_email
+        )
+        
+        if success:
+            return jsonify({"success": True, "message": "Email settings updated successfully"})
+        else:
+            return jsonify({"success": False, "error": "Failed to update email settings"}), 500
+            
+    except Exception as e:
+        app.logger.error("Error updating email settings: %s", e)
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/api/test-email", methods=["POST"])
+def test_email():
+    """Send a test email notification."""
+    try:
+        test_trade_data = {
+            'symbol': 'BTC',
+            'action': 'TEST',
+            'quantity': 0.001,
+            'price': 50000,
+            'total_value': 50,
+            'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        }
+        
+        success = email_service.send_trade_notification(test_trade_data)
+        
+        if success:
+            return jsonify({"success": True, "message": "Test email sent successfully!"})
+        else:
+            return jsonify({"success": False, "error": "Failed to send test email. Check your email settings and SendGrid API key."}), 500
+            
+    except Exception as e:
+        app.logger.error("Error sending test email: %s", e)
         return jsonify({"error": str(e)}), 500
 
 @app.route("/api/emergency_stop", methods=["POST"])

@@ -11,6 +11,7 @@ import logging
 import json
 import os
 from .price_api import CryptoPriceAPI
+from ..utils.email_service import email_service
 
 class CryptoPortfolioManager:
     """Manages a portfolio of 100 different cryptocurrencies."""
@@ -534,6 +535,17 @@ class CryptoPortfolioManager:
                         }
                         db_manager.save_trade(trade_data)
                     
+                    # Send email notification for successful buy
+                    trade_data_email = {
+                        'symbol': symbol,
+                        'action': 'BUY',
+                        'quantity': quantity,
+                        'price': current_price,
+                        'total_value': amount,
+                        'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                    }
+                    email_service.send_trade_notification(trade_data_email)
+                    
                     self.logger.info(f"AUTO BUY executed: {symbol} - {quantity:.4f} @ ${current_price:.4f}")
                     return True
                     
@@ -568,6 +580,18 @@ class CryptoPortfolioManager:
                     
                     # Remove position (full sell)
                     del self.portfolio_data[symbol]
+                    
+                    # Send email notification for successful sell
+                    trade_data_email = {
+                        'symbol': symbol,
+                        'action': 'SELL',
+                        'quantity': quantity,
+                        'price': current_price,
+                        'total_value': estimated_value,
+                        'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                        'pnl': pnl
+                    }
+                    email_service.send_trade_notification(trade_data_email)
                     
                     self.logger.info(f"AUTO SELL executed: {symbol} - {quantity:.4f} @ ${current_price:.4f} (P&L: ${pnl:.2f})")
                     return True
