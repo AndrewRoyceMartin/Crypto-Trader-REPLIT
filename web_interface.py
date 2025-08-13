@@ -19,6 +19,7 @@ from src.trading.live_trader import LiveTrader
 from src.strategies.bollinger_strategy import BollingerBandsStrategy
 from src.exchanges.okx_adapter import OKXAdapter  # (kept for future use)
 from src.exchanges.kraken_adapter import KrakenAdapter  # (kept for future use)
+from src.data.crypto_portfolio import CryptoPortfolioManager
 
 # -----------------------------------------------------------------------------
 # Flask app
@@ -33,6 +34,8 @@ config: Config | None = None
 db_manager: DatabaseManager | None = None
 current_trader = None
 trading_thread: threading.Thread | None = None
+crypto_portfolio: CryptoPortfolioManager | None = None
+portfolio_update_thread: threading.Thread | None = None
 
 state_lock = threading.RLock()
 _initialized = False
@@ -49,14 +52,43 @@ trading_status = {
 # -----------------------------------------------------------------------------
 def initialize_system():
     """Initialize the trading system components (idempotent)."""
-    global config, db_manager, _initialized
+    global config, db_manager, crypto_portfolio, _initialized
     if _initialized:
         return
     config = Config()
     setup_logging(config.get("logging", "level", "INFO"))
     db_manager = DatabaseManager()
+    
+    # Initialize crypto portfolio with 100 cryptos at $100 each
+    crypto_portfolio = CryptoPortfolioManager(initial_value_per_crypto=100.0)
+    crypto_portfolio.load_portfolio_state()  # Load existing state if available
+    
+    # Start background price simulation
+    start_portfolio_updates()
+    
     _initialized = True
-    app.logger.info("Trading system initialized")
+    app.logger.info("Trading system initialized with crypto portfolio")
+
+def start_portfolio_updates():
+    """Start background thread to update crypto portfolio prices."""
+    global portfolio_update_thread
+    
+    def update_prices():
+        import time
+        while True:
+            try:
+                if crypto_portfolio:
+                    crypto_portfolio.simulate_price_movements()
+                    crypto_portfolio.save_portfolio_state()
+                time.sleep(60)  # Update every minute
+            except Exception as e:
+                app.logger.error(f"Error updating portfolio prices: {e}")
+                time.sleep(60)
+    
+    if portfolio_update_thread is None or not portfolio_update_thread.is_alive():
+        portfolio_update_thread = threading.Thread(target=update_prices, daemon=True)
+        portfolio_update_thread.start()
+        app.logger.info("Started crypto portfolio price updates")
 
 def _require_json():
     data = request.get_json(silent=True)
@@ -196,10 +228,72 @@ def get_portfolio_history():
         app.logger.error("Error getting portfolio history: %s", e)
         return jsonify({"error": str(e)}), 500
 
+@app.route("/api/crypto-portfolio")
+def get_crypto_portfolio():
+    """Get detailed cryptocurrency portfolio data."""
+    try:
+        initialize_system()
+        if not crypto_portfolio:
+            return jsonify({"error": "Crypto portfolio not initialized"}), 500
+        
+        summary = crypto_portfolio.get_portfolio_summary()
+        portfolio_data = crypto_portfolio.get_portfolio_data()
+        
+        # Convert to list format for easier frontend consumption
+        crypto_list = []
+        for symbol, data in portfolio_data.items():
+            crypto_list.append({
+                "symbol": symbol,
+                "name": data["name"],
+                "rank": data["rank"],
+                "quantity": round(data["quantity"], 6),
+                "current_price": round(data["current_price"], 4),
+                "current_value": round(data["current_value"], 2),
+                "initial_value": data["initial_value"],
+                "pnl": round(data["pnl"], 2),
+                "pnl_percent": round(data["pnl_percent"], 2)
+            })
+        
+        # Sort by current value (largest positions first)
+        crypto_list.sort(key=lambda x: x["current_value"], reverse=True)
+        
+        return jsonify({
+            "summary": {
+                "total_cryptos": summary["number_of_cryptos"],
+                "total_initial_value": round(summary["total_initial_value"], 2),
+                "total_current_value": round(summary["total_current_value"], 2),
+                "total_pnl": round(summary["total_pnl"], 2),
+                "total_pnl_percent": round(summary["total_pnl_percent"], 2),
+                "top_gainers": summary["top_gainers"],
+                "top_losers": summary["top_losers"],
+                "largest_positions": summary["largest_positions"]
+            },
+            "cryptocurrencies": crypto_list
+        })
+        
+    except Exception as e:
+        app.logger.error("Error getting crypto portfolio: %s", e)
+        return jsonify({"error": str(e)}), 500
+
 def get_portfolio_data():
     """Assemble portfolio snapshot and last-7-days equity series."""
     initialize_system()
     try:
+        # Use crypto portfolio as primary data source
+        if crypto_portfolio:
+            summary = crypto_portfolio.get_portfolio_summary()
+            chart_data = crypto_portfolio.get_portfolio_chart_data(hours=24)
+            
+            return {
+                "total_value": summary["total_current_value"],
+                "cash": summary["total_current_value"] * 0.1,  # Assume 10% cash
+                "positions_value": summary["total_current_value"] * 0.9,  # 90% in positions
+                "daily_pnl": summary["total_pnl"],
+                "total_return": summary["total_pnl_percent"] / 100,
+                "chart_data": chart_data,
+            }
+        
+        # Fallback to trading system portfolio
         if current_trader and hasattr(current_trader, "get_portfolio_value"):
             if trading_status["mode"] == "paper":
                 portfolio_value = current_trader.get_portfolio_value()

@@ -74,6 +74,7 @@ class TradingApp {
             this.updateCharts(data.portfolio, data.recent_trades);
             this.updateRecentTrades(data.recent_trades);
             this.updatePositions(data.positions);
+            this.updateCryptoPortfolio();
             
             this.updateConnectionStatus(true);
             
@@ -321,6 +322,62 @@ class TradingApp {
         this.tradesChart.data.datasets[0].backgroundColor = colors;
         this.tradesChart.data.datasets[0].borderColor = borderColors;
         this.tradesChart.update('none');
+    }
+
+    async updateCryptoPortfolio() {
+        try {
+            const response = await fetch('/api/crypto-portfolio');
+            if (!response.ok) return;
+            
+            const data = await response.json();
+            
+            // Update summary statistics
+            document.getElementById('crypto-total-count').textContent = data.summary.total_cryptos;
+            document.getElementById('crypto-initial-value').textContent = this.formatCurrency(data.summary.total_initial_value);
+            document.getElementById('crypto-current-value').textContent = this.formatCurrency(data.summary.total_current_value);
+            document.getElementById('crypto-total-pnl').textContent = this.formatCurrency(data.summary.total_pnl);
+            document.getElementById('crypto-pnl-percent').textContent = data.summary.total_pnl_percent.toFixed(2) + '%';
+            
+            // Update P&L color
+            const pnlElement = document.getElementById('crypto-total-pnl');
+            const pnlPercentElement = document.getElementById('crypto-pnl-percent');
+            const pnlClass = data.summary.total_pnl >= 0 ? 'text-success' : 'text-danger';
+            pnlElement.className = `mb-0 ${pnlClass}`;
+            pnlPercentElement.className = `mb-0 ${pnlClass}`;
+            
+            // Update crypto table
+            this.updateCryptoTable(data.cryptocurrencies);
+            
+        } catch (error) {
+            console.error('Error updating crypto portfolio:', error);
+        }
+    }
+
+    updateCryptoTable(cryptos) {
+        const tbody = document.getElementById('crypto-portfolio-table');
+        
+        if (!cryptos || cryptos.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted">No cryptocurrency data available</td></tr>';
+            return;
+        }
+        
+        tbody.innerHTML = cryptos.map(crypto => {
+            const pnlClass = crypto.pnl >= 0 ? 'text-success' : 'text-danger';
+            const priceDisplay = crypto.current_price < 1 ? crypto.current_price.toFixed(6) : crypto.current_price.toFixed(2);
+            
+            return `
+                <tr>
+                    <td class="fw-bold">${crypto.rank}</td>
+                    <td class="fw-semibold">${crypto.symbol}</td>
+                    <td class="text-muted">${crypto.name}</td>
+                    <td>${crypto.quantity.toFixed(4)}</td>
+                    <td>$${priceDisplay}</td>
+                    <td>$${crypto.current_value.toFixed(2)}</td>
+                    <td class="${pnlClass}">$${crypto.pnl.toFixed(2)}</td>
+                    <td class="${pnlClass}">${crypto.pnl_percent.toFixed(2)}%</td>
+                </tr>
+            `;
+        }).join('');
     }
     
     updateTradingStatus(status) {
@@ -703,6 +760,13 @@ async function runBacktest() {
         window.tradingApp.showToast('Failed to run backtest: ' + error.message, 'danger');
     } finally {
         loadingModal.hide();
+    }
+}
+
+// Global crypto portfolio refresh function
+function refreshCryptoPortfolio() {
+    if (window.tradingDashboard) {
+        window.tradingDashboard.updateCryptoPortfolio();
     }
 }
 

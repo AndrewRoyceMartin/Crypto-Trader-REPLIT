@@ -224,6 +224,86 @@
             </div>
         </div>
 
+        <!-- Crypto Portfolio Row -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="fas fa-coins me-2"></i>
+                            Cryptocurrency Portfolio (100 Assets)
+                        </h5>
+                        <button class="btn btn-outline-primary btn-sm" onclick="refreshCryptoPortfolio()">
+                            <i class="fas fa-sync-alt me-1"></i>Refresh
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div class="row mb-3">
+                            <div class="col-md-2">
+                                <div class="text-center">
+                                    <h6 class="text-muted mb-1">Total Assets</h6>
+                                    <h5 id="crypto-total-count" class="text-info mb-0">100</h5>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="text-center">
+                                    <h6 class="text-muted mb-1">Initial Value</h6>
+                                    <h5 id="crypto-initial-value" class="text-secondary mb-0">$10,000</h5>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="text-center">
+                                    <h6 class="text-muted mb-1">Current Value</h6>
+                                    <h5 id="crypto-current-value" class="text-primary mb-0">$0.00</h5>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="text-center">
+                                    <h6 class="text-muted mb-1">Total P&L</h6>
+                                    <h5 id="crypto-total-pnl" class="mb-0">$0.00</h5>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="text-center">
+                                    <h6 class="text-muted mb-1">P&L %</h6>
+                                    <h5 id="crypto-pnl-percent" class="mb-0">0.00%</h5>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="text-center">
+                                    <h6 class="text-muted mb-1">Status</h6>
+                                    <span id="crypto-status" class="badge bg-success">Live</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Crypto Portfolio Table -->
+                        <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                            <table class="table table-sm table-hover">
+                                <thead class="table-light sticky-top">
+                                    <tr>
+                                        <th>Rank</th>
+                                        <th>Symbol</th>
+                                        <th>Name</th>
+                                        <th>Quantity</th>
+                                        <th>Price</th>
+                                        <th>Value</th>
+                                        <th>P&L</th>
+                                        <th>P&L %</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="crypto-portfolio-table">
+                                    <tr>
+                                        <td colspan="8" class="text-center text-muted">Loading cryptocurrency portfolio...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Data Tables Row -->
         <div class="row">
             <!-- Recent Trades -->
