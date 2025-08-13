@@ -1366,3 +1366,71 @@ function calculateTargetProximity(currentPrice, targetPrice) {
 document.addEventListener('DOMContentLoaded', function() {
     window.tradingApp = new TradingApp();
 });
+
+
+// API Status Tooltip Functions
+function updateCryptoStatusTooltip(apiStatus) {
+    const cryptoStatus = document.getElementById("crypto-status");
+    if (!cryptoStatus) return;
+    
+    if (apiStatus.status === "connected") {
+        cryptoStatus.className = "badge bg-success";
+        cryptoStatus.style.cursor = "pointer";
+        
+        const tooltipContent = `
+            <div class="text-start">
+                <strong>🔗 Live Data Connection</strong><br>
+                <strong>Provider:</strong> ${apiStatus.api_provider}<br>
+                <strong>Response Time:</strong> ${apiStatus.response_time_ms}ms<br>
+                <strong>Rate Limit:</strong> ${apiStatus.rate_limit}<br>
+                <strong>Coverage:</strong> 18,000+ cryptocurrencies<br>
+                <strong>Last Updated:</strong> ${new Date(apiStatus.last_updated).toLocaleTimeString()}
+            </div>
+        `;
+        
+        cryptoStatus.setAttribute("title", tooltipContent);
+        cryptoStatus.setAttribute("data-bs-html", "true");
+        
+        // Dispose existing tooltip and create new one
+        const existingTooltip = bootstrap.Tooltip.getInstance(cryptoStatus);
+        if (existingTooltip) {
+            existingTooltip.dispose();
+        }
+        new bootstrap.Tooltip(cryptoStatus, {
+            html: true,
+            placement: "top"
+        });
+    } else {
+        cryptoStatus.className = "badge bg-danger";
+        cryptoStatus.setAttribute("title", `API Error: ${apiStatus.error || "Connection failed"}`);
+        
+        const existingTooltip = bootstrap.Tooltip.getInstance(cryptoStatus);
+        if (existingTooltip) {
+            existingTooltip.dispose();
+        }
+        new bootstrap.Tooltip(cryptoStatus);
+    }
+}
+
+// Check API status and update tooltip
+function checkApiStatusAndTooltip() {
+    fetch("/api/price-source-status")
+        .then(response => response.json())
+        .then(data => {
+            updateCryptoStatusTooltip(data.status);
+        })
+        .catch(error => {
+            console.error("Error checking API status:", error);
+            updateCryptoStatusTooltip({
+                status: "error",
+                error: "Connection failed",
+                api_provider: "Unknown"
+            });
+        });
+}
+
+// Initialize API status tooltip on page load and update periodically
+document.addEventListener("DOMContentLoaded", function() {
+    setTimeout(checkApiStatusAndTooltip, 1000); // Wait for page to load
+    setInterval(checkApiStatusAndTooltip, 30000); // Check every 30 seconds
+});
