@@ -361,6 +361,11 @@ class TradingApp {
             return;
         }
         
+        // Store cryptos globally for sorting
+        window.cryptoPortfolioData = cryptos;
+        window.sortColumn = window.sortColumn || null;
+        window.sortDirection = window.sortDirection || 'asc';
+        
         tbody.innerHTML = cryptos.map(crypto => {
             const pnlClass = crypto.pnl >= 0 ? 'text-success' : 'text-danger';
             const priceDisplay = crypto.current_price < 1 ? crypto.current_price.toFixed(6) : crypto.current_price.toFixed(2);
@@ -895,6 +900,113 @@ function showBacktestResults(results) {
     
     const modal = new bootstrap.Modal(document.getElementById('backtestModal'));
     modal.show();
+}
+
+// Portfolio sorting functionality
+function sortPortfolio(column) {
+    if (!window.cryptoPortfolioData) return;
+    
+    // Toggle sort direction if same column
+    if (window.sortColumn === column) {
+        window.sortDirection = window.sortDirection === 'asc' ? 'desc' : 'asc';
+    } else {
+        window.sortColumn = column;
+        window.sortDirection = 'asc';
+    }
+    
+    // Sort the data
+    window.cryptoPortfolioData.sort((a, b) => {
+        let valueA, valueB;
+        
+        switch(column) {
+            case 'rank':
+                valueA = parseInt(a.rank);
+                valueB = parseInt(b.rank);
+                break;
+            case 'symbol':
+            case 'name':
+                valueA = a[column].toLowerCase();
+                valueB = b[column].toLowerCase();
+                break;
+            case 'quantity':
+            case 'current_price':
+            case 'current_value':
+            case 'pnl':
+            case 'pnl_percent':
+                valueA = parseFloat(a[column] || 0);
+                valueB = parseFloat(b[column] || 0);
+                break;
+            case 'price':
+                valueA = parseFloat(a.current_price || 0);
+                valueB = parseFloat(b.current_price || 0);
+                break;
+            case 'value':
+                valueA = parseFloat(a.current_value || 0);
+                valueB = parseFloat(b.current_value || 0);
+                break;
+            default:
+                return 0;
+        }
+        
+        if (valueA < valueB) return window.sortDirection === 'asc' ? -1 : 1;
+        if (valueA > valueB) return window.sortDirection === 'asc' ? 1 : -1;
+        return 0;
+    });
+    
+    // Update sort icons
+    updateSortIcons(column);
+    
+    // Re-render table
+    renderCryptoTable();
+}
+
+function updateSortIcons(activeColumn) {
+    // Reset all sort icons
+    const columns = ['rank', 'symbol', 'name', 'quantity', 'price', 'value', 'pnl', 'pnl_percent'];
+    columns.forEach(col => {
+        const icon = document.getElementById(`sort-${col}`);
+        if (icon) {
+            icon.className = 'fas fa-sort text-muted';
+        }
+    });
+    
+    // Set active column icon
+    const activeIcon = document.getElementById(`sort-${activeColumn}`);
+    if (activeIcon) {
+        if (window.sortDirection === 'asc') {
+            activeIcon.className = 'fas fa-sort-up text-primary';
+        } else {
+            activeIcon.className = 'fas fa-sort-down text-primary';
+        }
+    }
+}
+
+function renderCryptoTable() {
+    if (!window.cryptoPortfolioData) return;
+    
+    const tbody = document.getElementById('crypto-portfolio-table');
+    tbody.innerHTML = window.cryptoPortfolioData.map(crypto => {
+        const pnlClass = crypto.pnl >= 0 ? 'text-success' : 'text-danger';
+        const priceDisplay = crypto.current_price < 1 ? crypto.current_price.toFixed(6) : crypto.current_price.toFixed(2);
+        
+        return `
+            <tr>
+                <td class="fw-bold">${crypto.rank}</td>
+                <td class="fw-semibold">${crypto.symbol}</td>
+                <td class="text-muted">${crypto.name}</td>
+                <td>${crypto.quantity.toFixed(4)}</td>
+                <td>$${priceDisplay}</td>
+                <td>$${crypto.current_value.toFixed(2)}</td>
+                <td class="${pnlClass}">$${crypto.pnl.toFixed(2)}</td>
+                <td class="${pnlClass}">${crypto.pnl_percent.toFixed(2)}%</td>
+                <td>
+                    <button class="btn btn-outline-primary btn-sm" onclick="tradeCrypto('${crypto.symbol}')" title="Trade ${crypto.symbol}">
+                        <i class="fas fa-chart-line"></i>
+                    </button>
+                </td>
+            </tr>
+        `;
+    }).join('');
 }
 
 // Initialize the app when DOM is loaded

@@ -319,14 +319,30 @@
                             <table class="table table-sm table-hover">
                                 <thead class="table-light sticky-top">
                                     <tr>
-                                        <th>Rank</th>
-                                        <th>Symbol</th>
-                                        <th>Name</th>
-                                        <th>Quantity</th>
-                                        <th>Price</th>
-                                        <th>Value</th>
-                                        <th>P&L</th>
-                                        <th>P&L %</th>
+                                        <th class="sortable" onclick="sortPortfolio('rank')" style="cursor: pointer;">
+                                            Rank <i id="sort-rank" class="fas fa-sort text-muted"></i>
+                                        </th>
+                                        <th class="sortable" onclick="sortPortfolio('symbol')" style="cursor: pointer;">
+                                            Symbol <i id="sort-symbol" class="fas fa-sort text-muted"></i>
+                                        </th>
+                                        <th class="sortable" onclick="sortPortfolio('name')" style="cursor: pointer;">
+                                            Name <i id="sort-name" class="fas fa-sort text-muted"></i>
+                                        </th>
+                                        <th class="sortable" onclick="sortPortfolio('quantity')" style="cursor: pointer;">
+                                            Quantity <i id="sort-quantity" class="fas fa-sort text-muted"></i>
+                                        </th>
+                                        <th class="sortable" onclick="sortPortfolio('price')" style="cursor: pointer;">
+                                            Price <i id="sort-price" class="fas fa-sort text-muted"></i>
+                                        </th>
+                                        <th class="sortable" onclick="sortPortfolio('value')" style="cursor: pointer;">
+                                            Value <i id="sort-value" class="fas fa-sort text-muted"></i>
+                                        </th>
+                                        <th class="sortable" onclick="sortPortfolio('pnl')" style="cursor: pointer;">
+                                            P&L <i id="sort-pnl" class="fas fa-sort text-muted"></i>
+                                        </th>
+                                        <th class="sortable" onclick="sortPortfolio('pnl_percent')" style="cursor: pointer;">
+                                            P&L % <i id="sort-pnl_percent" class="fas fa-sort text-muted"></i>
+                                        </th>
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
