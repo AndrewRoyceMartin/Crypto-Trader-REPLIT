@@ -438,7 +438,18 @@ def rebalance_crypto_portfolio():
             crypto_portfolio.portfolio_data[symbol]["pnl_percent"] = (crypto_portfolio.portfolio_data[symbol]["pnl"] / 100.0) * 100
         
         crypto_portfolio.save_portfolio_state()
-        return jsonify({"success": True, "message": "Portfolio rebalanced and trading history cleared successfully"})
+        
+        # Populate initial trading data using the dedicated API
+        try:
+            with app.test_client() as test_client:
+                result = test_client.post('/api/populate-initial-trades')
+                result_data = result.get_json()
+                trades_added = result_data.get('trades_added', 0) if result_data and result_data.get('success') else 0
+        except Exception as e:
+            app.logger.warning(f"Error populating initial trades: {e}")
+            trades_added = 0
+        
+        return jsonify({"success": True, "message": f"Portfolio rebalanced and {trades_added} initial trades created successfully"})
         
     except Exception as e:
         app.logger.error("Error rebalancing portfolio: %s", e)
@@ -463,7 +474,17 @@ def reset_crypto_portfolio():
         crypto_portfolio = CryptoPortfolioManager(initial_value_per_crypto=100.0)
         crypto_portfolio.save_portfolio_state()
         
-        return jsonify({"success": True, "message": "Portfolio, trades, and positions reset successfully"})
+        # Populate initial trading data using the dedicated API
+        try:
+            with app.test_client() as test_client:
+                result = test_client.post('/api/populate-initial-trades')
+                result_data = result.get_json()
+                trades_added = result_data.get('trades_added', 0) if result_data and result_data.get('success') else 0
+        except Exception as e:
+            app.logger.warning(f"Error populating initial trades: {e}")
+            trades_added = 0
+        
+        return jsonify({"success": True, "message": f"Portfolio reset and {trades_added} initial trades created successfully"})
         
     except Exception as e:
         app.logger.error("Error resetting portfolio: %s", e)
@@ -487,6 +508,77 @@ def clear_trading_data():
         
     except Exception as e:
         app.logger.error("Error clearing trading data: %s", e)
+        return jsonify({"success": False, "error": str(e)}), 500
+
+@app.route("/api/populate-initial-trades", methods=["POST"])
+def populate_initial_trades():
+    """Populate initial trading data for display purposes."""
+    try:
+        initialize_system()
+        if not crypto_portfolio or not db_manager:
+            return jsonify({"error": "System not properly initialized"}), 500
+        
+        # Get portfolio data
+        portfolio_data = crypto_portfolio.get_portfolio_data()
+        
+        from datetime import datetime, timedelta
+        purchase_time = datetime.now() - timedelta(days=7)  # 7 days ago
+        
+        trades_added = 0
+        positions_added = 0
+        
+        for symbol, crypto_data in portfolio_data.items():
+            current_price = crypto_data['current_price']
+            initial_value = crypto_data['initial_value']  # $100
+            quantity = crypto_data['quantity']
+            
+            # Calculate purchase price based on current PnL
+            pnl_percent = crypto_data.get('pnl_percent', 0)
+            purchase_price = current_price / (1 + (pnl_percent / 100)) if pnl_percent != 0 else current_price
+            
+            # Add purchase trade
+            trade_data = {
+                'timestamp': purchase_time,
+                'symbol': symbol,
+                'action': 'BUY',
+                'size': quantity,
+                'price': purchase_price,
+                'commission': initial_value * 0.001,
+                'order_id': f"INIT_{symbol}_{int(purchase_time.timestamp())}",
+                'strategy': 'INITIAL_INVESTMENT',
+                'confidence': 1.0,
+                'pnl': 0,
+                'mode': 'paper'
+            }
+            
+            db_manager.save_trade(trade_data)
+            trades_added += 1
+            
+            # Add open position
+            position_data = {
+                'symbol': symbol,
+                'size': quantity,
+                'avg_price': purchase_price,
+                'entry_time': purchase_time,
+                'stop_loss': purchase_price * 0.9,
+                'take_profit': purchase_price * 1.2,
+                'unrealized_pnl': crypto_data['pnl'],
+                'status': 'open',
+                'mode': 'paper'
+            }
+            
+            db_manager.save_position(position_data)
+            positions_added += 1
+        
+        return jsonify({
+            "success": True,
+            "message": f"Successfully created {trades_added} trades and {positions_added} positions",
+            "trades_added": trades_added,
+            "positions_added": positions_added
+        })
+        
+    except Exception as e:
+        app.logger.error("Error populating initial trades: %s", e)
         return jsonify({"success": False, "error": str(e)}), 500
 
 @app.route("/api/export-portfolio")
