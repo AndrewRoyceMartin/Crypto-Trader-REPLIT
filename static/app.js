@@ -402,7 +402,17 @@ class TradingApp {
         const tbody = document.getElementById('crypto-portfolio-table');
         
         if (!cryptos || cryptos.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="10" class="text-center text-muted">No cryptocurrency data available</td></tr>';
+            // Clear existing rows safely
+            tbody.textContent = '';
+            
+            // Create empty state row using safe DOM methods
+            const emptyRow = document.createElement('tr');
+            const emptyCell = document.createElement('td');
+            emptyCell.setAttribute('colspan', '13');
+            emptyCell.className = 'text-center text-muted';
+            emptyCell.textContent = 'No cryptocurrency data available';
+            emptyRow.appendChild(emptyCell);
+            tbody.appendChild(emptyRow);
             return;
         }
         
@@ -417,7 +427,11 @@ class TradingApp {
             updateSortIcons(window.sortColumn);
         }
         
-        tbody.innerHTML = window.cryptoPortfolioData.map(crypto => {
+        // Clear existing rows safely
+        tbody.textContent = '';
+        
+        // Create rows using safe DOM methods
+        window.cryptoPortfolioData.forEach(crypto => {
             const pnlClass = crypto.pnl >= 0 ? 'text-success' : 'text-danger';
             const priceDisplay = crypto.current_price < 1 ? crypto.current_price.toFixed(6) : crypto.current_price.toFixed(2);
             
@@ -449,31 +463,64 @@ class TradingApp {
                                    approachingSellPercentage >= 90 ? 'text-dark fw-semibold bg-warning bg-opacity-50' : 
                                    approachingSellPercentage >= 80 ? 'text-white fw-normal bg-info bg-opacity-75' : 'text-dark';
             
-            return `
-                <tr class="${proximityClass}">
-                    <td class="fw-bold">${crypto.rank}</td>
-                    <td class="fw-semibold">${crypto.symbol}</td>
-                    <td class="text-muted">${crypto.name}</td>
-                    <td>${crypto.quantity.toFixed(4)}</td>
-                    <td>$${priceDisplay}</td>
-                    <td>$${crypto.current_value.toFixed(2)}</td>
-                    <td class="bg-light text-dark fw-semibold">$${crypto.target_sell_price ? crypto.target_sell_price.toFixed(crypto.target_sell_price < 1 ? 6 : 2) : 'N/A'}</td>
-                    <td class="${approachingClass}" style="padding: 8px; border-radius: 4px;">${approachingSellPercentage.toFixed(1)}%</td>
-                    <td class="bg-light text-success">$${targetBuyDisplay}</td>
-                    <td class="bg-light ${projectedPnlClass}">$${projectedPnl >= 0 ? '+' : ''}${projectedPnl.toFixed(2)}</td>
-                    <td class="${pnlClass}">$${crypto.pnl.toFixed(2)}</td>
-                    <td class="${pnlClass}">${crypto.pnl_percent.toFixed(2)}%</td>
-                    <td>
-                        <button class="btn btn-outline-primary btn-sm me-1" onclick="showCryptoChart('${crypto.symbol}')" title="View ${crypto.symbol} Chart">
-                            <i class="fas fa-chart-line"></i>
-                        </button>
-                        <button class="btn btn-outline-success btn-sm" onclick="tradeCrypto('${crypto.symbol}')" title="Trade ${crypto.symbol}">
-                            <i class="fas fa-exchange-alt"></i>
-                        </button>
-                    </td>
-                </tr>
-            `;
-        }).join('');
+            // Create row element safely
+            const row = document.createElement('tr');
+            row.className = proximityClass;
+            
+            // Create cells with safe methods
+            const cells = [
+                { content: crypto.rank.toString(), className: 'fw-bold' },
+                { content: crypto.symbol, className: 'fw-semibold' },
+                { content: crypto.name, className: 'text-muted' },
+                { content: crypto.quantity.toFixed(4) },
+                { content: `$${priceDisplay}` },
+                { content: `$${crypto.current_value.toFixed(2)}` },
+                { content: `$${crypto.target_sell_price ? crypto.target_sell_price.toFixed(crypto.target_sell_price < 1 ? 6 : 2) : 'N/A'}`, className: 'bg-light text-dark fw-semibold' },
+                { content: `${approachingSellPercentage.toFixed(1)}%`, className: approachingClass, style: 'padding: 8px; border-radius: 4px;' },
+                { content: `$${targetBuyDisplay}`, className: 'bg-light text-success' },
+                { content: `$${projectedPnl >= 0 ? '+' : ''}${projectedPnl.toFixed(2)}`, className: `bg-light ${projectedPnlClass}` },
+                { content: `$${crypto.pnl.toFixed(2)}`, className: pnlClass },
+                { content: `${crypto.pnl_percent.toFixed(2)}%`, className: pnlClass }
+            ];
+            
+            // Add data cells safely
+            cells.forEach(cellData => {
+                const cell = document.createElement('td');
+                if (cellData.className) cell.className = cellData.className;
+                if (cellData.style) cell.setAttribute('style', cellData.style);
+                cell.textContent = cellData.content;
+                row.appendChild(cell);
+            });
+            
+            // Create action buttons cell safely
+            const actionCell = document.createElement('td');
+            
+            // Chart button
+            const chartBtn = document.createElement('button');
+            chartBtn.className = 'btn btn-outline-primary btn-sm me-1';
+            chartBtn.setAttribute('onclick', `showCryptoChart('${crypto.symbol}')`);
+            chartBtn.setAttribute('title', `View ${crypto.symbol} Chart`);
+            
+            const chartIcon = document.createElement('i');
+            chartIcon.className = 'fas fa-chart-line';
+            chartBtn.appendChild(chartIcon);
+            
+            // Trade button
+            const tradeBtn = document.createElement('button');
+            tradeBtn.className = 'btn btn-outline-success btn-sm';
+            tradeBtn.setAttribute('onclick', `tradeCrypto('${crypto.symbol}')`);
+            tradeBtn.setAttribute('title', `Trade ${crypto.symbol}`);
+            
+            const tradeIcon = document.createElement('i');
+            tradeIcon.className = 'fas fa-exchange-alt';
+            tradeBtn.appendChild(tradeIcon);
+            
+            actionCell.appendChild(chartBtn);
+            actionCell.appendChild(tradeBtn);
+            row.appendChild(actionCell);
+            
+            tbody.appendChild(row);
+        });
     }
 
     updateTradingStatus(status) {
