@@ -212,7 +212,9 @@ initialize_system()
 # -----------------------------------------------------------------------------
 @app.route("/")
 def dashboard():
-    return render_template("index.html")
+    import time
+    cache_version = int(time.time())
+    return render_template("index.html", cache_version=cache_version)
 
 @app.route("/health")
 def health():

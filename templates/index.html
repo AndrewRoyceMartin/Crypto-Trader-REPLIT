@@ -16,6 +16,12 @@
     
     <!-- Custom CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    
+    <!-- Force JavaScript refresh -->
+    <script>
+        // Force cache refresh for JavaScript
+        window.cacheVersion = Date.now();
+    </script>
 </head>
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
@@ -624,6 +630,10 @@
     </script>
     
     <!-- Custom JS -->
-    <script src="{{ url_for('static', filename='app.js') }}"></script>
+    <script src="{{ url_for('static', filename='app.js') }}?v={{ cache_version }}"></script>
+    <script>
+        // Set cache version for future requests
+        window.cacheVersion = {{ cache_version }};
+    </script>
 </body>
 </html>
