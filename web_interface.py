@@ -155,6 +155,47 @@ def get_portfolio():
         app.logger.error("Error getting portfolio: %s", e)
         return jsonify({"error": str(e)}), 500
 
+@app.route("/api/portfolio/history")
+def get_portfolio_history():
+    """Get extended portfolio history for charting."""
+    try:
+        initialize_system()
+        days = request.args.get('days', 30, type=int)
+        mode = request.args.get('mode', trading_status["mode"])
+        
+        portfolio_history = db_manager.get_portfolio_history(mode=mode, days=days)
+        
+        if not portfolio_history.empty:
+            history_data = [
+                {
+                    "timestamp": row["timestamp"].isoformat(),
+                    "value": row["total_value"],
+                    "cash": row.get("cash", 0),
+                    "positions_value": row.get("positions_value", 0)
+                } 
+                for _, row in portfolio_history.iterrows()
+            ]
+        else:
+            # Return current snapshot if no history
+            portfolio_data = get_portfolio_data()
+            current_time = datetime.now()
+            history_data = [{
+                "timestamp": current_time.isoformat(),
+                "value": portfolio_data["total_value"],
+                "cash": portfolio_data["cash"],
+                "positions_value": portfolio_data["positions_value"]
+            }]
+        
+        return jsonify({
+            "history": history_data,
+            "period_days": days,
+            "mode": mode
+        })
+        
+    except Exception as e:
+        app.logger.error("Error getting portfolio history: %s", e)
+        return jsonify({"error": str(e)}), 500
+
 def get_portfolio_data():
     """Assemble portfolio snapshot and last-7-days equity series."""
     initialize_system()
@@ -178,12 +219,18 @@ def get_portfolio_data():
             positions_value = 0.0
             performance = {}
 
+        # Get portfolio history for charts
         portfolio_history = db_manager.get_portfolio_history(mode=trading_status["mode"], days=7)
-        chart_data = (
-            [{"timestamp": row["timestamp"].isoformat(), "value": row["total_value"]} for _, row in portfolio_history.iterrows()]
-            if not portfolio_history.empty
-            else []
-        )
+        if not portfolio_history.empty:
+            chart_data = [{"timestamp": row["timestamp"].isoformat(), "value": row["total_value"]} for _, row in portfolio_history.iterrows()]
+        else:
+            # If no history, create sample data points to show current portfolio value
+            current_time = datetime.now()
+            chart_data = [
+                {"timestamp": (current_time - timedelta(hours=6)).isoformat(), "value": portfolio_value},
+                {"timestamp": (current_time - timedelta(hours=3)).isoformat(), "value": portfolio_value},
+                {"timestamp": current_time.isoformat(), "value": portfolio_value}
+            ]
 
         return {
             "total_value": portfolio_value,

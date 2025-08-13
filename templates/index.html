@@ -132,9 +132,41 @@
                             </div>
                         </div>
                         
-                        <!-- Portfolio Chart -->
-                        <div class="chart-container">
-                            <canvas id="portfolioChart"></canvas>
+                        <!-- Portfolio Chart Tabs -->
+                        <ul class="nav nav-tabs" id="chartTabs" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="portfolio-tab" data-bs-toggle="tab" data-bs-target="#portfolio-chart" type="button" role="tab">
+                                    <i class="fas fa-chart-line me-1"></i>Portfolio Value
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="returns-tab" data-bs-toggle="tab" data-bs-target="#returns-chart" type="button" role="tab">
+                                    <i class="fas fa-percentage me-1"></i>Returns
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="trades-tab" data-bs-toggle="tab" data-bs-target="#trades-chart" type="button" role="tab">
+                                    <i class="fas fa-exchange-alt me-1"></i>Trade P&L
+                                </button>
+                            </li>
+                        </ul>
+                        
+                        <div class="tab-content" id="chartTabContent">
+                            <div class="tab-pane fade show active" id="portfolio-chart" role="tabpanel">
+                                <div class="chart-container mt-3">
+                                    <canvas id="portfolioChart"></canvas>
+                                </div>
+                            </div>
+                            <div class="tab-pane fade" id="returns-chart" role="tabpanel">
+                                <div class="chart-container mt-3">
+                                    <canvas id="returnsChart"></canvas>
+                                </div>
+                            </div>
+                            <div class="tab-pane fade" id="trades-chart" role="tabpanel">
+                                <div class="chart-container mt-3">
+                                    <canvas id="tradesChart"></canvas>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

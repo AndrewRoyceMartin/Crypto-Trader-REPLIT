@@ -4,14 +4,21 @@ class TradingApp {
     constructor() {
         this.updateInterval = null;
         this.portfolioChart = null;
+        this.returnsChart = null;
+        this.tradesChart = null;
         this.isLiveConfirmationPending = false;
+        this.chartData = {
+            portfolio: [],
+            returns: [],
+            trades: []
+        };
         
         this.init();
     }
     
     init() {
         this.setupEventListeners();
-        this.initializeChart();
+        this.initializeCharts();
         this.startAutoUpdate();
         this.loadConfig();
     }
@@ -64,6 +71,7 @@ class TradingApp {
             
             this.updateTradingStatus(data.trading_status);
             this.updatePortfolio(data.portfolio);
+            this.updateCharts(data.portfolio, data.recent_trades);
             this.updateRecentTrades(data.recent_trades);
             this.updatePositions(data.positions);
             
@@ -73,6 +81,246 @@ class TradingApp {
             console.error('Error updating dashboard:', error);
             this.updateConnectionStatus(false);
         }
+    }
+
+    initializeCharts() {
+        // Portfolio Value Chart
+        const portfolioCtx = document.getElementById('portfolioChart').getContext('2d');
+        this.portfolioChart = new Chart(portfolioCtx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Portfolio Value',
+                    data: [],
+                    borderColor: '#007bff',
+                    backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                        callbacks: {
+                            label: function(context) {
+                                return `Portfolio: $${context.parsed.y.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        display: true,
+                        title: {
+                            display: true,
+                            text: 'Time'
+                        }
+                    },
+                    y: {
+                        display: true,
+                        title: {
+                            display: true,
+                            text: 'Value ($)'
+                        },
+                        ticks: {
+                            callback: function(value) {
+                                return '$' + value.toLocaleString();
+                            }
+                        }
+                    }
+                },
+                interaction: {
+                    mode: 'nearest',
+                    axis: 'x',
+                    intersect: false
+                }
+            }
+        });
+
+        // Returns Chart
+        const returnsCtx = document.getElementById('returnsChart').getContext('2d');
+        this.returnsChart = new Chart(returnsCtx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Total Return (%)',
+                    data: [],
+                    borderColor: '#28a745',
+                    backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                        callbacks: {
+                            label: function(context) {
+                                return `Return: ${context.parsed.y.toFixed(2)}%`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        display: true,
+                        title: {
+                            display: true,
+                            text: 'Time'
+                        }
+                    },
+                    y: {
+                        display: true,
+                        title: {
+                            display: true,
+                            text: 'Return (%)'
+                        },
+                        ticks: {
+                            callback: function(value) {
+                                return value.toFixed(1) + '%';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        // Trade P&L Chart
+        const tradesCtx = document.getElementById('tradesChart').getContext('2d');
+        this.tradesChart = new Chart(tradesCtx, {
+            type: 'bar',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Trade P&L',
+                    data: [],
+                    backgroundColor: [],
+                    borderColor: [],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const pnl = context.parsed.y;
+                                return `P&L: $${pnl.toFixed(2)}`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        display: true,
+                        title: {
+                            display: true,
+                            text: 'Trade #'
+                        }
+                    },
+                    y: {
+                        display: true,
+                        title: {
+                            display: true,
+                            text: 'P&L ($)'
+                        },
+                        ticks: {
+                            callback: function(value) {
+                                return '$' + value.toFixed(0);
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    updateCharts(portfolioData, tradesData) {
+        this.updatePortfolioChart(portfolioData);
+        this.updateReturnsChart(portfolioData);
+        this.updateTradesChart(tradesData);
+    }
+
+    updatePortfolioChart(portfolioData) {
+        if (!this.portfolioChart || !portfolioData.chart_data) return;
+
+        const chartData = portfolioData.chart_data;
+        const labels = chartData.map(point => new Date(point.timestamp).toLocaleTimeString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        }));
+        const values = chartData.map(point => point.value);
+
+        this.portfolioChart.data.labels = labels;
+        this.portfolioChart.data.datasets[0].data = values;
+        this.portfolioChart.update('none');
+    }
+
+    updateReturnsChart(portfolioData) {
+        if (!this.returnsChart || !portfolioData.chart_data) return;
+
+        const chartData = portfolioData.chart_data;
+        if (chartData.length === 0) return;
+
+        const initialValue = chartData[0]?.value || 10000;
+        const labels = chartData.map(point => new Date(point.timestamp).toLocaleTimeString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        }));
+        const returns = chartData.map(point => ((point.value - initialValue) / initialValue) * 100);
+
+        this.returnsChart.data.labels = labels;
+        this.returnsChart.data.datasets[0].data = returns;
+        this.returnsChart.update('none');
+    }
+
+    updateTradesChart(tradesData) {
+        if (!this.tradesChart || !tradesData) return;
+
+        // Filter trades with P&L data
+        const tradesWithPnL = tradesData.filter(trade => trade.realized_pnl !== undefined && trade.realized_pnl !== null);
+        
+        if (tradesWithPnL.length === 0) return;
+
+        const labels = tradesWithPnL.map((_, index) => `Trade ${index + 1}`);
+        const pnlValues = tradesWithPnL.map(trade => trade.realized_pnl || 0);
+        
+        // Color bars based on profit/loss
+        const colors = pnlValues.map(pnl => pnl >= 0 ? 'rgba(40, 167, 69, 0.8)' : 'rgba(220, 53, 69, 0.8)');
+        const borderColors = pnlValues.map(pnl => pnl >= 0 ? '#28a745' : '#dc3545');
+
+        this.tradesChart.data.labels = labels;
+        this.tradesChart.data.datasets[0].data = pnlValues;
+        this.tradesChart.data.datasets[0].backgroundColor = colors;
+        this.tradesChart.data.datasets[0].borderColor = borderColors;
+        this.tradesChart.update('none');
     }
     
     updateTradingStatus(status) {
@@ -121,10 +369,7 @@ class TradingApp {
             pnlElement.className = 'pnl-neutral';
         }
         
-        // Update chart
-        if (portfolio.chart_data && portfolio.chart_data.length > 0) {
-            this.updateChart(portfolio.chart_data);
-        }
+        // Chart updates are handled by updateCharts() method
     }
     
     updateRecentTrades(trades) {
