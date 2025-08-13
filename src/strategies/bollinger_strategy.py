@@ -63,15 +63,15 @@ class BollingerBandsStrategy(BaseStrategy):
         try:
             # Calculate enhanced technical indicators
             upper_band, middle_band, lower_band = self.indicators.bollinger_bands(
-                data['close'], self.bb_period, self.bb_std_dev
+                data['close'].squeeze(), self.bb_period, self.bb_std_dev
             )
             
             atr = self.indicators.atr(
-                data['high'], data['low'], data['close'], self.atr_period
+                data['high'].squeeze(), data['low'].squeeze(), data['close'].squeeze(), self.atr_period
             )
             
             # Add RSI for momentum confirmation
-            rsi = self.indicators.rsi(data['close'], self.rsi_period)
+            rsi = self.indicators.rsi(data['close'].squeeze(), self.rsi_period)
             
             # Calculate price momentum and trend strength
             price_momentum = data['close'].pct_change(5).iloc[-1]  # 5-period momentum
@@ -375,7 +375,8 @@ class BollingerBandsStrategy(BaseStrategy):
         except Exception as e:
             self.logger.error(f"Error in exit logic: {str(e)}")
         
-        return None
+        # Return None when no signal is generated (this satisfies the return type)
+        return Signal('hold', current_price, 0, 0.0) if current_price else None
     
     def get_strategy_parameters(self) -> dict:
         """Get strategy parameters."""
