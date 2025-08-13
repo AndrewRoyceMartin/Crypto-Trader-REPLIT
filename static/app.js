@@ -869,10 +869,13 @@ function tradeCrypto(symbol) {
     }
 }
 
+// Global variable to store current chart instance
+let currentCryptoChart = null;
+
 // New function to show individual crypto chart
-function showCryptoChart(symbol) {
-    // Fetch individual crypto chart data
-    fetch(`/api/crypto-chart/${symbol}`)
+function showCryptoChart(symbol, duration = '1d') {
+    // Fetch individual crypto chart data with duration
+    fetch(`/api/crypto-chart/${symbol}?duration=${duration}`)
         .then(response => response.json())
         .then(data => {
             if (data.error) {
@@ -891,6 +894,13 @@ function showCryptoChart(symbol) {
                                 <h5 class="modal-title" id="cryptoChartModalLabel">
                                     ${data.name} (${data.symbol}) - $${data.current_price.toFixed(data.current_price < 1 ? 6 : 2)}
                                 </h5>
+                                <div class="btn-group me-3" role="group" aria-label="Duration Selection">
+                                    <button type="button" class="btn btn-outline-primary btn-sm duration-btn" data-duration="1h" onclick="updateChartDuration('${data.symbol}', '1h')">1H</button>
+                                    <button type="button" class="btn btn-outline-primary btn-sm duration-btn" data-duration="4h" onclick="updateChartDuration('${data.symbol}', '4h')">4H</button>
+                                    <button type="button" class="btn btn-outline-primary btn-sm duration-btn active" data-duration="1d" onclick="updateChartDuration('${data.symbol}', '1d')">1D</button>
+                                    <button type="button" class="btn btn-outline-primary btn-sm duration-btn" data-duration="7d" onclick="updateChartDuration('${data.symbol}', '7d')">7D</button>
+                                    <button type="button" class="btn btn-outline-primary btn-sm duration-btn" data-duration="30d" onclick="updateChartDuration('${data.symbol}', '30d')">30D</button>
+                                </div>
                                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                             </div>
                             <div class="modal-body">
@@ -940,7 +950,13 @@ function showCryptoChart(symbol) {
             // Create chart after modal is shown
             modal._element.addEventListener('shown.bs.modal', () => {
                 const ctx = document.getElementById('individualCryptoChart').getContext('2d');
-                new Chart(ctx, {
+                
+                // Destroy existing chart if it exists
+                if (currentCryptoChart) {
+                    currentCryptoChart.destroy();
+                }
+                
+                currentCryptoChart = new Chart(ctx, {
                     type: 'line',
                     data: {
                         labels: data.labels,
@@ -987,6 +1003,57 @@ function showCryptoChart(symbol) {
             console.error('Error fetching crypto chart:', error);
             if (window.tradingApp) {
                 window.tradingApp.showToast('Error loading chart data', 'error');
+            }
+        });
+}
+
+// Function to update chart duration
+function updateChartDuration(symbol, duration) {
+    // Update active button
+    document.querySelectorAll('.duration-btn').forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.dataset.duration === duration) {
+            btn.classList.add('active');
+        }
+    });
+    
+    // Fetch new data and update chart
+    fetch(`/api/crypto-chart/${symbol}?duration=${duration}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                if (window.tradingApp) {
+                    window.tradingApp.showToast(`Error: ${data.error}`, 'error');
+                }
+                return;
+            }
+            
+            // Update chart data
+            if (currentCryptoChart) {
+                currentCryptoChart.data.labels = data.labels;
+                currentCryptoChart.data.datasets[0].data = data.price_history;
+                currentCryptoChart.data.datasets[0].borderColor = data.pnl_percent >= 0 ? '#28a745' : '#dc3545';
+                currentCryptoChart.data.datasets[0].backgroundColor = data.pnl_percent >= 0 ? 'rgba(40, 167, 69, 0.1)' : 'rgba(220, 53, 69, 0.1)';
+                currentCryptoChart.update();
+            }
+            
+            // Update modal title with current price
+            const modalTitle = document.getElementById('cryptoChartModalLabel');
+            if (modalTitle) {
+                modalTitle.textContent = `${data.name} (${data.symbol}) - $${data.current_price.toFixed(data.current_price < 1 ? 6 : 2)}`;
+            }
+            
+            // Update performance display
+            const performanceSpan = document.querySelector('.modal-body .h4.text-success, .modal-body .h4.text-danger');
+            if (performanceSpan) {
+                performanceSpan.className = `h4 ${data.pnl_percent >= 0 ? 'text-success' : 'text-danger'}`;
+                performanceSpan.textContent = `${data.pnl_percent >= 0 ? '+' : ''}${data.pnl_percent.toFixed(2)}%`;
+            }
+        })
+        .catch(error => {
+            console.error('Error updating chart duration:', error);
+            if (window.tradingApp) {
+                window.tradingApp.showToast('Error updating chart duration', 'error');
             }
         });
 }

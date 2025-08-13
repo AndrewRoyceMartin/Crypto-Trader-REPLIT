@@ -450,6 +450,20 @@ def get_crypto_chart(symbol):
     """Return price history for a specific cryptocurrency."""
     try:
         initialize_system()
+        
+        # Get duration parameter (default to 1 day)
+        duration = request.args.get('duration', '1d')
+        
+        # Convert duration to hours
+        duration_map = {
+            '1h': 1,
+            '4h': 4, 
+            '1d': 24,
+            '7d': 168,  # 7 * 24
+            '30d': 720  # 30 * 24
+        }
+        hours = duration_map.get(duration, 24)
+        
         if crypto_portfolio:
             try:
                 portfolio_data = crypto_portfolio.get_portfolio_data()
@@ -457,7 +471,7 @@ def get_crypto_chart(symbol):
                     crypto_data = portfolio_data[symbol]
                     
                     # Get actual price history from crypto portfolio manager
-                    historical_data = crypto_portfolio.get_crypto_history(symbol, hours=50)
+                    historical_data = crypto_portfolio.get_crypto_history(symbol, hours=hours)
                     
                     if historical_data:
                         # Extract actual prices from historical data
@@ -469,11 +483,12 @@ def get_crypto_chart(symbol):
                         base_price = current_price / (1 + (crypto_data.get('pnl_percent', 0) / 100))
                         
                         # Generate realistic price fluctuations leading to current state
-                        for i in range(50):
+                        data_points = min(hours, 200)  # Limit data points for performance
+                        for i in range(data_points):
                             # Create realistic crypto volatility pattern
                             volatility = 0.03 + (i * 0.001)  # Increasing volatility over time
                             price_change = np.random.normal(0, volatility)
-                            trend = (crypto_data.get('pnl_percent', 0) / 100) / 50  # Gradual trend
+                            trend = (crypto_data.get('pnl_percent', 0) / 100) / data_points  # Gradual trend
                             
                             if i == 0:
                                 price = base_price
@@ -482,20 +497,49 @@ def get_crypto_chart(symbol):
                             
                             price_history.append(max(price, base_price * 0.1))  # Prevent negative prices
                     
-                    # Generate meaningful time-based labels
+                    # Generate meaningful time-based labels based on duration
                     time_labels = []
                     if len(price_history) > 0:
-                        for i in range(len(price_history)):
-                            hours_ago = len(price_history) - i - 1
-                            if hours_ago == 0:
+                        data_points = len(price_history)
+                        for i in range(data_points):
+                            time_ago = (data_points - i - 1) * (hours / data_points)
+                            
+                            if time_ago == 0:
                                 time_labels.append("Now")
-                            elif hours_ago == 1:
-                                time_labels.append("1h ago")
-                            elif hours_ago < 24:
-                                time_labels.append(f"{hours_ago}h ago")
-                            else:
-                                days_ago = hours_ago // 24
-                                time_labels.append(f"{days_ago}d ago")
+                            elif duration == '1h':
+                                mins_ago = int(time_ago * 60)
+                                if mins_ago == 0:
+                                    time_labels.append("Now")
+                                elif mins_ago < 60:
+                                    time_labels.append(f"{mins_ago}m ago")
+                                else:
+                                    time_labels.append(f"{int(time_ago)}h ago")
+                            elif duration == '4h':
+                                if time_ago < 1:
+                                    mins_ago = int(time_ago * 60)
+                                    time_labels.append(f"{mins_ago}m ago")
+                                else:
+                                    time_labels.append(f"{int(time_ago)}h ago")
+                            elif duration == '1d':
+                                if time_ago < 1:
+                                    time_labels.append(f"{int(time_ago * 60)}m ago")
+                                else:
+                                    time_labels.append(f"{int(time_ago)}h ago")
+                            elif duration == '7d':
+                                if time_ago < 24:
+                                    time_labels.append(f"{int(time_ago)}h ago")
+                                else:
+                                    days_ago = int(time_ago / 24)
+                                    time_labels.append(f"{days_ago}d ago")
+                            elif duration == '30d':
+                                days_ago = int(time_ago / 24)
+                                if days_ago == 0:
+                                    time_labels.append(f"{int(time_ago)}h ago")
+                                elif days_ago < 7:
+                                    time_labels.append(f"{days_ago}d ago")
+                                else:
+                                    weeks_ago = days_ago // 7
+                                    time_labels.append(f"{weeks_ago}w ago")
                     else:
                         time_labels = ["No data"]
                     
