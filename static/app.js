@@ -412,7 +412,7 @@ class TradingApp {
                     <td>${crypto.quantity.toFixed(4)}</td>
                     <td>$${priceDisplay}</td>
                     <td>$${crypto.current_value.toFixed(2)}</td>
-                    <td class="bg-light text-warning">$${crypto.target_sell_price ? crypto.target_sell_price.toFixed(crypto.target_sell_price < 1 ? 6 : 2) : 'N/A'}</td>
+                    <td class="bg-light text-dark fw-semibold">$${crypto.target_sell_price ? crypto.target_sell_price.toFixed(crypto.target_sell_price < 1 ? 6 : 2) : 'N/A'}</td>
                     <td class="${approachingClass}" style="padding: 8px; border-radius: 4px;">${approachingSellPercentage.toFixed(1)}%</td>
                     <td class="bg-light text-success">$${targetBuyDisplay}</td>
                     <td class="bg-light ${projectedPnlClass}">$${projectedPnl >= 0 ? '+' : ''}${projectedPnl.toFixed(2)}</td>
