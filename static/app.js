@@ -803,7 +803,11 @@ async function confirmLiveTrading() {
     const checkbox = document.getElementById('live-confirm-checkbox');
     
     if (!checkbox.checked) {
-        window.tradingApp.showToast('Please confirm you understand the risks', 'warning');
+        if (window.tradingApp && window.tradingApp.showToast) {
+            window.tradingApp.showToast('Please confirm you understand the risks', 'warning');
+        } else {
+            alert('Please confirm you understand the risks');
+        }
         return;
     }
     
@@ -840,13 +844,25 @@ async function executeStartTrading(mode, tradingMode = 'single') {
         const result = await response.json();
         
         if (response.ok) {
-            window.tradingApp.showToast(result.message, 'success');
+            if (window.tradingApp && window.tradingApp.showToast) {
+                window.tradingApp.showToast(result.message, 'success');
+            } else {
+                console.log('Trading started:', result.message);
+            }
         } else {
-            window.tradingApp.showToast(result.error, 'danger');
+            if (window.tradingApp && window.tradingApp.showToast) {
+                window.tradingApp.showToast(result.error, 'danger');
+            } else {
+                console.error('Trading error:', result.error);
+            }
         }
         
     } catch (error) {
-        window.tradingApp.showToast('Failed to start trading: ' + error.message, 'danger');
+        if (window.tradingApp && window.tradingApp.showToast) {
+            window.tradingApp.showToast('Failed to start trading: ' + error.message, 'danger');
+        } else {
+            console.error('Failed to start trading:', error.message);
+        }
     } finally {
         loadingModal.hide();
     }
@@ -861,13 +877,25 @@ async function stopTrading() {
         const result = await response.json();
         
         if (response.ok) {
-            window.tradingApp.showToast(result.message, 'success');
+            if (window.tradingApp && window.tradingApp.showToast) {
+                window.tradingApp.showToast(result.message, 'success');
+            } else {
+                console.log('Trading stopped:', result.message);
+            }
         } else {
-            window.tradingApp.showToast(result.error, 'danger');
+            if (window.tradingApp && window.tradingApp.showToast) {
+                window.tradingApp.showToast(result.error, 'danger');
+            } else {
+                console.error('Stop trading error:', result.error);
+            }
         }
         
     } catch (error) {
-        window.tradingApp.showToast('Failed to stop trading: ' + error.message, 'danger');
+        if (window.tradingApp && window.tradingApp.showToast) {
+            window.tradingApp.showToast('Failed to stop trading: ' + error.message, 'danger');
+        } else {
+            console.error('Failed to stop trading:', error.message);
+        }
     }
 }
 
@@ -884,13 +912,25 @@ async function emergencyStop() {
         const result = await response.json();
         
         if (response.ok) {
-            window.tradingApp.showToast(result.message, 'warning');
+            if (window.tradingApp && window.tradingApp.showToast) {
+                window.tradingApp.showToast(result.message, 'warning');
+            } else {
+                console.log('Emergency stop:', result.message);
+            }
         } else {
-            window.tradingApp.showToast(result.error, 'danger');
+            if (window.tradingApp && window.tradingApp.showToast) {
+                window.tradingApp.showToast(result.error, 'danger');
+            } else {
+                console.error('Emergency stop error:', result.error);
+            }
         }
         
     } catch (error) {
-        window.tradingApp.showToast('Failed to execute emergency stop: ' + error.message, 'danger');
+        if (window.tradingApp && window.tradingApp.showToast) {
+            window.tradingApp.showToast('Failed to execute emergency stop: ' + error.message, 'danger');
+        } else {
+            console.error('Failed to execute emergency stop:', error.message);
+        }
     }
 }
 
