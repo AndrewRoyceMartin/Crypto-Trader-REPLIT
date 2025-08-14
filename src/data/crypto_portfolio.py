@@ -172,11 +172,11 @@ class CryptoPortfolioManager:
         """Initialize portfolio with starting values for each cryptocurrency."""
         portfolio = {}
         
-        # Get all live prices for ALL cryptocurrencies (no artificial limit)
-        symbols = [crypto["symbol"] for crypto in self.crypto_list]
-        live_prices = self.price_api.get_multiple_prices(symbols)  # Get ALL live prices, not just first 20
+        # Get live prices for top 20 cryptocurrencies only during initialization to speed up startup
+        symbols = [crypto["symbol"] for crypto in self.crypto_list[:20]]  # Limit to first 20 for faster startup
+        live_prices = self.price_api.get_multiple_prices(symbols)
         
-        for crypto in self.crypto_list:
+        for crypto in self.crypto_list[:20]:  # Initialize only top 20 for faster startup
             symbol = crypto["symbol"]
             # Use live price if available, otherwise fallback to realistic simulation
             if symbol in live_prices:
@@ -217,7 +217,7 @@ class CryptoPortfolioManager:
                 "pnl_percent": 0.0,
                 "target_sell_price": self._calculate_target_sell_price(base_price, crypto["rank"]),
                 "target_buy_price": self._calculate_target_buy_price(base_price, crypto["rank"]),
-                "projected_sell_pnl": self._calculate_target_sell_price(base_price, crypto["rank"]) * quantity - self.initial_value,
+                "projected_sell_pnl": float(self._calculate_target_sell_price(base_price, crypto["rank"]) * quantity) - float(self.initial_value),
                 "initial_investment_date": datetime.now().isoformat(),
                 "total_invested": self.initial_value,
                 "total_realized_pnl": 0.0,
@@ -472,7 +472,7 @@ class CryptoPortfolioManager:
                 "daily_return_percent": daily_return,
                 "current_price": crypto["current_price"],
                 "quantity": crypto["quantity"],
-                "initial_price": total_invested / crypto["quantity"] if crypto["quantity"] > 0 else 0,
+                "initial_price": float(total_invested) / float(crypto["quantity"]) if crypto["quantity"] > 0 else 0,
                 "best_performer": accumulated_pnl_percent > 50,  # Flag top performers
                 "status": "winning" if accumulated_pnl_percent > 0 else "losing"
             })
@@ -512,7 +512,7 @@ class CryptoPortfolioManager:
                 # Calculate potential profit at target sell price
                 target_sell_price = crypto.get("target_sell_price", 0)
                 potential_sell_value = crypto["quantity"] * target_sell_price if target_sell_price > 0 else 0
-                potential_profit = potential_sell_value - crypto["initial_value"] if potential_sell_value > 0 else 0
+                potential_profit = potential_sell_value - float(crypto["initial_value"]) if potential_sell_value > 0 else 0
                 
                 positions.append({
                     "symbol": symbol,
@@ -527,7 +527,7 @@ class CryptoPortfolioManager:
                     "target_sell_price": target_sell_price,
                     "potential_sell_value": potential_sell_value,
                     "potential_profit": potential_profit,
-                    "avg_buy_price": crypto["initial_value"] / crypto["quantity"] if crypto["quantity"] > 0 else 0,
+                    "avg_buy_price": float(crypto["initial_value"]) / float(crypto["quantity"]) if crypto["quantity"] > 0 else 0,
                     "last_updated": datetime.now().isoformat()
                 })
         

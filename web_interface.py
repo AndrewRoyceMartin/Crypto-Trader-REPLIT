@@ -414,10 +414,23 @@ def get_crypto_portfolio():
             return jsonify({"error": "Crypto portfolio not initialized"}), 500
         
         # Update prices with validation first
-        price_update_result = crypto_portfolio.update_live_prices()
+        try:
+            price_update_result = crypto_portfolio.update_live_prices()
+        except Exception as e:
+            app.logger.error(f"Error updating prices: {e}")
+            price_update_result = {"status": "error", "message": str(e)}
         
-        summary = crypto_portfolio.get_portfolio_summary()
-        portfolio_data = crypto_portfolio.get_portfolio_data()
+        try:
+            summary = crypto_portfolio.get_portfolio_summary()
+        except Exception as e:
+            app.logger.error(f"Error getting portfolio summary: {e}")
+            raise e
+        
+        try:
+            portfolio_data = crypto_portfolio.get_portfolio_data()
+        except Exception as e:
+            app.logger.error(f"Error getting portfolio data: {e}")
+            raise e
         
         # Check for auto-trading opportunities and execute them
         opportunities = crypto_portfolio.check_auto_trading_opportunities()
@@ -438,44 +451,65 @@ def get_crypto_portfolio():
         # Convert to list format for easier frontend consumption
         crypto_list = []
         for symbol, data in portfolio_data.items():
-            # Calculate projected P&L based on target sell price
-            target_sell_price = data.get("target_sell_price", 0)
-            projected_sell_pnl = 0
-            if target_sell_price and target_sell_price > 0:
-                quantity = data["quantity"]
-                current_value = data["current_value"]
-                projected_value = quantity * target_sell_price
-                projected_sell_pnl = projected_value - current_value
+            try:
+                # Calculate projected P&L based on target sell price
+                target_sell_price = float(data.get("target_sell_price", 0)) if data.get("target_sell_price") is not None else 0.0
+                projected_sell_pnl = 0.0
+                if target_sell_price and target_sell_price > 0:
+                    quantity = float(data["quantity"])
+                    current_value = float(data["current_value"])
+                    projected_value = quantity * target_sell_price
+                    projected_sell_pnl = projected_value - current_value
+            except (TypeError, ValueError) as e:
+                app.logger.error(f"Error calculating projected P&L for {symbol}: {e}, data types: {[(k, type(v)) for k, v in data.items()]}")
+                target_sell_price = 0.0
+                projected_sell_pnl = 0.0
             
             crypto_list.append({
                 "symbol": symbol,
                 "name": data["name"],
-                "rank": data["rank"],
-                "quantity": round(data["quantity"], 6),
-                "current_price": round(data["current_price"], 4),
-                "current_value": round(data["current_value"], 2),
-                "initial_value": data["initial_value"],
-                "pnl": round(data["pnl"], 2),
-                "pnl_percent": round(data["pnl_percent"], 2),
-                "target_sell_price": round(data.get("target_sell_price", 0), 4) if data.get("target_sell_price") is not None else 0,
-                "target_buy_price": round(data.get("target_buy_price", 0), 4) if data.get("target_buy_price") is not None else 0,
+                "rank": int(data["rank"]) if data["rank"] is not None else 0,
+                "quantity": round(float(data["quantity"]), 6),
+                "current_price": round(float(data["current_price"]), 4),
+                "current_value": round(float(data["current_value"]), 2),
+                "initial_value": float(data["initial_value"]),
+                "pnl": round(float(data["pnl"]), 2),
+                "pnl_percent": round(float(data["pnl_percent"]), 2),
+                "target_sell_price": round(float(data.get("target_sell_price", 0)), 4) if data.get("target_sell_price") is not None else 0,
+                "target_buy_price": round(float(data.get("target_buy_price", 0)), 4) if data.get("target_buy_price") is not None else 0,
                 "projected_sell_pnl": round(projected_sell_pnl, 2)
             })
         
         # Sort by current value (largest positions first)
         crypto_list.sort(key=lambda x: x["current_value"], reverse=True)
         
-        return jsonify({
-            "summary": {
-                "total_cryptos": summary["number_of_cryptos"],
-                "total_initial_value": round(summary["total_initial_value"], 2),
-                "total_current_value": round(summary["total_current_value"], 2),
-                "total_pnl": round(summary["total_pnl"], 2),
-                "total_pnl_percent": round(summary["total_pnl_percent"], 2),
+        # Safely handle summary data types
+        try:
+            safe_summary = {
+                "total_cryptos": int(summary["number_of_cryptos"]),
+                "total_initial_value": round(float(summary["total_initial_value"]), 2),
+                "total_current_value": round(float(summary["total_current_value"]), 2),
+                "total_pnl": round(float(summary["total_pnl"]), 2),
+                "total_pnl_percent": round(float(summary["total_pnl_percent"]), 2),
                 "top_gainers": summary["top_gainers"],
                 "top_losers": summary["top_losers"],
                 "largest_positions": summary["largest_positions"]
-            },
+            }
+        except (TypeError, ValueError) as e:
+            app.logger.error(f"Error processing summary data: {e}, summary types: {[(k, type(v)) for k, v in summary.items()]}")
+            safe_summary = {
+                "total_cryptos": 0,
+                "total_initial_value": 0.0,
+                "total_current_value": 0.0,
+                "total_pnl": 0.0,
+                "total_pnl_percent": 0.0,
+                "top_gainers": [],
+                "top_losers": [],
+                "largest_positions": []
+            }
+
+        return jsonify({
+            "summary": safe_summary,
             "cryptocurrencies": crypto_list,
             "price_validation": price_update_result
         })
@@ -1364,8 +1398,8 @@ def get_positions():
                     position['current_price'] = crypto_data['current_price']
                     position['market_value'] = position['size'] * crypto_data['current_price']
                     # Recalculate P&L based on current portfolio value
-                    initial_value = position['size'] * position['avg_price']
-                    current_value = position['market_value']
+                    initial_value = float(position['size']) * float(position['avg_price'])
+                    current_value = float(position['market_value'])
                     position['unrealized_pnl'] = current_value - initial_value
                 else:
                     # Fallback if symbol not in portfolio
