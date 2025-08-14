@@ -39,11 +39,13 @@ The `RiskManager` enforces multiple safety layers, including portfolio-level lim
 A Flask-based web interface provides real-time monitoring, portfolio visualization with Chart.js, and user interaction capabilities. It features a streamlined three-dashboard system (Main Portfolio, Performance Dashboard, Current Holdings), professional news ticker with breaking crypto market updates, and a professional footer. ATO tax export functionality is prominent. Rate limiting ensures compliance with CoinGecko API limits (6-second update intervals).
 
 #### Connection Management & Monitoring (Updated: 2025-08-14)
-- **Intelligent Uptime Tracking**: System uptime counter waits for CoinGecko connection confirmation before starting, displaying "Waiting..." until connected
-- **Connection-Aware Trading Controls**: Trading countdown stops during connection outages and automatically resumes when reconnected
+- **Intelligent Uptime Tracking**: System uptime counter tracks only connected time, automatically resetting on connection loss and restarting fresh on reconnection
+- **Connection-Aware Trading Controls**: Trading countdown stops during connection outages, automatically resumes when reconnected, and trading buttons validate connection status before execution
 - **Enhanced Status Display**: Connection status with reconnection countdown timers (30-second intervals) and visual feedback
 - **Trading Countdown Relocation**: Moved from navbar to Portfolio Overview section for better contextual relevance
 - **Robust Error Handling**: Connection loss displays "Connection Lost" status with automatic recovery mechanisms
+- **Trading Validation**: All trading functions now prevent execution during API connection outages to ensure data integrity
+- **News Interface Removal**: Breaking news ticker completely removed for cleaner, distraction-free interface
 
 ### Technical Indicators
 The `TechnicalIndicators` class provides vectorized calculations for indicators like Bollinger Bands and ATR, utilizing pandas for efficient time series data processing.
