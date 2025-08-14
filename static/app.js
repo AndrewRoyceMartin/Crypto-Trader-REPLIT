@@ -952,6 +952,179 @@ function refreshCryptoPortfolio() {
     }
 }
 
+// Filter Functions for Tables
+function filterPortfolioTable() {
+    const textFilter = document.getElementById('portfolio-filter').value.toLowerCase();
+    const pnlFilter = document.getElementById('portfolio-pnl-filter').value;
+    const valueFilter = document.getElementById('portfolio-value-filter').value;
+    const table = document.getElementById('crypto-portfolio-table');
+    const rows = table.getElementsByTagName('tr');
+
+    for (let i = 0; i < rows.length; i++) {
+        const row = rows[i];
+        const cells = row.getElementsByTagName('td');
+        if (cells.length === 0) continue; // Skip header rows
+
+        let showRow = true;
+        
+        // Text filter (symbol and name)
+        if (textFilter) {
+            const symbol = cells[1]?.textContent.toLowerCase() || '';
+            const name = cells[2]?.textContent.toLowerCase() || '';
+            if (!symbol.includes(textFilter) && !name.includes(textFilter)) {
+                showRow = false;
+            }
+        }
+        
+        // P&L filter
+        if (pnlFilter && cells[10]) {
+            const pnlText = cells[10].textContent;
+            const isPositive = pnlText.includes('+') || (!pnlText.includes('-') && !pnlText.includes('$0.00'));
+            if ((pnlFilter === 'positive' && !isPositive) || (pnlFilter === 'negative' && isPositive)) {
+                showRow = false;
+            }
+        }
+        
+        // Value filter
+        if (valueFilter && cells[5]) {
+            const valueText = cells[5].textContent.replace('$', '').replace(',', '');
+            const value = parseFloat(valueText);
+            if (!isNaN(value)) {
+                if ((valueFilter === 'high' && value <= 15) ||
+                    (valueFilter === 'medium' && (value < 5 || value > 15)) ||
+                    (valueFilter === 'low' && value >= 5)) {
+                    showRow = false;
+                }
+            }
+        }
+        
+        row.style.display = showRow ? '' : 'none';
+    }
+}
+
+function clearPortfolioFilters() {
+    document.getElementById('portfolio-filter').value = '';
+    document.getElementById('portfolio-pnl-filter').value = '';
+    document.getElementById('portfolio-value-filter').value = '';
+    filterPortfolioTable();
+}
+
+function filterTradesTable() {
+    const textFilter = document.getElementById('trades-filter').value.toLowerCase();
+    const actionFilter = document.getElementById('trades-action-filter').value;
+    const pnlFilter = document.getElementById('trades-pnl-filter').value;
+    const table = document.getElementById('trades-table');
+    const rows = table.getElementsByTagName('tr');
+
+    for (let i = 0; i < rows.length; i++) {
+        const row = rows[i];
+        const cells = row.getElementsByTagName('td');
+        if (cells.length === 0) continue; // Skip header rows
+
+        let showRow = true;
+        
+        // Text filter (symbol)
+        if (textFilter && cells[1]) {
+            const symbol = cells[1].textContent.toLowerCase();
+            if (!symbol.includes(textFilter)) {
+                showRow = false;
+            }
+        }
+        
+        // Action filter
+        if (actionFilter && cells[2]) {
+            const action = cells[2].textContent.trim();
+            if (action !== actionFilter) {
+                showRow = false;
+            }
+        }
+        
+        // P&L filter
+        if (pnlFilter && cells[5]) {
+            const pnlText = cells[5].textContent;
+            const isPositive = pnlText.includes('+') || (!pnlText.includes('-') && !pnlText.includes('$0.00'));
+            if ((pnlFilter === 'positive' && !isPositive) || (pnlFilter === 'negative' && isPositive)) {
+                showRow = false;
+            }
+        }
+        
+        row.style.display = showRow ? '' : 'none';
+    }
+}
+
+function clearTradesFilters() {
+    document.getElementById('trades-filter').value = '';
+    document.getElementById('trades-action-filter').value = '';
+    document.getElementById('trades-pnl-filter').value = '';
+    filterTradesTable();
+}
+
+function filterPerformanceTable() {
+    const textFilter = document.getElementById('performance-filter').value.toLowerCase();
+    const pnlFilter = document.getElementById('performance-pnl-filter').value;
+    const returnFilter = document.getElementById('performance-return-filter').value;
+    const statusFilter = document.getElementById('performance-status-filter').value;
+    const table = document.getElementById('performance-table-body');
+    const rows = table.getElementsByTagName('tr');
+
+    for (let i = 0; i < rows.length; i++) {
+        const row = rows[i];
+        const cells = row.getElementsByTagName('td');
+        if (cells.length === 0) continue; // Skip header rows
+
+        let showRow = true;
+        
+        // Text filter (symbol and name)
+        if (textFilter && cells[1] && cells[2]) {
+            const symbol = cells[1].textContent.toLowerCase();
+            const name = cells[2].textContent.toLowerCase();
+            if (!symbol.includes(textFilter) && !name.includes(textFilter)) {
+                showRow = false;
+            }
+        }
+        
+        // P&L filter
+        if (pnlFilter && cells[6]) {
+            const pnlText = cells[6].textContent;
+            const isPositive = pnlText.includes('+') || (!pnlText.includes('-') && !pnlText.includes('$0.00'));
+            if ((pnlFilter === 'positive' && !isPositive) || (pnlFilter === 'negative' && isPositive)) {
+                showRow = false;
+            }
+        }
+        
+        // Return % filter
+        if (returnFilter && cells[7]) {
+            const returnText = cells[7].textContent.replace('%', '');
+            const returnValue = parseFloat(returnText);
+            if (!isNaN(returnValue)) {
+                if ((returnFilter === 'high' && returnValue <= 50) ||
+                    (returnFilter === 'medium' && (returnValue < 0 || returnValue > 50)) ||
+                    (returnFilter === 'low' && returnValue >= 0)) {
+                    showRow = false;
+                }
+            }
+        }
+        
+        // Status filter
+        if (statusFilter && cells[9]) {
+            const status = cells[9].textContent.trim();
+            if (status !== statusFilter) {
+                showRow = false;
+            }
+        }
+        
+        row.style.display = showRow ? '' : 'none';
+    }
+}
+
+function clearPerformanceFilters() {
+    document.getElementById('performance-filter').value = '';
+    document.getElementById('performance-pnl-filter').value = '';
+    document.getElementById('performance-return-filter').value = '';
+    document.getElementById('performance-status-filter').value = '';
+    filterPerformanceTable();
+}
+
 // Trade a specific cryptocurrency from the portfolio
 
 

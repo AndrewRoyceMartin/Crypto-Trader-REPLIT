@@ -274,6 +274,52 @@ body {
     font-size: 0.875rem;
 }
 
+/* Enhanced Sticky Header Styles */
+.sticky-top {
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 10 !important;
+}
+
+.table-dark th {
+    background-color: #212529 !important;
+    color: white !important;
+    border-color: #32383e !important;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.table-dark th i {
+    color: white !important;
+}
+
+.table-dark th:hover {
+    background-color: #343a40 !important;
+}
+
+/* Filter Controls Styling */
+.form-control-sm, .form-select-sm {
+    font-size: 0.875rem;
+}
+
+/* Sortable Column Styling */
+.sortable:hover {
+    background-color: rgba(255,255,255,0.1) !important;
+    transition: background-color 0.2s ease;
+}
+
+.sortable i {
+    transition: transform 0.2s ease;
+}
+
+.sortable:hover i {
+    transform: scale(1.1);
+}
+
+/* Table Row Hover Effect */
+.table-hover tbody tr:hover {
+    background-color: rgba(0,0,0,0.05);
+}
+
 /* P&L Styling */
 .pnl-positive {
     color: var(--success-color);

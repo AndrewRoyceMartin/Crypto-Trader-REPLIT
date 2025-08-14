@@ -297,48 +297,75 @@
                             </div>
                         </div>
                         
+                        <!-- Filter Controls for Portfolio -->
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <input type="text" id="portfolio-filter" class="form-control form-control-sm" placeholder="Filter by symbol or name..." onkeyup="filterPortfolioTable()">
+                            </div>
+                            <div class="col-md-2">
+                                <select id="portfolio-pnl-filter" class="form-select form-select-sm" onchange="filterPortfolioTable()">
+                                    <option value="">All P&L</option>
+                                    <option value="positive">Profitable</option>
+                                    <option value="negative">Loss</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <select id="portfolio-value-filter" class="form-select form-select-sm" onchange="filterPortfolioTable()">
+                                    <option value="">All Values</option>
+                                    <option value="high">&gt;$15</option>
+                                    <option value="medium">$5-$15</option>
+                                    <option value="low">&lt;$5</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <button class="btn btn-outline-secondary btn-sm w-100" onclick="clearPortfolioFilters()">
+                                    <i class="fas fa-times me-1"></i>Clear
+                                </button>
+                            </div>
+                        </div>
+
                         <!-- Crypto Portfolio Table -->
                         <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
                             <table class="table table-sm table-hover">
-                                <thead class="table-light sticky-top">
+                                <thead class="table-dark sticky-top">
                                     <tr>
-                                        <th class="sortable" onclick="sortPortfolio('rank')" style="cursor: pointer;">
-                                            Rank <i id="sort-rank" class="fas fa-sort text-muted"></i>
+                                        <th class="sortable" onclick="sortPortfolio('rank')" style="cursor: pointer; color: white;">
+                                            Rank <i id="sort-rank" class="fas fa-sort text-white"></i>
                                         </th>
-                                        <th class="sortable" onclick="sortPortfolio('symbol')" style="cursor: pointer;">
-                                            Symbol <i id="sort-symbol" class="fas fa-sort text-muted"></i>
+                                        <th class="sortable" onclick="sortPortfolio('symbol')" style="cursor: pointer; color: white;">
+                                            Symbol <i id="sort-symbol" class="fas fa-sort text-white"></i>
                                         </th>
-                                        <th class="sortable" onclick="sortPortfolio('name')" style="cursor: pointer;">
-                                            Name <i id="sort-name" class="fas fa-sort text-muted"></i>
+                                        <th class="sortable" onclick="sortPortfolio('name')" style="cursor: pointer; color: white;">
+                                            Name <i id="sort-name" class="fas fa-sort text-white"></i>
                                         </th>
-                                        <th class="sortable" onclick="sortPortfolio('quantity')" style="cursor: pointer;">
-                                            Quantity <i id="sort-quantity" class="fas fa-sort text-muted"></i>
+                                        <th class="sortable" onclick="sortPortfolio('quantity')" style="cursor: pointer; color: white;">
+                                            Quantity <i id="sort-quantity" class="fas fa-sort text-white"></i>
                                         </th>
-                                        <th class="sortable" onclick="sortPortfolio('price')" style="cursor: pointer;">
-                                            Current Price <i id="sort-price" class="fas fa-sort text-muted"></i>
+                                        <th class="sortable" onclick="sortPortfolio('price')" style="cursor: pointer; color: white;">
+                                            Current Price <i id="sort-price" class="fas fa-sort text-white"></i>
                                         </th>
-                                        <th class="sortable" onclick="sortPortfolio('value')" style="cursor: pointer;">
-                                            Value <i id="sort-value" class="fas fa-sort text-muted"></i>
+                                        <th class="sortable" onclick="sortPortfolio('value')" style="cursor: pointer; color: white;">
+                                            Value <i id="sort-value" class="fas fa-sort text-white"></i>
                                         </th>
-                                        <th class="bg-light sortable" onclick="sortPortfolio('target_sell')" style="cursor: pointer;">
-                                            Target Sell <i id="sort-target_sell" class="fas fa-sort text-muted"></i>
+                                        <th class="sortable" onclick="sortPortfolio('target_sell')" style="cursor: pointer; color: white;">
+                                            Target Sell <i id="sort-target_sell" class="fas fa-sort text-white"></i>
                                         </th>
-                                        <th class="bg-light sortable" onclick="sortPortfolio('approaching_sell')" style="cursor: pointer;">
-                                            Approaching Sell % <i id="sort-approaching_sell" class="fas fa-sort text-muted"></i>
+                                        <th class="sortable" onclick="sortPortfolio('approaching_sell')" style="cursor: pointer; color: white;">
+                                            Approaching Sell % <i id="sort-approaching_sell" class="fas fa-sort text-white"></i>
                                         </th>
-                                        <th class="bg-light sortable" onclick="sortPortfolio('target_buy')" style="cursor: pointer;">
-                                            Target Buy <i id="sort-target_buy" class="fas fa-sort text-muted"></i>
+                                        <th class="sortable" onclick="sortPortfolio('target_buy')" style="cursor: pointer; color: white;">
+                                            Target Buy <i id="sort-target_buy" class="fas fa-sort text-white"></i>
                                         </th>
-                                        <th class="bg-light sortable" onclick="sortPortfolio('projected_pnl')" style="cursor: pointer;">
-                                            Projected P&L <i id="sort-projected_pnl" class="fas fa-sort text-muted"></i>
+                                        <th class="sortable" onclick="sortPortfolio('projected_pnl')" style="cursor: pointer; color: white;">
+                                            Projected P&L <i id="sort-projected_pnl" class="fas fa-sort text-white"></i>
                                         </th>
-                                        <th class="sortable" onclick="sortPortfolio('pnl')" style="cursor: pointer;">
-                                            P&L <i id="sort-pnl" class="fas fa-sort text-muted"></i>
+                                        <th class="sortable" onclick="sortPortfolio('pnl')" style="cursor: pointer; color: white;">
+                                            P&L <i id="sort-pnl" class="fas fa-sort text-white"></i>
                                         </th>
-                                        <th class="sortable" onclick="sortPortfolio('pnl_percent')" style="cursor: pointer;">
-                                            P&L % <i id="sort-pnl_percent" class="fas fa-sort text-muted"></i>
+                                        <th class="sortable" onclick="sortPortfolio('pnl_percent')" style="cursor: pointer; color: white;">
+                                            P&L % <i id="sort-pnl_percent" class="fas fa-sort text-white"></i>
                                         </th>
-                                        <th>Actions</th>
+                                        <th style="color: white;">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody id="crypto-portfolio-table">
@@ -369,27 +396,53 @@
                         </h5>
                     </div>
                     <div class="card-body">
-                        <div class="table-responsive">
+                        <!-- Filter Controls for Recent Trades -->
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <input type="text" id="trades-filter" class="form-control form-control-sm" placeholder="Filter by symbol..." onkeyup="filterTradesTable()">
+                            </div>
+                            <div class="col-md-2">
+                                <select id="trades-action-filter" class="form-select form-select-sm" onchange="filterTradesTable()">
+                                    <option value="">All Actions</option>
+                                    <option value="BUY">Buy Only</option>
+                                    <option value="SELL">Sell Only</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <select id="trades-pnl-filter" class="form-select form-select-sm" onchange="filterTradesTable()">
+                                    <option value="">All P&L</option>
+                                    <option value="positive">Profitable</option>
+                                    <option value="negative">Loss</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <button class="btn btn-outline-secondary btn-sm w-100" onclick="clearTradesFilters()">
+                                    <i class="fas fa-times me-1"></i>Clear
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
                             <table class="table table-sm">
-                                <thead>
+                                <thead class="table-dark sticky-top">
                                     <tr>
-                                        <th onclick="sortTradesTable(0)" style="cursor: pointer;" class="sortable">
-                                            Time <i id="trades-sort-0" class="fas fa-sort text-muted"></i>
+                                        <th onclick="sortTradesTable(0)" style="cursor: pointer; color: white;" class="sortable">
+                                            Time <i id="trades-sort-0" class="fas fa-sort text-white"></i>
                                         </th>
-                                        <th onclick="sortTradesTable(1)" style="cursor: pointer;" class="sortable">
-                                            Symbol <i id="trades-sort-1" class="fas fa-sort text-muted"></i>
+                                        <th onclick="sortTradesTable(1)" style="cursor: pointer; color: white;" class="sortable">
+                                            Symbol <i id="trades-sort-1" class="fas fa-sort text-white"></i>
                                         </th>
-                                        <th onclick="sortTradesTable(2)" style="cursor: pointer;" class="sortable">
-                                            Action <i id="trades-sort-2" class="fas fa-sort text-muted"></i>
+                                        <th onclick="sortTradesTable(2)" style="cursor: pointer; color: white;" class="sortable">
+                                            Action <i id="trades-sort-2" class="fas fa-sort text-white"></i>
                                         </th>
-                                        <th onclick="sortTradesTable(3)" style="cursor: pointer;" class="sortable">
-                                            Size <i id="trades-sort-3" class="fas fa-sort text-muted"></i>
+                                        <th onclick="sortTradesTable(3)" style="cursor: pointer; color: white;" class="sortable">
+                                            Size <i id="trades-sort-3" class="fas fa-sort text-white"></i>
                                         </th>
-                                        <th onclick="sortTradesTable(4)" style="cursor: pointer;" class="sortable">
-                                            Price <i id="trades-sort-4" class="fas fa-sort text-muted"></i>
+                                        <th onclick="sortTradesTable(4)" style="cursor: pointer; color: white;" class="sortable">
+                                            Price <i id="trades-sort-4" class="fas fa-sort text-white"></i>
                                         </th>
-                                        <th onclick="sortTradesTable(5)" style="cursor: pointer;" class="sortable">
-                                            P&L <i id="trades-sort-5" class="fas fa-sort text-muted"></i>
+                                        <th onclick="sortTradesTable(5)" style="cursor: pointer; color: white;" class="sortable">
+                                            P&L <i id="trades-sort-5" class="fas fa-sort text-white"></i>
                                         </th>
                                     </tr>
                                 </thead>
@@ -536,39 +589,73 @@
                             </div>
                         </div>
                         
-                        <div class="table-responsive">
+                        <!-- Filter Controls for Performance -->
+                        <div class="row mb-3">
+                            <div class="col-md-3">
+                                <input type="text" id="performance-filter" class="form-control form-control-sm" placeholder="Filter by symbol or name..." onkeyup="filterPerformanceTable()">
+                            </div>
+                            <div class="col-md-2">
+                                <select id="performance-pnl-filter" class="form-select form-select-sm" onchange="filterPerformanceTable()">
+                                    <option value="">All P&L</option>
+                                    <option value="positive">Profitable</option>
+                                    <option value="negative">Loss</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <select id="performance-return-filter" class="form-select form-select-sm" onchange="filterPerformanceTable()">
+                                    <option value="">All Returns</option>
+                                    <option value="high">&gt;50%</option>
+                                    <option value="medium">0-50%</option>
+                                    <option value="low">&lt;0%</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <select id="performance-status-filter" class="form-select form-select-sm" onchange="filterPerformanceTable()">
+                                    <option value="">All Status</option>
+                                    <option value="Winner">Winners</option>
+                                    <option value="Loser">Losers</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <button class="btn btn-outline-secondary btn-sm w-100" onclick="clearPerformanceFilters()">
+                                    <i class="fas fa-times me-1"></i>Clear
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="table-responsive" style="max-height: 500px; overflow-y: auto;">
                             <table class="table table-striped table-hover" id="performance-table">
-                                <thead class="table-dark">
+                                <thead class="table-dark sticky-top">
                                     <tr>
-                                        <th onclick="sortPerformanceTable(0)" style="cursor: pointer;" class="sortable">
-                                            Rank <i class="fas fa-sort text-muted ms-1"></i>
+                                        <th onclick="sortPerformanceTable(0)" style="cursor: pointer; color: white;" class="sortable">
+                                            Rank <i class="fas fa-sort text-white ms-1"></i>
                                         </th>
-                                        <th onclick="sortPerformanceTable(1)" style="cursor: pointer;" class="sortable">
-                                            Symbol <i class="fas fa-sort text-muted ms-1"></i>
+                                        <th onclick="sortPerformanceTable(1)" style="cursor: pointer; color: white;" class="sortable">
+                                            Symbol <i class="fas fa-sort text-white ms-1"></i>
                                         </th>
-                                        <th onclick="sortPerformanceTable(2)" style="cursor: pointer;" class="sortable">
-                                            Name <i class="fas fa-sort text-muted ms-1"></i>
+                                        <th onclick="sortPerformanceTable(2)" style="cursor: pointer; color: white;" class="sortable">
+                                            Name <i class="fas fa-sort text-white ms-1"></i>
                                         </th>
-                                        <th onclick="sortPerformanceTable(3)" style="cursor: pointer;" class="sortable">
-                                            Days Invested <i class="fas fa-sort text-muted ms-1"></i>
+                                        <th onclick="sortPerformanceTable(3)" style="cursor: pointer; color: white;" class="sortable">
+                                            Days Invested <i class="fas fa-sort text-white ms-1"></i>
                                         </th>
-                                        <th onclick="sortPerformanceTable(4)" style="cursor: pointer;" class="sortable">
-                                            Total Invested <i class="fas fa-sort text-muted ms-1"></i>
+                                        <th onclick="sortPerformanceTable(4)" style="cursor: pointer; color: white;" class="sortable">
+                                            Total Invested <i class="fas fa-sort text-white ms-1"></i>
                                         </th>
-                                        <th onclick="sortPerformanceTable(5)" style="cursor: pointer;" class="sortable">
-                                            Current Value <i class="fas fa-sort text-muted ms-1"></i>
+                                        <th onclick="sortPerformanceTable(5)" style="cursor: pointer; color: white;" class="sortable">
+                                            Current Value <i class="fas fa-sort text-white ms-1"></i>
                                         </th>
-                                        <th onclick="sortPerformanceTable(6)" style="cursor: pointer;" class="sortable">
-                                            Total P&L <i class="fas fa-sort text-muted ms-1"></i>
+                                        <th onclick="sortPerformanceTable(6)" style="cursor: pointer; color: white;" class="sortable">
+                                            Total P&L <i class="fas fa-sort text-white ms-1"></i>
                                         </th>
-                                        <th onclick="sortPerformanceTable(7)" style="cursor: pointer;" class="sortable">
-                                            P&L % <i class="fas fa-sort text-muted ms-1"></i>
+                                        <th onclick="sortPerformanceTable(7)" style="cursor: pointer; color: white;" class="sortable">
+                                            P&L % <i class="fas fa-sort text-white ms-1"></i>
                                         </th>
-                                        <th onclick="sortPerformanceTable(8)" style="cursor: pointer;" class="sortable">
-                                            Daily Return % <i class="fas fa-sort text-muted ms-1"></i>
+                                        <th onclick="sortPerformanceTable(8)" style="cursor: pointer; color: white;" class="sortable">
+                                            Daily Return % <i class="fas fa-sort text-white ms-1"></i>
                                         </th>
-                                        <th onclick="sortPerformanceTable(9)" style="cursor: pointer;" class="sortable">
-                                            Status <i class="fas fa-sort text-muted ms-1"></i>
+                                        <th onclick="sortPerformanceTable(9)" style="cursor: pointer; color: white;" class="sortable">
+                                            Status <i class="fas fa-sort text-white ms-1"></i>
                                         </th>
                                     </tr>
                                 </thead>
