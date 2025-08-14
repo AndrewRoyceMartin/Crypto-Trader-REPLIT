@@ -13,6 +13,14 @@ Preferred communication style: Simple, everyday language.
 ### Core Trading Framework
 A modular architecture supports CLI operations via `main.py` and a web interface via Flask (`web_interface.py`). It includes `BacktestEngine`, `PaperTrader`, and `LiveTrader` classes for different trading modes.
 
+### Deployment Configuration (Updated: 2025-08-14)
+- **Primary Entry Point**: `app.py` - Direct Flask application entry for deployment
+- **WSGI Support**: `wsgi.py` - Production WSGI configuration with Gunicorn
+- **Development Entry**: `main.py` - CLI-based entry with multiple modes
+- **Port Configuration**: Uses PORT environment variable (defaults to 5000)
+- **Health Endpoints**: `/health`, `/ready`, and root `/` endpoint for deployment health checks
+- **Production Server**: Gunicorn configuration with proper worker settings
+
 ### Strategy System
 A plugin-based system using abstract base classes (`BaseStrategy`) allows for flexible strategy implementation, such as `BollingerBandsStrategy`. Strategies generate `Signal` objects with trade actions and risk parameters.
 

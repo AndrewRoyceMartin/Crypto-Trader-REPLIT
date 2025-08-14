@@ -24,7 +24,7 @@ author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "pip install -r requirements.txt && python main.py web"
+args = "python app.py"
 waitForPort = 5000
 
 [workflows.workflow.metadata]

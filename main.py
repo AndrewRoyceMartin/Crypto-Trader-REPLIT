@@ -26,7 +26,8 @@ def run_web() -> None:
     """Run web interface mode."""
     from web_interface import app, initialize_system
     initialize_system()
-    app.run(host='0.0.0.0', port=5000, debug=False, use_reloader=False)
+    port = int(os.environ.get("PORT", "5000"))  # Use PORT env var for Replit deployment
+    app.run(host='0.0.0.0', port=port, debug=False, use_reloader=False)
 
 if __name__ == "__main__":
     if len(sys.argv) > 1:

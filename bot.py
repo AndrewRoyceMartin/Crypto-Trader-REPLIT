@@ -70,7 +70,8 @@ class HealthHandler(BaseHTTPRequestHandler):
         self.wfile.write(msg)
 
 def start_health_server():
-    port = int(os.getenv("PORT", "8000"))
+    # Use a fixed port for bot health server to avoid conflicts with Flask app
+    port = int(os.getenv("BOT_HEALTH_PORT", "8001"))
     server = HTTPServer(("0.0.0.0", port), HealthHandler)
     t = threading.Thread(target=server.serve_forever, daemon=True)
     t.start()
