@@ -2,153 +2,61 @@
 
 ## Overview
 
-This is a comprehensive Python-based algorithmic trading system designed for cryptocurrency markets. The system provides three main trading modes: backtesting for historical strategy evaluation, paper trading for simulation without real money, and live trading with real capital. The system features a web-based dashboard for monitoring and controlling trading operations, implements Bollinger Bands mean reversion strategy, and includes comprehensive risk management controls.
+This Python-based algorithmic trading system is designed for cryptocurrency markets, offering backtesting, paper trading, and live trading capabilities. Its purpose is to automate trading strategies, manage risk, and provide a web-based dashboard for real-time monitoring and control. The system integrates a Bollinger Bands mean reversion strategy and comprehensive risk management controls. It includes a robust cryptocurrency portfolio system with realistic price simulation and tax compliance features for Australian reporting (ATO).
 
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
 
-## Recent Changes (August 2025)
-
-**Project Status**: Fully operational algorithmic trading system with comprehensive crypto portfolio
-- ✅ Fixed critical JSON serialization error with Infinity values in backtesting timeframes
-- ✅ Enhanced backtesting engine with proper handling of NaN and infinite values
-- ✅ Implemented comprehensive cryptocurrency portfolio system with 100 different cryptos (each starting at $100)
-- ✅ Added crypto price simulation with realistic market fluctuations and volatility
-- ✅ Integrated crypto portfolio display with API endpoints and web interface enhancements
-- ✅ Web interface successfully running on port 5000 with real-time crypto portfolio updates
-- ✅ All core components (backtesting, paper trading, risk management, crypto portfolio) functional
-- ✅ Database and logging systems operational
-- ✅ Professional Flask dashboard with comprehensive cryptocurrency portfolio visualization
-
-**Latest Enhancement (August 2025)**:
-- ✅ Optimized crypto asset selection based on past 6 months market research
-- ✅ Replaced portfolio with highest-performing cryptocurrencies including SAROS (+1,379%), XCN (+551%), ZBCN (+298%), SYRUP (+288%), TOSHI (+284%), VENOM (+255%)
-- ✅ Enhanced volatility patterns - high-growth winners get 8% volatility, micro-cap moonshots get 12% for realistic profit potential
-- ✅ Restructured portfolio with market leaders (BTC, ETH, SOL, XRP, DOGE), DeFi pioneers, and emerging projects
-- ✅ Added portfolio management controls (rebalance, export, reset) and direct trading from portfolio table
-- ✅ **FIXED BACKTEST SYSTEM**: Resolved zero trades issue - now generating 29 trades with 24.59% returns over 30 days
-- ✅ **OPTIMIZED BOLLINGER BANDS STRATEGY**: Made filters more permissive, achieving 58.62% win rate and 12.91 Sharpe ratio
-- ✅ **ENHANCED ALGORITHM OPTIMIZATION**: Implemented multi-factor signal generation with RSI confirmation, dynamic position sizing, and volatility-adjusted stop losses
-- ✅ **PROFIT/LOSS RATIO OPTIMIZATION**: Increased position sizes to 10%, tighter 1.2% stop losses, aggressive 8% profit targets with dynamic scaling
-- ✅ **SMART SIGNAL GENERATION**: Added RSI momentum filters, price trend confirmation, and adaptive confidence scoring for better entry/exit points
-- ✅ **COMPLETE TRADING SYSTEM**: Fixed trade window sizing, replaced meaningless "Point" labels with time-based chart labels, populated 105 initial $100 purchase trades and 100 open positions with proper P&L tracking
-- ✅ **DURATION-SPECIFIC CHART PATTERNS**: Fixed cryptocurrency chart duration selection - each time period (1H, 4H, 1D, 7D, 30D) now displays dramatically different price patterns with appropriate volatility ranges and data granularity
-- ✅ **REAL-TIME PRICE DATA INTEGRATION**: Integrated CoinGecko API for live cryptocurrency prices with automatic fallback to simulated data, API status monitoring, manual price update controls, and rate limit management
-- ✅ **CONNECTION STATUS DISPLAY**: Fixed JavaScript caching and conflicting functions - top-right corner now consistently displays "Connected to CoinGecko" with proper provider identification and warning popups for connection failures
-- ✅ **TARGET BUY PRICE DISPLAY FIX**: Resolved $0.00 target buy price display issue by adding missing target_buy_price field to API response and updating table rendering to properly show calculated discount prices (8-25% below current market price)
-- ✅ **RESET FUNCTIONALITY ENHANCEMENT**: Fixed reset operations to automatically populate Recent Trades and Open Positions sections with 100 sample trades and positions, ensuring interface remains functional and informative after data clearing
-- ✅ **TRADING DATA POPULATION**: Created /api/populate-initial-trades endpoint for generating realistic trading history, integrated automatic population into reset and rebalance functions
-- ✅ **COMPLETE INTERFACE FUNCTIONALITY**: All sections now display data immediately after reset operations - Recent Trades shows 100 purchase transactions, Open Positions displays 100 active positions with proper P&L calculations
-- ✅ **APPROACHING SELL PERCENTAGE COLUMN**: Added new sortable "Approaching Sell %" column to cryptocurrency portfolio table showing proximity to target sell prices with color-coded indicators (red 95%+, yellow 90-95%, blue 80-90%, gray <80%)
-- ✅ **ENHANCED TABLE READABILITY**: Fixed text colors for better contrast - Target Sell column now uses dark bold text instead of hard-to-read yellow, Approaching Sell % column features proper background colors with contrasting text for optimal visibility
-- ✅ **ADVANCED ALGORITHMIC OPTIMIZATION (August 14, 2025)**: Completely overhauled buy/sell algorithm for maximum profit potential and loss minimization
-  - Multi-timeframe momentum analysis (3-period and 5-period)
-  - Adaptive position sizing based on volatility regimes and confidence scoring
-  - Enhanced risk-reward ratio enforcement (minimum 4:1 ratio)
-  - Progressive trailing stops that tighten as profits increase
-  - Market volatility regime detection for dynamic stop loss adjustment
-  - Confidence-based position scaling with multi-factor scoring system
-  - Smart entry conditions with tighter distance thresholds and momentum confirmation
-  - Adaptive risk management with consecutive loss protection and performance-based position sizing
-  - Advanced drawdown protection and real-time performance tracking
-- ✅ **STATISTICAL ARBITRAGE INTEGRATION (August 14, 2025)**: Implemented advanced statistical techniques from professional quant trading
-  - Rolling beta regression for mean reversion edge detection using z-score correlation analysis
-  - EWMA (Exponentially Weighted Moving Average) statistics for adaptive mean and volatility estimation  
-  - Fractional Kelly Criterion position sizing for optimal capital allocation based on expected returns
-  - Cost-efficiency validation - only trades when statistical edge exceeds transaction costs
-  - Z-score threshold filtering (±0.5 sigma minimum) for high-probability setups
-  - Expected return calculation based on historical mean reversion strength
-  - Enhanced confidence scoring integrating statistical factors (z-score strength, beta edge, cost efficiency)
-  - Professional-grade risk management with statistical validation of every trade entry
-
-**Latest Update (August 14, 2025)**:
-- ✅ **CRYPTOCURRENCY PORTFOLIO EXPANSION**: Added user-requested cryptocurrencies BADGER, AMP, and GALA to the existing 100+ crypto portfolio
-- ✅ **PORTFOLIO VERIFICATION**: Confirmed all user-requested cryptos are present: ETH, XRP, BTC, TRX, PEPE, SOL, BADGER, ADA, LTC, DOGE, SHIB, 1INCH, AMP, GALA
-- ✅ **RANKING SYSTEM UPDATE**: Properly integrated new cryptocurrencies into the portfolio ranking system with correct numbering
-- ✅ **INVESTMENT AMOUNT ADJUSTMENT**: Changed initial investment from $100 to $10 per cryptocurrency (total portfolio: $1,030 for 103 cryptocurrencies)
-- ✅ **ENHANCED TABLE SORTING**: Added clickable column headers with visual feedback (sort arrows) for all three dashboard tables
-- ✅ **IMPROVED INFORMATION TOOLTIPS**: Updated information icons with detailed, accurate descriptions for each dashboard section
-- ✅ **PORTFOLIO PERFORMANCE DASHBOARD**: Displays accumulated P&L since investment with comprehensive tracking metrics
-- ✅ **CURRENT HOLDINGS DASHBOARD**: Shows actual cryptocurrency positions with real-time market values and unrealized P&L
-- ✅ **VISUAL SORT INDICATORS**: All tables now show active sort direction with up/down arrow icons and color feedback
-- ✅ **INTERFACE STREAMLINING**: Removed redundant "Open Positions" table from main screen since dedicated "Current Holdings" dashboard provides same functionality
-- ✅ **CLEAN THREE-DASHBOARD SYSTEM**: Streamlined navigation with no duplicate information - Main Portfolio, Performance Dashboard, and Current Holdings
-- ✅ **TRADING CONTROLS REMOVAL**: Completely removed trading controls section to focus interface on portfolio management rather than active trading
-- ✅ **FULL-WIDTH PORTFOLIO DISPLAY**: Expanded portfolio section to full width for better visibility and cleaner interface
-- ✅ **AUSTRALIAN TAX OFFICE (ATO) COMPLIANCE**: Implemented comprehensive capital gains tax export for Australian tax reporting
-  - Professional ATO-compliant CSV export with taxpayer information (Andrew Martin - ARM Digital Enterprises, ABN: 92 384 831 384)
-  - Actual buy/sell transaction history with realized capital gains calculations using FIFO method
-  - Complete capital gains transaction schedule showing purchases, sales, cost base, and realized gains/losses
-  - Tax year calculation, holding period analysis, CGT discount eligibility assessment
-  - Compliance notes and disclaimers for Australian tax requirements
-  - Proper formatting for tax professional review and ATO submission
-- ✅ **SYSTEM READY FOR DEPLOYMENT**: All requested features implemented, algorithm optimized, portfolio complete with 103 cryptocurrencies, tax compliance ready
-- ✅ **INTERFACE ENHANCEMENTS (August 14, 2025)**: 
-  - Completely removed non-functional color guide system from portfolio interface
-  - Moved ATO Tax Export button to prominent position in top navigation bar next to Current Holdings
-  - Added professional footer with business information (ARM Digital Enterprises, ABN: 92 384 831 384)
-  - Enhanced ATO tax export to show only actual buy/sell transactions with proper FIFO capital gains calculations
-  - Streamlined portfolio actions section with cleaner button layout
-
-**Next Enhancement Opportunities**: 
-- Individual crypto price charts and trading history  
-- Advanced portfolio analytics and risk metrics
-- Live trading mode completion
-- Deployment setup
-
 ## System Architecture
 
 ### Core Trading Framework
-The system is built around a modular architecture with clear separation of concerns. The main entry point supports CLI operations through `main.py`, while the web interface is provided via Flask in `web_interface.py`. The core framework consists of three trading modes implemented as separate classes: `BacktestEngine` for historical analysis, `PaperTrader` for simulation, and `LiveTrader` for real money operations.
+A modular architecture supports CLI operations via `main.py` and a web interface via Flask (`web_interface.py`). It includes `BacktestEngine`, `PaperTrader`, and `LiveTrader` classes for different trading modes.
 
 ### Strategy System
-Trading strategies follow a plugin-based architecture using abstract base classes. The `BaseStrategy` class defines the interface with signal generation methods, while concrete implementations like `BollingerBandsStrategy` provide specific trading logic. Strategies generate `Signal` objects containing trade actions, sizes, prices, and risk parameters. This design allows for easy addition of new strategies without modifying core trading logic.
+A plugin-based system using abstract base classes (`BaseStrategy`) allows for flexible strategy implementation, such as `BollingerBandsStrategy`. Strategies generate `Signal` objects with trade actions and risk parameters.
 
 ### Data Management
-The data layer implements a two-tier caching system. Raw market data is fetched through exchange adapters and cached using SQLite for performance. The `DataManager` coordinates between exchanges and local cache, while `DataCache` handles expiration and persistence. This approach reduces API calls and improves system responsiveness.
+A two-tier caching system uses SQLite to store raw market data fetched via exchange adapters. `DataManager` and `DataCache` manage data flow, caching, and persistence to minimize API calls.
 
 ### Exchange Integration
-Exchange connectivity uses an adapter pattern with `BaseExchange` defining the interface. Current implementations include `OKXAdapter` for demo/paper trading and `KrakenAdapter` for live trading. The adapters handle API authentication, rate limiting, and data normalization across different exchange formats.
+An adapter pattern with `BaseExchange` provides a unified interface for various cryptocurrency exchanges, including `OKXAdapter` for demo trading and `KrakenAdapter` for live trading, handling authentication, rate limiting, and data normalization.
 
 ### Risk Management
-The `RiskManager` implements multiple safety layers including portfolio-level risk limits, position sizing controls, daily loss limits, and emergency halt mechanisms. Risk checks are performed before every trade execution, and the system can automatically halt trading if limits are exceeded.
+The `RiskManager` enforces multiple safety layers, including portfolio-level limits, position sizing, daily loss limits, and emergency halts, performing checks before every trade.
 
 ### Web Interface
-The Flask-based web interface provides real-time monitoring through JavaScript polling and Chart.js visualizations. The frontend automatically updates trading status, portfolio values, and system health indicators. User interactions are protected with confirmation dialogs for live trading operations.
+A Flask-based web interface provides real-time monitoring, portfolio visualization with Chart.js, and user interaction capabilities. It features a streamlined three-dashboard system (Main Portfolio, Performance Dashboard, Current Holdings) and a professional footer. ATO tax export functionality is prominent.
 
 ### Technical Indicators
-Technical analysis is handled by the `TechnicalIndicators` class, which provides vectorized calculations for Bollinger Bands, ATR, and other indicators. The implementation uses pandas for efficient computation on time series data.
+The `TechnicalIndicators` class provides vectorized calculations for indicators like Bollinger Bands and ATR, utilizing pandas for efficient time series data processing.
 
 ### Database Layer
-The `DatabaseManager` handles persistent storage using SQLite for trades, portfolio history, and system state. Database operations use context managers for proper connection handling and transaction management.
+The `DatabaseManager` uses SQLite for persistent storage of trades, portfolio history, and system state, ensuring proper connection handling and transaction management.
+
+### Algorithmic Optimization
+The system incorporates advanced algorithmic optimization for buy/sell decisions, including multi-timeframe momentum analysis, adaptive position sizing, enhanced risk-reward enforcement, progressive trailing stops, and market volatility regime detection. It also integrates statistical arbitrage techniques like rolling beta regression, EWMA statistics, and Fractional Kelly Criterion for position sizing.
 
 ## External Dependencies
 
 ### Market Data & Trading APIs
-- **CCXT Library**: Unified interface for cryptocurrency exchanges (OKX, Kraken)
-- **OKX Exchange**: Demo trading environment for paper trading simulations
-- **Kraken Exchange**: Live trading platform for real money operations
+- **CCXT Library**: Unified exchange interface.
+- **OKX Exchange**: Demo trading environment.
+- **Kraken Exchange**: Live trading platform.
+- **CoinGecko API**: Live cryptocurrency prices.
 
 ### Data Processing & Analysis
-- **Pandas**: Time series data manipulation and analysis
-- **NumPy**: Numerical computations for technical indicators
-- **SQLite**: Local database for caching and data persistence
+- **Pandas**: Time series data manipulation.
+- **NumPy**: Numerical computations.
+- **SQLite**: Local database for caching and persistence.
 
 ### Web Interface & Visualization
-- **Flask**: Web framework for the dashboard interface
-- **Chart.js**: Client-side charting library for portfolio visualization
-- **Bootstrap**: Frontend CSS framework for responsive design
-- **Font Awesome**: Icon library for the web interface
+- **Flask**: Web framework.
+- **Chart.js**: Client-side charting.
+- **Bootstrap**: Frontend CSS framework.
+- **Font Awesome**: Icon library.
 
 ### Configuration & Logging
-- **ConfigParser**: Configuration file management
-- **Python Logging**: System-wide logging with file rotation
-- **Environment Variables**: Secure credential management
-
-### Development & Deployment
-- **Python 3.8+**: Core runtime environment
-- **pip**: Package dependency management
-- **Threading**: Concurrent trading operations
-
-The system is designed to be self-contained with minimal external service dependencies, relying primarily on exchange APIs for market data and trade execution.
+- **ConfigParser**: Configuration management.
+- **Python Logging**: System-wide logging.
+- **Environment Variables**: Secure credential management.
