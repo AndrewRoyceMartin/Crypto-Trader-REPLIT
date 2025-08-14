@@ -2092,6 +2092,8 @@ function updateConnectionStatusDisplay(apiStatus) {
         // Stop any reconnection countdown since we're connected
         if (window.tradingApp) {
             window.tradingApp.stopReconnectionCountdown();
+            // Restart trading countdown when connection is restored
+            window.tradingApp.startCountdown();
         }
         
         // Update new top-right corner connection status (if elements exist)
@@ -2116,6 +2118,20 @@ function updateConnectionStatusDisplay(apiStatus) {
         
         console.log('Status updated: Connected to', apiStatus.api_provider);
     } else {
+        // Stop trading countdown when connection is lost
+        if (window.tradingApp) {
+            if (window.tradingApp.countdownInterval) {
+                clearInterval(window.tradingApp.countdownInterval);
+                window.tradingApp.countdownInterval = null;
+            }
+            // Update countdown display to show connection issue
+            const countdownElement = document.getElementById('trading-countdown');
+            if (countdownElement) {
+                countdownElement.textContent = 'Connection Lost';
+                countdownElement.className = 'badge bg-danger ms-2';
+            }
+        }
+        
         // Update new top-right corner connection status (if elements exist)
         if (connectionIcon && connectionText) {
             connectionIcon.className = "fas fa-circle text-danger me-1";
