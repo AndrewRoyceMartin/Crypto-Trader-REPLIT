@@ -129,10 +129,10 @@
             </div>
         </div>
 
-        <!-- Portfolio and Controls Row -->
+        <!-- Portfolio Summary Row -->
         <div class="row mb-4">
             <!-- Portfolio Summary -->
-            <div class="col-lg-8">
+            <div class="col-12">
                 <div class="card">
                     <div class="card-header">
                         <h5 class="mb-0">
@@ -212,111 +212,7 @@
                 </div>
             </div>
 
-            <!-- Trading Controls -->
-            <div class="col-lg-4">
-                <div class="card">
-                    <div class="card-header">
-                        <h5 class="mb-0">
-                            <i class="fas fa-cog me-2"></i>
-                            Trading Controls
-                            <i class="fas fa-info-circle text-muted ms-2" 
-                               data-bs-toggle="tooltip" 
-                               data-bs-placement="top" 
-                               title="Configure trading parameters and run backtests on single assets or entire portfolio"></i>
-                        </h5>
-                    </div>
-                    <div class="card-body">
-                        <form id="trading-form">
-                            <div class="mb-3">
-                                <label for="symbol-select" class="form-label">Symbol</label>
-                                <select class="form-select" id="symbol-select">
-                                    <optgroup label="Major Pairs">
-                                        <option value="BTC/USDT">BTC/USDT</option>
-                                        <option value="ETH/USDT">ETH/USDT</option>
-                                        <option value="BTC/USD">BTC/USD</option>
-                                        <option value="ETH/USD">ETH/USD</option>
-                                    </optgroup>
-                                    <optgroup label="Top 10 Portfolio Cryptos">
-                                        <option value="BNB/USDT">BNB/USDT</option>
-                                        <option value="SOL/USDT">SOL/USDT</option>
-                                        <option value="XRP/USDT">XRP/USDT</option>
-                                        <option value="DOGE/USDT">DOGE/USDT</option>
-                                        <option value="ADA/USDT">ADA/USDT</option>
-                                        <option value="AVAX/USDT">AVAX/USDT</option>
-                                    </optgroup>
-                                    <optgroup label="Popular Alts">
-                                        <option value="LINK/USDT">LINK/USDT</option>
-                                        <option value="MATIC/USDT">MATIC/USDT</option>
-                                        <option value="DOT/USDT">DOT/USDT</option>
-                                        <option value="UNI/USDT">UNI/USDT</option>
-                                        <option value="LTC/USDT">LTC/USDT</option>
-                                        <option value="BCH/USDT">BCH/USDT</option>
-                                    </optgroup>
-                                </select>
-                            </div>
-                            
-                            <div class="mb-3">
-                                <label for="timeframe-select" class="form-label">Timeframe</label>
-                                <select class="form-select" id="timeframe-select">
-                                    <option value="1m">1 Minute</option>
-                                    <option value="5m">5 Minutes</option>
-                                    <option value="15m">15 Minutes</option>
-                                    <option value="30m">30 Minutes</option>
-                                    <option value="1h" selected>1 Hour</option>
-                                    <option value="4h">4 Hours</option>
-                                    <option value="1d">1 Day</option>
-                                </select>
-                            </div>
-                            
-                            <hr>
-                            
-                            <h6>Trading Mode</h6>
-                            <div class="mb-3">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="trading-mode" id="trading-mode-single" value="single" checked>
-                                    <label class="form-check-label" for="trading-mode-single">
-                                        Single Asset (Selected Symbol)
-                                    </label>
-                                </div>
-                                <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="trading-mode" id="trading-mode-portfolio" value="portfolio">
-                                    <label class="form-check-label" for="trading-mode-portfolio">
-                                        Portfolio (All 100 Cryptos)
-                                    </label>
-                                </div>
-                            </div>
-                            
-                            <hr>
-                            
-                            <h6>Backtest 
-                                <i class="fas fa-info-circle text-muted ms-1" 
-                                   data-bs-toggle="tooltip" 
-                                   data-bs-placement="top" 
-                                   title="Test your trading strategy on historical data to analyze performance without risking real money"></i>
-                            </h6>
-                            <div class="mb-3">
-                                <label for="backtest-days" class="form-label">Days to Test</label>
-                                <input type="number" class="form-control" id="backtest-days" value="30" min="1" max="365">
-                            </div>
-                            
-                            <div class="row">
-                                <div class="col-6">
-                                    <button type="button" class="btn btn-primary w-100" onclick="runSingleBacktest()">
-                                        <i class="fas fa-chart-area me-1"></i>
-                                        Single Asset
-                                    </button>
-                                </div>
-                                <div class="col-6">
-                                    <button type="button" class="btn btn-success w-100" onclick="runPortfolioBacktest()">
-                                        <i class="fas fa-chart-line me-1"></i>
-                                        Portfolio
-                                    </button>
-                                </div>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            </div>
+
         </div>
 
         <!-- Crypto Portfolio Row -->
