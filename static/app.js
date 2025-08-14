@@ -711,3 +711,78 @@ async function startPaperTrades() {
         window.tradingApp.showToast('Error starting paper trades: ' + error.message, 'error');
     }
 }
+
+// Navigation Functions for Dashboard Views
+function showMainDashboard() {
+    // Hide all dashboard sections first
+    const performanceDashboard = document.getElementById('performance-dashboard');
+    const currentHoldings = document.getElementById('current-holdings');
+    const mainDashboard = document.getElementById('main-dashboard');
+    
+    // Show main dashboard and hide others
+    if (mainDashboard) mainDashboard.style.display = 'block';
+    if (performanceDashboard) performanceDashboard.style.display = 'none';
+    if (currentHoldings) currentHoldings.style.display = 'none';
+    
+    // Update navbar button states
+    updateNavbarButtons('main');
+    
+    console.log('Switched to Main Dashboard');
+}
+
+function showPerformanceDashboard() {
+    // Hide all dashboard sections first
+    const mainDashboard = document.getElementById('main-dashboard');
+    const currentHoldings = document.getElementById('current-holdings');
+    const performanceDashboard = document.getElementById('performance-dashboard');
+    
+    // Show performance dashboard and hide others
+    if (performanceDashboard) performanceDashboard.style.display = 'block';
+    if (mainDashboard) mainDashboard.style.display = 'none';
+    if (currentHoldings) currentHoldings.style.display = 'none';
+    
+    // Update navbar button states
+    updateNavbarButtons('performance');
+    
+    console.log('Switched to Performance Dashboard');
+}
+
+function showCurrentPositions() {
+    // Hide all dashboard sections first
+    const mainDashboard = document.getElementById('main-dashboard');
+    const performanceDashboard = document.getElementById('performance-dashboard');
+    const currentHoldings = document.getElementById('current-holdings');
+    
+    // Show current holdings and hide others
+    if (currentHoldings) currentHoldings.style.display = 'block';
+    if (mainDashboard) mainDashboard.style.display = 'none';
+    if (performanceDashboard) performanceDashboard.style.display = 'none';
+    
+    // Update navbar button states
+    updateNavbarButtons('holdings');
+    
+    console.log('Switched to Current Holdings');
+}
+
+function updateNavbarButtons(activeView) {
+    // Get all navigation buttons
+    const buttons = document.querySelectorAll('.navbar-nav .btn');
+    
+    // Remove active classes
+    buttons.forEach(btn => {
+        btn.classList.remove('btn-light');
+        btn.classList.add('btn-outline-light');
+    });
+    
+    // Add active class to current view
+    const buttonMap = {
+        'main': 0,
+        'performance': 1,
+        'holdings': 2
+    };
+    
+    if (buttonMap[activeView] !== undefined && buttons[buttonMap[activeView]]) {
+        buttons[buttonMap[activeView]].classList.remove('btn-outline-light');
+        buttons[buttonMap[activeView]].classList.add('btn-light');
+    }
+}
