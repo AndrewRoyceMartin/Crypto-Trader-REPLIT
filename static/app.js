@@ -227,6 +227,7 @@ class TradingApp {
             // Update crypto symbols display
             if (data.cryptocurrencies) {
                 this.updateCryptoSymbols(data.cryptocurrencies);
+                this.updatePortfolioSummary(data.summary, data.cryptocurrencies);
             }
             
         } catch (error) {
@@ -295,6 +296,40 @@ class TradingApp {
                 toast.remove();
             }
         }, 5000);
+    }
+
+    updatePortfolioSummary(summary, cryptos) {
+        if (!summary) return;
+        
+        // Update main summary card
+        document.getElementById('summary-total-value').textContent = this.formatCurrency(summary.total_current_value);
+        
+        const changeElement = document.getElementById('summary-total-change');
+        const changeValue = summary.total_pnl || 0;
+        const changePercent = summary.total_pnl_percent || 0;
+        
+        changeElement.textContent = `${changeValue >= 0 ? '+' : ''}${this.formatCurrency(changeValue)} (${changePercent.toFixed(2)}%)`;
+        changeElement.className = `badge ${changeValue >= 0 ? 'bg-success' : 'bg-danger'}`;
+        
+        // Update summary stats
+        document.getElementById('summary-total-assets').textContent = summary.total_cryptos || 0;
+        document.getElementById('summary-portfolio-value').textContent = this.formatCurrency(summary.total_current_value);
+        
+        const dailyChangeElement = document.getElementById('summary-24h-change');
+        dailyChangeElement.textContent = `${changePercent >= 0 ? '+' : ''}${changePercent.toFixed(2)}%`;
+        dailyChangeElement.className = `mb-0 fw-bold ${changePercent >= 0 ? 'text-success' : 'text-danger'}`;
+        
+        // Find best performer
+        if (cryptos && cryptos.length > 0) {
+            const bestPerformer = cryptos.reduce((best, crypto) => {
+                const currentPnlPercent = crypto.pnl_percent || 0;
+                const bestPnlPercent = best.pnl_percent || 0;
+                return currentPnlPercent > bestPnlPercent ? crypto : best;
+            });
+            
+            document.getElementById('summary-best-performer').textContent = bestPerformer.symbol;
+            document.getElementById('summary-best-performance').textContent = `+${(bestPerformer.pnl_percent || 0).toFixed(2)}%`;
+        }
     }
 
     initializeCharts() {
