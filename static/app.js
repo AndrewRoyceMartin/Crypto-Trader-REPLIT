@@ -30,12 +30,7 @@ class TradingApp {
         this.startAutoUpdate();
         this.loadConfig();
         
-        // Initialize news ticker after DOM is ready
-        setTimeout(() => {
-            if (typeof window.initializeNewsTicker === 'function') {
-                window.initializeNewsTicker();
-            }
-        }, 3000);
+
     }
     
     setupEventListeners() {
@@ -961,8 +956,9 @@ async function confirmLiveTrading() {
 }
 
 async function executeStartTrading(mode, tradingMode = 'single') {
-    const symbol = document.getElementById('symbol-select').value;
-    const timeframe = document.getElementById('timeframe-select').value;
+    // Use default values since symbol-select and timeframe-select don't exist on this page
+    const symbol = 'BTC-USD'; // Default symbol
+    const timeframe = '1h'; // Default timeframe
     
     const loadingModal = new bootstrap.Modal(document.getElementById('loadingModal'));
     const tradingModeText = tradingMode === 'portfolio' ? 'portfolio' : 'single asset';
@@ -1148,65 +1144,7 @@ function refreshCryptoPortfolio() {
     }
 }
 
-// News ticker functionality
-function initializeNewsTicker() {
-    updateNewsTicker();
-    // Update news every 10 minutes
-    setInterval(() => {
-        updateNewsTicker();
-    }, 10 * 60 * 1000);
-}
 
-// Make sure functions are available globally immediately
-window.initializeNewsTicker = initializeNewsTicker;
-window.updateNewsTicker = updateNewsTicker;
-window.refreshNews = refreshNews;
-window.displayNews = displayNews;
-window.getTimeAgo = getTimeAgo;
-
-async function updateNewsTicker() {
-    try {
-        const response = await fetch('/api/crypto-news');
-        if (!response.ok) return;
-        
-        const data = await response.json();
-        displayNews(data.articles || []);
-    } catch (error) {
-        console.error('Error fetching news:', error);
-    }
-}
-
-function displayNews(articles) {
-    const ticker = document.getElementById('news-ticker');
-    if (!ticker || !articles.length) return;
-    
-    // Create news items
-    const newsItems = articles.slice(0, 5).map(article => {
-        const timeAgo = getTimeAgo(new Date(article.publishedAt));
-        return `<span class="news-item text-light">${article.title} (${timeAgo})</span>`;
-    }).join('');
-    
-    ticker.innerHTML = newsItems;
-}
-
-function getTimeAgo(date) {
-    const now = new Date();
-    const diffInMinutes = Math.floor((now - date) / (1000 * 60));
-    
-    if (diffInMinutes < 60) {
-        return `${diffInMinutes}m ago`;
-    } else if (diffInMinutes < 1440) {
-        return `${Math.floor(diffInMinutes / 60)}h ago`;
-    } else {
-        return `${Math.floor(diffInMinutes / 1440)}d ago`;
-    }
-}
-
-function refreshNews() {
-    if (typeof window.updateNewsTicker === 'function') {
-        window.updateNewsTicker();
-    }
-}
 
 // State management for table sorting and filtering
 const tableState = {
