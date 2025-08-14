@@ -1,0 +1,160 @@
+# ---------- BUY / SELL LOGIC (drop-in) ----------
+
+# Track peak since entry
+if LIVE.position_qty > 0.0:
+    LIVE.peak_since_entry = max(LIVE.peak_since_entry, float(last["high"]))
+
+# -------- Crash failsafe (intrabar-aware, only if currently in profit) --------
+if LIVE.position_qty > 0.0:
+    a = atr(df)  # ATR on strategy TF (price units)
+
+    # Drops from peak using both last price and candle low (captures wicks)
+    drop_from_peak_close = LIVE.peak_since_entry - px
+    drop_from_peak_low   = LIVE.peak_since_entry - float(last["low"])
+    drop_close_pct = drop_from_peak_close / max(1e-12, LIVE.peak_since_entry)
+    drop_low_pct   = drop_from_peak_low   / max(1e-12, LIVE.peak_since_entry)
+
+    # Optional: fast timeframe wick check (e.g., 1m lows over last 5 minutes)
+    fast_trigger = False
+    if FAST_FAILSAFE:
+        try:
+            df_fast = fetch_history(ex, symbol, FAST_TF,
+                                    max(FAST_LOOKBACK_MIN, FAST_LOW_WINDOW_MIN) + 5)
+            fast_low = float(df_fast["low"].iloc[-FAST_LOW_WINDOW_MIN:].min())
+            fast_drop = LIVE.peak_since_entry - fast_low
+            if fast_drop >= CRASH_ATR_MULT * a:
+                fast_trigger = True
+        except Exception:
+            fast_trigger = False  # don't break loop on fast fetch issues
+
+    # Require we are CURRENTLY in profit (breakeven includes fees+slippage)
+    breakeven_mult = 1 + 2*Pm.fee + 2*Pm.slip + CRASH_MIN_REALIZED_PROFIT_PCT
+    in_profit_now = px >= LIVE.entry_price * breakeven_mult if CRASH_REQUIRE_REALIZED_PROFIT else True
+
+    crash_trigger = (
+        max(drop_from_peak_close, drop_from_peak_low) >= CRASH_ATR_MULT * a
+        or max(drop_close_pct, drop_low_pct)          >= CRASH_DD_PCT
+        or fast_trigger
+    )
+    crash_now = in_profit_now and crash_trigger
+
+    if crash_now:
+        price = px * (1 - 0.001)  # cross spread for immediacy
+        resp = _place_limit_ioc(ex, symbol, 'sell', LIVE.position_qty, price)
+        fill = price
+        gross = LIVE.position_qty * (fill - LIVE.entry_price)
+        fees  = Pm.fee * (fill + LIVE.entry_price) * LIVE.position_qty
+        pnl   = gross - fees
+        LIVE.equity += pnl
+
+        append_trade_csv({
+            "ts": LIVE.last_ts, "symbol": symbol, "side": "sell",
+            "qty": f"{LIVE.position_qty:.8f}", "price": f"{fill:.2f}",
+            "order_id": resp.get("id"), "event": "CRASH_EXIT", "pnl": f"{pnl:.2f}",
+            "equity_after": f"{LIVE.equity:.2f}",
+            "notes": (
+                f"peak={LIVE.peak_since_entry:.2f} "
+                f"dropClose={drop_from_peak_close:.2f} dropLow={drop_from_peak_low:.2f} "
+                f"atr={a:.2f} fast={fast_trigger} in_profit_now={in_profit_now}"
+            )
+        })
+        print(f"[CRASH_EXIT] {LIVE.position_qty:.6f} @~{fill:.2f} pnl={pnl:.2f} eq={LIVE.equity:.2f}")
+
+        # Arm re-buy plan
+        LIVE.rebuy_armed = True
+        LIVE.rebuy_dynamic = REBUY_DYNAMIC
+        LIVE.rebuy_price = compute_rebuy_price(df, px, REBUY_MODE)
+        ready_at = pd.Timestamp.now(tz=SYD) + pd.Timedelta(minutes=REBUY_COOLDOWN_MIN)
+        LIVE.rebuy_ready_at_iso = ready_at.isoformat()
+
+        # Flatten position state
+        LIVE.position_qty = 0.0
+        LIVE.entry_price = 0.0
+        LIVE.peak_since_entry = 0.0
+
+        time.sleep(LOOP_SEC)
+        # IMPORTANT: skip the rest of this tick after a crash exit
+        # (in a function you'd `return`; inline we `continue` in your loop)
+        # continue
+
+# ---------------- Normal exits (tp / band / fixed stop) ----------------
+if LIVE.position_qty > 0.0:
+    stop = LIVE.entry_price * (1 - Pm.sl)
+    take = LIVE.entry_price * (1 + Pm.tp)
+    if px >= bb_up or px >= take or float(last["low"]) <= stop:
+        price = px * (1 - 0.001)
+        resp = _place_limit_ioc(ex, symbol, 'sell', LIVE.position_qty, price)
+        fill = price
+        gross = LIVE.position_qty * (fill - LIVE.entry_price)
+        fees  = Pm.fee * (fill + LIVE.entry_price) * LIVE.position_qty
+        pnl   = gross - fees
+        LIVE.equity += pnl
+        append_trade_csv({
+            "ts": LIVE.last_ts, "symbol": symbol, "side": "sell",
+            "qty": f"{LIVE.position_qty:.8f}", "price": f"{fill:.2f}",
+            "order_id": resp.get("id"), "event": "EXIT", "pnl": f"{pnl:.2f}",
+            "equity_after": f"{LIVE.equity:.2f}",
+            "notes": f"bb_up={bb_up:.2f} stop={stop:.2f} take={take:.2f}"
+        })
+        print(f"[EXIT] {LIVE.position_qty:.6f} @~{fill:.2f} pnl={pnl:.2f} eq={LIVE.equity:.2f}")
+        LIVE.position_qty = 0.0
+        LIVE.entry_price = 0.0
+        LIVE.peak_since_entry = 0.0
+
+# ---------------- Entries (rebuy-aware first, then baseline band entry) ----------------
+if LIVE.trading_enabled and LIVE.position_qty == 0.0:
+    # Update rebuy barrier dynamically if enabled
+    if LIVE.rebuy_armed and LIVE.rebuy_dynamic:
+        LIVE.rebuy_price = compute_rebuy_price(df, px, REBUY_MODE)
+
+    if LIVE.rebuy_armed:
+        if REBUY_MODE == "confirmation":
+            now_ok = (LIVE.rebuy_ready_at_iso and
+                      pd.Timestamp.now(tz=SYD) >= pd.Timestamp(LIVE.rebuy_ready_at_iso)) \
+                      and (px >= LIVE.rebuy_price)
+        else:  # "knife"
+            now_ok = (px <= LIVE.rebuy_price)
+
+        if now_ok:
+            risk_per_unit = max(1e-12, px * Pm.sl)
+            dollars = Pm.risk * LIVE.equity
+            qty = max(0.0, dollars / risk_per_unit)
+            if qty > 0.0:
+                price = px * (1 + 0.001)
+                resp = _place_limit_ioc(ex, symbol, 'buy', qty, price)
+                LIVE.position_qty = qty
+                LIVE.entry_price  = px
+                LIVE.peak_since_entry = px
+                tag = f"REBUY_{('CONFIRMATION' if REBUY_MODE=='confirmation' else 'KNIFE')}"
+                append_trade_csv({
+                    "ts": LIVE.last_ts, "symbol": symbol, "side": "buy", "qty": f"{qty:.8f}",
+                    "price": f"{price:.2f}", "order_id": resp.get("id"),
+                    "event": tag, "pnl": "", "equity_after": f"{LIVE.equity:.2f}",
+                    "notes": f"rebuy_price={LIVE.rebuy_price:.2f}"
+                })
+                print(f"[{tag}] {qty:.6f} @~{price:.2f} eq={LIVE.equity:.2f}")
+                LIVE.rebuy_armed = False
+                LIVE.rebuy_price = 0.0
+                LIVE.rebuy_ready_at_iso = ""
+
+    else:
+        # Baseline mean-reversion entry: price at/below lower band
+        if px <= bb_lo:
+            risk_per_unit = max(1e-12, px * Pm.sl)
+            dollars = Pm.risk * LIVE.equity
+            qty = max(0.0, dollars / risk_per_unit)
+            if qty > 0.0:
+                price = px * (1 + 0.001)
+                resp = _place_limit_ioc(ex, symbol, 'buy', qty, price)
+                LIVE.position_qty = qty
+                LIVE.entry_price  = px
+                LIVE.peak_since_entry = px
+                append_trade_csv({
+                    "ts": LIVE.last_ts, "symbol": symbol, "side": "buy",
+                    "qty": f"{qty:.8f}", "price": f"{price:.2f}",
+                    "order_id": resp.get("id"), "event": "ENTRY", "pnl": "",
+                    "equity_after": f"{LIVE.equity:.2f}", "notes": f"bb_lo={bb_lo:.2f}"
+                })
+                print(f"[ENTRY] {qty:.6f} @~{price:.2f} eq={LIVE.equity:.2f}")
+
+# ---------- END BUY / SELL LOGIC ----------

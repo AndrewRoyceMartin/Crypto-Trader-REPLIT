@@ -23,6 +23,7 @@ from src.exchanges.okx_adapter import OKXAdapter  # (kept for future use)
 from src.exchanges.kraken_adapter import KrakenAdapter  # (kept for future use)
 from src.data.crypto_portfolio import CryptoPortfolioManager
 from src.utils.email_service import email_service
+from version import get_version
 
 # -----------------------------------------------------------------------------
 # Flask app
@@ -241,7 +242,7 @@ def dashboard():
             health_status = {
                 "status": "ok",
                 "app": "trading-system",
-                "version": "1.0.0",
+                "version": get_version(),
                 "timestamp": datetime.now().isoformat(),
                 "components": {
                     "config": config is not None,
@@ -257,7 +258,7 @@ def dashboard():
         # For regular browser requests, serve the dashboard
         import time
         cache_version = int(time.time())
-        return render_template("index.html", cache_version=cache_version)
+        return render_template("index.html", cache_version=cache_version, version=get_version())
     except Exception as e:
         # Fallback health check response for any errors
         app.logger.error(f"Error in root route: {e}")

@@ -26,6 +26,7 @@ A modular architecture supports CLI operations via `main.py` and a web interface
 - **Deployment Files**: `Procfile`, `deployment.json` with autoscaling configuration, and gunicorn settings
 - **Production Server**: Gunicorn configuration optimized for Replit deployment with proper worker settings
 - **Port Conflict Resolution**: Configured for single port mapping (5000→80) to resolve deployment conflicts
+- **Version Tracking**: Version numbering system with `version.py` displaying current version (v2.1.0) in footer for deployment tracking
 - **Deployment Fixes Applied (2025-08-14)**:
   - Enhanced `app.py` with comprehensive logging and threaded Flask server
   - Verified WSGI application reference and proper initialization
@@ -33,6 +34,8 @@ A modular architecture supports CLI operations via `main.py` and a web interface
   - All deployment configuration files properly structured
   - Flask app configured to use PORT environment variable
   - Deployment verification script created (`deploy_check.py`)
+  - Added version tracking system (`version.py`) with current version 2.1.0
+  - Version number now displays in footer for easy deployment identification
 
 ### Strategy System
 A plugin-based system using abstract base classes (`BaseStrategy`) allows for flexible strategy implementation, such as `BollingerBandsStrategy`. Strategies generate `Signal` objects with trade actions and risk parameters.
