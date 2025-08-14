@@ -33,6 +33,13 @@ class CryptoPortfolioManager:
         # Always do fresh initialization - don't load old state in constructor
         self.portfolio_data = self._initialize_portfolio()
         
+        # Log first few cryptos to verify $10 initialization
+        if self.portfolio_data:
+            sample_symbols = list(self.portfolio_data.keys())[:3]
+            for symbol in sample_symbols:
+                initial_val = self.portfolio_data[symbol]['initial_value']
+                self.logger.info(f"Initialized {symbol} with ${initial_val} initial value")
+        
         self.logger.info(f"Initialized portfolio with ${self.initial_value} per cryptocurrency")
         
         # Test API connection on startup
@@ -590,6 +597,10 @@ class CryptoPortfolioManager:
             self.logger.info(f"Updated {updated_count} cryptocurrencies with live prices")
         
         return update_summary
+    
+    def update_portfolio_prices(self) -> Dict:
+        """Update all portfolio prices with live data (replacement for simulate_price_movements)."""
+        return self.update_prices()
     
     def get_price_validation_status(self) -> Dict[str, any]:
         """Get current price validation status for the portfolio."""

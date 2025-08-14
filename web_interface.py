@@ -71,18 +71,12 @@ def initialize_system():
     setup_logging(config.get("logging", "level", "INFO"))
     db_manager = DatabaseManager()
     
-    # Initialize crypto portfolio with 103 cryptos at $10 each
+    # Initialize crypto portfolio with 103 cryptos at $10 each - ALWAYS FRESH
     crypto_portfolio = CryptoPortfolioManager(initial_value_per_crypto=10.0)
     
-    # Only load existing state if the file exists and contains $10 values, otherwise start fresh
-    state_loaded = crypto_portfolio.load_portfolio_state()
-    if state_loaded:
-        # Check if loaded state has correct initial values ($10)
-        sample_crypto = next(iter(crypto_portfolio.portfolio_data.values()), {})
-        if sample_crypto.get('initial_value', 0) != 10.0:
-            app.logger.warning("Loaded portfolio has incorrect initial values, reinitializing with $10 per crypto")
-            crypto_portfolio = CryptoPortfolioManager(initial_value_per_crypto=10.0)
-            crypto_portfolio.save_portfolio_state()
+    # NEVER load old state during system initialization - always start fresh with $10
+    # This ensures portfolio always has correct $10 initial values
+    app.logger.info("System initialized with fresh portfolio - $10 per cryptocurrency")
     
     # Start background price simulation
     start_portfolio_updates()
@@ -99,7 +93,8 @@ def start_portfolio_updates():
         while True:
             try:
                 if crypto_portfolio:
-                    crypto_portfolio.simulate_price_movements()
+                    # Update portfolio with live prices instead of simulating
+                    crypto_portfolio.update_portfolio_prices()
                     crypto_portfolio.save_portfolio_state()
                 time.sleep(60)  # Update every 1 minute to reduce API usage
             except Exception as e:
@@ -786,7 +781,7 @@ def populate_initial_trades():
         
         for symbol, crypto_data in portfolio_data.items():
             current_price = crypto_data['current_price']
-            initial_value = crypto_data['initial_value']  # $100
+            initial_value = crypto_data['initial_value']  # Should be $10
             quantity = crypto_data['quantity']
             
             # Calculate purchase price based on current PnL
@@ -836,6 +831,120 @@ def populate_initial_trades():
         
     except Exception as e:
         app.logger.error("Error populating initial trades: %s", e)
+        return jsonify({"success": False, "error": str(e)}), 500
+
+@app.route("/api/paper-trade/buy", methods=["POST"])
+def paper_trade_buy():
+    """Execute a paper buy trade."""
+    try:
+        initialize_system()
+        data = request.get_json()
+        symbol = data.get('symbol')
+        amount = float(data.get('amount', 0))
+        
+        if not symbol or amount <= 0:
+            return jsonify({"success": False, "error": "Invalid symbol or amount"}), 400
+        
+        if not crypto_portfolio:
+            return jsonify({"success": False, "error": "Portfolio not initialized"}), 500
+        
+        # Get current price
+        portfolio_data = crypto_portfolio.get_portfolio_data()
+        if symbol not in portfolio_data:
+            return jsonify({"success": False, "error": f"Symbol {symbol} not found in portfolio"}), 400
+        
+        current_price = portfolio_data[symbol]['current_price']
+        quantity = amount / current_price
+        
+        # Record the trade
+        trade_data = {
+            'timestamp': datetime.now(),
+            'symbol': symbol,
+            'action': 'BUY',
+            'size': quantity,
+            'price': current_price,
+            'commission': amount * 0.001,  # 0.1% commission
+            'order_id': f"PAPER_BUY_{symbol}_{int(datetime.now().timestamp())}",
+            'strategy': 'MANUAL_PAPER_TRADE',
+            'confidence': 1.0,
+            'pnl': 0,
+            'mode': 'paper'
+        }
+        
+        if db_manager:
+            db_manager.save_trade(trade_data)
+        
+        return jsonify({
+            "success": True,
+            "message": f"Paper bought {quantity:.6f} {symbol} at ${current_price:.4f}",
+            "trade": {
+                "symbol": symbol,
+                "action": "BUY",
+                "quantity": quantity,
+                "price": current_price,
+                "total_cost": amount
+            }
+        })
+        
+    except Exception as e:
+        app.logger.error(f"Error in paper buy trade: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+@app.route("/api/paper-trade/sell", methods=["POST"])
+def paper_trade_sell():
+    """Execute a paper sell trade."""
+    try:
+        initialize_system()
+        data = request.get_json()
+        symbol = data.get('symbol')
+        quantity = float(data.get('quantity', 0))
+        
+        if not symbol or quantity <= 0:
+            return jsonify({"success": False, "error": "Invalid symbol or quantity"}), 400
+        
+        if not crypto_portfolio:
+            return jsonify({"success": False, "error": "Portfolio not initialized"}), 500
+        
+        # Get current price
+        portfolio_data = crypto_portfolio.get_portfolio_data()
+        if symbol not in portfolio_data:
+            return jsonify({"success": False, "error": f"Symbol {symbol} not found in portfolio"}), 400
+        
+        current_price = portfolio_data[symbol]['current_price']
+        total_value = quantity * current_price
+        
+        # Record the trade
+        trade_data = {
+            'timestamp': datetime.now(),
+            'symbol': symbol,
+            'action': 'SELL',
+            'size': quantity,
+            'price': current_price,
+            'commission': total_value * 0.001,  # 0.1% commission
+            'order_id': f"PAPER_SELL_{symbol}_{int(datetime.now().timestamp())}",
+            'strategy': 'MANUAL_PAPER_TRADE',
+            'confidence': 1.0,
+            'pnl': 0,  # Calculate based on average buy price if available
+            'mode': 'paper'
+        }
+        
+        if db_manager:
+            db_manager.save_trade(trade_data)
+        
+        return jsonify({
+            "success": True,
+            "message": f"Paper sold {quantity:.6f} {symbol} at ${current_price:.4f}",
+            "trade": {
+                "symbol": symbol,
+                "action": "SELL",
+                "quantity": quantity,
+                "price": current_price,
+                "total_value": total_value
+            }
+        })
+        
+    except Exception as e:
+        app.logger.error(f"Error in paper sell trade: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
 
 @app.route("/api/portfolio-performance")
