@@ -861,8 +861,8 @@ class TradingApp {
 async function startTrading(mode, tradingMode = 'single') {
     if (mode === 'live') {
         // Show confirmation modal for live trading
-        const modal = new bootstrap.Modal(document.getElementById('liveConfirmModal'));
-        modal.show();
+        const confirmModal = new bootstrap.Modal(document.getElementById('liveConfirmModal'));
+        confirmModal.show();
         window.tradingApp.isLiveConfirmationPending = true;
         window.tradingApp.pendingTradingMode = tradingMode;
         return;
@@ -879,8 +879,8 @@ async function confirmLiveTrading() {
         return;
     }
     
-    const modal = bootstrap.Modal.getInstance(document.getElementById('liveConfirmModal'));
-    modal.hide();
+    const liveConfirmModal = bootstrap.Modal.getInstance(document.getElementById('liveConfirmModal'));
+    liveConfirmModal.hide();
     
     await executeStartTrading('live', window.tradingApp.pendingTradingMode || 'single');
 }
@@ -1172,11 +1172,11 @@ function showCryptoChart(symbol, duration = '1d') {
             document.body.insertAdjacentHTML('beforeend', modalHtml);
             
             // Show modal
-            const modal = new bootstrap.Modal(document.getElementById('cryptoChartModal'));
-            modal.show();
+            const cryptoChartModal = new bootstrap.Modal(document.getElementById('cryptoChartModal'));
+            cryptoChartModal.show();
             
             // Create chart after modal is shown
-            modal._element.addEventListener('shown.bs.modal', () => {
+            cryptoChartModal._element.addEventListener('shown.bs.modal', () => {
                 const ctx = document.getElementById('individualCryptoChart').getContext('2d');
                 
                 // Destroy existing chart if it exists
@@ -1795,8 +1795,8 @@ function showConnectionWarning(errorMessage) {
     document.body.appendChild(modal);
     
     // Show the modal
-    const modal = new bootstrap.Modal(document.getElementById('connectionWarningModal'));
-    modal.show();
+    const connectionWarningModal = new bootstrap.Modal(document.getElementById('connectionWarningModal'));
+    connectionWarningModal.show();
     
     console.log('Connection warning popup displayed');
 }
