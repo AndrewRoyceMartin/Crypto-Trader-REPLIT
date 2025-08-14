@@ -9,6 +9,9 @@ class TradingApp {
         this.isLiveConfirmationPending = false;
         this.countdownInterval = null;
         this.countdown = 5;
+        this.reconnectCountdown = null;
+        this.reconnectInterval = null;
+        this.nextRetryTime = null;
         this.chartData = {
             portfolio: [],
             returns: [],
@@ -782,6 +785,92 @@ class TradingApp {
                 toast.remove();
             }
         }, 5000);
+    }
+    
+    startReconnectionCountdown(retrySeconds = 30) {
+        // Clear any existing countdown
+        this.stopReconnectionCountdown();
+        
+        this.nextRetryTime = Date.now() + (retrySeconds * 1000);
+        this.reconnectCountdown = retrySeconds;
+        
+        // Update the status display immediately
+        this.updateReconnectionDisplay();
+        
+        // Start the countdown interval
+        this.reconnectInterval = setInterval(() => {
+            const timeLeft = Math.max(0, Math.ceil((this.nextRetryTime - Date.now()) / 1000));
+            this.reconnectCountdown = timeLeft;
+            
+            if (timeLeft <= 0) {
+                this.stopReconnectionCountdown();
+                // Reset status to show checking...
+                this.updateConnectionStatusForReconnect();
+            } else {
+                this.updateReconnectionDisplay();
+            }
+        }, 1000);
+    }
+    
+    stopReconnectionCountdown() {
+        if (this.reconnectInterval) {
+            clearInterval(this.reconnectInterval);
+            this.reconnectInterval = null;
+        }
+        this.reconnectCountdown = null;
+        this.nextRetryTime = null;
+    }
+    
+    updateReconnectionDisplay() {
+        const connectionIcon = document.getElementById("connection-icon");
+        const connectionText = document.getElementById("connection-text");
+        const cryptoStatus = document.getElementById("crypto-status");
+        const connectionStatus = document.getElementById("connection-status");
+        
+        const countdownText = this.reconnectCountdown > 0 
+            ? `Reconnecting in ${this.reconnectCountdown}s` 
+            : "Reconnecting...";
+        
+        // Update new top-right corner connection status
+        if (connectionIcon && connectionText) {
+            connectionIcon.className = "fas fa-clock text-warning me-1";
+            connectionText.textContent = countdownText;
+        }
+        
+        // Update old top-right corner connection status
+        if (connectionStatus && (!connectionIcon || !connectionText)) {
+            connectionStatus.innerHTML = `<i class="fas fa-clock text-warning me-1"></i>${countdownText}`;
+        }
+        
+        // Update crypto portfolio status badge
+        if (cryptoStatus) {
+            cryptoStatus.className = "badge bg-warning";
+            cryptoStatus.textContent = countdownText;
+        }
+    }
+    
+    updateConnectionStatusForReconnect() {
+        const connectionIcon = document.getElementById("connection-icon");
+        const connectionText = document.getElementById("connection-text");
+        const cryptoStatus = document.getElementById("crypto-status");
+        const connectionStatus = document.getElementById("connection-status");
+        
+        // Update new top-right corner connection status
+        if (connectionIcon && connectionText) {
+            connectionIcon.className = "fas fa-sync fa-spin text-info me-1";
+            connectionText.textContent = "Checking connection...";
+        }
+        
+        // Update old top-right corner connection status
+        if (connectionStatus && (!connectionIcon || !connectionText)) {
+            connectionStatus.innerHTML = `<i class="fas fa-sync fa-spin text-info me-1"></i>Checking connection...`;
+        }
+        
+        // Update crypto portfolio status badge
+        if (cryptoStatus) {
+            cryptoStatus.className = "badge bg-info";
+            cryptoStatus.textContent = "Checking connection...";
+        }
     }
 }
 
@@ -1955,6 +2044,11 @@ function updateConnectionStatusDisplay(apiStatus) {
     console.log('Updating connection status display with:', apiStatus);
     
     if (apiStatus.status === "connected") {
+        // Stop any reconnection countdown since we're connected
+        if (window.tradingApp) {
+            window.tradingApp.stopReconnectionCountdown();
+        }
+        
         // Update new top-right corner connection status (if elements exist)
         if (connectionIcon && connectionText) {
             connectionIcon.className = "fas fa-circle text-success me-1";
@@ -1994,10 +2088,15 @@ function updateConnectionStatusDisplay(apiStatus) {
             cryptoStatus.textContent = "Connection Lost";
         }
         
-        // Show warning popup if connection was lost
+        // Show warning popup if connection was lost and start reconnection countdown
         if (!window.connectionLost) {
             window.connectionLost = true;
             showConnectionWarning(apiStatus.error || "Connection failed");
+            
+            // Start reconnection countdown - CoinGecko API retries every 30 seconds
+            if (window.tradingApp) {
+                window.tradingApp.startReconnectionCountdown(30);
+            }
         }
         
         console.log('Status updated: Connection Lost');
