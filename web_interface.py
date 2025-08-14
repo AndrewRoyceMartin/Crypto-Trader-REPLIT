@@ -1274,8 +1274,8 @@ def get_crypto_chart(symbol):
                 return jsonify({
                     'symbol': symbol,
                     'name': symbol,
-                    'current_price': 100.0,
-                    'price_history': [100.0, 101.0, 99.0, 102.0, 98.0],
+                    'current_price': 10.0,
+                    'price_history': [10.0, 10.1, 9.9, 10.2, 9.8],
                     'labels': ['4h ago', '3h ago', '2h ago', '1h ago', 'Now'],
                     'pnl_percent': 0.0
                 })

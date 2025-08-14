@@ -238,17 +238,17 @@ class CryptoPortfolioManager:
             # Ensure base_price is not zero to prevent division by zero
             if base_price <= 0:
                 base_price = 0.000001  # Use a very small number as fallback
-            # Calculate correct quantity based on initial investment
-            quantity = self.initial_value / base_price
+            # Calculate correct quantity: $10 worth of the asset
+            quantity = self.initial_value / base_price  # This gives us $10 worth of the asset
             
             portfolio[symbol] = {
                 "name": crypto["name"],
                 "rank": crypto["rank"],
-                "quantity": quantity,
+                "quantity": quantity,  # This is now $10 worth, not 1 full asset
                 "initial_price": base_price,
                 "current_price": base_price,
-                "initial_value": self.initial_value,
-                "current_value": quantity * base_price,
+                "initial_value": self.initial_value,  # Should be $10
+                "current_value": self.initial_value,  # Start at $10 initial investment
                 "pnl": 0.0,
                 "pnl_percent": 0.0,
                 "target_sell_price": self._calculate_target_sell_price(base_price, crypto["rank"]),
@@ -837,34 +837,8 @@ class CryptoPortfolioManager:
         self.logger.info(f"Portfolio state saved to {filepath}")
     
     def load_portfolio_state(self, filepath: str = "crypto_portfolio_state.json") -> bool:
-        """Load portfolio state from file."""
-        try:
-            if not os.path.exists(filepath):
-                return False
-            
-            with open(filepath, 'r') as f:
-                state = json.load(f)
-            
-            self.portfolio_data = state["portfolio_data"]
-            
-            # Migrate old portfolio data to include target_sell_price
-            self._migrate_portfolio_data()
-            
-            # Convert timestamp strings back to datetime objects
-            self.price_history = {}
-            for symbol, history in state["price_history"].items():
-                self.price_history[symbol] = [
-                    {
-                        "timestamp": datetime.fromisoformat(point["timestamp"]),
-                        "price": point["price"],
-                        "volume": point["volume"]
-                    }
-                    for point in history
-                ]
-            
-            self.logger.info(f"Portfolio state loaded from {filepath}")
-            return True
-            
-        except Exception as e:
-            self.logger.error(f"Error loading portfolio state: {e}")
-            return False
+        """Load portfolio state from file. DISABLED - always return False to force fresh initialization."""
+        # ALWAYS RETURN FALSE TO PREVENT LOADING OLD $100 VALUES
+        # This ensures every startup uses fresh $10 per crypto initialization
+        self.logger.info("Portfolio state loading disabled - using fresh initialization with $10 per crypto")
+        return False
