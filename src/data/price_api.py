@@ -102,7 +102,7 @@ class CryptoPriceAPI:
             "RVN": "ravencoin",
             "DGB": "digibyte",
             "SC": "siacoin",
-            "HOT": "holo",
+            "HOT": "holotoken",
             "IOST": "iostoken",
             "DUSK": "dusk-network",
             "WIN": "wink",

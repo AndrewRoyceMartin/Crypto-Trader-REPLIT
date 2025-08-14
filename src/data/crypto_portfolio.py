@@ -52,29 +52,29 @@ class CryptoPortfolioManager:
             {"symbol": "LINK", "name": "Chainlink", "rank": 9},
             {"symbol": "UNI", "name": "Uniswap", "rank": 10},
             
-            # High-Growth Winners - Top performers from research
-            {"symbol": "SAROS", "name": "Saros Finance", "rank": 11},  # +1,379%
-            {"symbol": "XCN", "name": "Onyxcoin", "rank": 12},  # +551%
-            {"symbol": "ZBCN", "name": "Zebec Network", "rank": 13},  # +298%
-            {"symbol": "SYRUP", "name": "Maple Finance", "rank": 14},  # +288%
-            {"symbol": "TOSHI", "name": "Toshi", "rank": 15},  # +284%
-            {"symbol": "VENOM", "name": "Venom", "rank": 16},  # +255%
-            {"symbol": "EUL", "name": "Euler", "rank": 17},  # +120%
-            {"symbol": "WBT", "name": "WhiteBIT Coin", "rank": 18},  # +90%
-            {"symbol": "HYPE", "name": "Hyperliquid", "rank": 19},  # +65%
-            {"symbol": "XMR", "name": "Monero", "rank": 20},  # +62%
+            # Real Major Cryptocurrencies - All have verified CoinGecko mappings
+            {"symbol": "USDC", "name": "USD Coin", "rank": 11},
+            {"symbol": "SHIB", "name": "Shiba Inu", "rank": 12},
+            {"symbol": "LTC", "name": "Litecoin", "rank": 13},
+            {"symbol": "BCH", "name": "Bitcoin Cash", "rank": 14},
+            {"symbol": "NEAR", "name": "NEAR Protocol", "rank": 15},
+            {"symbol": "ICP", "name": "Internet Computer", "rank": 16},
+            {"symbol": "LEO", "name": "LEO Token", "rank": 17},
+            {"symbol": "TON", "name": "Toncoin", "rank": 18},
+            {"symbol": "APT", "name": "Aptos", "rank": 19},
+            {"symbol": "STX", "name": "Stacks", "rank": 20},
             
             # Strong Altcoin Performers
-            {"symbol": "SUI", "name": "Sui Network", "rank": 21},  # +371%
-            {"symbol": "RNDR", "name": "Render Token", "rank": 22},
-            {"symbol": "PEPE", "name": "Pepe", "rank": 23},
-            {"symbol": "TON", "name": "Toncoin", "rank": 24},
-            {"symbol": "LTC", "name": "Litecoin", "rank": 25},
-            {"symbol": "SHIB", "name": "Shiba Inu", "rank": 26},
+            {"symbol": "ARB", "name": "Arbitrum", "rank": 21},
+            {"symbol": "OP", "name": "Optimism", "rank": 22},
+            {"symbol": "IMX", "name": "Immutable X", "rank": 23},
+            {"symbol": "MNT", "name": "Mantle", "rank": 24},
+            {"symbol": "HBAR", "name": "Hedera", "rank": 25},
+            {"symbol": "VET", "name": "VeChain", "rank": 26},
             {"symbol": "DOT", "name": "Polkadot", "rank": 27},
-            {"symbol": "TRX", "name": "TRON", "rank": 28},
-            {"symbol": "MATIC", "name": "Polygon", "rank": 29},
-            {"symbol": "APT", "name": "Aptos", "rank": 30},
+            {"symbol": "MATIC", "name": "Polygon", "rank": 28},
+            {"symbol": "ATOM", "name": "Cosmos", "rank": 29},
+            {"symbol": "FIL", "name": "Filecoin", "rank": 30},
             
             # DeFi & Gaming Leaders
             {"symbol": "AAVE", "name": "Aave", "rank": 31},
@@ -172,9 +172,9 @@ class CryptoPortfolioManager:
         """Initialize portfolio with starting values for each cryptocurrency."""
         portfolio = {}
         
-        # Get all live prices in batches to avoid rate limiting
+        # Get all live prices for ALL cryptocurrencies (no artificial limit)
         symbols = [crypto["symbol"] for crypto in self.crypto_list]
-        live_prices = self.price_api.get_multiple_prices(symbols[:20])  # Start with top 20 to avoid rate limits
+        live_prices = self.price_api.get_multiple_prices(symbols)  # Get ALL live prices, not just first 20
         
         for crypto in self.crypto_list:
             symbol = crypto["symbol"]
