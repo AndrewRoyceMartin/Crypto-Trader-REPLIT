@@ -423,62 +423,38 @@
 
 
 
-        <!-- Portfolio Summary Row -->
+        <!-- Crypto Symbols Row -->
         <div class="row mb-4">
-            <!-- Portfolio Summary -->
             <div class="col-12">
                 <div class="card">
                     <div class="card-header">
                         <h5 class="mb-0">
-                            <i class="fas fa-wallet me-2"></i>
-                            Portfolio Overview
-                            <i class="fas fa-info-circle text-muted ms-2" 
-                               data-bs-toggle="tooltip" 
-                               data-bs-placement="top" 
-                               title="Track your trading portfolio value, performance charts, and recent trading activity"></i>
+                            <i class="fas fa-coins me-2"></i>
+                            Tracked Cryptocurrencies
+                            <span id="trading-countdown" class="badge bg-secondary ms-3">Starting...</span>
                         </h5>
-                        <span id="trading-countdown" class="badge bg-secondary ms-3">Starting...</span>
                     </div>
                     <div class="card-body">
-                        <div class="row mb-3">
-                            <div class="col-md-3">
-                                <div class="portfolio-metric">
-                                    <h6>Total Value</h6>
-                                    <h4 id="portfolio-value" class="text-primary">$0.00</h4>
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <div class="portfolio-metric">
-                                    <h6>Cash</h6>
-                                    <h5 id="portfolio-cash" class="text-success">$0.00</h5>
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <div class="portfolio-metric">
-                                    <h6>Positions</h6>
-                                    <h5 id="portfolio-positions" class="text-info">$0.00</h5>
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <div class="portfolio-metric">
-                                    <h6>Daily P&L</h6>
-                                    <h5 id="portfolio-pnl" class="text-warning">$0.00</h5>
-                                </div>
-                            </div>
+                        <div id="crypto-symbols" class="d-flex flex-wrap gap-2">
+                            <span class="badge bg-secondary">Loading...</span>
                         </div>
-                        
-                        <!-- Crypto Symbols Row -->
-                        <div class="row mb-3">
-                            <div class="col-12">
-                                <div class="portfolio-metric">
-                                    <h6>Tracked Cryptocurrencies</h6>
-                                    <div id="crypto-symbols" class="d-flex flex-wrap gap-2 mt-2">
-                                        <span class="badge bg-secondary">Loading...</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Performance Dashboard Row -->
+        <div class="row mb-4">
+            <!-- Performance Dashboard -->
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-chart-line me-2"></i>
+                            Performance Dashboard
+                        </h5>
+                    </div>
+                    <div class="card-body">
                         <!-- Portfolio Chart Tabs -->
                         <ul class="nav nav-tabs" id="chartTabs" role="tablist">
                             <li class="nav-item" role="presentation">
