@@ -19,6 +19,8 @@ from src.backtesting.engine import BacktestEngine
 from src.trading.paper_trader import PaperTrader
 from src.trading.live_trader import LiveTrader
 from src.strategies.bollinger_strategy import BollingerBandsStrategy
+from src.strategies.enhanced_bollinger_strategy import EnhancedBollingerBandsStrategy
+from src.trading.enhanced_trader import EnhancedTrader
 from src.exchanges.okx_adapter import OKXAdapter  # (kept for future use)
 from src.exchanges.kraken_adapter import KrakenAdapter  # (kept for future use)
 from src.data.crypto_portfolio import CryptoPortfolioManager
