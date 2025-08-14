@@ -16,7 +16,7 @@ from ..utils.email_service import email_service
 class CryptoPortfolioManager:
     """Manages a portfolio of 103 different cryptocurrencies with $10 initial investment per crypto."""
     
-    def __init__(self, initial_value_per_crypto: float = 100.0):
+    def __init__(self, initial_value_per_crypto: float = 10.0):
         """
         Initialize the crypto portfolio manager.
         

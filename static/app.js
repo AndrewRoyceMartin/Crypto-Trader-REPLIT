@@ -242,6 +242,7 @@ class TradingApp {
                 this.updateCryptoSymbols(data.cryptocurrencies);
                 this.updateCryptoTable(data.cryptocurrencies);
                 this.updatePerformanceTable(data.cryptocurrencies);
+                this.updatePerformancePageTable(data.cryptocurrencies);
                 this.updateHoldingsTable(data.cryptocurrencies);
                 this.updatePortfolioSummary(data.summary, data.cryptocurrencies);
                 this.updateLoadingProgress(100, 'Complete!');
@@ -527,7 +528,7 @@ class TradingApp {
     }
     
     updateHoldingsTable(cryptos) {
-        const tableBody = document.getElementById('crypto-holdings-table');
+        const tableBody = document.getElementById('positions-table-body');
         if (!tableBody) return;
         
         // Clear existing content
@@ -568,30 +569,70 @@ class TradingApp {
                 signalClass = 'badge bg-danger';
             }
             
+            // Calculate position percentage (simplified as equal weight)
+            const positionPercent = (100 / cryptos.length).toFixed(1);
+            
             row.innerHTML = `
                 <td><strong>${crypto.symbol}</strong></td>
                 <td>${crypto.name}</td>
                 <td>${quantity}</td>
                 <td>$${price}</td>
                 <td>${currentValue}</td>
+                <td>${positionPercent}%</td>
                 <td class="${pnlClass}">${pnl}</td>
                 <td class="${pnlClass}">${pnlIcon} ${pnlPercent}%</td>
-                <td class="text-muted small">Just now</td>
+                <td>$${price}</td>
+                <td class="${pnlClass}">${this.formatCurrency(Math.max(0, crypto.pnl))}</td>
                 <td><span class="${signalClass}">${signal}</span></td>
-                <td>
-                    <button class="btn btn-sm btn-outline-success me-1" onclick="buyCrypto('${crypto.symbol}')" title="Buy ${crypto.symbol}">
-                        <i class="fas fa-plus"></i>
-                    </button>
-                    <button class="btn btn-sm btn-outline-danger" onclick="sellCrypto('${crypto.symbol}')" title="Sell ${crypto.symbol}">
-                        <i class="fas fa-minus"></i>
-                    </button>
-                </td>
-                <td class="text-muted small">
-                    ${crypto.target_buy_price ? 
-                        (crypto.current_price <= crypto.target_buy_price ? '🎯 At buy target' : `${((crypto.current_price - crypto.target_buy_price) / crypto.target_buy_price * 100).toFixed(1)}% above`) :
-                        '-'
-                    }
-                </td>
+            `;
+            
+            tableBody.appendChild(row);
+        });
+    }
+    
+    updatePerformancePageTable(cryptos) {
+        const tableBody = document.getElementById('performance-table-body');
+        if (!tableBody) return;
+        
+        // Clear existing content
+        tableBody.innerHTML = '';
+        
+        if (!cryptos || cryptos.length === 0) {
+            const row = document.createElement('tr');
+            row.innerHTML = '<td colspan="10" class="text-center text-muted">No performance data available</td>';
+            tableBody.appendChild(row);
+            return;
+        }
+        
+        // Populate performance page table with different structure
+        cryptos.forEach(crypto => {
+            const row = document.createElement('tr');
+            
+            // Format values
+            const price = crypto.current_price < 1 ? 
+                crypto.current_price.toFixed(6) : 
+                crypto.current_price.toFixed(2);
+            const quantity = crypto.quantity.toFixed(4);
+            const currentValue = this.formatCurrency(crypto.current_value);
+            const initialValue = this.formatCurrency(crypto.initial_value);
+            const pnl = this.formatCurrency(crypto.pnl);
+            const pnlPercent = crypto.pnl_percent.toFixed(2);
+            
+            // Determine colors and indicators
+            const pnlClass = crypto.pnl >= 0 ? 'text-success' : 'text-danger';
+            const pnlIcon = crypto.pnl >= 0 ? '↗' : '↘';
+            
+            row.innerHTML = `
+                <td><span class="badge bg-primary">#${crypto.rank}</span></td>
+                <td><strong>${crypto.symbol}</strong></td>
+                <td>${crypto.name}</td>
+                <td>${initialValue}</td>
+                <td>${currentValue}</td>
+                <td class="${pnlClass}">${pnl}</td>
+                <td class="${pnlClass}">${pnlIcon} ${pnlPercent}%</td>
+                <td>$${price}</td>
+                <td>${quantity}</td>
+                <td><small class="text-muted">Now</small></td>
             `;
             
             tableBody.appendChild(row);

@@ -444,7 +444,7 @@ def api_portfolio_summary():
     
     try:
         from src.data.crypto_portfolio import CryptoPortfolioManager
-        portfolio = CryptoPortfolioManager(initial_value_per_crypto=100.0)
+        portfolio = CryptoPortfolioManager(initial_value_per_crypto=10.0)
         
         summary = portfolio.get_portfolio_summary()
         return jsonify(summary)
