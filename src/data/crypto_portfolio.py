@@ -197,8 +197,9 @@ class CryptoPortfolioManager:
                     
                     base_price = price_value  # Use the actual price value for calculations
             else:
-                base_price = self._generate_realistic_price(crypto["rank"])
-                self.logger.info(f"Using simulated price for {symbol}: ${base_price:.6f}")
+                # NEVER use simulated prices - log error and skip this crypto
+                self.logger.error(f"CRITICAL: No live price data available for {symbol} - SKIPPING from portfolio initialization")
+                continue
             
             # Ensure base_price is not zero to prevent division by zero
             if base_price <= 0:
@@ -236,90 +237,15 @@ class CryptoPortfolioManager:
         except Exception as e:
             self.logger.warning(f"Failed to get live price for {symbol}: {e}")
         
-        # Fallback to simulated realistic price
-        crypto_data = next((c for c in self.crypto_list if c["symbol"] == symbol), None)
-        if crypto_data:
-            fallback_price = self._generate_realistic_price(crypto_data["rank"])
-            self.logger.info(f"Using fallback price for {symbol}: ${fallback_price:.6f}")
-            return fallback_price
-        
-        return 100.0  # Default fallback
+        # CRITICAL ERROR: No simulated data allowed - return None to indicate failure
+        self.logger.error(f"CRITICAL: No live price data available for {symbol} from CoinGecko API")
+        return None
     
-    def _generate_realistic_price(self, rank: int) -> float:
-        """Generate realistic cryptocurrency prices based on CURRENT market cap rank and August 2025 prices."""
-        if rank == 1:  # BTC
-            return np.random.uniform(118000, 121000)  # Bitcoin: ~$119,400 current
-        elif rank == 2:  # ETH
-            return np.random.uniform(4400, 4700)      # Ethereum: ~$4,584 current
-        elif rank == 3:  # SOL
-            return np.random.uniform(170, 180)        # Solana: ~$175 current
-        elif rank == 4:  # XRP
-            return np.random.uniform(0.50, 0.65)      # XRP: typically $0.50-0.60
-        elif rank == 5:  # DOGE
-            return np.random.uniform(0.08, 0.12)      # Dogecoin: typically $0.08-0.12
-        elif rank <= 10:  # Top 6-10 (BNB, USDC, ADA, AVAX, SHIB)
-            return np.random.uniform(20, 600)         # Major alts range
-        elif rank <= 20:  # Established alts
-            return np.random.uniform(1, 150)          # Mid-tier established
-        elif rank <= 40:  # Strong altcoins
-            return np.random.uniform(0.50, 50)        # Mid-cap range
-        elif rank <= 60:  # DeFi leaders
-            return np.random.uniform(0.20, 20)        # Established DeFi
-        elif rank <= 80:  # Infrastructure tokens
-            return np.random.uniform(0.05, 10)        # Growing projects
-        else:  # Micro-cap moonshots
-            return np.random.uniform(0.001, 5)        # Small caps
+    # REMOVED: _generate_realistic_price function - This system NEVER generates simulated prices
+    # All price data MUST come from live CoinGecko API - no fallbacks, no simulations, no mock data
     
-    def simulate_price_movements(self, hours_elapsed: int = 1) -> None:
-        """Simulate realistic price movements for all cryptocurrencies."""
-        timestamp = datetime.now()
-        
-        for symbol in self.portfolio_data:
-            crypto = self.portfolio_data[symbol]
-            current_price = crypto["current_price"]
-            
-            # Generate realistic volatility based on market cap rank
-            volatility = self._get_volatility_by_rank(crypto["rank"])
-            
-            # Generate price change with some correlation to Bitcoin
-            btc_change = np.random.normal(0, 0.02)  # Bitcoin baseline volatility
-            individual_change = np.random.normal(0, volatility)
-            
-            # Combine BTC correlation (30%) with individual movement (70%)
-            total_change = 0.3 * btc_change + 0.7 * individual_change
-            
-            # Apply the price change
-            new_price = current_price * (1 + total_change)
-            new_price = max(new_price, current_price * 0.5)  # Prevent more than 50% crash
-            
-            # Update portfolio data
-            crypto["current_price"] = new_price
-            crypto["current_value"] = crypto["quantity"] * new_price
-            crypto["pnl"] = crypto["current_value"] - crypto["initial_value"]
-            crypto["pnl_percent"] = (crypto["pnl"] / crypto["initial_value"]) * 100
-            
-            # Update projected sell P&L
-            if crypto.get("target_sell_price"):
-                sell_value = crypto["target_sell_price"] * crypto["quantity"]
-                crypto["projected_sell_pnl"] = sell_value - crypto["initial_value"]
-            
-            # Update target prices based on current price
-            crypto["target_sell_price"] = self._calculate_target_sell_price(new_price, crypto["rank"])
-            crypto["target_buy_price"] = self._calculate_target_buy_price(new_price, crypto["rank"])
-            
-            # Store price history
-            if symbol not in self.price_history:
-                self.price_history[symbol] = []
-            
-            self.price_history[symbol].append({
-                "timestamp": timestamp,
-                "price": new_price,
-                "volume": np.random.uniform(100000, 10000000)  # Simulated volume
-            })
-            
-            # Keep only last 100 data points per crypto
-            if len(self.price_history[symbol]) > 100:
-                self.price_history[symbol] = self.price_history[symbol][-100:]
+    # REMOVED: simulate_price_movements function - This system NEVER uses simulated data
+    # All price data MUST come from live CoinGecko API or return errors if unavailable
     
     def _get_volatility_by_rank(self, rank: int) -> float:
         """Get appropriate volatility based on cryptocurrency rank and performance potential."""
@@ -597,6 +523,12 @@ class CryptoPortfolioManager:
                     # Legacy numeric price format
                     price = price_info
                     update_summary['live_prices'] += 1
+                
+                # CRITICAL: Only use live data - if no valid price data, mark as failed
+                if price is None or price <= 0:
+                    update_summary['failed_symbols'].append(symbol)
+                    self.logger.error(f"CRITICAL ERROR: No valid price data for {symbol} - marking as failed")
+                    continue
                     update_summary['prices'][symbol] = {
                         'price': price,
                         'is_live': True,

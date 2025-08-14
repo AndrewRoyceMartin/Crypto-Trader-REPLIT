@@ -213,6 +213,11 @@ class TradingApp {
             
             const data = await response.json();
             
+            // CRITICAL: Check for failed price retrieval and display warnings
+            if (data.price_validation && data.price_validation.failed_symbols && data.price_validation.failed_symbols.length > 0) {
+                this.displayPriceDataWarning(data.price_validation.failed_symbols);
+            }
+            
             // Update summary statistics
             if (data.summary) {
                 document.getElementById('crypto-total-count').textContent = data.summary.total_cryptos;
@@ -296,6 +301,31 @@ class TradingApp {
                 toast.remove();
             }
         }, 5000);
+    }
+    
+    displayPriceDataWarning(failedSymbols) {
+        // Create or update warning banner for failed price data
+        let warningBanner = document.getElementById('price-data-warning');
+        if (!warningBanner) {
+            warningBanner = document.createElement('div');
+            warningBanner.id = 'price-data-warning';
+            warningBanner.className = 'alert alert-danger alert-dismissible fade show mb-3';
+            warningBanner.role = 'alert';
+            
+            // Insert at top of main container
+            const container = document.querySelector('.container-fluid');
+            if (container) {
+                container.insertBefore(warningBanner, container.firstChild);
+            }
+        }
+        
+        warningBanner.innerHTML = `
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            <strong>CRITICAL: Price Data Unavailable</strong>
+            <br>Live price data could not be retrieved from CoinGecko API for: ${failedSymbols.join(', ')}
+            <br>This system NEVER uses simulated prices. Please check your internet connection or try refreshing.
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        `;
     }
 
     updatePortfolioSummary(summary, cryptos) {
