@@ -2045,6 +2045,58 @@ function sortPositionsTable(columnIndex) {
     rows.forEach(row => tbody.appendChild(row));
 }
 
+window.tradesSortState = { column: -1, direction: 'desc' };
+
+function sortTradesTable(columnIndex) {
+    const table = document.querySelector('#trades-table').closest('table');
+    const tbody = document.getElementById('trades-table');
+    const rows = Array.from(tbody.querySelectorAll('tr')).filter(row => row.cells.length > 1);
+    
+    // Return early if no data to sort
+    if (rows.length === 0) return;
+    
+    // Determine sort direction
+    if (window.tradesSortState.column === columnIndex) {
+        window.tradesSortState.direction = window.tradesSortState.direction === 'asc' ? 'desc' : 'asc';
+    } else {
+        window.tradesSortState.column = columnIndex;
+        window.tradesSortState.direction = 'desc';
+    }
+    
+    // Clear all sort indicators and set active one
+    table.querySelectorAll('th i.fas').forEach(icon => {
+        icon.className = 'fas fa-sort text-muted';
+    });
+    const currentHeader = document.getElementById(`trades-sort-${columnIndex}`);
+    if (currentHeader) {
+        currentHeader.className = `fas fa-sort-${window.tradesSortState.direction === 'asc' ? 'up' : 'down'} text-primary`;
+    }
+    
+    rows.sort((a, b) => {
+        const aVal = a.cells[columnIndex].textContent.trim();
+        const bVal = b.cells[columnIndex].textContent.trim();
+        
+        let result = 0;
+        
+        // Handle different column types
+        if (columnIndex === 0) { // Time column - sort by date
+            const aDate = new Date(aVal);
+            const bDate = new Date(bVal);
+            result = aDate - bDate;
+        } else if (columnIndex === 3 || columnIndex === 4 || columnIndex === 5) { // Size, Price, P&L columns - numeric
+            const aNum = parseFloat(aVal.replace(/[$,]/g, ''));
+            const bNum = parseFloat(bVal.replace(/[$,]/g, ''));
+            result = !isNaN(aNum) && !isNaN(bNum) ? aNum - bNum : aVal.localeCompare(bVal);
+        } else { // Symbol, Action columns - text
+            result = aVal.localeCompare(bVal);
+        }
+        
+        return window.tradesSortState.direction === 'asc' ? result : -result;
+    });
+    
+    rows.forEach(row => tbody.appendChild(row));
+}
+
 /* Cache refresh - Wed Aug 14 03:09:38 AM UTC 2025 */
 
 

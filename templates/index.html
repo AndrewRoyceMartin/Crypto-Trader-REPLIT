@@ -500,12 +500,24 @@
                             <table class="table table-sm">
                                 <thead>
                                     <tr>
-                                        <th>Time</th>
-                                        <th>Symbol</th>
-                                        <th>Action</th>
-                                        <th>Size</th>
-                                        <th>Price</th>
-                                        <th>P&L</th>
+                                        <th onclick="sortTradesTable(0)" style="cursor: pointer;" class="sortable">
+                                            Time <i id="trades-sort-0" class="fas fa-sort text-muted"></i>
+                                        </th>
+                                        <th onclick="sortTradesTable(1)" style="cursor: pointer;" class="sortable">
+                                            Symbol <i id="trades-sort-1" class="fas fa-sort text-muted"></i>
+                                        </th>
+                                        <th onclick="sortTradesTable(2)" style="cursor: pointer;" class="sortable">
+                                            Action <i id="trades-sort-2" class="fas fa-sort text-muted"></i>
+                                        </th>
+                                        <th onclick="sortTradesTable(3)" style="cursor: pointer;" class="sortable">
+                                            Size <i id="trades-sort-3" class="fas fa-sort text-muted"></i>
+                                        </th>
+                                        <th onclick="sortTradesTable(4)" style="cursor: pointer;" class="sortable">
+                                            Price <i id="trades-sort-4" class="fas fa-sort text-muted"></i>
+                                        </th>
+                                        <th onclick="sortTradesTable(5)" style="cursor: pointer;" class="sortable">
+                                            P&L <i id="trades-sort-5" class="fas fa-sort text-muted"></i>
+                                        </th>
                                     </tr>
                                 </thead>
                                 <tbody id="trades-table">
