@@ -1394,11 +1394,22 @@ def export_ato_tax_statement():
         total_capital_gain = 0
         
         for trade in trades_data:
-            symbol = trade.get('symbol', '').replace('/USDT', '').replace('/USD', '')
-            action = trade.get('action', '').lower()
-            size = float(trade.get('size', 0))
-            price = float(trade.get('price', 0))
-            timestamp = trade.get('timestamp', '')
+            # Handle both dict and DataFrame row access
+            if hasattr(trade, 'get'):
+                # Dictionary access
+                symbol = trade.get('symbol', '').replace('/USDT', '').replace('/USD', '')
+                action = trade.get('action', '').lower()
+                size = float(trade.get('size', 0))
+                price = float(trade.get('price', 0))
+                timestamp = trade.get('timestamp', '')
+            else:
+                # DataFrame row access
+                symbol = str(trade.symbol).replace('/USDT', '').replace('/USD', '')
+                action = str(trade.action).lower()
+                size = float(trade.size)
+                price = float(trade.price)
+                timestamp = str(trade.timestamp)
+            
             total_value = size * price
             
             if action == 'buy':
