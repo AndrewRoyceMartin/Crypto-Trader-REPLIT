@@ -597,6 +597,43 @@ def api_crypto_portfolio():
         logger.error(f"Crypto portfolio error: {e}")
         return jsonify({"error": str(e)}), 500
 
+@app.route("/api/reset-entire-program", methods=["POST"])
+def api_reset_entire_program():
+    """Reset the entire trading system to initial state."""
+    if not warmup["done"]:
+        return jsonify({"error": "System still initializing"}), 503
+    
+    try:
+        # Clear cache and reset system state
+        import os
+        import sqlite3
+        
+        # Clear cache database if it exists
+        cache_files = ["cache.db", "warmup_cache.parquet", "trading.db"]
+        for cache_file in cache_files:
+            if os.path.exists(cache_file):
+                try:
+                    os.remove(cache_file)
+                    logger.info(f"Removed cache file: {cache_file}")
+                except Exception as e:
+                    logger.warning(f"Could not remove {cache_file}: {e}")
+        
+        # Clear any in-memory state
+        global server_start_time
+        server_start_time = datetime.utcnow()
+        
+        return jsonify({
+            "success": True,
+            "message": "System reset successfully. All data cleared and portfolio reset to initial state."
+        })
+        
+    except Exception as e:
+        logger.error(f"Reset error: {e}")
+        return jsonify({
+            "success": False, 
+            "error": str(e)
+        }), 500
+
 # Catch-all for other routes - serve loading screen if not ready
 @app.route("/<path:path>")
 def catch_all_routes(path):
