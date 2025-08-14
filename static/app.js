@@ -953,15 +953,7 @@ function refreshCryptoPortfolio() {
 }
 
 // Trade a specific cryptocurrency from the portfolio
-// Toggle the color legend visibility
-function toggleColorLegend() {
-    const legend = document.getElementById('color-legend');
-    if (legend.style.display === 'none') {
-        legend.style.display = 'block';
-    } else {
-        legend.style.display = 'none';
-    }
-}
+
 
 function tradeCrypto(symbol) {
     try {
