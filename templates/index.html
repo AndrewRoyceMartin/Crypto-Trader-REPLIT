@@ -161,6 +161,174 @@
             </div>
         </div>
 
+        <!-- Tracked Cryptocurrencies (Moved to Top) -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="fas fa-coins me-2"></i>
+                            Tracked Cryptocurrencies (103 Assets - $10 Each)
+                            <i class="fas fa-info-circle text-info ms-2" 
+                               data-bs-toggle="tooltip" 
+                               data-bs-placement="top" 
+                               title="Complete cryptocurrency portfolio overview with 103 cryptocurrencies ($10 initial investment each = $1,030 total). Real-time prices, P&L tracking, trading signals, and profit/loss calculations with live CoinGecko API integration."></i>
+                        </h5>
+                        <button class="btn btn-outline-primary btn-sm" onclick="refreshCryptoPortfolio()">
+                            <i class="fas fa-sync-alt me-1"></i>Refresh
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div class="row mb-3">
+                            <div class="col-md-2">
+                                <div class="text-center">
+                                    <h6 class="text-muted mb-1">Total Assets</h6>
+                                    <h5 id="crypto-total-count" class="text-info mb-0">103</h5>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="text-center">
+                                    <h6 class="text-muted mb-1">Initial Value</h6>
+                                    <h5 id="crypto-initial-value" class="text-secondary mb-0">$1,030</h5>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="text-center">
+                                    <h6 class="text-muted mb-1">Current Value</h6>
+                                    <h5 id="crypto-current-value" class="text-primary mb-0">$0.00</h5>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="text-center">
+                                    <h6 class="text-muted mb-1">Total P&L</h6>
+                                    <h5 id="crypto-total-pnl" class="mb-0">$0.00</h5>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="text-center">
+                                    <h6 class="text-muted mb-1">P&L %</h6>
+                                    <h5 id="crypto-pnl-percent" class="mb-0">0.00%</h5>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="text-center">
+                                    <h6 class="text-muted mb-1">Status</h6>
+                                    <span id="crypto-status" 
+                                          class="badge bg-success" 
+                                          style="cursor: pointer;"
+                                          data-bs-toggle="tooltip" 
+                                          data-bs-placement="top" 
+                                          data-bs-html="true"
+                                          title="">Live</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Crypto Symbols Display -->
+                        <div class="row mb-3">
+                            <div class="col-12">
+                                <h6 class="text-muted mb-2">Current Holdings:</h6>
+                                <div id="crypto-symbols" class="d-flex flex-wrap">
+                                    <span class="badge bg-secondary">Loading cryptocurrencies...</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Portfolio Actions -->
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <button class="btn btn-outline-info btn-sm w-100" onclick="exportPortfolio()">
+                                    <i class="fas fa-download me-1"></i>Export Data
+                                </button>
+                            </div>
+                            <div class="col-md-6">
+                                <button class="btn btn-outline-danger btn-sm w-100" onclick="resetEntireProgram()">
+                                    <i class="fas fa-power-off me-1"></i>Reset Entire Program
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Filter Controls for Portfolio -->
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <input type="text" id="portfolio-filter" class="form-control form-control-sm" placeholder="Filter by symbol or name..." onkeyup="filterPortfolioTable()">
+                            </div>
+                            <div class="col-md-2">
+                                <select id="portfolio-pnl-filter" class="form-select form-select-sm" onchange="filterPortfolioTable()">
+                                    <option value="">All P&L</option>
+                                    <option value="positive">Profitable</option>
+                                    <option value="negative">Loss</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <select id="portfolio-value-filter" class="form-select form-select-sm" onchange="filterPortfolioTable()">
+                                    <option value="">All Values</option>
+                                    <option value="high">&gt;$15</option>
+                                    <option value="medium">$5-$15</option>
+                                    <option value="low">&lt;$5</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <button class="btn btn-outline-secondary btn-sm w-100" onclick="clearPortfolioFilters()">
+                                    <i class="fas fa-times me-1"></i>Clear
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Crypto Portfolio Table -->
+                        <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                            <table class="table table-sm table-hover">
+                                <thead class="table-dark sticky-top">
+                                    <tr>
+                                        <th class="sortable" onclick="sortPortfolio('rank')" style="cursor: pointer; color: white;">
+                                            Rank <i id="sort-rank" class="fas fa-sort text-white"></i>
+                                        </th>
+                                        <th class="sortable" onclick="sortPortfolio('symbol')" style="cursor: pointer; color: white;">
+                                            Symbol <i id="sort-symbol" class="fas fa-sort text-white"></i>
+                                        </th>
+                                        <th class="sortable" onclick="sortPortfolio('name')" style="cursor: pointer; color: white;">
+                                            Name <i id="sort-name" class="fas fa-sort text-white"></i>
+                                        </th>
+                                        <th class="sortable" onclick="sortPortfolio('quantity')" style="cursor: pointer; color: white;">
+                                            Quantity <i id="sort-quantity" class="fas fa-sort text-white"></i>
+                                        </th>
+                                        <th class="sortable" onclick="sortPortfolio('price')" style="cursor: pointer; color: white;">
+                                            Current Price <i id="sort-price" class="fas fa-sort text-white"></i>
+                                        </th>
+                                        <th class="sortable" onclick="sortPortfolio('value')" style="cursor: pointer; color: white;">
+                                            Value <i id="sort-value" class="fas fa-sort text-white"></i>
+                                        </th>
+                                        <th class="sortable" onclick="sortPortfolio('target_sell')" style="cursor: pointer; color: white;">
+                                            Target Sell <i id="sort-target_sell" class="fas fa-sort text-white"></i>
+                                        </th>
+                                        <th class="sortable" onclick="sortPortfolio('pnl')" style="cursor: pointer; color: white;">
+                                            P&L <i id="sort-pnl" class="fas fa-sort text-white"></i>
+                                        </th>
+                                        <th class="sortable" onclick="sortPortfolio('pnl_percent')" style="cursor: pointer; color: white;">
+                                            P&L % <i id="sort-pnl_percent" class="fas fa-sort text-white"></i>
+                                        </th>
+                                        <th class="sortable" onclick="sortPortfolio('last_updated')" style="cursor: pointer; color: white;">
+                                            Updated <i id="sort-last_updated" class="fas fa-sort text-white"></i>
+                                        </th>
+                                        <th style="color: white;">Signal</th>
+                                        <th style="color: white;">Actions</th>
+                                        <th class="sortable" onclick="sortPortfolio('target_proximity')" style="cursor: pointer; color: white;">
+                                            Target <i id="sort-target_proximity" class="fas fa-sort text-white"></i>
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody id="crypto-table">
+                                    <tr>
+                                        <td colspan="13" class="text-center text-muted">Loading cryptocurrency portfolio...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Currency Selection Tool -->
         <div class="row mb-4">
             <div class="col-12">
@@ -392,7 +560,7 @@
 
         </div>
 
-        <!-- Crypto Portfolio Row -->
+        <!-- Data Tables Row -->
         <div class="row mb-4">
             <div class="col-12">
                 <div class="card">
