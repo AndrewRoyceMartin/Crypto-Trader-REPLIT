@@ -655,3 +655,12 @@ async function resetEntireProgram() {
         }
     }
 }
+
+async function startPaperTrades() {
+    try {
+        // For now, just show a message that paper trading is already active
+        window.tradingApp.showToast('Paper trading is already active in the system', 'info');
+    } catch (error) {
+        window.tradingApp.showToast('Error starting paper trades: ' + error.message, 'error');
+    }
+}
