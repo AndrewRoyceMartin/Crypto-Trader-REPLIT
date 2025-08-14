@@ -215,7 +215,7 @@ def start_portfolio_trader_thread(mode: str, timeframe: str):
     app.logger.info("Started %s portfolio trader for %d assets", mode, len(symbols))
 
 # Ensure initialization even if app is imported (e.g. main.py -> from web_interface import app)
-initialize_system()
+# initialize_system()  # Disabled for fast-boot compatibility
 
 # -----------------------------------------------------------------------------
 # Routes
