@@ -23,6 +23,9 @@ class TradingApp {
         this.initializeCharts();
         this.startAutoUpdate();
         this.loadConfig();
+        
+        // Load data immediately on startup
+        this.updateDashboard();
     }
     
     setupEventListeners() {
@@ -368,11 +371,23 @@ class TradingApp {
         if (progressBar) {
             progressBar.style.width = `${percent}%`;
             progressBar.setAttribute('aria-valuenow', percent);
+            
+            // Add visual feedback
+            if (percent === 100) {
+                progressBar.className = 'progress-bar bg-success';
+                setTimeout(() => {
+                    if (progressBar) {
+                        progressBar.className = 'progress-bar progress-bar-striped progress-bar-animated';
+                    }
+                }, 500);
+            }
         }
         
         if (progressText) {
             progressText.textContent = message || `${percent}%`;
         }
+        
+        console.log(`Loading progress: ${percent}% - ${message}`);
     }
     
     hideLoadingProgress() {
