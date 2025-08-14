@@ -1210,64 +1210,27 @@ function updateChartDuration(symbol, duration) {
 }
 
 // Portfolio management functions
-function rebalancePortfolio() {
-    if (confirm('Are you sure you want to rebalance the portfolio? This will reset all positions to equal $100 values and clear all trades and open positions from the database.')) {
-        fetch('/api/rebalance-portfolio', { method: 'POST' })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    window.tradingApp.showToast('Portfolio rebalanced and trading history cleared successfully', 'success');
-                    refreshCryptoPortfolio();
-                } else {
-                    window.tradingApp.showToast('Failed to rebalance portfolio: ' + data.error, 'danger');
-                }
-            })
-            .catch(error => {
-                window.tradingApp.showToast('Error rebalancing portfolio: ' + error.message, 'danger');
-            });
-    }
-}
-
 function exportPortfolio() {
     window.open('/api/export-portfolio', '_blank');
 }
 
-function resetPortfolio() {
-    if (confirm('Are you sure you want to reset all cryptocurrency positions to $10 each? This will lose all current price history and clear all trades and open positions from the database.')) {
-        fetch('/api/reset-portfolio', { method: 'POST' })
+function resetEntireProgram() {
+    if (confirm('PROGRAM RESET: This will completely reset the entire trading system to its initial state. All data will be cleared and the portfolio will be reset to $10 per cryptocurrency. This cannot be undone. Continue?')) {
+        fetch('/api/reset-entire-program', { method: 'POST' })
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    window.tradingApp.showToast('Portfolio, trades, and positions reset successfully', 'success');
-                    refreshCryptoPortfolio();
-                } else {
-                    window.tradingApp.showToast('Failed to reset portfolio: ' + data.error, 'danger');
-                }
-            })
-            .catch(error => {
-                window.tradingApp.showToast('Error resetting portfolio: ' + error.message, 'danger');
-            });
-    }
-}
-
-function testResetPortfolio() {
-    if (confirm('TEST RESET: This will completely reset all cryptocurrency positions to $10 each and clear ALL database tables (trades, positions, history). This is for testing purposes only. Continue?')) {
-        fetch('/api/test-reset-portfolio', { method: 'POST' })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    window.tradingApp.showToast('TEST RESET COMPLETE: ' + data.message, 'warning');
-                    refreshCryptoPortfolio();
+                    window.tradingApp.showToast('PROGRAM RESET COMPLETE: ' + data.message, 'success');
                     // Force refresh the page after a short delay to show all changes
                     setTimeout(() => {
                         window.location.reload();
                     }, 2000);
                 } else {
-                    window.tradingApp.showToast('Test reset failed: ' + data.error, 'danger');
+                    window.tradingApp.showToast('Program reset failed: ' + data.error, 'danger');
                 }
             })
             .catch(error => {
-                window.tradingApp.showToast('Error during test reset: ' + error.message, 'danger');
+                window.tradingApp.showToast('Error during program reset: ' + error.message, 'danger');
             });
     }
 }

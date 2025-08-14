@@ -508,9 +508,9 @@ def reset_crypto_portfolio():
         app.logger.error("Error resetting portfolio: %s", e)
         return jsonify({"success": False, "error": str(e)}), 500
 
-@app.route("/api/test-reset-portfolio", methods=["POST"])
-def test_reset_crypto_portfolio():
-    """Test reset - completely reset the portfolio to $10 per crypto and clear all database tables."""
+@app.route("/api/reset-entire-program", methods=["POST"])
+def reset_entire_program():
+    """Complete program reset - reset everything to initial state with $10 per crypto."""
     global crypto_portfolio
     try:
         initialize_system()
@@ -543,14 +543,14 @@ def test_reset_crypto_portfolio():
             app.logger.warning(f"Error populating initial trades: {e}")
             trades_added = 0
         
-        app.logger.info(f"Test reset completed: Portfolio reset to $10 per crypto, {trades_added} trades created")
+        app.logger.info(f"Program reset completed: Portfolio reset to $10 per crypto, {trades_added} trades created")
         return jsonify({
             "success": True, 
-            "message": f"TEST RESET COMPLETE: Portfolio reset to $10 per crypto, all database tables cleared, {trades_added} initial $10 purchase trades created"
+            "message": f"PROGRAM RESET COMPLETE: All systems reset, portfolio initialized with $10 per crypto ({trades_added} initial trades created)"
         })
         
     except Exception as e:
-        app.logger.error("Error in test reset: %s", e)
+        app.logger.error("Error in program reset: %s", e)
         return jsonify({"success": False, "error": str(e)}), 500
 
 @app.route("/api/clear-trading-data", methods=["POST"])
