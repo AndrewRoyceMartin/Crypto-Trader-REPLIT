@@ -216,12 +216,38 @@ initialize_system()
 def dashboard():
     """Root route - serves both as dashboard and health check endpoint."""
     try:
-        # For health check requests, return simple JSON
+        # For health check requests, return detailed JSON status
         accept_header = request.headers.get('Accept', '')
-        if ('application/json' in accept_header or 
+        user_agent = request.headers.get('User-Agent', '').lower()
+        is_health_check = (
+            'application/json' in accept_header or 
             request.args.get('health') == 'true' or
-            'curl' in request.headers.get('User-Agent', '').lower()):
-            return jsonify({"status": "ok", "app": "trading-system"}), 200
+            ('curl' in user_agent and 'text/html' not in accept_header) or
+            'httpx' in user_agent or
+            'python-requests' in user_agent or
+            'deployment' in user_agent
+        )
+        
+        if is_health_check:
+            # Initialize system to ensure components are ready
+            initialize_system()
+            
+            # Comprehensive health check response for deployment
+            health_status = {
+                "status": "ok",
+                "app": "trading-system",
+                "version": "1.0.0",
+                "timestamp": datetime.now().isoformat(),
+                "components": {
+                    "config": config is not None,
+                    "database": db_manager is not None,
+                    "crypto_portfolio": crypto_portfolio is not None,
+                    "system_initialized": _initialized
+                },
+                "port": int(os.environ.get("PORT", "5000")),
+                "environment": os.environ.get("FLASK_ENV", "production")
+            }
+            return jsonify(health_status), 200
         
         # For regular browser requests, serve the dashboard
         import time
@@ -230,17 +256,55 @@ def dashboard():
     except Exception as e:
         # Fallback health check response for any errors
         app.logger.error(f"Error in root route: {e}")
-        return jsonify({"status": "ok", "app": "trading-system"}), 200
+        return jsonify({
+            "status": "ok", 
+            "app": "trading-system",
+            "error": str(e),
+            "timestamp": datetime.now().isoformat()
+        }), 200
 
 @app.route("/health")
 def health():
-    return jsonify({"status": "ok"}), 200
+    """Basic health check endpoint."""
+    try:
+        initialize_system()
+        return jsonify({
+            "status": "healthy",
+            "timestamp": datetime.now().isoformat(),
+            "app": "trading-system"
+        }), 200
+    except Exception as e:
+        app.logger.error(f"Health check error: {e}")
+        return jsonify({
+            "status": "unhealthy",
+            "error": str(e),
+            "timestamp": datetime.now().isoformat()
+        }), 503
 
 @app.route("/ready")
 def ready():
-    ok = (config is not None) and (db_manager is not None)
-    code = 200 if ok else 503
-    return jsonify({"ready": ok}), code
+    """Readiness probe for deployment - checks if all components are initialized."""
+    try:
+        initialize_system()
+        ok = (config is not None) and (db_manager is not None) and _initialized
+        code = 200 if ok else 503
+        return jsonify({
+            "ready": ok,
+            "components": {
+                "config": config is not None,
+                "database": db_manager is not None,
+                "crypto_portfolio": crypto_portfolio is not None,
+                "system_initialized": _initialized
+            },
+            "timestamp": datetime.now().isoformat()
+        }), code
+    except Exception as e:
+        app.logger.error(f"Readiness check error: {e}")
+        return jsonify({
+            "ready": False,
+            "error": str(e),
+            "timestamp": datetime.now().isoformat()
+        }), 503
 
 @app.route("/api/status")
 def get_status():
