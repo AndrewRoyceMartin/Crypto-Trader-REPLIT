@@ -73,7 +73,16 @@ def initialize_system():
     
     # Initialize crypto portfolio with 103 cryptos at $10 each
     crypto_portfolio = CryptoPortfolioManager(initial_value_per_crypto=10.0)
-    crypto_portfolio.load_portfolio_state()  # Load existing state if available
+    
+    # Only load existing state if the file exists and contains $10 values, otherwise start fresh
+    state_loaded = crypto_portfolio.load_portfolio_state()
+    if state_loaded:
+        # Check if loaded state has correct initial values ($10)
+        sample_crypto = next(iter(crypto_portfolio.portfolio_data.values()), {})
+        if sample_crypto.get('initial_value', 0) != 10.0:
+            app.logger.warning("Loaded portfolio has incorrect initial values, reinitializing with $10 per crypto")
+            crypto_portfolio = CryptoPortfolioManager(initial_value_per_crypto=10.0)
+            crypto_portfolio.save_portfolio_state()
     
     # Start background price simulation
     start_portfolio_updates()
@@ -701,6 +710,13 @@ def reset_entire_program():
             db_manager.reset_portfolio_snapshots(mode='live')
             
             app.logger.info("All database tables cleared successfully")
+        
+        # Remove any existing portfolio state file to force fresh initialization
+        import os
+        state_file = "crypto_portfolio_state.json"
+        if os.path.exists(state_file):
+            os.remove(state_file)
+            app.logger.info(f"Removed existing portfolio state file: {state_file}")
         
         # Completely reinitialize crypto portfolio with $10 per crypto
         crypto_portfolio = CryptoPortfolioManager(initial_value_per_crypto=10.0)
