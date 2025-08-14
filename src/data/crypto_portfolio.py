@@ -203,7 +203,11 @@ class CryptoPortfolioManager:
                 "pnl_percent": 0.0,
                 "target_sell_price": self._calculate_target_sell_price(base_price, crypto["rank"]),
                 "target_buy_price": self._calculate_target_buy_price(base_price, crypto["rank"]),
-                "projected_sell_pnl": self._calculate_target_sell_price(base_price, crypto["rank"]) * quantity - self.initial_value
+                "projected_sell_pnl": self._calculate_target_sell_price(base_price, crypto["rank"]) * quantity - self.initial_value,
+                "initial_investment_date": datetime.now().isoformat(),
+                "total_invested": self.initial_value,
+                "total_realized_pnl": 0.0,
+                "trade_count": 0
             }
             
         return portfolio
@@ -414,6 +418,109 @@ class CryptoPortfolioManager:
     def get_portfolio_data(self) -> Dict:
         """Get detailed portfolio data for all cryptocurrencies."""
         return self.portfolio_data
+    
+    def get_portfolio_performance(self) -> List[Dict]:
+        """Get portfolio performance data showing accumulated P&L since original investment."""
+        performance_data = []
+        
+        for symbol, crypto in self.portfolio_data.items():
+            # Calculate time since investment
+            initial_time = crypto.get("initial_investment_date", datetime.now())
+            if isinstance(initial_time, str):
+                try:
+                    initial_time = datetime.fromisoformat(initial_time)
+                except:
+                    initial_time = datetime.now()
+            
+            days_invested = (datetime.now() - initial_time).days
+            
+            # Calculate total accumulated P&L (includes all trades and current position)
+            total_realized_pnl = crypto.get("total_realized_pnl", 0.0)  # From completed trades
+            current_unrealized_pnl = crypto.get("pnl", 0.0)  # Current position P&L
+            total_accumulated_pnl = total_realized_pnl + current_unrealized_pnl
+            
+            # Calculate total money invested (initial + any additional purchases)
+            total_invested = crypto.get("total_invested", crypto["initial_value"])
+            accumulated_pnl_percent = (total_accumulated_pnl / total_invested) * 100 if total_invested > 0 else 0
+            
+            # Calculate average daily return
+            daily_return = accumulated_pnl_percent / days_invested if days_invested > 0 else 0
+            
+            performance_data.append({
+                "symbol": symbol,
+                "name": crypto["name"],
+                "rank": crypto["rank"],
+                "days_invested": days_invested,
+                "total_invested": total_invested,
+                "current_value": crypto["current_value"],
+                "total_accumulated_pnl": total_accumulated_pnl,
+                "accumulated_pnl_percent": accumulated_pnl_percent,
+                "daily_return_percent": daily_return,
+                "current_price": crypto["current_price"],
+                "quantity": crypto["quantity"],
+                "initial_price": total_invested / crypto["quantity"] if crypto["quantity"] > 0 else 0,
+                "best_performer": accumulated_pnl_percent > 50,  # Flag top performers
+                "status": "winning" if accumulated_pnl_percent > 0 else "losing"
+            })
+        
+        # Sort by accumulated P&L percentage (best performers first)
+        performance_data.sort(key=lambda x: x["accumulated_pnl_percent"], reverse=True)
+        
+        return performance_data
+    
+    def get_current_positions(self) -> List[Dict]:
+        """Get current market positions showing actual holdings at this moment."""
+        positions = []
+        
+        for symbol, crypto in self.portfolio_data.items():
+            # Only include positions with actual holdings
+            if crypto["quantity"] > 0:
+                current_value = crypto["current_value"]
+                unrealized_pnl = crypto.get("pnl", 0.0)
+                
+                # Calculate position size as percentage of total portfolio
+                total_portfolio_value = sum(c["current_value"] for c in self.portfolio_data.values())
+                position_percent = (current_value / total_portfolio_value) * 100 if total_portfolio_value > 0 else 0
+                
+                # Determine position status
+                pnl_percent = crypto.get("pnl_percent", 0.0)
+                if pnl_percent > 20:
+                    status = "strong_gain"
+                elif pnl_percent > 5:
+                    status = "moderate_gain" 
+                elif pnl_percent > -5:
+                    status = "stable"
+                elif pnl_percent > -20:
+                    status = "moderate_loss"
+                else:
+                    status = "significant_loss"
+                
+                # Calculate potential profit at target sell price
+                target_sell_price = crypto.get("target_sell_price", 0)
+                potential_sell_value = crypto["quantity"] * target_sell_price if target_sell_price > 0 else 0
+                potential_profit = potential_sell_value - crypto["initial_value"] if potential_sell_value > 0 else 0
+                
+                positions.append({
+                    "symbol": symbol,
+                    "name": crypto["name"],
+                    "quantity": crypto["quantity"],
+                    "current_price": crypto["current_price"],
+                    "current_value": current_value,
+                    "position_percent": position_percent,
+                    "unrealized_pnl": unrealized_pnl,
+                    "pnl_percent": pnl_percent,
+                    "status": status,
+                    "target_sell_price": target_sell_price,
+                    "potential_sell_value": potential_sell_value,
+                    "potential_profit": potential_profit,
+                    "avg_buy_price": crypto["initial_value"] / crypto["quantity"] if crypto["quantity"] > 0 else 0,
+                    "last_updated": datetime.now().isoformat()
+                })
+        
+        # Sort by current value (largest positions first)
+        positions.sort(key=lambda x: x["current_value"], reverse=True)
+        
+        return positions
     
     def get_api_status(self) -> Dict:
         """Get live API connection status and information."""

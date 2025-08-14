@@ -598,6 +598,80 @@ def populate_initial_trades():
         app.logger.error("Error populating initial trades: %s", e)
         return jsonify({"success": False, "error": str(e)}), 500
 
+@app.route("/api/portfolio-performance")
+def api_portfolio_performance():
+    """API endpoint to get portfolio performance data showing accumulated P&L."""
+    try:
+        initialize_system()
+        if crypto_portfolio is None:
+            return jsonify({"error": "Crypto portfolio not initialized"}), 500
+        
+        performance_data = crypto_portfolio.get_portfolio_performance()
+        
+        # Calculate summary statistics
+        total_invested = sum(p["total_invested"] for p in performance_data)
+        total_current_value = sum(p["current_value"] for p in performance_data)
+        total_pnl = sum(p["total_accumulated_pnl"] for p in performance_data)
+        avg_return = (total_pnl / total_invested) * 100 if total_invested > 0 else 0
+        
+        # Count winning vs losing positions
+        winners = [p for p in performance_data if p["accumulated_pnl_percent"] > 0]
+        losers = [p for p in performance_data if p["accumulated_pnl_percent"] < 0]
+        
+        return jsonify({
+            "performance": performance_data,
+            "summary": {
+                "total_invested": total_invested,
+                "total_current_value": total_current_value,
+                "total_accumulated_pnl": total_pnl,
+                "overall_return_percent": avg_return,
+                "winners_count": len(winners),
+                "losers_count": len(losers),
+                "win_rate": (len(winners) / len(performance_data)) * 100 if performance_data else 0
+            },
+            "timestamp": datetime.now().isoformat()
+        })
+    except Exception as e:
+        app.logger.error(f"Error getting portfolio performance: {e}")
+        return jsonify({"error": "Failed to get portfolio performance data"}), 500
+
+@app.route("/api/current-positions")
+def api_current_positions():
+    """API endpoint to get current market positions."""
+    try:
+        initialize_system()
+        if crypto_portfolio is None:
+            return jsonify({"error": "Crypto portfolio not initialized"}), 500
+        
+        positions_data = crypto_portfolio.get_current_positions()
+        
+        # Calculate summary for current positions
+        total_position_value = sum(p["current_value"] for p in positions_data)
+        total_unrealized_pnl = sum(p["unrealized_pnl"] for p in positions_data)
+        
+        # Group by position status
+        status_groups = {}
+        for position in positions_data:
+            status = position["status"]
+            if status not in status_groups:
+                status_groups[status] = {"count": 0, "total_value": 0}
+            status_groups[status]["count"] += 1
+            status_groups[status]["total_value"] += position["current_value"]
+        
+        return jsonify({
+            "positions": positions_data,
+            "summary": {
+                "total_positions": len(positions_data),
+                "total_position_value": total_position_value,
+                "total_unrealized_pnl": total_unrealized_pnl,
+                "status_breakdown": status_groups
+            },
+            "timestamp": datetime.now().isoformat()
+        })
+    except Exception as e:
+        app.logger.error(f"Error getting current positions: {e}")
+        return jsonify({"error": "Failed to get current positions data"}), 500
+
 @app.route("/api/export-portfolio")
 def export_crypto_portfolio():
     """Export cryptocurrency portfolio data as CSV."""

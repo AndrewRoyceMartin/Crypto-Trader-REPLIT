@@ -32,9 +32,17 @@
             </a>
             
             <div class="navbar-nav me-auto">
-                <button class="btn btn-outline-light btn-sm" onclick="showMainDashboard()">
+                <button class="btn btn-outline-light btn-sm me-2" onclick="showMainDashboard()">
                     <i class="fas fa-home me-1"></i>
                     Dashboard
+                </button>
+                <button class="btn btn-outline-light btn-sm me-2" onclick="showPerformanceDashboard()">
+                    <i class="fas fa-chart-bar me-1"></i>
+                    Performance
+                </button>
+                <button class="btn btn-outline-light btn-sm" onclick="showCurrentPositions()">
+                    <i class="fas fa-coins me-1"></i>
+                    Current Holdings
                 </button>
             </div>
             
@@ -617,6 +625,167 @@
                         <span class="visually-hidden">Loading...</span>
                     </div>
                     <p id="loading-message">Processing...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Portfolio Performance Dashboard -->
+    <div id="performance-dashboard" class="d-none">
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="fas fa-chart-bar me-2"></i>
+                            Portfolio Performance - Accumulated P&L Since Investment
+                        </h5>
+                        <div>
+                            <button class="btn btn-primary btn-sm" onclick="updatePerformanceData()">
+                                <i class="fas fa-sync-alt me-1"></i>Refresh
+                            </button>
+                            <button class="btn btn-secondary btn-sm" onclick="showMainDashboard()">
+                                <i class="fas fa-arrow-left me-1"></i>Back to Dashboard
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="row mb-3">
+                            <div class="col-md-2">
+                                <div class="performance-metric">
+                                    <h6>Total Invested</h6>
+                                    <h4 id="perf-total-invested" class="text-info">$0.00</h4>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="performance-metric">
+                                    <h6>Current Value</h6>
+                                    <h4 id="perf-current-value" class="text-primary">$0.00</h4>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="performance-metric">
+                                    <h6>Total P&L</h6>
+                                    <h4 id="perf-total-pnl" class="text-success">$0.00</h4>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="performance-metric">
+                                    <h6>Overall Return</h6>
+                                    <h4 id="perf-overall-return" class="text-warning">0.00%</h4>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="performance-metric">
+                                    <h6>Winners</h6>
+                                    <h4 id="perf-winners" class="text-success">0</h4>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="performance-metric">
+                                    <h6>Win Rate</h6>
+                                    <h4 id="perf-win-rate" class="text-info">0.00%</h4>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover" id="performance-table">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th onclick="sortPerformanceTable(0)" style="cursor: pointer;">Rank</th>
+                                        <th onclick="sortPerformanceTable(1)" style="cursor: pointer;">Symbol</th>
+                                        <th onclick="sortPerformanceTable(2)" style="cursor: pointer;">Name</th>
+                                        <th onclick="sortPerformanceTable(3)" style="cursor: pointer;">Days Invested</th>
+                                        <th onclick="sortPerformanceTable(4)" style="cursor: pointer;">Total Invested</th>
+                                        <th onclick="sortPerformanceTable(5)" style="cursor: pointer;">Current Value</th>
+                                        <th onclick="sortPerformanceTable(6)" style="cursor: pointer;">Total P&L</th>
+                                        <th onclick="sortPerformanceTable(7)" style="cursor: pointer;">P&L %</th>
+                                        <th onclick="sortPerformanceTable(8)" style="cursor: pointer;">Daily Return %</th>
+                                        <th onclick="sortPerformanceTable(9)" style="cursor: pointer;">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="performance-table-body">
+                                    <tr><td colspan="10" class="text-center">Loading performance data...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Current Positions Dashboard -->
+    <div id="positions-dashboard" class="d-none">
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="fas fa-coins me-2"></i>
+                            Current Market Positions - What You Actually Own
+                        </h5>
+                        <div>
+                            <button class="btn btn-primary btn-sm" onclick="updatePositionsData()">
+                                <i class="fas fa-sync-alt me-1"></i>Refresh
+                            </button>
+                            <button class="btn btn-secondary btn-sm" onclick="showMainDashboard()">
+                                <i class="fas fa-arrow-left me-1"></i>Back to Dashboard
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="row mb-3">
+                            <div class="col-md-3">
+                                <div class="position-metric">
+                                    <h6>Total Positions</h6>
+                                    <h4 id="pos-total-count" class="text-info">0</h4>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="position-metric">
+                                    <h6>Total Position Value</h6>
+                                    <h4 id="pos-total-value" class="text-primary">$0.00</h4>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="position-metric">
+                                    <h6>Unrealized P&L</h6>
+                                    <h4 id="pos-unrealized-pnl" class="text-success">$0.00</h4>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="position-metric">
+                                    <h6>Strong Gains</h6>
+                                    <h4 id="pos-strong-gains" class="text-success">0</h4>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover" id="positions-table">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th onclick="sortPositionsTable(0)" style="cursor: pointer;">Symbol</th>
+                                        <th onclick="sortPositionsTable(1)" style="cursor: pointer;">Name</th>
+                                        <th onclick="sortPositionsTable(2)" style="cursor: pointer;">Quantity</th>
+                                        <th onclick="sortPositionsTable(3)" style="cursor: pointer;">Current Price</th>
+                                        <th onclick="sortPositionsTable(4)" style="cursor: pointer;">Current Value</th>
+                                        <th onclick="sortPositionsTable(5)" style="cursor: pointer;">Position %</th>
+                                        <th onclick="sortPositionsTable(6)" style="cursor: pointer;">Unrealized P&L</th>
+                                        <th onclick="sortPositionsTable(7)" style="cursor: pointer;">P&L %</th>
+                                        <th onclick="sortPositionsTable(8)" style="cursor: pointer;">Avg Buy Price</th>
+                                        <th onclick="sortPositionsTable(9)" style="cursor: pointer;">Potential Profit</th>
+                                        <th onclick="sortPositionsTable(10)" style="cursor: pointer;">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="positions-table-body">
+                                    <tr><td colspan="11" class="text-center">Loading current positions...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

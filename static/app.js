@@ -1826,4 +1826,265 @@ document.addEventListener("DOMContentLoaded", function() {
     setTimeout(checkApiStatusAndDisplay, 2000); // Wait for page to load
     setInterval(checkApiStatusAndDisplay, 30000); // Check every 30 seconds
 });
-/* Cache refresh - Wed Aug 13 03:41:26 AM UTC 2025 */
+
+// Dashboard Navigation Functions
+function showMainDashboard() {
+    document.querySelectorAll('[id$="-dashboard"]').forEach(el => el.classList.add('d-none'));
+    const mainDashboard = document.querySelector('.container-fluid[id]:not([id*="dashboard"]), .container-fluid:not([id])');
+    if (mainDashboard) {
+        mainDashboard.style.display = 'block';
+    }
+    
+    // Show all main dashboard sections
+    document.querySelectorAll('.row').forEach(row => {
+        if (!row.closest('#performance-dashboard') && !row.closest('#positions-dashboard')) {
+            row.style.display = '';
+        }
+    });
+    
+    // Update navbar buttons
+    document.querySelectorAll('.navbar .btn').forEach(btn => btn.classList.remove('active'));
+    const mainBtn = document.querySelector('[onclick="showMainDashboard()"]');
+    if (mainBtn) mainBtn.classList.add('active');
+    
+    // Update dashboard data
+    if (window.tradingApp) {
+        window.tradingApp.updateDashboard();
+    }
+}
+
+function showPerformanceDashboard() {
+    document.querySelectorAll('.row').forEach(row => {
+        if (!row.closest('#performance-dashboard') && !row.closest('#positions-dashboard')) {
+            row.style.display = 'none';
+        }
+    });
+    
+    document.getElementById('performance-dashboard').classList.remove('d-none');
+    document.getElementById('positions-dashboard').classList.add('d-none');
+    
+    // Update navbar buttons
+    document.querySelectorAll('.navbar .btn').forEach(btn => btn.classList.remove('active'));
+    const perfBtn = document.querySelector('[onclick="showPerformanceDashboard()"]');
+    if (perfBtn) perfBtn.classList.add('active');
+    
+    // Load performance data
+    updatePerformanceData();
+}
+
+function showCurrentPositions() {
+    document.querySelectorAll('.row').forEach(row => {
+        if (!row.closest('#performance-dashboard') && !row.closest('#positions-dashboard')) {
+            row.style.display = 'none';
+        }
+    });
+    
+    document.getElementById('performance-dashboard').classList.add('d-none');
+    document.getElementById('positions-dashboard').classList.remove('d-none');
+    
+    // Update navbar buttons
+    document.querySelectorAll('.navbar .btn').forEach(btn => btn.classList.remove('active'));
+    const posBtn = document.querySelector('[onclick="showCurrentPositions()"]');
+    if (posBtn) posBtn.classList.add('active');
+    
+    // Load positions data
+    updatePositionsData();
+}
+
+// Performance Dashboard Functions
+async function updatePerformanceData() {
+    try {
+        const response = await fetch('/api/portfolio-performance');
+        const data = await response.json();
+        
+        if (response.ok) {
+            displayPerformanceData(data);
+        } else {
+            console.error('Error loading performance data:', data.error);
+            if (window.tradingApp) {
+                window.tradingApp.showToast('Failed to load performance data', 'danger');
+            }
+        }
+    } catch (error) {
+        console.error('Error fetching performance data:', error);
+        if (window.tradingApp) {
+            window.tradingApp.showToast('Failed to fetch performance data', 'danger');
+        }
+    }
+}
+
+function displayPerformanceData(data) {
+    // Update summary metrics
+    document.getElementById('perf-total-invested').textContent = '$' + data.summary.total_invested.toLocaleString();
+    document.getElementById('perf-current-value').textContent = '$' + data.summary.total_current_value.toLocaleString();
+    document.getElementById('perf-total-pnl').textContent = '$' + data.summary.total_accumulated_pnl.toLocaleString();
+    document.getElementById('perf-overall-return').textContent = data.summary.overall_return_percent.toFixed(2) + '%';
+    document.getElementById('perf-winners').textContent = data.summary.winners_count;
+    document.getElementById('perf-win-rate').textContent = data.summary.win_rate.toFixed(1) + '%';
+    
+    // Update P&L color
+    const pnlElement = document.getElementById('perf-total-pnl');
+    const returnElement = document.getElementById('perf-overall-return');
+    if (data.summary.total_accumulated_pnl > 0) {
+        pnlElement.className = 'text-success';
+        returnElement.className = 'text-success';
+    } else if (data.summary.total_accumulated_pnl < 0) {
+        pnlElement.className = 'text-danger';
+        returnElement.className = 'text-danger';
+    }
+    
+    // Update table
+    const tbody = document.getElementById('performance-table-body');
+    tbody.innerHTML = '';
+    
+    data.performance.forEach((crypto) => {
+        const row = document.createElement('tr');
+        const statusClass = crypto.status === 'winning' ? 'text-success' : 'text-danger';
+        const pnlClass = crypto.accumulated_pnl_percent > 0 ? 'text-success' : 'text-danger';
+        
+        row.innerHTML = `
+            <td>${crypto.rank}</td>
+            <td><strong>${crypto.symbol}</strong></td>
+            <td>${crypto.name}</td>
+            <td>${crypto.days_invested}</td>
+            <td>$${crypto.total_invested.toLocaleString()}</td>
+            <td>$${crypto.current_value.toLocaleString()}</td>
+            <td class="${pnlClass}">$${crypto.total_accumulated_pnl.toLocaleString()}</td>
+            <td class="${pnlClass}">${crypto.accumulated_pnl_percent.toFixed(2)}%</td>
+            <td>${crypto.daily_return_percent.toFixed(3)}%</td>
+            <td><span class="badge ${crypto.best_performer ? 'bg-success' : crypto.status === 'winning' ? 'bg-info' : 'bg-secondary'}">${crypto.status === 'winning' ? 'WINNING' : 'LOSING'}</span></td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+// Current Positions Functions
+async function updatePositionsData() {
+    try {
+        const response = await fetch('/api/current-positions');
+        const data = await response.json();
+        
+        if (response.ok) {
+            displayPositionsData(data);
+        } else {
+            console.error('Error loading positions data:', data.error);
+            if (window.tradingApp) {
+                window.tradingApp.showToast('Failed to load positions data', 'danger');
+            }
+        }
+    } catch (error) {
+        console.error('Error fetching positions data:', error);
+        if (window.tradingApp) {
+            window.tradingApp.showToast('Failed to fetch positions data', 'danger');
+        }
+    }
+}
+
+function displayPositionsData(data) {
+    // Update summary metrics
+    document.getElementById('pos-total-count').textContent = data.summary.total_positions;
+    document.getElementById('pos-total-value').textContent = '$' + data.summary.total_position_value.toLocaleString();
+    document.getElementById('pos-unrealized-pnl').textContent = '$' + data.summary.total_unrealized_pnl.toLocaleString();
+    
+    // Count strong gains
+    const strongGains = data.positions.filter(p => p.status === 'strong_gain').length;
+    document.getElementById('pos-strong-gains').textContent = strongGains;
+    
+    // Update P&L color
+    const pnlElement = document.getElementById('pos-unrealized-pnl');
+    if (data.summary.total_unrealized_pnl > 0) {
+        pnlElement.className = 'text-success';
+    } else if (data.summary.total_unrealized_pnl < 0) {
+        pnlElement.className = 'text-danger';
+    }
+    
+    // Update table
+    const tbody = document.getElementById('positions-table-body');
+    tbody.innerHTML = '';
+    
+    data.positions.forEach((position) => {
+        const row = document.createElement('tr');
+        const pnlClass = position.unrealized_pnl > 0 ? 'text-success' : 'text-danger';
+        
+        let statusBadge = '';
+        switch (position.status) {
+            case 'strong_gain':
+                statusBadge = '<span class="badge bg-success">Strong Gain</span>';
+                break;
+            case 'moderate_gain':
+                statusBadge = '<span class="badge bg-info">Moderate Gain</span>';
+                break;
+            case 'stable':
+                statusBadge = '<span class="badge bg-secondary">Stable</span>';
+                break;
+            case 'moderate_loss':
+                statusBadge = '<span class="badge bg-warning">Moderate Loss</span>';
+                break;
+            case 'significant_loss':
+                statusBadge = '<span class="badge bg-danger">Significant Loss</span>';
+                break;
+        }
+        
+        row.innerHTML = `
+            <td><strong>${position.symbol}</strong></td>
+            <td>${position.name}</td>
+            <td>${position.quantity.toFixed(6)}</td>
+            <td>$${position.current_price.toFixed(4)}</td>
+            <td>$${position.current_value.toLocaleString()}</td>
+            <td>${position.position_percent.toFixed(1)}%</td>
+            <td class="${pnlClass}">$${position.unrealized_pnl.toLocaleString()}</td>
+            <td class="${pnlClass}">${position.pnl_percent.toFixed(2)}%</td>
+            <td>$${position.avg_buy_price.toFixed(4)}</td>
+            <td class="text-info">$${position.potential_profit.toLocaleString()}</td>
+            <td>${statusBadge}</td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+// Table Sorting Functions
+function sortPerformanceTable(columnIndex) {
+    const table = document.getElementById('performance-table');
+    const tbody = table.querySelector('tbody');
+    const rows = Array.from(tbody.querySelectorAll('tr'));
+    
+    rows.sort((a, b) => {
+        const aVal = a.cells[columnIndex].textContent.trim();
+        const bVal = b.cells[columnIndex].textContent.trim();
+        
+        // Try to parse as number
+        const aNum = parseFloat(aVal.replace(/[$,%]/g, ''));
+        const bNum = parseFloat(bVal.replace(/[$,%]/g, ''));
+        
+        if (!isNaN(aNum) && !isNaN(bNum)) {
+            return bNum - aNum; // Descending for numbers
+        }
+        return aVal.localeCompare(bVal); // Ascending for strings
+    });
+    
+    rows.forEach(row => tbody.appendChild(row));
+}
+
+function sortPositionsTable(columnIndex) {
+    const table = document.getElementById('positions-table');
+    const tbody = table.querySelector('tbody');
+    const rows = Array.from(tbody.querySelectorAll('tr'));
+    
+    rows.sort((a, b) => {
+        const aVal = a.cells[columnIndex].textContent.trim();
+        const bVal = b.cells[columnIndex].textContent.trim();
+        
+        // Try to parse as number
+        const aNum = parseFloat(aVal.replace(/[$,%]/g, ''));
+        const bNum = parseFloat(bVal.replace(/[$,%]/g, ''));
+        
+        if (!isNaN(aNum) && !isNaN(bNum)) {
+            return bNum - aNum; // Descending for numbers
+        }
+        return aVal.localeCompare(bVal); // Ascending for strings
+    });
+    
+    rows.forEach(row => tbody.appendChild(row));
+}
+
+/* Cache refresh - Wed Aug 14 03:09:38 AM UTC 2025 */
