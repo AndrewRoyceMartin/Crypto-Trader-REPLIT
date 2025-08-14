@@ -14,28 +14,30 @@ Preferred communication style: Simple, everyday language.
 A modular architecture supports CLI operations via `main.py` and a web interface via Flask (`web_interface.py`). It includes `BacktestEngine`, `PaperTrader`, and `LiveTrader` classes for different trading modes.
 
 ### Deployment Configuration (Updated: 2025-08-14)
-- **Primary Entry Point**: `app.py` - Direct Flask application entry for deployment with enhanced logging and error handling
-- **WSGI Support**: `wsgi.py` - Enhanced production WSGI configuration with Flask environment settings
+- **Primary Entry Point**: `app.py` - Fast-boot Flask application with background initialization for ultra-fast deployment
+- **WSGI Support**: `wsgi.py` - Enhanced production WSGI configuration with Flask environment settings  
 - **Development Entry**: `main.py` - CLI-based entry with multiple modes
 - **Port Configuration**: Uses PORT environment variable (defaults to 5000, maps to 80 for deployment)
+- **Fast-Boot Architecture**: 
+  - **Immediate Port Opening**: Flask server starts in <1 second with minimal initialization
+  - **Background Warmup**: Trading system initializes in background thread with 8-second timeout
+  - **Circuit Breaker Pattern**: Loading skeleton UI with automatic polling for readiness
+  - **Persistent Cache**: OHLCV data cached to `warmup_cache.parquet` for instant subsequent boots
+  - **Exponential Backoff**: API calls use retry logic with exponential backoff for reliability
 - **Enhanced Health Endpoints**: 
-  - `/` - Intelligent health check detection with comprehensive status for deployment tools
-  - `/health` - Basic health check with error handling and timestamps
-  - `/ready` - Detailed readiness probe checking all component initialization
-- **Smart Health Detection**: Automatically detects deployment tools (curl, httpx, python-requests) and returns JSON status
+  - `/` - Smart loading skeleton that polls `/ready` and auto-refreshes when system ready
+  - `/health` - Instant health check responding immediately after Flask startup
+  - `/ready` - Detailed readiness probe returning 200 only when warmup complete
+  - `/api/warmup` - Real-time warmup status with elapsed time and loaded symbols
+- **Hardened Configuration (Environment Variables)**:
+  - `MAX_STARTUP_SYMBOLS=5` - Reduced symbol count for faster boot (was 10)
+  - `STARTUP_OHLCV_LIMIT=150` - Reduced OHLCV bars per symbol (was 300)
+  - `STARTUP_TIMEOUT_SEC=8` - Aggressive timeout to prevent deployment timeouts
+  - `WARMUP_CHUNK_SIZE=2` - Smaller API request batches for rate limit compliance
 - **Deployment Files**: `Procfile`, `deployment.json` with autoscaling configuration, and gunicorn settings
 - **Production Server**: Gunicorn configuration optimized for Replit deployment with proper worker settings
-- **Port Conflict Resolution**: Configured for single port mapping (5000→80) to resolve deployment conflicts
-- **Version Tracking**: Version numbering system with `version.py` displaying current version (v2.1.0) in footer for deployment tracking
-- **Deployment Fixes Applied (2025-08-14)**:
-  - Enhanced `app.py` with comprehensive logging and threaded Flask server
-  - Verified WSGI application reference and proper initialization
-  - Confirmed health check endpoints respond correctly (200 status)
-  - All deployment configuration files properly structured
-  - Flask app configured to use PORT environment variable
-  - Deployment verification script created (`deploy_check.py`)
-  - Added version tracking system (`version.py`) with current version 2.1.0
-  - Version number now displays in footer for easy deployment identification
+- **Port Conflict Resolution**: Configured for single port mapping (5000→80) to resolve deployment conflicts  
+- **Version Tracking**: Version numbering system with `version.py` displaying current version (v2.1.0) in footer
 
 ### Strategy System
 A plugin-based system using abstract base classes (`BaseStrategy`) allows for flexible strategy implementation, such as `BollingerBandsStrategy`. Strategies generate `Signal` objects with trade actions and risk parameters.

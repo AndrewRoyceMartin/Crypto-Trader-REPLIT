@@ -21,22 +21,114 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
-# --- Fast-boot knobs ---
+# --- Fast-boot knobs (extra hardening) ---
 WATCHLIST = [s.strip() for s in os.getenv(
     "WATCHLIST",
     "BTC,ETH,SOL,XRP,DOGE,BNB,ADA,AVAX,LINK,UNI"
 ).split(",") if s.strip()]
 
-MAX_STARTUP_SYMBOLS   = int(os.getenv("MAX_STARTUP_SYMBOLS", "10"))   # how many to prefetch at boot
-STARTUP_OHLCV_LIMIT   = int(os.getenv("STARTUP_OHLCV_LIMIT", "300"))  # bars per symbol at boot
-WARMUP_CHUNK_SIZE     = int(os.getenv("WARMUP_CHUNK_SIZE", "3"))      # fetch N symbols in a batch
-WARMUP_SLEEP_SEC      = int(os.getenv("WARMUP_SLEEP_SEC", "1"))       # pause between batches (rate-limit)
-STARTUP_TIMEOUT_SEC   = int(os.getenv("STARTUP_TIMEOUT_SEC", "15"))   # soft budget; we never block beyond this
+MAX_STARTUP_SYMBOLS   = int(os.getenv("MAX_STARTUP_SYMBOLS", "5"))     # reduced: only 5 symbols at boot
+STARTUP_OHLCV_LIMIT   = int(os.getenv("STARTUP_OHLCV_LIMIT", "150"))  # reduced: 150 bars per symbol
+WARMUP_CHUNK_SIZE     = int(os.getenv("WARMUP_CHUNK_SIZE", "2"))      # smaller chunks: 2 symbols at a time
+WARMUP_SLEEP_SEC      = int(os.getenv("WARMUP_SLEEP_SEC", "1"))       # base pause between batches
+STARTUP_TIMEOUT_SEC   = int(os.getenv("STARTUP_TIMEOUT_SEC", "8"))    # reduced: 8 second budget
+CACHE_FILE            = "warmup_cache.parquet"                        # persistent cache file
 
 # Warm-up state & simple in-memory cache
 warmup = {"started": False, "done": False, "error": "", "loaded": [], "start_time": None}
 price_cache = {}  # key: (symbol,timeframe) -> DataFrame
 cache_lock = threading.RLock()
+
+def cache_put(symbol: str, timeframe: str, df):
+    """Store DataFrame in cache and optionally persist to disk."""
+    with cache_lock:
+        price_cache[(symbol, timeframe)] = df
+
+def cache_get(symbol: str, timeframe: str):
+    """Retrieve DataFrame from cache."""
+    with cache_lock:
+        return price_cache.get((symbol, timeframe))
+
+def load_persistent_cache():
+    """Load yesterday's OHLCV data from disk cache for instant boot."""
+    try:
+        if os.path.exists(CACHE_FILE):
+            import pandas as pd
+            logger.info(f"Loading persistent cache from {CACHE_FILE}")
+            cached_data = pd.read_parquet(CACHE_FILE)
+            
+            # Parse cached data back into price_cache format
+            for symbol in cached_data['symbol'].unique():
+                symbol_data = cached_data[cached_data['symbol'] == symbol].copy()
+                symbol_data = symbol_data.drop('symbol', axis=1)
+                symbol_data.set_index('timestamp', inplace=True)
+                cache_put(symbol, '1d', symbol_data)
+            
+            logger.info(f"Loaded {len(cached_data['symbol'].unique())} symbols from persistent cache")
+            return True
+    except Exception as e:
+        logger.warning(f"Could not load persistent cache: {e}")
+    return False
+
+def save_persistent_cache():
+    """Save current cache to disk for next boot."""
+    try:
+        import pandas as pd
+        all_data = []
+        
+        with cache_lock:
+            for (symbol, timeframe), df in price_cache.items():
+                if timeframe == '1d' and not df.empty:
+                    df_copy = df.copy().reset_index()
+                    df_copy['symbol'] = symbol
+                    all_data.append(df_copy)
+        
+        if all_data:
+            combined_df = pd.concat(all_data, ignore_index=True)
+            combined_df.to_parquet(CACHE_FILE, index=False)
+            logger.info(f"Saved {len(all_data)} symbol datasets to persistent cache")
+    except Exception as e:
+        logger.warning(f"Could not save persistent cache: {e}")
+
+def get_df(symbol: str, timeframe: str):
+    """Get OHLCV data with fallback fetch."""
+    df = cache_get(symbol, timeframe)
+    if df is not None:
+        return df
+    
+    # Fallback: fetch just-in-time for requested symbol only
+    try:
+        from src.config import Config
+        from src.adapters.okx_adapter import OKXAdapter
+        
+        ex = OKXAdapter(Config()).exchange
+        ex.load_markets()
+        
+        # Exponential backoff for API calls
+        import time
+        for attempt in range(3):
+            try:
+                ohlcv = ex.fetch_ohlcv(symbol, timeframe=timeframe, limit=STARTUP_OHLCV_LIMIT)
+                break
+            except Exception as api_error:
+                if attempt < 2:
+                    wait_time = (2 ** attempt) * WARMUP_SLEEP_SEC
+                    logger.warning(f"API error for {symbol}, retrying in {wait_time}s: {api_error}")
+                    time.sleep(wait_time)
+                else:
+                    raise api_error
+        
+        import pandas as pd
+        df = pd.DataFrame(ohlcv, columns=["ts","open","high","low","close","volume"])
+        df["ts"] = pd.to_datetime(df["ts"], unit="ms", utc=True)
+        df.set_index("ts", inplace=True)
+        cache_put(symbol, timeframe, df)
+        return df
+        
+    except Exception as e:
+        logger.error(f"Failed to fetch data for {symbol}: {e}")
+        import pandas as pd
+        return pd.DataFrame()  # Return empty DataFrame on failure
 
 def initialize_lightweight():
     """Initialize only essential components needed for Flask to start."""
@@ -49,6 +141,11 @@ def initialize_lightweight():
         setup_logging()
         logger.info("Lightweight initialization started")
         
+        # Try to load persistent cache first for instant data availability
+        cache_loaded = load_persistent_cache()
+        if cache_loaded:
+            logger.info("Instant cache loaded - some data available immediately")
+        
         # Initialize database
         db = DatabaseManager()
         logger.info("Database initialized successfully")
@@ -60,38 +157,49 @@ def initialize_lightweight():
         return False
 
 def background_warmup():
-    """Initialize trading system components in background."""
+    """Initialize trading system components in background with timeout."""
     global warmup, app
     
     try:
         warmup["started"] = True
-        warmup["start_time"] = datetime.now()
-        logger.info("Background warmup started")
+        start_time = datetime.now()
+        warmup["start_time"] = start_time
+        logger.info(f"Background warmup started with {STARTUP_TIMEOUT_SEC}s timeout")
         
-        # Import trading system components
+        # Quick timeout check function
+        def check_timeout():
+            elapsed = (datetime.now() - start_time).total_seconds()
+            if elapsed > STARTUP_TIMEOUT_SEC:
+                logger.warning(f"Warmup timeout reached ({elapsed:.1f}s > {STARTUP_TIMEOUT_SEC}s)")
+                return True
+            return False
+        
+        # Import trading system components (with timeout check)
+        if check_timeout():
+            raise TimeoutError("Timeout during import phase")
+            
         from web_interface import initialize_system, app as main_app
         
-        # Initialize the full trading system
+        # Initialize only essential components quickly
+        if check_timeout():
+            raise TimeoutError("Timeout before initialization")
+            
         initialize_system()
         
-        # Register routes from main app (but only after warmup)
-        logger.info("Registering main application routes")
-        with app.app_context():
-            # Copy all routes except ones we already have
-            for rule in main_app.url_map.iter_rules():
-                endpoint = rule.endpoint
-                if endpoint not in ['health', 'ready', 'warmup_status', 'index'] and endpoint not in app.view_functions:
-                    try:
-                        # Create a new route in our app that calls the main app's view function
-                        view_func = main_app.view_functions[endpoint]
-                        app.add_url_rule(rule.rule, endpoint, view_func, methods=list(rule.methods))
-                    except Exception as route_error:
-                        logger.warning(f"Could not register route {rule.rule}: {route_error}")
+        # Save current cache state for next boot
+        save_persistent_cache()
+        
+        # Don't register routes during app runtime - causes Flask errors
+        # Routes will be available when user navigates to main app endpoints
         
         warmup["done"] = True
         warmup["loaded"] = WATCHLIST[:MAX_STARTUP_SYMBOLS]
-        logger.info("Background warmup completed successfully")
+        logger.info(f"Background warmup completed in {(datetime.now() - start_time).total_seconds():.1f}s")
         
+    except TimeoutError as e:
+        logger.warning(f"Background warmup timeout: {e}")
+        warmup["error"] = f"Timeout after {STARTUP_TIMEOUT_SEC}s"
+        warmup["done"] = True
     except Exception as e:
         error_msg = f"Background warmup failed: {str(e)}"
         logger.error(error_msg)
@@ -126,61 +234,131 @@ def warmup_status():
 
 @app.route("/")
 def index():
-    """Main dashboard route - will redirect to main app after warmup."""
-    if warmup["done"]:
-        # Redirect to the main web interface that's now loaded
+    """Main dashboard route with circuit breaker pattern."""
+    if warmup["done"] and not warmup["error"]:
+        # System ready - redirect to main interface
         return f"""
         <!DOCTYPE html>
         <html>
         <head>
             <title>Trading System - Ready</title>
-            <meta http-equiv="refresh" content="1;url=/dashboard">
+            <meta http-equiv="refresh" content="0;url=/dashboard">
             <style>
                 body {{ font-family: Arial, sans-serif; text-align: center; padding: 50px; }}
-                .ready {{ color: green; animation: pulse 1s ease-in-out infinite; }}
-                @keyframes pulse {{ 0% {{ opacity: 1; }} 50% {{ opacity: 0.5; }} 100% {{ opacity: 1; }} }}
+                .ready {{ color: green; }}
             </style>
         </head>
         <body>
             <h1 class="ready">✅ Trading System Ready!</h1>
-            <p>Currency selector and all trading features are now available.</p>
-            <p>Redirecting to main dashboard...</p>
-            <p><a href="/dashboard">Click here if not redirected automatically</a></p>
+            <p>Redirecting to dashboard with currency selector...</p>
+            <p><a href="/dashboard">Click here if not redirected</a></p>
         </body>
         </html>
         """
+    elif warmup["done"] and warmup["error"]:
+        # System failed to initialize properly
+        return render_loading_skeleton(f"System Error: {warmup['error']}", error=True)
     else:
-        # Show loading page
-        elapsed = ""
-        if warmup["start_time"]:
-            elapsed_sec = (datetime.now() - warmup["start_time"]).total_seconds()
-            elapsed = f" ({elapsed_sec:.1f}s)"
-        
-        return f"""
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <title>Trading System - Loading</title>
-            <meta http-equiv="refresh" content="3">
-            <style>
-                body {{ font-family: Arial, sans-serif; text-align: center; padding: 50px; }}
-                .loading {{ animation: spin 1s linear infinite; display: inline-block; }}
-                @keyframes spin {{ 0% {{ transform: rotate(0deg); }} 100% {{ transform: rotate(360deg); }} }}
-                .progress {{ width: 80%; background: #f0f0f0; margin: 20px auto; height: 10px; border-radius: 5px; }}
-                .progress-bar {{ height: 100%; background: linear-gradient(90deg, #007bff, #28a745); border-radius: 5px; animation: progress 30s linear; }}
-                @keyframes progress {{ 0% {{ width: 0%; }} 100% {{ width: 100%; }} }}
-            </style>
-        </head>
-        <body>
-            <h1>🚀 Trading System Loading{elapsed}</h1>
-            <div class="loading">⚡</div>
-            <div class="progress"><div class="progress-bar"></div></div>
-            <p>Initializing currency selector and live price feeds...</p>
-            <p>Status: {"Starting up..." if not warmup["started"] else "Loading live cryptocurrency data..."}</p>
-            <p><small>Auto-refreshing every 3 seconds...</small></p>
-        </body>
-        </html>
-        """
+        # Show loading skeleton while warming up
+        return render_loading_skeleton()
+
+# Fallback route handler that delegates to main app when ready
+@app.route("/<path:path>")
+def catch_all(path):
+    """Catch-all route that delegates to main app when ready."""
+    if warmup["done"] and not warmup["error"]:
+        try:
+            from web_interface import app as main_app
+            with main_app.test_request_context(f'/{path}'):
+                try:
+                    return main_app.full_dispatch_request()
+                except Exception:
+                    # If route doesn't exist in main app, return 404
+                    from flask import abort
+                    abort(404)
+        except Exception as e:
+            logger.error(f"Error serving path /{path}: {e}")
+            return render_loading_skeleton("Error loading page")
+    else:
+        return render_loading_skeleton("System still initializing...")
+
+def render_loading_skeleton(message="Loading live cryptocurrency data...", error=False):
+    """Render a loading skeleton UI that polls /ready endpoint."""
+    elapsed = ""
+    if warmup.get("start_time"):
+        elapsed_sec = (datetime.now() - warmup["start_time"]).total_seconds()
+        elapsed = f" ({elapsed_sec:.1f}s)"
+    
+    elapsed_sec = 0
+    if warmup.get("start_time"):
+        elapsed_sec = (datetime.now() - warmup["start_time"]).total_seconds()
+    progress_width = min(90, (elapsed_sec / STARTUP_TIMEOUT_SEC) * 100) if elapsed_sec else 0
+    status_color = "red" if error else "orange"
+    
+    return f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Trading System{elapsed}</title>
+        <style>
+            body {{ font-family: Arial, sans-serif; margin: 0; background: #f8f9fa; }}
+            .container {{ max-width: 1200px; margin: 0 auto; padding: 20px; }}
+            .header {{ background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; text-align: center; }}
+            .loading {{ animation: spin 1s linear infinite; display: inline-block; }}
+            @keyframes spin {{ 0% {{ transform: rotate(0deg); }} 100% {{ transform: rotate(360deg); }} }}
+            .progress {{ width: 100%; background: #e9ecef; height: 8px; border-radius: 4px; margin: 15px 0; }}
+            .progress-bar {{ height: 100%; background: linear-gradient(90deg, #007bff, #28a745); border-radius: 4px; width: {progress_width}%; transition: width 0.5s; }}
+            .skeleton {{ background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; }}
+            .skeleton-item {{ height: 20px; background: #e9ecef; border-radius: 4px; margin: 10px 0; animation: pulse 1.5s ease-in-out infinite; }}
+            @keyframes pulse {{ 0% {{ opacity: 1; }} 50% {{ opacity: 0.5; }} 100% {{ opacity: 1; }} }}
+            .status {{ color: {status_color}; font-weight: bold; }}
+        </style>
+        <script>
+            // Poll ready endpoint and reload when ready
+            async function checkReady() {{
+                try {{
+                    const response = await fetch('/ready');
+                    if (response.ok) {{
+                        window.location.reload();
+                    }}
+                }} catch (e) {{
+                    console.log('Still loading...');
+                }}
+            }}
+            setInterval(checkReady, 2000);
+        </script>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1>🚀 Trading System{elapsed}</h1>
+                <div class="loading">⚡</div>
+                <div class="progress"><div class="progress-bar"></div></div>
+                <p class="status">{message}</p>
+                <p><small>{"Error occurred during startup" if error else "System will be ready shortly..."}</small></p>
+            </div>
+            
+            <div class="skeleton">
+                <h3>Currency Selector</h3>
+                <div class="skeleton-item" style="width: 300px;"></div>
+            </div>
+            
+            <div class="skeleton">
+                <h3>Portfolio Overview</h3>
+                <div class="skeleton-item"></div>
+                <div class="skeleton-item" style="width: 60%;"></div>
+                <div class="skeleton-item" style="width: 80%;"></div>
+            </div>
+            
+            <div class="skeleton">
+                <h3>Trading Controls</h3>
+                <div class="skeleton-item" style="width: 40%;"></div>
+                <div class="skeleton-item" style="width: 50%;"></div>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
 
 # Ensure this can be imported for WSGI as well
 application = app

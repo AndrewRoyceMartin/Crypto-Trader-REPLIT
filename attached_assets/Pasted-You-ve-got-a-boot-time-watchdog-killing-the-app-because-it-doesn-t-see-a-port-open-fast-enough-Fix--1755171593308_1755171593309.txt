@@ -1,0 +1,180 @@
+You’ve got a boot-time watchdog killing the app because it doesn’t see a port open fast enough. Fix it by binding the HTTP port immediately and deferring all price work. Here’s a compact, proven pattern you can drop in.
+
+What to change (summary)
+
+Bind first, work later: server listens in <1s; heavy price fetches run in a background thread.
+
+Split /health (always 200 once server is up) from /ready (200 only after warm-up).
+
+Lazy-load prices for the single currency the user selects (don’t prefetch all).
+
+Add a tiny cache with TTL to avoid hammering the exchange on startup.
+
+Keep initialize_system() cheap (no network I/O).
+
+A) Drop-in patches for web_interface.py
+1) Globals & cache (top of file, after imports)
+# Fast-boot knobs
+WATCHLIST = [s.strip() for s in os.getenv(
+    "WATCHLIST", "BTC/USDT,ETH/USDT,SOL/USDT,BNB/USDT,ADA/USDT"
+).split(",") if s.strip()]
+
+MAX_STARTUP_SYMBOLS = int(os.getenv("MAX_STARTUP_SYMBOLS", "8"))   # warm only a few
+STARTUP_OHLCV_LIMIT = int(os.getenv("STARTUP_OHLCV_LIMIT", "200")) # bars per symbol at boot
+PRICE_TTL_SEC       = int(os.getenv("PRICE_TTL_SEC", "5"))         # cache refresh cadence
+WARMUP_SLEEP_SEC    = int(os.getenv("WARMUP_SLEEP_SEC", "1"))
+
+warmup = {"started": False, "done": False, "error": "", "loaded": []}
+
+# (symbol, timeframe) -> {"df": pd.DataFrame, "ts": datetime}
+_price_cache = {}
+_cache_lock = threading.RLock()
+
+2) Tiny cache helpers (put near your other helpers)
+def cache_put(sym, tf, df):
+    with _cache_lock:
+        _price_cache[(sym, tf)] = {"df": df, "ts": datetime.utcnow()}
+
+def cache_get(sym, tf):
+    with _cache_lock:
+        item = _price_cache.get((sym, tf))
+    if not item:
+        return None
+    if (datetime.utcnow() - item["ts"]).total_seconds() > PRICE_TTL_SEC:
+        return None
+    return item["df"]
+
+3) Warm-up in the background (bind first!)
+def background_warmup():
+    global warmup
+    if warmup["started"]:
+        return
+    warmup.update({"started": True, "done": False, "error": "", "loaded": []})
+    try:
+        # Use your existing adapter or ccxt fallback
+        import ccxt
+        ex = ccxt.okx({'enableRateLimit': True})
+        if os.getenv("OKX_DEMO", "1") in ("1","true","True"):
+            ex.set_sandbox_mode(True)
+        ex.load_markets()
+
+        tf = config.get('trading', 'default_timeframe', '1h') if config else '1h'
+        for i, sym in enumerate(WATCHLIST[:MAX_STARTUP_SYMBOLS]):
+            try:
+                ohlcv = ex.fetch_ohlcv(sym, timeframe=tf, limit=STARTUP_OHLCV_LIMIT)
+                import pandas as pd
+                df = pd.DataFrame(ohlcv, columns=["ts","open","high","low","close","volume"])
+                df["ts"] = pd.to_datetime(df["ts"], unit="ms", utc=True)
+                df.set_index("ts", inplace=True)
+                cache_put(sym, tf, df)
+                warmup["loaded"].append(sym)
+            except Exception as fe:
+                app.logger.warning("Warmup fetch failed for %s: %s", sym, fe)
+            time.sleep(WARMUP_SLEEP_SEC)
+        warmup["done"] = True
+        app.logger.info("Warm-up complete: %s", ",".join(warmup["loaded"]))
+    except Exception as e:
+        warmup.update({"error": str(e), "done": False})
+        app.logger.exception("Warm-up error")
+
+
+Kick it off after the server is already listening:
+
+@app.before_first_request
+def _kick_warmup():
+    threading.Thread(target=background_warmup, daemon=True).start()
+
+4) Cheap health + readiness endpoints
+@app.route("/health")
+def health():
+    # Platform watchdog checks this; return 200 immediately once listening
+    return jsonify({"status": "ok"}), 200
+
+@app.route("/ready")
+def ready():
+    # UI can poll this and show a spinner until ready
+    return (jsonify({"ready": True, **warmup}), 200) if warmup["done"] else (jsonify({"ready": False, **warmup}), 503)
+
+5) Lazy price route per selected currency (no big preload)
+@app.route("/api/price")
+def api_price():
+    """
+    Returns latest OHLCV slice for the selected symbol & timeframe.
+    Uses cache with TTL; fetches on demand if missing/stale.
+    """
+    try:
+        sym = request.args.get("symbol", config.get('trading','default_symbol','BTC/USDT'))
+        tf  = request.args.get("timeframe", config.get('trading','default_timeframe','1h'))
+        lim = int(request.args.get("limit", 200))
+
+        df = cache_get(sym, tf)
+        if df is None or len(df) < lim:
+            import ccxt, pandas as pd
+            ex = ccxt.okx({'enableRateLimit': True})
+            if os.getenv("OKX_DEMO", "1") in ("1","true","True"):
+                ex.set_sandbox_mode(True)
+            ex.load_markets()
+            ohlcv = ex.fetch_ohlcv(sym, timeframe=tf, limit=lim)
+            df = pd.DataFrame(ohlcv, columns=["ts","open","high","low","close","volume"])
+            df["ts"] = pd.to_datetime(df["ts"], unit="ms", utc=True)
+            df.set_index("ts", inplace=True)
+            cache_put(sym, tf, df)
+
+        out = df.tail(lim).reset_index()
+        out["ts"] = out["ts"].astype(str)
+        return jsonify(out.to_dict(orient="records"))
+    except Exception as e:
+        app.logger.error("api_price error: %s", e)
+        return jsonify({"error": str(e)}), 500
+
+
+Your currency selector in the UI should now call /api/price?symbol=BTC/USDT&timeframe=1h after page load; the server will not prefetch everything at boot.
+
+6) Ensure your entrypoint binds immediately
+
+At the bottom:
+
+if __name__ == '__main__':
+    initialize_system()  # config/db only; no network calls here
+    port = int(os.getenv('PORT', '5000'))
+    app.run(host='0.0.0.0', port=port, debug=False, use_reloader=False)
+
+B) Make sure you’re not doing heavy work at import time
+
+Do not fetch prices or load “all markets” at module import or inside initialize_system().
+
+Start the trading loop only when a user clicks “Start” (or in a post-start thread), not during app boot.
+
+C) Replit / runner config
+
+.replit:
+
+run = "python web_interface.py"
+entrypoint = "web_interface.py"
+
+D) Verify (quick)
+
+Start: python web_interface.py
+
+In a second shell:
+
+curl -s "http://localhost:${PORT:-5000}/health"   # -> {"status":"ok"}
+curl -s -o /dev/null -w "%{http_code}\n" "http://localhost:${PORT:-5000}/ready"  # 503 then 200 after warmup
+curl -s "http://localhost:${PORT:-5000}/api/price?symbol=BTC/USDT&timeframe=1h&limit=50" | head
+
+
+If your workflow expects a health check, point it at /health (fast) instead of /ready.
+
+E) If it still trips the watchdog
+
+Reduce warm-up further:
+
+MAX_STARTUP_SYMBOLS=3
+STARTUP_OHLCV_LIMIT=120
+
+
+Persist a tiny cache file on disk (parquet) and load it instantly at boot; refresh in background.
+
+If your UI blocks on data, render a “Warming up…” skeleton that polls /ready without failing the page.
+
+This pattern eliminates the restart loop by making the app listen first and work later, while your currency selector keeps fetching only what’s needed on demand.
