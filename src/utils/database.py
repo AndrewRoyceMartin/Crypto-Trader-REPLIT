@@ -602,14 +602,19 @@ class DatabaseManager:
                 stats = {}
                 
                 # Count records in each table
-                # Using hardcoded table names to prevent SQL injection
-                valid_tables = ['trades', 'positions', 'portfolio_snapshots', 'signals', 'strategy_performance']
+                # Using explicit SQL queries to avoid dynamic string construction
+                table_queries = {
+                    'trades': 'SELECT COUNT(*) as count FROM trades',
+                    'positions': 'SELECT COUNT(*) as count FROM positions', 
+                    'portfolio_snapshots': 'SELECT COUNT(*) as count FROM portfolio_snapshots',
+                    'signals': 'SELECT COUNT(*) as count FROM signals',
+                    'strategy_performance': 'SELECT COUNT(*) as count FROM strategy_performance'
+                }
                 
-                for table in valid_tables:
-                    # Table names cannot be parameterized, but we validate against known safe values
-                    cursor.execute(f'SELECT COUNT(*) as count FROM {table}')
+                for table_name, query in table_queries.items():
+                    cursor.execute(query)
                     result = cursor.fetchone()
-                    stats[f'{table}_count'] = result['count']
+                    stats[f'{table_name}_count'] = result['count']
                 
                 # Database file size
                 if os.path.exists(self.db_path):
