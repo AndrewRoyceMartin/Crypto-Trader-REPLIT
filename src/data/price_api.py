@@ -19,7 +19,7 @@ class CryptoPriceAPI:
         self.cache = {}
         self.cache_duration = 60  # Cache for 60 seconds
         self.last_request_time = 0
-        self.request_delay = 1.1  # Rate limit: 1 request per second
+        self.request_delay = 6.5  # Rate limit: 10 requests per minute (6 second intervals)
         
         # CoinGecko coin IDs for our cryptocurrencies
         self.coin_mapping = {

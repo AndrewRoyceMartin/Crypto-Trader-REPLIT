@@ -24,17 +24,19 @@ class TradingApp {
         this.startAutoUpdate();
         this.loadConfig();
         
-        // Initialize news ticker
+        // Initialize news ticker after DOM is ready
         setTimeout(() => {
-            initializeNewsTicker();
-        }, 2000);
+            if (typeof initializeNewsTicker === 'function') {
+                initializeNewsTicker();
+            }
+        }, 3000);
     }
     
     setupEventListeners() {
-        // Auto-refresh every 5 seconds
+        // Auto-refresh every 6 seconds (10 times per minute to respect CoinGecko limits)
         this.updateInterval = setInterval(() => {
             this.updateDashboard();
-        }, 5000);
+        }, 6000);
         
         // Start countdown timer
         this.startCountdown();
@@ -68,7 +70,7 @@ class TradingApp {
         if (!this.updateInterval) {
             this.updateInterval = setInterval(() => {
                 this.updateDashboard();
-            }, 5000);
+            }, 6000);
         }
     }
     
@@ -971,6 +973,11 @@ function initializeNewsTicker() {
         updateNewsTicker();
     }, 10 * 60 * 1000);
 }
+
+// Make sure function is available globally
+window.initializeNewsTicker = initializeNewsTicker;
+window.updateNewsTicker = updateNewsTicker;
+window.refreshNews = refreshNews;
 
 async function updateNewsTicker() {
     try {

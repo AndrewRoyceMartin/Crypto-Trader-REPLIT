@@ -84,10 +84,10 @@ def start_portfolio_updates():
                 if crypto_portfolio:
                     crypto_portfolio.simulate_price_movements()
                     crypto_portfolio.save_portfolio_state()
-                time.sleep(60)  # Update every minute
+                time.sleep(180)  # Update every 3 minutes to respect CoinGecko rate limits
             except Exception as e:
                 app.logger.error(f"Error updating portfolio prices: {e}")
-                time.sleep(60)
+                time.sleep(180)
     
     if portfolio_update_thread is None or not portfolio_update_thread.is_alive():
         portfolio_update_thread = threading.Thread(target=update_prices, daemon=True)
