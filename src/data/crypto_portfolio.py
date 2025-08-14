@@ -16,7 +16,7 @@ from ..utils.email_service import email_service
 class CryptoPortfolioManager:
     """Manages a portfolio of 103 different cryptocurrencies with $10 initial investment per crypto."""
     
-    def __init__(self, initial_value_per_crypto: float = 10.0):
+    def __init__(self, initial_value_per_crypto: float = 100.0):
         """
         Initialize the crypto portfolio manager.
         
@@ -172,8 +172,8 @@ class CryptoPortfolioManager:
         """Initialize portfolio with starting values for each cryptocurrency."""
         portfolio = {}
         
-        # Get live prices for top 10 cryptocurrencies only during initialization to speed up startup
-        symbols = [crypto["symbol"] for crypto in self.crypto_list[:10]]  # Limit to first 10 for faster startup
+        # Get live prices for top 25 cryptocurrencies during initialization
+        symbols = [crypto["symbol"] for crypto in self.crypto_list[:25]]  # Fetch prices for 25 cryptocurrencies
         live_prices = self.price_api.get_multiple_prices(symbols)
         
         for crypto in self.crypto_list[:25]:  # Initialize top 25 cryptocurrencies
@@ -204,6 +204,7 @@ class CryptoPortfolioManager:
             # Ensure base_price is not zero to prevent division by zero
             if base_price <= 0:
                 base_price = 0.000001  # Use a very small number as fallback
+            # Calculate correct quantity based on initial investment
             quantity = self.initial_value / base_price
             
             portfolio[symbol] = {
@@ -213,7 +214,7 @@ class CryptoPortfolioManager:
                 "initial_price": base_price,
                 "current_price": base_price,
                 "initial_value": self.initial_value,
-                "current_value": self.initial_value,
+                "current_value": quantity * base_price,
                 "pnl": 0.0,
                 "pnl_percent": 0.0,
                 "target_sell_price": self._calculate_target_sell_price(base_price, crypto["rank"]),
