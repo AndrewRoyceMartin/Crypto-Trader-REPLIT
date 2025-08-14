@@ -51,7 +51,15 @@
             </div>
             
             <div class="navbar-nav ms-auto">
-                <div class="nav-item">
+                <div class="nav-item d-flex align-items-center">
+                    <div class="me-3">
+                        <select class="form-select form-select-sm" id="currency-selector" onchange="changeCurrency()" style="min-width: 80px; font-size: 0.8rem;">
+                            <option value="USD" selected>USD</option>
+                            <option value="AUD">AUD</option>
+                            <option value="EUR">EUR</option>
+                            <option value="GBP">GBP</option>
+                        </select>
+                    </div>
                     <span class="navbar-text me-3">
                         <i class="fas fa-server text-info me-1"></i>
                         <span class="text-light">Server Uptime:</span>
@@ -329,67 +337,7 @@
             </div>
         </div>
 
-        <!-- Currency Selection Tool -->
-        <div class="row mb-4">
-            <div class="col-12">
-                <div class="card">
-                    <div class="card-header">
-                        <h5 class="mb-0">
-                            <i class="fas fa-coins me-2"></i>
-                            Currency Selection
-                            <i class="fas fa-info-circle text-muted ms-2" 
-                               data-bs-toggle="tooltip" 
-                               data-bs-placement="top" 
-                               title="Select your preferred display currency for portfolio values and P&L calculations"></i>
-                        </h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="row align-items-center">
-                            <div class="col-md-6">
-                                <div class="input-group">
-                                    <label class="input-group-text">
-                                        <i class="fas fa-dollar-sign me-1"></i>
-                                        Display Currency
-                                    </label>
-                                    <select class="form-select" id="currency-selector" onchange="changeCurrency()">
-                                        <option value="USD" selected>
-                                            <span class="flag-icon flag-icon-us"></span>
-                                            USD - US Dollar ($)
-                                        </option>
-                                        <option value="EUR">EUR - Euro (€)</option>
-                                        <option value="GBP">GBP - British Pound (£)</option>
-                                        <option value="JPY">JPY - Japanese Yen (¥)</option>
-                                        <option value="AUD">AUD - Australian Dollar (A$)</option>
-                                        <option value="CAD">CAD - Canadian Dollar (C$)</option>
-                                        <option value="CHF">CHF - Swiss Franc</option>
-                                        <option value="CNY">CNY - Chinese Yuan (¥)</option>
-                                        <option value="KRW">KRW - South Korean Won (₩)</option>
-                                        <option value="BTC">BTC - Bitcoin (₿)</option>
-                                        <option value="ETH">ETH - Ethereum (Ξ)</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="d-flex align-items-center">
-                                    <div class="me-3">
-                                        <small class="text-muted">Current Rate:</small>
-                                        <div class="fw-bold" id="exchange-rate">1.00 USD</div>
-                                    </div>
-                                    <div class="me-3">
-                                        <small class="text-muted">Last Updated:</small>
-                                        <div class="text-info" id="rate-updated">Just now</div>
-                                    </div>
-                                    <button class="btn btn-outline-primary btn-sm" onclick="refreshExchangeRates()">
-                                        <i class="fas fa-sync-alt me-1"></i>
-                                        Refresh Rates
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+
 
         <!-- System Status Row -->
         <div class="row mb-4">
