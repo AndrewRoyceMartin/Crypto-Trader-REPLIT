@@ -999,7 +999,14 @@ def run_backtest():
             engine = BacktestEngine(config, strategy)
             end_date = datetime.now()
             start_date = end_date - timedelta(days=days)
-            results = engine.run_backtest(symbol=symbol, start_date=start_date, end_date=end_date, timeframe=timeframe)
+            
+            # Ensure symbol has proper format for trading pairs
+            if '/' not in symbol:
+                trading_symbol = f"{symbol}/USDT"
+            else:
+                trading_symbol = symbol
+            
+            results = engine.run_backtest(symbol=trading_symbol, start_date=start_date, end_date=end_date, timeframe=timeframe)
 
         # Clean up infinite and NaN values for JSON serialization
         def clean_float_values(obj):
