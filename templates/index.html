@@ -42,21 +42,110 @@
             </div>
         </div>
 
-        <!-- Tracked Cryptocurrencies -->
+        <!-- Dashboard - Tracked Cryptocurrencies -->
         <div class="row mb-4">
             <div class="col-12">
                 <div class="card">
-                    <div class="card-header">
+                    <div class="card-header d-flex justify-content-between align-items-center">
                         <h5 class="mb-0">
                             <i class="fas fa-coins me-2"></i>
-                            Tracked Cryptocurrencies
+                            Dashboard - Tracked Cryptocurrencies
                             <span id="trading-countdown" class="badge bg-secondary ms-3">Starting...</span>
                         </h5>
-                        <small class="text-muted ms-3">Live CoinGecko Price Data</small>
+                        <button class="btn btn-outline-primary btn-sm" onclick="refreshCryptoPortfolio()">
+                            <i class="fas fa-sync-alt me-1"></i>Refresh
+                        </button>
                     </div>
                     <div class="card-body">
-                        <div id="crypto-symbols" class="d-flex flex-wrap gap-2">
-                            <span class="badge bg-secondary">Loading...</span>
+                        <!-- Portfolio Summary Metrics -->
+                        <div class="row text-center mb-4">
+                            <div class="col-md-3">
+                                <div class="text-center">
+                                    <h6 class="text-muted mb-1">Total Assets</h6>
+                                    <span id="total-assets" class="h5">0</span>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="text-center">
+                                    <h6 class="text-muted mb-1">Portfolio Value</h6>
+                                    <span id="portfolio-value-display" class="h5">$0.00</span>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="text-center">
+                                    <h6 class="text-muted mb-1">24h Change</h6>
+                                    <p id="portfolio-change" class="mb-0 fw-bold">0.00%</p>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="text-center">
+                                    <h6 class="text-muted mb-1">Status</h6>
+                                    <span id="crypto-status" class="badge bg-success">Live</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Crypto Symbols Display -->
+                        <div class="row mb-3">
+                            <div class="col-12">
+                                <h6 class="text-muted mb-2">Live CoinGecko Price Data:</h6>
+                                <div id="crypto-symbols" class="d-flex flex-wrap gap-2">
+                                    <span class="badge bg-secondary">Loading cryptocurrencies...</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Crypto Portfolio Table -->
+                        <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                            <table class="table table-sm table-hover">
+                                <thead class="table-dark sticky-top">
+                                    <tr>
+                                        <th class="sortable" onclick="sortPortfolio('rank')" style="cursor: pointer; color: white;">
+                                            Rank <i id="sort-rank" class="fas fa-sort text-white"></i>
+                                        </th>
+                                        <th class="sortable" onclick="sortPortfolio('symbol')" style="cursor: pointer; color: white;">
+                                            Symbol <i id="sort-symbol" class="fas fa-sort text-white"></i>
+                                        </th>
+                                        <th class="sortable" onclick="sortPortfolio('name')" style="cursor: pointer; color: white;">
+                                            Name <i id="sort-name" class="fas fa-sort text-white"></i>
+                                        </th>
+                                        <th class="sortable" onclick="sortPortfolio('price')" style="cursor: pointer; color: white;">
+                                            Current Price <i id="sort-price" class="fas fa-sort text-white"></i>
+                                        </th>
+                                        <th class="sortable" onclick="sortPortfolio('quantity')" style="cursor: pointer; color: white;">
+                                            Quantity <i id="sort-quantity" class="fas fa-sort text-white"></i>
+                                        </th>
+                                        <th class="sortable" onclick="sortPortfolio('value')" style="cursor: pointer; color: white;">
+                                            Value <i id="sort-value" class="fas fa-sort text-white"></i>
+                                        </th>
+                                        <th class="sortable" onclick="sortPortfolio('pnl_percent')" style="cursor: pointer; color: white;">
+                                            P&L % <i id="sort-pnl_percent" class="fas fa-sort text-white"></i>
+                                        </th>
+                                        <th class="sortable" onclick="sortPortfolio('last_updated')" style="cursor: pointer; color: white;">
+                                            Updated <i id="sort-last_updated" class="fas fa-sort text-white"></i>
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody id="crypto-table">
+                                    <tr>
+                                        <td colspan="8" class="text-center">
+                                            <div class="d-flex align-items-center justify-content-center">
+                                                <div class="spinner-border spinner-border-sm text-primary me-3" role="status">
+                                                    <span class="visually-hidden">Loading...</span>
+                                                </div>
+                                                <div>
+                                                    <div class="text-muted mb-2">Loading cryptocurrency dashboard...</div>
+                                                    <div class="progress" style="width: 300px; height: 20px;">
+                                                        <div id="crypto-loading-progress" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+                                                            <span id="crypto-loading-text">0%</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </div>

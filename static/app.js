@@ -240,6 +240,7 @@ class TradingApp {
             if (data.cryptocurrencies) {
                 this.updateLoadingProgress(80, 'Updating displays...');
                 this.updateCryptoSymbols(data.cryptocurrencies);
+                this.updateCryptoTable(data.cryptocurrencies);
                 this.updatePerformanceTable(data.cryptocurrencies);
                 this.updateHoldingsTable(data.cryptocurrencies);
                 this.updatePortfolioSummary(data.summary, data.cryptocurrencies);
@@ -290,11 +291,57 @@ class TradingApp {
     }
     
     updateCryptoTable(cryptos) {
-        // This method is no longer used in the clean template
-        return;
+        const tableBody = document.getElementById('crypto-table');
+        if (!tableBody) return;
         
         // Clear existing content
         tableBody.innerHTML = '';
+        
+        // Sort cryptos by market cap rank
+        const sortedCryptos = [...cryptos].sort((a, b) => (a.rank || 999) - (b.rank || 999));
+        
+        sortedCryptos.forEach(crypto => {
+            const row = tableBody.insertRow();
+            
+            // Format values
+            const price = typeof crypto.current_price === 'number' ? crypto.current_price : 0;
+            const quantity = typeof crypto.quantity === 'number' ? crypto.quantity : 0;
+            const value = typeof crypto.current_value === 'number' ? crypto.current_value : 0;
+            const pnlPercent = typeof crypto.pnl_percent === 'number' ? crypto.pnl_percent : 0;
+            
+            // Create cells
+            const rankCell = row.insertCell(0);
+            const symbolCell = row.insertCell(1);
+            const nameCell = row.insertCell(2);
+            const priceCell = row.insertCell(3);
+            const quantityCell = row.insertCell(4);
+            const valueCell = row.insertCell(5);
+            const pnlPercentCell = row.insertCell(6);
+            const updatedCell = row.insertCell(7);
+            
+            // Fill cells with data
+            rankCell.textContent = crypto.rank || '-';
+            symbolCell.innerHTML = `<span class="fw-bold text-primary">${crypto.symbol || '-'}</span>`;
+            nameCell.textContent = crypto.name || '-';
+            priceCell.textContent = this.formatCurrency(price);
+            quantityCell.textContent = quantity.toFixed(6);
+            valueCell.textContent = this.formatCurrency(value);
+            
+            // Color-code P&L percentage
+            const pnlClass = pnlPercent >= 0 ? 'text-success' : 'text-danger';
+            pnlPercentCell.innerHTML = `<span class="${pnlClass} fw-bold">${pnlPercent.toFixed(2)}%</span>`;
+            
+            // Format last updated
+            if (crypto.last_updated) {
+                const updateTime = new Date(crypto.last_updated);
+                updatedCell.innerHTML = `<small class="text-muted">${updateTime.toLocaleTimeString()}</small>`;
+            } else {
+                updatedCell.innerHTML = '<small class="text-muted">-</small>';
+            }
+            
+            // Add hover effect
+            row.classList.add('table-row-hover');
+        });
         
         if (!cryptos || cryptos.length === 0) {
             const row = document.createElement('tr');
