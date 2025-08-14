@@ -12,8 +12,9 @@ class TradingApp {
         this.reconnectCountdown = null;
         this.reconnectInterval = null;
         this.nextRetryTime = null;
-        this.startTime = Date.now();
+        this.startTime = null;
         this.uptimeInterval = null;
+        this.uptimeStarted = false;
         this.chartData = {
             portfolio: [],
             returns: [],
@@ -46,8 +47,7 @@ class TradingApp {
         // Start countdown timer
         this.startCountdown();
         
-        // Start uptime counter
-        this.startUptimeCounter();
+        // Uptime counter will start when connection is confirmed
         
         // Handle page visibility change
         document.addEventListener('visibilitychange', () => {
@@ -883,6 +883,11 @@ class TradingApp {
     }
     
     startUptimeCounter() {
+        if (this.uptimeStarted) return; // Already started
+        
+        this.startTime = Date.now();
+        this.uptimeStarted = true;
+        
         // Update uptime every second
         this.uptimeInterval = setInterval(() => {
             this.updateUptimeDisplay();
@@ -895,6 +900,10 @@ class TradingApp {
     updateUptimeDisplay() {
         const uptimeElement = document.getElementById('system-uptime');
         if (uptimeElement) {
+            if (!this.startTime) {
+                uptimeElement.textContent = 'Waiting...';
+                return;
+            }
             const uptimeSeconds = Math.floor((Date.now() - this.startTime) / 1000);
             const uptimeText = this.formatUptime(uptimeSeconds);
             uptimeElement.textContent = uptimeText;
@@ -2094,6 +2103,8 @@ function updateConnectionStatusDisplay(apiStatus) {
             window.tradingApp.stopReconnectionCountdown();
             // Restart trading countdown when connection is restored
             window.tradingApp.startCountdown();
+            // Start uptime counter when connection is first confirmed
+            window.tradingApp.startUptimeCounter();
         }
         
         // Update new top-right corner connection status (if elements exist)
