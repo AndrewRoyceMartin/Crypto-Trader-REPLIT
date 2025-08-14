@@ -241,8 +241,9 @@ def get_status():
             trade_mode = "live"
         else:
             trade_mode = "paper"  # Default to paper for stopped or other modes
-        recent_trades = db_manager.get_trades(mode=trade_mode, start_date=datetime.now() - timedelta(days=8))
-        trades_data = recent_trades.tail(10).to_dict("records") if not recent_trades.empty else []
+        # Get all trades, then take the most recent 50 to show all purchases including initial ones
+        recent_trades = db_manager.get_trades(mode=trade_mode, start_date=datetime.now() - timedelta(days=365))
+        trades_data = recent_trades.tail(50).to_dict("records") if not recent_trades.empty else []
         positions_df = db_manager.get_positions(mode=trade_mode)
         positions_data = positions_df.to_dict("records") if not positions_df.empty else []
         with state_lock:

@@ -118,13 +118,13 @@ class TradingApp {
             this.updatePortfolio(data.portfolio);
             this.updateCharts(data.portfolio, data.recent_trades);
             this.updateRecentTrades(data.recent_trades);
-            this.updatePositions(data.positions);
             this.updateCryptoPortfolio();
             
             // Connection status managed by updateConnectionStatusDisplay()
             
         } catch (error) {
-            console.error('Error updating dashboard:', error);
+            console.error('Error updating dashboard:', error.message || error);
+            console.error('Full error:', error);
             // Connection status managed by updateConnectionStatusDisplay()
         }
     }
@@ -577,7 +577,7 @@ class TradingApp {
             return;
         }
         
-        trades.slice(0, 10).forEach(trade => {
+        trades.slice(-50).reverse().forEach(trade => {
             const row = document.createElement('tr');
             
             // Timestamp cell
