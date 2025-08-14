@@ -29,9 +29,15 @@ class BollingerBandsStrategy(BaseStrategy):
         self.rsi_period = config.get_int('strategy', 'rsi_period', 14)
         
         # Optimized risk parameters for maximum profit/loss ratio
-        self.position_size_percent = config.get_float('trading', 'position_size_percent', 10.0)  # Aggressive position sizing
-        self.stop_loss_percent = config.get_float('trading', 'stop_loss_percent', 1.2)  # Very tight stop loss
-        self.take_profit_percent = config.get_float('trading', 'take_profit_percent', 8.0)  # High profit targets
+        self.position_size_percent = config.get_float('trading', 'position_size_percent', 8.0)  # Smart position sizing
+        self.stop_loss_percent = config.get_float('trading', 'stop_loss_percent', 1.5)  # Adaptive stop loss
+        self.take_profit_percent = config.get_float('trading', 'take_profit_percent', 6.0)  # Realistic profit targets
+        
+        # Advanced adaptive parameters for dynamic optimization
+        self.market_volatility_threshold = 0.02  # 2% volatility threshold
+        self.momentum_strength_factor = 0.15  # Momentum weighting
+        self.risk_reward_ratio = 4.0  # Minimum 4:1 reward-to-risk ratio
+        self.adaptive_confidence_scaling = True  # Enable confidence-based sizing
         
         # Advanced optimization parameters - more aggressive for better results
         self.trend_confirmation_period = 3  # Shorter confirmation period
@@ -73,9 +79,14 @@ class BollingerBandsStrategy(BaseStrategy):
             # Add RSI for momentum confirmation
             rsi = self.indicators.rsi(data['close'].squeeze(), self.rsi_period)
             
-            # Calculate price momentum and trend strength
+            # Calculate price momentum and trend strength with multiple timeframes
             price_momentum = data['close'].pct_change(5).iloc[-1]  # 5-period momentum
+            short_momentum = data['close'].pct_change(3).iloc[-1]  # 3-period momentum
             trend_strength = (data['close'].iloc[-1] - data['close'].iloc[-10]) / data['close'].iloc[-10]
+            
+            # Calculate market state indicators
+            volatility_regime = band_width > self.market_volatility_threshold  # High/low volatility
+            recent_volatility = data['close'].pct_change().rolling(10).std().iloc[-1]  # Recent volatility
             
             # Get latest values
             current_price = data['close'].iloc[-1]
@@ -111,39 +122,77 @@ class BollingerBandsStrategy(BaseStrategy):
             distance_to_lower = abs(current_price - current_lower) / current_price
             distance_to_upper = abs(current_price - current_upper) / current_price
             
-            # Dynamic position sizing based on volatility and confidence
+            # Advanced dynamic position sizing based on market conditions
             base_position_size = self.position_size_percent / 100
-            volatility_adjusted_size = base_position_size * (1 + band_width * self.volatility_multiplier)
-            volatility_adjusted_size = min(volatility_adjusted_size, 0.15)  # Cap at 15%
             
-            # Ultra-permissive Buy signal for guaranteed trades in backtesting
+            # Multi-factor position sizing algorithm
+            volatility_factor = 1 + min(band_width * self.volatility_multiplier, 0.5)  # Cap volatility impact
+            momentum_factor = 1 + min(abs(price_momentum) * 10, 0.3)  # Boost for strong momentum
+            confidence_factor = 1  # Will be set in signal generation
+            
+            # Calculate adaptive position size
+            adaptive_position_size = base_position_size * volatility_factor * momentum_factor
+            volatility_adjusted_size = min(adaptive_position_size, 0.12)  # Cap at 12% for safety
+            
+            # Smart Buy signal with adaptive conditions for profit maximization
             enhanced_buy_conditions = (
-                current_price <= current_lower * 1.05 and  # 5% above lower band (very loose)
-                current_rsi < 80 and  # Ultra permissive RSI
-                distance_to_lower < 0.10  # Very generous distance
+                current_price <= current_lower * 1.03 and  # 3% above lower band (optimized)
+                current_rsi < 65 and  # RSI oversold threshold
+                distance_to_lower < 0.05 and  # Tighter distance for better entries
+                (price_momentum < 0 or short_momentum < -0.01) and  # Confirming downward momentum
+                trend_strength > -0.15  # Not in severe downtrend
             )
             
             # Check enhanced buy conditions first
             if self.use_enhanced_filters and enhanced_buy_conditions:
                 
-                # Calculate dynamic confidence based on multiple factors
-                rsi_factor = (50 - current_rsi) / 50  # Higher confidence for lower RSI
-                momentum_factor = min(1.0, abs(price_momentum) * 10)  # Stronger momentum = higher confidence
-                band_factor = (current_lower - current_price) / current_atr
-                confidence = min(0.95, (rsi_factor + momentum_factor + band_factor) / 3 + 0.3)
+                # Advanced confidence calculation with multi-factor scoring
+                rsi_factor = max(0, (50 - current_rsi) / 50)  # Higher confidence for lower RSI
+                momentum_factor = min(0.4, abs(price_momentum) * 15)  # Strong momentum boost
+                volatility_factor = min(0.3, recent_volatility * 20)  # Volatility adjustment
+                band_factor = min(0.4, (current_lower - current_price) / current_atr)
+                trend_factor = max(0, -trend_strength * 2) if trend_strength < 0 else 0.1
                 
-                # Optimized dynamic stop loss and take profit based on volatility and market conditions
-                volatility_factor = min(2.0, 1 + band_width * 3)  # Scale with volatility
-                dynamic_stop_loss = max(0.8, self.stop_loss_percent * volatility_factor)  # Minimum 0.8% stop
-                dynamic_take_profit = self.take_profit_percent * (1.5 + band_width * 2)  # Aggressive profit targets
+                # Weighted confidence score
+                confidence = min(0.92, 
+                    rsi_factor * 0.3 + 
+                    momentum_factor * 0.25 + 
+                    volatility_factor * 0.15 + 
+                    band_factor * 0.25 + 
+                    trend_factor * 0.05 + 0.25
+                )
+                
+                # Advanced dynamic risk management with market adaptation
+                volatility_factor = min(1.8, 1 + band_width * 2.5)  # Controlled volatility scaling
+                momentum_adjustment = 1 + min(0.3, abs(momentum_factor))  # Momentum-based adjustments
+                
+                # Adaptive stop loss - tighter in low volatility, wider in high volatility
+                if volatility_regime:
+                    dynamic_stop_loss = max(1.0, self.stop_loss_percent * volatility_factor)
+                else:
+                    dynamic_stop_loss = max(0.8, self.stop_loss_percent * 0.8)  # Tighter stops in calm markets
+                
+                # Dynamic take profit with risk-reward optimization
+                base_take_profit = self.take_profit_percent * momentum_adjustment
+                dynamic_take_profit = base_take_profit * (1.3 + min(band_width * 1.5, 0.7))
+                
+                # Ensure minimum risk-reward ratio
+                if dynamic_take_profit / dynamic_stop_loss < self.risk_reward_ratio:
+                    dynamic_take_profit = dynamic_stop_loss * self.risk_reward_ratio
                 
                 stop_loss = current_price * (1 - dynamic_stop_loss / 100)
                 take_profit = current_price * (1 + dynamic_take_profit / 100)
                 
+                # Apply confidence-based position sizing if enabled
+                if self.adaptive_confidence_scaling:
+                    final_position_size = volatility_adjusted_size * (0.5 + confidence * 0.5)
+                else:
+                    final_position_size = volatility_adjusted_size
+                
                 signal = Signal(
                     action='buy',
                     price=current_price,
-                    size=volatility_adjusted_size,
+                    size=final_position_size,
                     confidence=confidence,
                     stop_loss=stop_loss,
                     take_profit=take_profit
@@ -153,11 +202,13 @@ class BollingerBandsStrategy(BaseStrategy):
                     signals.append(signal)
                     self.logger.info(f"Enhanced BUY signal: Price={current_price:.2f}, RSI={current_rsi:.1f}, Confidence={confidence:.2f}")
             
-            # Ultra-permissive Sell signal for guaranteed trades in backtesting
+            # Smart Sell signal with adaptive conditions for profit maximization
             enhanced_sell_conditions = (
-                current_price >= current_upper * 0.95 and  # 5% below upper band (very loose)
-                current_rsi > 20 and  # Ultra permissive RSI  
-                distance_to_upper < 0.10  # Very generous distance
+                current_price >= current_upper * 0.97 and  # 3% below upper band (optimized)
+                current_rsi > 35 and  # RSI overbought threshold
+                distance_to_upper < 0.05 and  # Tighter distance for better entries
+                (price_momentum > 0 or short_momentum > 0.01) and  # Confirming upward momentum
+                trend_strength < 0.15  # Not in severe uptrend
             )
             
             # Check enhanced sell conditions
@@ -354,9 +405,17 @@ class BollingerBandsStrategy(BaseStrategy):
             else:
                 pnl_percent = (entry_price - current_price) / entry_price * 100
             
-            # Trailing stop logic
-            if pnl_percent > self.take_profit_percent / 2:  # If profit > 50% of target
-                trailing_stop_percent = self.stop_loss_percent / 2  # Tighter trailing stop
+            # Advanced trailing stop logic with profit protection
+            profit_threshold = self.take_profit_percent * 0.3  # Start trailing at 30% of target
+            
+            if pnl_percent > profit_threshold:
+                # Progressive trailing stop - tighter as profit increases
+                if pnl_percent > self.take_profit_percent * 0.8:  # Near target
+                    trailing_stop_percent = self.stop_loss_percent * 0.3  # Very tight
+                elif pnl_percent > self.take_profit_percent * 0.5:  # Halfway to target
+                    trailing_stop_percent = self.stop_loss_percent * 0.5  # Medium tight
+                else:  # Early profit stage
+                    trailing_stop_percent = self.stop_loss_percent * 0.7  # Moderate
                 
                 if position['side'] == 'long':
                     trailing_stop_price = current_price * (1 - trailing_stop_percent / 100)

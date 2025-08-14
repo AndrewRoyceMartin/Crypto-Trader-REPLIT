@@ -21,16 +21,26 @@ class RiskManager:
         self.config = config
         self.logger = logging.getLogger(__name__)
         
-        # Risk parameters
-        self.max_portfolio_risk = config.get_float('risk', 'max_portfolio_risk', 10.0)
-        self.max_single_position_risk = config.get_float('risk', 'max_single_position_risk', 5.0)
-        self.max_daily_loss = config.get_float('risk', 'max_daily_loss', 5.0)
+        # Enhanced risk parameters for adaptive trading
+        self.max_portfolio_risk = config.get_float('risk', 'max_portfolio_risk', 12.0)
+        self.max_single_position_risk = config.get_float('risk', 'max_single_position_risk', 8.0)
+        self.max_daily_loss = config.get_float('risk', 'max_daily_loss', 4.0)  # Tighter daily loss control
         self.trailing_stop_percent = config.get_float('risk', 'trailing_stop_percent', 1.0)
         
-        # Daily tracking
+        # Advanced risk management parameters
+        self.adaptive_position_sizing = True
+        self.volatility_adjustment_factor = 0.5  # Reduce size in high volatility
+        self.correlation_risk_limit = 0.7  # Limit correlated positions
+        self.drawdown_protection = True
+        self.max_consecutive_losses = 3  # Reduce position sizes after losses
+        
+        # Daily tracking and adaptive limits
         self.daily_pnl = 0.0
         self.daily_reset_time = None
-        self.max_positions = config.get_int('trading', 'max_positions', 3)
+        self.max_positions = config.get_int('trading', 'max_positions', 5)  # Allow more positions
+        self.consecutive_losses = 0
+        self.recent_trades = []  # Track recent trade performance
+        self.current_drawdown = 0.0
         
         # Risk state
         self.trading_halted = False
@@ -66,7 +76,7 @@ class RiskManager:
     
     def validate_position_size(self, signal: Signal, portfolio_value: float) -> bool:
         """
-        Validate if position size is within risk limits.
+        Enhanced position size validation with adaptive risk management.
         
         Args:
             signal: Trading signal
@@ -80,23 +90,41 @@ class RiskManager:
             position_value = portfolio_value * signal.size
             position_risk_percent = (position_value / portfolio_value) * 100
             
-            # Check single position risk limit
-            if position_risk_percent > self.max_single_position_risk:
-                self.logger.warning(f"Position size exceeds risk limit: {position_risk_percent:.2f}% > {self.max_single_position_risk}%")
+            # Apply adaptive risk limits based on recent performance
+            adaptive_max_risk = self.max_single_position_risk
+            if self.consecutive_losses >= self.max_consecutive_losses:
+                adaptive_max_risk *= 0.5  # Halve position size after consecutive losses
+                self.logger.info(f"Reduced position size due to {self.consecutive_losses} consecutive losses")
+            
+            # Check adaptive single position risk limit
+            if position_risk_percent > adaptive_max_risk:
+                self.logger.warning(f"Position size exceeds adaptive risk limit: {position_risk_percent:.2f}% > {adaptive_max_risk:.2f}%")
                 return False
             
-            # Check if position has stop loss
+            # Enhanced stop loss validation
             if signal.action in ['buy', 'sell'] and not signal.stop_loss:
                 self.logger.warning("Position rejected: No stop loss specified")
                 return False
+                
+            # Calculate risk-reward ratio
+            entry_price = signal.price
+            if signal.take_profit and signal.stop_loss:
+                potential_profit = abs(signal.take_profit - entry_price)
+                potential_loss = abs(entry_price - signal.stop_loss)
+                risk_reward_ratio = potential_profit / potential_loss if potential_loss > 0 else 0
+                
+                if risk_reward_ratio < 2.0:  # Minimum 2:1 risk-reward
+                    self.logger.warning(f"Poor risk-reward ratio: {risk_reward_ratio:.2f} < 2.0")
+                    return False
             
-            # Additional position size validation
-            min_position_size = 50  # Minimum $50 position
+            # Dynamic position size limits
+            min_position_size = 25  # Reduced minimum for more flexibility
+            max_position_size = portfolio_value * 0.15  # More conservative max size
+            
             if position_value < min_position_size:
                 self.logger.warning(f"Position size too small: ${position_value:.2f} < ${min_position_size}")
                 return False
             
-            max_position_size = portfolio_value * 0.2  # Max 20% of portfolio
             if position_value > max_position_size:
                 self.logger.warning(f"Position size too large: ${position_value:.2f} > ${max_position_size:.2f}")
                 return False
@@ -178,9 +206,47 @@ class RiskManager:
             self.logger.error(f"Error calculating Kelly position size: {str(e)}")
             return 0.01  # 1% fallback
     
+    def get_adaptive_position_multiplier(self) -> float:
+        """
+        Calculate position size multiplier based on recent performance.
+        
+        Returns:
+            Multiplier between 0.3 and 1.5
+        """
+        if len(self.recent_trades) < 3:
+            return 1.0  # Default multiplier
+        
+        # Calculate win rate from recent trades
+        wins = sum(1 for trade in self.recent_trades if trade > 0)
+        win_rate = wins / len(self.recent_trades)
+        
+        # Calculate average profit/loss ratio
+        profitable_trades = [trade for trade in self.recent_trades if trade > 0]
+        losing_trades = [abs(trade) for trade in self.recent_trades if trade < 0]
+        
+        if profitable_trades and losing_trades:
+            avg_win = sum(profitable_trades) / len(profitable_trades)
+            avg_loss = sum(losing_trades) / len(losing_trades)
+            profit_factor = avg_win / avg_loss if avg_loss > 0 else 1.0
+        else:
+            profit_factor = 1.0
+        
+        # Adaptive multiplier based on performance
+        if win_rate > 0.7 and profit_factor > 2.0:
+            multiplier = 1.3  # Increase size on good performance
+        elif win_rate > 0.5 and profit_factor > 1.5:
+            multiplier = 1.1  # Slight increase
+        elif win_rate < 0.3 or profit_factor < 0.8:
+            multiplier = 0.5  # Reduce size on poor performance
+        else:
+            multiplier = 1.0  # Default
+        
+        self.logger.debug(f"Adaptive multiplier: {multiplier:.2f} (Win rate: {win_rate:.2f}, Profit factor: {profit_factor:.2f})")
+        return multiplier
+    
     def update_daily_pnl(self, trade_pnl: float):
         """
-        Update daily P&L tracking.
+        Enhanced daily P&L tracking with performance analysis.
         
         Args:
             trade_pnl: P&L from completed trade
@@ -188,7 +254,28 @@ class RiskManager:
         self._reset_daily_tracking()
         self.daily_pnl += trade_pnl
         
-        self.logger.debug(f"Daily P&L updated: ${self.daily_pnl:.2f}")
+        # Track consecutive losses/wins
+        if trade_pnl < 0:
+            self.consecutive_losses += 1
+        else:
+            self.consecutive_losses = 0  # Reset on profitable trade
+        
+        # Update recent trades (keep last 10)
+        self.recent_trades.append(trade_pnl)
+        if len(self.recent_trades) > 10:
+            self.recent_trades.pop(0)
+        
+        # Calculate current drawdown
+        if trade_pnl < 0:
+            self.current_drawdown += abs(trade_pnl)
+        else:
+            self.current_drawdown = max(0, self.current_drawdown - trade_pnl * 0.5)  # Reduce drawdown on profits
+        
+        self.logger.debug(f"Daily P&L updated: ${self.daily_pnl:.2f}, Consecutive losses: {self.consecutive_losses}")
+        
+        # Alert on significant drawdown
+        if self.current_drawdown > 200:  # $200 drawdown threshold
+            self.logger.warning(f"Significant drawdown detected: ${self.current_drawdown:.2f}")
     
     def check_position_limits(self, current_positions: int) -> bool:
         """
