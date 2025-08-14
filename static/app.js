@@ -2073,13 +2073,21 @@ function updateConnectionStatusDisplay(apiStatus) {
     console.log('Updating connection status display with:', apiStatus);
     
     if (apiStatus.status === "connected") {
+        // Only restart uptime if we were previously disconnected
+        const wasDisconnected = window.connectionLost === true;
+        
         // Stop any reconnection countdown since we're connected
         if (window.tradingApp) {
             window.tradingApp.stopReconnectionCountdown();
             // Restart trading countdown when connection is restored
             window.tradingApp.startCountdown();
-            // Restart uptime counter when connection is restored (resets the timer)
-            window.tradingApp.restartUptimeCounter();
+            // Only restart uptime counter if we were previously disconnected
+            if (wasDisconnected) {
+                window.tradingApp.restartUptimeCounter();
+            } else {
+                // Just start it if it hasn't been started yet
+                window.tradingApp.startUptimeCounter();
+            }
         }
         
         // Update new top-right corner connection status (if elements exist)
