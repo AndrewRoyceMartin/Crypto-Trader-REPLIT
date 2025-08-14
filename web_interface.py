@@ -443,17 +443,17 @@ def rebalance_crypto_portfolio():
             db_manager.reset_all_positions(mode='paper')  # Clear paper trading positions
             db_manager.reset_portfolio_snapshots(mode='paper')  # Clear portfolio history
         
-        # Reset all positions to $100 each but keep price history
+        # Reset all positions to $10 each but keep price history
         portfolio_data = crypto_portfolio.get_portfolio_data()
         for symbol, data in portfolio_data.items():
             current_price = data["current_price"]
-            new_quantity = 100.0 / current_price
+            new_quantity = 10.0 / current_price
             
             crypto_portfolio.portfolio_data[symbol]["quantity"] = new_quantity
-            crypto_portfolio.portfolio_data[symbol]["initial_value"] = 100.0
+            crypto_portfolio.portfolio_data[symbol]["initial_value"] = 10.0
             crypto_portfolio.portfolio_data[symbol]["current_value"] = new_quantity * current_price
-            crypto_portfolio.portfolio_data[symbol]["pnl"] = crypto_portfolio.portfolio_data[symbol]["current_value"] - 100.0
-            crypto_portfolio.portfolio_data[symbol]["pnl_percent"] = (crypto_portfolio.portfolio_data[symbol]["pnl"] / 100.0) * 100
+            crypto_portfolio.portfolio_data[symbol]["pnl"] = crypto_portfolio.portfolio_data[symbol]["current_value"] - 10.0
+            crypto_portfolio.portfolio_data[symbol]["pnl_percent"] = (crypto_portfolio.portfolio_data[symbol]["pnl"] / 10.0) * 100
         
         crypto_portfolio.save_portfolio_state()
         
@@ -488,8 +488,8 @@ def reset_crypto_portfolio():
             db_manager.reset_all_positions(mode='paper')  # Clear paper trading positions
             db_manager.reset_portfolio_snapshots(mode='paper')  # Clear portfolio history
         
-        # Reinitialize the entire portfolio
-        crypto_portfolio = CryptoPortfolioManager(initial_value_per_crypto=100.0)
+        # Reinitialize the entire portfolio with $10 per crypto
+        crypto_portfolio = CryptoPortfolioManager(initial_value_per_crypto=10.0)
         crypto_portfolio.save_portfolio_state()
         
         # Populate initial trading data using the dedicated API
@@ -506,6 +506,51 @@ def reset_crypto_portfolio():
         
     except Exception as e:
         app.logger.error("Error resetting portfolio: %s", e)
+        return jsonify({"success": False, "error": str(e)}), 500
+
+@app.route("/api/test-reset-portfolio", methods=["POST"])
+def test_reset_crypto_portfolio():
+    """Test reset - completely reset the portfolio to $10 per crypto and clear all database tables."""
+    global crypto_portfolio
+    try:
+        initialize_system()
+        
+        # Clear ALL trading data from database (both paper and live modes)
+        if db_manager:
+            # Clear paper trading data
+            db_manager.reset_all_trades(mode='paper')
+            db_manager.reset_all_positions(mode='paper') 
+            db_manager.reset_portfolio_snapshots(mode='paper')
+            
+            # Clear live trading data (if any)
+            db_manager.reset_all_trades(mode='live')
+            db_manager.reset_all_positions(mode='live')
+            db_manager.reset_portfolio_snapshots(mode='live')
+            
+            app.logger.info("All database tables cleared successfully")
+        
+        # Completely reinitialize crypto portfolio with $10 per crypto
+        crypto_portfolio = CryptoPortfolioManager(initial_value_per_crypto=10.0)
+        crypto_portfolio.save_portfolio_state()
+        
+        # Populate fresh initial trades reflecting the $10 investments
+        try:
+            with app.test_client() as test_client:
+                result = test_client.post('/api/populate-initial-trades')
+                result_data = result.get_json()
+                trades_added = result_data.get('trades_added', 0) if result_data and result_data.get('success') else 0
+        except Exception as e:
+            app.logger.warning(f"Error populating initial trades: {e}")
+            trades_added = 0
+        
+        app.logger.info(f"Test reset completed: Portfolio reset to $10 per crypto, {trades_added} trades created")
+        return jsonify({
+            "success": True, 
+            "message": f"TEST RESET COMPLETE: Portfolio reset to $10 per crypto, all database tables cleared, {trades_added} initial $10 purchase trades created"
+        })
+        
+    except Exception as e:
+        app.logger.error("Error in test reset: %s", e)
         return jsonify({"success": False, "error": str(e)}), 500
 
 @app.route("/api/clear-trading-data", methods=["POST"])

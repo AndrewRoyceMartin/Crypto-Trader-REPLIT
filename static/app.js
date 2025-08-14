@@ -1233,7 +1233,7 @@ function exportPortfolio() {
 }
 
 function resetPortfolio() {
-    if (confirm('Are you sure you want to reset all cryptocurrency positions to $100 each? This will lose all current price history and clear all trades and open positions from the database.')) {
+    if (confirm('Are you sure you want to reset all cryptocurrency positions to $10 each? This will lose all current price history and clear all trades and open positions from the database.')) {
         fetch('/api/reset-portfolio', { method: 'POST' })
             .then(response => response.json())
             .then(data => {
@@ -1246,6 +1246,28 @@ function resetPortfolio() {
             })
             .catch(error => {
                 window.tradingApp.showToast('Error resetting portfolio: ' + error.message, 'danger');
+            });
+    }
+}
+
+function testResetPortfolio() {
+    if (confirm('TEST RESET: This will completely reset all cryptocurrency positions to $10 each and clear ALL database tables (trades, positions, history). This is for testing purposes only. Continue?')) {
+        fetch('/api/test-reset-portfolio', { method: 'POST' })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    window.tradingApp.showToast('TEST RESET COMPLETE: ' + data.message, 'warning');
+                    refreshCryptoPortfolio();
+                    // Force refresh the page after a short delay to show all changes
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 2000);
+                } else {
+                    window.tradingApp.showToast('Test reset failed: ' + data.error, 'danger');
+                }
+            })
+            .catch(error => {
+                window.tradingApp.showToast('Error during test reset: ' + error.message, 'danger');
             });
     }
 }
