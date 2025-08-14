@@ -393,6 +393,9 @@ class TradingApp {
             // Update crypto table
             this.updateCryptoTable(data.cryptocurrencies);
             
+            // Restore table state after update
+            restoreTableState();
+            
         } catch (error) {
             console.error('Error updating crypto portfolio:', error);
         }
@@ -952,8 +955,89 @@ function refreshCryptoPortfolio() {
     }
 }
 
+// State management for table sorting and filtering
+const tableState = {
+    portfolio: {
+        sortColumn: null,
+        sortDirection: 'asc',
+        filters: {}
+    },
+    trades: {
+        sortColumn: null,
+        sortDirection: 'asc',
+        filters: {}
+    },
+    performance: {
+        sortColumn: null,
+        sortDirection: 'asc',
+        filters: {}
+    }
+};
+
+// Save current filter states
+function saveTableFilters() {
+    tableState.portfolio.filters = {
+        text: document.getElementById('portfolio-filter')?.value || '',
+        pnl: document.getElementById('portfolio-pnl-filter')?.value || '',
+        value: document.getElementById('portfolio-value-filter')?.value || ''
+    };
+    
+    tableState.trades.filters = {
+        text: document.getElementById('trades-filter')?.value || '',
+        action: document.getElementById('trades-action-filter')?.value || '',
+        pnl: document.getElementById('trades-pnl-filter')?.value || ''
+    };
+    
+    tableState.performance.filters = {
+        text: document.getElementById('performance-filter')?.value || '',
+        pnl: document.getElementById('performance-pnl-filter')?.value || '',
+        return: document.getElementById('performance-return-filter')?.value || '',
+        status: document.getElementById('performance-status-filter')?.value || ''
+    };
+}
+
+// Restore filter states
+function restoreTableFilters() {
+    // Portfolio filters
+    if (document.getElementById('portfolio-filter')) {
+        document.getElementById('portfolio-filter').value = tableState.portfolio.filters.text || '';
+        document.getElementById('portfolio-pnl-filter').value = tableState.portfolio.filters.pnl || '';
+        document.getElementById('portfolio-value-filter').value = tableState.portfolio.filters.value || '';
+    }
+    
+    // Trades filters
+    if (document.getElementById('trades-filter')) {
+        document.getElementById('trades-filter').value = tableState.trades.filters.text || '';
+        document.getElementById('trades-action-filter').value = tableState.trades.filters.action || '';
+        document.getElementById('trades-pnl-filter').value = tableState.trades.filters.pnl || '';
+    }
+    
+    // Performance filters
+    if (document.getElementById('performance-filter')) {
+        document.getElementById('performance-filter').value = tableState.performance.filters.text || '';
+        document.getElementById('performance-pnl-filter').value = tableState.performance.filters.pnl || '';
+        document.getElementById('performance-return-filter').value = tableState.performance.filters.return || '';
+        document.getElementById('performance-status-filter').value = tableState.performance.filters.status || '';
+    }
+}
+
+// Apply saved sorting to table
+function applySavedSorting(tableType) {
+    const state = tableState[tableType];
+    if (state.sortColumn !== null) {
+        if (tableType === 'portfolio') {
+            sortPortfolio(state.sortColumn, false);
+        } else if (tableType === 'trades') {
+            sortTradesTable(state.sortColumn, false);
+        } else if (tableType === 'performance') {
+            sortPerformanceTable(state.sortColumn, false);
+        }
+    }
+}
+
 // Filter Functions for Tables
 function filterPortfolioTable() {
+    saveTableFilters(); // Save current state
     const textFilter = document.getElementById('portfolio-filter').value.toLowerCase();
     const pnlFilter = document.getElementById('portfolio-pnl-filter').value;
     const valueFilter = document.getElementById('portfolio-value-filter').value;
@@ -1006,10 +1090,13 @@ function clearPortfolioFilters() {
     document.getElementById('portfolio-filter').value = '';
     document.getElementById('portfolio-pnl-filter').value = '';
     document.getElementById('portfolio-value-filter').value = '';
+    // Clear state
+    tableState.portfolio.filters = {};
     filterPortfolioTable();
 }
 
 function filterTradesTable() {
+    saveTableFilters(); // Save current state
     const textFilter = document.getElementById('trades-filter').value.toLowerCase();
     const actionFilter = document.getElementById('trades-action-filter').value;
     const pnlFilter = document.getElementById('trades-pnl-filter').value;
@@ -1056,10 +1143,13 @@ function clearTradesFilters() {
     document.getElementById('trades-filter').value = '';
     document.getElementById('trades-action-filter').value = '';
     document.getElementById('trades-pnl-filter').value = '';
+    // Clear state
+    tableState.trades.filters = {};
     filterTradesTable();
 }
 
 function filterPerformanceTable() {
+    saveTableFilters(); // Save current state
     const textFilter = document.getElementById('performance-filter').value.toLowerCase();
     const pnlFilter = document.getElementById('performance-pnl-filter').value;
     const returnFilter = document.getElementById('performance-return-filter').value;
@@ -1122,7 +1212,33 @@ function clearPerformanceFilters() {
     document.getElementById('performance-pnl-filter').value = '';
     document.getElementById('performance-return-filter').value = '';
     document.getElementById('performance-status-filter').value = '';
+    // Clear state
+    tableState.performance.filters = {};
     filterPerformanceTable();
+}
+
+// Hook into data update functions to restore state
+function restoreTableState() {
+    // Wait a bit for tables to be populated
+    setTimeout(() => {
+        restoreTableFilters();
+        
+        // Apply saved sorting
+        applySavedSorting('portfolio');
+        applySavedSorting('trades');
+        applySavedSorting('performance');
+        
+        // Re-apply filters
+        if (document.getElementById('portfolio-filter')) {
+            filterPortfolioTable();
+        }
+        if (document.getElementById('trades-filter')) {
+            filterTradesTable();
+        }
+        if (document.getElementById('performance-filter')) {
+            filterPerformanceTable();
+        }
+    }, 100);
 }
 
 // Trade a specific cryptocurrency from the portfolio
@@ -2126,18 +2242,25 @@ function displayPositionsData(data) {
 // Enhanced Table Sorting Functions with Visual Feedback
 window.perfSortState = { column: -1, direction: 'desc' };
 
-function sortPerformanceTable(columnIndex) {
+function sortPerformanceTable(columnIndex, toggleDirection = true) {
     const table = document.getElementById('performance-table');
     const tbody = table.querySelector('tbody');
     const rows = Array.from(tbody.querySelectorAll('tr'));
     
-    // Determine sort direction
-    if (window.perfSortState.column === columnIndex) {
-        window.perfSortState.direction = window.perfSortState.direction === 'asc' ? 'desc' : 'asc';
-    } else {
-        window.perfSortState.column = columnIndex;
-        window.perfSortState.direction = 'desc';
+    // Save state to tableState
+    if (toggleDirection) {
+        if (tableState.performance.sortColumn === columnIndex) {
+            tableState.performance.sortDirection = tableState.performance.sortDirection === 'asc' ? 'desc' : 'asc';
+        } else {
+            tableState.performance.sortColumn = columnIndex;
+            tableState.performance.sortDirection = 'desc';
+        }
     }
+    
+    // Update legacy sort state for compatibility
+    window.perfSortState = window.perfSortState || {};
+    window.perfSortState.column = tableState.performance.sortColumn;
+    window.perfSortState.direction = tableState.performance.sortDirection;
     
     // Clear all sort indicators and set active one
     table.querySelectorAll('th i.fas').forEach(icon => {
@@ -2145,7 +2268,7 @@ function sortPerformanceTable(columnIndex) {
     });
     const currentHeader = table.querySelector(`th:nth-child(${columnIndex + 1}) i.fas`);
     if (currentHeader) {
-        currentHeader.className = `fas fa-sort-${window.perfSortState.direction === 'asc' ? 'up' : 'down'} text-primary ms-1`;
+        currentHeader.className = `fas fa-sort-${tableState.performance.sortDirection === 'asc' ? 'up' : 'down'} text-white ms-1`;
     }
     
     rows.sort((a, b) => {
@@ -2163,7 +2286,7 @@ function sortPerformanceTable(columnIndex) {
             result = aVal.localeCompare(bVal);
         }
         
-        return window.perfSortState.direction === 'asc' ? result : -result;
+        return tableState.performance.sortDirection === 'asc' ? result : -result;
     });
     
     rows.forEach(row => tbody.appendChild(row));
@@ -2216,7 +2339,7 @@ function sortPositionsTable(columnIndex) {
 
 window.tradesSortState = { column: -1, direction: 'desc' };
 
-function sortTradesTable(columnIndex) {
+function sortTradesTable(columnIndex, toggleDirection = true) {
     const table = document.querySelector('#trades-table').closest('table');
     const tbody = document.getElementById('trades-table');
     const rows = Array.from(tbody.querySelectorAll('tr')).filter(row => row.cells.length > 1);
@@ -2224,13 +2347,20 @@ function sortTradesTable(columnIndex) {
     // Return early if no data to sort
     if (rows.length === 0) return;
     
-    // Determine sort direction
-    if (window.tradesSortState.column === columnIndex) {
-        window.tradesSortState.direction = window.tradesSortState.direction === 'asc' ? 'desc' : 'asc';
-    } else {
-        window.tradesSortState.column = columnIndex;
-        window.tradesSortState.direction = 'desc';
+    // Save state to tableState
+    if (toggleDirection) {
+        if (tableState.trades.sortColumn === columnIndex) {
+            tableState.trades.sortDirection = tableState.trades.sortDirection === 'asc' ? 'desc' : 'asc';
+        } else {
+            tableState.trades.sortColumn = columnIndex;
+            tableState.trades.sortDirection = 'desc';
+        }
     }
+    
+    // Update legacy sort state for compatibility
+    window.tradesSortState = window.tradesSortState || {};
+    window.tradesSortState.column = tableState.trades.sortColumn;
+    window.tradesSortState.direction = tableState.trades.sortDirection;
     
     // Clear all sort indicators and set active one
     table.querySelectorAll('th i.fas').forEach(icon => {
@@ -2238,7 +2368,7 @@ function sortTradesTable(columnIndex) {
     });
     const currentHeader = document.getElementById(`trades-sort-${columnIndex}`);
     if (currentHeader) {
-        currentHeader.className = `fas fa-sort-${window.tradesSortState.direction === 'asc' ? 'up' : 'down'} text-primary`;
+        currentHeader.className = `fas fa-sort-${tableState.trades.sortDirection === 'asc' ? 'up' : 'down'} text-white`;
     }
     
     rows.sort((a, b) => {
@@ -2260,7 +2390,7 @@ function sortTradesTable(columnIndex) {
             result = aVal.localeCompare(bVal);
         }
         
-        return window.tradesSortState.direction === 'asc' ? result : -result;
+        return tableState.trades.sortDirection === 'asc' ? result : -result;
     });
     
     rows.forEach(row => tbody.appendChild(row));
@@ -2272,18 +2402,25 @@ function sortTradesTable(columnIndex) {
 // Enhanced sorting for main crypto portfolio table
 window.portfolioSortState = { column: '', direction: 'desc' };
 
-function sortPortfolio(columnType) {
+function sortPortfolio(columnType, toggleDirection = true) {
     const table = document.querySelector('#crypto-portfolio-table').closest('table');
     const tbody = document.getElementById('crypto-portfolio-table');
     const rows = Array.from(tbody.querySelectorAll('tr')).filter(row => row.cells.length > 1);
     
-    // Determine sort direction
-    if (window.portfolioSortState.column === columnType) {
-        window.portfolioSortState.direction = window.portfolioSortState.direction === 'asc' ? 'desc' : 'asc';
-    } else {
-        window.portfolioSortState.column = columnType;
-        window.portfolioSortState.direction = 'desc';
+    // Save state to tableState
+    if (toggleDirection) {
+        if (tableState.portfolio.sortColumn === columnType) {
+            tableState.portfolio.sortDirection = tableState.portfolio.sortDirection === 'asc' ? 'desc' : 'asc';
+        } else {
+            tableState.portfolio.sortColumn = columnType;
+            tableState.portfolio.sortDirection = 'desc';
+        }
     }
+    
+    // Update legacy sort state for compatibility
+    window.portfolioSortState = window.portfolioSortState || {};
+    window.portfolioSortState.column = tableState.portfolio.sortColumn;
+    window.portfolioSortState.direction = tableState.portfolio.sortDirection;
     
     // Clear all sort indicators
     table.querySelectorAll('th i.fas').forEach(icon => {
@@ -2293,7 +2430,7 @@ function sortPortfolio(columnType) {
     // Set active sort indicator
     const currentIcon = document.getElementById(`sort-${columnType}`);
     if (currentIcon) {
-        currentIcon.className = `fas fa-sort-${window.portfolioSortState.direction === 'asc' ? 'up' : 'down'} text-primary`;
+        currentIcon.className = `fas fa-sort-${tableState.portfolio.sortDirection === 'asc' ? 'up' : 'down'} text-white`;
     }
     
     // Sort rows based on column type
@@ -2360,7 +2497,7 @@ function sortPortfolio(columnType) {
             result = String(aVal).localeCompare(String(bVal));
         }
         
-        return window.portfolioSortState.direction === 'asc' ? result : -result;
+        return tableState.portfolio.sortDirection === 'asc' ? result : -result;
     });
     
     // Re-append sorted rows
