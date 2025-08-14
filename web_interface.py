@@ -718,8 +718,10 @@ def reset_entire_program():
             os.remove(state_file)
             app.logger.info(f"Removed existing portfolio state file: {state_file}")
         
-        # Completely reinitialize crypto portfolio with $10 per crypto
+        # Completely reinitialize crypto portfolio with $10 per crypto (DO NOT load old state)
         crypto_portfolio = CryptoPortfolioManager(initial_value_per_crypto=10.0)
+        # Force fresh initialization without loading any existing state
+        crypto_portfolio.portfolio_data = crypto_portfolio._initialize_portfolio()
         crypto_portfolio.save_portfolio_state()
         
         # Also update the global reference to the new portfolio

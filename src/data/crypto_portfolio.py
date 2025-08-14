@@ -27,8 +27,13 @@ class CryptoPortfolioManager:
         self.logger = logging.getLogger(__name__)
         self.crypto_list = self._get_top_100_cryptos()
         self.price_api = CryptoPriceAPI()
-        self.portfolio_data = self._initialize_portfolio()
+        self.portfolio_data = {}  # Initialize empty first
         self.price_history = {}
+        
+        # Always do fresh initialization - don't load old state in constructor
+        self.portfolio_data = self._initialize_portfolio()
+        
+        self.logger.info(f"Initialized portfolio with ${self.initial_value} per cryptocurrency")
         
         # Test API connection on startup
         api_status = self.price_api.test_connection()
