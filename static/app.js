@@ -23,6 +23,11 @@ class TradingApp {
         this.initializeCharts();
         this.startAutoUpdate();
         this.loadConfig();
+        
+        // Initialize news ticker
+        setTimeout(() => {
+            initializeNewsTicker();
+        }, 2000);
     }
     
     setupEventListeners() {
@@ -54,6 +59,9 @@ class TradingApp {
         window.addEventListener('beforeunload', () => {
             this.stopAutoUpdate();
         });
+        
+        // Initialize news ticker
+        this.initializeNewsTicker();
     }
     
     startAutoUpdate() {
@@ -953,6 +961,57 @@ function refreshCryptoPortfolio() {
     if (window.tradingDashboard) {
         window.tradingDashboard.updateCryptoPortfolio();
     }
+}
+
+// News ticker functionality
+function initializeNewsTicker() {
+    updateNewsTicker();
+    // Update news every 10 minutes
+    setInterval(() => {
+        updateNewsTicker();
+    }, 10 * 60 * 1000);
+}
+
+async function updateNewsTicker() {
+    try {
+        const response = await fetch('/api/crypto-news');
+        if (!response.ok) return;
+        
+        const data = await response.json();
+        displayNews(data.articles || []);
+    } catch (error) {
+        console.error('Error fetching news:', error);
+    }
+}
+
+function displayNews(articles) {
+    const ticker = document.getElementById('news-ticker');
+    if (!ticker || !articles.length) return;
+    
+    // Create news items
+    const newsItems = articles.slice(0, 5).map(article => {
+        const timeAgo = getTimeAgo(new Date(article.publishedAt));
+        return `<span class="news-item text-light">${article.title} (${timeAgo})</span>`;
+    }).join('');
+    
+    ticker.innerHTML = newsItems;
+}
+
+function getTimeAgo(date) {
+    const now = new Date();
+    const diffInMinutes = Math.floor((now - date) / (1000 * 60));
+    
+    if (diffInMinutes < 60) {
+        return `${diffInMinutes}m ago`;
+    } else if (diffInMinutes < 1440) {
+        return `${Math.floor(diffInMinutes / 60)}h ago`;
+    } else {
+        return `${Math.floor(diffInMinutes / 1440)}d ago`;
+    }
+}
+
+function refreshNews() {
+    updateNewsTicker();
 }
 
 // State management for table sorting and filtering

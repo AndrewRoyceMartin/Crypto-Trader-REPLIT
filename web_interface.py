@@ -6,6 +6,7 @@ Provides a dashboard for monitoring and controlling trading operations.
 from flask import Flask, render_template, jsonify, request
 import json
 import logging
+import requests
 from datetime import datetime, timedelta
 import threading
 import os
@@ -1724,6 +1725,57 @@ def export_ato_tax_statement():
     except Exception as e:
         app.logger.error("Error exporting ATO tax statement: %s", e)
         return jsonify({"success": False, "error": str(e)}), 500
+
+@app.route("/api/crypto-news")
+def get_crypto_news():
+    """Get latest cryptocurrency news from multiple sources."""
+    try:
+        # Create simulated crypto news for demonstration
+        # In production, replace with real news APIs like NewsAPI.org
+        current_time = datetime.now()
+        
+        fake_news = [
+            {
+                "title": "Bitcoin Breaks $45,000 Resistance, Eyes $50,000 Target",
+                "publishedAt": (current_time - timedelta(minutes=15)).isoformat(),
+                "source": "CryptoDaily"
+            },
+            {
+                "title": "Ethereum ETF Approval Drives Institutional Interest",
+                "publishedAt": (current_time - timedelta(minutes=45)).isoformat(),
+                "source": "BlockNews"
+            },
+            {
+                "title": "Federal Reserve Hints at Crypto-Friendly Regulations",
+                "publishedAt": (current_time - timedelta(hours=1, minutes=20)).isoformat(),
+                "source": "FinancialTimes"
+            },
+            {
+                "title": "Major Mining Operation Expands with Renewable Energy",
+                "publishedAt": (current_time - timedelta(hours=2, minutes=10)).isoformat(),
+                "source": "GreenCrypto"
+            },
+            {
+                "title": "DeFi Protocol Launches Cross-Chain Bridge Solution",
+                "publishedAt": (current_time - timedelta(hours=3, minutes=30)).isoformat(),
+                "source": "DeFiPulse"
+            },
+            {
+                "title": "Whale Activity Increases in Major Altcoins",
+                "publishedAt": (current_time - timedelta(hours=4, minutes=5)).isoformat(),
+                "source": "WhaleAlert"
+            }
+        ]
+        
+        return jsonify({
+            "status": "success",
+            "articles": fake_news,
+            "message": "Demo news feed - Connect NewsAPI.org for live data"
+        })
+        
+    except Exception as e:
+        app.logger.error("Error fetching crypto news: %s", e)
+        return jsonify({"error": str(e)}), 500
 
 @app.errorhandler(404)
 def not_found(_):
