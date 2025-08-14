@@ -701,19 +701,29 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Trading functions
 async function resetEntireProgram() {
-    if (confirm('Are you sure you want to reset the entire trading system? This will clear all data and cannot be undone.')) {
+    if (confirm('Are you sure you want to reset the entire trading system? This will reset all portfolio values back to $10 each and clear all trading data. This cannot be undone.')) {
         try {
-            const response = await fetch('/api/reset-entire-program', { method: 'POST' });
+            // Call the web_interface.py reset endpoint which properly handles portfolio reset
+            const response = await fetch('/api/reset-entire-program', { 
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
             const data = await response.json();
             
             if (data.success) {
-                window.tradingApp.showToast('System reset successfully!', 'success');
-                setTimeout(() => location.reload(), 2000);
+                window.tradingApp.showToast('Portfolio reset successfully! All values back to $10 each.', 'success');
+                // Reload after a short delay to show the message
+                setTimeout(() => {
+                    location.reload();
+                }, 2500);
             } else {
-                window.tradingApp.showToast('Failed to reset system: ' + (data.error || 'Unknown error'), 'error');
+                window.tradingApp.showToast('Failed to reset portfolio: ' + (data.error || 'Unknown error'), 'error');
             }
         } catch (error) {
-            window.tradingApp.showToast('Error resetting system: ' + error.message, 'error');
+            console.error('Reset error:', error);
+            window.tradingApp.showToast('Error resetting portfolio: ' + error.message, 'error');
         }
     }
 }

@@ -71,8 +71,8 @@ def initialize_system():
     setup_logging(config.get("logging", "level", "INFO"))
     db_manager = DatabaseManager()
     
-    # Initialize crypto portfolio with 100 cryptos at $100 each
-    crypto_portfolio = CryptoPortfolioManager(initial_value_per_crypto=100.0)
+    # Initialize crypto portfolio with 103 cryptos at $10 each
+    crypto_portfolio = CryptoPortfolioManager(initial_value_per_crypto=10.0)
     crypto_portfolio.load_portfolio_state()  # Load existing state if available
     
     # Start background price simulation
@@ -705,6 +705,9 @@ def reset_entire_program():
         # Completely reinitialize crypto portfolio with $10 per crypto
         crypto_portfolio = CryptoPortfolioManager(initial_value_per_crypto=10.0)
         crypto_portfolio.save_portfolio_state()
+        
+        # Also update the global reference to the new portfolio
+        globals()['crypto_portfolio'] = crypto_portfolio
         
         # Populate fresh initial trades reflecting the $10 investments
         try:
