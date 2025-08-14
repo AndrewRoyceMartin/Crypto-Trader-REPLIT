@@ -925,6 +925,16 @@ class TradingApp {
 
 // Global functions for button actions
 async function startTrading(mode, tradingMode = 'single') {
+    // Check connection status before allowing trading
+    if (window.connectionLost === true) {
+        if (window.tradingApp && window.tradingApp.showToast) {
+            window.tradingApp.showToast('Cannot start trading: API connection lost. Please wait for reconnection.', 'danger');
+        } else {
+            alert('Cannot start trading: API connection lost. Please wait for reconnection.');
+        }
+        return;
+    }
+    
     if (mode === 'live') {
         // Show confirmation modal for live trading
         const confirmModal = new bootstrap.Modal(document.getElementById('liveConfirmModal'));
@@ -956,6 +966,16 @@ async function confirmLiveTrading() {
 }
 
 async function executeStartTrading(mode, tradingMode = 'single') {
+    // Double-check connection status before executing
+    if (window.connectionLost === true) {
+        if (window.tradingApp && window.tradingApp.showToast) {
+            window.tradingApp.showToast('Trading aborted: API connection lost during execution.', 'danger');
+        } else {
+            alert('Trading aborted: API connection lost during execution.');
+        }
+        return;
+    }
+    
     // Use default values since symbol-select and timeframe-select don't exist on this page
     const symbol = 'BTC-USD'; // Default symbol
     const timeframe = '1h'; // Default timeframe
