@@ -208,9 +208,13 @@ class TradingApp {
     
     async updateCryptoPortfolio() {
         try {
+            // Show loading progress
+            this.updateLoadingProgress(20, 'Fetching cryptocurrency data...');
+            
             const response = await fetch('/api/crypto-portfolio');
             if (!response.ok) return;
             
+            this.updateLoadingProgress(60, 'Processing market data...');
             const data = await response.json();
             
             // CRITICAL: Check for failed price retrieval and display warnings
@@ -231,13 +235,21 @@ class TradingApp {
             
             // Update crypto symbols display and table
             if (data.cryptocurrencies) {
+                this.updateLoadingProgress(80, 'Updating displays...');
                 this.updateCryptoSymbols(data.cryptocurrencies);
                 this.updateCryptoTable(data.cryptocurrencies);
                 this.updatePortfolioSummary(data.summary, data.cryptocurrencies);
+                this.updateLoadingProgress(100, 'Complete!');
+                
+                // Hide progress bar after completion
+                setTimeout(() => {
+                    this.hideLoadingProgress();
+                }, 1000);
             }
             
         } catch (error) {
             console.error('Error updating crypto portfolio:', error);
+            this.updateLoadingProgress(0, 'Error loading data');
         }
     }
     
@@ -347,6 +359,27 @@ class TradingApp {
             
             tableBody.appendChild(row);
         });
+    }
+    
+    updateLoadingProgress(percent, message = '') {
+        const progressBar = document.getElementById('crypto-loading-progress');
+        const progressText = document.getElementById('crypto-loading-text');
+        
+        if (progressBar) {
+            progressBar.style.width = `${percent}%`;
+            progressBar.setAttribute('aria-valuenow', percent);
+        }
+        
+        if (progressText) {
+            progressText.textContent = message || `${percent}%`;
+        }
+    }
+    
+    hideLoadingProgress() {
+        const loadingRow = document.querySelector('#crypto-table tr');
+        if (loadingRow && loadingRow.querySelector('.progress')) {
+            // Progress is hidden when table gets populated with actual data
+        }
     }
     
     showToast(message, type = 'info') {
