@@ -831,10 +831,20 @@ class TradingApp {
         const toast = document.createElement('div');
         toast.className = `alert alert-${type} position-fixed top-0 end-0 m-3`;
         toast.style.zIndex = '9999';
-        toast.innerHTML = `
-            <button type="button" class="btn-close" onclick="this.parentElement.remove()"></button>
-            ${message}
-        `;
+        
+        // Create close button safely
+        const closeButton = document.createElement('button');
+        closeButton.type = 'button';
+        closeButton.className = 'btn-close';
+        closeButton.onclick = function() { this.parentElement.remove(); };
+        
+        // Add message as text content (prevents XSS)
+        const messageSpan = document.createElement('span');
+        messageSpan.textContent = message;
+        
+        // Append elements safely
+        toast.appendChild(closeButton);
+        toast.appendChild(messageSpan);
         
         document.body.appendChild(toast);
         
@@ -1630,45 +1640,88 @@ function updateConnectionStatusDisplay(apiStatus) {
 
 // Show connection warning popup
 function showConnectionWarning(errorMessage) {
-    // Create a Bootstrap alert modal
-    const alertHtml = `
-        <div class="modal fade" id="connectionWarningModal" tabindex="-1" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered">
-                <div class="modal-content border-warning">
-                    <div class="modal-header bg-warning text-dark">
-                        <h5 class="modal-title">
-                            <i class="fas fa-exclamation-triangle me-2"></i>
-                            Connection Warning
-                        </h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                    </div>
-                    <div class="modal-body">
-                        <div class="alert alert-warning mb-3">
-                            <strong>API Connection Lost!</strong>
-                        </div>
-                        <p>The connection to the cryptocurrency price API has been interrupted.</p>
-                        <p><strong>Error:</strong> ${errorMessage}</p>
-                        <p class="mb-0">The system will continue using simulated prices and automatically retry the connection.</p>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-warning" data-bs-dismiss="modal">
-                            <i class="fas fa-check me-1"></i>
-                            Understood
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    `;
-    
     // Remove existing modal if present
     const existingModal = document.getElementById('connectionWarningModal');
     if (existingModal) {
         existingModal.remove();
     }
     
+    // Create modal elements safely
+    const modal = document.createElement('div');
+    modal.className = 'modal fade';
+    modal.id = 'connectionWarningModal';
+    modal.setAttribute('tabindex', '-1');
+    modal.setAttribute('aria-hidden', 'true');
+    
+    const modalDialog = document.createElement('div');
+    modalDialog.className = 'modal-dialog modal-dialog-centered';
+    
+    const modalContent = document.createElement('div');
+    modalContent.className = 'modal-content border-warning';
+    
+    // Header
+    const modalHeader = document.createElement('div');
+    modalHeader.className = 'modal-header bg-warning text-dark';
+    
+    const modalTitle = document.createElement('h5');
+    modalTitle.className = 'modal-title';
+    modalTitle.innerHTML = '<i class="fas fa-exclamation-triangle me-2"></i>Connection Warning';
+    
+    const closeButton = document.createElement('button');
+    closeButton.type = 'button';
+    closeButton.className = 'btn-close';
+    closeButton.setAttribute('data-bs-dismiss', 'modal');
+    
+    modalHeader.appendChild(modalTitle);
+    modalHeader.appendChild(closeButton);
+    
+    // Body
+    const modalBody = document.createElement('div');
+    modalBody.className = 'modal-body';
+    
+    const alertDiv = document.createElement('div');
+    alertDiv.className = 'alert alert-warning mb-3';
+    alertDiv.innerHTML = '<strong>API Connection Lost!</strong>';
+    
+    const p1 = document.createElement('p');
+    p1.textContent = 'The connection to the cryptocurrency price API has been interrupted.';
+    
+    const p2 = document.createElement('p');
+    p2.innerHTML = '<strong>Error:</strong> ';
+    const errorSpan = document.createElement('span');
+    errorSpan.textContent = errorMessage; // Safe text content
+    p2.appendChild(errorSpan);
+    
+    const p3 = document.createElement('p');
+    p3.className = 'mb-0';
+    p3.textContent = 'The system will continue using simulated prices and automatically retry the connection.';
+    
+    modalBody.appendChild(alertDiv);
+    modalBody.appendChild(p1);
+    modalBody.appendChild(p2);
+    modalBody.appendChild(p3);
+    
+    // Footer
+    const modalFooter = document.createElement('div');
+    modalFooter.className = 'modal-footer';
+    
+    const understoodButton = document.createElement('button');
+    understoodButton.type = 'button';
+    understoodButton.className = 'btn btn-warning';
+    understoodButton.setAttribute('data-bs-dismiss', 'modal');
+    understoodButton.innerHTML = '<i class="fas fa-check me-1"></i>Understood';
+    
+    modalFooter.appendChild(understoodButton);
+    
+    // Assemble modal
+    modalContent.appendChild(modalHeader);
+    modalContent.appendChild(modalBody);
+    modalContent.appendChild(modalFooter);
+    modalDialog.appendChild(modalContent);
+    modal.appendChild(modalDialog);
+    
     // Add modal to page
-    document.body.insertAdjacentHTML('beforeend', alertHtml);
+    document.body.appendChild(modal);
     
     // Show the modal
     const modal = new bootstrap.Modal(document.getElementById('connectionWarningModal'));
