@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Main Flask application entry point for deployment.
-Fast-boot approach: start Flask immediately, initialize trading system in background.
+Ultra-fast boot: bind port immediately, defer all heavy work to background.
 """
 
 import os
@@ -9,8 +9,8 @@ import sys
 import logging
 import threading
 import time
-from datetime import datetime
-from flask import Flask, jsonify
+from datetime import datetime, timedelta
+from flask import Flask, jsonify, request
 
 # Set up logging for deployment
 logging.basicConfig(
@@ -21,104 +21,93 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
-# --- Fast-boot knobs (extra hardening) ---
+# --- Ultra-fast boot knobs ---
 WATCHLIST = [s.strip() for s in os.getenv(
     "WATCHLIST",
-    "BTC,ETH,SOL,XRP,DOGE,BNB,ADA,AVAX,LINK,UNI"
+    "BTC/USDT,ETH/USDT,SOL/USDT,XRP/USDT,DOGE/USDT,BNB/USDT,ADA/USDT,AVAX/USDT,LINK/USDT,UNI/USDT"
 ).split(",") if s.strip()]
 
-MAX_STARTUP_SYMBOLS   = int(os.getenv("MAX_STARTUP_SYMBOLS", "5"))     # reduced: only 5 symbols at boot
-STARTUP_OHLCV_LIMIT   = int(os.getenv("STARTUP_OHLCV_LIMIT", "150"))  # reduced: 150 bars per symbol
-WARMUP_CHUNK_SIZE     = int(os.getenv("WARMUP_CHUNK_SIZE", "2"))      # smaller chunks: 2 symbols at a time
-WARMUP_SLEEP_SEC      = int(os.getenv("WARMUP_SLEEP_SEC", "1"))       # base pause between batches
-STARTUP_TIMEOUT_SEC   = int(os.getenv("STARTUP_TIMEOUT_SEC", "8"))    # reduced: 8 second budget
+MAX_STARTUP_SYMBOLS   = int(os.getenv("MAX_STARTUP_SYMBOLS", "3"))     # minimal: only 3 symbols
+STARTUP_OHLCV_LIMIT   = int(os.getenv("STARTUP_OHLCV_LIMIT", "120"))  # minimal: 120 bars per symbol  
+PRICE_TTL_SEC         = int(os.getenv("PRICE_TTL_SEC", "5"))           # cache refresh cadence
+WARMUP_SLEEP_SEC      = int(os.getenv("WARMUP_SLEEP_SEC", "1"))       # pause between fetches
 CACHE_FILE            = "warmup_cache.parquet"                        # persistent cache file
 
-# Warm-up state & simple in-memory cache
-warmup = {"started": False, "done": False, "error": "", "loaded": [], "start_time": None}
-price_cache = {}  # key: (symbol,timeframe) -> DataFrame
-cache_lock = threading.RLock()
+# Warm-up state & TTL cache
+warmup = {"started": False, "done": False, "error": "", "loaded": []}
+# (symbol, timeframe) -> {"df": pd.DataFrame, "ts": datetime}
+_price_cache = {}
+_cache_lock = threading.RLock()
 
-def cache_put(symbol: str, timeframe: str, df):
-    """Store DataFrame in cache and optionally persist to disk."""
-    with cache_lock:
-        price_cache[(symbol, timeframe)] = df
+def cache_put(sym: str, tf: str, df):
+    """Store DataFrame in cache with TTL."""
+    with _cache_lock:
+        _price_cache[(sym, tf)] = {"df": df, "ts": datetime.utcnow()}
 
-def cache_get(symbol: str, timeframe: str):
-    """Retrieve DataFrame from cache."""
-    with cache_lock:
-        return price_cache.get((symbol, timeframe))
+def cache_get(sym: str, tf: str):
+    """Retrieve DataFrame from cache if not expired."""
+    with _cache_lock:
+        item = _price_cache.get((sym, tf))
+    if not item:
+        return None
+    if (datetime.utcnow() - item["ts"]).total_seconds() > PRICE_TTL_SEC:
+        return None
+    return item["df"]
 
-def load_persistent_cache():
-    """Load yesterday's OHLCV data from disk cache for instant boot."""
+def background_warmup():
+    """Background warmup with minimal symbols and no heavy initialization."""
+    global warmup
+    if warmup["started"]:
+        return
+    warmup.update({"started": True, "done": False, "error": "", "loaded": []})
+    
     try:
-        if os.path.exists(CACHE_FILE):
-            import pandas as pd
-            logger.info(f"Loading persistent cache from {CACHE_FILE}")
-            cached_data = pd.read_parquet(CACHE_FILE)
-            
-            # Parse cached data back into price_cache format
-            for symbol in cached_data['symbol'].unique():
-                symbol_data = cached_data[cached_data['symbol'] == symbol].copy()
-                symbol_data = symbol_data.drop('symbol', axis=1)
-                symbol_data.set_index('timestamp', inplace=True)
-                cache_put(symbol, '1d', symbol_data)
-            
-            logger.info(f"Loaded {len(cached_data['symbol'].unique())} symbols from persistent cache")
-            return True
-    except Exception as e:
-        logger.warning(f"Could not load persistent cache: {e}")
-    return False
-
-def save_persistent_cache():
-    """Save current cache to disk for next boot."""
-    try:
-        import pandas as pd
-        all_data = []
+        logger.info(f"Background warmup starting for {MAX_STARTUP_SYMBOLS} symbols")
         
-        with cache_lock:
-            for (symbol, timeframe), df in price_cache.items():
-                if timeframe == '1d' and not df.empty:
-                    df_copy = df.copy().reset_index()
-                    df_copy['symbol'] = symbol
-                    all_data.append(df_copy)
+        # Use minimal CCXT setup - no heavy initialization
+        import ccxt
+        ex = ccxt.okx({'enableRateLimit': True})
+        if os.getenv("OKX_DEMO", "1") in ("1", "true", "True"):
+            ex.set_sandbox_mode(True)
+        ex.load_markets()
         
-        if all_data:
-            combined_df = pd.concat(all_data, ignore_index=True)
-            combined_df.to_parquet(CACHE_FILE, index=False)
-            logger.info(f"Saved {len(all_data)} symbol datasets to persistent cache")
+        # Fetch minimal data for just a few symbols
+        for i, sym in enumerate(WATCHLIST[:MAX_STARTUP_SYMBOLS]):
+            try:
+                ohlcv = ex.fetch_ohlcv(sym, timeframe='1h', limit=STARTUP_OHLCV_LIMIT)
+                import pandas as pd
+                df = pd.DataFrame(ohlcv, columns=["ts","open","high","low","close","volume"])
+                df["ts"] = pd.to_datetime(df["ts"], unit="ms", utc=True)
+                df.set_index("ts", inplace=True)
+                cache_put(sym, '1h', df)
+                warmup["loaded"].append(sym)
+                logger.info(f"Warmed up {sym}")
+            except Exception as fe:
+                logger.warning(f"Warmup fetch failed for {sym}: {fe}")
+            time.sleep(WARMUP_SLEEP_SEC)
+            
+        warmup["done"] = True
+        logger.info(f"Warmup complete: {', '.join(warmup['loaded'])}")
+        
     except Exception as e:
-        logger.warning(f"Could not save persistent cache: {e}")
+        warmup.update({"error": str(e), "done": False})
+        logger.error(f"Warmup error: {e}")
 
 def get_df(symbol: str, timeframe: str):
-    """Get OHLCV data with fallback fetch."""
+    """Get OHLCV data with on-demand fetch."""
     df = cache_get(symbol, timeframe)
     if df is not None:
         return df
     
-    # Fallback: fetch just-in-time for requested symbol only
+    # On-demand fetch for requested symbol
     try:
-        from src.config import Config
-        from src.adapters.okx_adapter import OKXAdapter
-        
-        ex = OKXAdapter(Config()).exchange
+        import ccxt, pandas as pd
+        ex = ccxt.okx({'enableRateLimit': True})
+        if os.getenv("OKX_DEMO", "1") in ("1", "true", "True"):
+            ex.set_sandbox_mode(True)
         ex.load_markets()
         
-        # Exponential backoff for API calls
-        import time
-        for attempt in range(3):
-            try:
-                ohlcv = ex.fetch_ohlcv(symbol, timeframe=timeframe, limit=STARTUP_OHLCV_LIMIT)
-                break
-            except Exception as api_error:
-                if attempt < 2:
-                    wait_time = (2 ** attempt) * WARMUP_SLEEP_SEC
-                    logger.warning(f"API error for {symbol}, retrying in {wait_time}s: {api_error}")
-                    time.sleep(wait_time)
-                else:
-                    raise api_error
-        
-        import pandas as pd
+        ohlcv = ex.fetch_ohlcv(symbol, timeframe=timeframe, limit=200)
         df = pd.DataFrame(ohlcv, columns=["ts","open","high","low","close","volume"])
         df["ts"] = pd.to_datetime(df["ts"], unit="ms", utc=True)
         df.set_index("ts", inplace=True)
@@ -128,130 +117,105 @@ def get_df(symbol: str, timeframe: str):
     except Exception as e:
         logger.error(f"Failed to fetch data for {symbol}: {e}")
         import pandas as pd
-        return pd.DataFrame()  # Return empty DataFrame on failure
+        return pd.DataFrame()
 
-def initialize_lightweight():
-    """Initialize only essential components needed for Flask to start."""
+def initialize_system():
+    """Initialize only essential components - no network I/O."""
     try:
-        # Import here to avoid circular imports
+        # Setup basic logging only
+        logging.basicConfig(level=logging.INFO)
+        logger.info("Ultra-lightweight initialization")
+        
+        # Initialize database only - no heavy work
         from src.utils.database import DatabaseManager
-        from src.utils.logging import setup_logging
-        
-        # Setup basic logging
-        setup_logging()
-        logger.info("Lightweight initialization started")
-        
-        # Try to load persistent cache first for instant data availability
-        cache_loaded = load_persistent_cache()
-        if cache_loaded:
-            logger.info("Instant cache loaded - some data available immediately")
-        
-        # Initialize database
         db = DatabaseManager()
-        logger.info("Database initialized successfully")
+        logger.info("Database ready")
         
         return True
         
     except Exception as e:
-        logger.error(f"Lightweight initialization failed: {e}")
+        logger.error(f"Initialization failed: {e}")
         return False
 
-def background_warmup():
-    """Initialize trading system components in background with timeout."""
-    global warmup, app
-    
-    try:
-        warmup["started"] = True
-        start_time = datetime.now()
-        warmup["start_time"] = start_time
-        logger.info(f"Background warmup started with {STARTUP_TIMEOUT_SEC}s timeout")
-        
-        # Quick timeout check function
-        def check_timeout():
-            elapsed = (datetime.now() - start_time).total_seconds()
-            if elapsed > STARTUP_TIMEOUT_SEC:
-                logger.warning(f"Warmup timeout reached ({elapsed:.1f}s > {STARTUP_TIMEOUT_SEC}s)")
-                return True
-            return False
-        
-        # Import trading system components (with timeout check)
-        if check_timeout():
-            raise TimeoutError("Timeout during import phase")
-            
-        from web_interface import initialize_system, app as main_app
-        
-        # Initialize only essential components quickly
-        if check_timeout():
-            raise TimeoutError("Timeout before initialization")
-            
-        initialize_system()
-        
-        # Save current cache state for next boot
-        save_persistent_cache()
-        
-        # Don't register routes during app runtime - causes Flask errors
-        # Routes will be available when user navigates to main app endpoints
-        
-        warmup["done"] = True
-        warmup["loaded"] = WATCHLIST[:MAX_STARTUP_SYMBOLS]
-        logger.info(f"Background warmup completed in {(datetime.now() - start_time).total_seconds():.1f}s")
-        
-    except TimeoutError as e:
-        logger.warning(f"Background warmup timeout: {e}")
-        warmup["error"] = f"Timeout after {STARTUP_TIMEOUT_SEC}s"
-        warmup["done"] = True
-    except Exception as e:
-        error_msg = f"Background warmup failed: {str(e)}"
-        logger.error(error_msg)
-        warmup["error"] = error_msg
-        warmup["done"] = True  # Mark as done even if failed
 
-# Create Flask app instance
+
+# Create Flask app instance  
 app = Flask(__name__)
 
-# Add fast-boot health endpoints to the Flask app
+# Kick off warmup immediately when Flask starts
+warmup_thread = None
+def start_warmup():
+    global warmup_thread
+    if warmup_thread is None:
+        warmup_thread = threading.Thread(target=background_warmup, daemon=True)
+        warmup_thread.start()
+
+# Ultra-fast health endpoints
 @app.route("/health")
 def health():
-    """For the platform restart logic: 200 as soon as we're listening."""
-    return jsonify({"status": "ok", "timestamp": datetime.now().isoformat()}), 200
+    """Platform watchdog checks this; return 200 immediately once listening."""
+    return jsonify({"status": "ok"}), 200
 
 @app.route("/ready")
 def ready():
-    """For your UI: only 200 when warm-up has finished."""
-    if warmup["done"]:
-        return jsonify({"ready": True, **warmup}), 200
-    else:
-        return jsonify({"ready": False, **warmup}), 503
+    """UI can poll this and show a spinner until ready."""
+    return (jsonify({"ready": True, **warmup}), 200) if warmup["done"] else (jsonify({"ready": False, **warmup}), 503)
 
-@app.route("/api/warmup")
-def warmup_status():
-    """Get detailed warmup status."""
-    status = dict(warmup)
-    if warmup["start_time"]:
-        elapsed = (datetime.now() - warmup["start_time"]).total_seconds()
-        status["elapsed_seconds"] = round(elapsed, 2)
-    return jsonify(status), 200
+@app.route("/api/price")
+def api_price():
+    """
+    Returns latest OHLCV slice for the selected symbol & timeframe.
+    Uses cache with TTL; fetches on demand if missing/stale.
+    """
+    try:
+        sym = request.args.get("symbol", "BTC/USDT")
+        tf = request.args.get("timeframe", "1h")
+        lim = int(request.args.get("limit", 200))
+
+        df = cache_get(sym, tf)
+        if df is None or len(df) < lim:
+            import ccxt, pandas as pd
+            ex = ccxt.okx({'enableRateLimit': True})
+            if os.getenv("OKX_DEMO", "1") in ("1", "true", "True"):
+                ex.set_sandbox_mode(True)
+            ex.load_markets()
+            ohlcv = ex.fetch_ohlcv(sym, timeframe=tf, limit=lim)
+            df = pd.DataFrame(ohlcv, columns=["ts","open","high","low","close","volume"])
+            df["ts"] = pd.to_datetime(df["ts"], unit="ms", utc=True)
+            df.set_index("ts", inplace=True)
+            cache_put(sym, tf, df)
+
+        out = df.tail(lim).reset_index()
+        out["ts"] = out["ts"].astype(str)
+        return jsonify(out.to_dict(orient="records"))
+    except Exception as e:
+        logger.error(f"api_price error: {e}")
+        return jsonify({"error": str(e)}), 500
 
 @app.route("/")
 def index():
     """Main dashboard route with circuit breaker pattern."""
+    # Start warmup on first request if not started
+    start_warmup()
+    
     if warmup["done"] and not warmup["error"]:
-        # System ready - redirect to main interface
+        # System ready - show ready page
         return f"""
         <!DOCTYPE html>
         <html>
         <head>
             <title>Trading System - Ready</title>
-            <meta http-equiv="refresh" content="0;url=/dashboard">
             <style>
                 body {{ font-family: Arial, sans-serif; text-align: center; padding: 50px; }}
                 .ready {{ color: green; }}
+                .button {{ display: inline-block; padding: 10px 20px; background: #007bff; color: white; text-decoration: none; border-radius: 5px; margin: 10px; }}
             </style>
         </head>
         <body>
             <h1 class="ready">✅ Trading System Ready!</h1>
-            <p>Redirecting to dashboard with currency selector...</p>
-            <p><a href="/dashboard">Click here if not redirected</a></p>
+            <p>Currency selector and live price feeds are now available.</p>
+            <a href="/api/price?symbol=BTC/USDT&limit=50" class="button">Test Price API</a>
+            <p><small>Background warmup loaded: {', '.join(warmup.get('loaded', []))}</small></p>
         </body>
         </html>
         """
@@ -364,16 +328,7 @@ def render_loading_skeleton(message="Loading live cryptocurrency data...", error
 application = app
 
 if __name__ == "__main__":
-    # Fast initialization - only what's needed for Flask to start
-    if not initialize_lightweight():
-        logger.error("Failed lightweight initialization")
-        sys.exit(1)
-    
-    # Start background warmup immediately
-    warmup_thread = threading.Thread(target=background_warmup, daemon=True)
-    warmup_thread.start()
-    
-    # Start Flask server immediately
-    port = int(os.environ.get("PORT", "5000"))  # Replit/host injects PORT
-    logger.info(f"Starting Flask server on 0.0.0.0:{port}")
-    app.run(host="0.0.0.0", port=port, debug=False, use_reloader=False, threaded=True)
+    initialize_system()  # config/db only; no network calls here
+    port = int(os.environ.get("PORT", "5000"))
+    logger.info(f"Ultra-fast Flask server starting on 0.0.0.0:{port}")
+    app.run(host="0.0.0.0", port=port, debug=False, use_reloader=False)
