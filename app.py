@@ -61,7 +61,7 @@ def initialize_lightweight():
 
 def background_warmup():
     """Initialize trading system components in background."""
-    global warmup
+    global warmup, app
     
     try:
         warmup["started"] = True
@@ -69,10 +69,24 @@ def background_warmup():
         logger.info("Background warmup started")
         
         # Import trading system components
-        from web_interface import initialize_system
+        from web_interface import initialize_system, app as main_app
         
         # Initialize the full trading system
         initialize_system()
+        
+        # Register routes from main app (but only after warmup)
+        logger.info("Registering main application routes")
+        with app.app_context():
+            # Copy all routes except ones we already have
+            for rule in main_app.url_map.iter_rules():
+                endpoint = rule.endpoint
+                if endpoint not in ['health', 'ready', 'warmup_status', 'index'] and endpoint not in app.view_functions:
+                    try:
+                        # Create a new route in our app that calls the main app's view function
+                        view_func = main_app.view_functions[endpoint]
+                        app.add_url_rule(rule.rule, endpoint, view_func, methods=list(rule.methods))
+                    except Exception as route_error:
+                        logger.warning(f"Could not register route {rule.rule}: {route_error}")
         
         warmup["done"] = True
         warmup["loaded"] = WATCHLIST[:MAX_STARTUP_SYMBOLS]
@@ -112,41 +126,58 @@ def warmup_status():
 
 @app.route("/")
 def index():
-    """Main dashboard route - will be populated after warmup."""
+    """Main dashboard route - will redirect to main app after warmup."""
     if warmup["done"]:
-        # Import and serve the main web interface
-        try:
-            from web_interface import app as main_app
-            # Copy routes from main app to this app
-            for rule in main_app.url_map.iter_rules():
-                if rule.endpoint not in ['health', 'ready', 'warmup_status', 'index']:
-                    app.add_url_rule(rule.rule, rule.endpoint, main_app.view_functions[rule.endpoint], methods=rule.methods)
-            
-            # Serve the main index
-            return main_app.view_functions['index']()
-        except Exception as e:
-            logger.error(f"Error loading main interface: {e}")
-            return jsonify({"error": "System loading", "message": "Please refresh in a moment"}), 503
+        # Redirect to the main web interface that's now loaded
+        return f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Trading System - Ready</title>
+            <meta http-equiv="refresh" content="1;url=/dashboard">
+            <style>
+                body {{ font-family: Arial, sans-serif; text-align: center; padding: 50px; }}
+                .ready {{ color: green; animation: pulse 1s ease-in-out infinite; }}
+                @keyframes pulse {{ 0% {{ opacity: 1; }} 50% {{ opacity: 0.5; }} 100% {{ opacity: 1; }} }}
+            </style>
+        </head>
+        <body>
+            <h1 class="ready">✅ Trading System Ready!</h1>
+            <p>Currency selector and all trading features are now available.</p>
+            <p>Redirecting to main dashboard...</p>
+            <p><a href="/dashboard">Click here if not redirected automatically</a></p>
+        </body>
+        </html>
+        """
     else:
         # Show loading page
+        elapsed = ""
+        if warmup["start_time"]:
+            elapsed_sec = (datetime.now() - warmup["start_time"]).total_seconds()
+            elapsed = f" ({elapsed_sec:.1f}s)"
+        
         return f"""
         <!DOCTYPE html>
         <html>
         <head>
             <title>Trading System - Loading</title>
-            <meta http-equiv="refresh" content="5">
+            <meta http-equiv="refresh" content="3">
             <style>
                 body {{ font-family: Arial, sans-serif; text-align: center; padding: 50px; }}
-                .loading {{ animation: spin 1s linear infinite; }}
+                .loading {{ animation: spin 1s linear infinite; display: inline-block; }}
                 @keyframes spin {{ 0% {{ transform: rotate(0deg); }} 100% {{ transform: rotate(360deg); }} }}
+                .progress {{ width: 80%; background: #f0f0f0; margin: 20px auto; height: 10px; border-radius: 5px; }}
+                .progress-bar {{ height: 100%; background: linear-gradient(90deg, #007bff, #28a745); border-radius: 5px; animation: progress 30s linear; }}
+                @keyframes progress {{ 0% {{ width: 0%; }} 100% {{ width: 100%; }} }}
             </style>
         </head>
         <body>
-            <h1>🚀 Trading System Loading...</h1>
+            <h1>🚀 Trading System Loading{elapsed}</h1>
             <div class="loading">⚡</div>
-            <p>Currency selector and trading features will be available shortly.</p>
-            <p>Status: {"Loading..." if not warmup["done"] else "Ready!"}</p>
-            <p><small>Auto-refreshing every 5 seconds...</small></p>
+            <div class="progress"><div class="progress-bar"></div></div>
+            <p>Initializing currency selector and live price feeds...</p>
+            <p>Status: {"Starting up..." if not warmup["started"] else "Loading live cryptocurrency data..."}</p>
+            <p><small>Auto-refreshing every 3 seconds...</small></p>
         </body>
         </html>
         """
