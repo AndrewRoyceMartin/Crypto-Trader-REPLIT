@@ -26,8 +26,8 @@ class TradingApp {
         
         // Initialize news ticker after DOM is ready
         setTimeout(() => {
-            if (typeof initializeNewsTicker === 'function') {
-                initializeNewsTicker();
+            if (typeof window.initializeNewsTicker === 'function') {
+                window.initializeNewsTicker();
             }
         }, 3000);
     }
@@ -63,7 +63,7 @@ class TradingApp {
         });
         
         // Initialize news ticker
-        this.initializeNewsTicker();
+        // News ticker initialized separately
     }
     
     startAutoUpdate() {
@@ -974,10 +974,12 @@ function initializeNewsTicker() {
     }, 10 * 60 * 1000);
 }
 
-// Make sure function is available globally
+// Make sure functions are available globally immediately
 window.initializeNewsTicker = initializeNewsTicker;
 window.updateNewsTicker = updateNewsTicker;
 window.refreshNews = refreshNews;
+window.displayNews = displayNews;
+window.getTimeAgo = getTimeAgo;
 
 async function updateNewsTicker() {
     try {
@@ -1018,7 +1020,9 @@ function getTimeAgo(date) {
 }
 
 function refreshNews() {
-    updateNewsTicker();
+    if (typeof window.updateNewsTicker === 'function') {
+        window.updateNewsTicker();
+    }
 }
 
 // State management for table sorting and filtering
