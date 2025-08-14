@@ -40,9 +40,13 @@
                     <i class="fas fa-chart-bar me-1"></i>
                     Performance
                 </button>
-                <button class="btn btn-outline-light btn-sm" onclick="showCurrentPositions()">
+                <button class="btn btn-outline-light btn-sm me-2" onclick="showCurrentPositions()">
                     <i class="fas fa-coins me-1"></i>
                     Current Holdings
+                </button>
+                <button class="btn btn-outline-success btn-sm" onclick="exportATOTax()">
+                    <i class="fas fa-file-invoice-dollar me-1"></i>
+                    ATO Tax Export
                 </button>
             </div>
             
@@ -281,17 +285,12 @@
                         
                         <!-- Portfolio Actions -->
                         <div class="row mb-3">
-                            <div class="col-md-4">
+                            <div class="col-md-6">
                                 <button class="btn btn-outline-info btn-sm w-100" onclick="exportPortfolio()">
                                     <i class="fas fa-download me-1"></i>Export Data
                                 </button>
                             </div>
-                            <div class="col-md-4">
-                                <button class="btn btn-outline-success btn-sm w-100" onclick="exportATOTax()">
-                                    <i class="fas fa-file-invoice-dollar me-1"></i>ATO Tax Export
-                                </button>
-                            </div>
-                            <div class="col-md-4">
+                            <div class="col-md-6">
                                 <button class="btn btn-outline-danger btn-sm w-100" onclick="resetEntireProgram()">
                                     <i class="fas fa-power-off me-1"></i>Reset Entire Program
                                 </button>
