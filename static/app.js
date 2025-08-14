@@ -412,6 +412,9 @@ class TradingApp {
             // Update crypto table
             this.updateCryptoTable(data.cryptocurrencies);
             
+            // Update crypto symbols display
+            this.updateCryptoSymbols(data.cryptocurrencies);
+            
             // Restore table state after update
             restoreTableState();
             
@@ -919,6 +922,38 @@ class TradingApp {
         } else {
             return `${seconds}s`;
         }
+    }
+    
+    updateCryptoSymbols(cryptos) {
+        const symbolsContainer = document.getElementById('crypto-symbols');
+        if (!symbolsContainer) return;
+        
+        // Clear existing content
+        symbolsContainer.innerHTML = '';
+        
+        if (!cryptos || cryptos.length === 0) {
+            const badge = document.createElement('span');
+            badge.className = 'badge bg-secondary';
+            badge.textContent = 'No cryptocurrencies loaded';
+            symbolsContainer.appendChild(badge);
+            return;
+        }
+        
+        // Create badges for each crypto with price and PnL info
+        cryptos.forEach(crypto => {
+            const badge = document.createElement('span');
+            const pnlClass = crypto.pnl >= 0 ? 'bg-success' : 'bg-danger';
+            badge.className = `badge ${pnlClass} me-1 mb-1`;
+            
+            const price = crypto.current_price < 1 ? 
+                crypto.current_price.toFixed(6) : 
+                crypto.current_price.toFixed(2);
+            const pnl = crypto.pnl >= 0 ? `+${crypto.pnl.toFixed(2)}` : crypto.pnl.toFixed(2);
+            
+            badge.textContent = `${crypto.symbol} $${price} (${pnl})`;
+            badge.setAttribute('title', `${crypto.name}: $${price}, P&L: ${pnl}`);
+            symbolsContainer.appendChild(badge);
+        });
     }
 }
 
