@@ -14,7 +14,7 @@ Preferred communication style: Simple, everyday language.
 A modular architecture supports CLI operations via `main.py` and a web interface via Flask (`web_interface.py`). It includes `BacktestEngine`, `PaperTrader`, and `LiveTrader` classes for different trading modes.
 
 ### Deployment Configuration (Updated: 2025-08-14)
-- **Primary Entry Point**: `app.py` - Direct Flask application entry for deployment
+- **Primary Entry Point**: `app.py` - Direct Flask application entry for deployment with enhanced logging and error handling
 - **WSGI Support**: `wsgi.py` - Enhanced production WSGI configuration with Flask environment settings
 - **Development Entry**: `main.py` - CLI-based entry with multiple modes
 - **Port Configuration**: Uses PORT environment variable (defaults to 5000, maps to 80 for deployment)
@@ -26,6 +26,13 @@ A modular architecture supports CLI operations via `main.py` and a web interface
 - **Deployment Files**: `Procfile`, `deployment.json` with autoscaling configuration, and gunicorn settings
 - **Production Server**: Gunicorn configuration optimized for Replit deployment with proper worker settings
 - **Port Conflict Resolution**: Configured for single port mapping (5000→80) to resolve deployment conflicts
+- **Deployment Fixes Applied (2025-08-14)**:
+  - Enhanced `app.py` with comprehensive logging and threaded Flask server
+  - Verified WSGI application reference and proper initialization
+  - Confirmed health check endpoints respond correctly (200 status)
+  - All deployment configuration files properly structured
+  - Flask app configured to use PORT environment variable
+  - Deployment verification script created (`deploy_check.py`)
 
 ### Strategy System
 A plugin-based system using abstract base classes (`BaseStrategy`) allows for flexible strategy implementation, such as `BollingerBandsStrategy`. Strategies generate `Signal` objects with trade actions and risk parameters.
