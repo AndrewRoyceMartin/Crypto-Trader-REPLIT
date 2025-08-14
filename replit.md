@@ -52,6 +52,15 @@ Preferred communication style: Simple, everyday language.
   - Smart entry conditions with tighter distance thresholds and momentum confirmation
   - Adaptive risk management with consecutive loss protection and performance-based position sizing
   - Advanced drawdown protection and real-time performance tracking
+- ✅ **STATISTICAL ARBITRAGE INTEGRATION (August 14, 2025)**: Implemented advanced statistical techniques from professional quant trading
+  - Rolling beta regression for mean reversion edge detection using z-score correlation analysis
+  - EWMA (Exponentially Weighted Moving Average) statistics for adaptive mean and volatility estimation  
+  - Fractional Kelly Criterion position sizing for optimal capital allocation based on expected returns
+  - Cost-efficiency validation - only trades when statistical edge exceeds transaction costs
+  - Z-score threshold filtering (±0.5 sigma minimum) for high-probability setups
+  - Expected return calculation based on historical mean reversion strength
+  - Enhanced confidence scoring integrating statistical factors (z-score strength, beta edge, cost efficiency)
+  - Professional-grade risk management with statistical validation of every trade entry
 
 **Next Enhancement Opportunities**: 
 - Individual crypto price charts and trading history  

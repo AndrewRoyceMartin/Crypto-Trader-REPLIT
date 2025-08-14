@@ -39,6 +39,15 @@ class BollingerBandsStrategy(BaseStrategy):
         self.risk_reward_ratio = 4.0  # Minimum 4:1 reward-to-risk ratio
         self.adaptive_confidence_scaling = True  # Enable confidence-based sizing
         
+        # Statistical arbitrage parameters
+        self.beta_lookback = 500  # Periods for beta calculation
+        self.ewma_halflife_mu = 50  # Half-life for mean estimation
+        self.ewma_halflife_sigma = 50  # Half-life for volatility estimation
+        self.kelly_lambda = 0.15  # Risk aversion for Kelly sizing
+        self.kelly_cap = 0.20  # Maximum Kelly fraction
+        self.trading_costs = 0.001  # 0.1% total trading costs
+        self.z_score_threshold = 0.5  # Minimum z-score for entry
+        
         # Advanced optimization parameters - more aggressive for better results
         self.trend_confirmation_period = 3  # Shorter confirmation period
         self.volatility_multiplier = 1.5  # Higher multiplier for profit potential
@@ -79,6 +88,22 @@ class BollingerBandsStrategy(BaseStrategy):
             # Add RSI for momentum confirmation
             rsi = self.indicators.rsi(data['close'].squeeze(), self.rsi_period)
             
+            # Get latest values first
+            current_price = data['close'].iloc[-1]
+            current_volume = data['volume'].iloc[-1]
+            current_upper = upper_band.iloc[-1]
+            current_middle = middle_band.iloc[-1]
+            current_lower = lower_band.iloc[-1]
+            current_atr = atr.iloc[-1]
+            current_rsi = rsi.iloc[-1]
+            
+            # Skip if we don't have valid indicator values
+            if pd.isna(current_upper) or pd.isna(current_lower) or pd.isna(current_atr) or pd.isna(current_rsi):
+                return signals
+            
+            # Calculate band width first
+            band_width = (current_upper - current_lower) / current_middle
+            
             # Calculate price momentum and trend strength with multiple timeframes
             price_momentum = data['close'].pct_change(5).iloc[-1]  # 5-period momentum
             short_momentum = data['close'].pct_change(3).iloc[-1]  # 3-period momentum
@@ -87,6 +112,20 @@ class BollingerBandsStrategy(BaseStrategy):
             # Calculate market state indicators
             volatility_regime = band_width > self.market_volatility_threshold  # High/low volatility
             recent_volatility = data['close'].pct_change().rolling(10).std().iloc[-1]  # Recent volatility
+            
+            # Statistical arbitrage calculations
+            ewma_mu, ewma_sigma = self.indicators.ewma_statistics(data['close'], self.ewma_halflife_mu)
+            z_score = (current_price - ewma_mu) / ewma_sigma if ewma_sigma > 0 else 0
+            
+            # Calculate mean reversion edge using rolling beta
+            beta_edge = self.indicators.rolling_beta_regression(data['close'], self.beta_lookback)
+            
+            # Expected return based on statistical edge
+            expected_return = beta_edge * abs(z_score) if beta_edge > 0 else 0
+            
+            # Cost threshold - only trade when edge exceeds costs
+            cost_threshold = (self.trading_costs + 0.0005) / beta_edge if beta_edge > 0 else float('inf')
+            edge_sufficient = abs(z_score) > cost_threshold
             
             # Get latest values
             current_price = data['close'].iloc[-1]
@@ -134,32 +173,43 @@ class BollingerBandsStrategy(BaseStrategy):
             adaptive_position_size = base_position_size * volatility_factor * momentum_factor
             volatility_adjusted_size = min(adaptive_position_size, 0.12)  # Cap at 12% for safety
             
-            # Smart Buy signal with adaptive conditions for profit maximization
+            # Enhanced Buy signal with statistical arbitrage edge validation
             enhanced_buy_conditions = (
-                current_price <= current_lower * 1.03 and  # 3% above lower band (optimized)
-                current_rsi < 65 and  # RSI oversold threshold
-                distance_to_lower < 0.05 and  # Tighter distance for better entries
-                (price_momentum < 0 or short_momentum < -0.01) and  # Confirming downward momentum
-                trend_strength > -0.15  # Not in severe downtrend
+                z_score < -self.z_score_threshold and  # Statistically oversold (z < -0.5)
+                beta_edge > 0.001 and  # Minimum edge threshold
+                edge_sufficient and  # Edge exceeds trading costs
+                current_rsi < 65 and  # RSI confirmation
+                distance_to_lower < 0.05 and  # Near Bollinger Band
+                (price_momentum < 0 or short_momentum < -0.01) and  # Momentum confirmation
+                trend_strength > -0.15 and  # Not in severe downtrend
+                expected_return > self.trading_costs  # Expected return exceeds costs
             )
             
             # Check enhanced buy conditions first
             if self.use_enhanced_filters and enhanced_buy_conditions:
                 
-                # Advanced confidence calculation with multi-factor scoring
+                # Advanced confidence calculation with statistical edge integration
                 rsi_factor = max(0, (50 - current_rsi) / 50)  # Higher confidence for lower RSI
                 momentum_factor = min(0.4, abs(price_momentum) * 15)  # Strong momentum boost
                 volatility_factor = min(0.3, recent_volatility * 20)  # Volatility adjustment
                 band_factor = min(0.4, (current_lower - current_price) / current_atr)
                 trend_factor = max(0, -trend_strength * 2) if trend_strength < 0 else 0.1
                 
-                # Weighted confidence score
-                confidence = min(0.92, 
-                    rsi_factor * 0.3 + 
-                    momentum_factor * 0.25 + 
-                    volatility_factor * 0.15 + 
-                    band_factor * 0.25 + 
-                    trend_factor * 0.05 + 0.25
+                # Statistical arbitrage factors
+                z_factor = min(0.3, abs(z_score) / 3.0)  # Z-score strength (capped at 3 sigma)
+                beta_factor = min(0.2, beta_edge * 100)  # Beta edge strength
+                cost_efficiency = min(0.2, expected_return / self.trading_costs) if self.trading_costs > 0 else 0.1
+                
+                # Enhanced weighted confidence score including statistical factors
+                confidence = min(0.95, 
+                    rsi_factor * 0.20 + 
+                    momentum_factor * 0.15 + 
+                    volatility_factor * 0.10 + 
+                    band_factor * 0.15 + 
+                    trend_factor * 0.05 + 
+                    z_factor * 0.15 + 
+                    beta_factor * 0.10 + 
+                    cost_efficiency * 0.10 + 0.20
                 )
                 
                 # Advanced dynamic risk management with market adaptation
@@ -183,11 +233,19 @@ class BollingerBandsStrategy(BaseStrategy):
                 stop_loss = current_price * (1 - dynamic_stop_loss / 100)
                 take_profit = current_price * (1 + dynamic_take_profit / 100)
                 
-                # Apply confidence-based position sizing if enabled
-                if self.adaptive_confidence_scaling:
-                    final_position_size = volatility_adjusted_size * (0.5 + confidence * 0.5)
+                # Kelly Criterion position sizing based on statistical edge
+                kelly_fraction = self.indicators.fractional_kelly(
+                    expected_return, recent_volatility, self.kelly_lambda, self.kelly_cap
+                )
+                
+                # Combine Kelly sizing with volatility adjustment
+                if self.adaptive_confidence_scaling and kelly_fraction > 0.01:
+                    # Use Kelly when we have strong statistical edge
+                    statistical_size = kelly_fraction * confidence
+                    final_position_size = min(statistical_size, volatility_adjusted_size)
                 else:
-                    final_position_size = volatility_adjusted_size
+                    # Fall back to confidence-based sizing
+                    final_position_size = volatility_adjusted_size * (0.5 + confidence * 0.5)
                 
                 signal = Signal(
                     action='buy',
@@ -200,25 +258,46 @@ class BollingerBandsStrategy(BaseStrategy):
                 
                 if self.validate_signal(signal):
                     signals.append(signal)
-                    self.logger.info(f"Enhanced BUY signal: Price={current_price:.2f}, RSI={current_rsi:.1f}, Confidence={confidence:.2f}")
+                    self.logger.info(f"Statistical BUY signal: Price={current_price:.2f}, Z-score={z_score:.2f}, Beta={beta_edge:.4f}, Expected={expected_return:.4f}, Confidence={confidence:.2f}")
             
-            # Smart Sell signal with adaptive conditions for profit maximization
+            # Enhanced Sell signal with statistical arbitrage edge validation
             enhanced_sell_conditions = (
-                current_price >= current_upper * 0.97 and  # 3% below upper band (optimized)
-                current_rsi > 35 and  # RSI overbought threshold
-                distance_to_upper < 0.05 and  # Tighter distance for better entries
-                (price_momentum > 0 or short_momentum > 0.01) and  # Confirming upward momentum
-                trend_strength < 0.15  # Not in severe uptrend
+                z_score > self.z_score_threshold and  # Statistically overbought (z > 0.5)
+                beta_edge > 0.001 and  # Minimum edge threshold
+                edge_sufficient and  # Edge exceeds trading costs
+                current_rsi > 35 and  # RSI confirmation
+                distance_to_upper < 0.05 and  # Near Bollinger Band
+                (price_momentum > 0 or short_momentum > 0.01) and  # Momentum confirmation
+                trend_strength < 0.15 and  # Not in severe uptrend
+                expected_return > self.trading_costs  # Expected return exceeds costs
             )
             
             # Check enhanced sell conditions
             if self.use_enhanced_filters and enhanced_sell_conditions:
                 
-                # Calculate dynamic confidence
-                rsi_factor = (current_rsi - 50) / 50
-                momentum_factor = min(1.0, price_momentum * 10)
-                band_factor = (current_price - current_upper) / current_atr
-                confidence = min(0.95, (rsi_factor + momentum_factor + band_factor) / 3 + 0.3)
+                # Enhanced confidence calculation for sell signals
+                rsi_factor = max(0, (current_rsi - 50) / 50)
+                momentum_factor = min(0.4, abs(price_momentum) * 15)
+                volatility_factor = min(0.3, recent_volatility * 20)
+                band_factor = min(0.4, (current_price - current_upper) / current_atr)
+                trend_factor = max(0, trend_strength * 2) if trend_strength > 0 else 0.1
+                
+                # Statistical arbitrage factors for sell
+                z_factor = min(0.3, abs(z_score) / 3.0)
+                beta_factor = min(0.2, beta_edge * 100)
+                cost_efficiency = min(0.2, expected_return / self.trading_costs) if self.trading_costs > 0 else 0.1
+                
+                # Enhanced confidence for sell signals
+                confidence = min(0.95,
+                    rsi_factor * 0.20 + 
+                    momentum_factor * 0.15 + 
+                    volatility_factor * 0.10 + 
+                    band_factor * 0.15 + 
+                    trend_factor * 0.05 + 
+                    z_factor * 0.15 + 
+                    beta_factor * 0.10 + 
+                    cost_efficiency * 0.10 + 0.20
+                )
                 
                 # Optimized dynamic stop loss and take profit for short positions
                 volatility_factor = min(2.0, 1 + band_width * 3)
@@ -228,10 +307,22 @@ class BollingerBandsStrategy(BaseStrategy):
                 stop_loss = current_price * (1 + dynamic_stop_loss / 100)
                 take_profit = current_price * (1 - dynamic_take_profit / 100)
                 
+                # Kelly Criterion position sizing for sell signals
+                kelly_fraction = self.indicators.fractional_kelly(
+                    expected_return, recent_volatility, self.kelly_lambda, self.kelly_cap
+                )
+                
+                # Apply Kelly sizing with confidence scaling
+                if self.adaptive_confidence_scaling and kelly_fraction > 0.01:
+                    statistical_size = kelly_fraction * confidence
+                    final_sell_size = min(statistical_size, volatility_adjusted_size)
+                else:
+                    final_sell_size = volatility_adjusted_size * (0.5 + confidence * 0.5)
+                
                 signal = Signal(
                     action='sell',
                     price=current_price,
-                    size=volatility_adjusted_size,
+                    size=final_sell_size,
                     confidence=confidence,
                     stop_loss=stop_loss,
                     take_profit=take_profit
@@ -239,7 +330,7 @@ class BollingerBandsStrategy(BaseStrategy):
                 
                 if self.validate_signal(signal):
                     signals.append(signal)
-                    self.logger.info(f"Enhanced SELL signal: Price={current_price:.2f}, RSI={current_rsi:.1f}, Confidence={confidence:.2f}")
+                    self.logger.info(f"Statistical SELL signal: Price={current_price:.2f}, Z-score={z_score:.2f}, Beta={beta_edge:.4f}, Expected={expected_return:.4f}, Confidence={confidence:.2f}")
             
             # Fallback to original Bollinger Bands logic if enhanced filters are too restrictive
             # More permissive fallback for low-volatility periods

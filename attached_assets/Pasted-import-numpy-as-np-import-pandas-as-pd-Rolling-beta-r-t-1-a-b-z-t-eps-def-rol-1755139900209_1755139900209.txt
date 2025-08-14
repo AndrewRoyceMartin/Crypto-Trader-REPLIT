@@ -1,0 +1,100 @@
+import numpy as np
+import pandas as pd
+
+# --- Rolling beta: r_{t+1} = a + b*(-z_t) + eps
+def rolling_beta(df, lookback=1000):
+    # expects df with columns: close; will compute z from rolling mean/stdev
+    z = (df['close'] - df['close'].ewm(span=100, adjust=False).mean()) / \
+        df['close'].ewm(span=100, adjust=False).std(bias=False)
+    r1 = df['close'].pct_change().shift(-1)  # next-bar return
+    x = (-z).shift(0)
+    y = r1
+    win = min(lookback, len(df.dropna()))
+    if win < 50:
+        return 0.0
+    xw, yw = x.iloc[-win:], y.iloc[-win:]
+    xw, yw = xw.dropna(), yw.dropna()
+    idx = xw.index.intersection(yw.index)
+    if len(idx) < 30:
+        return 0.0
+    xv, yv = xw.loc[idx], yw.loc[idx]
+    var = np.var(xv, ddof=1)
+    if var == 0:
+        return 0.0
+    cov = np.cov(xv, yv, ddof=1)[0,1]
+    b = cov / var
+    return float(max(0.0, b))  # clip: we only use mean-reversion edge
+
+def ewma_mu_sigma(series, halflife=50):
+    # returns mu_t, sigma_t on the last point
+    mu = series.ewm(halflife=halflife, adjust=False).mean()
+    var = (series - mu).ewm(halflife=halflife, adjust=False).var(bias=False)
+    sig = np.sqrt(var)
+    return float(mu.iloc[-1]), float(sig.iloc[-1])
+
+def atr(df, period=14):
+    h,l,c = df['high'], df['low'], df['close']
+    prev_c = c.shift(1)
+    tr = pd.concat([(h-l).abs(), (h-prev_c).abs(), (l-prev_c).abs()], axis=1).max(axis=1)
+    return float(tr.ewm(span=period, adjust=False).mean().iloc[-1])
+
+def live_cost_percent(spread_pct, fee_pct_roundtrip, slippage_pct):
+    # all in percent per round trip; e.g., 0.10% fee + 0.05% slip + 0.02% spread*crossing
+    return spread_pct + fee_pct_roundtrip + slippage_pct
+
+def fractional_kelly(mu_hat, sigma_hat, lam=0.2, cap=0.25):
+    if sigma_hat <= 0: return 0.0
+    f = lam * (mu_hat / (sigma_hat**2))
+    return float(np.clip(f, 0.0, cap))
+
+def edge_entry_decision(df, price, fee_rt=0.001, slip=0.0005, spread_pct=0.0002,
+                        k_sl=1.0, k_tp=2.0, lam_kelly=0.2,
+                        hl_mu=50, hl_sig=50, lookback_beta=1000, equity=10_000):
+    """
+    Returns dict with decision & sized order when edge > costs.
+    """
+    mu, sig = ewma_mu_sigma(df['close'], halflife=hl_mu)
+    if sig <= 0 or np.isnan(sig) or len(df) < 60:
+        return {"enter": False, "reason": "insufficient_sigma"}
+
+    z = (price - mu) / sig
+    beta = rolling_beta(df, lookback=lookback_beta)  # expected next return per unit of -z
+    if beta <= 0:
+        return {"enter": False, "reason": "no_edge"}
+
+    # expected next-bar return if we buy when z<0:
+    mu_hat = beta * abs(z)              # ~ expected 1-step return
+    sigma_hat = df['close'].pct_change().ewm(halflife=hl_sig, adjust=False).std(bias=False).iloc[-1]
+    C = live_cost_percent(spread_pct, 2*fee_rt, slip)  # round-trip cost
+
+    z_star = (C + 0.001) / beta  # 0.10% extra margin
+    if -z < z_star:
+        return {"enter": False, "reason": f"edge_below_cost z*={z_star:.3f} z={z:.3f}"}
+
+    # Sizing
+    f = fractional_kelly(mu_hat, sigma_hat, lam=lam_kelly, cap=0.25)
+    # Use stop distance = k_sl * ATR in price terms
+    atr_val = atr(df)
+    stop_dist = k_sl * atr_val
+    if stop_dist <= 0:
+        return {"enter": False, "reason": "atr_zero"}
+
+    risk_notional = max(0.0, f * equity)  # Kelly fraction of equity
+    # fall back to 1% equity risk model if Kelly is tiny
+    risk_notional = max(risk_notional, 0.01 * equity)
+    qty = risk_notional / stop_dist
+
+    tp_price = price + k_tp * atr_val
+    sl_price = price - k_sl * atr_val
+
+    return {
+        "enter": True,
+        "side": "buy" if z < 0 else "sell",
+        "z": float(z),
+        "z_star": float(z_star),
+        "beta": float(beta),
+        "mu_hat": float(mu_hat),
+        "size_qty": float(qty),
+        "tp": float(tp_price),
+        "sl": float(sl_price),
+    }

@@ -102,6 +102,103 @@ class TechnicalIndicators:
             raise Exception(f"Error calculating RSI: {str(e)}")
     
     @staticmethod
+    def rolling_beta_regression(data: pd.Series, lookback: int = 500) -> float:
+        """
+        Calculate rolling beta for mean reversion prediction using z-score regression.
+        Returns expected next-bar return per unit of negative z-score.
+        
+        Args:
+            data: Price data (close prices)
+            lookback: Number of periods for regression
+            
+        Returns:
+            Beta coefficient (edge strength)
+        """
+        try:
+            if len(data) < lookback or lookback < 50:
+                return 0.0
+            
+            # Calculate z-score using EWMA
+            ewm_mean = data.ewm(span=100, adjust=False).mean()
+            ewm_std = data.ewm(span=100, adjust=False).std()
+            z_score = (data - ewm_mean) / ewm_std
+            
+            # Calculate next-bar returns
+            next_returns = data.pct_change().shift(-1)
+            
+            # Regression variables: x = -z_score, y = next_return
+            x = (-z_score).dropna()
+            y = next_returns.dropna()
+            
+            # Get common index and last 'lookback' points
+            common_idx = x.index.intersection(y.index)
+            if len(common_idx) < 30:
+                return 0.0
+            
+            x_vals = x.loc[common_idx].iloc[-min(lookback, len(common_idx)):]
+            y_vals = y.loc[common_idx].iloc[-min(lookback, len(common_idx)):]
+            
+            # Calculate beta coefficient
+            x_var = np.var(x_vals, ddof=1)
+            if x_var == 0:
+                return 0.0
+            
+            covariance = np.cov(x_vals, y_vals, ddof=1)[0, 1]
+            beta = covariance / x_var
+            
+            # Only return positive beta (mean reversion edge)
+            return max(0.0, float(beta))
+            
+        except Exception as e:
+            return 0.0
+    
+    @staticmethod
+    def ewma_statistics(data: pd.Series, halflife: int = 50) -> tuple:
+        """
+        Calculate EWMA mean and standard deviation.
+        
+        Args:
+            data: Price data
+            halflife: Half-life for EWMA calculation
+            
+        Returns:
+            Tuple of (mean, std_dev)
+        """
+        try:
+            ewm_mean = data.ewm(halflife=halflife, adjust=False).mean()
+            ewm_var = (data - ewm_mean).ewm(halflife=halflife, adjust=False).var()
+            ewm_std = np.sqrt(ewm_var)
+            
+            return float(ewm_mean.iloc[-1]), float(ewm_std.iloc[-1])
+            
+        except Exception as e:
+            return 0.0, 0.0
+    
+    @staticmethod
+    def fractional_kelly(expected_return: float, volatility: float, lambda_factor: float = 0.2, cap: float = 0.25) -> float:
+        """
+        Calculate fractional Kelly criterion for position sizing.
+        
+        Args:
+            expected_return: Expected return of the trade
+            volatility: Volatility of returns
+            lambda_factor: Risk aversion parameter (0-1)
+            cap: Maximum fraction allowed
+            
+        Returns:
+            Optimal fraction of capital to risk
+        """
+        try:
+            if volatility <= 0:
+                return 0.0
+            
+            kelly_fraction = lambda_factor * (expected_return / (volatility ** 2))
+            return max(0.0, min(float(kelly_fraction), cap))
+            
+        except Exception as e:
+            return 0.0
+    
+    @staticmethod
     def macd(data: pd.Series, fast_period: int = 12, slow_period: int = 26, signal_period: int = 9) -> Tuple[pd.Series, pd.Series, pd.Series]:
         """
         Calculate MACD (Moving Average Convergence Divergence).
