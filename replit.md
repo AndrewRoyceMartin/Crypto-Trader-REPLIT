@@ -17,8 +17,10 @@ A modular architecture supports CLI operations via `main.py` and a web interface
 - **Primary Entry Point**: `app.py` - Direct Flask application entry for deployment
 - **WSGI Support**: `wsgi.py` - Production WSGI configuration with Gunicorn
 - **Development Entry**: `main.py` - CLI-based entry with multiple modes
-- **Port Configuration**: Uses PORT environment variable (defaults to 5000)
-- **Health Endpoints**: `/health`, `/ready`, and root `/` endpoint for deployment health checks
+- **Port Configuration**: Uses PORT environment variable (defaults to 5000, maps to 80 for deployment)
+- **Health Endpoints**: `/health`, `/ready`, and root `/` endpoint with intelligent health check detection
+- **Root Route Intelligence**: Detects curl/JSON requests and returns health status automatically
+- **Deployment Files**: `Procfile`, `deployment.json`, and proper requirements.txt for cloud deployment
 - **Production Server**: Gunicorn configuration with proper worker settings
 
 ### Strategy System

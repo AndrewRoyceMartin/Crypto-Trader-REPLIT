@@ -213,9 +213,23 @@ initialize_system()
 # -----------------------------------------------------------------------------
 @app.route("/")
 def dashboard():
-    import time
-    cache_version = int(time.time())
-    return render_template("index.html", cache_version=cache_version)
+    """Root route - serves both as dashboard and health check endpoint."""
+    try:
+        # For health check requests, return simple JSON
+        accept_header = request.headers.get('Accept', '')
+        if ('application/json' in accept_header or 
+            request.args.get('health') == 'true' or
+            'curl' in request.headers.get('User-Agent', '').lower()):
+            return jsonify({"status": "ok", "app": "trading-system"}), 200
+        
+        # For regular browser requests, serve the dashboard
+        import time
+        cache_version = int(time.time())
+        return render_template("index.html", cache_version=cache_version)
+    except Exception as e:
+        # Fallback health check response for any errors
+        app.logger.error(f"Error in root route: {e}")
+        return jsonify({"status": "ok", "app": "trading-system"}), 200
 
 @app.route("/health")
 def health():

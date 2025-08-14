@@ -1,0 +1,32 @@
+{
+  "name": "trading-system",
+  "description": "Algorithmic Trading System with ATO Tax Compliance",
+  "version": "1.0.0",
+  "main": "app.py",
+  "scripts": {
+    "start": "python app.py",
+    "dev": "python web_interface.py"
+  },
+  "health_checks": {
+    "endpoints": [
+      "/",
+      "/health",
+      "/ready"
+    ],
+    "expected_status": 200,
+    "timeout": 30
+  },
+  "environment": {
+    "PORT": "5000",
+    "FLASK_ENV": "production",
+    "PYTHONPATH": "."
+  },
+  "deployment": {
+    "platform": "replit",
+    "runtime": "python3.11",
+    "port_mapping": {
+      "internal": 5000,
+      "external": 80
+    }
+  }
+}
