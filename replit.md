@@ -36,7 +36,7 @@ An adapter pattern with `BaseExchange` provides a unified interface for various 
 The `RiskManager` enforces multiple safety layers, including portfolio-level limits, position sizing, daily loss limits, and emergency halts, performing checks before every trade.
 
 ### Web Interface
-A Flask-based web interface provides real-time monitoring, portfolio visualization with Chart.js, and user interaction capabilities. It features a streamlined three-dashboard system (Main Portfolio, Performance Dashboard, Current Holdings) and a professional footer. ATO tax export functionality is prominent.
+A Flask-based web interface provides real-time monitoring, portfolio visualization with Chart.js, and user interaction capabilities. It features a streamlined three-dashboard system (Main Portfolio, Performance Dashboard, Current Holdings), professional news ticker with breaking crypto market updates, and a professional footer. ATO tax export functionality is prominent. Rate limiting ensures compliance with CoinGecko API limits (6-second update intervals).
 
 ### Technical Indicators
 The `TechnicalIndicators` class provides vectorized calculations for indicators like Bollinger Bands and ATR, utilizing pandas for efficient time series data processing.
@@ -53,7 +53,8 @@ The system incorporates advanced algorithmic optimization for buy/sell decisions
 - **CCXT Library**: Unified exchange interface.
 - **OKX Exchange**: Demo trading environment.
 - **Kraken Exchange**: Live trading platform.
-- **CoinGecko API**: Live cryptocurrency prices.
+- **CoinGecko API**: Live cryptocurrency prices with rate limiting (10 requests/minute).
+- **Crypto News Integration**: Real-time market news ticker with automatic updates.
 
 ### Data Processing & Analysis
 - **Pandas**: Time series data manipulation.
