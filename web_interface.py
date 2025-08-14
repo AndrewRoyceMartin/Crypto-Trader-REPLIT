@@ -433,6 +433,15 @@ def get_crypto_portfolio():
         # Convert to list format for easier frontend consumption
         crypto_list = []
         for symbol, data in portfolio_data.items():
+            # Calculate projected P&L based on target sell price
+            target_sell_price = data.get("target_sell_price", 0)
+            projected_sell_pnl = 0
+            if target_sell_price and target_sell_price > 0:
+                quantity = data["quantity"]
+                current_value = data["current_value"]
+                projected_value = quantity * target_sell_price
+                projected_sell_pnl = projected_value - current_value
+            
             crypto_list.append({
                 "symbol": symbol,
                 "name": data["name"],
@@ -444,7 +453,8 @@ def get_crypto_portfolio():
                 "pnl": round(data["pnl"], 2),
                 "pnl_percent": round(data["pnl_percent"], 2),
                 "target_sell_price": round(data.get("target_sell_price", 0), 4) if data.get("target_sell_price") is not None else 0,
-                "target_buy_price": round(data.get("target_buy_price", 0), 4) if data.get("target_buy_price") is not None else 0
+                "target_buy_price": round(data.get("target_buy_price", 0), 4) if data.get("target_buy_price") is not None else 0,
+                "projected_sell_pnl": round(projected_sell_pnl, 2)
             })
         
         # Sort by current value (largest positions first)
