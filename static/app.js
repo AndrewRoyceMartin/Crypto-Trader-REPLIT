@@ -229,9 +229,10 @@ class TradingApp {
                 pnlElement.className = `mb-0 ${pnlClass}`;
             }
             
-            // Update crypto symbols display
+            // Update crypto symbols display and table
             if (data.cryptocurrencies) {
                 this.updateCryptoSymbols(data.cryptocurrencies);
+                this.updateCryptoTable(data.cryptocurrencies);
                 this.updatePortfolioSummary(data.summary, data.cryptocurrencies);
             }
             
@@ -269,6 +270,82 @@ class TradingApp {
             badge.textContent = `${crypto.symbol} $${price} (${pnl})`;
             badge.setAttribute('title', `${crypto.name}: $${price}, P&L: ${pnl}`);
             symbolsContainer.appendChild(badge);
+        });
+    }
+    
+    updateCryptoTable(cryptos) {
+        const tableBody = document.getElementById('crypto-table');
+        if (!tableBody) return;
+        
+        // Clear existing content
+        tableBody.innerHTML = '';
+        
+        if (!cryptos || cryptos.length === 0) {
+            const row = document.createElement('tr');
+            row.innerHTML = '<td colspan="13" class="text-center text-muted">No cryptocurrency data available</td>';
+            tableBody.appendChild(row);
+            return;
+        }
+        
+        // Populate table with cryptocurrency data
+        cryptos.forEach(crypto => {
+            const row = document.createElement('tr');
+            
+            // Format values
+            const price = crypto.current_price < 1 ? 
+                crypto.current_price.toFixed(6) : 
+                crypto.current_price.toFixed(2);
+            const quantity = crypto.quantity.toFixed(4);
+            const currentValue = this.formatCurrency(crypto.current_value);
+            const pnl = this.formatCurrency(crypto.pnl);
+            const pnlPercent = crypto.pnl_percent.toFixed(2);
+            const targetBuy = crypto.target_buy_price ? this.formatCurrency(crypto.target_buy_price) : '-';
+            const targetSell = crypto.target_sell_price ? this.formatCurrency(crypto.target_sell_price) : '-';
+            
+            // Determine PnL colors
+            const pnlClass = crypto.pnl >= 0 ? 'text-success' : 'text-danger';
+            const pnlIcon = crypto.pnl >= 0 ? '↗' : '↘';
+            
+            // Signal based on current price vs target prices
+            let signal = 'HOLD';
+            let signalClass = 'badge bg-secondary';
+            if (crypto.target_buy_price && crypto.current_price <= crypto.target_buy_price) {
+                signal = 'BUY';
+                signalClass = 'badge bg-success';
+            } else if (crypto.target_sell_price && crypto.current_price >= crypto.target_sell_price) {
+                signal = 'SELL';
+                signalClass = 'badge bg-danger';
+            }
+            
+            row.innerHTML = `
+                <td><strong>${crypto.symbol}</strong></td>
+                <td>${crypto.name}</td>
+                <td>#${crypto.rank}</td>
+                <td>$${price}</td>
+                <td>${quantity}</td>
+                <td>${currentValue}</td>
+                <td>${targetSell}</td>
+                <td class="${pnlClass}">${pnl}</td>
+                <td class="${pnlClass}">${pnlIcon} ${pnlPercent}%</td>
+                <td class="text-muted small">Just now</td>
+                <td><span class="${signalClass}">${signal}</span></td>
+                <td>
+                    <button class="btn btn-sm btn-outline-success me-1" onclick="buyCrypto('${crypto.symbol}')" title="Buy ${crypto.symbol}">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                    <button class="btn btn-sm btn-outline-danger" onclick="sellCrypto('${crypto.symbol}')" title="Sell ${crypto.symbol}">
+                        <i class="fas fa-minus"></i>
+                    </button>
+                </td>
+                <td class="text-muted">
+                    ${crypto.target_buy_price ? 
+                        (crypto.current_price <= crypto.target_buy_price ? '🎯 At buy target' : `${((crypto.current_price - crypto.target_buy_price) / crypto.target_buy_price * 100).toFixed(1)}% above`) :
+                        '-'
+                    }
+                </td>
+            `;
+            
+            tableBody.appendChild(row);
         });
     }
     
