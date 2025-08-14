@@ -1338,41 +1338,112 @@ function resetPortfolio() {
 function showBacktestResults(results) {
     const resultsDiv = document.getElementById('backtest-results');
     
-    resultsDiv.innerHTML = `
-        <div class="row">
-            <div class="col-md-6">
-                <h6>Performance Metrics</h6>
-                <table class="table table-sm">
-                    <tr><td>Total Return</td><td class="text-end">${(results.total_return * 100).toFixed(2)}%</td></tr>
-                    <tr><td>Sharpe Ratio</td><td class="text-end">${results.sharpe_ratio.toFixed(3)}</td></tr>
-                    <tr><td>Max Drawdown</td><td class="text-end">${(results.max_drawdown * 100).toFixed(2)}%</td></tr>
-                    <tr><td>Calmar Ratio</td><td class="text-end">${results.calmar_ratio.toFixed(3)}</td></tr>
-                </table>
-            </div>
-            <div class="col-md-6">
-                <h6>Trading Statistics</h6>
-                <table class="table table-sm">
-                    <tr><td>Total Trades</td><td class="text-end">${results.total_trades}</td></tr>
-                    <tr><td>Win Rate</td><td class="text-end">${(results.win_rate * 100).toFixed(1)}%</td></tr>
-                    <tr><td>Profit Factor</td><td class="text-end">${results.profit_factor.toFixed(2)}</td></tr>
-                    <tr><td>Avg Win</td><td class="text-end">$${results.avg_win.toFixed(2)}</td></tr>
-                </table>
-            </div>
-        </div>
-        <div class="row mt-3">
-            <div class="col-12">
-                <h6>Summary</h6>
-                <div class="alert alert-info">
-                    Initial Capital: $${results.initial_capital.toLocaleString()}<br>
-                    Final Value: $${results.final_value.toLocaleString()}<br>
-                    Profit/Loss: $${(results.final_value - results.initial_capital).toLocaleString()}
-                </div>
-            </div>
-        </div>
-    `;
+    // Clear existing content
+    resultsDiv.textContent = '';
     
-    const modal = new bootstrap.Modal(document.getElementById('backtestModal'));
-    modal.show();
+    // Create the structure using safe DOM methods
+    const rowDiv = document.createElement('div');
+    rowDiv.className = 'row';
+    
+    // Performance Metrics Column
+    const col1 = document.createElement('div');
+    col1.className = 'col-md-6';
+    const h6_1 = document.createElement('h6');
+    h6_1.textContent = 'Performance Metrics';
+    col1.appendChild(h6_1);
+    
+    const table1 = document.createElement('table');
+    table1.className = 'table table-sm';
+    
+    // Add performance metrics rows
+    const metricsData = [
+        ['Total Return', (results.total_return * 100).toFixed(2) + '%'],
+        ['Sharpe Ratio', results.sharpe_ratio.toFixed(3)],
+        ['Max Drawdown', (results.max_drawdown * 100).toFixed(2) + '%'],
+        ['Calmar Ratio', results.calmar_ratio.toFixed(3)]
+    ];
+    
+    metricsData.forEach(([label, value]) => {
+        const row = document.createElement('tr');
+        const td1 = document.createElement('td');
+        td1.textContent = label;
+        const td2 = document.createElement('td');
+        td2.className = 'text-end';
+        td2.textContent = value;
+        row.appendChild(td1);
+        row.appendChild(td2);
+        table1.appendChild(row);
+    });
+    
+    col1.appendChild(table1);
+    rowDiv.appendChild(col1);
+    
+    // Trading Statistics Column
+    const col2 = document.createElement('div');
+    col2.className = 'col-md-6';
+    const h6_2 = document.createElement('h6');
+    h6_2.textContent = 'Trading Statistics';
+    col2.appendChild(h6_2);
+    
+    const table2 = document.createElement('table');
+    table2.className = 'table table-sm';
+    
+    // Add trading statistics rows
+    const statsData = [
+        ['Total Trades', results.total_trades.toString()],
+        ['Win Rate', (results.win_rate * 100).toFixed(1) + '%'],
+        ['Profit Factor', results.profit_factor.toFixed(2)],
+        ['Avg Win', '$' + results.avg_win.toFixed(2)]
+    ];
+    
+    statsData.forEach(([label, value]) => {
+        const row = document.createElement('tr');
+        const td1 = document.createElement('td');
+        td1.textContent = label;
+        const td2 = document.createElement('td');
+        td2.className = 'text-end';
+        td2.textContent = value;
+        row.appendChild(td1);
+        row.appendChild(td2);
+        table2.appendChild(row);
+    });
+    
+    col2.appendChild(table2);
+    rowDiv.appendChild(col2);
+    
+    resultsDiv.appendChild(rowDiv);
+    
+    // Summary section
+    const summaryRow = document.createElement('div');
+    summaryRow.className = 'row mt-3';
+    const summaryCol = document.createElement('div');
+    summaryCol.className = 'col-12';
+    
+    const summaryH6 = document.createElement('h6');
+    summaryH6.textContent = 'Summary';
+    summaryCol.appendChild(summaryH6);
+    
+    const alertDiv = document.createElement('div');
+    alertDiv.className = 'alert alert-info';
+    
+    // Create text nodes for summary
+    const initialCapitalText = document.createTextNode('Initial Capital: $' + results.initial_capital.toLocaleString());
+    const finalValueText = document.createTextNode('Final Value: $' + results.final_value.toLocaleString());
+    const profitLossText = document.createTextNode('Profit/Loss: $' + (results.final_value - results.initial_capital).toLocaleString());
+    
+    alertDiv.appendChild(initialCapitalText);
+    alertDiv.appendChild(document.createElement('br'));
+    alertDiv.appendChild(finalValueText);
+    alertDiv.appendChild(document.createElement('br'));
+    alertDiv.appendChild(profitLossText);
+    
+    summaryCol.appendChild(alertDiv);
+    summaryRow.appendChild(summaryCol);
+    resultsDiv.appendChild(summaryRow);
+    
+    // Show modal with unique variable name
+    const backtestModal = new bootstrap.Modal(document.getElementById('backtestModal'));
+    backtestModal.show();
 }
 
 // Portfolio sorting functionality
