@@ -12,6 +12,8 @@ class TradingApp {
         this.reconnectCountdown = null;
         this.reconnectInterval = null;
         this.nextRetryTime = null;
+        this.startTime = Date.now();
+        this.uptimeInterval = null;
         this.chartData = {
             portfolio: [],
             returns: [],
@@ -43,6 +45,9 @@ class TradingApp {
         
         // Start countdown timer
         this.startCountdown();
+        
+        // Start uptime counter
+        this.startUptimeCounter();
         
         // Handle page visibility change
         document.addEventListener('visibilitychange', () => {
@@ -85,6 +90,10 @@ class TradingApp {
         if (this.countdownInterval) {
             clearInterval(this.countdownInterval);
             this.countdownInterval = null;
+        }
+        if (this.uptimeInterval) {
+            clearInterval(this.uptimeInterval);
+            this.uptimeInterval = null;
         }
     }
     
@@ -870,6 +879,42 @@ class TradingApp {
         if (cryptoStatus) {
             cryptoStatus.className = "badge bg-info";
             cryptoStatus.textContent = "Checking connection...";
+        }
+    }
+    
+    startUptimeCounter() {
+        // Update uptime every second
+        this.uptimeInterval = setInterval(() => {
+            this.updateUptimeDisplay();
+        }, 1000);
+        
+        // Update immediately
+        this.updateUptimeDisplay();
+    }
+    
+    updateUptimeDisplay() {
+        const uptimeElement = document.getElementById('system-uptime');
+        if (uptimeElement) {
+            const uptimeSeconds = Math.floor((Date.now() - this.startTime) / 1000);
+            const uptimeText = this.formatUptime(uptimeSeconds);
+            uptimeElement.textContent = uptimeText;
+        }
+    }
+    
+    formatUptime(totalSeconds) {
+        const days = Math.floor(totalSeconds / 86400);
+        const hours = Math.floor((totalSeconds % 86400) / 3600);
+        const minutes = Math.floor((totalSeconds % 3600) / 60);
+        const seconds = totalSeconds % 60;
+        
+        if (days > 0) {
+            return `${days}d ${hours}h ${minutes}m`;
+        } else if (hours > 0) {
+            return `${hours}h ${minutes}m ${seconds}s`;
+        } else if (minutes > 0) {
+            return `${minutes}m ${seconds}s`;
+        } else {
+            return `${seconds}s`;
         }
     }
 }
