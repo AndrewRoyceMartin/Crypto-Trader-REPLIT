@@ -892,7 +892,7 @@ class TradingApp {
         
         if (connectionUptimeElement && connectionUptimeSeconds !== undefined) {
             if (connectionUptimeSeconds === 0) {
-                connectionUptimeElement.textContent = 'Server Connection Lost';
+                connectionUptimeElement.textContent = 'Server Connection to CoinGecko Lost';
                 connectionUptimeElement.className = 'text-danger ms-1';
             } else {
                 const connectionText = this.formatUptime(connectionUptimeSeconds);
@@ -2102,7 +2102,7 @@ function updateConnectionStatusDisplay(apiStatus) {
             // Update countdown display to show connection issue
             const countdownElement = document.getElementById('trading-countdown');
             if (countdownElement) {
-                countdownElement.textContent = 'Server Connection Lost';
+                countdownElement.textContent = 'Server Connection to CoinGecko Lost';
                 countdownElement.className = 'badge bg-danger ms-2';
             }
         }
@@ -2110,18 +2110,18 @@ function updateConnectionStatusDisplay(apiStatus) {
         // Update new top-right corner connection status (if elements exist)
         if (connectionIcon && connectionText) {
             connectionIcon.className = "fas fa-circle text-danger me-1";
-            connectionText.textContent = "Server Connection Lost";
+            connectionText.textContent = "Server Connection to CoinGecko Lost";
         }
         
         // Update old top-right corner connection status (fallback)
         if (connectionStatus && (!connectionIcon || !connectionText)) {
-            connectionStatus.innerHTML = `<i class="fas fa-circle text-danger me-1"></i>Server Connection Lost`;
+            connectionStatus.innerHTML = `<i class="fas fa-circle text-danger me-1"></i>Server Connection to CoinGecko Lost`;
         }
         
         // Update crypto portfolio status badge
         if (cryptoStatus) {
             cryptoStatus.className = "badge bg-danger";
-            cryptoStatus.textContent = "Server Connection Lost";
+            cryptoStatus.textContent = "Server Connection to CoinGecko Lost";
         }
         
         // Show warning popup if connection was lost and start reconnection countdown
