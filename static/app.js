@@ -892,6 +892,23 @@ class TradingApp {
         this.updateUptimeDisplay();
     }
     
+    stopUptimeCounter() {
+        if (this.uptimeInterval) {
+            clearInterval(this.uptimeInterval);
+            this.uptimeInterval = null;
+        }
+        this.uptimeStarted = false;
+        this.startTime = null;
+        this.updateUptimeDisplay(); // Show "Waiting..." immediately
+    }
+    
+    restartUptimeCounter() {
+        // Stop existing counter
+        this.stopUptimeCounter();
+        // Start fresh counter
+        this.startUptimeCounter();
+    }
+    
     updateUptimeDisplay() {
         const uptimeElement = document.getElementById('system-uptime');
         if (uptimeElement) {
@@ -2061,8 +2078,8 @@ function updateConnectionStatusDisplay(apiStatus) {
             window.tradingApp.stopReconnectionCountdown();
             // Restart trading countdown when connection is restored
             window.tradingApp.startCountdown();
-            // Start uptime counter when connection is first confirmed
-            window.tradingApp.startUptimeCounter();
+            // Restart uptime counter when connection is restored (resets the timer)
+            window.tradingApp.restartUptimeCounter();
         }
         
         // Update new top-right corner connection status (if elements exist)
@@ -2087,12 +2104,15 @@ function updateConnectionStatusDisplay(apiStatus) {
         
         console.log('Status updated: Connected to', apiStatus.api_provider);
     } else {
-        // Stop trading countdown when connection is lost
+        // Stop trading countdown and uptime counter when connection is lost
         if (window.tradingApp) {
             if (window.tradingApp.countdownInterval) {
                 clearInterval(window.tradingApp.countdownInterval);
                 window.tradingApp.countdownInterval = null;
             }
+            // Stop uptime counter when connection is lost
+            window.tradingApp.stopUptimeCounter();
+            
             // Update countdown display to show connection issue
             const countdownElement = document.getElementById('trading-countdown');
             if (countdownElement) {
