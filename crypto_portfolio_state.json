@@ -3,17 +3,17 @@
     "BTC": {
       "name": "Bitcoin",
       "rank": 1,
-      "quantity": 0.0008398422672510673,
-      "initial_price": 118028.75914859687,
-      "current_price": 119069.97766058543,
+      "quantity": 0.0008080220428413287,
+      "initial_price": 123759,
+      "current_price": 124234.09049274908,
       "initial_value": 100.0,
-      "current_value": 100.0,
-      "pnl": 0.0,
-      "pnl_percent": 0.0,
-      "target_sell_price": 125023.4765436147,
-      "target_buy_price": 109544.3794477386,
-      "projected_sell_pnl": 5.491474842316535,
-      "initial_investment_date": "2025-08-14T03:15:39.097964",
+      "current_value": 100.38388359048561,
+      "pnl": 0.3838835904856097,
+      "pnl_percent": 0.3838835904856097,
+      "target_sell_price": 130445.79501738654,
+      "target_buy_price": 114295.36325332915,
+      "projected_sell_pnl": 5.000000000000014,
+      "initial_investment_date": "2025-08-14T03:17:38.745661",
       "total_invested": 100.0,
       "total_realized_pnl": 0.0,
       "trade_count": 0
@@ -21,17 +21,17 @@
     "ETH": {
       "name": "Ethereum",
       "rank": 2,
-      "quantity": 0.021953806971220527,
-      "initial_price": 4472.2371665168375,
-      "current_price": 4555.018641235711,
+      "quantity": 0.02103332520044759,
+      "initial_price": 4754.36,
+      "current_price": 4672.378636765248,
       "initial_value": 100.0,
-      "current_value": 100.0,
-      "pnl": 0.0,
-      "pnl_percent": 0.0,
-      "target_sell_price": 4782.769573297496,
-      "target_buy_price": 4190.617149936854,
-      "projected_sell_pnl": 6.10950576482314,
-      "initial_investment_date": "2025-08-14T03:15:39.098165",
+      "current_value": 98.27565932670745,
+      "pnl": -1.724340673292545,
+      "pnl_percent": -1.7243406732925448,
+      "target_sell_price": 4905.997568603511,
+      "target_buy_price": 4298.588345824029,
+      "projected_sell_pnl": 5.0,
+      "initial_investment_date": "2025-08-14T03:17:38.745842",
       "total_invested": 100.0,
       "total_realized_pnl": 0.0,
       "trade_count": 0
@@ -39,17 +39,17 @@
     "SOL": {
       "name": "Solana",
       "rank": 3,
-      "quantity": 0.5990699535472718,
-      "initial_price": 171.8169834014906,
-      "current_price": 166.92541398190676,
+      "quantity": 0.4834888555818788,
+      "initial_price": 206.83,
+      "current_price": 194.6723842024127,
       "initial_value": 100.0,
-      "current_value": 99.99999999999999,
-      "pnl": -1.4210854715202004e-14,
-      "pnl_percent": -1.4210854715202004e-14,
-      "target_sell_price": 180.27944710045932,
-      "target_buy_price": 146.89436430407795,
-      "projected_sell_pnl": 6.2703946611374874,
-      "initial_investment_date": "2025-08-14T03:15:39.098311",
+      "current_value": 94.12192825142034,
+      "pnl": -5.878071748579657,
+      "pnl_percent": -5.878071748579657,
+      "target_sell_price": 210.24617493860572,
+      "target_buy_price": 171.31169809812317,
+      "projected_sell_pnl": 8.0,
+      "initial_investment_date": "2025-08-14T03:17:38.746076",
       "total_invested": 100.0,
       "total_realized_pnl": 0.0,
       "trade_count": 0
@@ -57,17 +57,17 @@
     "XRP": {
       "name": "XRP",
       "rank": 4,
-      "quantity": 185.07710665931356,
-      "initial_price": 0.5271633625885573,
-      "current_price": 0.5403153410220428,
+      "quantity": 29.940119760479043,
+      "initial_price": 3.34,
+      "current_price": 3.2783000513163603,
       "initial_value": 100.0,
-      "current_value": 100.0,
-      "pnl": 0.0,
-      "pnl_percent": 0.0,
-      "target_sell_price": 0.5835405683038063,
-      "target_buy_price": 0.47547750009939765,
-      "projected_sell_pnl": 10.496692907847788,
-      "initial_investment_date": "2025-08-14T03:15:39.098467",
+      "current_value": 98.15269614719642,
+      "pnl": -1.8473038528035772,
+      "pnl_percent": -1.8473038528035772,
+      "target_sell_price": 3.5405640554216693,
+      "target_buy_price": 2.884904045158397,
+      "projected_sell_pnl": 8.000000000000014,
+      "initial_investment_date": "2025-08-14T03:17:38.746323",
       "total_invested": 100.0,
       "total_realized_pnl": 0.0,
       "trade_count": 0
@@ -75,17 +75,17 @@
     "DOGE": {
       "name": "Dogecoin",
       "rank": 5,
-      "quantity": 1105.0200588779226,
-      "initial_price": 0.09376707736150894,
-      "current_price": 0.09049609479627331,
+      "quantity": 394.5037734285928,
+      "initial_price": 0.253483,
+      "current_price": 0.24817332508604756,
       "initial_value": 100.0,
-      "current_value": 100.0,
-      "pnl": 0.0,
-      "pnl_percent": 0.0,
-      "target_sell_price": 0.09773578237997518,
-      "target_buy_price": 0.07963656342072051,
-      "projected_sell_pnl": 6.835575137843975,
-      "initial_investment_date": "2025-08-14T03:15:39.098620",
+      "current_value": 97.90531321076661,
+      "pnl": -2.0946867892333927,
+      "pnl_percent": -2.0946867892333927,
+      "target_sell_price": 0.2680271910929314,
+      "target_buy_price": 0.21839252607572185,
+      "projected_sell_pnl": 8.0,
+      "initial_investment_date": "2025-08-14T03:17:38.746630",
       "total_invested": 100.0,
       "total_realized_pnl": 0.0,
       "trade_count": 0
@@ -93,17 +93,17 @@
     "BNB": {
       "name": "BNB",
       "rank": 6,
-      "quantity": 0.36842254046997125,
-      "initial_price": 270.37306184698,
-      "current_price": 271.4274752908356,
+      "quantity": 0.11709464760365804,
+      "initial_price": 854.01,
+      "current_price": 874.9290810508594,
       "initial_value": 100.0,
-      "current_value": 100.0,
-      "pnl": 0.0,
-      "pnl_percent": 0.0,
-      "target_sell_price": 293.1416733141025,
-      "target_buy_price": 238.85617825593533,
-      "projected_sell_pnl": 10.47610978300294,
-      "initial_investment_date": "2025-08-14T03:15:39.098772",
+      "current_value": 102.44951242384275,
+      "pnl": 2.449512423842748,
+      "pnl_percent": 2.449512423842748,
+      "target_sell_price": 944.9234075349282,
+      "target_buy_price": 769.9375913247562,
+      "projected_sell_pnl": 8.000000000000014,
+      "initial_investment_date": "2025-08-14T03:17:38.746780",
       "total_invested": 100.0,
       "total_realized_pnl": 0.0,
       "trade_count": 0
@@ -111,17 +111,17 @@
     "ADA": {
       "name": "Cardano",
       "rank": 7,
-      "quantity": 4.497392076589062,
-      "initial_price": 23.424714436700043,
-      "current_price": 22.235108324343066,
+      "quantity": 102.34785990624935,
+      "initial_price": 0.97706,
+      "current_price": 0.99446721263941,
       "initial_value": 100.0,
-      "current_value": 100.0,
-      "pnl": 0.0,
-      "pnl_percent": 0.0,
-      "target_sell_price": 24.013916990290515,
-      "target_buy_price": 19.5668953254219,
-      "projected_sell_pnl": 6.346122140173378,
-      "initial_investment_date": "2025-08-14T03:15:39.098910",
+      "current_value": 101.78159096057662,
+      "pnl": 1.7815909605766223,
+      "pnl_percent": 1.7815909605766223,
+      "target_sell_price": 1.074024589650563,
+      "target_buy_price": 0.8751311471226808,
+      "projected_sell_pnl": 8.000000000000014,
+      "initial_investment_date": "2025-08-14T03:17:38.746918",
       "total_invested": 100.0,
       "total_realized_pnl": 0.0,
       "trade_count": 0
@@ -129,17 +129,17 @@
     "AVAX": {
       "name": "Avalanche",
       "rank": 8,
-      "quantity": 0.7255512577937233,
-      "initial_price": 134.5444757438714,
-      "current_price": 137.82623753431676,
+      "quantity": 3.87747188832881,
+      "initial_price": 25.79,
+      "current_price": 26.008555474939595,
       "initial_value": 100.0,
-      "current_value": 100.0,
-      "pnl": 0.0,
-      "pnl_percent": 0.0,
-      "target_sell_price": 148.85233653706211,
-      "target_buy_price": 121.28708903019874,
-      "projected_sell_pnl": 9.752324246822141,
-      "initial_investment_date": "2025-08-14T03:15:39.099048",
+      "current_value": 100.84744271011864,
+      "pnl": 0.8474427101186421,
+      "pnl_percent": 0.8474427101186421,
+      "target_sell_price": 28.089239912934765,
+      "target_buy_price": 22.887528817946844,
+      "projected_sell_pnl": 8.000000000000014,
+      "initial_investment_date": "2025-08-14T03:17:38.747180",
       "total_invested": 100.0,
       "total_realized_pnl": 0.0,
       "trade_count": 0
@@ -147,17 +147,17 @@
     "LINK": {
       "name": "Chainlink",
       "rank": 9,
-      "quantity": 1.0825879865702128,
-      "initial_price": 93.49300838142601,
-      "current_price": 92.37124486926344,
+      "quantity": 4.180602006688963,
+      "initial_price": 23.92,
+      "current_price": 23.992436917346282,
       "initial_value": 100.0,
-      "current_value": 100.0,
-      "pnl": 0.0,
-      "pnl_percent": 0.0,
-      "target_sell_price": 99.76094445880452,
-      "target_buy_price": 81.28669548495182,
-      "projected_sell_pnl": 7.827508904281245,
-      "initial_investment_date": "2025-08-14T03:15:39.099325",
+      "current_value": 100.30282992201622,
+      "pnl": 0.3028299220162154,
+      "pnl_percent": 0.3028299220162154,
+      "target_sell_price": 25.911831870733987,
+      "target_buy_price": 21.11334448726473,
+      "projected_sell_pnl": 8.0,
+      "initial_investment_date": "2025-08-14T03:17:38.747350",
       "total_invested": 100.0,
       "total_realized_pnl": 0.0,
       "trade_count": 0
@@ -165,17 +165,17 @@
     "UNI": {
       "name": "Uniswap",
       "rank": 10,
-      "quantity": 0.9311261910383097,
-      "initial_price": 106.07021626443353,
-      "current_price": 107.39682866023651,
+      "quantity": 8.271298593879239,
+      "initial_price": 12.09,
+      "current_price": 11.72828450423036,
       "initial_value": 100.0,
-      "current_value": 100.0,
-      "pnl": 0.0,
-      "pnl_percent": 0.0,
-      "target_sell_price": 115.98857495305543,
-      "target_buy_price": 94.50920922100813,
-      "projected_sell_pnl": 5.9009490485344,
-      "initial_investment_date": "2025-08-14T03:15:39.099497",
+      "current_value": 97.00814312845624,
+      "pnl": -2.99185687154376,
+      "pnl_percent": -2.99185687154376,
+      "target_sell_price": 12.66654726456879,
+      "target_buy_price": 10.320890363722716,
+      "projected_sell_pnl": 8.0,
+      "initial_investment_date": "2025-08-14T03:17:38.747533",
       "total_invested": 100.0,
       "total_realized_pnl": 0.0,
       "trade_count": 0
@@ -183,17 +183,17 @@
     "SAROS": {
       "name": "Saros Finance",
       "rank": 11,
-      "quantity": 0.7029807591760903,
-      "initial_price": 146.4737388933365,
-      "current_price": 142.25140403160154,
+      "quantity": 1.1226925621277974,
+      "initial_price": 89.07157967669592,
+      "current_price": 82.45498030232521,
       "initial_value": 100.0,
-      "current_value": 100.0,
-      "pnl": 0.0,
-      "pnl_percent": 0.0,
-      "target_sell_price": 159.32157251539374,
-      "target_buy_price": 116.64615130591326,
-      "projected_sell_pnl": 9.656745188077679,
-      "initial_investment_date": "2025-08-14T03:15:39.099644",
+      "current_value": 92.57159309581456,
+      "pnl": -7.428406904185437,
+      "pnl_percent": -7.428406904185437,
+      "target_sell_price": 92.34957793860424,
+      "target_buy_price": 67.61308384790668,
+      "projected_sell_pnl": 12.0,
+      "initial_investment_date": "2025-08-14T03:17:38.747712",
       "total_invested": 100.0,
       "total_realized_pnl": 0.0,
       "trade_count": 0
@@ -201,17 +201,17 @@
     "XCN": {
       "name": "Onyxcoin",
       "rank": 12,
-      "quantity": 2.486337120866441,
-      "initial_price": 38.11939269594593,
-      "current_price": 40.21980734662076,
+      "quantity": 0.7179017238613511,
+      "initial_price": 139.29483197523714,
+      "current_price": 142.76768648846627,
       "initial_value": 100.0,
-      "current_value": 100.0,
-      "pnl": 0.0,
-      "pnl_percent": 0.0,
-      "target_sell_price": 45.04618422821526,
-      "target_buy_price": 32.98024202422903,
-      "projected_sell_pnl": 17.40729870856866,
-      "initial_investment_date": "2025-08-14T03:15:39.099800",
+      "current_value": 102.49316824176685,
+      "pnl": 2.4931682417668526,
+      "pnl_percent": 2.4931682417668526,
+      "target_sell_price": 159.89980886708224,
+      "target_buy_price": 117.06950292054235,
+      "projected_sell_pnl": 12.000000000000014,
+      "initial_investment_date": "2025-08-14T03:17:38.747861",
       "total_invested": 100.0,
       "total_realized_pnl": 0.0,
       "trade_count": 0
@@ -219,17 +219,17 @@
     "ZBCN": {
       "name": "Zebec Network",
       "rank": 13,
-      "quantity": 3.1249150192872386,
-      "initial_price": 32.136385237106325,
-      "current_price": 32.00087022616346,
+      "quantity": 0.7146285711939673,
+      "initial_price": 139.93283228646285,
+      "current_price": 147.6003121139407,
       "initial_value": 100.0,
-      "current_value": 100.0,
-      "pnl": 0.0,
-      "pnl_percent": 0.0,
-      "target_sell_price": 35.84097465330308,
-      "target_buy_price": 26.240713585454035,
-      "projected_sell_pnl": 20.094718727189573,
-      "initial_investment_date": "2025-08-14T03:15:39.099975",
+      "current_value": 105.47940015376906,
+      "pnl": 5.479400153769063,
+      "pnl_percent": 5.479400153769063,
+      "target_sell_price": 165.3123495676136,
+      "target_buy_price": 121.03225593343139,
+      "projected_sell_pnl": 12.0,
+      "initial_investment_date": "2025-08-14T03:17:38.748008",
       "total_invested": 100.0,
       "total_realized_pnl": 0.0,
       "trade_count": 0
@@ -237,17 +237,17 @@
     "SYRUP": {
       "name": "Maple Finance",
       "rank": 14,
-      "quantity": 0.8882459623132666,
-      "initial_price": 120.72254586403754,
-      "current_price": 112.58142929191499,
+      "quantity": 2.062531269473298,
+      "initial_price": 48.48411341930185,
+      "current_price": 51.673778903807616,
       "initial_value": 100.0,
-      "current_value": 100.0,
-      "pnl": 0.0,
-      "pnl_percent": 0.0,
-      "target_sell_price": 126.0912008069448,
-      "target_buy_price": 92.31677201937029,
-      "projected_sell_pnl": 4.315060580401209,
-      "initial_investment_date": "2025-08-14T03:15:39.100194",
+      "current_value": 106.57878480095283,
+      "pnl": 6.578784800952832,
+      "pnl_percent": 6.578784800952832,
+      "target_sell_price": 57.874632372264536,
+      "target_buy_price": 42.37249870112225,
+      "projected_sell_pnl": 12.0,
+      "initial_investment_date": "2025-08-14T03:17:38.748225",
       "total_invested": 100.0,
       "total_realized_pnl": 0.0,
       "trade_count": 0
@@ -255,17 +255,17 @@
     "TOSHI": {
       "name": "Toshi",
       "rank": 15,
-      "quantity": 12.555519743929922,
-      "initial_price": 7.511756714918526,
-      "current_price": 7.96462448703853,
+      "quantity": 4.129214780778378,
+      "initial_price": 24.217679464265963,
+      "current_price": 23.13462596834793,
       "initial_value": 100.0,
-      "current_value": 100.0,
-      "pnl": 0.0,
-      "pnl_percent": 0.0,
-      "target_sell_price": 8.920379425483155,
-      "target_buy_price": 6.530992079371595,
-      "projected_sell_pnl": 22.616032528060103,
-      "initial_investment_date": "2025-08-14T03:15:39.100390",
+      "current_value": 95.52783949628157,
+      "pnl": -4.4721605037184275,
+      "pnl_percent": -4.4721605037184275,
+      "target_sell_price": 25.910781084549683,
+      "target_buy_price": 18.970393294045305,
+      "projected_sell_pnl": 12.000000000000014,
+      "initial_investment_date": "2025-08-14T03:17:38.748380",
       "total_invested": 100.0,
       "total_realized_pnl": 0.0,
       "trade_count": 0
@@ -273,17 +273,17 @@
     "VENOM": {
       "name": "Venom",
       "rank": 16,
-      "quantity": 0.85864248205038,
-      "initial_price": 111.40213968539395,
-      "current_price": 116.46290754355269,
+      "quantity": 1.1819992915594886,
+      "initial_price": 84.60241957341911,
+      "current_price": 81.71412519338273,
       "initial_value": 100.0,
-      "current_value": 100.0,
-      "pnl": 0.0,
-      "pnl_percent": 0.0,
-      "target_sell_price": 130.43845644877902,
-      "target_buy_price": 95.49958418571322,
-      "projected_sell_pnl": 9.491704440488974,
-      "initial_investment_date": "2025-08-14T03:15:39.100520",
+      "current_value": 96.58603808898174,
+      "pnl": -3.413961911018262,
+      "pnl_percent": -3.413961911018262,
+      "target_sell_price": 91.51982021658867,
+      "target_buy_price": 67.00558265857384,
+      "projected_sell_pnl": 12.0,
+      "initial_investment_date": "2025-08-14T03:17:38.748536",
       "total_invested": 100.0,
       "total_realized_pnl": 0.0,
       "trade_count": 0
@@ -291,17 +291,17 @@
     "EUL": {
       "name": "Euler",
       "rank": 17,
-      "quantity": 1.857656474966747,
-      "initial_price": 53.32060948753171,
-      "current_price": 53.83126608583002,
+      "quantity": 11.174172060002858,
+      "initial_price": 8.949208895569344,
+      "current_price": 8.293706506561113,
       "initial_value": 100.0,
-      "current_value": 100.0,
-      "pnl": 0.0,
-      "pnl_percent": 0.0,
-      "target_sell_price": 60.291018016129634,
-      "target_buy_price": 44.141638190380625,
-      "projected_sell_pnl": 5.374523002748006,
-      "initial_investment_date": "2025-08-14T03:15:39.100631",
+      "current_value": 92.6753035194791,
+      "pnl": -7.324696480520899,
+      "pnl_percent": -7.3246964805209,
+      "target_sell_price": 9.288951287348448,
+      "target_buy_price": 6.800839335380114,
+      "projected_sell_pnl": 12.000000000000014,
+      "initial_investment_date": "2025-08-14T03:17:38.748689",
       "total_invested": 100.0,
       "total_realized_pnl": 0.0,
       "trade_count": 0
@@ -309,17 +309,17 @@
     "WBT": {
       "name": "WhiteBIT Coin",
       "rank": 18,
-      "quantity": 0.6581912270643546,
-      "initial_price": 144.6360312073582,
-      "current_price": 151.93152975620336,
+      "quantity": 19.95462581174684,
+      "initial_price": 5.011369340793764,
+      "current_price": 4.599321248365246,
       "initial_value": 100.0,
-      "current_value": 100.0,
-      "pnl": 0.0,
-      "pnl_percent": 0.0,
-      "target_sell_price": 170.1633133269478,
-      "target_buy_price": 124.58385440008676,
-      "projected_sell_pnl": 13.119532812126977,
-      "initial_investment_date": "2025-08-14T03:15:39.100747",
+      "current_value": 91.77773449914484,
+      "pnl": -8.222265500855158,
+      "pnl_percent": -8.222265500855158,
+      "target_sell_price": 5.151239798169076,
+      "target_buy_price": 3.7714434236595022,
+      "projected_sell_pnl": 12.0,
+      "initial_investment_date": "2025-08-14T03:17:38.748839",
       "total_invested": 100.0,
       "total_realized_pnl": 0.0,
       "trade_count": 0
@@ -327,17 +327,17 @@
     "HYPE": {
       "name": "Hyperliquid",
       "rank": 19,
-      "quantity": 4.901852178768264,
-      "initial_price": 19.598498560959154,
-      "current_price": 20.400451982851912,
+      "quantity": 8.090347787233068,
+      "initial_price": 12.36040806030669,
+      "current_price": 13.470231265718672,
       "initial_value": 100.0,
-      "current_value": 100.0,
-      "pnl": 0.0,
-      "pnl_percent": 0.0,
-      "target_sell_price": 22.848506220794143,
-      "target_buy_price": 16.72837062593857,
-      "projected_sell_pnl": 16.914441387486107,
-      "initial_investment_date": "2025-08-14T03:15:39.100893",
+      "current_value": 108.97885571412475,
+      "pnl": 8.978855714124748,
+      "pnl_percent": 8.978855714124748,
+      "target_sell_price": 15.086659017604914,
+      "target_buy_price": 11.045589637889313,
+      "projected_sell_pnl": 12.000000000000014,
+      "initial_investment_date": "2025-08-14T03:17:38.749002",
       "total_invested": 100.0,
       "total_realized_pnl": 0.0,
       "trade_count": 0
@@ -345,17 +345,17 @@
     "XMR": {
       "name": "Monero",
       "rank": 20,
-      "quantity": 1.3606750249773965,
-      "initial_price": 68.67105773486733,
-      "current_price": 73.49293414249387,
+      "quantity": 1.006658903655952,
+      "initial_price": 99.33851440326329,
+      "current_price": 98.28845075779915,
       "initial_value": 100.0,
-      "current_value": 100.0,
-      "pnl": 0.0,
-      "pnl_percent": 0.0,
-      "target_sell_price": 82.31208623959314,
-      "target_buy_price": 60.26420599684497,
-      "projected_sell_pnl": 21.68404713618311,
-      "initial_investment_date": "2025-08-14T03:15:39.101056",
+      "current_value": 98.94294408188811,
+      "pnl": -1.0570559181118853,
+      "pnl_percent": -1.0570559181118853,
+      "target_sell_price": 110.08306484873506,
+      "target_buy_price": 80.59652962139532,
+      "projected_sell_pnl": 12.000000000000028,
+      "initial_investment_date": "2025-08-14T03:17:38.749154",
       "total_invested": 100.0,
       "total_realized_pnl": 0.0,
       "trade_count": 0
@@ -363,17 +363,17 @@
     "SUI": {
       "name": "Sui Network",
       "rank": 21,
-      "quantity": 55.92058084195914,
-      "initial_price": 1.6960266008643552,
-      "current_price": 1.7882503810648287,
+      "quantity": 10.143237238511256,
+      "initial_price": 9.858785479287203,
+      "current_price": 9.831169832642324,
       "initial_value": 100.0,
-      "current_value": 100.0,
-      "pnl": 0.0,
-      "pnl_percent": 0.0,
-      "target_sell_price": 1.9670754191713118,
-      "target_buy_price": 1.5200128239051043,
-      "projected_sell_pnl": 16.009231341556657,
-      "initial_investment_date": "2025-08-14T03:15:39.101259",
+      "current_value": 99.71988794458609,
+      "pnl": -0.28011205541390893,
+      "pnl_percent": -0.28011205541390893,
+      "target_sell_price": 10.814286815906557,
+      "target_buy_price": 8.356494357745975,
+      "projected_sell_pnl": 10.0,
+      "initial_investment_date": "2025-08-14T03:17:38.749356",
       "total_invested": 100.0,
       "total_realized_pnl": 0.0,
       "trade_count": 0
@@ -381,17 +381,17 @@
     "RNDR": {
       "name": "Render Token",
       "rank": 22,
-      "quantity": 2.027446811224138,
-      "initial_price": 47.33300611699803,
-      "current_price": 49.32311883418619,
+      "quantity": 11.59530504239533,
+      "initial_price": 8.62418018623702,
+      "current_price": 7.991523365003208,
       "initial_value": 100.0,
-      "current_value": 100.00000000000001,
-      "pnl": 1.4210854715202004e-14,
-      "pnl_percent": 1.4210854715202004e-14,
-      "target_sell_price": 54.25543071760481,
-      "target_buy_price": 41.92465100905826,
-      "projected_sell_pnl": 12.23457706933074,
-      "initial_investment_date": "2025-08-14T03:15:39.101417",
+      "current_value": 92.66415117064179,
+      "pnl": -7.335848829358213,
+      "pnl_percent": -7.335848829358213,
+      "target_sell_price": 8.79067570150353,
+      "target_buy_price": 6.792794860252727,
+      "projected_sell_pnl": 10.000000000000028,
+      "initial_investment_date": "2025-08-14T03:17:38.749515",
       "total_invested": 100.0,
       "total_realized_pnl": 0.0,
       "trade_count": 0
@@ -399,17 +399,17 @@
     "PEPE": {
       "name": "Pepe",
       "rank": 23,
-      "quantity": 5.346726014285564,
-      "initial_price": 20.321332402546297,
-      "current_price": 18.703034292914317,
+      "quantity": 2.479750534687094,
+      "initial_price": 40.32663713594822,
+      "current_price": 41.392440498320745,
       "initial_value": 100.0,
-      "current_value": 100.0,
-      "pnl": 0.0,
-      "pnl_percent": 0.0,
-      "target_sell_price": 20.57333772220575,
-      "target_buy_price": 15.897579148977169,
-      "projected_sell_pnl": 6.297098509053839,
-      "initial_investment_date": "2025-08-14T03:15:39.101576",
+      "current_value": 102.64292645771458,
+      "pnl": 2.64292645771458,
+      "pnl_percent": 2.64292645771458,
+      "target_sell_price": 45.531684548152825,
+      "target_buy_price": 35.18357442357263,
+      "projected_sell_pnl": 10.000000000000028,
+      "initial_investment_date": "2025-08-14T03:17:38.750549",
       "total_invested": 100.0,
       "total_realized_pnl": 0.0,
       "trade_count": 0
@@ -417,17 +417,17 @@
     "TON": {
       "name": "Toncoin",
       "rank": 24,
-      "quantity": 2.32682072265735,
-      "initial_price": 40.62387107144261,
-      "current_price": 42.97709704329726,
+      "quantity": 2.295859239361062,
+      "initial_price": 43.556677293434596,
+      "current_price": 45.00978326070268,
       "initial_value": 100.0,
-      "current_value": 100.0,
-      "pnl": 0.0,
-      "pnl_percent": 0.0,
-      "target_sell_price": 47.274806747627,
-      "target_buy_price": 36.53053248680267,
-      "projected_sell_pnl": 18.442986426114715,
-      "initial_investment_date": "2025-08-14T03:15:39.101717",
+      "current_value": 103.33612676072313,
+      "pnl": 3.3361267607231326,
+      "pnl_percent": 3.3361267607231326,
+      "target_sell_price": 49.51076158677296,
+      "target_buy_price": 38.25831577159728,
+      "projected_sell_pnl": 10.000000000000014,
+      "initial_investment_date": "2025-08-14T03:17:38.750754",
       "total_invested": 100.0,
       "total_realized_pnl": 0.0,
       "trade_count": 0
@@ -435,17 +435,17 @@
     "LTC": {
       "name": "Litecoin",
       "rank": 25,
-      "quantity": 7.674535995762769,
-      "initial_price": 15.14125361860964,
-      "current_price": 13.030103716395566,
+      "quantity": 3.0007714677571946,
+      "initial_price": 33.324763673103355,
+      "current_price": 33.26486527742874,
       "initial_value": 100.0,
-      "current_value": 100.0,
-      "pnl": 0.0,
-      "pnl_percent": 0.0,
-      "target_sell_price": 14.333114088035122,
-      "target_buy_price": 11.075588158936231,
-      "projected_sell_pnl": 0.43343807516282595,
-      "initial_investment_date": "2025-08-14T03:15:39.101827",
+      "current_value": 99.82025860329517,
+      "pnl": -0.17974139670482714,
+      "pnl_percent": -0.17974139670482714,
+      "target_sell_price": 36.59135180517162,
+      "target_buy_price": 28.275135485814427,
+      "projected_sell_pnl": 10.000000000000014,
+      "initial_investment_date": "2025-08-14T03:17:38.751210",
       "total_invested": 100.0,
       "total_realized_pnl": 0.0,
       "trade_count": 0
@@ -453,17 +453,17 @@
     "SHIB": {
       "name": "Shiba Inu",
       "rank": 26,
-      "quantity": 2.199540244283966,
-      "initial_price": 45.08708336923771,
-      "current_price": 45.464046525119976,
+      "quantity": 5.113805944291581,
+      "initial_price": 19.55490706713805,
+      "current_price": 19.476854634772256,
       "initial_value": 100.0,
-      "current_value": 100.0,
-      "pnl": 0.0,
-      "pnl_percent": 0.0,
-      "target_sell_price": 50.01045117763198,
-      "target_buy_price": 38.644439546351975,
-      "projected_sell_pnl": 8.587128756766916,
-      "initial_investment_date": "2025-08-14T03:15:39.101933",
+      "current_value": 99.60085500740139,
+      "pnl": -0.3991449925986075,
+      "pnl_percent": -0.3991449925986075,
+      "target_sell_price": 21.424540098249484,
+      "target_buy_price": 16.555326439556417,
+      "projected_sell_pnl": 10.000000000000014,
+      "initial_investment_date": "2025-08-14T03:17:38.751641",
       "total_invested": 100.0,
       "total_realized_pnl": 0.0,
       "trade_count": 0
@@ -471,17 +471,17 @@
     "DOT": {
       "name": "Polkadot",
       "rank": 27,
-      "quantity": 1.899773435048473,
-      "initial_price": 48.692751919115125,
-      "current_price": 52.63785573328037,
+      "quantity": 4.304691533185074,
+      "initial_price": 23.230468252857424,
+      "current_price": 23.420260588804204,
       "initial_value": 100.0,
-      "current_value": 100.0,
-      "pnl": 0.0,
-      "pnl_percent": 0.0,
-      "target_sell_price": 57.90164130660841,
-      "target_buy_price": 44.742177373288314,
-      "projected_sell_pnl": 11.432494068493469,
-      "initial_investment_date": "2025-08-14T03:15:39.102036",
+      "current_value": 100.81699746161354,
+      "pnl": 0.8169974616135391,
+      "pnl_percent": 0.8169974616135391,
+      "target_sell_price": 25.762286647684626,
+      "target_buy_price": 19.907221500483573,
+      "projected_sell_pnl": 10.000000000000014,
+      "initial_investment_date": "2025-08-14T03:17:38.751965",
       "total_invested": 100.0,
       "total_realized_pnl": 0.0,
       "trade_count": 0
@@ -489,17 +489,17 @@
     "TRX": {
       "name": "TRON",
       "rank": 28,
-      "quantity": 2.6769448213475195,
-      "initial_price": 36.775247231644194,
-      "current_price": 37.356018399236945,
+      "quantity": 8.011164417588454,
+      "initial_price": 12.4825799081655,
+      "current_price": 12.547032847608476,
       "initial_value": 100.0,
-      "current_value": 100.0,
-      "pnl": 0.0,
-      "pnl_percent": 0.0,
-      "target_sell_price": 41.09162023916064,
-      "target_buy_price": 31.7526156393514,
-      "projected_sell_pnl": 11.23073596128907,
-      "initial_investment_date": "2025-08-14T03:15:39.102221",
+      "current_value": 100.51634309507455,
+      "pnl": 0.5163430950745465,
+      "pnl_percent": 0.5163430950745465,
+      "target_sell_price": 13.801736132369324,
+      "target_buy_price": 10.664977920467203,
+      "projected_sell_pnl": 10.0,
+      "initial_investment_date": "2025-08-14T03:17:38.752299",
       "total_invested": 100.0,
       "total_realized_pnl": 0.0,
       "trade_count": 0
@@ -507,17 +507,17 @@
     "MATIC": {
       "name": "Polygon",
       "rank": 29,
-      "quantity": 3.9366155789956316,
-      "initial_price": 25.996995517586193,
-      "current_price": 25.402531182766264,
+      "quantity": 22.77864594830914,
+      "initial_price": 4.390076575531611,
+      "current_price": 4.380210634241805,
       "initial_value": 100.0,
-      "current_value": 100.0,
-      "pnl": 0.0,
-      "pnl_percent": 0.0,
-      "target_sell_price": 27.94278430104289,
-      "target_buy_price": 21.592151505351325,
-      "projected_sell_pnl": 12.811733376918426,
-      "initial_investment_date": "2025-08-14T03:15:39.102356",
+      "current_value": 99.7752672164127,
+      "pnl": -0.22473278358729942,
+      "pnl_percent": -0.22473278358729945,
+      "target_sell_price": 4.818231697665985,
+      "target_buy_price": 3.723179039105534,
+      "projected_sell_pnl": 10.000000000000014,
+      "initial_investment_date": "2025-08-14T03:17:38.752496",
       "total_invested": 100.0,
       "total_realized_pnl": 0.0,
       "trade_count": 0
@@ -525,17 +525,17 @@
     "APT": {
       "name": "Aptos",
       "rank": 30,
-      "quantity": 4.154179770471873,
-      "initial_price": 22.397898587549406,
-      "current_price": 24.072140717357787,
+      "quantity": 2.188721122036973,
+      "initial_price": 45.68878099322822,
+      "current_price": 49.98876134892983,
       "initial_value": 100.0,
-      "current_value": 100.0,
-      "pnl": 0.0,
-      "pnl_percent": 0.0,
-      "target_sell_price": 26.479354789093566,
-      "target_buy_price": 20.461319609754117,
-      "projected_sell_pnl": 14.02865821580994,
-      "initial_investment_date": "2025-08-14T03:15:39.102665",
+      "current_value": 109.41145782886817,
+      "pnl": 9.411457828868166,
+      "pnl_percent": 9.411457828868166,
+      "target_sell_price": 54.987637483822816,
+      "target_buy_price": 42.490447146590355,
+      "projected_sell_pnl": 10.0,
+      "initial_investment_date": "2025-08-14T03:17:38.752677",
       "total_invested": 100.0,
       "total_realized_pnl": 0.0,
       "trade_count": 0
@@ -543,17 +543,17 @@
     "AAVE": {
       "name": "Aave",
       "rank": 31,
-      "quantity": 3.901833111543208,
-      "initial_price": 25.108651547290567,
-      "current_price": 25.62897928775051,
+      "quantity": 5.404037568272789,
+      "initial_price": 18.5046826075196,
+      "current_price": 18.60881552498649,
       "initial_value": 100.0,
-      "current_value": 100.0,
-      "pnl": 0.0,
-      "pnl_percent": 0.0,
-      "target_sell_price": 28.191877216525565,
-      "target_buy_price": 21.784632394587934,
-      "projected_sell_pnl": 17.014898784481304,
-      "initial_investment_date": "2025-08-14T03:15:39.102867",
+      "current_value": 100.5627381980849,
+      "pnl": 0.5627381980849009,
+      "pnl_percent": 0.5627381980849009,
+      "target_sell_price": 20.46969707748514,
+      "target_buy_price": 15.817493196238516,
+      "projected_sell_pnl": 10.000000000000014,
+      "initial_investment_date": "2025-08-14T03:17:38.752962",
       "total_invested": 100.0,
       "total_realized_pnl": 0.0,
       "trade_count": 0
@@ -561,17 +561,17 @@
     "MKR": {
       "name": "Maker",
       "rank": 32,
-      "quantity": 5.7452262204373525,
-      "initial_price": 18.062694575871166,
-      "current_price": 17.405754997822793,
+      "quantity": 4.248910975834343,
+      "initial_price": 23.535442509562905,
+      "current_price": 22.362228767053633,
       "initial_value": 100.0,
-      "current_value": 100.0,
-      "pnl": 0.0,
-      "pnl_percent": 0.0,
-      "target_sell_price": 19.146330497605074,
-      "target_buy_price": 14.794891748149373,
-      "projected_sell_pnl": 9.360599692119933,
-      "initial_investment_date": "2025-08-14T03:15:39.102985",
+      "current_value": 95.01511925245266,
+      "pnl": -4.9848807475473365,
+      "pnl_percent": -4.9848807475473365,
+      "target_sell_price": 24.598451643759,
+      "target_buy_price": 19.007894451995586,
+      "projected_sell_pnl": 10.0,
+      "initial_investment_date": "2025-08-14T03:17:38.753269",
       "total_invested": 100.0,
       "total_realized_pnl": 0.0,
       "trade_count": 0
@@ -579,17 +579,17 @@
     "COMP": {
       "name": "Compound",
       "rank": 33,
-      "quantity": 13.848387631940925,
-      "initial_price": 7.705111430492701,
-      "current_price": 7.22105725646737,
+      "quantity": 37.24111415138864,
+      "initial_price": 2.685204303864019,
+      "current_price": 2.7131438766859204,
       "initial_value": 100.0,
-      "current_value": 100.0,
-      "pnl": 0.0,
-      "pnl_percent": 0.0,
-      "target_sell_price": 7.943162982114107,
-      "target_buy_price": 6.1378986679972645,
-      "projected_sell_pnl": 6.993560612093063,
-      "initial_investment_date": "2025-08-14T03:15:39.103107",
+      "current_value": 101.04050082080147,
+      "pnl": 1.0405008208014692,
+      "pnl_percent": 1.0405008208014692,
+      "target_sell_price": 2.9844582643545126,
+      "target_buy_price": 2.3061722951830324,
+      "projected_sell_pnl": 10.000000000000014,
+      "initial_investment_date": "2025-08-14T03:17:38.753491",
       "total_invested": 100.0,
       "total_realized_pnl": 0.0,
       "trade_count": 0
@@ -597,17 +597,17 @@
     "CRV": {
       "name": "Curve DAO",
       "rank": 34,
-      "quantity": 2.4801930230465805,
-      "initial_price": 40.28025550518988,
-      "current_price": 40.31944250740758,
+      "quantity": 3.364323364045648,
+      "initial_price": 29.723658869624394,
+      "current_price": 29.157240512233976,
       "initial_value": 100.0,
-      "current_value": 100.0,
-      "pnl": 0.0,
-      "pnl_percent": 0.0,
-      "target_sell_price": 44.351386758148344,
-      "target_buy_price": 34.27152613129644,
-      "projected_sell_pnl": 11.252330001171302,
-      "initial_investment_date": "2025-08-14T03:15:39.103247",
+      "current_value": 98.09438548640706,
+      "pnl": -1.905614513592937,
+      "pnl_percent": -1.9056145135929368,
+      "target_sell_price": 32.072964563457376,
+      "target_buy_price": 24.78365443539888,
+      "projected_sell_pnl": 10.000000000000014,
+      "initial_investment_date": "2025-08-14T03:17:38.753622",
       "total_invested": 100.0,
       "total_realized_pnl": 0.0,
       "trade_count": 0
@@ -615,17 +615,17 @@
     "SNX": {
       "name": "Synthetix",
       "rank": 35,
-      "quantity": 3.983755130310698,
-      "initial_price": 27.521740063801026,
-      "current_price": 25.101944454151447,
+      "quantity": 3.35421188461819,
+      "initial_price": 29.813262679850947,
+      "current_price": 28.533369401861865,
       "initial_value": 100.0,
-      "current_value": 100.0,
-      "pnl": 0.0,
-      "pnl_percent": 0.0,
-      "target_sell_price": 27.612138899566595,
-      "target_buy_price": 21.33665278602873,
-      "projected_sell_pnl": 2.6471483478228635,
-      "initial_investment_date": "2025-08-14T03:15:39.103374",
+      "current_value": 95.70696675592609,
+      "pnl": -4.293033244073911,
+      "pnl_percent": -4.293033244073911,
+      "target_sell_price": 31.386706342048054,
+      "target_buy_price": 24.253363991582585,
+      "projected_sell_pnl": 10.000000000000014,
+      "initial_investment_date": "2025-08-14T03:17:38.753843",
       "total_invested": 100.0,
       "total_realized_pnl": 0.0,
       "trade_count": 0
@@ -633,17 +633,17 @@
     "SUSHI": {
       "name": "SushiSwap",
       "rank": 36,
-      "quantity": 2.933715537595136,
-      "initial_price": 37.565073653617574,
-      "current_price": 34.08646772957862,
+      "quantity": 5.896152536762277,
+      "initial_price": 16.960212507479067,
+      "current_price": 17.350938832672053,
       "initial_value": 100.0,
-      "current_value": 100.0,
-      "pnl": 0.0,
-      "pnl_percent": 0.0,
-      "target_sell_price": 37.49511450253649,
-      "target_buy_price": 28.973497570141827,
-      "projected_sell_pnl": 5.09795772434515,
-      "initial_investment_date": "2025-08-14T03:15:39.103496",
+      "current_value": 102.30378201346643,
+      "pnl": 2.3037820134664315,
+      "pnl_percent": 2.3037820134664315,
+      "target_sell_price": 19.08603271593926,
+      "target_buy_price": 14.748298007771245,
+      "projected_sell_pnl": 10.000000000000014,
+      "initial_investment_date": "2025-08-14T03:17:38.754019",
       "total_invested": 100.0,
       "total_realized_pnl": 0.0,
       "trade_count": 0
@@ -651,17 +651,17 @@
     "1INCH": {
       "name": "1inch",
       "rank": 37,
-      "quantity": 3.4575234908351917,
-      "initial_price": 28.131067819273916,
-      "current_price": 28.922435455628452,
+      "quantity": 5.298096352124771,
+      "initial_price": 18.87470392264489,
+      "current_price": 19.047997783238536,
       "initial_value": 100.0,
-      "current_value": 100.0,
-      "pnl": 0.0,
-      "pnl_percent": 0.0,
-      "target_sell_price": 31.8146790011913,
-      "target_buy_price": 24.584070137284183,
-      "projected_sell_pnl": 8.106582750624796,
-      "initial_investment_date": "2025-08-14T03:15:39.103603",
+      "current_value": 100.91812757065682,
+      "pnl": 0.9181275706568215,
+      "pnl_percent": 0.9181275706568215,
+      "target_sell_price": 20.95279756156239,
+      "target_buy_price": 16.190798115752756,
+      "projected_sell_pnl": 10.000000000000014,
+      "initial_investment_date": "2025-08-14T03:17:38.754179",
       "total_invested": 100.0,
       "total_realized_pnl": 0.0,
       "trade_count": 0
@@ -669,17 +669,17 @@
     "SAND": {
       "name": "The Sandbox",
       "rank": 38,
-      "quantity": 8.176553915342334,
-      "initial_price": 13.40012832964939,
-      "current_price": 12.23009118943885,
+      "quantity": 2.735283541607126,
+      "initial_price": 36.559281141743945,
+      "current_price": 35.94217656920701,
       "initial_value": 100.0,
-      "current_value": 100.00000000000001,
-      "pnl": 1.4210854715202004e-14,
-      "pnl_percent": 1.4210854715202004e-14,
-      "target_sell_price": 13.453100308382737,
-      "target_buy_price": 10.395577511023022,
-      "projected_sell_pnl": 5.654287949149406,
-      "initial_investment_date": "2025-08-14T03:15:39.103716",
+      "current_value": 98.3120440192892,
+      "pnl": -1.6879559807107967,
+      "pnl_percent": -1.6879559807107967,
+      "target_sell_price": 39.53639422612771,
+      "target_buy_price": 30.550850083825956,
+      "projected_sell_pnl": 10.000000000000014,
+      "initial_investment_date": "2025-08-14T03:17:38.754312",
       "total_invested": 100.0,
       "total_realized_pnl": 0.0,
       "trade_count": 0
@@ -687,17 +687,17 @@
     "MANA": {
       "name": "Decentraland",
       "rank": 39,
-      "quantity": 2.9708853958674126,
-      "initial_price": 33.580786596680724,
-      "current_price": 33.659999183779654,
+      "quantity": 2.4956372921178716,
+      "initial_price": 40.06992535166721,
+      "current_price": 40.31947474433772,
       "initial_value": 100.0,
-      "current_value": 100.0,
-      "pnl": 0.0,
-      "pnl_percent": 0.0,
-      "target_sell_price": 37.02599910215762,
-      "target_buy_price": 28.610999306212705,
-      "projected_sell_pnl": 6.774300324998691,
-      "initial_investment_date": "2025-08-14T03:15:39.103863",
+      "current_value": 100.6227847705739,
+      "pnl": 0.6227847705739009,
+      "pnl_percent": 0.6227847705739009,
+      "target_sell_price": 44.351422218771496,
+      "target_buy_price": 34.27155353268706,
+      "projected_sell_pnl": 10.000000000000014,
+      "initial_investment_date": "2025-08-14T03:17:38.754452",
       "total_invested": 100.0,
       "total_realized_pnl": 0.0,
       "trade_count": 0
@@ -705,17 +705,17 @@
     "AXS": {
       "name": "Axie Infinity",
       "rank": 40,
-      "quantity": 11.059232406760566,
-      "initial_price": 9.123661998193246,
-      "current_price": 9.042218873967192,
+      "quantity": 55.5296420508982,
+      "initial_price": 1.800839989358125,
+      "current_price": 2.0143476775104068,
       "initial_value": 100.0,
-      "current_value": 100.0,
-      "pnl": 0.0,
-      "pnl_percent": 0.0,
-      "target_sell_price": 9.946440761363911,
-      "target_buy_price": 7.685886042872113,
-      "projected_sell_pnl": 6.42160810380075,
-      "initial_investment_date": "2025-08-14T03:15:39.103995",
+      "current_value": 111.856005498211,
+      "pnl": 11.856005498211005,
+      "pnl_percent": 11.856005498211005,
+      "target_sell_price": 2.2157824452614476,
+      "target_buy_price": 1.7121955258838457,
+      "projected_sell_pnl": 10.000000000000014,
+      "initial_investment_date": "2025-08-14T03:17:38.754587",
       "total_invested": 100.0,
       "total_realized_pnl": 0.0,
       "trade_count": 0
@@ -723,17 +723,17 @@
     "BADGER": {
       "name": "Badger DAO",
       "rank": 41,
-      "quantity": 16.24266058863336,
-      "initial_price": 5.828602580231854,
-      "current_price": 6.156626831812281,
+      "quantity": 5.243799192194815,
+      "initial_price": 19.070142912574912,
+      "current_price": 18.896337001851954,
       "initial_value": 100.0,
-      "current_value": 100.00000000000001,
-      "pnl": 1.4210854715202004e-14,
-      "pnl_percent": 1.4210854715202004e-14,
-      "target_sell_price": 6.710723246675387,
-      "target_buy_price": 5.294699075358562,
-      "projected_sell_pnl": 11.055044544166236,
-      "initial_investment_date": "2025-08-14T03:15:39.104168",
+      "current_value": 99.08859670575227,
+      "pnl": -0.9114032942477337,
+      "pnl_percent": -0.9114032942477337,
+      "target_sell_price": 20.59700733201863,
+      "target_buy_price": 16.25084982159268,
+      "projected_sell_pnl": 9.000000000000014,
+      "initial_investment_date": "2025-08-14T03:17:38.754715",
       "total_invested": 100.0,
       "total_realized_pnl": 0.0,
       "trade_count": 0
@@ -741,17 +741,17 @@
     "AMP": {
       "name": "Amp",
       "rank": 42,
-      "quantity": 6.05640567151648,
-      "initial_price": 16.406652221734383,
-      "current_price": 16.51144349036988,
+      "quantity": 12.929993738200615,
+      "initial_price": 7.733955794932687,
+      "current_price": 8.081214150520328,
       "initial_value": 100.0,
-      "current_value": 100.00000000000001,
-      "pnl": 1.4210854715202004e-14,
-      "pnl_percent": 1.4210854715202004e-14,
-      "target_sell_price": 17.99747340450317,
-      "target_buy_price": 14.199841401718098,
-      "projected_sell_pnl": 9.46456497533319,
-      "initial_investment_date": "2025-08-14T03:15:39.104324",
+      "current_value": 104.49004836328604,
+      "pnl": 4.490048363286036,
+      "pnl_percent": 4.490048363286036,
+      "target_sell_price": 8.808523424067157,
+      "target_buy_price": 6.9498441694474815,
+      "projected_sell_pnl": 9.0,
+      "initial_investment_date": "2025-08-14T03:17:38.754844",
       "total_invested": 100.0,
       "total_realized_pnl": 0.0,
       "trade_count": 0
@@ -759,17 +759,17 @@
     "GALA": {
       "name": "Gala",
       "rank": 43,
-      "quantity": 5.511950066402371,
-      "initial_price": 18.693707862662997,
-      "current_price": 18.142399476646496,
+      "quantity": 5.581618372325199,
+      "initial_price": 17.91595077438837,
+      "current_price": 18.233803347363125,
       "initial_value": 100.0,
-      "current_value": 100.0,
-      "pnl": 0.0,
-      "pnl_percent": 0.0,
-      "target_sell_price": 19.775215429544684,
-      "target_buy_price": 15.602463549915987,
-      "projected_sell_pnl": 8.762100692928115,
-      "initial_investment_date": "2025-08-14T03:15:39.104517",
+      "current_value": 101.77413176100673,
+      "pnl": 1.7741317610067284,
+      "pnl_percent": 1.7741317610067284,
+      "target_sell_price": 19.874845648625808,
+      "target_buy_price": 15.681070878732287,
+      "projected_sell_pnl": 9.000000000000014,
+      "initial_investment_date": "2025-08-14T03:17:38.755010",
       "total_invested": 100.0,
       "total_realized_pnl": 0.0,
       "trade_count": 0
@@ -777,17 +777,17 @@
     "ATOM": {
       "name": "Cosmos",
       "rank": 44,
-      "quantity": 6.089629003216928,
-      "initial_price": 15.94143983274463,
-      "current_price": 16.421361621073086,
+      "quantity": 10.26514925630864,
+      "initial_price": 9.741699560631632,
+      "current_price": 9.12210151532512,
       "initial_value": 100.0,
-      "current_value": 100.0,
-      "pnl": 0.0,
-      "pnl_percent": 0.0,
-      "target_sell_price": 17.899284166969665,
-      "target_buy_price": 14.122370994122853,
-      "projected_sell_pnl": 13.169998423491236,
-      "initial_investment_date": "2025-08-14T03:15:39.104665",
+      "current_value": 93.63973358601157,
+      "pnl": -6.360266413988427,
+      "pnl_percent": -6.360266413988428,
+      "target_sell_price": 9.943090651704381,
+      "target_buy_price": 7.845007303179603,
+      "projected_sell_pnl": 9.000000000000014,
+      "initial_investment_date": "2025-08-14T03:17:38.755177",
       "total_invested": 100.0,
       "total_realized_pnl": 0.0,
       "trade_count": 0
@@ -795,17 +795,17 @@
     "FTM": {
       "name": "Fantom",
       "rank": 45,
-      "quantity": 21.411240016652606,
-      "initial_price": 4.717254525623398,
-      "current_price": 4.670444118239996,
+      "quantity": 12.467855425284895,
+      "initial_price": 8.02062556782615,
+      "current_price": 8.140827904502464,
       "initial_value": 100.0,
-      "current_value": 100.0,
-      "pnl": 0.0,
-      "pnl_percent": 0.0,
-      "target_sell_price": 5.0907840888815965,
-      "target_buy_price": 4.016581941686397,
-      "projected_sell_pnl": 12.971471322910531,
-      "initial_investment_date": "2025-08-14T03:15:39.104797",
+      "current_value": 101.49866535546171,
+      "pnl": 1.4986653554617106,
+      "pnl_percent": 1.4986653554617106,
+      "target_sell_price": 8.873502415907685,
+      "target_buy_price": 7.001111997872119,
+      "projected_sell_pnl": 9.000000000000014,
+      "initial_investment_date": "2025-08-14T03:17:38.755333",
       "total_invested": 100.0,
       "total_realized_pnl": 0.0,
       "trade_count": 0
@@ -813,17 +813,17 @@
     "ALGO": {
       "name": "Algorand",
       "rank": 46,
-      "quantity": 13.589983599158586,
-      "initial_price": 7.876412835536967,
-      "current_price": 7.358360609514748,
+      "quantity": 5.144585341284131,
+      "initial_price": 19.437912555852204,
+      "current_price": 19.244630319942623,
       "initial_value": 100.0,
-      "current_value": 100.0,
-      "pnl": 0.0,
-      "pnl_percent": 0.0,
-      "target_sell_price": 8.020613064371076,
-      "target_buy_price": 6.328190124182683,
-      "projected_sell_pnl": 7.546722916971731,
-      "initial_investment_date": "2025-08-14T03:15:39.104914",
+      "current_value": 99.00564304240895,
+      "pnl": -0.9943569575910516,
+      "pnl_percent": -0.9943569575910517,
+      "target_sell_price": 20.97664704873746,
+      "target_buy_price": 16.550382075150655,
+      "projected_sell_pnl": 9.0,
+      "initial_investment_date": "2025-08-14T03:17:38.755467",
       "total_invested": 100.0,
       "total_realized_pnl": 0.0,
       "trade_count": 0
@@ -831,17 +831,17 @@
     "FLOW": {
       "name": "Flow",
       "rank": 47,
-      "quantity": 8.444454671644099,
-      "initial_price": 11.174442627324712,
-      "current_price": 11.842090921015085,
+      "quantity": 5.610690663062553,
+      "initial_price": 17.82311768822695,
+      "current_price": 18.541871193683658,
       "initial_value": 100.0,
-      "current_value": 100.0,
-      "pnl": 0.0,
-      "pnl_percent": 0.0,
-      "target_sell_price": 12.907879103906444,
-      "target_buy_price": 10.184198192072973,
-      "projected_sell_pnl": 12.310249752843774,
-      "initial_investment_date": "2025-08-14T03:15:39.105027",
+      "current_value": 104.03270358210942,
+      "pnl": 4.03270358210942,
+      "pnl_percent": 4.03270358210942,
+      "target_sell_price": 20.21063960111519,
+      "target_buy_price": 15.946009226567945,
+      "projected_sell_pnl": 9.0,
+      "initial_investment_date": "2025-08-14T03:17:38.763328",
       "total_invested": 100.0,
       "total_realized_pnl": 0.0,
       "trade_count": 0
@@ -849,17 +849,17 @@
     "ICP": {
       "name": "Internet Computer",
       "rank": 48,
-      "quantity": 92.38051004813352,
-      "initial_price": 0.9701928700705365,
-      "current_price": 1.082479409865744,
+      "quantity": 13.135036180087587,
+      "initial_price": 7.6132260793919775,
+      "current_price": 7.394305243627089,
       "initial_value": 100.0,
-      "current_value": 100.0,
-      "pnl": 0.0,
-      "pnl_percent": 0.0,
-      "target_sell_price": 1.179902556753661,
-      "target_buy_price": 0.9309322924845398,
-      "projected_sell_pnl": 14.58244291292958,
-      "initial_investment_date": "2025-08-14T03:15:39.105179",
+      "current_value": 97.12446690165318,
+      "pnl": -2.8755330983468212,
+      "pnl_percent": -2.8755330983468212,
+      "target_sell_price": 8.059792715553527,
+      "target_buy_price": 6.359102509519297,
+      "projected_sell_pnl": 9.000000000000014,
+      "initial_investment_date": "2025-08-14T03:17:38.763624",
       "total_invested": 100.0,
       "total_realized_pnl": 0.0,
       "trade_count": 0
@@ -867,17 +867,17 @@
     "THETA": {
       "name": "Theta Network",
       "rank": 49,
-      "quantity": 6.666687875740885,
-      "initial_price": 15.128472780055468,
-      "current_price": 14.999952279734824,
+      "quantity": 6.5798292151339215,
+      "initial_price": 15.197962854415008,
+      "current_price": 14.930311779352953,
       "initial_value": 100.0,
-      "current_value": 100.0,
-      "pnl": 0.0,
-      "pnl_percent": 0.0,
-      "target_sell_price": 16.34994798491096,
-      "target_buy_price": 12.899958960571949,
-      "projected_sell_pnl": 9.901380958629645,
-      "initial_investment_date": "2025-08-14T03:15:39.105296",
+      "current_value": 98.23890163684469,
+      "pnl": -1.7610983631553125,
+      "pnl_percent": -1.7610983631553125,
+      "target_sell_price": 16.27403983949472,
+      "target_buy_price": 12.840068130243539,
+      "projected_sell_pnl": 9.0,
+      "initial_investment_date": "2025-08-14T03:17:38.763761",
       "total_invested": 100.0,
       "total_realized_pnl": 0.0,
       "trade_count": 0
@@ -885,17 +885,17 @@
     "FIL": {
       "name": "Filecoin",
       "rank": 50,
-      "quantity": 6.629434340050954,
-      "initial_price": 15.063642711189281,
-      "current_price": 15.084243220550759,
+      "quantity": 5.9980575495737405,
+      "initial_price": 16.672064109672743,
+      "current_price": 17.663627952378132,
       "initial_value": 100.0,
-      "current_value": 100.0,
-      "pnl": 0.0,
-      "pnl_percent": 0.0,
-      "target_sell_price": 16.441825110400327,
-      "target_buy_price": 12.972449169673652,
-      "projected_sell_pnl": 6.261688687666563,
-      "initial_investment_date": "2025-08-14T03:15:39.105400",
+      "current_value": 105.9474569926234,
+      "pnl": 5.947456992623401,
+      "pnl_percent": 5.947456992623401,
+      "target_sell_price": 19.253354468092166,
+      "target_buy_price": 15.190720039045193,
+      "projected_sell_pnl": 9.0,
+      "initial_investment_date": "2025-08-14T03:17:38.763976",
       "total_invested": 100.0,
       "total_realized_pnl": 0.0,
       "trade_count": 0
@@ -903,17 +903,17 @@
     "VET": {
       "name": "VeChain",
       "rank": 51,
-      "quantity": 4.71131346755925,
-      "initial_price": 19.7756054096769,
-      "current_price": 21.22550339487518,
+      "quantity": 31.1180983428016,
+      "initial_price": 3.2135639812685572,
+      "current_price": 3.115013617939668,
       "initial_value": 100.0,
-      "current_value": 100.0,
-      "pnl": 0.0,
-      "pnl_percent": 0.0,
-      "target_sell_price": 23.135798700413947,
-      "target_buy_price": 18.253932919592653,
-      "projected_sell_pnl": 14.711212207810973,
-      "initial_investment_date": "2025-08-14T03:15:39.105509",
+      "current_value": 96.9333001022128,
+      "pnl": -3.0666998977872026,
+      "pnl_percent": -3.0666998977872026,
+      "target_sell_price": 3.3953648435542387,
+      "target_buy_price": 2.6789117114281145,
+      "projected_sell_pnl": 9.0,
+      "initial_investment_date": "2025-08-14T03:17:38.764127",
       "total_invested": 100.0,
       "total_realized_pnl": 0.0,
       "trade_count": 0
@@ -921,17 +921,17 @@
     "HBAR": {
       "name": "Hedera",
       "rank": 52,
-      "quantity": 50.58514921296671,
-      "initial_price": 2.072899405795202,
-      "current_price": 1.9768647825667887,
+      "quantity": 17.59971683918874,
+      "initial_price": 5.68190959625743,
+      "current_price": 5.689531737738829,
       "initial_value": 100.0,
-      "current_value": 100.0,
-      "pnl": 0.0,
-      "pnl_percent": 0.0,
-      "target_sell_price": 2.1547826129977996,
-      "target_buy_price": 1.7001037130074381,
-      "projected_sell_pnl": 9.35983790089142,
-      "initial_investment_date": "2025-08-14T03:15:39.105618",
+      "current_value": 100.13414753178084,
+      "pnl": 0.13414753178084027,
+      "pnl_percent": 0.13414753178084027,
+      "target_sell_price": 6.201589594135324,
+      "target_buy_price": 4.892997294455393,
+      "projected_sell_pnl": 9.0,
+      "initial_investment_date": "2025-08-14T03:17:38.764266",
       "total_invested": 100.0,
       "total_realized_pnl": 0.0,
       "trade_count": 0
@@ -939,17 +939,17 @@
     "EGLD": {
       "name": "MultiversX",
       "rank": 53,
-      "quantity": 6.109438703821692,
-      "initial_price": 17.744133925689248,
-      "current_price": 16.368115771003005,
+      "quantity": 5.3369995750715065,
+      "initial_price": 18.73711972305341,
+      "current_price": 19.06306028644222,
       "initial_value": 100.0,
-      "current_value": 100.0,
-      "pnl": 0.0,
-      "pnl_percent": 0.0,
-      "target_sell_price": 17.841246190393278,
-      "target_buy_price": 14.076579563062584,
-      "projected_sell_pnl": 4.803407875246123,
-      "initial_investment_date": "2025-08-14T03:15:39.105735",
+      "current_value": 101.73954464830463,
+      "pnl": 1.73954464830463,
+      "pnl_percent": 1.73954464830463,
+      "target_sell_price": 20.77873571222202,
+      "target_buy_price": 16.394231846340308,
+      "projected_sell_pnl": 9.0,
+      "initial_investment_date": "2025-08-14T03:17:38.764434",
       "total_invested": 100.0,
       "total_realized_pnl": 0.0,
       "trade_count": 0
@@ -957,17 +957,17 @@
     "GRT": {
       "name": "The Graph",
       "rank": 54,
-      "quantity": 5.72369234848954,
-      "initial_price": 17.249367547732593,
-      "current_price": 17.47123952711917,
+      "quantity": 7.607712624925095,
+      "initial_price": 13.144555391376208,
+      "current_price": 12.302838494530429,
       "initial_value": 100.0,
-      "current_value": 100.0,
-      "pnl": 0.0,
-      "pnl_percent": 0.0,
-      "target_sell_price": 19.043651084559897,
-      "target_buy_price": 15.025265993322487,
-      "projected_sell_pnl": 4.42292460732412,
-      "initial_investment_date": "2025-08-14T03:15:39.105841",
+      "current_value": 93.5964597372536,
+      "pnl": -6.403540262746404,
+      "pnl_percent": -6.403540262746405,
+      "target_sell_price": 13.410093959038168,
+      "target_buy_price": 10.580441105296169,
+      "projected_sell_pnl": 9.000000000000014,
+      "initial_investment_date": "2025-08-14T03:17:38.764579",
       "total_invested": 100.0,
       "total_realized_pnl": 0.0,
       "trade_count": 0
@@ -975,17 +975,17 @@
     "FET": {
       "name": "Fetch.ai",
       "rank": 55,
-      "quantity": 20.274438156017755,
-      "initial_price": 5.1724158971531935,
-      "current_price": 4.932319171089755,
+      "quantity": 22.83765700817673,
+      "initial_price": 4.378732895594162,
+      "current_price": 4.573903340119728,
       "initial_value": 100.0,
-      "current_value": 100.0,
-      "pnl": 0.0,
-      "pnl_percent": 0.0,
-      "target_sell_price": 5.376227896487833,
-      "target_buy_price": 4.24179448713719,
-      "projected_sell_pnl": 7.957912145581119,
-      "initial_investment_date": "2025-08-14T03:15:39.105946",
+      "current_value": 104.45723567020828,
+      "pnl": 4.457235670208277,
+      "pnl_percent": 4.457235670208277,
+      "target_sell_price": 4.985554640730505,
+      "target_buy_price": 3.9335568725029666,
+      "projected_sell_pnl": 9.0,
+      "initial_investment_date": "2025-08-14T03:17:38.764724",
       "total_invested": 100.0,
       "total_realized_pnl": 0.0,
       "trade_count": 0
@@ -993,17 +993,17 @@
     "LRC": {
       "name": "Loopring",
       "rank": 56,
-      "quantity": 19.469568527222826,
-      "initial_price": 5.396628555886134,
-      "current_price": 5.136220654308675,
+      "quantity": 7.3567177801750026,
+      "initial_price": 13.593018379674907,
+      "current_price": 12.904012305432301,
       "initial_value": 100.0,
-      "current_value": 100.0,
-      "pnl": 0.0,
-      "pnl_percent": 0.0,
-      "target_sell_price": 5.5984805131964555,
-      "target_buy_price": 4.41714976270546,
-      "projected_sell_pnl": 6.947072595247718,
-      "initial_investment_date": "2025-08-14T03:15:39.106050",
+      "current_value": 94.93117676297084,
+      "pnl": -5.068823237029164,
+      "pnl_percent": -5.068823237029164,
+      "target_sell_price": 14.06537341292121,
+      "target_buy_price": 11.09745058267178,
+      "projected_sell_pnl": 9.0,
+      "initial_investment_date": "2025-08-14T03:17:38.764854",
       "total_invested": 100.0,
       "total_realized_pnl": 0.0,
       "trade_count": 0
@@ -1011,17 +1011,17 @@
     "ENJ": {
       "name": "Enjin Coin",
       "rank": 57,
-      "quantity": 5.289496783962336,
-      "initial_price": 19.407120499856497,
-      "current_price": 18.905390074760664,
+      "quantity": 10.581927936206506,
+      "initial_price": 9.450073805345607,
+      "current_price": 9.569136951944602,
       "initial_value": 100.0,
-      "current_value": 100.0,
-      "pnl": 0.0,
-      "pnl_percent": 0.0,
-      "target_sell_price": 20.606875181489126,
-      "target_buy_price": 16.25863546429417,
-      "projected_sell_pnl": 7.311511690583359,
-      "initial_investment_date": "2025-08-14T03:15:39.106183",
+      "current_value": 101.25991763716856,
+      "pnl": 1.2599176371685559,
+      "pnl_percent": 1.2599176371685559,
+      "target_sell_price": 10.430359277619617,
+      "target_buy_price": 8.229457778672357,
+      "projected_sell_pnl": 9.000000000000014,
+      "initial_investment_date": "2025-08-14T03:17:38.764985",
       "total_invested": 100.0,
       "total_realized_pnl": 0.0,
       "trade_count": 0
@@ -1029,17 +1029,17 @@
     "CHZ": {
       "name": "Chiliz",
       "rank": 58,
-      "quantity": 7.413290797436099,
-      "initial_price": 13.97365756145308,
-      "current_price": 13.489286031324333,
+      "quantity": 22.841338002349527,
+      "initial_price": 4.37802724121125,
+      "current_price": 4.451306578973657,
       "initial_value": 100.0,
-      "current_value": 100.0,
-      "pnl": 0.0,
-      "pnl_percent": 0.0,
-      "target_sell_price": 14.703321774143525,
-      "target_buy_price": 11.600785986938927,
-      "projected_sell_pnl": 10.590943936205548,
-      "initial_investment_date": "2025-08-14T03:15:39.106296",
+      "current_value": 101.67379812241947,
+      "pnl": 1.6737981224194698,
+      "pnl_percent": 1.6737981224194696,
+      "target_sell_price": 4.851924171081286,
+      "target_buy_price": 3.828123657917345,
+      "projected_sell_pnl": 9.0,
+      "initial_investment_date": "2025-08-14T03:17:38.765131",
       "total_invested": 100.0,
       "total_realized_pnl": 0.0,
       "trade_count": 0
@@ -1047,17 +1047,17 @@
     "BAT": {
       "name": "Basic Attention Token",
       "rank": 59,
-      "quantity": 30.995557122001298,
-      "initial_price": 2.9189959090884017,
-      "current_price": 3.226268836091283,
+      "quantity": 5.724066766306642,
+      "initial_price": 17.47009671316663,
+      "current_price": 17.547926066160088,
       "initial_value": 100.0,
-      "current_value": 100.0,
-      "pnl": 0.0,
-      "pnl_percent": 0.0,
-      "target_sell_price": 3.5166330313394987,
-      "target_buy_price": 2.7745911990385035,
-      "projected_sell_pnl": 18.006318138716082,
-      "initial_investment_date": "2025-08-14T03:15:39.106415",
+      "current_value": 100.445500412913,
+      "pnl": 0.445500412913006,
+      "pnl_percent": 0.445500412913006,
+      "target_sell_price": 19.1272394121145,
+      "target_buy_price": 15.091216416897675,
+      "projected_sell_pnl": 9.000000000000014,
+      "initial_investment_date": "2025-08-14T03:17:38.765263",
       "total_invested": 100.0,
       "total_realized_pnl": 0.0,
       "trade_count": 0
@@ -1065,17 +1065,17 @@
     "XTZ": {
       "name": "Tezos",
       "rank": 60,
-      "quantity": 41.0608759493775,
-      "initial_price": 2.5983225065663107,
-      "current_price": 2.4354083464582312,
+      "quantity": 10.568932003222976,
+      "initial_price": 9.461693950675924,
+      "current_price": 9.888374434009515,
       "initial_value": 100.0,
-      "current_value": 100.0,
-      "pnl": 0.0,
-      "pnl_percent": 0.0,
-      "target_sell_price": 2.654595097639472,
-      "target_buy_price": 2.094451177954079,
-      "projected_sell_pnl": 4.952786040323517,
-      "initial_investment_date": "2025-08-14T03:15:39.106523",
+      "current_value": 104.50955701545504,
+      "pnl": 4.509557015455044,
+      "pnl_percent": 4.509557015455044,
+      "target_sell_price": 10.778328133070373,
+      "target_buy_price": 8.504002013248183,
+      "projected_sell_pnl": 9.000000000000014,
+      "initial_investment_date": "2025-08-14T03:17:38.765398",
       "total_invested": 100.0,
       "total_realized_pnl": 0.0,
       "trade_count": 0
@@ -1083,17 +1083,17 @@
     "MINA": {
       "name": "Mina Protocol",
       "rank": 61,
-      "quantity": 17.207287096819314,
-      "initial_price": 6.876361306569992,
-      "current_price": 5.811491343018536,
+      "quantity": 13.51203622190586,
+      "initial_price": 7.400809053329721,
+      "current_price": 7.439020487606995,
       "initial_value": 100.0,
-      "current_value": 100.00000000000001,
-      "pnl": 1.4210854715202004e-14,
-      "pnl_percent": 1.4210854715202004e-14,
-      "target_sell_price": 6.683215044471316,
-      "target_buy_price": 4.649193074414829,
-      "projected_sell_pnl": 5.3487256140414985,
-      "initial_investment_date": "2025-08-14T03:15:39.106627",
+      "current_value": 100.5163142840455,
+      "pnl": 0.5163142840455066,
+      "pnl_percent": 0.5163142840455066,
+      "target_sell_price": 8.554873560748044,
+      "target_buy_price": 5.951216390085596,
+      "projected_sell_pnl": 15.0,
+      "initial_investment_date": "2025-08-14T03:17:38.765534",
       "total_invested": 100.0,
       "total_realized_pnl": 0.0,
       "trade_count": 0
@@ -1101,17 +1101,17 @@
     "KCS": {
       "name": "KuCoin Shares",
       "rank": 62,
-      "quantity": 18.22214179511676,
-      "initial_price": 4.9309346450107805,
-      "current_price": 5.487829099584682,
+      "quantity": 16.64288886011703,
+      "initial_price": 6.00857224010188,
+      "current_price": 6.563242047892608,
       "initial_value": 100.0,
-      "current_value": 100.00000000000001,
-      "pnl": 1.4210854715202004e-14,
-      "pnl_percent": 1.4210854715202004e-14,
-      "target_sell_price": 6.3110034645223845,
-      "target_buy_price": 4.390263279667746,
-      "projected_sell_pnl": 24.55064723349581,
-      "initial_investment_date": "2025-08-14T03:15:39.106743",
+      "current_value": 109.23130796512356,
+      "pnl": 9.231307965123563,
+      "pnl_percent": 9.231307965123563,
+      "target_sell_price": 7.547728355076498,
+      "target_buy_price": 5.250593638314086,
+      "projected_sell_pnl": 14.999999999999986,
+      "initial_investment_date": "2025-08-14T03:17:38.765657",
       "total_invested": 100.0,
       "total_realized_pnl": 0.0,
       "trade_count": 0
@@ -1119,17 +1119,17 @@
     "YFI": {
       "name": "yearn.finance",
       "rank": 63,
-      "quantity": 61.19834480425799,
-      "initial_price": 1.8067429547848606,
-      "current_price": 1.6340311215907641,
+      "quantity": 24.51262854499995,
+      "initial_price": 4.079529856066695,
+      "current_price": 4.030528188384227,
       "initial_value": 100.0,
-      "current_value": 100.0,
-      "pnl": 0.0,
-      "pnl_percent": 0.0,
-      "target_sell_price": 1.8791357898293786,
-      "target_buy_price": 1.3072248972726115,
-      "projected_sell_pnl": 11.445043096865945,
-      "initial_investment_date": "2025-08-14T03:15:39.106848",
+      "current_value": 98.79884032201413,
+      "pnl": -1.2011596779858706,
+      "pnl_percent": -1.2011596779858706,
+      "target_sell_price": 4.63510741664186,
+      "target_buy_price": 3.2244225507073816,
+      "projected_sell_pnl": 14.999999999999986,
+      "initial_investment_date": "2025-08-14T03:17:38.765782",
       "total_invested": 100.0,
       "total_realized_pnl": 0.0,
       "trade_count": 0
@@ -1137,17 +1137,17 @@
     "ZEC": {
       "name": "Zcash",
       "rank": 64,
-      "quantity": 10.777982712952218,
-      "initial_price": 9.590826914452245,
-      "current_price": 9.27817409465939,
+      "quantity": 30.819855090939285,
+      "initial_price": 3.244661589255783,
+      "current_price": 3.239320343016672,
       "initial_value": 100.0,
-      "current_value": 100.0,
-      "pnl": 0.0,
-      "pnl_percent": 0.0,
-      "target_sell_price": 10.669900208858298,
-      "target_buy_price": 7.422539275727512,
-      "projected_sell_pnl": 20.459694673665027,
-      "initial_investment_date": "2025-08-14T03:15:39.106954",
+      "current_value": 99.83538356490557,
+      "pnl": -0.16461643509443036,
+      "pnl_percent": -0.16461643509443036,
+      "target_sell_price": 3.725218394469173,
+      "target_buy_price": 2.591456274413338,
+      "projected_sell_pnl": 14.999999999999986,
+      "initial_investment_date": "2025-08-14T03:17:38.765901",
       "total_invested": 100.0,
       "total_realized_pnl": 0.0,
       "trade_count": 0
@@ -1155,17 +1155,17 @@
     "DASH": {
       "name": "Dash",
       "rank": 65,
-      "quantity": 496.0473423461583,
-      "initial_price": 0.24113476440278941,
-      "current_price": 0.20159366145785473,
+      "quantity": 32.865132953561556,
+      "initial_price": 3.0427383373528425,
+      "current_price": 3.0720286879087646,
       "initial_value": 100.0,
-      "current_value": 100.0,
-      "pnl": 0.0,
-      "pnl_percent": 0.0,
-      "target_sell_price": 0.23183271067653294,
-      "target_buy_price": 0.1612749291662838,
-      "projected_sell_pnl": 9.316092217218838,
-      "initial_investment_date": "2025-08-14T03:15:39.107068",
+      "current_value": 100.96263126527681,
+      "pnl": 0.9626312652768121,
+      "pnl_percent": 0.9626312652768121,
+      "target_sell_price": 3.532832991095079,
+      "target_buy_price": 2.457622950327012,
+      "projected_sell_pnl": 14.999999999999986,
+      "initial_investment_date": "2025-08-14T03:17:38.766021",
       "total_invested": 100.0,
       "total_realized_pnl": 0.0,
       "trade_count": 0
@@ -1173,17 +1173,17 @@
     "DCR": {
       "name": "Decred",
       "rank": 66,
-      "quantity": 111.31850410433742,
-      "initial_price": 0.9594857972070274,
-      "current_price": 0.8983232464772547,
+      "quantity": 11.10224130163523,
+      "initial_price": 9.007190285557131,
+      "current_price": 9.013765943266591,
       "initial_value": 100.0,
-      "current_value": 100.0,
-      "pnl": 0.0,
-      "pnl_percent": 0.0,
-      "target_sell_price": 1.0330717334488428,
-      "target_buy_price": 0.7186585971818038,
-      "projected_sell_pnl": 10.244642278662369,
-      "initial_investment_date": "2025-08-14T03:15:39.107194",
+      "current_value": 100.07300453860739,
+      "pnl": 0.07300453860739253,
+      "pnl_percent": 0.07300453860739253,
+      "target_sell_price": 10.36583083475658,
+      "target_buy_price": 7.211012754613273,
+      "projected_sell_pnl": 15.0,
+      "initial_investment_date": "2025-08-14T03:17:38.766162",
       "total_invested": 100.0,
       "total_realized_pnl": 0.0,
       "trade_count": 0
@@ -1191,17 +1191,17 @@
     "WAVES": {
       "name": "Waves",
       "rank": 67,
-      "quantity": 114.30824788173769,
-      "initial_price": 0.9758441273314168,
-      "current_price": 0.874827511164891,
+      "quantity": 10.62970236574965,
+      "initial_price": 9.407601131167477,
+      "current_price": 8.945056106648577,
       "initial_value": 100.0,
-      "current_value": 100.0,
-      "pnl": 0.0,
-      "pnl_percent": 0.0,
-      "target_sell_price": 1.0060516378396245,
-      "target_buy_price": 0.6998620089319129,
-      "projected_sell_pnl": 9.242421241728579,
-      "initial_investment_date": "2025-08-14T03:15:39.107314",
+      "current_value": 95.08328405860573,
+      "pnl": -4.916715941394273,
+      "pnl_percent": -4.916715941394273,
+      "target_sell_price": 10.286814522645862,
+      "target_buy_price": 7.156044885318862,
+      "projected_sell_pnl": 14.999999999999986,
+      "initial_investment_date": "2025-08-14T03:17:38.766287",
       "total_invested": 100.0,
       "total_realized_pnl": 0.0,
       "trade_count": 0
@@ -1209,17 +1209,17 @@
     "ZIL": {
       "name": "Zilliqa",
       "rank": 68,
-      "quantity": 149.43328288870947,
-      "initial_price": 0.8102670995530148,
-      "current_price": 0.6691949615700744,
+      "quantity": 26.420180335910484,
+      "initial_price": 3.7849855197271056,
+      "current_price": 3.7189370783158147,
       "initial_value": 100.0,
-      "current_value": 99.99999999999999,
-      "pnl": -1.4210854715202004e-14,
-      "pnl_percent": -1.4210854715202004e-14,
-      "target_sell_price": 0.7695742058055856,
-      "target_buy_price": 0.5353559692560595,
-      "projected_sell_pnl": 10.351691841320672,
-      "initial_investment_date": "2025-08-14T03:15:39.107416",
+      "current_value": 98.25498826700787,
+      "pnl": -1.7450117329921255,
+      "pnl_percent": -1.7450117329921255,
+      "target_sell_price": 4.2767776400631865,
+      "target_buy_price": 2.975149662652652,
+      "projected_sell_pnl": 14.999999999999986,
+      "initial_investment_date": "2025-08-14T03:17:38.766647",
       "total_invested": 100.0,
       "total_realized_pnl": 0.0,
       "trade_count": 0
@@ -1227,17 +1227,17 @@
     "BAL": {
       "name": "Balancer",
       "rank": 69,
-      "quantity": 72.88972062911974,
-      "initial_price": 1.401691122737454,
-      "current_price": 1.3719355642591062,
+      "quantity": 12.8207453359008,
+      "initial_price": 7.799858540203497,
+      "current_price": 7.664159068252383,
       "initial_value": 100.0,
-      "current_value": 100.0,
-      "pnl": 0.0,
-      "pnl_percent": 0.0,
-      "target_sell_price": 1.577725898897972,
-      "target_buy_price": 1.097548451407285,
-      "projected_sell_pnl": 7.9162985031482975,
-      "initial_investment_date": "2025-08-14T03:15:39.107524",
+      "current_value": 98.26023162789855,
+      "pnl": -1.7397683721014516,
+      "pnl_percent": -1.7397683721014516,
+      "target_sell_price": 8.81378292849024,
+      "target_buy_price": 6.131327254601906,
+      "projected_sell_pnl": 14.999999999999986,
+      "initial_investment_date": "2025-08-14T03:17:38.766908",
       "total_invested": 100.0,
       "total_realized_pnl": 0.0,
       "trade_count": 0
@@ -1245,17 +1245,17 @@
     "BAND": {
       "name": "Band Protocol",
       "rank": 70,
-      "quantity": 20.743817720773944,
-      "initial_price": 5.4738093615752765,
-      "current_price": 4.820713397411643,
+      "quantity": 10.547416250768897,
+      "initial_price": 9.480994930176392,
+      "current_price": 9.002882813270517,
       "initial_value": 100.0,
-      "current_value": 100.0,
-      "pnl": 0.0,
-      "pnl_percent": 0.0,
-      "target_sell_price": 5.5438204070233885,
-      "target_buy_price": 3.8565707179293143,
-      "projected_sell_pnl": 2.146856735510127,
-      "initial_investment_date": "2025-08-14T03:15:39.107628",
+      "current_value": 94.95715248845747,
+      "pnl": -5.042847511542533,
+      "pnl_percent": -5.042847511542533,
+      "target_sell_price": 10.353315235261094,
+      "target_buy_price": 7.202306250616414,
+      "projected_sell_pnl": 15.0,
+      "initial_investment_date": "2025-08-14T03:17:38.767217",
       "total_invested": 100.0,
       "total_realized_pnl": 0.0,
       "trade_count": 0
@@ -1263,17 +1263,17 @@
     "OCEAN": {
       "name": "Ocean Protocol",
       "rank": 71,
-      "quantity": 12.002183638198128,
-      "initial_price": 9.725578102647077,
-      "current_price": 8.331817193809648,
+      "quantity": 110.95795002489453,
+      "initial_price": 0.9012423172703172,
+      "current_price": 0.814382477304978,
       "initial_value": 100.0,
-      "current_value": 100.0,
-      "pnl": 0.0,
-      "pnl_percent": 0.0,
-      "target_sell_price": 9.581589772881095,
-      "target_buy_price": 6.665453755047719,
-      "projected_sell_pnl": 10.462766144063792,
-      "initial_investment_date": "2025-08-14T03:15:39.107735",
+      "current_value": 90.36221021795555,
+      "pnl": -9.63778978204445,
+      "pnl_percent": -9.63778978204445,
+      "target_sell_price": 0.9365398489007246,
+      "target_buy_price": 0.6515059818439825,
+      "projected_sell_pnl": 14.999999999999986,
+      "initial_investment_date": "2025-08-14T03:17:38.767508",
       "total_invested": 100.0,
       "total_realized_pnl": 0.0,
       "trade_count": 0
@@ -1281,17 +1281,17 @@
     "UMA": {
       "name": "UMA Protocol",
       "rank": 72,
-      "quantity": 13.326633527385397,
-      "initial_price": 6.722441612349675,
-      "current_price": 7.50377053548492,
+      "quantity": 16.055502094644787,
+      "initial_price": 6.228394441389309,
+      "current_price": 6.140909000336553,
       "initial_value": 100.0,
-      "current_value": 100.0,
-      "pnl": 0.0,
-      "pnl_percent": 0.0,
-      "target_sell_price": 8.629336115807657,
-      "target_buy_price": 6.003016428387936,
-      "projected_sell_pnl": 26.593487083734274,
-      "initial_investment_date": "2025-08-14T03:15:39.107835",
+      "current_value": 98.59537731792655,
+      "pnl": -1.4046226820734518,
+      "pnl_percent": -1.4046226820734518,
+      "target_sell_price": 7.062045350387035,
+      "target_buy_price": 4.912727200269242,
+      "projected_sell_pnl": 14.999999999999986,
+      "initial_investment_date": "2025-08-14T03:17:38.767825",
       "total_invested": 100.0,
       "total_realized_pnl": 0.0,
       "trade_count": 0
@@ -1299,17 +1299,17 @@
     "ALPHA": {
       "name": "Alpha Finance",
       "rank": 73,
-      "quantity": 21.02762288889081,
-      "initial_price": 4.934966695850606,
-      "current_price": 4.755649296565586,
+      "quantity": 23.309266686156576,
+      "initial_price": 4.290139254333137,
+      "current_price": 4.423923181258428,
       "initial_value": 100.0,
-      "current_value": 100.0,
-      "pnl": 0.0,
-      "pnl_percent": 0.0,
-      "target_sell_price": 5.468996691050424,
-      "target_buy_price": 3.8045194372524693,
-      "projected_sell_pnl": 11.451908778491841,
-      "initial_investment_date": "2025-08-14T03:15:39.107992",
+      "current_value": 103.1184052310229,
+      "pnl": 3.118405231022905,
+      "pnl_percent": 3.118405231022905,
+      "target_sell_price": 5.087511658447192,
+      "target_buy_price": 3.5391385450067427,
+      "projected_sell_pnl": 14.999999999999986,
+      "initial_investment_date": "2025-08-14T03:17:38.768075",
       "total_invested": 100.0,
       "total_realized_pnl": 0.0,
       "trade_count": 0
@@ -1317,17 +1317,17 @@
     "ANKR": {
       "name": "Ankr",
       "rank": 74,
-      "quantity": 22.29542766498238,
-      "initial_price": 4.823794284985244,
-      "current_price": 4.48522457172068,
+      "quantity": 23.123705364446376,
+      "initial_price": 4.3245664318900205,
+      "current_price": 4.340985844178786,
       "initial_value": 100.0,
-      "current_value": 100.0,
-      "pnl": 0.0,
-      "pnl_percent": 0.0,
-      "target_sell_price": 5.158008257478782,
-      "target_buy_price": 3.5881796573765445,
-      "projected_sell_pnl": 11.125381588276994,
-      "initial_investment_date": "2025-08-14T03:15:39.108101",
+      "current_value": 100.37967765202278,
+      "pnl": 0.37967765202277803,
+      "pnl_percent": 0.37967765202277803,
+      "target_sell_price": 4.992133720805604,
+      "target_buy_price": 3.472788675343029,
+      "projected_sell_pnl": 15.0,
+      "initial_investment_date": "2025-08-14T03:17:38.768452",
       "total_invested": 100.0,
       "total_realized_pnl": 0.0,
       "trade_count": 0
@@ -1335,17 +1335,17 @@
     "SKL": {
       "name": "SKALE Network",
       "rank": 75,
-      "quantity": 9.81638938272074,
-      "initial_price": 9.938713748753736,
-      "current_price": 10.187044961360701,
+      "quantity": 12.671218844819803,
+      "initial_price": 7.8919006312389275,
+      "current_price": 7.7892799681404234,
       "initial_value": 100.0,
-      "current_value": 100.0,
-      "pnl": 0.0,
-      "pnl_percent": 0.0,
-      "target_sell_price": 11.715101705564805,
-      "target_buy_price": 8.149635969088562,
-      "projected_sell_pnl": 13.946975171774753,
-      "initial_investment_date": "2025-08-14T03:15:39.108231",
+      "current_value": 98.69967111987833,
+      "pnl": -1.3003288801216684,
+      "pnl_percent": -1.3003288801216684,
+      "target_sell_price": 8.957671963361486,
+      "target_buy_price": 6.231423974512339,
+      "projected_sell_pnl": 14.999999999999986,
+      "initial_investment_date": "2025-08-14T03:17:38.768703",
       "total_invested": 100.0,
       "total_realized_pnl": 0.0,
       "trade_count": 0
@@ -1353,17 +1353,17 @@
     "CTSI": {
       "name": "Cartesi",
       "rank": 76,
-      "quantity": 12.027912708402628,
-      "initial_price": 7.418336847222693,
-      "current_price": 8.313994491341843,
+      "quantity": 38.42435369719746,
+      "initial_price": 2.6025161226665903,
+      "current_price": 2.579271022283826,
       "initial_value": 100.0,
-      "current_value": 100.0,
-      "pnl": 0.0,
-      "pnl_percent": 0.0,
-      "target_sell_price": 9.561093665043119,
-      "target_buy_price": 6.651195593073474,
-      "projected_sell_pnl": 26.46051256134014,
-      "initial_investment_date": "2025-08-14T03:15:39.108377",
+      "current_value": 99.10682204116581,
+      "pnl": -0.8931779588341868,
+      "pnl_percent": -0.8931779588341869,
+      "target_sell_price": 2.9661616756263998,
+      "target_buy_price": 2.063416817827061,
+      "projected_sell_pnl": 14.999999999999986,
+      "initial_investment_date": "2025-08-14T03:17:38.768958",
       "total_invested": 100.0,
       "total_realized_pnl": 0.0,
       "trade_count": 0
@@ -1371,17 +1371,17 @@
     "CELR": {
       "name": "Celer Network",
       "rank": 77,
-      "quantity": 51.25741465183606,
-      "initial_price": 2.103962276746793,
-      "current_price": 1.9509372581361353,
+      "quantity": 28.375092137112794,
+      "initial_price": 3.5242176313220295,
+      "current_price": 3.382343041226346,
       "initial_value": 100.0,
-      "current_value": 100.0,
-      "pnl": 0.0,
-      "pnl_percent": 0.0,
-      "target_sell_price": 2.2435778468565553,
-      "target_buy_price": 1.5607498065089083,
-      "projected_sell_pnl": 16.12394828084433,
-      "initial_investment_date": "2025-08-14T03:15:39.108592",
+      "current_value": 95.97429543411987,
+      "pnl": -4.025704565880133,
+      "pnl_percent": -4.025704565880133,
+      "target_sell_price": 3.8896944974102974,
+      "target_buy_price": 2.705874432981077,
+      "projected_sell_pnl": 15.0,
+      "initial_investment_date": "2025-08-14T03:17:38.769268",
       "total_invested": 100.0,
       "total_realized_pnl": 0.0,
       "trade_count": 0
@@ -1389,17 +1389,17 @@
     "STORJ": {
       "name": "Storj",
       "rank": 78,
-      "quantity": 14.950158960856562,
-      "initial_price": 7.261924751000772,
-      "current_price": 6.688892088828369,
+      "quantity": 27.32678501115342,
+      "initial_price": 3.6594132811153974,
+      "current_price": 3.724519621600109,
       "initial_value": 100.0,
-      "current_value": 100.0,
-      "pnl": 0.0,
-      "pnl_percent": 0.0,
-      "target_sell_price": 7.692225902152623,
-      "target_buy_price": 5.351113671062695,
-      "projected_sell_pnl": 12.252612156200499,
-      "initial_investment_date": "2025-08-14T03:15:39.108772",
+      "current_value": 101.77914696928866,
+      "pnl": 1.7791469692886608,
+      "pnl_percent": 1.7791469692886606,
+      "target_sell_price": 4.283197564840125,
+      "target_buy_price": 2.9796156972800873,
+      "projected_sell_pnl": 14.999999999999986,
+      "initial_investment_date": "2025-08-14T03:17:38.769546",
       "total_invested": 100.0,
       "total_realized_pnl": 0.0,
       "trade_count": 0
@@ -1407,17 +1407,17 @@
     "RSR": {
       "name": "Reserve Rights",
       "rank": 79,
-      "quantity": 47.94072928976475,
-      "initial_price": 2.226465051507258,
-      "current_price": 2.0859090272819403,
+      "quantity": 12.423468868408722,
+      "initial_price": 8.04928165065774,
+      "current_price": 8.091201474856382,
       "initial_value": 100.0,
-      "current_value": 100.0,
-      "pnl": 0.0,
-      "pnl_percent": 0.0,
-      "target_sell_price": 2.398795381374231,
-      "target_buy_price": 1.6687272218255522,
-      "projected_sell_pnl": 12.59242307506139,
-      "initial_investment_date": "2025-08-14T03:15:39.108943",
+      "current_value": 100.52078963090099,
+      "pnl": 0.5207896309009925,
+      "pnl_percent": 0.5207896309009925,
+      "target_sell_price": 9.304881696084838,
+      "target_buy_price": 6.472961179885106,
+      "projected_sell_pnl": 15.0,
+      "initial_investment_date": "2025-08-14T03:17:38.769818",
       "total_invested": 100.0,
       "total_realized_pnl": 0.0,
       "trade_count": 0
@@ -1425,17 +1425,17 @@
     "REN": {
       "name": "Ren Protocol",
       "rank": 80,
-      "quantity": 1442.9505078977393,
-      "initial_price": 0.0693698828164628,
-      "current_price": 0.0693024462396093,
+      "quantity": 30.863199076264863,
+      "initial_price": 3.2401048171608475,
+      "current_price": 3.3648720919042967,
       "initial_value": 100.0,
-      "current_value": 100.0,
-      "pnl": 0.0,
-      "pnl_percent": 0.0,
-      "target_sell_price": 0.07969781317555068,
-      "target_buy_price": 0.05544195699168744,
-      "projected_sell_pnl": 16.01663703683711,
-      "initial_investment_date": "2025-08-14T03:15:39.109582",
+      "current_value": 103.8507172386101,
+      "pnl": 3.850717238610102,
+      "pnl_percent": 3.850717238610102,
+      "target_sell_price": 3.869602905689941,
+      "target_buy_price": 2.6918976735234375,
+      "projected_sell_pnl": 14.999999999999986,
+      "initial_investment_date": "2025-08-14T03:17:38.770087",
       "total_invested": 100.0,
       "total_realized_pnl": 0.0,
       "trade_count": 0
@@ -1443,17 +1443,17 @@
     "KNC": {
       "name": "Kyber Network",
       "rank": 81,
-      "quantity": 23.5151601881279,
-      "initial_price": 4.493507401292866,
-      "current_price": 4.252575751131264,
+      "quantity": 79.37397969214898,
+      "initial_price": 1.259858714251809,
+      "current_price": 1.4660501696382253,
       "initial_value": 100.0,
-      "current_value": 100.0,
-      "pnl": 0.0,
-      "pnl_percent": 0.0,
-      "target_sell_price": 5.1030909013575165,
-      "target_buy_price": 3.189431813348448,
-      "projected_sell_pnl": 29.111937709459937,
-      "initial_investment_date": "2025-08-14T03:15:39.109711",
+      "current_value": 116.36623639253607,
+      "pnl": 16.366236392536067,
+      "pnl_percent": 16.366236392536067,
+      "target_sell_price": 1.7592602035658704,
+      "target_buy_price": 1.099537627228669,
+      "projected_sell_pnl": 20.000000000000014,
+      "initial_investment_date": "2025-08-14T03:17:38.770379",
       "total_invested": 100.0,
       "total_realized_pnl": 0.0,
       "trade_count": 0
@@ -1461,17 +1461,17 @@
     "NMR": {
       "name": "Numeraire",
       "rank": 82,
-      "quantity": 32.60789512350927,
-      "initial_price": 2.5572929138142113,
-      "current_price": 3.0667419537884593,
+      "quantity": 46.33528484769225,
+      "initial_price": 2.1581824807748116,
+      "current_price": 2.3425477854711714,
       "initial_value": 100.0,
-      "current_value": 100.0,
-      "pnl": 0.0,
-      "pnl_percent": 0.0,
-      "target_sell_price": 3.680090344546151,
-      "target_buy_price": 2.3000564653413447,
-      "projected_sell_pnl": 44.63666671713574,
-      "initial_investment_date": "2025-08-14T03:15:39.109854",
+      "current_value": 108.5426189091374,
+      "pnl": 8.542618909137403,
+      "pnl_percent": 8.542618909137403,
+      "target_sell_price": 2.8110573425654057,
+      "target_buy_price": 1.7569108391033785,
+      "projected_sell_pnl": 19.999999999999986,
+      "initial_investment_date": "2025-08-14T03:17:38.770651",
       "total_invested": 100.0,
       "total_realized_pnl": 0.0,
       "trade_count": 0
@@ -1479,17 +1479,17 @@
     "BNT": {
       "name": "Bancor",
       "rank": 83,
-      "quantity": 34.79281235758097,
-      "initial_price": 2.3764372168041272,
-      "current_price": 2.8741568509109356,
+      "quantity": 23.06880049253099,
+      "initial_price": 4.334859111221544,
+      "current_price": 4.433036984918266,
       "initial_value": 100.0,
-      "current_value": 100.00000000000001,
-      "pnl": 1.4210854715202004e-14,
-      "pnl_percent": 1.4210854715202004e-14,
-      "target_sell_price": 3.448988221093123,
-      "target_buy_price": 2.1556176381832017,
-      "projected_sell_pnl": 28.47415445324475,
-      "initial_investment_date": "2025-08-14T03:15:39.110284",
+      "current_value": 102.26484578109059,
+      "pnl": 2.2648457810905853,
+      "pnl_percent": 2.2648457810905853,
+      "target_sell_price": 5.319644381901918,
+      "target_buy_price": 3.324777738688699,
+      "projected_sell_pnl": 19.999999999999986,
+      "initial_investment_date": "2025-08-14T03:17:38.771358",
       "total_invested": 100.0,
       "total_realized_pnl": 0.0,
       "trade_count": 0
@@ -1497,17 +1497,17 @@
     "KAVA": {
       "name": "Kava",
       "rank": 84,
-      "quantity": 40.05063940410141,
-      "initial_price": 2.7060719387942975,
-      "current_price": 2.4968390389732313,
+      "quantity": 44.372257128810695,
+      "initial_price": 2.253660428174849,
+      "current_price": 2.1526759879583643,
       "initial_value": 100.0,
-      "current_value": 100.0,
-      "pnl": 0.0,
-      "pnl_percent": 0.0,
-      "target_sell_price": 2.9962068467678775,
-      "target_buy_price": 1.8726292792299235,
-      "projected_sell_pnl": 25.0889911698345,
-      "initial_investment_date": "2025-08-14T03:15:39.111706",
+      "current_value": 95.51909245270514,
+      "pnl": -4.480907547294862,
+      "pnl_percent": -4.480907547294862,
+      "target_sell_price": 2.583211185550037,
+      "target_buy_price": 1.6145069909687733,
+      "projected_sell_pnl": 20.0,
+      "initial_investment_date": "2025-08-14T03:17:38.771633",
       "total_invested": 100.0,
       "total_realized_pnl": 0.0,
       "trade_count": 0
@@ -1515,17 +1515,17 @@
     "COTI": {
       "name": "COTI",
       "rank": 85,
-      "quantity": 19.066078551705974,
-      "initial_price": 4.359749280939026,
-      "current_price": 5.2449170252187125,
+      "quantity": 282.69796778344386,
+      "initial_price": 0.3537344140959774,
+      "current_price": 0.32577415686603955,
       "initial_value": 100.0,
-      "current_value": 100.0,
-      "pnl": 0.0,
-      "pnl_percent": 0.0,
-      "target_sell_price": 6.293900430262455,
-      "target_buy_price": 3.9336877689140346,
-      "projected_sell_pnl": 28.468377278857076,
-      "initial_investment_date": "2025-08-14T03:15:39.111971",
+      "current_value": 92.09569210239424,
+      "pnl": -7.9043078976057615,
+      "pnl_percent": -7.9043078976057615,
+      "target_sell_price": 0.39092898823924743,
+      "target_buy_price": 0.24433061764952968,
+      "projected_sell_pnl": 20.0,
+      "initial_investment_date": "2025-08-14T03:17:38.771891",
       "total_invested": 100.0,
       "total_realized_pnl": 0.0,
       "trade_count": 0
@@ -1533,17 +1533,17 @@
     "NKN": {
       "name": "NKN",
       "rank": 86,
-      "quantity": 251.65756687831794,
-      "initial_price": 0.3807151394609364,
-      "current_price": 0.397365361353717,
+      "quantity": 38.99502502875171,
+      "initial_price": 2.5644296913841766,
+      "current_price": 2.1219956805459743,
       "initial_value": 100.0,
-      "current_value": 100.0,
-      "pnl": 0.0,
-      "pnl_percent": 0.0,
-      "target_sell_price": 0.4768384336244603,
-      "target_buy_price": 0.29802402101528774,
-      "projected_sell_pnl": 25.421262992731315,
-      "initial_investment_date": "2025-08-14T03:15:39.112244",
+      "current_value": 82.74727467379329,
+      "pnl": -17.252725326206715,
+      "pnl_percent": -17.252725326206715,
+      "target_sell_price": 2.546394816655169,
+      "target_buy_price": 1.5914967604094807,
+      "projected_sell_pnl": 19.999999999999986,
+      "initial_investment_date": "2025-08-14T03:17:38.772237",
       "total_invested": 100.0,
       "total_realized_pnl": 0.0,
       "trade_count": 0
@@ -1551,17 +1551,17 @@
     "OGN": {
       "name": "Origin Protocol",
       "rank": 87,
-      "quantity": 37.51381937056097,
-      "initial_price": 2.293113488716646,
-      "current_price": 2.665684317883003,
+      "quantity": 179.67736851733704,
+      "initial_price": 0.556553119767841,
+      "current_price": 0.5273254265124668,
       "initial_value": 100.0,
-      "current_value": 100.0,
-      "pnl": 0.0,
-      "pnl_percent": 0.0,
-      "target_sell_price": 3.198821181459604,
-      "target_buy_price": 1.9992632384122524,
-      "projected_sell_pnl": 24.182440913395027,
-      "initial_investment_date": "2025-08-14T03:15:39.112891",
+      "current_value": 94.74844498804244,
+      "pnl": -5.251555011957564,
+      "pnl_percent": -5.251555011957564,
+      "target_sell_price": 0.6327905118149602,
+      "target_buy_price": 0.3954940698843501,
+      "projected_sell_pnl": 19.999999999999986,
+      "initial_investment_date": "2025-08-14T03:17:38.773390",
       "total_invested": 100.0,
       "total_realized_pnl": 0.0,
       "trade_count": 0
@@ -1569,17 +1569,17 @@
     "NANO": {
       "name": "Nano",
       "rank": 88,
-      "quantity": 67.57818439191868,
-      "initial_price": 1.841089617517534,
-      "current_price": 1.479767485614166,
+      "quantity": 20.347325150453496,
+      "initial_price": 4.914650906719856,
+      "current_price": 4.015309348889438,
       "initial_value": 100.0,
-      "current_value": 99.99999999999999,
-      "pnl": -1.4210854715202004e-14,
-      "pnl_percent": -1.4210854715202004e-14,
-      "target_sell_price": 1.7757209827369993,
-      "target_buy_price": 1.1098256142106244,
-      "projected_sell_pnl": 12.608696359549242,
-      "initial_investment_date": "2025-08-14T03:15:39.113911",
+      "current_value": 81.7008049015091,
+      "pnl": -18.299195098490898,
+      "pnl_percent": -18.299195098490898,
+      "target_sell_price": 4.818371218667325,
+      "target_buy_price": 3.011482011667078,
+      "projected_sell_pnl": 19.999999999999986,
+      "initial_investment_date": "2025-08-14T03:17:38.773525",
       "total_invested": 100.0,
       "total_realized_pnl": 0.0,
       "trade_count": 0
@@ -1587,17 +1587,17 @@
     "RVN": {
       "name": "Ravencoin",
       "rank": 89,
-      "quantity": 28.221161457279734,
-      "initial_price": 3.308584624435619,
-      "current_price": 3.5434402709249477,
+      "quantity": 30.863689443209086,
+      "initial_price": 3.2400533378877334,
+      "current_price": 3.3658021182716373,
       "initial_value": 100.0,
-      "current_value": 100.0,
-      "pnl": 0.0,
-      "pnl_percent": 0.0,
-      "target_sell_price": 4.252128325109937,
-      "target_buy_price": 2.657580203193711,
-      "projected_sell_pnl": 23.69210476929132,
-      "initial_investment_date": "2025-08-14T03:15:39.114581",
+      "current_value": 103.88107130563111,
+      "pnl": 3.88107130563111,
+      "pnl_percent": 3.8810713056311097,
+      "target_sell_price": 4.038962541925964,
+      "target_buy_price": 2.5243515887037278,
+      "projected_sell_pnl": 19.999999999999986,
+      "initial_investment_date": "2025-08-14T03:17:38.773638",
       "total_invested": 100.0,
       "total_realized_pnl": 0.0,
       "trade_count": 0
@@ -1605,17 +1605,17 @@
     "DGB": {
       "name": "DigiByte",
       "rank": 90,
-      "quantity": 55.26872948367892,
-      "initial_price": 1.959253172900801,
-      "current_price": 1.809341393120506,
+      "quantity": 21.758788248841245,
+      "initial_price": 4.595844164498703,
+      "current_price": 4.622842102410628,
       "initial_value": 100.0,
-      "current_value": 100.0,
-      "pnl": 0.0,
-      "pnl_percent": 0.0,
-      "target_sell_price": 2.171209671744607,
-      "target_buy_price": 1.3570060448403796,
-      "projected_sell_pnl": 12.079395683077394,
-      "initial_investment_date": "2025-08-14T03:15:39.114738",
+      "current_value": 100.58744241418093,
+      "pnl": 0.5874424141809271,
+      "pnl_percent": 0.5874424141809271,
+      "target_sell_price": 5.547410522892753,
+      "target_buy_price": 3.467131576807971,
+      "projected_sell_pnl": 19.999999999999986,
+      "initial_investment_date": "2025-08-14T03:17:38.773762",
       "total_invested": 100.0,
       "total_realized_pnl": 0.0,
       "trade_count": 0
@@ -1623,17 +1623,17 @@
     "SC": {
       "name": "Siacoin",
       "rank": 91,
-      "quantity": 18.694282202018872,
-      "initial_price": 4.551097814861711,
-      "current_price": 5.349229187799497,
+      "quantity": 53.391509836174656,
+      "initial_price": 1.87295696088831,
+      "current_price": 2.102402941720958,
       "initial_value": 100.0,
-      "current_value": 100.0,
-      "pnl": 0.0,
-      "pnl_percent": 0.0,
-      "target_sell_price": 6.419075025359397,
-      "target_buy_price": 4.011921890849623,
-      "projected_sell_pnl": 33.94890923481657,
-      "initial_investment_date": "2025-08-14T03:15:39.115043",
+      "current_value": 112.25046734249707,
+      "pnl": 12.250467342497075,
+      "pnl_percent": 12.250467342497075,
+      "target_sell_price": 2.5228835300651498,
+      "target_buy_price": 1.5768022062907185,
+      "projected_sell_pnl": 20.0,
+      "initial_investment_date": "2025-08-14T03:17:38.773875",
       "total_invested": 100.0,
       "total_realized_pnl": 0.0,
       "trade_count": 0
@@ -1641,17 +1641,17 @@
     "HOT": {
       "name": "Holo",
       "rank": 92,
-      "quantity": 208.53149464363062,
-      "initial_price": 0.6303703800901004,
-      "current_price": 0.47954387020001343,
+      "quantity": 33.425429061152016,
+      "initial_price": 2.9917342217821474,
+      "current_price": 2.657648957002056,
       "initial_value": 100.0,
-      "current_value": 100.0,
-      "pnl": 0.0,
-      "pnl_percent": 0.0,
-      "target_sell_price": 0.5754526442400161,
-      "target_buy_price": 0.3596579026500101,
-      "projected_sell_pnl": 1.9793545736167744,
-      "initial_investment_date": "2025-08-14T03:15:39.115390",
+      "current_value": 88.83305668171687,
+      "pnl": -11.166943318283131,
+      "pnl_percent": -11.166943318283131,
+      "target_sell_price": 3.1891787484024667,
+      "target_buy_price": 1.9932367177515418,
+      "projected_sell_pnl": 20.0,
+      "initial_investment_date": "2025-08-14T03:17:38.774017",
       "total_invested": 100.0,
       "total_realized_pnl": 0.0,
       "trade_count": 0
@@ -1659,17 +1659,17 @@
     "IOST": {
       "name": "IOST",
       "rank": 93,
-      "quantity": 28.07704676938427,
-      "initial_price": 4.122737667281803,
-      "current_price": 3.561628144917358,
+      "quantity": 30.684286666922905,
+      "initial_price": 3.2589970588365724,
+      "current_price": 3.2491601931282026,
       "initial_value": 100.0,
-      "current_value": 100.0,
-      "pnl": 0.0,
-      "pnl_percent": 0.0,
-      "target_sell_price": 4.273953773900829,
-      "target_buy_price": 2.6712211086880187,
-      "projected_sell_pnl": 18.953875030840464,
-      "initial_investment_date": "2025-08-14T03:15:39.115549",
+      "current_value": 99.69816279270036,
+      "pnl": -0.30183720729964136,
+      "pnl_percent": -0.30183720729964136,
+      "target_sell_price": 3.898992231753843,
+      "target_buy_price": 2.436870144846152,
+      "projected_sell_pnl": 20.0,
+      "initial_investment_date": "2025-08-14T03:17:38.774140",
       "total_invested": 100.0,
       "total_realized_pnl": 0.0,
       "trade_count": 0
@@ -1677,17 +1677,17 @@
     "DUSK": {
       "name": "Dusk Network",
       "rank": 94,
-      "quantity": 602.1851195060041,
-      "initial_price": 0.18342596105159847,
-      "current_price": 0.16606189153600126,
+      "quantity": 21.592769822453544,
+      "initial_price": 4.631179826499776,
+      "current_price": 4.889789290168612,
       "initial_value": 100.0,
-      "current_value": 100.0,
-      "pnl": 0.0,
-      "pnl_percent": 0.0,
-      "target_sell_price": 0.1992742698432015,
-      "target_buy_price": 0.12454641865200095,
-      "projected_sell_pnl": 6.9552997737170585,
-      "initial_investment_date": "2025-08-14T03:15:39.115815",
+      "current_value": 105.58409462290935,
+      "pnl": 5.5840946229093475,
+      "pnl_percent": 5.5840946229093475,
+      "target_sell_price": 5.8677471482023345,
+      "target_buy_price": 3.6673419676264594,
+      "projected_sell_pnl": 19.999999999999986,
+      "initial_investment_date": "2025-08-14T03:17:38.774241",
       "total_invested": 100.0,
       "total_realized_pnl": 0.0,
       "trade_count": 0
@@ -1695,17 +1695,17 @@
     "WIN": {
       "name": "WINkLink",
       "rank": 95,
-      "quantity": 31.981648960929103,
-      "initial_price": 3.4229739114963027,
-      "current_price": 3.126793121960866,
+      "quantity": 105.40824786561275,
+      "initial_price": 0.9486923653971762,
+      "current_price": 0.9714780924419609,
       "initial_value": 100.0,
-      "current_value": 100.0,
-      "pnl": 0.0,
-      "pnl_percent": 0.0,
-      "target_sell_price": 3.752151746353039,
-      "target_buy_price": 2.3450948414706496,
-      "projected_sell_pnl": 13.799032644330339,
-      "initial_investment_date": "2025-08-14T03:15:39.117057",
+      "current_value": 102.40180356413488,
+      "pnl": 2.4018035641348803,
+      "pnl_percent": 2.4018035641348803,
+      "target_sell_price": 1.165773710930353,
+      "target_buy_price": 0.7286085693314707,
+      "projected_sell_pnl": 20.0,
+      "initial_investment_date": "2025-08-14T03:17:38.774348",
       "total_invested": 100.0,
       "total_realized_pnl": 0.0,
       "trade_count": 0
@@ -1713,17 +1713,17 @@
     "BTT": {
       "name": "BitTorrent",
       "rank": 96,
-      "quantity": 81.89185376751082,
-      "initial_price": 1.2235756591233071,
-      "current_price": 1.2211226806990816,
+      "quantity": 94.05612921119457,
+      "initial_price": 1.063194933053847,
+      "current_price": 1.0459771765169876,
       "initial_value": 100.0,
-      "current_value": 100.0,
-      "pnl": 0.0,
-      "pnl_percent": 0.0,
-      "target_sell_price": 1.465347216838898,
-      "target_buy_price": 0.9158420105243112,
-      "projected_sell_pnl": 23.905285250227706,
-      "initial_investment_date": "2025-08-14T03:15:39.117337",
+      "current_value": 98.38056446644227,
+      "pnl": -1.6194355335577342,
+      "pnl_percent": -1.6194355335577342,
+      "target_sell_price": 1.2551726118203852,
+      "target_buy_price": 0.7844828823877408,
+      "projected_sell_pnl": 20.0,
+      "initial_investment_date": "2025-08-14T03:17:38.774460",
       "total_invested": 100.0,
       "total_realized_pnl": 0.0,
       "trade_count": 0
@@ -1731,17 +1731,17 @@
     "TWT": {
       "name": "Trust Wallet Token",
       "rank": 97,
-      "quantity": 25.43812990637352,
-      "initial_price": 4.664790377778009,
-      "current_price": 3.931106585588472,
+      "quantity": 25.809049428421414,
+      "initial_price": 3.8746099610270073,
+      "current_price": 3.471758828168901,
       "initial_value": 100.0,
-      "current_value": 100.0,
-      "pnl": 0.0,
-      "pnl_percent": 0.0,
-      "target_sell_price": 4.717327902706167,
-      "target_buy_price": 2.948329939191354,
-      "projected_sell_pnl": 20.798894591978026,
-      "initial_investment_date": "2025-08-14T03:15:39.117574",
+      "current_value": 89.60279519976957,
+      "pnl": -10.397204800230426,
+      "pnl_percent": -10.397204800230426,
+      "target_sell_price": 4.166110593802681,
+      "target_buy_price": 2.6038191211266755,
+      "projected_sell_pnl": 19.999999999999986,
+      "initial_investment_date": "2025-08-14T03:17:38.774568",
       "total_invested": 100.0,
       "total_realized_pnl": 0.0,
       "trade_count": 0
@@ -1749,17 +1749,17 @@
     "JST": {
       "name": "JUST",
       "rank": 98,
-      "quantity": 21.113347536580918,
-      "initial_price": 4.337190793595431,
-      "current_price": 4.736340356579662,
+      "quantity": 191.09161366560954,
+      "initial_price": 0.5233092027522966,
+      "current_price": 0.5771644553002075,
       "initial_value": 100.0,
-      "current_value": 99.99999999999999,
-      "pnl": -1.4210854715202004e-14,
-      "pnl_percent": -1.4210854715202004e-14,
-      "target_sell_price": 5.683608427895594,
-      "target_buy_price": 3.5522552674347465,
-      "projected_sell_pnl": 29.44266821564412,
-      "initial_investment_date": "2025-08-14T03:15:39.117856",
+      "current_value": 110.29128711374923,
+      "pnl": 10.291287113749235,
+      "pnl_percent": 10.291287113749235,
+      "target_sell_price": 0.692597346360249,
+      "target_buy_price": 0.43287334147515566,
+      "projected_sell_pnl": 20.000000000000014,
+      "initial_investment_date": "2025-08-14T03:17:38.774681",
       "total_invested": 100.0,
       "total_realized_pnl": 0.0,
       "trade_count": 0
@@ -1767,17 +1767,17 @@
     "SXP": {
       "name": "Solar",
       "rank": 99,
-      "quantity": 63.63429192418278,
-      "initial_price": 1.7403741603781018,
-      "current_price": 1.5714797317010334,
+      "quantity": 22.819734364607825,
+      "initial_price": 4.382171957053742,
+      "current_price": 3.672198975772022,
       "initial_value": 100.0,
-      "current_value": 100.0,
-      "pnl": 0.0,
-      "pnl_percent": 0.0,
-      "target_sell_price": 1.88577567804124,
-      "target_buy_price": 1.178609798775775,
-      "projected_sell_pnl": 10.66690133613831,
-      "initial_investment_date": "2025-08-14T03:15:39.118193",
+      "current_value": 83.79860516110247,
+      "pnl": -16.201394838897528,
+      "pnl_percent": -16.201394838897528,
+      "target_sell_price": 4.406638770926427,
+      "target_buy_price": 2.7541492318290164,
+      "projected_sell_pnl": 19.999999999999986,
+      "initial_investment_date": "2025-08-14T03:17:38.774785",
       "total_invested": 100.0,
       "total_realized_pnl": 0.0,
       "trade_count": 0
@@ -1785,17 +1785,17 @@
     "HARD": {
       "name": "Kava Lend",
       "rank": 100,
-      "quantity": 106.14126722502981,
-      "initial_price": 1.0548686022460747,
-      "current_price": 0.942140626491582,
+      "quantity": 39.352146233721975,
+      "initial_price": 2.54115746079199,
+      "current_price": 2.5749790023469514,
       "initial_value": 100.0,
-      "current_value": 100.0,
-      "pnl": 0.0,
-      "pnl_percent": 0.0,
-      "target_sell_price": 1.1305687517898984,
-      "target_buy_price": 0.7066054698686866,
-      "projected_sell_pnl": 9.775464537311123,
-      "initial_investment_date": "2025-08-14T03:15:39.118348",
+      "current_value": 101.33095024912075,
+      "pnl": 1.3309502491207468,
+      "pnl_percent": 1.3309502491207468,
+      "target_sell_price": 3.0899748028163416,
+      "target_buy_price": 1.9312342517602135,
+      "projected_sell_pnl": 20.0,
+      "initial_investment_date": "2025-08-14T03:17:38.774917",
       "total_invested": 100.0,
       "total_realized_pnl": 0.0,
       "trade_count": 0
@@ -1803,17 +1803,17 @@
     "SUN": {
       "name": "Sun Token",
       "rank": 101,
-      "quantity": 21.81570396809571,
-      "initial_price": 4.530879377874525,
-      "current_price": 4.583853913045602,
+      "quantity": 27.534576629574914,
+      "initial_price": 3.631797261505372,
+      "current_price": 3.598632893058741,
       "initial_value": 100.0,
-      "current_value": 100.0,
-      "pnl": 0.0,
-      "pnl_percent": 0.0,
-      "target_sell_price": 5.5006246956547225,
-      "target_buy_price": 3.437890434784202,
-      "projected_sell_pnl": 23.4114264308931,
-      "initial_investment_date": "2025-08-14T03:15:39.118583",
+      "current_value": 99.08683315563478,
+      "pnl": -0.9131668443652217,
+      "pnl_percent": -0.9131668443652217,
+      "target_sell_price": 4.318359471670489,
+      "target_buy_price": 2.6989746697940555,
+      "projected_sell_pnl": 19.999999999999986,
+      "initial_investment_date": "2025-08-14T03:17:38.775026",
       "total_invested": 100.0,
       "total_realized_pnl": 0.0,
       "trade_count": 0
@@ -1821,17 +1821,17 @@
     "ICX": {
       "name": "ICON",
       "rank": 102,
-      "quantity": 30.10630425356986,
-      "initial_price": 3.5263227249584586,
-      "current_price": 3.3215634558712894,
+      "quantity": 21.614414205837043,
+      "initial_price": 4.626542225372671,
+      "current_price": 4.528018044367198,
       "initial_value": 100.0,
-      "current_value": 100.0,
-      "pnl": 0.0,
-      "pnl_percent": 0.0,
-      "target_sell_price": 3.985876147045547,
-      "target_buy_price": 2.4911725919034673,
-      "projected_sell_pnl": 17.769903553930646,
-      "initial_investment_date": "2025-08-14T03:15:39.118833",
+      "current_value": 97.87045754245683,
+      "pnl": -2.1295424575431667,
+      "pnl_percent": -2.1295424575431667,
+      "target_sell_price": 5.433621653240638,
+      "target_buy_price": 3.396013533275399,
+      "projected_sell_pnl": 19.999999999999986,
+      "initial_investment_date": "2025-08-14T03:17:38.775258",
       "total_invested": 100.0,
       "total_realized_pnl": 0.0,
       "trade_count": 0
@@ -1839,17 +1839,17 @@
     "ONT": {
       "name": "Ontology",
       "rank": 103,
-      "quantity": 48.24009569417122,
-      "initial_price": 1.7991424359746693,
-      "current_price": 2.0729643787187357,
+      "quantity": 154.81470949546846,
+      "initial_price": 0.645933453777705,
+      "current_price": 0.6209004446315096,
       "initial_value": 100.0,
-      "current_value": 100.0,
-      "pnl": 0.0,
-      "pnl_percent": 0.0,
-      "target_sell_price": 2.487557254462483,
-      "target_buy_price": 1.554723284039052,
-      "projected_sell_pnl": 22.86559809220259,
-      "initial_investment_date": "2025-08-14T03:15:39.119073",
+      "current_value": 96.12452196123436,
+      "pnl": -3.8754780387656353,
+      "pnl_percent": -3.8754780387656353,
+      "target_sell_price": 0.7450805335578116,
+      "target_buy_price": 0.4656753334736322,
+      "projected_sell_pnl": 20.0,
+      "initial_investment_date": "2025-08-14T03:17:38.775352",
       "total_invested": 100.0,
       "total_realized_pnl": 0.0,
       "trade_count": 0
@@ -1858,1240 +1858,725 @@
   "price_history": {
     "BTC": [
       {
-        "timestamp": "2025-08-14T03:16:09.402943",
-        "price": 118581.21787041947,
-        "volume": 3777587.3297466123
-      },
-      {
-        "timestamp": "2025-08-14T03:16:20.129858",
-        "price": 119069.97766058543,
-        "volume": 4383974.5066782115
+        "timestamp": "2025-08-14T03:18:22.164423",
+        "price": 124234.09049274908,
+        "volume": 2544739.276089906
       }
     ],
     "ETH": [
       {
-        "timestamp": "2025-08-14T03:16:09.402943",
-        "price": 4519.494051449283,
-        "volume": 3881639.423359922
-      },
-      {
-        "timestamp": "2025-08-14T03:16:20.129858",
-        "price": 4555.018641235711,
-        "volume": 2363584.640384026
+        "timestamp": "2025-08-14T03:18:22.164423",
+        "price": 4672.378636765248,
+        "volume": 6851555.781759416
       }
     ],
     "SOL": [
       {
-        "timestamp": "2025-08-14T03:16:09.402943",
-        "price": 169.06535773668995,
-        "volume": 3896479.645118171
-      },
-      {
-        "timestamp": "2025-08-14T03:16:20.129858",
-        "price": 166.92541398190676,
-        "volume": 1957393.1049139423
+        "timestamp": "2025-08-14T03:18:22.164423",
+        "price": 194.6723842024127,
+        "volume": 2464335.7894355827
       }
     ],
     "XRP": [
       {
-        "timestamp": "2025-08-14T03:16:09.402943",
-        "price": 0.5393500758168169,
-        "volume": 2103131.816606867
-      },
-      {
-        "timestamp": "2025-08-14T03:16:20.129858",
-        "price": 0.5403153410220428,
-        "volume": 4327896.514284956
+        "timestamp": "2025-08-14T03:18:22.164423",
+        "price": 3.2783000513163603,
+        "volume": 7079102.136418941
       }
     ],
     "DOGE": [
       {
-        "timestamp": "2025-08-14T03:16:09.402943",
-        "price": 0.09275610776769921,
-        "volume": 529015.7118949834
-      },
-      {
-        "timestamp": "2025-08-14T03:16:20.129858",
-        "price": 0.09049609479627331,
-        "volume": 5838838.389436418
+        "timestamp": "2025-08-14T03:18:22.164423",
+        "price": 0.24817332508604756,
+        "volume": 9743920.26203313
       }
     ],
     "BNB": [
       {
-        "timestamp": "2025-08-14T03:16:09.402943",
-        "price": 276.57188947197784,
-        "volume": 9536111.860771138
-      },
-      {
-        "timestamp": "2025-08-14T03:16:20.129858",
-        "price": 271.4274752908356,
-        "volume": 9329576.629112352
+        "timestamp": "2025-08-14T03:18:22.164423",
+        "price": 874.9290810508594,
+        "volume": 3641092.9451732147
       }
     ],
     "ADA": [
       {
-        "timestamp": "2025-08-14T03:16:09.402943",
-        "price": 23.06599576466653,
-        "volume": 7705834.579795733
-      },
-      {
-        "timestamp": "2025-08-14T03:16:20.129858",
-        "price": 22.235108324343066,
-        "volume": 446835.3741761228
+        "timestamp": "2025-08-14T03:18:22.164423",
+        "price": 0.99446721263941,
+        "volume": 5291578.544274368
       }
     ],
     "AVAX": [
       {
-        "timestamp": "2025-08-14T03:16:09.402943",
-        "price": 136.72749006907472,
-        "volume": 406713.5854794187
-      },
-      {
-        "timestamp": "2025-08-14T03:16:20.129858",
-        "price": 137.82623753431676,
-        "volume": 1336200.5293616985
+        "timestamp": "2025-08-14T03:18:22.164423",
+        "price": 26.008555474939595,
+        "volume": 5510277.430134459
       }
     ],
     "LINK": [
       {
-        "timestamp": "2025-08-14T03:16:09.402943",
-        "price": 93.34368697903938,
-        "volume": 1692386.6241397494
-      },
-      {
-        "timestamp": "2025-08-14T03:16:20.129858",
-        "price": 92.37124486926344,
-        "volume": 7528232.311586241
+        "timestamp": "2025-08-14T03:18:22.164423",
+        "price": 23.992436917346282,
+        "volume": 4377822.011072243
       }
     ],
     "UNI": [
       {
-        "timestamp": "2025-08-14T03:16:09.402943",
-        "price": 104.00867192765553,
-        "volume": 2114737.1620689332
-      },
-      {
-        "timestamp": "2025-08-14T03:16:20.129858",
-        "price": 107.39682866023651,
-        "volume": 4247932.496906109
+        "timestamp": "2025-08-14T03:18:22.164423",
+        "price": 11.72828450423036,
+        "volume": 7488449.477162706
       }
     ],
     "SAROS": [
       {
-        "timestamp": "2025-08-14T03:16:09.402943",
-        "price": 143.40922734438948,
-        "volume": 5017295.528770254
-      },
-      {
-        "timestamp": "2025-08-14T03:16:20.129858",
-        "price": 142.25140403160154,
-        "volume": 5068564.034993637
+        "timestamp": "2025-08-14T03:18:22.164423",
+        "price": 82.45498030232521,
+        "volume": 2463844.7433729623
       }
     ],
     "XCN": [
       {
-        "timestamp": "2025-08-14T03:16:09.402943",
-        "price": 39.95977611466209,
-        "volume": 704328.8672567571
-      },
-      {
-        "timestamp": "2025-08-14T03:16:20.129858",
-        "price": 40.21980734662076,
-        "volume": 9749542.786146203
+        "timestamp": "2025-08-14T03:18:22.164423",
+        "price": 142.76768648846627,
+        "volume": 5260877.086983466
       }
     ],
     "ZBCN": [
       {
-        "timestamp": "2025-08-14T03:16:09.402943",
-        "price": 34.45901916034724,
-        "volume": 1255523.0403649134
-      },
-      {
-        "timestamp": "2025-08-14T03:16:20.129858",
-        "price": 32.00087022616346,
-        "volume": 7232568.575325743
+        "timestamp": "2025-08-14T03:18:22.164423",
+        "price": 147.6003121139407,
+        "volume": 2129853.8885751665
       }
     ],
     "SYRUP": [
       {
-        "timestamp": "2025-08-14T03:16:09.402943",
-        "price": 112.43910433238695,
-        "volume": 1814928.9169858727
-      },
-      {
-        "timestamp": "2025-08-14T03:16:20.129858",
-        "price": 112.58142929191499,
-        "volume": 4279459.87588606
+        "timestamp": "2025-08-14T03:18:22.164423",
+        "price": 51.673778903807616,
+        "volume": 8107352.401605931
       }
     ],
     "TOSHI": [
       {
-        "timestamp": "2025-08-14T03:16:09.402943",
-        "price": 8.223766122315391,
-        "volume": 7048429.608781625
-      },
-      {
-        "timestamp": "2025-08-14T03:16:20.129858",
-        "price": 7.96462448703853,
-        "volume": 917382.5435984816
+        "timestamp": "2025-08-14T03:18:22.164423",
+        "price": 23.13462596834793,
+        "volume": 9416697.529249007
       }
     ],
     "VENOM": [
       {
-        "timestamp": "2025-08-14T03:16:09.402943",
-        "price": 108.90723350420733,
-        "volume": 6943541.77145408
-      },
-      {
-        "timestamp": "2025-08-14T03:16:20.129858",
-        "price": 116.46290754355269,
-        "volume": 4180179.992973008
+        "timestamp": "2025-08-14T03:18:22.164423",
+        "price": 81.71412519338273,
+        "volume": 7718906.096618301
       }
     ],
     "EUL": [
       {
-        "timestamp": "2025-08-14T03:16:09.402943",
-        "price": 50.166373133611195,
-        "volume": 7453776.28763404
-      },
-      {
-        "timestamp": "2025-08-14T03:16:20.129858",
-        "price": 53.83126608583002,
-        "volume": 3091125.1103769555
+        "timestamp": "2025-08-14T03:18:22.164423",
+        "price": 8.293706506561113,
+        "volume": 2125890.267913431
       }
     ],
     "WBT": [
       {
-        "timestamp": "2025-08-14T03:16:09.402943",
-        "price": 146.08178819621943,
-        "volume": 8823161.3283508
-      },
-      {
-        "timestamp": "2025-08-14T03:16:20.129858",
-        "price": 151.93152975620336,
-        "volume": 3177902.186727284
+        "timestamp": "2025-08-14T03:18:22.164423",
+        "price": 4.599321248365246,
+        "volume": 5162151.168392616
       }
     ],
     "HYPE": [
       {
-        "timestamp": "2025-08-14T03:16:09.402943",
-        "price": 20.458459922214193,
-        "volume": 2259431.0968238935
-      },
-      {
-        "timestamp": "2025-08-14T03:16:20.129858",
-        "price": 20.400451982851912,
-        "volume": 4551441.421556167
+        "timestamp": "2025-08-14T03:18:22.164423",
+        "price": 13.470231265718672,
+        "volume": 6506910.208975957
       }
     ],
     "XMR": [
       {
-        "timestamp": "2025-08-14T03:16:09.402943",
-        "price": 74.60868059197452,
-        "volume": 9434073.820574835
-      },
-      {
-        "timestamp": "2025-08-14T03:16:20.129858",
-        "price": 73.49293414249387,
-        "volume": 9442432.454488248
+        "timestamp": "2025-08-14T03:18:22.164423",
+        "price": 98.28845075779915,
+        "volume": 6023096.139351174
       }
     ],
     "SUI": [
       {
-        "timestamp": "2025-08-14T03:16:09.402943",
-        "price": 1.7886794754646085,
-        "volume": 1734072.8273018599
-      },
-      {
-        "timestamp": "2025-08-14T03:16:20.129858",
-        "price": 1.7882503810648287,
-        "volume": 8759721.693647686
+        "timestamp": "2025-08-14T03:18:22.164423",
+        "price": 9.831169832642324,
+        "volume": 7403685.514295664
       }
     ],
     "RNDR": [
       {
-        "timestamp": "2025-08-14T03:16:09.402943",
-        "price": 48.29454475419381,
-        "volume": 7657166.327080921
-      },
-      {
-        "timestamp": "2025-08-14T03:16:20.129858",
-        "price": 49.32311883418619,
-        "volume": 3182677.0109620183
+        "timestamp": "2025-08-14T03:18:22.164423",
+        "price": 7.991523365003208,
+        "volume": 5027472.4183029
       }
     ],
     "PEPE": [
       {
-        "timestamp": "2025-08-14T03:16:09.402943",
-        "price": 19.637260656624466,
-        "volume": 7209892.567202683
-      },
-      {
-        "timestamp": "2025-08-14T03:16:20.129858",
-        "price": 18.703034292914317,
-        "volume": 2095975.9798521912
+        "timestamp": "2025-08-14T03:18:22.164423",
+        "price": 41.392440498320745,
+        "volume": 1928020.1616599998
       }
     ],
     "TON": [
       {
-        "timestamp": "2025-08-14T03:16:09.402943",
-        "price": 43.741932817191916,
-        "volume": 8810525.918150822
-      },
-      {
-        "timestamp": "2025-08-14T03:16:20.129858",
-        "price": 42.97709704329726,
-        "volume": 4963003.767901033
+        "timestamp": "2025-08-14T03:18:22.164423",
+        "price": 45.00978326070268,
+        "volume": 2108137.5206145104
       }
     ],
     "LTC": [
       {
-        "timestamp": "2025-08-14T03:16:09.402943",
-        "price": 13.824437797136056,
-        "volume": 1700432.471004268
-      },
-      {
-        "timestamp": "2025-08-14T03:16:20.129858",
-        "price": 13.030103716395566,
-        "volume": 9659869.032724451
+        "timestamp": "2025-08-14T03:18:22.164423",
+        "price": 33.26486527742874,
+        "volume": 3353153.1765790335
       }
     ],
     "SHIB": [
       {
-        "timestamp": "2025-08-14T03:16:09.402943",
-        "price": 44.50797206438636,
-        "volume": 144116.10216357425
-      },
-      {
-        "timestamp": "2025-08-14T03:16:20.129858",
-        "price": 45.464046525119976,
-        "volume": 6151002.503505382
+        "timestamp": "2025-08-14T03:18:22.164423",
+        "price": 19.476854634772256,
+        "volume": 3515592.915299717
       }
     ],
     "DOT": [
       {
-        "timestamp": "2025-08-14T03:16:09.402943",
-        "price": 49.32686172186745,
-        "volume": 331723.09765626024
-      },
-      {
-        "timestamp": "2025-08-14T03:16:20.129858",
-        "price": 52.63785573328037,
-        "volume": 7461379.400820265
+        "timestamp": "2025-08-14T03:18:22.164423",
+        "price": 23.420260588804204,
+        "volume": 7970275.815507187
       }
     ],
     "TRX": [
       {
-        "timestamp": "2025-08-14T03:16:09.402943",
-        "price": 37.18670740667402,
-        "volume": 597864.6152181269
-      },
-      {
-        "timestamp": "2025-08-14T03:16:20.129858",
-        "price": 37.356018399236945,
-        "volume": 3608528.532261192
+        "timestamp": "2025-08-14T03:18:22.164423",
+        "price": 12.547032847608476,
+        "volume": 3989751.8591360664
       }
     ],
     "MATIC": [
       {
-        "timestamp": "2025-08-14T03:16:09.402943",
-        "price": 26.661510244826154,
-        "volume": 4061495.8475528494
-      },
-      {
-        "timestamp": "2025-08-14T03:16:20.129858",
-        "price": 25.402531182766264,
-        "volume": 1681633.7640856565
+        "timestamp": "2025-08-14T03:18:22.164423",
+        "price": 4.380210634241805,
+        "volume": 5293595.93760383
       }
     ],
     "APT": [
       {
-        "timestamp": "2025-08-14T03:16:09.402943",
-        "price": 23.218202934473123,
-        "volume": 6133450.344495603
-      },
-      {
-        "timestamp": "2025-08-14T03:16:20.129858",
-        "price": 24.072140717357787,
-        "volume": 6351467.219600041
+        "timestamp": "2025-08-14T03:18:22.164423",
+        "price": 49.98876134892983,
+        "volume": 2330637.344858791
       }
     ],
     "AAVE": [
       {
-        "timestamp": "2025-08-14T03:16:09.402943",
-        "price": 26.70987563110014,
-        "volume": 1663672.2089518406
-      },
-      {
-        "timestamp": "2025-08-14T03:16:20.129858",
-        "price": 25.62897928775051,
-        "volume": 9680141.77968455
+        "timestamp": "2025-08-14T03:18:22.164423",
+        "price": 18.60881552498649,
+        "volume": 5693068.7925946275
       }
     ],
     "MKR": [
       {
-        "timestamp": "2025-08-14T03:16:09.402943",
-        "price": 17.957701007935203,
-        "volume": 3283216.436838227
-      },
-      {
-        "timestamp": "2025-08-14T03:16:20.129858",
-        "price": 17.405754997822793,
-        "volume": 2091678.406757646
+        "timestamp": "2025-08-14T03:18:22.164423",
+        "price": 22.362228767053633,
+        "volume": 706176.6308366457
       }
     ],
     "COMP": [
       {
-        "timestamp": "2025-08-14T03:16:09.402943",
-        "price": 7.4945209714668355,
-        "volume": 1109552.2078172122
-      },
-      {
-        "timestamp": "2025-08-14T03:16:20.129858",
-        "price": 7.22105725646737,
-        "volume": 6801160.8020344265
+        "timestamp": "2025-08-14T03:18:22.164423",
+        "price": 2.7131438766859204,
+        "volume": 5316330.3688594
       }
     ],
     "CRV": [
       {
-        "timestamp": "2025-08-14T03:16:09.402943",
-        "price": 40.73883889086255,
-        "volume": 5456172.94532461
-      },
-      {
-        "timestamp": "2025-08-14T03:16:20.129858",
-        "price": 40.31944250740758,
-        "volume": 4654594.033159924
+        "timestamp": "2025-08-14T03:18:22.164423",
+        "price": 29.157240512233976,
+        "volume": 801716.1850893889
       }
     ],
     "SNX": [
       {
-        "timestamp": "2025-08-14T03:16:09.402943",
-        "price": 25.682073955629125,
-        "volume": 2049674.8893937464
-      },
-      {
-        "timestamp": "2025-08-14T03:16:20.129858",
-        "price": 25.101944454151447,
-        "volume": 6841022.730515459
+        "timestamp": "2025-08-14T03:18:22.164423",
+        "price": 28.533369401861865,
+        "volume": 2257711.341900621
       }
     ],
     "SUSHI": [
       {
-        "timestamp": "2025-08-14T03:16:09.402943",
-        "price": 35.8910229341801,
-        "volume": 1095813.5696431845
-      },
-      {
-        "timestamp": "2025-08-14T03:16:20.129858",
-        "price": 34.08646772957862,
-        "volume": 1042231.4825746408
+        "timestamp": "2025-08-14T03:18:22.164423",
+        "price": 17.350938832672053,
+        "volume": 2636434.7291068565
       }
     ],
     "1INCH": [
       {
-        "timestamp": "2025-08-14T03:16:09.402943",
-        "price": 27.64685100970703,
-        "volume": 9391046.303784382
-      },
-      {
-        "timestamp": "2025-08-14T03:16:20.129858",
-        "price": 28.922435455628452,
-        "volume": 5685956.173830315
+        "timestamp": "2025-08-14T03:18:22.164423",
+        "price": 19.047997783238536,
+        "volume": 8700773.645073786
       }
     ],
     "SAND": [
       {
-        "timestamp": "2025-08-14T03:16:09.402943",
-        "price": 12.870736519057553,
-        "volume": 1895506.351529389
-      },
-      {
-        "timestamp": "2025-08-14T03:16:20.129858",
-        "price": 12.23009118943885,
-        "volume": 5551873.042604101
+        "timestamp": "2025-08-14T03:18:22.164423",
+        "price": 35.94217656920701,
+        "volume": 2895134.2765963534
       }
     ],
     "MANA": [
       {
-        "timestamp": "2025-08-14T03:16:09.402943",
-        "price": 32.59604539294252,
-        "volume": 8604925.060102465
-      },
-      {
-        "timestamp": "2025-08-14T03:16:20.129858",
-        "price": 33.659999183779654,
-        "volume": 6157403.247003814
+        "timestamp": "2025-08-14T03:18:22.164423",
+        "price": 40.31947474433772,
+        "volume": 121220.64487677452
       }
     ],
     "AXS": [
       {
-        "timestamp": "2025-08-14T03:16:09.402943",
-        "price": 8.826861651302375,
-        "volume": 9419939.221885348
-      },
-      {
-        "timestamp": "2025-08-14T03:16:20.129858",
-        "price": 9.042218873967192,
-        "volume": 4699304.34711128
+        "timestamp": "2025-08-14T03:18:22.164423",
+        "price": 2.0143476775104068,
+        "volume": 4418374.678820808
       }
     ],
     "BADGER": [
       {
-        "timestamp": "2025-08-14T03:16:09.402943",
-        "price": 5.938492836494411,
-        "volume": 2343463.107173989
-      },
-      {
-        "timestamp": "2025-08-14T03:16:20.129858",
-        "price": 6.156626831812281,
-        "volume": 7698520.776783843
+        "timestamp": "2025-08-14T03:18:22.164423",
+        "price": 18.896337001851954,
+        "volume": 9663224.554540534
       }
     ],
     "AMP": [
       {
-        "timestamp": "2025-08-14T03:16:09.402943",
-        "price": 16.476578423428787,
-        "volume": 5837441.051889945
-      },
-      {
-        "timestamp": "2025-08-14T03:16:20.129858",
-        "price": 16.51144349036988,
-        "volume": 9733691.742146526
+        "timestamp": "2025-08-14T03:18:22.164423",
+        "price": 8.081214150520328,
+        "volume": 8979333.320981689
       }
     ],
     "GALA": [
       {
-        "timestamp": "2025-08-14T03:16:09.402943",
-        "price": 18.652907677826924,
-        "volume": 1946620.9827856964
-      },
-      {
-        "timestamp": "2025-08-14T03:16:20.129858",
-        "price": 18.142399476646496,
-        "volume": 7856464.982439756
+        "timestamp": "2025-08-14T03:18:22.164423",
+        "price": 18.233803347363125,
+        "volume": 8454717.403600972
       }
     ],
     "ATOM": [
       {
-        "timestamp": "2025-08-14T03:16:09.402943",
-        "price": 16.551309364586146,
-        "volume": 1656761.0464350614
-      },
-      {
-        "timestamp": "2025-08-14T03:16:20.129858",
-        "price": 16.421361621073086,
-        "volume": 336325.84022793407
+        "timestamp": "2025-08-14T03:18:22.164423",
+        "price": 9.12210151532512,
+        "volume": 8401973.513362685
       }
     ],
     "FTM": [
       {
-        "timestamp": "2025-08-14T03:16:09.402943",
-        "price": 4.889130131782877,
-        "volume": 147747.90067557667
-      },
-      {
-        "timestamp": "2025-08-14T03:16:20.129858",
-        "price": 4.670444118239996,
-        "volume": 925634.2104984171
+        "timestamp": "2025-08-14T03:18:22.164423",
+        "price": 8.140827904502464,
+        "volume": 4700788.012351681
       }
     ],
     "ALGO": [
       {
-        "timestamp": "2025-08-14T03:16:09.402943",
-        "price": 7.771398062414438,
-        "volume": 3733183.3533259262
-      },
-      {
-        "timestamp": "2025-08-14T03:16:20.129858",
-        "price": 7.358360609514748,
-        "volume": 8601459.846872605
+        "timestamp": "2025-08-14T03:18:22.164423",
+        "price": 19.244630319942623,
+        "volume": 9732043.800100755
       }
     ],
     "FLOW": [
       {
-        "timestamp": "2025-08-14T03:16:09.402943",
-        "price": 11.513802223152863,
-        "volume": 9533315.16189339
-      },
-      {
-        "timestamp": "2025-08-14T03:16:20.129858",
-        "price": 11.842090921015085,
-        "volume": 3831592.769483333
+        "timestamp": "2025-08-14T03:18:22.164423",
+        "price": 18.541871193683658,
+        "volume": 4755874.253680636
       }
     ],
     "ICP": [
       {
-        "timestamp": "2025-08-14T03:16:09.402943",
-        "price": 1.0198813683430141,
-        "volume": 7172579.393322593
-      },
-      {
-        "timestamp": "2025-08-14T03:16:20.129858",
-        "price": 1.082479409865744,
-        "volume": 6497727.595394996
+        "timestamp": "2025-08-14T03:18:22.164423",
+        "price": 7.394305243627089,
+        "volume": 8653014.29064036
       }
     ],
     "THETA": [
       {
-        "timestamp": "2025-08-14T03:16:09.402943",
-        "price": 15.253578443331511,
-        "volume": 959913.1675047451
-      },
-      {
-        "timestamp": "2025-08-14T03:16:20.129858",
-        "price": 14.999952279734824,
-        "volume": 5813249.241667178
+        "timestamp": "2025-08-14T03:18:22.164423",
+        "price": 14.930311779352953,
+        "volume": 9182564.073152376
       }
     ],
     "FIL": [
       {
-        "timestamp": "2025-08-14T03:16:09.402943",
-        "price": 14.685212039253512,
-        "volume": 1218960.3608373546
-      },
-      {
-        "timestamp": "2025-08-14T03:16:20.129858",
-        "price": 15.084243220550759,
-        "volume": 1674810.4615368163
+        "timestamp": "2025-08-14T03:18:22.164423",
+        "price": 17.663627952378132,
+        "volume": 6195473.274145289
       }
     ],
     "VET": [
       {
-        "timestamp": "2025-08-14T03:16:09.402943",
-        "price": 20.811776776948452,
-        "volume": 8645344.022274107
-      },
-      {
-        "timestamp": "2025-08-14T03:16:20.129858",
-        "price": 21.22550339487518,
-        "volume": 6945129.42347733
+        "timestamp": "2025-08-14T03:18:22.164423",
+        "price": 3.115013617939668,
+        "volume": 2132882.761660578
       }
     ],
     "HBAR": [
       {
-        "timestamp": "2025-08-14T03:16:09.402943",
-        "price": 2.079742596354288,
-        "volume": 512802.3058832922
-      },
-      {
-        "timestamp": "2025-08-14T03:16:20.129858",
-        "price": 1.9768647825667887,
-        "volume": 2104931.608094938
+        "timestamp": "2025-08-14T03:18:22.164423",
+        "price": 5.689531737738829,
+        "volume": 4460619.593553163
       }
     ],
     "EGLD": [
       {
-        "timestamp": "2025-08-14T03:16:09.402943",
-        "price": 17.060969772541302,
-        "volume": 6148964.152778439
-      },
-      {
-        "timestamp": "2025-08-14T03:16:20.129858",
-        "price": 16.368115771003005,
-        "volume": 415869.05946228275
+        "timestamp": "2025-08-14T03:18:22.164423",
+        "price": 19.06306028644222,
+        "volume": 4069489.4568750225
       }
     ],
     "GRT": [
       {
-        "timestamp": "2025-08-14T03:16:09.402943",
-        "price": 16.525040430833982,
-        "volume": 1143943.8055883846
-      },
-      {
-        "timestamp": "2025-08-14T03:16:20.129858",
-        "price": 17.47123952711917,
-        "volume": 215303.73395149194
+        "timestamp": "2025-08-14T03:18:22.164423",
+        "price": 12.302838494530429,
+        "volume": 3639549.841629135
       }
     ],
     "FET": [
       {
-        "timestamp": "2025-08-14T03:16:09.402943",
-        "price": 5.122965330323592,
-        "volume": 8125745.432811282
-      },
-      {
-        "timestamp": "2025-08-14T03:16:20.129858",
-        "price": 4.932319171089755,
-        "volume": 2157998.954140455
+        "timestamp": "2025-08-14T03:18:22.164423",
+        "price": 4.573903340119728,
+        "volume": 6287848.555696125
       }
     ],
     "LRC": [
       {
-        "timestamp": "2025-08-14T03:16:09.402943",
-        "price": 5.294987393907717,
-        "volume": 4579488.143951135
-      },
-      {
-        "timestamp": "2025-08-14T03:16:20.129858",
-        "price": 5.136220654308675,
-        "volume": 3011805.176963091
+        "timestamp": "2025-08-14T03:18:22.164423",
+        "price": 12.904012305432301,
+        "volume": 8566826.140941037
       }
     ],
     "ENJ": [
       {
-        "timestamp": "2025-08-14T03:16:09.402943",
-        "price": 19.10649026055881,
-        "volume": 7022324.183367406
-      },
-      {
-        "timestamp": "2025-08-14T03:16:20.129858",
-        "price": 18.905390074760664,
-        "volume": 7836236.186820484
+        "timestamp": "2025-08-14T03:18:22.164423",
+        "price": 9.569136951944602,
+        "volume": 1188016.021297882
       }
     ],
     "CHZ": [
       {
-        "timestamp": "2025-08-14T03:16:09.402943",
-        "price": 14.177614495067818,
-        "volume": 1220306.5393149466
-      },
-      {
-        "timestamp": "2025-08-14T03:16:20.129858",
-        "price": 13.489286031324333,
-        "volume": 9816140.750259887
+        "timestamp": "2025-08-14T03:18:22.164423",
+        "price": 4.451306578973657,
+        "volume": 9844725.446632
       }
     ],
     "BAT": [
       {
-        "timestamp": "2025-08-14T03:16:09.402943",
-        "price": 3.1601831182889604,
-        "volume": 7873444.993202455
-      },
-      {
-        "timestamp": "2025-08-14T03:16:20.129858",
-        "price": 3.226268836091283,
-        "volume": 5524309.6072262535
+        "timestamp": "2025-08-14T03:18:22.164423",
+        "price": 17.547926066160088,
+        "volume": 6190644.648833757
       }
     ],
     "XTZ": [
       {
-        "timestamp": "2025-08-14T03:16:09.402943",
-        "price": 2.501845743994597,
-        "volume": 9525242.491368966
-      },
-      {
-        "timestamp": "2025-08-14T03:16:20.129858",
-        "price": 2.4354083464582312,
-        "volume": 9824280.244285787
+        "timestamp": "2025-08-14T03:18:22.164423",
+        "price": 9.888374434009515,
+        "volume": 3973688.377617098
       }
     ],
     "MINA": [
       {
-        "timestamp": "2025-08-14T03:16:09.402943",
-        "price": 6.299268700076992,
-        "volume": 6269943.100409178
-      },
-      {
-        "timestamp": "2025-08-14T03:16:20.129858",
-        "price": 5.811491343018536,
-        "volume": 7991769.291015864
+        "timestamp": "2025-08-14T03:18:22.164423",
+        "price": 7.439020487606995,
+        "volume": 4473675.854476619
       }
     ],
     "KCS": [
       {
-        "timestamp": "2025-08-14T03:16:09.402943",
-        "price": 5.340444360888354,
-        "volume": 5559189.861839327
-      },
-      {
-        "timestamp": "2025-08-14T03:16:20.129858",
-        "price": 5.487829099584682,
-        "volume": 8729705.940053824
+        "timestamp": "2025-08-14T03:18:22.164423",
+        "price": 6.563242047892608,
+        "volume": 1954490.1675197002
       }
     ],
     "YFI": [
       {
-        "timestamp": "2025-08-14T03:16:09.402943",
-        "price": 1.7508917083561542,
-        "volume": 1813709.79593647
-      },
-      {
-        "timestamp": "2025-08-14T03:16:20.129858",
-        "price": 1.6340311215907641,
-        "volume": 3216704.74738945
+        "timestamp": "2025-08-14T03:18:22.164423",
+        "price": 4.030528188384227,
+        "volume": 6723409.485508926
       }
     ],
     "ZEC": [
       {
-        "timestamp": "2025-08-14T03:16:09.402943",
-        "price": 10.046157232894663,
-        "volume": 573451.0250720917
-      },
-      {
-        "timestamp": "2025-08-14T03:16:20.129858",
-        "price": 9.27817409465939,
-        "volume": 5604653.384114382
+        "timestamp": "2025-08-14T03:18:22.164423",
+        "price": 3.239320343016672,
+        "volume": 115816.3266216909
       }
     ],
     "DASH": [
       {
-        "timestamp": "2025-08-14T03:16:09.402943",
-        "price": 0.229216609932458,
-        "volume": 785882.1435703606
-      },
-      {
-        "timestamp": "2025-08-14T03:16:20.129858",
-        "price": 0.20159366145785473,
-        "volume": 1246347.0049412563
+        "timestamp": "2025-08-14T03:18:22.164423",
+        "price": 3.0720286879087646,
+        "volume": 3771242.630584685
       }
     ],
     "DCR": [
       {
-        "timestamp": "2025-08-14T03:16:09.402943",
-        "price": 0.9198101607351821,
-        "volume": 5439375.147431194
-      },
-      {
-        "timestamp": "2025-08-14T03:16:20.129858",
-        "price": 0.8983232464772547,
-        "volume": 5306054.854747849
+        "timestamp": "2025-08-14T03:18:22.164423",
+        "price": 9.013765943266591,
+        "volume": 6564893.278069109
       }
     ],
     "WAVES": [
       {
-        "timestamp": "2025-08-14T03:16:09.402943",
-        "price": 0.9269876106452666,
-        "volume": 2278761.416766528
-      },
-      {
-        "timestamp": "2025-08-14T03:16:20.129858",
-        "price": 0.874827511164891,
-        "volume": 3981830.246660918
+        "timestamp": "2025-08-14T03:18:22.164423",
+        "price": 8.945056106648577,
+        "volume": 3004880.1749397437
       }
     ],
     "ZIL": [
       {
-        "timestamp": "2025-08-14T03:16:09.402943",
-        "price": 0.7775160459046522,
-        "volume": 5778815.118649512
-      },
-      {
-        "timestamp": "2025-08-14T03:16:20.129858",
-        "price": 0.6691949615700744,
-        "volume": 3989659.3894128245
+        "timestamp": "2025-08-14T03:18:22.164423",
+        "price": 3.7189370783158147,
+        "volume": 5681411.855649276
       }
     ],
     "BAL": [
       {
-        "timestamp": "2025-08-14T03:16:09.402943",
-        "price": 1.3153505879178102,
-        "volume": 9486794.06901295
-      },
-      {
-        "timestamp": "2025-08-14T03:16:20.129858",
-        "price": 1.3719355642591062,
-        "volume": 5141135.810838215
+        "timestamp": "2025-08-14T03:18:22.164423",
+        "price": 7.664159068252383,
+        "volume": 6194799.327769185
       }
     ],
     "BAND": [
       {
-        "timestamp": "2025-08-14T03:16:09.402943",
-        "price": 4.8620210491680345,
-        "volume": 6573755.131432995
-      },
-      {
-        "timestamp": "2025-08-14T03:16:20.129858",
-        "price": 4.820713397411643,
-        "volume": 305270.2399307779
+        "timestamp": "2025-08-14T03:18:22.164423",
+        "price": 9.002882813270517,
+        "volume": 1951053.131702771
       }
     ],
     "OCEAN": [
       {
-        "timestamp": "2025-08-14T03:16:09.402943",
-        "price": 9.341863126682885,
-        "volume": 667957.2441720492
-      },
-      {
-        "timestamp": "2025-08-14T03:16:20.129858",
-        "price": 8.331817193809648,
-        "volume": 1300488.3594566886
+        "timestamp": "2025-08-14T03:18:22.164423",
+        "price": 0.814382477304978,
+        "volume": 7866556.393027548
       }
     ],
     "UMA": [
       {
-        "timestamp": "2025-08-14T03:16:09.402943",
-        "price": 7.400150655862143,
-        "volume": 7728881.726087106
-      },
-      {
-        "timestamp": "2025-08-14T03:16:20.129858",
-        "price": 7.50377053548492,
-        "volume": 3605728.56449776
+        "timestamp": "2025-08-14T03:18:22.164423",
+        "price": 6.140909000336553,
+        "volume": 992389.099115058
       }
     ],
     "ALPHA": [
       {
-        "timestamp": "2025-08-14T03:16:09.402943",
-        "price": 4.782708330529018,
-        "volume": 9072425.319379713
-      },
-      {
-        "timestamp": "2025-08-14T03:16:20.129858",
-        "price": 4.755649296565586,
-        "volume": 5323334.882033603
+        "timestamp": "2025-08-14T03:18:22.164423",
+        "price": 4.423923181258428,
+        "volume": 8792843.00487893
       }
     ],
     "ANKR": [
       {
-        "timestamp": "2025-08-14T03:16:09.402943",
-        "price": 4.661269396715957,
-        "volume": 4420769.621608147
-      },
-      {
-        "timestamp": "2025-08-14T03:16:20.129858",
-        "price": 4.48522457172068,
-        "volume": 2636392.9251287375
+        "timestamp": "2025-08-14T03:18:22.164423",
+        "price": 4.340985844178786,
+        "volume": 2093991.4985734536
       }
     ],
     "SKL": [
       {
-        "timestamp": "2025-08-14T03:16:09.402943",
-        "price": 9.847707554509727,
-        "volume": 8347845.287943585
-      },
-      {
-        "timestamp": "2025-08-14T03:16:20.129858",
-        "price": 10.187044961360701,
-        "volume": 5510901.182507337
+        "timestamp": "2025-08-14T03:18:22.164423",
+        "price": 7.7892799681404234,
+        "volume": 4631897.282646125
       }
     ],
     "CTSI": [
       {
-        "timestamp": "2025-08-14T03:16:09.402943",
-        "price": 8.157623304803982,
-        "volume": 8281957.627590524
-      },
-      {
-        "timestamp": "2025-08-14T03:16:20.129858",
-        "price": 8.313994491341843,
-        "volume": 8870464.142419687
+        "timestamp": "2025-08-14T03:18:22.164423",
+        "price": 2.579271022283826,
+        "volume": 3965079.3286334295
       }
     ],
     "CELR": [
       {
-        "timestamp": "2025-08-14T03:16:09.402943",
-        "price": 2.1245252748677577,
-        "volume": 8649725.41279727
-      },
-      {
-        "timestamp": "2025-08-14T03:16:20.129858",
-        "price": 1.9509372581361353,
-        "volume": 430761.5557148058
+        "timestamp": "2025-08-14T03:18:22.164423",
+        "price": 3.382343041226346,
+        "volume": 263059.2806951827
       }
     ],
     "STORJ": [
       {
-        "timestamp": "2025-08-14T03:16:09.402943",
-        "price": 7.088434978970458,
-        "volume": 3259373.265034837
-      },
-      {
-        "timestamp": "2025-08-14T03:16:20.129858",
-        "price": 6.688892088828369,
-        "volume": 5006019.544950318
+        "timestamp": "2025-08-14T03:18:22.164423",
+        "price": 3.724519621600109,
+        "volume": 8171352.377995285
       }
     ],
     "RSR": [
       {
-        "timestamp": "2025-08-14T03:16:09.402943",
-        "price": 2.1798530003577703,
-        "volume": 9387656.267851597
-      },
-      {
-        "timestamp": "2025-08-14T03:16:20.129858",
-        "price": 2.0859090272819403,
-        "volume": 4542737.801667151
+        "timestamp": "2025-08-14T03:18:22.164423",
+        "price": 8.091201474856382,
+        "volume": 9436057.065830356
       }
     ],
     "REN": [
       {
-        "timestamp": "2025-08-14T03:16:09.402943",
-        "price": 0.06998313492178684,
-        "volume": 8047260.158560803
-      },
-      {
-        "timestamp": "2025-08-14T03:16:20.129858",
-        "price": 0.0693024462396093,
-        "volume": 711906.754727374
+        "timestamp": "2025-08-14T03:18:22.164423",
+        "price": 3.3648720919042967,
+        "volume": 6494419.816831657
       }
     ],
     "KNC": [
       {
-        "timestamp": "2025-08-14T03:16:09.402943",
-        "price": 4.8347120641060135,
-        "volume": 3657059.798973549
-      },
-      {
-        "timestamp": "2025-08-14T03:16:20.129858",
-        "price": 4.252575751131264,
-        "volume": 8448222.150736228
+        "timestamp": "2025-08-14T03:18:22.164423",
+        "price": 1.4660501696382253,
+        "volume": 6117226.459397902
       }
     ],
     "NMR": [
       {
-        "timestamp": "2025-08-14T03:16:09.402943",
-        "price": 3.0823193572786587,
-        "volume": 8561981.288567977
-      },
-      {
-        "timestamp": "2025-08-14T03:16:20.129858",
-        "price": 3.0667419537884593,
-        "volume": 5662912.2002201
+        "timestamp": "2025-08-14T03:18:22.164423",
+        "price": 2.3425477854711714,
+        "volume": 8089090.263877224
       }
     ],
     "BNT": [
       {
-        "timestamp": "2025-08-14T03:16:09.402943",
-        "price": 2.5442563503344373,
-        "volume": 3628593.508322198
-      },
-      {
-        "timestamp": "2025-08-14T03:16:20.129858",
-        "price": 2.8741568509109356,
-        "volume": 7168128.486904848
+        "timestamp": "2025-08-14T03:18:22.164423",
+        "price": 4.433036984918266,
+        "volume": 7895643.516799423
       }
     ],
     "KAVA": [
       {
-        "timestamp": "2025-08-14T03:16:09.402943",
-        "price": 2.8208317404731402,
-        "volume": 4627389.8167206235
-      },
-      {
-        "timestamp": "2025-08-14T03:16:20.129858",
-        "price": 2.4968390389732313,
-        "volume": 2863566.671152804
+        "timestamp": "2025-08-14T03:18:22.164423",
+        "price": 2.1526759879583643,
+        "volume": 4568710.166888356
       }
     ],
     "COTI": [
       {
-        "timestamp": "2025-08-14T03:16:09.402943",
-        "price": 4.667415962207506,
-        "volume": 3428393.8830855265
-      },
-      {
-        "timestamp": "2025-08-14T03:16:20.129858",
-        "price": 5.2449170252187125,
-        "volume": 4766248.022688289
+        "timestamp": "2025-08-14T03:18:22.164423",
+        "price": 0.32577415686603955,
+        "volume": 8274111.22768826
       }
     ],
     "NKN": [
       {
-        "timestamp": "2025-08-14T03:16:09.402943",
-        "price": 0.397914780263704,
-        "volume": 1752668.5438433988
-      },
-      {
-        "timestamp": "2025-08-14T03:16:20.129858",
-        "price": 0.397365361353717,
-        "volume": 1757815.6484790458
+        "timestamp": "2025-08-14T03:18:22.164423",
+        "price": 2.1219956805459743,
+        "volume": 9689375.163425623
       }
     ],
     "OGN": [
       {
-        "timestamp": "2025-08-14T03:16:09.402943",
-        "price": 2.373036919335534,
-        "volume": 6808482.396606493
-      },
-      {
-        "timestamp": "2025-08-14T03:16:20.129858",
-        "price": 2.665684317883003,
-        "volume": 8133213.750123967
+        "timestamp": "2025-08-14T03:18:22.164423",
+        "price": 0.5273254265124668,
+        "volume": 6196151.591416474
       }
     ],
     "NANO": [
       {
-        "timestamp": "2025-08-14T03:16:09.402943",
-        "price": 1.7276891809145887,
-        "volume": 627419.7542962518
-      },
-      {
-        "timestamp": "2025-08-14T03:16:20.129858",
-        "price": 1.479767485614166,
-        "volume": 8491138.657563776
+        "timestamp": "2025-08-14T03:18:22.164423",
+        "price": 4.015309348889438,
+        "volume": 7094286.9856800595
       }
     ],
     "RVN": [
       {
-        "timestamp": "2025-08-14T03:16:09.402943",
-        "price": 3.4103816333646417,
-        "volume": 1035569.7578277405
-      },
-      {
-        "timestamp": "2025-08-14T03:16:20.129858",
-        "price": 3.5434402709249477,
-        "volume": 8430626.518362949
+        "timestamp": "2025-08-14T03:18:22.164423",
+        "price": 3.3658021182716373,
+        "volume": 7672915.4707336305
       }
     ],
     "DGB": [
       {
-        "timestamp": "2025-08-14T03:16:09.402943",
-        "price": 1.8299325967406144,
-        "volume": 6487001.70536208
-      },
-      {
-        "timestamp": "2025-08-14T03:16:20.129858",
-        "price": 1.809341393120506,
-        "volume": 7149111.300344434
+        "timestamp": "2025-08-14T03:18:22.164423",
+        "price": 4.622842102410628,
+        "volume": 5777362.015159843
       }
     ],
     "SC": [
       {
-        "timestamp": "2025-08-14T03:16:09.402943",
-        "price": 5.080121567680695,
-        "volume": 7062528.380199823
-      },
-      {
-        "timestamp": "2025-08-14T03:16:20.129858",
-        "price": 5.349229187799497,
-        "volume": 6019412.940286239
+        "timestamp": "2025-08-14T03:18:22.164423",
+        "price": 2.102402941720958,
+        "volume": 8944731.97844995
       }
     ],
     "HOT": [
       {
-        "timestamp": "2025-08-14T03:16:09.402943",
-        "price": 0.5357063708659494,
-        "volume": 6502306.0460333405
-      },
-      {
-        "timestamp": "2025-08-14T03:16:20.129858",
-        "price": 0.47954387020001343,
-        "volume": 5130755.567384461
+        "timestamp": "2025-08-14T03:18:22.164423",
+        "price": 2.657648957002056,
+        "volume": 6592775.143454616
       }
     ],
     "IOST": [
       {
-        "timestamp": "2025-08-14T03:16:09.402943",
-        "price": 4.086796843823153,
-        "volume": 817506.6960973564
-      },
-      {
-        "timestamp": "2025-08-14T03:16:20.129858",
-        "price": 3.561628144917358,
-        "volume": 2497675.487813264
+        "timestamp": "2025-08-14T03:18:22.164423",
+        "price": 3.2491601931282026,
+        "volume": 5100617.090007065
       }
     ],
     "DUSK": [
       {
-        "timestamp": "2025-08-14T03:16:09.402943",
-        "price": 0.1634864887546322,
-        "volume": 5439137.95753935
-      },
-      {
-        "timestamp": "2025-08-14T03:16:20.129858",
-        "price": 0.16606189153600126,
-        "volume": 2820528.36110345
+        "timestamp": "2025-08-14T03:18:22.164423",
+        "price": 4.889789290168612,
+        "volume": 6493068.778107121
       }
     ],
     "WIN": [
       {
-        "timestamp": "2025-08-14T03:16:09.402943",
-        "price": 3.2460926657921574,
-        "volume": 7148950.730926921
-      },
-      {
-        "timestamp": "2025-08-14T03:16:20.129858",
-        "price": 3.126793121960866,
-        "volume": 548545.3925241781
+        "timestamp": "2025-08-14T03:18:22.164423",
+        "price": 0.9714780924419609,
+        "volume": 4585648.978872925
       }
     ],
     "BTT": [
       {
-        "timestamp": "2025-08-14T03:16:09.402943",
-        "price": 1.2633957589075728,
-        "volume": 9613332.416305428
-      },
-      {
-        "timestamp": "2025-08-14T03:16:20.129858",
-        "price": 1.2211226806990816,
-        "volume": 2498060.3585502435
+        "timestamp": "2025-08-14T03:18:22.164423",
+        "price": 1.0459771765169876,
+        "volume": 4812070.989278886
       }
     ],
     "TWT": [
       {
-        "timestamp": "2025-08-14T03:16:09.402943",
-        "price": 4.6958460094906584,
-        "volume": 5050353.82315259
-      },
-      {
-        "timestamp": "2025-08-14T03:16:20.129858",
-        "price": 3.931106585588472,
-        "volume": 3961834.469934817
+        "timestamp": "2025-08-14T03:18:22.164423",
+        "price": 3.471758828168901,
+        "volume": 2507382.5899331216
       }
     ],
     "JST": [
       {
-        "timestamp": "2025-08-14T03:16:09.402943",
-        "price": 4.678479574027663,
-        "volume": 4253778.725115327
-      },
-      {
-        "timestamp": "2025-08-14T03:16:20.129858",
-        "price": 4.736340356579662,
-        "volume": 5475773.9314081315
+        "timestamp": "2025-08-14T03:18:22.164423",
+        "price": 0.5771644553002075,
+        "volume": 2818387.1291417102
       }
     ],
     "SXP": [
       {
-        "timestamp": "2025-08-14T03:16:09.402943",
-        "price": 1.6050151291210661,
-        "volume": 2571842.4404458716
-      },
-      {
-        "timestamp": "2025-08-14T03:16:20.129858",
-        "price": 1.5714797317010334,
-        "volume": 2589116.2561423355
+        "timestamp": "2025-08-14T03:18:22.164423",
+        "price": 3.672198975772022,
+        "volume": 7352339.816568794
       }
     ],
     "HARD": [
       {
-        "timestamp": "2025-08-14T03:16:09.402943",
-        "price": 0.9649890903115577,
-        "volume": 3828670.631991139
-      },
-      {
-        "timestamp": "2025-08-14T03:16:20.129858",
-        "price": 0.942140626491582,
-        "volume": 5797363.1777894255
+        "timestamp": "2025-08-14T03:18:22.164423",
+        "price": 2.5749790023469514,
+        "volume": 1623313.6925261281
       }
     ],
     "SUN": [
       {
-        "timestamp": "2025-08-14T03:16:09.402943",
-        "price": 4.659685725081773,
-        "volume": 3613457.449976651
-      },
-      {
-        "timestamp": "2025-08-14T03:16:20.129858",
-        "price": 4.583853913045602,
-        "volume": 9996380.090041462
+        "timestamp": "2025-08-14T03:18:22.164423",
+        "price": 3.598632893058741,
+        "volume": 6927909.232056647
       }
     ],
     "ICX": [
       {
-        "timestamp": "2025-08-14T03:16:09.402943",
-        "price": 3.460789060153263,
-        "volume": 5475760.749245187
-      },
-      {
-        "timestamp": "2025-08-14T03:16:20.129858",
-        "price": 3.3215634558712894,
-        "volume": 6119921.747908886
+        "timestamp": "2025-08-14T03:18:22.164423",
+        "price": 4.528018044367198,
+        "volume": 8776373.614328682
       }
     ],
     "ONT": [
       {
-        "timestamp": "2025-08-14T03:16:09.402943",
-        "price": 1.8421059287424169,
-        "volume": 1457282.2666014554
-      },
-      {
-        "timestamp": "2025-08-14T03:16:20.129858",
-        "price": 2.0729643787187357,
-        "volume": 7748490.777160227
+        "timestamp": "2025-08-14T03:18:22.164423",
+        "price": 0.6209004446315096,
+        "volume": 546216.6337467917
       }
     ]
   },
-  "last_updated": "2025-08-14T03:16:39.102647"
+  "last_updated": "2025-08-14T03:18:22.165797"
 }
