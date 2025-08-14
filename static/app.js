@@ -1214,6 +1214,10 @@ function exportPortfolio() {
     window.open('/api/export-portfolio', '_blank');
 }
 
+function exportATOTax() {
+    window.open('/api/export-ato-tax', '_blank');
+}
+
 function resetEntireProgram() {
     if (confirm('PROGRAM RESET: This will completely reset the entire trading system to its initial state. All data will be cleared and the portfolio will be reset to $10 per cryptocurrency. This cannot be undone. Continue?')) {
         fetch('/api/reset-entire-program', { method: 'POST' })

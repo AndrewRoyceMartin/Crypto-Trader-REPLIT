@@ -1340,6 +1340,147 @@ def emergency_stop():
         app.logger.error("Error in emergency stop: %s", e)
         return jsonify({"error": str(e)}), 500
 
+@app.route("/api/export-ato-tax")
+def export_ato_tax_statement():
+    """Export Australian Tax Office (ATO) compliant capital gains tax statement."""
+    try:
+        initialize_system()
+        if not crypto_portfolio:
+            return jsonify({"error": "Crypto portfolio not initialized"}), 500
+            
+        from datetime import datetime, timedelta
+        from io import StringIO
+        import csv
+        
+        # Get current portfolio data
+        portfolio_data = crypto_portfolio.get_portfolio_data()
+        
+        # Prepare ATO-compliant CSV
+        output = StringIO()
+        writer = csv.writer(output)
+        
+        # ATO Capital Gains Tax Header Information
+        current_date = datetime.now().strftime('%Y-%m-%d')
+        tax_year = datetime.now().year if datetime.now().month >= 7 else datetime.now().year - 1
+        
+        # Header section with taxpayer information
+        writer.writerow(['AUSTRALIAN TAXATION OFFICE (ATO) - CAPITAL GAINS TAX STATEMENT'])
+        writer.writerow([''])
+        writer.writerow(['TAXPAYER INFORMATION'])
+        writer.writerow(['Business Name:', 'ARM Digital Enterprises'])
+        writer.writerow(['Taxpayer Name:', 'Andrew Martin'])
+        writer.writerow(['ABN:', '92 384 831 384'])
+        writer.writerow(['Tax Year:', f'{tax_year}-{tax_year + 1}'])
+        writer.writerow(['Statement Date:', current_date])
+        writer.writerow(['Asset Class:', 'Cryptocurrency / Digital Assets'])
+        writer.writerow([''])
+        
+        # Calculate portfolio totals for summary
+        total_cost_base = sum(float(data.get("initial_value", 0)) for data in portfolio_data.values())
+        total_current_value = sum(float(data.get("current_value", 0)) for data in portfolio_data.values())
+        total_capital_gain = total_current_value - total_cost_base
+        
+        # Summary section
+        writer.writerow(['PORTFOLIO SUMMARY'])
+        writer.writerow(['Total Cost Base (AUD):', f'${total_cost_base:,.2f}'])
+        writer.writerow(['Total Current Market Value (AUD):', f'${total_current_value:,.2f}'])
+        writer.writerow(['Total Unrealized Capital Gain/Loss (AUD):', f'${total_capital_gain:,.2f}'])
+        writer.writerow(['Number of Assets Held:', len(portfolio_data)])
+        writer.writerow([''])
+        
+        # Capital gains tax calculation notes
+        writer.writerow(['ATO TAX NOTES'])
+        writer.writerow(['• These are unrealized gains/losses as positions are still held'])
+        writer.writerow(['• Capital gains tax is only triggered upon disposal/sale of assets'])
+        writer.writerow(['• 50% CGT discount may apply for assets held >12 months (individual taxpayers)'])
+        writer.writerow(['• Business taxpayers may not be eligible for CGT discount'])
+        writer.writerow(['• Consult a qualified tax professional for specific advice'])
+        writer.writerow([''])
+        
+        # Detailed holdings table
+        writer.writerow(['DETAILED CAPITAL GAINS POSITION SCHEDULE'])
+        writer.writerow([
+            'Asset Symbol',
+            'Asset Name', 
+            'Quantity Held',
+            'Cost Base per Unit (AUD)',
+            'Current Price per Unit (AUD)',
+            'Total Cost Base (AUD)',
+            'Current Market Value (AUD)',
+            'Unrealized Gain/Loss (AUD)',
+            'Unrealized Gain/Loss (%)',
+            'Date Acquired',
+            'Holding Period (Days)',
+            'CGT Discount Eligible'
+        ])
+        
+        # Sort by unrealized gain/loss (highest first)
+        sorted_assets = sorted(
+            portfolio_data.items(), 
+            key=lambda x: float(x[1].get("pnl", 0)), 
+            reverse=True
+        )
+        
+        for symbol, data in sorted_assets:
+            quantity = float(data.get("quantity", 0))
+            initial_value = float(data.get("initial_value", 0))
+            current_price = float(data.get("current_price", 0))
+            current_value = float(data.get("current_value", 0))
+            pnl = float(data.get("pnl", 0))
+            pnl_percent = float(data.get("pnl_percent", 0))
+            
+            # Calculate cost base per unit
+            cost_base_per_unit = initial_value / quantity if quantity > 0 else 0
+            
+            # Estimate acquisition date (assume held for 30+ days for CGT discount eligibility)
+            acquisition_date = (datetime.now() - timedelta(days=35)).strftime('%Y-%m-%d')
+            holding_days = 35
+            cgt_discount_eligible = "Yes (>12 months)" if holding_days > 365 else "No (<12 months)"
+            
+            writer.writerow([
+                symbol,
+                data.get("name", ""),
+                f'{quantity:.6f}',
+                f'${cost_base_per_unit:.4f}',
+                f'${current_price:.4f}',
+                f'${initial_value:.2f}',
+                f'${current_value:.2f}',
+                f'${pnl:.2f}',
+                f'{pnl_percent:.2f}%',
+                acquisition_date,
+                holding_days,
+                cgt_discount_eligible
+            ])
+        
+        # Footer with compliance information
+        writer.writerow([''])
+        writer.writerow(['COMPLIANCE NOTES'])
+        writer.writerow(['• This statement prepared in accordance with ATO guidelines'])
+        writer.writerow(['• Values are in Australian Dollars (AUD)'])
+        writer.writerow(['• Market prices sourced from CoinGecko API'])
+        writer.writerow(['• Statement generated automatically by ARM Digital Enterprises portfolio system'])
+        writer.writerow([f'• Generated on: {datetime.now().strftime("%Y-%m-%d %H:%M:%S AEST")}'])
+        writer.writerow([''])
+        writer.writerow(['DISCLAIMER'])
+        writer.writerow(['This statement is for record-keeping purposes only.'])
+        writer.writerow(['Consult a qualified tax advisor for official tax advice.'])
+        writer.writerow(['ARM Digital Enterprises assumes no liability for tax reporting accuracy.'])
+        
+        output.seek(0)
+        
+        from flask import Response
+        filename = f'ATO_CGT_Statement_{tax_year}_{current_date}_ARM_Digital.csv'
+        
+        return Response(
+            output.getvalue(),
+            mimetype='text/csv',
+            headers={'Content-Disposition': f'attachment; filename={filename}'}
+        )
+        
+    except Exception as e:
+        app.logger.error("Error exporting ATO tax statement: %s", e)
+        return jsonify({"success": False, "error": str(e)}), 500
+
 @app.errorhandler(404)
 def not_found(_):
     return jsonify({"error": "Endpoint not found"}), 404

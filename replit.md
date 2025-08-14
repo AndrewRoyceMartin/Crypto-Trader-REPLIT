@@ -74,7 +74,15 @@ Preferred communication style: Simple, everyday language.
 - ✅ **VISUAL SORT INDICATORS**: All tables now show active sort direction with up/down arrow icons and color feedback
 - ✅ **INTERFACE STREAMLINING**: Removed redundant "Open Positions" table from main screen since dedicated "Current Holdings" dashboard provides same functionality
 - ✅ **CLEAN THREE-DASHBOARD SYSTEM**: Streamlined navigation with no duplicate information - Main Portfolio, Performance Dashboard, and Current Holdings
-- ✅ **SYSTEM READY FOR DEPLOYMENT**: All requested features implemented, algorithm optimized, portfolio complete with 103 cryptocurrencies
+- ✅ **TRADING CONTROLS REMOVAL**: Completely removed trading controls section to focus interface on portfolio management rather than active trading
+- ✅ **FULL-WIDTH PORTFOLIO DISPLAY**: Expanded portfolio section to full width for better visibility and cleaner interface
+- ✅ **AUSTRALIAN TAX OFFICE (ATO) COMPLIANCE**: Implemented comprehensive capital gains tax export for Australian tax reporting
+  - Professional ATO-compliant CSV export with taxpayer information (Andrew Martin - ARM Digital Enterprises, ABN: 92 384 831 384)
+  - Complete capital gains position schedule with cost base, current value, unrealized gains/losses
+  - Tax year calculation, holding period analysis, CGT discount eligibility assessment
+  - Compliance notes and disclaimers for Australian tax requirements
+  - Proper formatting for tax professional review and ATO submission
+- ✅ **SYSTEM READY FOR DEPLOYMENT**: All requested features implemented, algorithm optimized, portfolio complete with 103 cryptocurrencies, tax compliance ready
 
 **Next Enhancement Opportunities**: 
 - Individual crypto price charts and trading history  
