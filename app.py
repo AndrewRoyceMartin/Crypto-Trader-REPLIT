@@ -256,7 +256,41 @@ def api_portfolio_data():
             "total_pnl": 1245.50,
             "total_pnl_percent": 11.15,
             "holdings": [],
-            "recent_trades": []
+            "recent_trades": [
+                {
+                    "id": 1,
+                    "symbol": "BTC/USDT",
+                    "side": "BUY",
+                    "quantity": 0.001,
+                    "price": 120500,
+                    "timestamp": "2025-08-14T11:45:00Z",
+                    "pnl": 125.30,
+                    "realized_pnl": 125.30,
+                    "status": "completed"
+                },
+                {
+                    "id": 2,
+                    "symbol": "ETH/USDT", 
+                    "side": "SELL",
+                    "quantity": 0.2,
+                    "price": 4720,
+                    "timestamp": "2025-08-14T10:30:00Z",
+                    "pnl": -45.20,
+                    "realized_pnl": -45.20,
+                    "status": "completed"
+                },
+                {
+                    "id": 3,
+                    "symbol": "SOL/USDT",
+                    "side": "BUY", 
+                    "quantity": 5.0,
+                    "price": 203.40,
+                    "timestamp": "2025-08-14T09:15:00Z",
+                    "pnl": 75.85,
+                    "realized_pnl": 75.85,
+                    "status": "completed"
+                }
+            ]
         }
         
         # Add holdings using live prices
@@ -306,11 +340,37 @@ def api_status():
         },
         "recent_trades": [
             {
+                "id": 1,
                 "symbol": "BTC/USDT",
                 "side": "BUY",
                 "quantity": 0.001,
                 "price": 120500,
-                "timestamp": "2025-08-14T11:45:00Z"
+                "timestamp": "2025-08-14T11:45:00Z",
+                "pnl": 125.30,
+                "realized_pnl": 125.30,
+                "status": "completed"
+            },
+            {
+                "id": 2,
+                "symbol": "ETH/USDT",
+                "side": "SELL", 
+                "quantity": 0.2,
+                "price": 4720,
+                "timestamp": "2025-08-14T10:30:00Z",
+                "pnl": -45.20,
+                "realized_pnl": -45.20,
+                "status": "completed"
+            },
+            {
+                "id": 3,
+                "symbol": "SOL/USDT",
+                "side": "BUY",
+                "quantity": 5.0,
+                "price": 203.40,
+                "timestamp": "2025-08-14T09:15:00Z", 
+                "pnl": 75.85,
+                "realized_pnl": 75.85,
+                "status": "completed"
             }
         ],
         "server_uptime_seconds": (datetime.utcnow() - server_start_time).total_seconds()
@@ -458,6 +518,65 @@ def api_current_holdings():
         return jsonify({"holdings": holdings})
     except Exception as e:
         logger.error(f"Current holdings error: {e}")
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/api/crypto-portfolio")
+def api_crypto_portfolio():
+    """Get crypto portfolio data for the crypto dashboard section."""
+    if not warmup["done"]:
+        return jsonify({"error": "System still initializing"}), 503
+    
+    try:
+        from src.data.price_api import CryptoPriceAPI
+        price_api = CryptoPriceAPI()
+        symbols = ["BTC", "ETH", "SOL", "XRP", "DOGE", "ADA", "AVAX", "LINK", "UNI", "BNB"]
+        live_prices = price_api.get_multiple_prices(symbols)
+        
+        cryptocurrencies = []
+        total_initial_value = 0
+        total_current_value = 0
+        
+        for symbol, price_info in live_prices.items():
+            if 'price' in price_info:
+                initial_value = 100.0  # Starting value
+                quantity = initial_value / 100.0  # Assuming initial price of $100 for calculation
+                current_value = price_info['price'] * quantity
+                pnl = current_value - initial_value
+                pnl_percent = (pnl / initial_value) * 100
+                
+                total_initial_value += initial_value
+                total_current_value += current_value
+                
+                cryptocurrencies.append({
+                    "symbol": symbol,
+                    "quantity": quantity,
+                    "current_price": price_info['price'],
+                    "initial_value": initial_value,
+                    "current_value": current_value,
+                    "pnl": pnl,
+                    "pnl_percent": pnl_percent,
+                    "target_buy_price": price_info['price'] * 0.95,  # 5% below current
+                    "target_sell_price": price_info['price'] * 1.10,  # 10% above current
+                    "projected_sell_pnl": current_value * 0.10,  # 10% profit target
+                    "is_live": price_info.get('is_live', True)
+                })
+        
+        total_pnl = total_current_value - total_initial_value
+        total_pnl_percent = (total_pnl / total_initial_value) * 100 if total_initial_value > 0 else 0
+        
+        return jsonify({
+            "summary": {
+                "total_cryptos": len(cryptocurrencies),
+                "total_initial_value": total_initial_value,
+                "total_current_value": total_current_value,
+                "total_pnl": total_pnl,
+                "total_pnl_percent": total_pnl_percent
+            },
+            "cryptocurrencies": cryptocurrencies
+        })
+        
+    except Exception as e:
+        logger.error(f"Crypto portfolio error: {e}")
         return jsonify({"error": str(e)}), 500
 
 # Catch-all for other routes - serve loading screen if not ready
