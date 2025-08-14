@@ -209,268 +209,126 @@ def index():
         return render_loading_skeleton()
 
 def render_full_dashboard():
-    """Render the complete trading dashboard when system is ready."""
-    return f"""
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Crypto Trading System - Live Dashboard</title>
-        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-        <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-        <style>
-            .currency-selector {{ font-size: 0.9rem; min-width: 120px; }}
-            .price-display {{ font-family: 'Courier New', monospace; font-weight: bold; }}
-            .status-connected {{ color: #28a745; }}
-            .status-error {{ color: #dc3545; }}
-            .portfolio-card {{ background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }}
-            .trading-card {{ background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; }}
-        </style>
-    </head>
-    <body class="bg-light">
-        <!-- Header with currency selector -->
-        <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
-            <div class="container-fluid">
-                <span class="navbar-brand">
-                    <i class="fas fa-chart-line me-2"></i>Crypto Trading System
-                </span>
-                <div class="d-flex align-items-center">
-                    <label class="text-white me-2">Currency:</label>
-                    <select class="form-select currency-selector me-3" id="currencySelector">
-                        <option value="BTC/USDT">Bitcoin (BTC)</option>
-                        <option value="ETH/USDT">Ethereum (ETH)</option>
-                        <option value="SOL/USDT">Solana (SOL)</option>
-                        <option value="XRP/USDT">Ripple (XRP)</option>
-                        <option value="DOGE/USDT">Dogecoin (DOGE)</option>
-                    </select>
-                    <span class="badge bg-success" id="connectionStatus">
-                        <i class="fas fa-circle me-1"></i>Live
-                    </span>
-                </div>
-            </div>
-        </nav>
+    """Render the original trading dashboard using templates."""
+    try:
+        # Initialize minimal system components for template rendering
+        from flask import render_template
+        from version import get_version
+        import time
+        
+        cache_version = int(time.time())
+        return render_template("index.html", cache_version=cache_version, version=get_version())
+    except Exception as e:
+        logger.error(f"Error rendering original dashboard: {e}")
+        # Fallback to a simple interface that redirects to full system
+        return f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Trading System</title>
+            <meta http-equiv="refresh" content="2;url=/dashboard">
+        </head>
+        <body>
+            <h1>Loading Trading System...</h1>
+            <p>Redirecting to full dashboard...</p>
+            <p><a href="/dashboard">Click here if not redirected</a></p>
+        </body>
+        </html>
+        """
 
-        <!-- Main Dashboard -->
-        <div class="container-fluid py-4">
-            <div class="row">
-                <!-- Portfolio Overview -->
-                <div class="col-md-8">
-                    <div class="card portfolio-card mb-4">
-                        <div class="card-body">
-                            <h5 class="card-title">
-                                <i class="fas fa-wallet me-2"></i>Portfolio Overview
-                            </h5>
-                            <div class="row">
-                                <div class="col-md-3">
-                                    <h6>Total Value</h6>
-                                    <div class="price-display h4" id="totalValue">$12,450.67</div>
-                                </div>
-                                <div class="col-md-3">
-                                    <h6>24h Change</h6>
-                                    <div class="price-display h5" id="dayChange">+$234.50 (1.92%)</div>
-                                </div>
-                                <div class="col-md-3">
-                                    <h6>Current Price</h6>
-                                    <div class="price-display h5" id="currentPrice">Loading...</div>
-                                </div>
-                                <div class="col-md-3">
-                                    <h6>Last Updated</h6>
-                                    <div class="price-display" id="lastUpdate">Just now</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Price Chart -->
-                    <div class="card">
-                        <div class="card-body">
-                            <h5 class="card-title">
-                                <i class="fas fa-chart-area me-2"></i>Price Chart
-                            </h5>
-                            <canvas id="priceChart" height="100"></canvas>
-                        </div>
-                    </div>
-                </div>
+# Add essential routes from original web interface
+@app.route("/api/portfolio-data")
+def api_portfolio_data():
+    """Get portfolio data."""
+    if not warmup["done"]:
+        return jsonify({"error": "System still initializing"}), 503
+    
+    try:
+        # Initialize crypto portfolio if needed
+        from src.data.crypto_portfolio import CryptoPortfolioManager
+        portfolio = CryptoPortfolioManager(initial_value_per_crypto=100.0)
+        
+        data = portfolio.get_portfolio_data()
+        return jsonify(data)
+    except Exception as e:
+        logger.error(f"Portfolio data error: {e}")
+        return jsonify({"error": str(e)}), 500
 
-                <!-- Trading Controls -->
-                <div class="col-md-4">
-                    <div class="card trading-card mb-4">
-                        <div class="card-body">
-                            <h5 class="card-title">
-                                <i class="fas fa-exchange-alt me-2"></i>Quick Trade
-                            </h5>
-                            <div class="mb-3">
-                                <label class="form-label">Amount</label>
-                                <input type="number" class="form-control" id="tradeAmount" placeholder="0.00">
-                            </div>
-                            <div class="d-grid gap-2">
-                                <button class="btn btn-success" id="buyBtn" disabled>
-                                    <i class="fas fa-arrow-up me-2"></i>Buy
-                                </button>
-                                <button class="btn btn-danger" id="sellBtn" disabled>
-                                    <i class="fas fa-arrow-down me-2"></i>Sell
-                                </button>
-                            </div>
-                            <div class="mt-3 text-center">
-                                <small>Trading disabled until live prices confirmed</small>
-                            </div>
-                        </div>
-                    </div>
+@app.route("/api/live-prices")
+def api_live_prices():
+    """Get live cryptocurrency prices."""
+    if not warmup["done"]:
+        return jsonify({"error": "System still initializing"}), 503
+        
+    try:
+        from src.data.price_api import PriceAPI
+        price_api = PriceAPI()
+        prices = price_api.get_live_prices()
+        return jsonify(prices)
+    except Exception as e:
+        logger.error(f"Live prices error: {e}")
+        return jsonify({"error": str(e)}), 500
 
-                    <!-- Holdings -->
-                    <div class="card">
-                        <div class="card-body">
-                            <h5 class="card-title">
-                                <i class="fas fa-coins me-2"></i>Current Holdings
-                            </h5>
-                            <div id="holdingsList">
-                                <div class="d-flex justify-content-between py-2">
-                                    <span>BTC</span>
-                                    <span class="price-display">0.02450 BTC</span>
-                                </div>
-                                <div class="d-flex justify-content-between py-2">
-                                    <span>ETH</span>
-                                    <span class="price-display">1.25680 ETH</span>
-                                </div>
-                                <div class="d-flex justify-content-between py-2">
-                                    <span>SOL</span>
-                                    <span class="price-display">15.00000 SOL</span>
-                                </div>
-                                <hr>
-                                <div class="d-flex justify-content-between">
-                                    <strong>Total USD:</strong>
-                                    <strong class="price-display">$12,450.67</strong>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+# Add missing API routes that the original dashboard expects
+@app.route("/api/config")
+def api_config():
+    """Get system configuration."""
+    if not warmup["done"]:
+        return jsonify({"error": "System still initializing"}), 503
+    
+    return jsonify({
+        "default_symbol": "BTC/USDT",
+        "default_timeframe": "1h",
+        "update_interval": 6000,
+        "symbols": ["BTC/USDT", "ETH/USDT", "SOL/USDT", "XRP/USDT", "DOGE/USDT"]
+    })
 
-        <!-- Scripts -->
-        <script>
-            let priceChart;
-            let currentSymbol = 'BTC/USDT';
-            
-            // Initialize chart
-            function initChart() {{
-                const ctx = document.getElementById('priceChart').getContext('2d');
-                priceChart = new Chart(ctx, {{
-                    type: 'line',
-                    data: {{
-                        labels: [],
-                        datasets: [{{
-                            label: 'Price',
-                            data: [],
-                            borderColor: '#007bff',
-                            backgroundColor: 'rgba(0, 123, 255, 0.1)',
-                            tension: 0.4
-                        }}]
-                    }},
-                    options: {{
-                        responsive: true,
-                        scales: {{
-                            y: {{
-                                beginAtZero: false,
-                                ticks: {{
-                                    callback: function(value) {{
-                                        return '$' + value.toLocaleString();
-                                    }}
-                                }}
-                            }}
-                        }}
-                    }}
-                }});
-            }}
+@app.route("/api/price-source-status")
+def api_price_source_status():
+    """Get price source status."""
+    if not warmup["done"]:
+        return jsonify({"status": "initializing"}), 503
+    
+    return jsonify({
+        "status": "connected",
+        "api_provider": "CoinGecko_API",
+        "last_update": datetime.utcnow().isoformat(),
+        "symbols_loaded": warmup.get("loaded", [])
+    })
 
-            // Load price data
-            async function loadPriceData(symbol) {{
-                try {{
-                    const response = await fetch(`/api/price?symbol=${{symbol}}&limit=50`);
-                    const data = await response.json();
-                    
-                    if (data.error) {{
-                        throw new Error(data.error);
-                    }}
-                    
-                    // Update chart
-                    const labels = data.map(d => new Date(d.ts).toLocaleTimeString());
-                    const prices = data.map(d => d.close);
-                    
-                    priceChart.data.labels = labels;
-                    priceChart.data.datasets[0].data = prices;
-                    priceChart.update();
-                    
-                    // Update current price
-                    const currentPrice = prices[prices.length - 1];
-                    document.getElementById('currentPrice').textContent = '$' + currentPrice.toLocaleString();
-                    document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString();
-                    
-                    // Enable trading buttons when we have live prices
-                    document.getElementById('buyBtn').disabled = false;
-                    document.getElementById('sellBtn').disabled = false;
-                    document.querySelector('.mt-3 small').textContent = 'Live prices active - Trading enabled';
-                    
-                }} catch (error) {{
-                    console.error('Price loading error:', error);
-                    document.getElementById('currentPrice').textContent = 'Price unavailable';
-                    document.getElementById('connectionStatus').innerHTML = '<i class="fas fa-exclamation-triangle me-1"></i>Error';
-                    document.getElementById('connectionStatus').className = 'badge bg-warning';
-                }}
-            }}
+@app.route("/api/portfolio-summary")
+def api_portfolio_summary():
+    """Get portfolio summary."""
+    if not warmup["done"]:
+        return jsonify({"error": "System still initializing"}), 503
+    
+    try:
+        from src.data.crypto_portfolio import CryptoPortfolioManager
+        portfolio = CryptoPortfolioManager(initial_value_per_crypto=100.0)
+        
+        summary = portfolio.get_portfolio_summary()
+        return jsonify(summary)
+    except Exception as e:
+        logger.error(f"Portfolio summary error: {e}")
+        return jsonify({"error": str(e)}), 500
 
-            // Currency selector change
-            document.getElementById('currencySelector').addEventListener('change', function() {{
-                currentSymbol = this.value;
-                loadPriceData(currentSymbol);
-            }});
+# Add static file serving 
+@app.route("/static/<path:filename>")
+def static_files(filename):
+    """Serve static files."""
+    from flask import send_from_directory
+    return send_from_directory("static", filename)
 
-            // Initialize dashboard
-            document.addEventListener('DOMContentLoaded', function() {{
-                initChart();
-                loadPriceData(currentSymbol);
-                
-                // Refresh data every 30 seconds
-                setInterval(() => loadPriceData(currentSymbol), 30000);
-            }});
-        </script>
-    </body>
-    </html>
-    """
-
-# Delegate all other routes to main app when ready
-@app.route("/<path:path>", methods=['GET', 'POST', 'PUT', 'DELETE', 'PATCH'])
-def proxy_to_main_app(path):
-    """Proxy all routes to main app when ready."""
+# Catch-all for other routes - serve loading screen if not ready
+@app.route("/<path:path>")
+def catch_all_routes(path):
+    """Handle remaining routes."""
     if warmup["done"] and not warmup["error"]:
-        try:
-            from web_interface import app as main_app
-            from flask import request
-            
-            # Forward the request to the main app
-            with main_app.test_client() as client:
-                response = client.open(
-                    path=f'/{path}',
-                    method=request.method,
-                    headers=dict(request.headers),
-                    data=request.get_data(),
-                    query_string=request.query_string
-                )
-                
-                # Return the response from main app
-                from flask import Response
-                return Response(
-                    response.data,
-                    status=response.status_code,
-                    headers=dict(response.headers)
-                )
-                
-        except Exception as e:
-            logger.error(f"Proxy error for /{path}: {e}")
-            return jsonify({"error": "Service temporarily unavailable"}), 503
+        # For API routes, return 404
+        if path.startswith("api/"):
+            return jsonify({"error": "Endpoint not found"}), 404
+        # For other routes, redirect to main dashboard
+        return render_full_dashboard()
     else:
         return render_loading_skeleton("System still initializing..."), 503
 
