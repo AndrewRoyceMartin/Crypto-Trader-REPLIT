@@ -92,6 +92,76 @@
             </div>
         </div>
 
+        <!-- System Status Row -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="fas fa-tachometer-alt me-2"></i>
+                            System Status
+                            <i class="fas fa-info-circle text-muted ms-2" 
+                               data-bs-toggle="tooltip" 
+                               data-bs-placement="top" 
+                               title="Monitor your trading system status and control paper/live trading operations"></i>
+                        </h5>
+                        <div>
+                            <div class="btn-group me-2" role="group">
+                                <button class="btn btn-success btn-sm" onclick="startTrading('paper', 'single')">
+                                    <i class="fas fa-play me-1"></i>Paper Trade (Single)
+                                </button>
+                                <button class="btn btn-success btn-sm" onclick="startTrading('paper', 'portfolio')">
+                                    <i class="fas fa-play me-1"></i>Paper Trade (Portfolio)
+                                </button>
+                            </div>
+                            <div class="btn-group me-2" role="group">
+                                <button class="btn btn-warning btn-sm" onclick="startTrading('live', 'single')">
+                                    <i class="fas fa-play me-1"></i>Live Trade (Single)
+                                </button>
+                                <button class="btn btn-warning btn-sm" onclick="startTrading('live', 'portfolio')">
+                                    <i class="fas fa-play me-1"></i>Live Trade (Portfolio)
+                                </button>
+                            </div>
+                            <button class="btn btn-danger btn-sm me-2" onclick="stopTrading()">
+                                <i class="fas fa-stop me-1"></i>Stop
+                            </button>
+                            <button class="btn btn-danger btn-sm" onclick="emergencyStop()">
+                                <i class="fas fa-exclamation-triangle me-1"></i>Emergency Stop
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="status-item">
+                                    <label>Trading Mode:</label>
+                                    <span id="trading-mode" class="badge bg-secondary">Stopped</span>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="status-item">
+                                    <label>Symbol:</label>
+                                    <span id="trading-symbol">-</span>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="status-item">
+                                    <label>Running Since:</label>
+                                    <span id="trading-start-time">-</span>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="status-item">
+                                    <label>Status:</label>
+                                    <span id="trading-status" class="badge bg-secondary">Idle</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Portfolio Summary Cards (CoinGecko Style) -->
         <div class="row mb-4">
             <div class="col-12">
@@ -338,76 +408,6 @@
         </div>
 
 
-
-        <!-- System Status Row -->
-        <div class="row mb-4">
-            <div class="col-12">
-                <div class="card">
-                    <div class="card-header d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0">
-                            <i class="fas fa-tachometer-alt me-2"></i>
-                            System Status
-                            <i class="fas fa-info-circle text-muted ms-2" 
-                               data-bs-toggle="tooltip" 
-                               data-bs-placement="top" 
-                               title="Monitor your trading system status and control paper/live trading operations"></i>
-                        </h5>
-                        <div>
-                            <div class="btn-group me-2" role="group">
-                                <button class="btn btn-success btn-sm" onclick="startTrading('paper', 'single')">
-                                    <i class="fas fa-play me-1"></i>Paper Trade (Single)
-                                </button>
-                                <button class="btn btn-success btn-sm" onclick="startTrading('paper', 'portfolio')">
-                                    <i class="fas fa-play me-1"></i>Paper Trade (Portfolio)
-                                </button>
-                            </div>
-                            <div class="btn-group me-2" role="group">
-                                <button class="btn btn-warning btn-sm" onclick="startTrading('live', 'single')">
-                                    <i class="fas fa-play me-1"></i>Live Trade (Single)
-                                </button>
-                                <button class="btn btn-warning btn-sm" onclick="startTrading('live', 'portfolio')">
-                                    <i class="fas fa-play me-1"></i>Live Trade (Portfolio)
-                                </button>
-                            </div>
-                            <button class="btn btn-danger btn-sm me-2" onclick="stopTrading()">
-                                <i class="fas fa-stop me-1"></i>Stop
-                            </button>
-                            <button class="btn btn-danger btn-sm" onclick="emergencyStop()">
-                                <i class="fas fa-exclamation-triangle me-1"></i>Emergency Stop
-                            </button>
-                        </div>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-3">
-                                <div class="status-item">
-                                    <label>Trading Mode:</label>
-                                    <span id="trading-mode" class="badge bg-secondary">Stopped</span>
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <div class="status-item">
-                                    <label>Symbol:</label>
-                                    <span id="trading-symbol">-</span>
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <div class="status-item">
-                                    <label>Running Since:</label>
-                                    <span id="trading-start-time">-</span>
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <div class="status-item">
-                                    <label>Status:</label>
-                                    <span id="trading-status" class="badge bg-secondary">Idle</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
 
         <!-- Portfolio Summary Row -->
         <div class="row mb-4">
