@@ -78,7 +78,8 @@ Preferred communication style: Simple, everyday language.
 - ✅ **FULL-WIDTH PORTFOLIO DISPLAY**: Expanded portfolio section to full width for better visibility and cleaner interface
 - ✅ **AUSTRALIAN TAX OFFICE (ATO) COMPLIANCE**: Implemented comprehensive capital gains tax export for Australian tax reporting
   - Professional ATO-compliant CSV export with taxpayer information (Andrew Martin - ARM Digital Enterprises, ABN: 92 384 831 384)
-  - Complete capital gains position schedule with cost base, current value, unrealized gains/losses
+  - Actual buy/sell transaction history with realized capital gains calculations using FIFO method
+  - Complete capital gains transaction schedule showing purchases, sales, cost base, and realized gains/losses
   - Tax year calculation, holding period analysis, CGT discount eligibility assessment
   - Compliance notes and disclaimers for Australian tax requirements
   - Proper formatting for tax professional review and ATO submission

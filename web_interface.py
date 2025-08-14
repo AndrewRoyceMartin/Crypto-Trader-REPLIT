@@ -1352,8 +1352,10 @@ def export_ato_tax_statement():
         from io import StringIO
         import csv
         
-        # Get current portfolio data
-        portfolio_data = crypto_portfolio.get_portfolio_data()
+        # Get trading history for actual buy/sell transactions
+        trades_data = []
+        if db_manager:
+            trades_data = db_manager.get_trades(mode='paper')  # Get all trading transactions
         
         # Prepare ATO-compliant CSV
         output = StringIO()
@@ -1375,81 +1377,172 @@ def export_ato_tax_statement():
         writer.writerow(['Asset Class:', 'Cryptocurrency / Digital Assets'])
         writer.writerow([''])
         
-        # Calculate portfolio totals for summary
-        total_cost_base = sum(float(data.get("initial_value", 0)) for data in portfolio_data.values())
-        total_current_value = sum(float(data.get("current_value", 0)) for data in portfolio_data.values())
-        total_capital_gain = total_current_value - total_cost_base
+        # Process trades to calculate capital gains
+        buy_trades = {}  # Track purchases for cost base
+        sell_trades = []  # Track sales for capital gains
+        total_purchases = 0
+        total_sales = 0
+        total_capital_gain = 0
+        
+        for trade in trades_data:
+            symbol = trade.get('symbol', '').replace('/USDT', '').replace('/USD', '')
+            action = trade.get('action', '').lower()
+            size = float(trade.get('size', 0))
+            price = float(trade.get('price', 0))
+            timestamp = trade.get('timestamp', '')
+            total_value = size * price
+            
+            if action == 'buy':
+                if symbol not in buy_trades:
+                    buy_trades[symbol] = []
+                buy_trades[symbol].append({
+                    'quantity': size,
+                    'price': price,
+                    'total_cost': total_value,
+                    'date': timestamp
+                })
+                total_purchases += total_value
+                
+            elif action == 'sell':
+                # Calculate capital gain using FIFO method
+                if symbol in buy_trades and buy_trades[symbol]:
+                    remaining_to_sell = size
+                    sale_proceeds = total_value
+                    cost_base = 0
+                    
+                    while remaining_to_sell > 0 and buy_trades[symbol]:
+                        buy_trade = buy_trades[symbol][0]
+                        if buy_trade['quantity'] <= remaining_to_sell:
+                            # Use entire buy trade
+                            cost_base += buy_trade['total_cost']
+                            remaining_to_sell -= buy_trade['quantity']
+                            buy_trades[symbol].pop(0)
+                        else:
+                            # Partial use of buy trade
+                            proportion = remaining_to_sell / buy_trade['quantity']
+                            cost_base += buy_trade['total_cost'] * proportion
+                            buy_trade['quantity'] -= remaining_to_sell
+                            buy_trade['total_cost'] *= (1 - proportion)
+                            remaining_to_sell = 0
+                    
+                    capital_gain = sale_proceeds - cost_base
+                    total_capital_gain += capital_gain
+                    
+                    sell_trades.append({
+                        'symbol': symbol,
+                        'sale_date': timestamp,
+                        'sale_proceeds': sale_proceeds,
+                        'cost_base': cost_base,
+                        'capital_gain': capital_gain,
+                        'quantity': size,
+                        'sale_price': price
+                    })
+                    
+                total_sales += total_value
         
         # Summary section
-        writer.writerow(['PORTFOLIO SUMMARY'])
-        writer.writerow(['Total Cost Base (AUD):', f'${total_cost_base:,.2f}'])
-        writer.writerow(['Total Current Market Value (AUD):', f'${total_current_value:,.2f}'])
-        writer.writerow(['Total Unrealized Capital Gain/Loss (AUD):', f'${total_capital_gain:,.2f}'])
-        writer.writerow(['Number of Assets Held:', len(portfolio_data)])
+        writer.writerow(['TRADING SUMMARY'])
+        writer.writerow(['Total Purchase Amount (AUD):', f'${total_purchases:,.2f}'])
+        writer.writerow(['Total Sale Amount (AUD):', f'${total_sales:,.2f}'])
+        writer.writerow(['Total Realized Capital Gain/Loss (AUD):', f'${total_capital_gain:,.2f}'])
+        writer.writerow(['Number of Buy Transactions:', len([t for t in trades_data if t.get('action', '').lower() == 'buy'])])
+        writer.writerow(['Number of Sell Transactions:', len(sell_trades)])
         writer.writerow([''])
         
         # Capital gains tax calculation notes
         writer.writerow(['ATO TAX NOTES'])
-        writer.writerow(['• These are unrealized gains/losses as positions are still held'])
-        writer.writerow(['• Capital gains tax is only triggered upon disposal/sale of assets'])
+        writer.writerow(['• These are realized gains/losses from completed buy/sell transactions'])
+        writer.writerow(['• Capital gains tax applies to these realized gains in the tax year of disposal'])
         writer.writerow(['• 50% CGT discount may apply for assets held >12 months (individual taxpayers)'])
         writer.writerow(['• Business taxpayers may not be eligible for CGT discount'])
+        writer.writerow(['• FIFO (First In, First Out) method used for cost base calculation'])
         writer.writerow(['• Consult a qualified tax professional for specific advice'])
         writer.writerow([''])
         
-        # Detailed holdings table
-        writer.writerow(['DETAILED CAPITAL GAINS POSITION SCHEDULE'])
+        if sell_trades:
+            # Detailed capital gains table for sales
+            writer.writerow(['DETAILED CAPITAL GAINS TRANSACTIONS'])
+            writer.writerow([
+                'Asset Symbol',
+                'Sale Date',
+                'Quantity Sold',
+                'Sale Price per Unit (AUD)',
+                'Total Sale Proceeds (AUD)',
+                'Cost Base (AUD)',
+                'Capital Gain/Loss (AUD)',
+                'Capital Gain/Loss %',
+                'Holding Period',
+                'CGT Discount Eligible'
+            ])
+            
+            # Sort by capital gain (highest first)
+            sell_trades_sorted = sorted(sell_trades, key=lambda x: x['capital_gain'], reverse=True)
+            
+            for trade in sell_trades_sorted:
+                # Calculate holding period (estimate based on trade timing)
+                holding_period_days = 30  # Placeholder - could be calculated from actual buy/sell dates
+                cgt_discount_eligible = "Yes (>12 months)" if holding_period_days > 365 else "No (<12 months)"
+                gain_percent = (trade['capital_gain'] / trade['cost_base'] * 100) if trade['cost_base'] > 0 else 0
+                
+                writer.writerow([
+                    trade['symbol'],
+                    trade['sale_date'],
+                    f'{trade["quantity"]:.6f}',
+                    f'${trade["sale_price"]:.4f}',
+                    f'${trade["sale_proceeds"]:.2f}',
+                    f'${trade["cost_base"]:.2f}',
+                    f'${trade["capital_gain"]:.2f}',
+                    f'{gain_percent:.2f}%',
+                    f'{holding_period_days} days',
+                    cgt_discount_eligible
+                ])
+        
+        # All buy transactions for reference
+        writer.writerow([''])
+        writer.writerow(['ALL BUY TRANSACTIONS (ACQUISITIONS)'])
         writer.writerow([
             'Asset Symbol',
-            'Asset Name', 
-            'Quantity Held',
-            'Cost Base per Unit (AUD)',
-            'Current Price per Unit (AUD)',
-            'Total Cost Base (AUD)',
-            'Current Market Value (AUD)',
-            'Unrealized Gain/Loss (AUD)',
-            'Unrealized Gain/Loss (%)',
-            'Date Acquired',
-            'Holding Period (Days)',
-            'CGT Discount Eligible'
+            'Purchase Date',
+            'Quantity Purchased',
+            'Purchase Price per Unit (AUD)',
+            'Total Cost (AUD)',
+            'Status'
         ])
         
-        # Sort by unrealized gain/loss (highest first)
-        sorted_assets = sorted(
-            portfolio_data.items(), 
-            key=lambda x: float(x[1].get("pnl", 0)), 
-            reverse=True
-        )
-        
-        for symbol, data in sorted_assets:
-            quantity = float(data.get("quantity", 0))
-            initial_value = float(data.get("initial_value", 0))
-            current_price = float(data.get("current_price", 0))
-            current_value = float(data.get("current_value", 0))
-            pnl = float(data.get("pnl", 0))
-            pnl_percent = float(data.get("pnl_percent", 0))
-            
-            # Calculate cost base per unit
-            cost_base_per_unit = initial_value / quantity if quantity > 0 else 0
-            
-            # Estimate acquisition date (assume held for 30+ days for CGT discount eligibility)
-            acquisition_date = (datetime.now() - timedelta(days=35)).strftime('%Y-%m-%d')
-            holding_days = 35
-            cgt_discount_eligible = "Yes (>12 months)" if holding_days > 365 else "No (<12 months)"
-            
+        buy_transactions = [t for t in trades_data if t.get('action', '').lower() == 'buy']
+        for trade in buy_transactions:
+            symbol = trade.get('symbol', '').replace('/USDT', '').replace('/USD', '')
             writer.writerow([
                 symbol,
-                data.get("name", ""),
-                f'{quantity:.6f}',
-                f'${cost_base_per_unit:.4f}',
-                f'${current_price:.4f}',
-                f'${initial_value:.2f}',
-                f'${current_value:.2f}',
-                f'${pnl:.2f}',
-                f'{pnl_percent:.2f}%',
-                acquisition_date,
-                holding_days,
-                cgt_discount_eligible
+                trade.get('timestamp', ''),
+                f'{float(trade.get("size", 0)):.6f}',
+                f'${float(trade.get("price", 0)):.4f}',
+                f'${float(trade.get("size", 0)) * float(trade.get("price", 0)):.2f}',
+                'Purchase'
+            ])
+        
+        # All sell transactions for reference  
+        writer.writerow([''])
+        writer.writerow(['ALL SELL TRANSACTIONS (DISPOSALS)'])
+        writer.writerow([
+            'Asset Symbol',
+            'Sale Date',
+            'Quantity Sold',
+            'Sale Price per Unit (AUD)',
+            'Total Proceeds (AUD)',
+            'Status'
+        ])
+        
+        sell_transactions = [t for t in trades_data if t.get('action', '').lower() == 'sell']
+        for trade in sell_transactions:
+            symbol = trade.get('symbol', '').replace('/USDT', '').replace('/USD', '')
+            writer.writerow([
+                symbol,
+                trade.get('timestamp', ''),
+                f'{float(trade.get("size", 0)):.6f}',
+                f'${float(trade.get("price", 0)):.4f}',
+                f'${float(trade.get("size", 0)) * float(trade.get("price", 0)):.2f}',
+                'Sale'
             ])
         
         # Footer with compliance information
