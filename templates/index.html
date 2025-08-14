@@ -72,6 +72,21 @@
     </nav>
 
     <div class="container-fluid py-4">
+        <!-- Price Validation Warning Banner -->
+        <div id="price-warning-banner" class="alert alert-warning alert-dismissible" style="display: none; margin-bottom: 20px;" role="alert">
+            <div class="d-flex align-items-center">
+                <i class="fas fa-exclamation-triangle me-2" style="color: #856404;"></i>
+                <div class="flex-grow-1">
+                    <strong>CoinGecko API Connection Issue</strong>
+                    <div id="price-warning-message">Using last known prices. Trading operations are temporarily disabled.</div>
+                    <small id="price-warning-details" class="text-muted"></small>
+                </div>
+                <button type="button" class="btn btn-sm btn-outline-warning me-2" id="acknowledge-warning-btn">
+                    <i class="fas fa-check"></i> Acknowledge
+                </button>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        </div>
 
 
         <!-- System Status Row -->

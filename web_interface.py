@@ -407,11 +407,14 @@ def get_portfolio_history():
 
 @app.route("/api/crypto-portfolio")
 def get_crypto_portfolio():
-    """Get detailed cryptocurrency portfolio data."""
+    """Get detailed cryptocurrency portfolio data with price validation."""
     try:
         initialize_system()
         if not crypto_portfolio:
             return jsonify({"error": "Crypto portfolio not initialized"}), 500
+        
+        # Update prices with validation first
+        price_update_result = crypto_portfolio.update_live_prices()
         
         summary = crypto_portfolio.get_portfolio_summary()
         portfolio_data = crypto_portfolio.get_portfolio_data()
@@ -473,7 +476,8 @@ def get_crypto_portfolio():
                 "top_losers": summary["top_losers"],
                 "largest_positions": summary["largest_positions"]
             },
-            "cryptocurrencies": crypto_list
+            "cryptocurrencies": crypto_list,
+            "price_validation": price_update_result
         })
         
     except Exception as e:
@@ -1459,10 +1463,49 @@ def test_email():
         app.logger.error("Error sending test email: %s", e)
         return jsonify({"error": str(e)}), 500
 
+@app.route("/api/price-validation-status", methods=["GET"])
+def get_price_validation_status():
+    """Get current price validation status and connection information."""
+    try:
+        initialize_system()
+        if not crypto_portfolio:
+            return jsonify({"error": "Crypto portfolio not initialized"}), 500
+        
+        validation_status = crypto_portfolio.get_price_validation_status()
+        return jsonify(validation_status)
+        
+    except Exception as e:
+        app.logger.error("Error getting price validation status: %s", e)
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/api/acknowledge-price-warning", methods=["POST"])
+def acknowledge_price_warning():
+    """Acknowledge price validation warning."""
+    try:
+        initialize_system()
+        if not crypto_portfolio:
+            return jsonify({"error": "Crypto portfolio not initialized"}), 500
+        
+        crypto_portfolio.price_api.acknowledge_warning()
+        return jsonify({"success": True, "message": "Price warning acknowledged"})
+        
+    except Exception as e:
+        app.logger.error("Error acknowledging price warning: %s", e)
+        return jsonify({"error": str(e)}), 500
+
 @app.route("/api/emergency_stop", methods=["POST"])
 def emergency_stop():
+    """Emergency stop with price validation check."""
     try:
         global current_trader
+        
+        # Check if prices are live before allowing trading operations
+        initialize_system()
+        if crypto_portfolio:
+            validation_status = crypto_portfolio.get_price_validation_status()
+            if not validation_status.get('connection_status', {}).get('connected', False):
+                app.logger.warning("Emergency stop called during price API disconnection")
+        
         if current_trader and hasattr(current_trader, "emergency_stop"):
             current_trader.emergency_stop()
         elif current_trader:

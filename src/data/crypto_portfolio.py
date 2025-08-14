@@ -181,7 +181,21 @@ class CryptoPortfolioManager:
             # Use live price if available, otherwise fallback to realistic simulation
             if symbol in live_prices:
                 base_price = live_prices[symbol]
-                self.logger.info(f"Using live price for {symbol}: ${base_price:.6f}")
+                if isinstance(base_price, (int, float)):
+                    self.logger.info(f"Using live price for {symbol}: ${base_price:.6f}")
+                else:
+                    # Handle new price data format with validation info
+                    price_value = base_price.get('price', 0) if isinstance(base_price, dict) else base_price
+                    is_live = base_price.get('is_live', True) if isinstance(base_price, dict) else True
+                    source = base_price.get('source', 'Unknown') if isinstance(base_price, dict) else 'Legacy'
+                    
+                    if is_live:
+                        self.logger.info(f"Using live price for {symbol}: ${price_value:.6f} from {source}")
+                    else:
+                        age_hours = base_price.get('age_hours', 0) if isinstance(base_price, dict) else 0
+                        self.logger.warning(f"Using cached price for {symbol}: ${price_value:.6f} from {source} ({age_hours:.1f}h old)")
+                    
+                    base_price = price_value  # Use the actual price value for calculations
             else:
                 base_price = self._generate_realistic_price(crypto["rank"])
                 self.logger.info(f"Using simulated price for {symbol}: ${base_price:.6f}")
@@ -526,19 +540,71 @@ class CryptoPortfolioManager:
         """Get live API connection status and information."""
         return self.price_api.test_connection()
     
-    def update_live_prices(self, symbols: List[str] = None) -> Dict[str, float]:
-        """Update portfolio with live prices from API."""
+    def update_live_prices(self, symbols: List[str] = None) -> Dict[str, any]:
+        """
+        Update portfolio with live prices from API with validation.
+        
+        Returns:
+            Dictionary containing update status and price validation information
+        """
         if symbols is None:
             symbols = [crypto["symbol"] for crypto in self.crypto_list]
         
-        # Get live prices for all symbols
-        live_prices = self.price_api.get_multiple_prices(symbols)
+        # Get validated price data for all symbols
+        price_data_with_validation = self.price_api.get_multiple_prices(symbols)
         
-        # Update portfolio with live prices
+        update_summary = {
+            'total_symbols': len(symbols),
+            'live_prices': 0,
+            'cached_prices': 0,
+            'failed_symbols': [],
+            'has_non_live_prices': False,
+            'oldest_price_age': 0,
+            'connection_status': self.price_api.get_connection_status(),
+            'prices': {}
+        }
+        
+        # Update portfolio with validated price data
         updated_count = 0
-        for symbol, price in live_prices.items():
-            if symbol in self.portfolio_data:
+        for symbol in symbols:
+            if symbol in price_data_with_validation and symbol in self.portfolio_data:
+                price_info = price_data_with_validation[symbol]
                 crypto = self.portfolio_data[symbol]
+                
+                if isinstance(price_info, dict):
+                    price = price_info.get('price', crypto["current_price"])
+                    is_live = price_info.get('is_live', True)
+                    source = price_info.get('source', 'Unknown')
+                    age_hours = price_info.get('age_hours', 0)
+                    
+                    # Track validation statistics
+                    if is_live:
+                        update_summary['live_prices'] += 1
+                    else:
+                        update_summary['cached_prices'] += 1
+                        update_summary['has_non_live_prices'] = True
+                        if age_hours > update_summary['oldest_price_age']:
+                            update_summary['oldest_price_age'] = age_hours
+                    
+                    # Store validation info for frontend
+                    update_summary['prices'][symbol] = {
+                        'price': price,
+                        'is_live': is_live,
+                        'source': source,
+                        'age_hours': age_hours
+                    }
+                else:
+                    # Legacy numeric price format
+                    price = price_info
+                    update_summary['live_prices'] += 1
+                    update_summary['prices'][symbol] = {
+                        'price': price,
+                        'is_live': True,
+                        'source': 'CoinGecko_API',
+                        'age_hours': 0
+                    }
+                
+                # Update portfolio data
                 crypto["current_price"] = price
                 crypto["current_value"] = crypto["quantity"] * price
                 crypto["pnl"] = crypto["current_value"] - crypto["initial_value"]
@@ -554,9 +620,24 @@ class CryptoPortfolioManager:
                     crypto["projected_sell_pnl"] = sell_value - crypto["initial_value"]
                 
                 updated_count += 1
+            else:
+                # Symbol failed to update
+                update_summary['failed_symbols'].append(symbol)
         
-        self.logger.info(f"Updated {updated_count} cryptocurrencies with live prices")
-        return live_prices
+        if update_summary['has_non_live_prices'] or update_summary['failed_symbols']:
+            self.logger.warning(f"Updated {updated_count} cryptocurrencies: {update_summary['live_prices']} live, {update_summary['cached_prices']} cached, {len(update_summary['failed_symbols'])} failed")
+        else:
+            self.logger.info(f"Updated {updated_count} cryptocurrencies with live prices")
+        
+        return update_summary
+    
+    def get_price_validation_status(self) -> Dict[str, any]:
+        """Get current price validation status for the portfolio."""
+        return {
+            'connection_status': self.price_api.get_connection_status(),
+            'has_trading_restrictions': not self.price_api.connection_status['connected'],
+            'last_update': datetime.now().isoformat()
+        }
     
     def check_auto_trading_opportunities(self) -> List[Dict]:
         """Check for automatic buy/sell opportunities based on target prices."""
