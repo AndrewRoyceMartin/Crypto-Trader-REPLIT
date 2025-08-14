@@ -44,6 +44,11 @@ backtest_results: dict = {}
 state_lock = threading.RLock()
 _initialized = False
 
+# Server uptime tracking
+server_start_time = datetime.now()
+connection_start_time = None
+last_successful_connection = None
+
 trading_status = {
     "mode": "stopped",
     "symbol": None,
@@ -327,6 +332,11 @@ def get_status():
         positions_data = positions_df.to_dict("records") if not positions_df.empty else []
         with state_lock:
             status_copy = dict(trading_status)
+        
+        # Calculate server uptime
+        current_time = datetime.now()
+        server_uptime_seconds = int((current_time - server_start_time).total_seconds())
+        
         return jsonify(
             {
                 "trading_status": status_copy,
@@ -334,7 +344,9 @@ def get_status():
                 "recent_trades": trades_data,
                 "positions": positions_data,
                 "backtest_results": backtest_results,
-                "timestamp": datetime.now().isoformat(),
+                "server_uptime_seconds": server_uptime_seconds,
+                "server_start_time": server_start_time.isoformat(),
+                "timestamp": current_time.isoformat(),
             }
         )
     except Exception as e:
@@ -457,26 +469,57 @@ def get_crypto_portfolio():
 
 @app.route("/api/price-source-status")
 def get_price_source_status():
-    """Get live price data source connection status."""
+    """Get live price data source connection status with connection uptime."""
+    global connection_start_time, last_successful_connection
+    
     try:
         initialize_system()
         if not crypto_portfolio:
             return jsonify({"error": "Crypto portfolio not initialized"}), 500
             
         api_status = crypto_portfolio.get_api_status()
+        current_time = datetime.now()
+        
+        # Track connection state changes
+        if api_status.get('status') == 'connected':
+            if connection_start_time is None:
+                # First successful connection
+                connection_start_time = current_time
+            last_successful_connection = current_time
+            connection_uptime_seconds = int((current_time - connection_start_time).total_seconds()) if connection_start_time else 0
+        else:
+            # Connection lost - reset connection timer
+            connection_start_time = None
+            connection_uptime_seconds = 0
+        
+        # Add connection timing information to the status
+        enhanced_status = api_status.copy()
+        enhanced_status.update({
+            'connection_uptime_seconds': connection_uptime_seconds,
+            'connection_start_time': connection_start_time.isoformat() if connection_start_time else None,
+            'last_successful_connection': last_successful_connection.isoformat() if last_successful_connection else None,
+            'server_uptime_seconds': int((current_time - server_start_time).total_seconds())
+        })
+        
         return jsonify({
             'success': True,
-            'status': api_status
+            'status': enhanced_status
         })
     except Exception as e:
         app.logger.error("Error getting price source status: %s", e)
+        # Reset connection timer on error
+        connection_start_time = None
         return jsonify({
             'success': False,
             'error': str(e),
             'status': {
                 'status': 'error',
                 'error': 'Failed to check API status',
-                'api_provider': 'Unknown'
+                'api_provider': 'Unknown',
+                'connection_uptime_seconds': 0,
+                'connection_start_time': None,
+                'last_successful_connection': last_successful_connection.isoformat() if last_successful_connection else None,
+                'server_uptime_seconds': int((datetime.now() - server_start_time).total_seconds())
             }
         }), 500
 

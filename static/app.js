@@ -137,6 +137,13 @@ class TradingApp {
             this.updateRecentTrades(data.recent_trades);
             this.updateCryptoPortfolio();
             
+            // Update server uptime from API response
+            if (data.server_uptime_seconds !== undefined) {
+                this.lastServerUptimeSeconds = data.server_uptime_seconds;
+                this.lastUptimeUpdate = Date.now();
+                this.updateUptimeDisplay(data.server_uptime_seconds);
+            }
+            
             // Connection status managed by updateConnectionStatusDisplay()
             
         } catch (error) {
@@ -878,18 +885,15 @@ class TradingApp {
     }
     
     startUptimeCounter() {
-        if (this.uptimeStarted) return; // Already started
+        // Server uptime tracking - no longer needed as we get this from server
+        if (this.uptimeInterval) return; // Already started
         
-        this.startTime = Date.now();
-        this.uptimeStarted = true;
-        
-        // Update uptime every second
+        // Update uptime display every second based on server data
         this.uptimeInterval = setInterval(() => {
             this.updateUptimeDisplay();
         }, 1000);
         
-        // Update immediately
-        this.updateUptimeDisplay();
+        this.uptimeStarted = true;
     }
     
     stopUptimeCounter() {
@@ -898,27 +902,51 @@ class TradingApp {
             this.uptimeInterval = null;
         }
         this.uptimeStarted = false;
-        this.startTime = null;
-        this.updateUptimeDisplay(); // Show "Waiting..." immediately
     }
     
     restartUptimeCounter() {
-        // Stop existing counter
-        this.stopUptimeCounter();
-        // Start fresh counter
+        // Server tracks connection uptime, so just ensure display is updating
         this.startUptimeCounter();
     }
     
-    updateUptimeDisplay() {
+    updateUptimeDisplay(serverUptimeSeconds = null, connectionUptimeSeconds = null) {
         const uptimeElement = document.getElementById('system-uptime');
+        const connectionUptimeElement = document.getElementById('connection-uptime');
+        
         if (uptimeElement) {
-            if (!this.startTime) {
+            if (serverUptimeSeconds !== null) {
+                // Use server-provided uptime
+                const uptimeText = this.formatUptime(serverUptimeSeconds);
+                uptimeElement.textContent = uptimeText;
+            } else if (this.lastServerUptimeSeconds !== undefined) {
+                // Increment from last known server uptime
+                const currentIncrement = Math.floor((Date.now() - (this.lastUptimeUpdate || Date.now())) / 1000);
+                const estimatedUptime = this.lastServerUptimeSeconds + currentIncrement;
+                const uptimeText = this.formatUptime(estimatedUptime);
+                uptimeElement.textContent = uptimeText;
+            } else {
                 uptimeElement.textContent = 'Waiting...';
-                return;
             }
-            const uptimeSeconds = Math.floor((Date.now() - this.startTime) / 1000);
-            const uptimeText = this.formatUptime(uptimeSeconds);
-            uptimeElement.textContent = uptimeText;
+        }
+        
+        if (connectionUptimeElement) {
+            if (connectionUptimeSeconds !== null) {
+                if (connectionUptimeSeconds === 0) {
+                    connectionUptimeElement.textContent = 'Disconnected';
+                    connectionUptimeElement.className = 'text-danger';
+                } else {
+                    const connectionText = this.formatUptime(connectionUptimeSeconds);
+                    connectionUptimeElement.textContent = connectionText;
+                    connectionUptimeElement.className = 'text-success';
+                }
+            } else if (this.lastConnectionUptimeSeconds !== undefined) {
+                // Increment from last known connection uptime
+                const currentIncrement = Math.floor((Date.now() - (this.lastUptimeUpdate || Date.now())) / 1000);
+                const estimatedConnectionUptime = this.lastConnectionUptimeSeconds + currentIncrement;
+                const connectionText = this.formatUptime(estimatedConnectionUptime);
+                connectionUptimeElement.textContent = connectionText;
+                connectionUptimeElement.className = 'text-success';
+            }
         }
     }
     
@@ -2081,12 +2109,14 @@ function updateConnectionStatusDisplay(apiStatus) {
             window.tradingApp.stopReconnectionCountdown();
             // Restart trading countdown when connection is restored
             window.tradingApp.startCountdown();
-            // Only restart uptime counter if we were previously disconnected
-            if (wasDisconnected) {
-                window.tradingApp.restartUptimeCounter();
-            } else {
-                // Just start it if it hasn't been started yet
-                window.tradingApp.startUptimeCounter();
+            // Start uptime tracking (server-side timing will be used)
+            window.tradingApp.startUptimeCounter();
+            
+            // Update connection uptime display with server data
+            if (apiStatus.connection_uptime_seconds !== undefined) {
+                window.tradingApp.lastConnectionUptimeSeconds = apiStatus.connection_uptime_seconds;
+                window.tradingApp.lastUptimeUpdate = Date.now();
+                window.tradingApp.updateUptimeDisplay(null, apiStatus.connection_uptime_seconds);
             }
         }
         
@@ -2112,14 +2142,16 @@ function updateConnectionStatusDisplay(apiStatus) {
         
         console.log('Status updated: Connected to', apiStatus.api_provider);
     } else {
-        // Stop trading countdown and uptime counter when connection is lost
+        // Stop trading countdown when connection is lost
         if (window.tradingApp) {
             if (window.tradingApp.countdownInterval) {
                 clearInterval(window.tradingApp.countdownInterval);
                 window.tradingApp.countdownInterval = null;
             }
-            // Stop uptime counter when connection is lost
-            window.tradingApp.stopUptimeCounter();
+            
+            // Update connection uptime to 0 (disconnected)
+            window.tradingApp.lastConnectionUptimeSeconds = 0;
+            window.tradingApp.updateUptimeDisplay(null, 0);
             
             // Update countdown display to show connection issue
             const countdownElement = document.getElementById('trading-countdown');
