@@ -17,9 +17,9 @@ class CryptoPriceAPI:
         self.base_url = "https://api.coingecko.com/api/v3"
         self.logger = logging.getLogger(__name__)
         self.cache = {}
-        self.cache_duration = 60  # Cache for 60 seconds
+        self.cache_duration = 300  # Cache for 5 minutes to reduce API calls
         self.last_request_time = 0
-        self.request_delay = 6.5  # Rate limit: 10 requests per minute (6 second intervals)
+        self.request_delay = 60.0  # Rate limit: Check once per minute to avoid API limits
         
         # CoinGecko coin IDs for our cryptocurrencies
         self.coin_mapping = {

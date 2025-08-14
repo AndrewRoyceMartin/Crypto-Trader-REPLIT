@@ -31,10 +31,10 @@ class TradingApp {
     }
     
     setupEventListeners() {
-        // Auto-refresh every 6 seconds (10 times per minute to respect CoinGecko limits)
+        // Auto-refresh every 60 seconds (once per minute to reduce CoinGecko API usage)
         this.updateInterval = setInterval(() => {
             this.updateDashboard();
-        }, 6000);
+        }, 60000);
         
         // Start countdown timer
         this.startCountdown();
@@ -2266,7 +2266,7 @@ document.addEventListener("DOMContentLoaded", function() {
     console.log('Connection status display initialized');
     
     setTimeout(checkApiStatusAndDisplay, 2000); // Wait for page to load
-    setInterval(checkApiStatusAndDisplay, 30000); // Check every 30 seconds
+    setInterval(checkApiStatusAndDisplay, 60000); // Check every 60 seconds
 });
 
 // Dashboard Navigation Functions
