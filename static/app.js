@@ -240,7 +240,6 @@ class TradingApp {
             if (data.cryptocurrencies) {
                 this.updateLoadingProgress(80, 'Updating displays...');
                 this.updateCryptoSymbols(data.cryptocurrencies);
-                this.updateCryptoTable(data.cryptocurrencies);
                 this.updatePerformanceTable(data.cryptocurrencies);
                 this.updateHoldingsTable(data.cryptocurrencies);
                 this.updatePortfolioSummary(data.summary, data.cryptocurrencies);
@@ -291,8 +290,8 @@ class TradingApp {
     }
     
     updateCryptoTable(cryptos) {
-        const tableBody = document.getElementById('crypto-table');
-        if (!tableBody) return;
+        // This method is no longer used in the clean template
+        return;
         
         // Clear existing content
         tableBody.innerHTML = '';

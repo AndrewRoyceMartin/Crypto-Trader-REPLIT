@@ -3,182 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Algorithmic Trading System</title>
-    
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
-    <!-- Custom CSS -->
+    <title>Cryptocurrency Trading System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    
-    <!-- Force JavaScript refresh -->
-    <script>
-        // Force cache refresh for JavaScript
-        window.cacheVersion = Date.now();
-    </script>
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="#" onclick="showMainDashboard()">
-                <i class="fas fa-chart-line me-2"></i>
-                Algorithmic Trading System
-            </a>
-            
-            <div class="navbar-nav me-auto">
-                <button class="btn btn-outline-light btn-sm me-2" onclick="showMainDashboard()">
-                    <i class="fas fa-home me-1"></i>
-                    Dashboard
-                </button>
-                <button class="btn btn-outline-light btn-sm me-2" onclick="showPerformanceDashboard()">
-                    <i class="fas fa-chart-bar me-1"></i>
-                    Performance
-                </button>
-                <button class="btn btn-outline-light btn-sm me-2" onclick="showCurrentPositions()">
-                    <i class="fas fa-coins me-1"></i>
-                    Current Holdings
-                </button>
-                <button class="btn btn-outline-success btn-sm" onclick="exportATOTax()">
-                    <i class="fas fa-file-invoice-dollar me-1"></i>
-                    ATO Tax Export
-                </button>
-            </div>
-            
-            <div class="navbar-nav ms-auto">
-                <div class="nav-item d-flex align-items-center">
-                    <div class="me-3">
-                        <select class="form-select form-select-sm" id="currency-selector" onchange="changeCurrency()" style="min-width: 80px; font-size: 0.8rem;">
-                            <option value="USD" selected>USD</option>
-                            <option value="AUD">AUD</option>
-                            <option value="EUR">EUR</option>
-                            <option value="GBP">GBP</option>
-                        </select>
-                    </div>
-                    <span class="navbar-text me-3">
-                        <i class="fas fa-server text-info me-1"></i>
-                        <span class="text-light">Server Uptime:</span>
-                        <span id="system-uptime" class="text-info ms-1">0s</span>
-                    </span>
-                    <span class="navbar-text" id="server-connection-status">
-                        <i class="fas fa-wifi text-success me-1"></i>
-                        <span class="text-light">CoinGecko API:</span>
-                        <span id="server-connection-text" class="text-success ms-1">Connected</span>
-                    </span>
-                </div>
-            </div>
-        </div>
-    </nav>
-
-    <div class="container-fluid py-4">
-        <!-- Price Validation Warning Banner -->
-        <div id="price-warning-banner" class="alert alert-warning alert-dismissible" style="display: none; margin-bottom: 20px;" role="alert">
-            <div class="d-flex align-items-center">
-                <i class="fas fa-exclamation-triangle me-2" style="color: #856404;"></i>
-                <div class="flex-grow-1">
-                    <strong>CoinGecko API Connection Issue</strong>
-                    <div id="price-warning-message">Using last known prices. Trading operations are temporarily disabled.</div>
-                    <small id="price-warning-details" class="text-muted"></small>
-                </div>
-                <button type="button" class="btn btn-sm btn-outline-warning me-2" id="acknowledge-warning-btn">
-                    <i class="fas fa-check"></i> Acknowledge
-                </button>
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-        </div>
-
-        <!-- System Status Row -->
-        <div class="row mb-4">
-            <div class="col-12">
-                <div class="card">
-                    <div class="card-header d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0">
-                            <i class="fas fa-tachometer-alt me-2"></i>
-                            System Status
-                            <i class="fas fa-info-circle text-muted ms-2" 
-                               data-bs-toggle="tooltip" 
-                               data-bs-placement="top" 
-                               title="Monitor your trading system status and control paper/live trading operations"></i>
-                        </h5>
-                        <div>
-                            <div class="btn-group me-2" role="group">
-                                <button class="btn btn-success btn-sm" onclick="startTrading('paper', 'single')">
-                                    <i class="fas fa-play me-1"></i>Paper Trade (Single)
-                                </button>
-                                <button class="btn btn-success btn-sm" onclick="startTrading('paper', 'portfolio')">
-                                    <i class="fas fa-play me-1"></i>Paper Trade (Portfolio)
-                                </button>
-                            </div>
-                            <div class="btn-group me-2" role="group">
-                                <button class="btn btn-warning btn-sm" onclick="startTrading('live', 'single')">
-                                    <i class="fas fa-play me-1"></i>Live Trade (Single)
-                                </button>
-                                <button class="btn btn-warning btn-sm" onclick="startTrading('live', 'portfolio')">
-                                    <i class="fas fa-play me-1"></i>Live Trade (Portfolio)
-                                </button>
-                            </div>
-                            <button class="btn btn-danger btn-sm me-2" onclick="stopTrading()">
-                                <i class="fas fa-stop me-1"></i>Stop
-                            </button>
-                            <button class="btn btn-danger btn-sm" onclick="emergencyStop()">
-                                <i class="fas fa-exclamation-triangle me-1"></i>Emergency Stop
-                            </button>
-                        </div>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-3">
-                                <div class="status-item">
-                                    <label>Trading Mode:</label>
-                                    <span id="trading-mode" class="badge bg-secondary">Stopped</span>
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <div class="status-item">
-                                    <label>Symbol:</label>
-                                    <span id="trading-symbol">-</span>
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <div class="status-item">
-                                    <label>Running Since:</label>
-                                    <span id="trading-start-time">-</span>
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <div class="status-item">
-                                    <label>Status:</label>
-                                    <span id="trading-status" class="badge bg-secondary">Idle</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Portfolio Summary Cards (CoinGecko Style) -->
+    <div class="container-fluid">
+        <!-- Header -->
         <div class="row mb-4">
             <div class="col-12">
                 <div class="card bg-primary text-white">
                     <div class="card-body">
-                        <div class="row align-items-center">
-                            <div class="col-md-8">
-                                <h4 class="card-title mb-1">
-                                    <i class="fas fa-wallet me-2"></i>
-                                    Your Cryptocurrency Portfolio
-                                </h4>
-                                <p class="card-text mb-0 opacity-75">Real-time tracking of your digital assets</p>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h1 class="mb-0"><i class="fas fa-chart-line me-2"></i>Cryptocurrency Trading System</h1>
+                                <p class="mb-0">Real-time portfolio tracking and algorithmic trading</p>
                             </div>
-                            <div class="col-md-4 text-md-end">
-                                <div class="d-flex flex-column align-items-md-end">
-                                    <h3 id="summary-total-value" class="mb-1 text-white">$0.00</h3>
-                                    <span id="summary-total-change" class="badge bg-success">+$0.00 (0.00%)</span>
+                            <div class="text-end">
+                                <div id="connection-indicator" class="mb-2">
+                                    <span id="connection-status" class="badge bg-success">Connected</span>
+                                </div>
+                                <div class="text-white-50">
+                                    <small>Uptime: <span id="uptime-counter">00:00:00</span></small>
                                 </div>
                             </div>
                         </div>
@@ -187,243 +34,7 @@
             </div>
         </div>
 
-        <!-- Market Summary Stats Row (CoinGecko Style) -->
-        <div class="row mb-4">
-            <div class="col-lg-3 col-md-6 mb-3">
-                <div class="card h-100">
-                    <div class="card-body text-center">
-                        <div class="d-flex align-items-center justify-content-center mb-2">
-                            <i class="fas fa-coins text-primary fs-4 me-2"></i>
-                            <span class="text-muted small">Total Assets</span>
-                        </div>
-                        <h5 id="summary-total-assets" class="mb-0 fw-bold">0</h5>
-                        <small class="text-muted">Cryptocurrencies</small>
-                    </div>
-                </div>
-            </div>
-            <div class="col-lg-3 col-md-6 mb-3">
-                <div class="card h-100">
-                    <div class="card-body text-center">
-                        <div class="d-flex align-items-center justify-content-center mb-2">
-                            <i class="fas fa-chart-line text-success fs-4 me-2"></i>
-                            <span class="text-muted small">Portfolio Value</span>
-                        </div>
-                        <h5 id="summary-portfolio-value" class="mb-0 fw-bold">$0.00</h5>
-                        <small class="text-muted">Current Market Value</small>
-                    </div>
-                </div>
-            </div>
-            <div class="col-lg-3 col-md-6 mb-3">
-                <div class="card h-100">
-                    <div class="card-body text-center">
-                        <div class="d-flex align-items-center justify-content-center mb-2">
-                            <i class="fas fa-percentage text-warning fs-4 me-2"></i>
-                            <span class="text-muted small">24h Change</span>
-                        </div>
-                        <h5 id="summary-24h-change" class="mb-0 fw-bold text-success">+0.00%</h5>
-                        <small class="text-muted">Daily Performance</small>
-                    </div>
-                </div>
-            </div>
-            <div class="col-lg-3 col-md-6 mb-3">
-                <div class="card h-100">
-                    <div class="card-body text-center">
-                        <div class="d-flex align-items-center justify-content-center mb-2">
-                            <i class="fas fa-trophy text-info fs-4 me-2"></i>
-                            <span class="text-muted small">Best Performer</span>
-                        </div>
-                        <h5 id="summary-best-performer" class="mb-0 fw-bold">-</h5>
-                        <small id="summary-best-performance" class="text-muted">No data</small>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Tracked Cryptocurrencies (Moved to Top) -->
-        <div class="row mb-4">
-            <div class="col-12">
-                <div class="card">
-                    <div class="card-header d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0">
-                            <i class="fas fa-coins me-2"></i>
-                            Tracked Cryptocurrencies (103 Assets - $10 Each)
-                            <i class="fas fa-info-circle text-info ms-2" 
-                               data-bs-toggle="tooltip" 
-                               data-bs-placement="top" 
-                               title="Complete cryptocurrency portfolio overview with 103 cryptocurrencies ($10 initial investment each = $1,030 total). Real-time prices, P&L tracking, trading signals, and profit/loss calculations with live CoinGecko API integration."></i>
-                        </h5>
-                        <button class="btn btn-outline-primary btn-sm" onclick="refreshCryptoPortfolio()">
-                            <i class="fas fa-sync-alt me-1"></i>Refresh
-                        </button>
-                    </div>
-                    <div class="card-body">
-                        <div class="row mb-3">
-                            <div class="col-md-2">
-                                <div class="text-center">
-                                    <h6 class="text-muted mb-1">Total Assets</h6>
-                                    <h5 id="crypto-total-count" class="text-info mb-0">103</h5>
-                                </div>
-                            </div>
-                            <div class="col-md-2">
-                                <div class="text-center">
-                                    <h6 class="text-muted mb-1">Initial Value</h6>
-                                    <h5 id="crypto-initial-value" class="text-secondary mb-0">$1,030</h5>
-                                </div>
-                            </div>
-                            <div class="col-md-2">
-                                <div class="text-center">
-                                    <h6 class="text-muted mb-1">Current Value</h6>
-                                    <h5 id="crypto-current-value" class="text-primary mb-0">$0.00</h5>
-                                </div>
-                            </div>
-                            <div class="col-md-2">
-                                <div class="text-center">
-                                    <h6 class="text-muted mb-1">Total P&L</h6>
-                                    <h5 id="crypto-total-pnl" class="mb-0">$0.00</h5>
-                                </div>
-                            </div>
-                            <div class="col-md-2">
-                                <div class="text-center">
-                                    <h6 class="text-muted mb-1">P&L %</h6>
-                                    <h5 id="crypto-pnl-percent" class="mb-0">0.00%</h5>
-                                </div>
-                            </div>
-                            <div class="col-md-2">
-                                <div class="text-center">
-                                    <h6 class="text-muted mb-1">Status</h6>
-                                    <span id="crypto-status" 
-                                          class="badge bg-success" 
-                                          style="cursor: pointer;"
-                                          data-bs-toggle="tooltip" 
-                                          data-bs-placement="top" 
-                                          data-bs-html="true"
-                                          title="">Live</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Crypto Symbols Display -->
-                        <div class="row mb-3">
-                            <div class="col-12">
-                                <h6 class="text-muted mb-2">Current Holdings:</h6>
-                                <div id="crypto-symbols" class="d-flex flex-wrap">
-                                    <span class="badge bg-secondary">Loading cryptocurrencies...</span>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- Portfolio Actions -->
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <button class="btn btn-outline-info btn-sm w-100" onclick="exportPortfolio()">
-                                    <i class="fas fa-download me-1"></i>Export Data
-                                </button>
-                            </div>
-                            <div class="col-md-6">
-                                <button class="btn btn-outline-danger btn-sm w-100" onclick="resetEntireProgram()">
-                                    <i class="fas fa-power-off me-1"></i>Reset Entire Program
-                                </button>
-                            </div>
-                        </div>
-                        
-                        <!-- Filter Controls for Portfolio -->
-                        <div class="row mb-3">
-                            <div class="col-md-4">
-                                <input type="text" id="portfolio-filter" class="form-control form-control-sm" placeholder="Filter by symbol or name..." onkeyup="filterPortfolioTable()">
-                            </div>
-                            <div class="col-md-2">
-                                <select id="portfolio-pnl-filter" class="form-select form-select-sm" onchange="filterPortfolioTable()">
-                                    <option value="">All P&L</option>
-                                    <option value="positive">Profitable</option>
-                                    <option value="negative">Loss</option>
-                                </select>
-                            </div>
-                            <div class="col-md-2">
-                                <select id="portfolio-value-filter" class="form-select form-select-sm" onchange="filterPortfolioTable()">
-                                    <option value="">All Values</option>
-                                    <option value="high">&gt;$15</option>
-                                    <option value="medium">$5-$15</option>
-                                    <option value="low">&lt;$5</option>
-                                </select>
-                            </div>
-                            <div class="col-md-2">
-                                <button class="btn btn-outline-secondary btn-sm w-100" onclick="clearPortfolioFilters()">
-                                    <i class="fas fa-times me-1"></i>Clear
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- Crypto Portfolio Table -->
-                        <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
-                            <table class="table table-sm table-hover">
-                                <thead class="table-dark sticky-top">
-                                    <tr>
-                                        <th class="sortable" onclick="sortPortfolio('rank')" style="cursor: pointer; color: white;">
-                                            Rank <i id="sort-rank" class="fas fa-sort text-white"></i>
-                                        </th>
-                                        <th class="sortable" onclick="sortPortfolio('symbol')" style="cursor: pointer; color: white;">
-                                            Symbol <i id="sort-symbol" class="fas fa-sort text-white"></i>
-                                        </th>
-                                        <th class="sortable" onclick="sortPortfolio('name')" style="cursor: pointer; color: white;">
-                                            Name <i id="sort-name" class="fas fa-sort text-white"></i>
-                                        </th>
-                                        <th class="sortable" onclick="sortPortfolio('quantity')" style="cursor: pointer; color: white;">
-                                            Quantity <i id="sort-quantity" class="fas fa-sort text-white"></i>
-                                        </th>
-                                        <th class="sortable" onclick="sortPortfolio('price')" style="cursor: pointer; color: white;">
-                                            Current Price <i id="sort-price" class="fas fa-sort text-white"></i>
-                                        </th>
-                                        <th class="sortable" onclick="sortPortfolio('value')" style="cursor: pointer; color: white;">
-                                            Value <i id="sort-value" class="fas fa-sort text-white"></i>
-                                        </th>
-                                        <th class="sortable" onclick="sortPortfolio('target_sell')" style="cursor: pointer; color: white;">
-                                            Target Sell <i id="sort-target_sell" class="fas fa-sort text-white"></i>
-                                        </th>
-                                        <th class="sortable" onclick="sortPortfolio('pnl')" style="cursor: pointer; color: white;">
-                                            P&L <i id="sort-pnl" class="fas fa-sort text-white"></i>
-                                        </th>
-                                        <th class="sortable" onclick="sortPortfolio('pnl_percent')" style="cursor: pointer; color: white;">
-                                            P&L % <i id="sort-pnl_percent" class="fas fa-sort text-white"></i>
-                                        </th>
-                                        <th class="sortable" onclick="sortPortfolio('last_updated')" style="cursor: pointer; color: white;">
-                                            Updated <i id="sort-last_updated" class="fas fa-sort text-white"></i>
-                                        </th>
-                                        <th style="color: white;">Signal</th>
-                                        <th style="color: white;">Actions</th>
-                                        <th class="sortable" onclick="sortPortfolio('target_proximity')" style="cursor: pointer; color: white;">
-                                            Target <i id="sort-target_proximity" class="fas fa-sort text-white"></i>
-                                        </th>
-                                    </tr>
-                                </thead>
-                                <tbody id="crypto-table">
-                                    <tr>
-                                        <td colspan="13" class="text-center">
-                                            <div class="d-flex align-items-center justify-content-center">
-                                                <div class="spinner-border spinner-border-sm text-primary me-3" role="status">
-                                                    <span class="visually-hidden">Loading...</span>
-                                                </div>
-                                                <div>
-                                                    <div class="text-muted mb-2">Loading cryptocurrency portfolio...</div>
-                                                    <div class="progress" style="width: 300px; height: 20px;">
-                                                        <div id="crypto-loading-progress" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
-                                                            <span id="crypto-loading-text">0%</span>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-
-
-        <!-- Crypto Symbols Row -->
+        <!-- Tracked Cryptocurrencies -->
         <div class="row mb-4">
             <div class="col-12">
                 <div class="card">
@@ -433,6 +44,7 @@
                             Tracked Cryptocurrencies
                             <span id="trading-countdown" class="badge bg-secondary ms-3">Starting...</span>
                         </h5>
+                        <small class="text-muted ms-3">Live CoinGecko Price Data</small>
                     </div>
                     <div class="card-body">
                         <div id="crypto-symbols" class="d-flex flex-wrap gap-2">
@@ -443,9 +55,8 @@
             </div>
         </div>
         
-        <!-- Performance Dashboard Row -->
+        <!-- Performance Dashboard -->
         <div class="row mb-4">
-            <!-- Performance Dashboard -->
             <div class="col-12">
                 <div class="card">
                     <div class="card-header">
@@ -469,85 +80,144 @@
                             </li>
                             <li class="nav-item" role="presentation">
                                 <button class="nav-link" id="trades-tab" data-bs-toggle="tab" data-bs-target="#trades-chart" type="button" role="tab">
-                                    <i class="fas fa-exchange-alt me-1"></i>Trade P&L
+                                    <i class="fas fa-exchange-alt me-1"></i>Trades
                                 </button>
                             </li>
                         </ul>
                         
-                        <div class="tab-content" id="chartTabContent">
+                        <div class="tab-content" id="chartContent">
                             <div class="tab-pane fade show active" id="portfolio-chart" role="tabpanel">
-                                <div class="chart-container mt-3">
+                                <div style="height: 300px;">
                                     <canvas id="portfolioChart"></canvas>
                                 </div>
                             </div>
                             <div class="tab-pane fade" id="returns-chart" role="tabpanel">
-                                <div class="chart-container mt-3">
+                                <div style="height: 300px;">
                                     <canvas id="returnsChart"></canvas>
                                 </div>
                             </div>
                             <div class="tab-pane fade" id="trades-chart" role="tabpanel">
-                                <div class="chart-container mt-3">
+                                <div style="height: 300px;">
                                     <canvas id="tradesChart"></canvas>
                                 </div>
                             </div>
                         </div>
+                        
+                        <!-- Filter Controls -->
+                        <div class="row mb-3 mt-3">
+                            <div class="col-md-4">
+                                <input type="text" id="performance-filter" class="form-control form-control-sm" placeholder="Filter by symbol or name..." onkeyup="filterPerformanceTable()">
+                            </div>
+                            <div class="col-md-2">
+                                <select id="performance-pnl-filter" class="form-select form-select-sm" onchange="filterPerformanceTable()">
+                                    <option value="">All P&L</option>
+                                    <option value="positive">Profitable</option>
+                                    <option value="negative">Loss</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <select id="performance-value-filter" class="form-select form-select-sm" onchange="filterPerformanceTable()">
+                                    <option value="">All Values</option>
+                                    <option value="high">&gt;$15</option>
+                                    <option value="medium">$5-$15</option>
+                                    <option value="low">&lt;$5</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <button class="btn btn-outline-secondary btn-sm w-100" onclick="clearPerformanceFilters()">
+                                    <i class="fas fa-times me-1"></i>Clear
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Performance Table -->
+                        <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                            <table class="table table-sm table-hover">
+                                <thead class="table-dark sticky-top">
+                                    <tr>
+                                        <th class="sortable" onclick="sortPerformance('rank')" style="cursor: pointer; color: white;">
+                                            Rank <i id="sort-perf-rank" class="fas fa-sort text-white"></i>
+                                        </th>
+                                        <th class="sortable" onclick="sortPerformance('symbol')" style="cursor: pointer; color: white;">
+                                            Symbol <i id="sort-perf-symbol" class="fas fa-sort text-white"></i>
+                                        </th>
+                                        <th class="sortable" onclick="sortPerformance('name')" style="cursor: pointer; color: white;">
+                                            Name <i id="sort-perf-name" class="fas fa-sort text-white"></i>
+                                        </th>
+                                        <th class="sortable" onclick="sortPerformance('quantity')" style="cursor: pointer; color: white;">
+                                            Quantity <i id="sort-perf-quantity" class="fas fa-sort text-white"></i>
+                                        </th>
+                                        <th class="sortable" onclick="sortPerformance('price')" style="cursor: pointer; color: white;">
+                                            Current Price <i id="sort-perf-price" class="fas fa-sort text-white"></i>
+                                        </th>
+                                        <th class="sortable" onclick="sortPerformance('value')" style="cursor: pointer; color: white;">
+                                            Value <i id="sort-perf-value" class="fas fa-sort text-white"></i>
+                                        </th>
+                                        <th class="sortable" onclick="sortPerformance('target_sell')" style="cursor: pointer; color: white;">
+                                            Target Sell <i id="sort-perf-target_sell" class="fas fa-sort text-white"></i>
+                                        </th>
+                                        <th class="sortable" onclick="sortPerformance('approaching_sell')" style="cursor: pointer; color: white;">
+                                            Approaching Sell % <i id="sort-perf-approaching_sell" class="fas fa-sort text-white"></i>
+                                        </th>
+                                        <th class="sortable" onclick="sortPerformance('target_buy')" style="cursor: pointer; color: white;">
+                                            Target Buy <i id="sort-perf-target_buy" class="fas fa-sort text-white"></i>
+                                        </th>
+                                        <th class="sortable" onclick="sortPerformance('projected_pnl')" style="cursor: pointer; color: white;">
+                                            Projected P&L <i id="sort-perf-projected_pnl" class="fas fa-sort text-white"></i>
+                                        </th>
+                                        <th class="sortable" onclick="sortPerformance('pnl')" style="cursor: pointer; color: white;">
+                                            P&L <i id="sort-perf-pnl" class="fas fa-sort text-white"></i>
+                                        </th>
+                                        <th class="sortable" onclick="sortPerformance('pnl_percent')" style="cursor: pointer; color: white;">
+                                            P&L % <i id="sort-perf-pnl_percent" class="fas fa-sort text-white"></i>
+                                        </th>
+                                        <th style="color: white;">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="crypto-portfolio-table">
+                                    <tr>
+                                        <td colspan="13" class="text-center text-muted">Loading performance data...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>
-
-
         </div>
 
-        <!-- Data Tables Row -->
+        <!-- Current Holdings -->
         <div class="row mb-4">
             <div class="col-12">
                 <div class="card">
-                    <div class="card-header d-flex justify-content-between align-items-center">
+                    <div class="card-header">
                         <h5 class="mb-0">
-                            <i class="fas fa-coins me-2"></i>
-                            Cryptocurrency Portfolio (103 Assets - $10 Each)
-                            <i class="fas fa-info-circle text-info ms-2" 
-                               data-bs-toggle="tooltip" 
-                               data-bs-placement="top" 
-                               title="Complete cryptocurrency portfolio overview with 103 cryptocurrencies ($10 initial investment each = $1,030 total). Real-time prices, P&L tracking, trading signals, and profit/loss calculations with live CoinGecko API integration."></i>
+                            <i class="fas fa-briefcase me-2"></i>
+                            Current Holdings
                         </h5>
-                        <button class="btn btn-outline-primary btn-sm" onclick="refreshCryptoPortfolio()">
-                            <i class="fas fa-sync-alt me-1"></i>Refresh
-                        </button>
                     </div>
                     <div class="card-body">
-                        <div class="row mb-3">
-                            <div class="col-md-2">
+                        <!-- Summary Statistics -->
+                        <div class="row text-center mb-4">
+                            <div class="col-md-3">
                                 <div class="text-center">
-                                    <h6 class="text-muted mb-1">Total Assets</h6>
-                                    <h5 id="crypto-total-count" class="text-info mb-0">103</h5>
+                                    <h6 class="text-muted mb-1">Cryptos</h6>
+                                    <span id="summary-total-assets" class="h5">0</span>
                                 </div>
                             </div>
-                            <div class="col-md-2">
+                            <div class="col-md-3">
                                 <div class="text-center">
-                                    <h6 class="text-muted mb-1">Initial Value</h6>
-                                    <h5 id="crypto-initial-value" class="text-secondary mb-0">$1,030</h5>
+                                    <h6 class="text-muted mb-1">Portfolio Value</h6>
+                                    <span id="summary-portfolio-value" class="h5">$0.00</span>
                                 </div>
                             </div>
-                            <div class="col-md-2">
+                            <div class="col-md-3">
                                 <div class="text-center">
-                                    <h6 class="text-muted mb-1">Current Value</h6>
-                                    <h5 id="crypto-current-value" class="text-primary mb-0">$0.00</h5>
+                                    <h6 class="text-muted mb-1">24h Change</h6>
+                                    <p id="summary-24h-change" class="mb-0 fw-bold">0.00%</p>
                                 </div>
                             </div>
-                            <div class="col-md-2">
-                                <div class="text-center">
-                                    <h6 class="text-muted mb-1">Total P&L</h6>
-                                    <h5 id="crypto-total-pnl" class="mb-0">$0.00</h5>
-                                </div>
-                            </div>
-                            <div class="col-md-2">
-                                <div class="text-center">
-                                    <h6 class="text-muted mb-1">P&L %</h6>
-                                    <h5 id="crypto-pnl-percent" class="mb-0">0.00%</h5>
-                                </div>
-                            </div>
-                            <div class="col-md-2">
+                            <div class="col-md-3">
                                 <div class="text-center">
                                     <h6 class="text-muted mb-1">Status</h6>
                                     <span id="crypto-status" 
@@ -561,7 +231,6 @@
                             </div>
                         </div>
 
-                        
                         <!-- Portfolio Actions -->
                         <div class="row mb-3">
                             <div class="col-md-6">
@@ -575,21 +244,21 @@
                                 </button>
                             </div>
                         </div>
-                        
-                        <!-- Filter Controls for Portfolio -->
+
+                        <!-- Filter Controls -->
                         <div class="row mb-3">
                             <div class="col-md-4">
-                                <input type="text" id="portfolio-filter" class="form-control form-control-sm" placeholder="Filter by symbol or name..." onkeyup="filterPortfolioTable()">
+                                <input type="text" id="holdings-filter" class="form-control form-control-sm" placeholder="Filter by symbol or name..." onkeyup="filterHoldingsTable()">
                             </div>
                             <div class="col-md-2">
-                                <select id="portfolio-pnl-filter" class="form-select form-select-sm" onchange="filterPortfolioTable()">
+                                <select id="holdings-pnl-filter" class="form-select form-select-sm" onchange="filterHoldingsTable()">
                                     <option value="">All P&L</option>
                                     <option value="positive">Profitable</option>
                                     <option value="negative">Loss</option>
                                 </select>
                             </div>
                             <div class="col-md-2">
-                                <select id="portfolio-value-filter" class="form-select form-select-sm" onchange="filterPortfolioTable()">
+                                <select id="holdings-value-filter" class="form-select form-select-sm" onchange="filterHoldingsTable()">
                                     <option value="">All Values</option>
                                     <option value="high">&gt;$15</option>
                                     <option value="medium">$5-$15</option>
@@ -597,59 +266,51 @@
                                 </select>
                             </div>
                             <div class="col-md-2">
-                                <button class="btn btn-outline-secondary btn-sm w-100" onclick="clearPortfolioFilters()">
+                                <button class="btn btn-outline-secondary btn-sm w-100" onclick="clearHoldingsFilters()">
                                     <i class="fas fa-times me-1"></i>Clear
                                 </button>
                             </div>
                         </div>
 
-                        <!-- Crypto Portfolio Table -->
+                        <!-- Current Holdings Table -->
                         <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
                             <table class="table table-sm table-hover">
                                 <thead class="table-dark sticky-top">
                                     <tr>
-                                        <th class="sortable" onclick="sortPortfolio('rank')" style="cursor: pointer; color: white;">
-                                            Rank <i id="sort-rank" class="fas fa-sort text-white"></i>
+                                        <th class="sortable" onclick="sortHoldings('symbol')" style="cursor: pointer; color: white;">
+                                            Symbol <i id="sort-holdings-symbol" class="fas fa-sort text-white"></i>
                                         </th>
-                                        <th class="sortable" onclick="sortPortfolio('symbol')" style="cursor: pointer; color: white;">
-                                            Symbol <i id="sort-symbol" class="fas fa-sort text-white"></i>
+                                        <th class="sortable" onclick="sortHoldings('name')" style="cursor: pointer; color: white;">
+                                            Name <i id="sort-holdings-name" class="fas fa-sort text-white"></i>
                                         </th>
-                                        <th class="sortable" onclick="sortPortfolio('name')" style="cursor: pointer; color: white;">
-                                            Name <i id="sort-name" class="fas fa-sort text-white"></i>
+                                        <th class="sortable" onclick="sortHoldings('quantity')" style="cursor: pointer; color: white;">
+                                            Quantity <i id="sort-holdings-quantity" class="fas fa-sort text-white"></i>
                                         </th>
-                                        <th class="sortable" onclick="sortPortfolio('quantity')" style="cursor: pointer; color: white;">
-                                            Quantity <i id="sort-quantity" class="fas fa-sort text-white"></i>
+                                        <th class="sortable" onclick="sortHoldings('price')" style="cursor: pointer; color: white;">
+                                            Current Price <i id="sort-holdings-price" class="fas fa-sort text-white"></i>
                                         </th>
-                                        <th class="sortable" onclick="sortPortfolio('price')" style="cursor: pointer; color: white;">
-                                            Current Price <i id="sort-price" class="fas fa-sort text-white"></i>
+                                        <th class="sortable" onclick="sortHoldings('value')" style="cursor: pointer; color: white;">
+                                            Value <i id="sort-holdings-value" class="fas fa-sort text-white"></i>
                                         </th>
-                                        <th class="sortable" onclick="sortPortfolio('value')" style="cursor: pointer; color: white;">
-                                            Value <i id="sort-value" class="fas fa-sort text-white"></i>
+                                        <th class="sortable" onclick="sortHoldings('pnl')" style="cursor: pointer; color: white;">
+                                            P&L <i id="sort-holdings-pnl" class="fas fa-sort text-white"></i>
                                         </th>
-                                        <th class="sortable" onclick="sortPortfolio('target_sell')" style="cursor: pointer; color: white;">
-                                            Target Sell <i id="sort-target_sell" class="fas fa-sort text-white"></i>
+                                        <th class="sortable" onclick="sortHoldings('pnl_percent')" style="cursor: pointer; color: white;">
+                                            P&L % <i id="sort-holdings-pnl_percent" class="fas fa-sort text-white"></i>
                                         </th>
-                                        <th class="sortable" onclick="sortPortfolio('approaching_sell')" style="cursor: pointer; color: white;">
-                                            Approaching Sell % <i id="sort-approaching_sell" class="fas fa-sort text-white"></i>
+                                        <th class="sortable" onclick="sortHoldings('last_updated')" style="cursor: pointer; color: white;">
+                                            Updated <i id="sort-holdings-last_updated" class="fas fa-sort text-white"></i>
                                         </th>
-                                        <th class="sortable" onclick="sortPortfolio('target_buy')" style="cursor: pointer; color: white;">
-                                            Target Buy <i id="sort-target_buy" class="fas fa-sort text-white"></i>
-                                        </th>
-                                        <th class="sortable" onclick="sortPortfolio('projected_pnl')" style="cursor: pointer; color: white;">
-                                            Projected P&L <i id="sort-projected_pnl" class="fas fa-sort text-white"></i>
-                                        </th>
-                                        <th class="sortable" onclick="sortPortfolio('pnl')" style="cursor: pointer; color: white;">
-                                            P&L <i id="sort-pnl" class="fas fa-sort text-white"></i>
-                                        </th>
-                                        <th class="sortable" onclick="sortPortfolio('pnl_percent')" style="cursor: pointer; color: white;">
-                                            P&L % <i id="sort-pnl_percent" class="fas fa-sort text-white"></i>
-                                        </th>
+                                        <th style="color: white;">Signal</th>
                                         <th style="color: white;">Actions</th>
+                                        <th class="sortable" onclick="sortHoldings('target_proximity')" style="cursor: pointer; color: white;">
+                                            Target <i id="sort-holdings-target_proximity" class="fas fa-sort text-white"></i>
+                                        </th>
                                     </tr>
                                 </thead>
-                                <tbody id="crypto-portfolio-table">
+                                <tbody id="crypto-holdings-table">
                                     <tr>
-                                        <td colspan="13" class="text-center text-muted">Loading cryptocurrency portfolio...</td>
+                                        <td colspan="11" class="text-center text-muted">Loading holdings data...</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -659,443 +320,26 @@
             </div>
         </div>
 
-        <!-- Data Tables Row -->
-        <div class="row">
-            <!-- Recent Trades -->
-            <div class="col-lg-12">
-                <div class="card">
-                    <div class="card-header">
-                        <h5 class="mb-0">
-                            <i class="fas fa-exchange-alt me-2"></i>
-                            Recent Trades
-                            <i class="fas fa-info-circle text-muted ms-2" 
-                               data-bs-toggle="tooltip" 
-                               data-bs-placement="top" 
-                               title="Shows completed buy/sell orders from your algorithmic trading strategy with profit/loss results"></i>
-                        </h5>
-                    </div>
-                    <div class="card-body">
-                        <!-- Filter Controls for Recent Trades -->
-                        <div class="row mb-3">
-                            <div class="col-md-4">
-                                <input type="text" id="trades-filter" class="form-control form-control-sm" placeholder="Filter by symbol..." onkeyup="filterTradesTable()">
-                            </div>
-                            <div class="col-md-2">
-                                <select id="trades-action-filter" class="form-select form-select-sm" onchange="filterTradesTable()">
-                                    <option value="">All Actions</option>
-                                    <option value="BUY">Buy Only</option>
-                                    <option value="SELL">Sell Only</option>
-                                </select>
-                            </div>
-                            <div class="col-md-2">
-                                <select id="trades-pnl-filter" class="form-select form-select-sm" onchange="filterTradesTable()">
-                                    <option value="">All P&L</option>
-                                    <option value="positive">Profitable</option>
-                                    <option value="negative">Loss</option>
-                                </select>
-                            </div>
-                            <div class="col-md-2">
-                                <button class="btn btn-outline-secondary btn-sm w-100" onclick="clearTradesFilters()">
-                                    <i class="fas fa-times me-1"></i>Clear
-                                </button>
-                            </div>
-                        </div>
-
-                        <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
-                            <table class="table table-sm">
-                                <thead class="table-dark sticky-top">
-                                    <tr>
-                                        <th onclick="sortTradesTable(0)" style="cursor: pointer; color: white;" class="sortable">
-                                            Time <i id="trades-sort-0" class="fas fa-sort text-white"></i>
-                                        </th>
-                                        <th onclick="sortTradesTable(1)" style="cursor: pointer; color: white;" class="sortable">
-                                            Symbol <i id="trades-sort-1" class="fas fa-sort text-white"></i>
-                                        </th>
-                                        <th onclick="sortTradesTable(2)" style="cursor: pointer; color: white;" class="sortable">
-                                            Action <i id="trades-sort-2" class="fas fa-sort text-white"></i>
-                                        </th>
-                                        <th onclick="sortTradesTable(3)" style="cursor: pointer; color: white;" class="sortable">
-                                            Size <i id="trades-sort-3" class="fas fa-sort text-white"></i>
-                                        </th>
-                                        <th onclick="sortTradesTable(4)" style="cursor: pointer; color: white;" class="sortable">
-                                            Price <i id="trades-sort-4" class="fas fa-sort text-white"></i>
-                                        </th>
-                                        <th onclick="sortTradesTable(5)" style="cursor: pointer; color: white;" class="sortable">
-                                            P&L <i id="trades-sort-5" class="fas fa-sort text-white"></i>
-                                        </th>
-                                    </tr>
-                                </thead>
-                                <tbody id="trades-table">
-                                    <tr>
-                                        <td colspan="6" class="text-center text-muted">No trades yet</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
+        <!-- Footer -->
+        <footer class="bg-light text-center py-3 mt-5">
+            <div class="container">
+                <p class="mb-0 text-muted">
+                    <i class="fas fa-shield-alt me-1"></i>
+                    Powered by CoinGecko API | 
+                    <i class="fas fa-code me-1"></i>
+                    v2.1.0 | 
+                    <i class="fas fa-clock me-1"></i>
+                    Last updated: <span id="last-update-time">--:--</span>
+                </p>
             </div>
-
-
-        </div>
+        </footer>
     </div>
-
-    <!-- Modals -->
-    
-    <!-- Live Trading Confirmation Modal -->
-    <div class="modal fade" id="liveConfirmModal" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header bg-warning">
-                    <h5 class="modal-title">
-                        <i class="fas fa-exclamation-triangle me-2"></i>
-                        Live Trading Warning
-                    </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="alert alert-danger">
-                        <strong>WARNING:</strong> You are about to start live trading with real money!
-                    </div>
-                    <p>This will execute real trades on the live exchange. Make sure you understand the risks involved.</p>
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" id="live-confirm-checkbox">
-                        <label class="form-check-label" for="live-confirm-checkbox">
-                            I understand the risks and want to proceed with live trading
-                        </label>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-danger" onclick="confirmLiveTrading()">Start Live Trading</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Backtest Results Modal -->
-    <div class="modal fade" id="backtestModal" tabindex="-1">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">
-                        <i class="fas fa-chart-area me-2"></i>
-                        Backtest Results
-                    </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <div id="backtest-results">
-                        <!-- Results will be populated here -->
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Loading Modal -->
-    <div class="modal fade" id="loadingModal" tabindex="-1" data-bs-backdrop="static">
-        <div class="modal-dialog modal-sm">
-            <div class="modal-content">
-                <div class="modal-body text-center">
-                    <div class="spinner-border text-primary mb-3" role="status">
-                        <span class="visually-hidden">Loading...</span>
-                    </div>
-                    <p id="loading-message">Processing...</p>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Portfolio Performance Dashboard -->
-    <div id="performance-dashboard" class="d-none">
-        <div class="row mb-4">
-            <div class="col-12">
-                <div class="card">
-                    <div class="card-header d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0">
-                            <i class="fas fa-chart-bar me-2"></i>
-                            Portfolio Performance - Accumulated P&L Since Investment
-                            <i class="fas fa-info-circle ms-2 text-info" data-bs-toggle="tooltip" 
-                               title="Shows your overall investment performance over time. Tracks total P&L from your $10 initial investment in each of 103 cryptocurrencies. This view shows accumulated gains/losses since you started investing, not current market positions."></i>
-                        </h5>
-                        <div>
-                            <button class="btn btn-primary btn-sm" onclick="updatePerformanceData()">
-                                <i class="fas fa-sync-alt me-1"></i>Refresh
-                            </button>
-                            <button class="btn btn-secondary btn-sm" onclick="showMainDashboard()">
-                                <i class="fas fa-arrow-left me-1"></i>Back to Dashboard
-                            </button>
-                        </div>
-                    </div>
-                    <div class="card-body">
-                        <div class="row mb-3">
-                            <div class="col-md-2">
-                                <div class="performance-metric">
-                                    <h6>Total Invested</h6>
-                                    <h4 id="perf-total-invested" class="text-info">$0.00</h4>
-                                </div>
-                            </div>
-                            <div class="col-md-2">
-                                <div class="performance-metric">
-                                    <h6>Current Value</h6>
-                                    <h4 id="perf-current-value" class="text-primary">$0.00</h4>
-                                </div>
-                            </div>
-                            <div class="col-md-2">
-                                <div class="performance-metric">
-                                    <h6>Total P&L</h6>
-                                    <h4 id="perf-total-pnl" class="text-success">$0.00</h4>
-                                </div>
-                            </div>
-                            <div class="col-md-2">
-                                <div class="performance-metric">
-                                    <h6>Overall Return</h6>
-                                    <h4 id="perf-overall-return" class="text-warning">0.00%</h4>
-                                </div>
-                            </div>
-                            <div class="col-md-2">
-                                <div class="performance-metric">
-                                    <h6>Winners</h6>
-                                    <h4 id="perf-winners" class="text-success">0</h4>
-                                </div>
-                            </div>
-                            <div class="col-md-2">
-                                <div class="performance-metric">
-                                    <h6>Win Rate</h6>
-                                    <h4 id="perf-win-rate" class="text-info">0.00%</h4>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- Filter Controls for Performance -->
-                        <div class="row mb-3">
-                            <div class="col-md-3">
-                                <input type="text" id="performance-filter" class="form-control form-control-sm" placeholder="Filter by symbol or name..." onkeyup="filterPerformanceTable()">
-                            </div>
-                            <div class="col-md-2">
-                                <select id="performance-pnl-filter" class="form-select form-select-sm" onchange="filterPerformanceTable()">
-                                    <option value="">All P&L</option>
-                                    <option value="positive">Profitable</option>
-                                    <option value="negative">Loss</option>
-                                </select>
-                            </div>
-                            <div class="col-md-2">
-                                <select id="performance-return-filter" class="form-select form-select-sm" onchange="filterPerformanceTable()">
-                                    <option value="">All Returns</option>
-                                    <option value="high">&gt;50%</option>
-                                    <option value="medium">0-50%</option>
-                                    <option value="low">&lt;0%</option>
-                                </select>
-                            </div>
-                            <div class="col-md-2">
-                                <select id="performance-status-filter" class="form-select form-select-sm" onchange="filterPerformanceTable()">
-                                    <option value="">All Status</option>
-                                    <option value="Winner">Winners</option>
-                                    <option value="Loser">Losers</option>
-                                </select>
-                            </div>
-                            <div class="col-md-2">
-                                <button class="btn btn-outline-secondary btn-sm w-100" onclick="clearPerformanceFilters()">
-                                    <i class="fas fa-times me-1"></i>Clear
-                                </button>
-                            </div>
-                        </div>
-
-                        <div class="table-responsive" style="max-height: 500px; overflow-y: auto;">
-                            <table class="table table-striped table-hover" id="performance-table">
-                                <thead class="table-dark sticky-top">
-                                    <tr>
-                                        <th onclick="sortPerformanceTable(0)" style="cursor: pointer; color: white;" class="sortable">
-                                            Rank <i class="fas fa-sort text-white ms-1"></i>
-                                        </th>
-                                        <th onclick="sortPerformanceTable(1)" style="cursor: pointer; color: white;" class="sortable">
-                                            Symbol <i class="fas fa-sort text-white ms-1"></i>
-                                        </th>
-                                        <th onclick="sortPerformanceTable(2)" style="cursor: pointer; color: white;" class="sortable">
-                                            Name <i class="fas fa-sort text-white ms-1"></i>
-                                        </th>
-                                        <th onclick="sortPerformanceTable(3)" style="cursor: pointer; color: white;" class="sortable">
-                                            Days Invested <i class="fas fa-sort text-white ms-1"></i>
-                                        </th>
-                                        <th onclick="sortPerformanceTable(4)" style="cursor: pointer; color: white;" class="sortable">
-                                            Total Invested <i class="fas fa-sort text-white ms-1"></i>
-                                        </th>
-                                        <th onclick="sortPerformanceTable(5)" style="cursor: pointer; color: white;" class="sortable">
-                                            Current Value <i class="fas fa-sort text-white ms-1"></i>
-                                        </th>
-                                        <th onclick="sortPerformanceTable(6)" style="cursor: pointer; color: white;" class="sortable">
-                                            Total P&L <i class="fas fa-sort text-white ms-1"></i>
-                                        </th>
-                                        <th onclick="sortPerformanceTable(7)" style="cursor: pointer; color: white;" class="sortable">
-                                            P&L % <i class="fas fa-sort text-white ms-1"></i>
-                                        </th>
-                                        <th onclick="sortPerformanceTable(8)" style="cursor: pointer; color: white;" class="sortable">
-                                            Daily Return % <i class="fas fa-sort text-white ms-1"></i>
-                                        </th>
-                                        <th onclick="sortPerformanceTable(9)" style="cursor: pointer; color: white;" class="sortable">
-                                            Status <i class="fas fa-sort text-white ms-1"></i>
-                                        </th>
-                                    </tr>
-                                </thead>
-                                <tbody id="performance-table-body">
-                                    <tr><td colspan="10" class="text-center">Loading performance data...</td></tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Current Positions Dashboard -->
-    <div id="positions-dashboard" class="d-none">
-        <div class="row mb-4">
-            <div class="col-12">
-                <div class="card">
-                    <div class="card-header d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0">
-                            <i class="fas fa-coins me-2"></i>
-                            Current Market Positions - What You Actually Own
-                            <i class="fas fa-info-circle ms-2 text-info" data-bs-toggle="tooltip" 
-                               title="Displays your current cryptocurrency holdings and their real-time market value. Shows exact quantities you own, current prices, unrealized P&L, and position percentages. This is your live portfolio snapshot of actual assets."></i>
-                        </h5>
-                        <div>
-                            <button class="btn btn-primary btn-sm" onclick="updatePositionsData()">
-                                <i class="fas fa-sync-alt me-1"></i>Refresh
-                            </button>
-                            <button class="btn btn-secondary btn-sm" onclick="showMainDashboard()">
-                                <i class="fas fa-arrow-left me-1"></i>Back to Dashboard
-                            </button>
-                        </div>
-                    </div>
-                    <div class="card-body">
-                        <div class="row mb-3">
-                            <div class="col-md-3">
-                                <div class="position-metric">
-                                    <h6>Total Positions</h6>
-                                    <h4 id="pos-total-count" class="text-info">0</h4>
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <div class="position-metric">
-                                    <h6>Total Position Value</h6>
-                                    <h4 id="pos-total-value" class="text-primary">$0.00</h4>
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <div class="position-metric">
-                                    <h6>Unrealized P&L</h6>
-                                    <h4 id="pos-unrealized-pnl" class="text-success">$0.00</h4>
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <div class="position-metric">
-                                    <h6>Strong Gains</h6>
-                                    <h4 id="pos-strong-gains" class="text-success">0</h4>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="table-responsive">
-                            <table class="table table-striped table-hover" id="positions-table">
-                                <thead class="table-dark">
-                                    <tr>
-                                        <th onclick="sortPositionsTable(0)" style="cursor: pointer;" class="sortable">
-                                            Symbol <i class="fas fa-sort text-muted ms-1"></i>
-                                        </th>
-                                        <th onclick="sortPositionsTable(1)" style="cursor: pointer;" class="sortable">
-                                            Name <i class="fas fa-sort text-muted ms-1"></i>
-                                        </th>
-                                        <th onclick="sortPositionsTable(2)" style="cursor: pointer;" class="sortable">
-                                            Quantity <i class="fas fa-sort text-muted ms-1"></i>
-                                        </th>
-                                        <th onclick="sortPositionsTable(3)" style="cursor: pointer;" class="sortable">
-                                            Current Price <i class="fas fa-sort text-muted ms-1"></i>
-                                        </th>
-                                        <th onclick="sortPositionsTable(4)" style="cursor: pointer;" class="sortable">
-                                            Current Value <i class="fas fa-sort text-muted ms-1"></i>
-                                        </th>
-                                        <th onclick="sortPositionsTable(5)" style="cursor: pointer;" class="sortable">
-                                            Position % <i class="fas fa-sort text-muted ms-1"></i>
-                                        </th>
-                                        <th onclick="sortPositionsTable(6)" style="cursor: pointer;" class="sortable">
-                                            Unrealized P&L <i class="fas fa-sort text-muted ms-1"></i>
-                                        </th>
-                                        <th onclick="sortPositionsTable(7)" style="cursor: pointer;" class="sortable">
-                                            P&L % <i class="fas fa-sort text-muted ms-1"></i>
-                                        </th>
-                                        <th onclick="sortPositionsTable(8)" style="cursor: pointer;" class="sortable">
-                                            Avg Buy Price <i class="fas fa-sort text-muted ms-1"></i>
-                                        </th>
-                                        <th onclick="sortPositionsTable(9)" style="cursor: pointer;" class="sortable">
-                                            Potential Profit <i class="fas fa-sort text-muted ms-1"></i>
-                                        </th>
-                                        <th onclick="sortPositionsTable(10)" style="cursor: pointer;" class="sortable">
-                                            Status <i class="fas fa-sort text-muted ms-1"></i>
-                                        </th>
-                                    </tr>
-                                </thead>
-                                <tbody id="positions-table-body">
-                                    <tr><td colspan="11" class="text-center">Loading current positions...</td></tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Footer -->
-    <footer class="bg-dark text-light py-4 mt-5">
-        <div class="container-fluid">
-            <div class="row">
-                <div class="col-md-6">
-                    <p class="mb-1"><strong>ARM Digital Enterprises</strong></p>
-                    <p class="mb-2 text-white">ABN: 92 384 831 384</p>
-                    <p class="mb-0 text-white"><small>Algorithmic Trading System</small></p>
-                    <p class="mb-1 text-white"><small>Professional Cryptocurrency Portfolio Management</small></p>
-                    <p class="mb-0 text-info"><small><strong>Version: {{ version }}</strong></small></p>
-                </div>
-                <div class="col-md-6 text-md-end">
-                    <div class="mb-2">
-                        <p class="mb-1"><small><strong>Copyright Notice & Disclaimers</strong></small></p>
-                        <p class="mb-1 text-white" style="font-size: 0.75rem;">
-                            © 2025 ARM Digital Enterprises. All rights reserved. This software and its contents are protected by Australian and international copyright laws.
-                        </p>
-                    </div>
-                    <div class="mb-0">
-                        <p class="mb-1 text-white" style="font-size: 0.75rem;">
-                            <strong>Investment Disclaimer:</strong> This system is for informational purposes only. Cryptocurrency trading involves substantial risk of loss. Past performance does not guarantee future results. Consult qualified financial advisors before making investment decisions.
-                        </p>
-                        <p class="mb-0 text-white" style="font-size: 0.75rem;">
-                            <strong>Compliance:</strong> This system complies with Australian Tax Office (ATO) requirements for capital gains reporting. Users are responsible for their own tax obligations and compliance with applicable laws and regulations.
-                        </p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </footer>
 
     <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    
-    <!-- Initialize Bootstrap Tooltips -->
-    <script>
-        // Enable all tooltips
-        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-            return new bootstrap.Tooltip(tooltipTriggerEl);
-        });
-    </script>
-    
-    <!-- Custom JS -->
-    <script src="{{ url_for('static', filename='app.js') }}?v={{ cache_version }}"></script>
-    <script>
-        // Set cache version for future requests
-        window.cacheVersion = {{ cache_version }};
-    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Application JS -->
+    <script src="{{ url_for('static', filename='app.js') }}?v={{ timestamp }}"></script>
 </body>
 </html>
