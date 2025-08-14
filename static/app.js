@@ -2748,3 +2748,165 @@ function sortPortfolio(columnType, toggleDirection = true) {
     // Re-append sorted rows
     rows.forEach(row => tbody.appendChild(row));
 }
+
+// Currency conversion functionality
+let currentCurrency = 'USD';
+let exchangeRates = {};
+let lastRateUpdate = null;
+
+// Currency conversion symbols mapping
+const currencySymbols = {
+    USD: '$',
+    EUR: '€',
+    GBP: '£',
+    JPY: '¥',
+    AUD: 'A$',
+    CAD: 'C$',
+    CHF: 'CHF ',
+    CNY: '¥',
+    KRW: '₩',
+    BTC: '₿',
+    ETH: 'Ξ'
+};
+
+async function changeCurrency() {
+    const selectedCurrency = document.getElementById('currency-selector').value;
+    
+    if (selectedCurrency === currentCurrency) {
+        return; // No change needed
+    }
+    
+    currentCurrency = selectedCurrency;
+    
+    // Show loading indicator
+    document.getElementById('exchange-rate').textContent = 'Loading...';
+    document.getElementById('rate-updated').textContent = 'Updating...';
+    
+    try {
+        await fetchExchangeRates();
+        updateCurrencyDisplay();
+        
+        // Refresh portfolio to show new currency values
+        if (window.tradingApp) {
+            window.tradingApp.updateDashboard();
+        }
+        
+        // Show toast notification
+        if (window.tradingApp && window.tradingApp.showToast) {
+            window.tradingApp.showToast(`Currency changed to ${selectedCurrency}`, 'success');
+        }
+        
+    } catch (error) {
+        console.error('Error changing currency:', error);
+        if (window.tradingApp && window.tradingApp.showToast) {
+            window.tradingApp.showToast('Failed to update exchange rates', 'danger');
+        }
+        
+        // Revert to previous currency
+        document.getElementById('currency-selector').value = currentCurrency;
+    }
+}
+
+async function fetchExchangeRates() {
+    try {
+        // For demo purposes, use simulated exchange rates
+        // In production, this would call a real exchange rate API
+        const baseRates = {
+            USD: 1.0,
+            EUR: 0.85,
+            GBP: 0.73,
+            JPY: 110.0,
+            AUD: 1.35,
+            CAD: 1.25,
+            CHF: 0.92,
+            CNY: 6.45,
+            KRW: 1180.0,
+            BTC: 0.0000083, // 1 USD = 0.0000083 BTC (approx)
+            ETH: 0.000213   // 1 USD = 0.000213 ETH (approx)
+        };
+        
+        exchangeRates = baseRates;
+        lastRateUpdate = new Date();
+        
+        return exchangeRates;
+        
+    } catch (error) {
+        console.error('Error fetching exchange rates:', error);
+        throw error;
+    }
+}
+
+async function refreshExchangeRates() {
+    document.getElementById('exchange-rate').textContent = 'Refreshing...';
+    document.getElementById('rate-updated').textContent = 'Updating...';
+    
+    try {
+        await fetchExchangeRates();
+        updateCurrencyDisplay();
+        
+        if (window.tradingApp && window.tradingApp.showToast) {
+            window.tradingApp.showToast('Exchange rates updated', 'success');
+        }
+        
+    } catch (error) {
+        console.error('Error refreshing rates:', error);
+        if (window.tradingApp && window.tradingApp.showToast) {
+            window.tradingApp.showToast('Failed to refresh exchange rates', 'danger');
+        }
+    }
+}
+
+function updateCurrencyDisplay() {
+    const rate = exchangeRates[currentCurrency] || 1.0;
+    const symbol = currencySymbols[currentCurrency] || currentCurrency;
+    
+    // Update exchange rate display
+    if (currentCurrency === 'USD') {
+        document.getElementById('exchange-rate').textContent = '1.00 USD';
+    } else {
+        document.getElementById('exchange-rate').textContent = `${rate.toFixed(6)} ${currentCurrency} per USD`;
+    }
+    
+    // Update last updated time
+    if (lastRateUpdate) {
+        const timeAgo = Math.floor((new Date() - lastRateUpdate) / 1000);
+        if (timeAgo < 60) {
+            document.getElementById('rate-updated').textContent = 'Just now';
+        } else if (timeAgo < 3600) {
+            document.getElementById('rate-updated').textContent = `${Math.floor(timeAgo / 60)}m ago`;
+        } else {
+            document.getElementById('rate-updated').textContent = `${Math.floor(timeAgo / 3600)}h ago`;
+        }
+    }
+}
+
+function convertCurrency(usdAmount) {
+    if (!exchangeRates[currentCurrency]) {
+        return usdAmount; // Fallback to USD if rate not available
+    }
+    
+    return usdAmount * exchangeRates[currentCurrency];
+}
+
+function formatCurrencyValue(usdAmount, decimals = 2) {
+    const convertedAmount = convertCurrency(usdAmount);
+    const symbol = currencySymbols[currentCurrency] || currentCurrency + ' ';
+    
+    if (currentCurrency === 'BTC' || currentCurrency === 'ETH') {
+        return `${symbol}${convertedAmount.toFixed(8)}`;
+    } else if (currentCurrency === 'JPY' || currentCurrency === 'KRW') {
+        return `${symbol}${Math.round(convertedAmount).toLocaleString()}`;
+    } else {
+        return `${symbol}${convertedAmount.toFixed(decimals)}`;
+    }
+}
+
+// Initialize currency functionality when DOM loads
+document.addEventListener('DOMContentLoaded', () => {
+    // Initialize currency functionality
+    fetchExchangeRates().then(() => {
+        updateCurrencyDisplay();
+    }).catch(error => {
+        console.error('Failed to initialize exchange rates:', error);
+    });
+});

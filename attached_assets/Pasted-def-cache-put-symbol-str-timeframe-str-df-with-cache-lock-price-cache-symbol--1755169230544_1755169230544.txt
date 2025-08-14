@@ -1,0 +1,51 @@
+def cache_put(symbol: str, timeframe: str, df):
+    with cache_lock:
+        price_cache[(symbol, timeframe)] = df
+
+def cache_get(symbol: str, timeframe: str):
+    with cache_lock:
+        return price_cache.get((symbol, timeframe))
+
+def background_warmup():
+    """Fetch a small, useful subset after the server is already listening."""
+    global warmup
+    if warmup["started"]:
+        return
+    warmup.update({"started": True, "done": False, "error": "", "loaded": []})
+    try:
+        # Use the same exchange your traders use (avoid multiple auths)
+        ex = OKXAdapter(Config()).exchange if "OKXAdapter" in globals() else None
+        if ex is None:
+            # Fallback if you don't have adapters wired here
+            import ccxt
+            ex = ccxt.okx({'enableRateLimit': True})
+            ex.set_sandbox_mode(bool(int(os.getenv("OKX_DEMO", "1"))))
+        # Preload markets (fast) but DO NOT loop all symbols
+        ex.load_markets()
+        symbols = WATCHLIST[:MAX_STARTUP_SYMBOLS]
+        tf = Config().get('trading', 'default_timeframe', '1h')
+
+        start = time.time()
+        for i in range(0, len(symbols), WARMUP_CHUNK_SIZE):
+            batch = symbols[i:i+WARMUP_CHUNK_SIZE]
+            for sym in batch:
+                try:
+                    ohlcv = ex.fetch_ohlcv(sym, timeframe=tf, limit=STARTUP_OHLCV_LIMIT)
+                    import pandas as pd
+                    df = pd.DataFrame(ohlcv, columns=["ts","open","high","low","close","volume"])
+                    df["ts"] = pd.to_datetime(df["ts"], unit="ms", utc=True)
+                    df.set_index("ts", inplace=True)
+                    cache_put(sym, tf, df)
+                    warmup["loaded"].append(sym)
+                except Exception as fe:
+                    app.logger.warning("Warmup fetch failed for %s: %s", sym, fe)
+            time.sleep(WARMUP_SLEEP_SEC)
+            # Never hold the main thread hostage—respect start-up budget
+            if time.time() - start > STARTUP_TIMEOUT_SEC:
+                break
+
+        warmup["done"] = True
+        app.logger.info("Warm-up done. Loaded: %s", ",".join(warmup["loaded"]))
+    except Exception as e:
+        warmup.update({"error": str(e), "done": False})
+        app.logger.exception("Warm-up error: %s", e)

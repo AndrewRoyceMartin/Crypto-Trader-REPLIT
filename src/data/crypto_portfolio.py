@@ -172,11 +172,11 @@ class CryptoPortfolioManager:
         """Initialize portfolio with starting values for each cryptocurrency."""
         portfolio = {}
         
-        # Get live prices for top 20 cryptocurrencies only during initialization to speed up startup
-        symbols = [crypto["symbol"] for crypto in self.crypto_list[:20]]  # Limit to first 20 for faster startup
+        # Get live prices for top 10 cryptocurrencies only during initialization to speed up startup
+        symbols = [crypto["symbol"] for crypto in self.crypto_list[:10]]  # Limit to first 10 for faster startup
         live_prices = self.price_api.get_multiple_prices(symbols)
         
-        for crypto in self.crypto_list[:20]:  # Initialize only top 20 for faster startup
+        for crypto in self.crypto_list[:10]:  # Initialize only top 10 for faster startup
             symbol = crypto["symbol"]
             # Use live price if available, otherwise fallback to realistic simulation
             if symbol in live_prices:
