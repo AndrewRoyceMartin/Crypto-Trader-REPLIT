@@ -298,9 +298,16 @@ class CryptoPriceAPI:
             # Handle any symbols that failed to fetch with fallback prices
             for symbol in uncached_symbols:
                 if symbol not in fresh_prices:
-                    fallback_data = self._get_fallback_price_for_symbol(symbol)
-                    if fallback_data:
-                        all_results[symbol] = fallback_data
+                    # Use simple fallback price based on symbol (for demo/simulation purposes)
+                    fallback_price = 1.0  # Default fallback
+                    fallback_data = {
+                        'price': fallback_price,
+                        'is_live': False,
+                        'timestamp': current_datetime.isoformat(),
+                        'source': 'Fallback_Demo'
+                    }
+                    all_results[symbol] = fallback_data
+                    self.logger.warning(f"Using fallback price for unmapped symbol {symbol}: ${fallback_price}")
             
             return all_results
             
