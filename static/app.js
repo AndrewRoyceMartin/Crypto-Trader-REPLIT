@@ -616,15 +616,17 @@ class TradingApp {
             // Action cell
             const actionCell = document.createElement('td');
             const actionSpan = document.createElement('span');
-            const actionClass = trade.action === 'buy' ? 'trade-buy' : 'trade-sell';
+            const action = trade.action || trade.side || 'unknown';
+            const actionClass = action.toLowerCase() === 'buy' ? 'trade-buy' : 'trade-sell';
             actionSpan.className = actionClass;
-            actionSpan.textContent = String(trade.action).toUpperCase();
+            actionSpan.textContent = String(action).toUpperCase();
             actionCell.appendChild(actionSpan);
             row.appendChild(actionCell);
             
             // Size cell
             const sizeCell = document.createElement('td');
-            sizeCell.textContent = parseFloat(trade.size).toFixed(6);
+            const size = trade.size || trade.quantity || 0;
+            sizeCell.textContent = parseFloat(size).toFixed(6);
             row.appendChild(sizeCell);
             
             // Price cell

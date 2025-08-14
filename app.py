@@ -536,6 +536,21 @@ def api_crypto_portfolio():
         total_initial_value = 0
         total_current_value = 0
         
+        # Cryptocurrency names mapping
+        crypto_names = {
+            "BTC": "Bitcoin",
+            "ETH": "Ethereum", 
+            "SOL": "Solana",
+            "XRP": "XRP",
+            "DOGE": "Dogecoin",
+            "ADA": "Cardano",
+            "AVAX": "Avalanche",
+            "LINK": "Chainlink",
+            "UNI": "Uniswap",
+            "BNB": "BNB"
+        }
+        
+        rank = 1
         for symbol, price_info in live_prices.items():
             if 'price' in price_info:
                 initial_value = 100.0  # Starting value
@@ -548,7 +563,9 @@ def api_crypto_portfolio():
                 total_current_value += current_value
                 
                 cryptocurrencies.append({
+                    "rank": rank,
                     "symbol": symbol,
+                    "name": crypto_names.get(symbol, symbol),
                     "quantity": quantity,
                     "current_price": price_info['price'],
                     "initial_value": initial_value,
@@ -560,6 +577,7 @@ def api_crypto_portfolio():
                     "projected_sell_pnl": current_value * 0.10,  # 10% profit target
                     "is_live": price_info.get('is_live', True)
                 })
+                rank += 1
         
         total_pnl = total_current_value - total_initial_value
         total_pnl_percent = (total_pnl / total_initial_value) * 100 if total_initial_value > 0 else 0
