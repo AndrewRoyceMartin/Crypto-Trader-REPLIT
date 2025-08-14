@@ -2042,49 +2042,194 @@ function displayPositionsData(data) {
     });
 }
 
-// Table Sorting Functions
+// Enhanced Table Sorting Functions with Visual Feedback
+window.perfSortState = { column: -1, direction: 'desc' };
+
 function sortPerformanceTable(columnIndex) {
     const table = document.getElementById('performance-table');
     const tbody = table.querySelector('tbody');
     const rows = Array.from(tbody.querySelectorAll('tr'));
+    
+    // Determine sort direction
+    if (window.perfSortState.column === columnIndex) {
+        window.perfSortState.direction = window.perfSortState.direction === 'asc' ? 'desc' : 'asc';
+    } else {
+        window.perfSortState.column = columnIndex;
+        window.perfSortState.direction = 'desc';
+    }
+    
+    // Clear all sort indicators and set active one
+    table.querySelectorAll('th i.fas').forEach(icon => {
+        icon.className = 'fas fa-sort text-muted ms-1';
+    });
+    const currentHeader = table.querySelector(`th:nth-child(${columnIndex + 1}) i.fas`);
+    if (currentHeader) {
+        currentHeader.className = `fas fa-sort-${window.perfSortState.direction === 'asc' ? 'up' : 'down'} text-primary ms-1`;
+    }
     
     rows.sort((a, b) => {
         const aVal = a.cells[columnIndex].textContent.trim();
         const bVal = b.cells[columnIndex].textContent.trim();
         
         // Try to parse as number
-        const aNum = parseFloat(aVal.replace(/[$,%]/g, ''));
-        const bNum = parseFloat(bVal.replace(/[$,%]/g, ''));
+        const aNum = parseFloat(aVal.replace(/[$,%+\-]/g, ''));
+        const bNum = parseFloat(bVal.replace(/[$,%+\-]/g, ''));
         
+        let result = 0;
         if (!isNaN(aNum) && !isNaN(bNum)) {
-            return bNum - aNum; // Descending for numbers
+            result = aNum - bNum;
+        } else {
+            result = aVal.localeCompare(bVal);
         }
-        return aVal.localeCompare(bVal); // Ascending for strings
+        
+        return window.perfSortState.direction === 'asc' ? result : -result;
     });
     
     rows.forEach(row => tbody.appendChild(row));
 }
+
+window.posSortState = { column: -1, direction: 'desc' };
 
 function sortPositionsTable(columnIndex) {
     const table = document.getElementById('positions-table');
     const tbody = table.querySelector('tbody');
     const rows = Array.from(tbody.querySelectorAll('tr'));
     
+    // Determine sort direction
+    if (window.posSortState.column === columnIndex) {
+        window.posSortState.direction = window.posSortState.direction === 'asc' ? 'desc' : 'asc';
+    } else {
+        window.posSortState.column = columnIndex;
+        window.posSortState.direction = 'desc';
+    }
+    
+    // Clear all sort indicators and set active one
+    table.querySelectorAll('th i.fas').forEach(icon => {
+        icon.className = 'fas fa-sort text-muted ms-1';
+    });
+    const currentHeader = table.querySelector(`th:nth-child(${columnIndex + 1}) i.fas`);
+    if (currentHeader) {
+        currentHeader.className = `fas fa-sort-${window.posSortState.direction === 'asc' ? 'up' : 'down'} text-primary ms-1`;
+    }
+    
     rows.sort((a, b) => {
         const aVal = a.cells[columnIndex].textContent.trim();
         const bVal = b.cells[columnIndex].textContent.trim();
         
         // Try to parse as number
-        const aNum = parseFloat(aVal.replace(/[$,%]/g, ''));
-        const bNum = parseFloat(bVal.replace(/[$,%]/g, ''));
+        const aNum = parseFloat(aVal.replace(/[$,%+\-]/g, ''));
+        const bNum = parseFloat(bVal.replace(/[$,%+\-]/g, ''));
         
+        let result = 0;
         if (!isNaN(aNum) && !isNaN(bNum)) {
-            return bNum - aNum; // Descending for numbers
+            result = aNum - bNum;
+        } else {
+            result = aVal.localeCompare(bVal);
         }
-        return aVal.localeCompare(bVal); // Ascending for strings
+        
+        return window.posSortState.direction === 'asc' ? result : -result;
     });
     
     rows.forEach(row => tbody.appendChild(row));
 }
 
 /* Cache refresh - Wed Aug 14 03:09:38 AM UTC 2025 */
+
+
+// Enhanced sorting for main crypto portfolio table
+window.portfolioSortState = { column: '', direction: 'desc' };
+
+function sortPortfolio(columnType) {
+    const table = document.querySelector('#crypto-portfolio-table').closest('table');
+    const tbody = document.getElementById('crypto-portfolio-table');
+    const rows = Array.from(tbody.querySelectorAll('tr')).filter(row => row.cells.length > 1);
+    
+    // Determine sort direction
+    if (window.portfolioSortState.column === columnType) {
+        window.portfolioSortState.direction = window.portfolioSortState.direction === 'asc' ? 'desc' : 'asc';
+    } else {
+        window.portfolioSortState.column = columnType;
+        window.portfolioSortState.direction = 'desc';
+    }
+    
+    // Clear all sort indicators
+    table.querySelectorAll('th i.fas').forEach(icon => {
+        icon.className = 'fas fa-sort text-muted';
+    });
+    
+    // Set active sort indicator
+    const currentIcon = document.getElementById(`sort-${columnType}`);
+    if (currentIcon) {
+        currentIcon.className = `fas fa-sort-${window.portfolioSortState.direction === 'asc' ? 'up' : 'down'} text-primary`;
+    }
+    
+    // Sort rows based on column type
+    rows.sort((a, b) => {
+        let aVal, bVal;
+        
+        switch(columnType) {
+            case 'rank':
+                aVal = parseInt(a.cells[0].textContent) || 0;
+                bVal = parseInt(b.cells[0].textContent) || 0;
+                break;
+            case 'symbol':
+                aVal = a.cells[1].textContent.trim();
+                bVal = b.cells[1].textContent.trim();
+                break;
+            case 'name':
+                aVal = a.cells[2].textContent.trim();
+                bVal = b.cells[2].textContent.trim();
+                break;
+            case 'quantity':
+                aVal = parseFloat(a.cells[3].textContent.replace(/[,]/g, '')) || 0;
+                bVal = parseFloat(b.cells[3].textContent.replace(/[,]/g, '')) || 0;
+                break;
+            case 'price':
+                aVal = parseFloat(a.cells[4].textContent.replace(/[$,]/g, '')) || 0;
+                bVal = parseFloat(b.cells[4].textContent.replace(/[$,]/g, '')) || 0;
+                break;
+            case 'value':
+                aVal = parseFloat(a.cells[5].textContent.replace(/[$,]/g, '')) || 0;
+                bVal = parseFloat(b.cells[5].textContent.replace(/[$,]/g, '')) || 0;
+                break;
+            case 'target_sell':
+                aVal = parseFloat(a.cells[6].textContent.replace(/[$,]/g, '')) || 0;
+                bVal = parseFloat(b.cells[6].textContent.replace(/[$,]/g, '')) || 0;
+                break;
+            case 'approaching_sell':
+                aVal = parseFloat(a.cells[7].textContent.replace(/[%]/g, '')) || 0;
+                bVal = parseFloat(b.cells[7].textContent.replace(/[%]/g, '')) || 0;
+                break;
+            case 'target_buy':
+                aVal = parseFloat(a.cells[8].textContent.replace(/[$,]/g, '')) || 0;
+                bVal = parseFloat(b.cells[8].textContent.replace(/[$,]/g, '')) || 0;
+                break;
+            case 'projected_pnl':
+                aVal = parseFloat(a.cells[9].textContent.replace(/[$,+\-]/g, '')) || 0;
+                bVal = parseFloat(b.cells[9].textContent.replace(/[$,+\-]/g, '')) || 0;
+                break;
+            case 'pnl':
+                aVal = parseFloat(a.cells[10].textContent.replace(/[$,+\-]/g, '')) || 0;
+                bVal = parseFloat(b.cells[10].textContent.replace(/[$,+\-]/g, '')) || 0;
+                break;
+            case 'pnl_percent':
+                aVal = parseFloat(a.cells[11].textContent.replace(/[%+\-]/g, '')) || 0;
+                bVal = parseFloat(b.cells[11].textContent.replace(/[%+\-]/g, '')) || 0;
+                break;
+            default:
+                return 0;
+        }
+        
+        let result = 0;
+        if (typeof aVal === 'number' && typeof bVal === 'number') {
+            result = aVal - bVal;
+        } else {
+            result = String(aVal).localeCompare(String(bVal));
+        }
+        
+        return window.portfolioSortState.direction === 'asc' ? result : -result;
+    });
+    
+    // Re-append sorted rows
+    rows.forEach(row => tbody.appendChild(row));
+}

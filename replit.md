@@ -66,7 +66,13 @@ Preferred communication style: Simple, everyday language.
 - ✅ **CRYPTOCURRENCY PORTFOLIO EXPANSION**: Added user-requested cryptocurrencies BADGER, AMP, and GALA to the existing 100+ crypto portfolio
 - ✅ **PORTFOLIO VERIFICATION**: Confirmed all user-requested cryptos are present: ETH, XRP, BTC, TRX, PEPE, SOL, BADGER, ADA, LTC, DOGE, SHIB, 1INCH, AMP, GALA
 - ✅ **RANKING SYSTEM UPDATE**: Properly integrated new cryptocurrencies into the portfolio ranking system with correct numbering
-- ✅ **SYSTEM READY FOR DEPLOYMENT**: All requested features implemented, algorithm optimized, portfolio complete
+- ✅ **INVESTMENT AMOUNT ADJUSTMENT**: Changed initial investment from $100 to $10 per cryptocurrency (total portfolio: $1,030 for 103 cryptocurrencies)
+- ✅ **ENHANCED TABLE SORTING**: Added clickable column headers with visual feedback (sort arrows) for all three dashboard tables
+- ✅ **IMPROVED INFORMATION TOOLTIPS**: Updated information icons with detailed, accurate descriptions for each dashboard section
+- ✅ **PORTFOLIO PERFORMANCE DASHBOARD**: Displays accumulated P&L since investment with comprehensive tracking metrics
+- ✅ **CURRENT HOLDINGS DASHBOARD**: Shows actual cryptocurrency positions with real-time market values and unrealized P&L
+- ✅ **VISUAL SORT INDICATORS**: All tables now show active sort direction with up/down arrow icons and color feedback
+- ✅ **SYSTEM READY FOR DEPLOYMENT**: All requested features implemented, algorithm optimized, portfolio complete with 103 cryptocurrencies
 
 **Next Enhancement Opportunities**: 
 - Individual crypto price charts and trading history  
