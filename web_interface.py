@@ -1355,7 +1355,16 @@ def export_ato_tax_statement():
         # Get trading history for actual buy/sell transactions
         trades_data = []
         if db_manager:
-            trades_data = db_manager.get_trades(mode='paper')  # Get all trading transactions
+            try:
+                trades_result = db_manager.get_trades(mode='paper')  # Get all trading transactions
+                if isinstance(trades_result, list):
+                    trades_data = trades_result
+                else:
+                    # If it returns a DataFrame, convert to list of dicts
+                    trades_data = trades_result.to_dict('records') if hasattr(trades_result, 'to_dict') else []
+            except Exception as e:
+                print(f"Error getting trades data: {e}")
+                trades_data = []
         
         # Prepare ATO-compliant CSV
         output = StringIO()
