@@ -12,9 +12,6 @@ class TradingApp {
         this.reconnectCountdown = null;
         this.reconnectInterval = null;
         this.nextRetryTime = null;
-        this.startTime = null;
-        this.uptimeInterval = null;
-        this.uptimeStarted = false;
         this.chartData = {
             portfolio: [],
             returns: [],
@@ -139,8 +136,6 @@ class TradingApp {
             
             // Update server uptime from API response
             if (data.server_uptime_seconds !== undefined) {
-                this.lastServerUptimeSeconds = data.server_uptime_seconds;
-                this.lastUptimeUpdate = Date.now();
                 this.updateUptimeDisplay(data.server_uptime_seconds);
             }
             
@@ -884,68 +879,25 @@ class TradingApp {
         }
     }
     
-    startUptimeCounter() {
-        // Server uptime tracking - no longer needed as we get this from server
-        if (this.uptimeInterval) return; // Already started
-        
-        // Update uptime display every second based on server data
-        this.uptimeInterval = setInterval(() => {
-            this.updateUptimeDisplay();
-        }, 1000);
-        
-        this.uptimeStarted = true;
-    }
+
     
-    stopUptimeCounter() {
-        if (this.uptimeInterval) {
-            clearInterval(this.uptimeInterval);
-            this.uptimeInterval = null;
-        }
-        this.uptimeStarted = false;
-    }
-    
-    restartUptimeCounter() {
-        // Server tracks connection uptime, so just ensure display is updating
-        this.startUptimeCounter();
-    }
-    
-    updateUptimeDisplay(serverUptimeSeconds = null, connectionUptimeSeconds = null) {
+    updateUptimeDisplay(serverUptimeSeconds, connectionUptimeSeconds) {
         const uptimeElement = document.getElementById('system-uptime');
         const connectionUptimeElement = document.getElementById('connection-uptime');
         
-        if (uptimeElement) {
-            if (serverUptimeSeconds !== null) {
-                // Use server-provided uptime
-                const uptimeText = this.formatUptime(serverUptimeSeconds);
-                uptimeElement.textContent = uptimeText;
-            } else if (this.lastServerUptimeSeconds !== undefined) {
-                // Increment from last known server uptime
-                const currentIncrement = Math.floor((Date.now() - (this.lastUptimeUpdate || Date.now())) / 1000);
-                const estimatedUptime = this.lastServerUptimeSeconds + currentIncrement;
-                const uptimeText = this.formatUptime(estimatedUptime);
-                uptimeElement.textContent = uptimeText;
-            } else {
-                uptimeElement.textContent = 'Waiting...';
-            }
+        if (uptimeElement && serverUptimeSeconds !== undefined) {
+            const uptimeText = this.formatUptime(serverUptimeSeconds);
+            uptimeElement.textContent = uptimeText;
         }
         
-        if (connectionUptimeElement) {
-            if (connectionUptimeSeconds !== null) {
-                if (connectionUptimeSeconds === 0) {
-                    connectionUptimeElement.textContent = 'Disconnected';
-                    connectionUptimeElement.className = 'text-danger';
-                } else {
-                    const connectionText = this.formatUptime(connectionUptimeSeconds);
-                    connectionUptimeElement.textContent = connectionText;
-                    connectionUptimeElement.className = 'text-success';
-                }
-            } else if (this.lastConnectionUptimeSeconds !== undefined) {
-                // Increment from last known connection uptime
-                const currentIncrement = Math.floor((Date.now() - (this.lastUptimeUpdate || Date.now())) / 1000);
-                const estimatedConnectionUptime = this.lastConnectionUptimeSeconds + currentIncrement;
-                const connectionText = this.formatUptime(estimatedConnectionUptime);
+        if (connectionUptimeElement && connectionUptimeSeconds !== undefined) {
+            if (connectionUptimeSeconds === 0) {
+                connectionUptimeElement.textContent = 'Disconnected';
+                connectionUptimeElement.className = 'text-danger ms-1';
+            } else {
+                const connectionText = this.formatUptime(connectionUptimeSeconds);
                 connectionUptimeElement.textContent = connectionText;
-                connectionUptimeElement.className = 'text-success';
+                connectionUptimeElement.className = 'text-success ms-1';
             }
         }
     }
@@ -2109,14 +2061,9 @@ function updateConnectionStatusDisplay(apiStatus) {
             window.tradingApp.stopReconnectionCountdown();
             // Restart trading countdown when connection is restored
             window.tradingApp.startCountdown();
-            // Start uptime tracking (server-side timing will be used)
-            window.tradingApp.startUptimeCounter();
-            
-            // Update connection uptime display with server data
+            // Update uptime display with server data
             if (apiStatus.connection_uptime_seconds !== undefined) {
-                window.tradingApp.lastConnectionUptimeSeconds = apiStatus.connection_uptime_seconds;
-                window.tradingApp.lastUptimeUpdate = Date.now();
-                window.tradingApp.updateUptimeDisplay(null, apiStatus.connection_uptime_seconds);
+                window.tradingApp.updateUptimeDisplay(apiStatus.server_uptime_seconds, apiStatus.connection_uptime_seconds);
             }
         }
         
@@ -2150,8 +2097,7 @@ function updateConnectionStatusDisplay(apiStatus) {
             }
             
             // Update connection uptime to 0 (disconnected)
-            window.tradingApp.lastConnectionUptimeSeconds = 0;
-            window.tradingApp.updateUptimeDisplay(null, 0);
+            window.tradingApp.updateUptimeDisplay(apiStatus.server_uptime_seconds, 0);
             
             // Update countdown display to show connection issue
             const countdownElement = document.getElementById('trading-countdown');
