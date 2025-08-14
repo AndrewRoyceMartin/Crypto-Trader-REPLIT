@@ -484,6 +484,21 @@ class TradingApp {
                 approachingPercent = ((crypto.current_price / crypto.target_sell_price) * 100).toFixed(1);
             }
             
+            // Calculate the last updated time
+            const lastUpdated = crypto.last_updated ? new Date(crypto.last_updated).toLocaleTimeString() : '-';
+            
+            // Determine trading signal
+            const signal = crypto.current_price <= crypto.target_buy_price ? 
+                '<span class="badge bg-success">BUY</span>' : 
+                crypto.current_price >= crypto.target_sell_price ? 
+                '<span class="badge bg-danger">SELL</span>' : 
+                '<span class="badge bg-secondary">HOLD</span>';
+            
+            // Calculate target proximity
+            const targetProximity = crypto.target_buy_price ? 
+                (crypto.current_price <= crypto.target_buy_price ? '🎯 At buy target' : `${((crypto.current_price - crypto.target_buy_price) / crypto.target_buy_price * 100).toFixed(1)}% above`) :
+                '-';
+
             row.innerHTML = `
                 <td><span class="badge bg-primary">#${crypto.rank}</span></td>
                 <td><strong>${crypto.symbol}</strong></td>
@@ -492,11 +507,10 @@ class TradingApp {
                 <td>$${price}</td>
                 <td>${currentValue}</td>
                 <td>${targetSell}</td>
-                <td class="text-info">${approachingPercent}%</td>
-                <td>${targetBuy}</td>
-                <td class="text-warning">${this.formatCurrency(crypto.projected_sell_pnl)}</td>
                 <td class="${pnlClass}">${pnl}</td>
                 <td class="${pnlClass}">${pnlIcon} ${pnlPercent}%</td>
+                <td><small class="text-muted">${lastUpdated}</small></td>
+                <td>${signal}</td>
                 <td>
                     <button class="btn btn-sm btn-outline-success me-1" onclick="buyCrypto('${crypto.symbol}')" title="Buy">
                         <i class="fas fa-plus"></i>
@@ -505,6 +519,7 @@ class TradingApp {
                         <i class="fas fa-minus"></i>
                     </button>
                 </td>
+                <td><small class="text-info">${targetProximity}</small></td>
             `;
             
             tableBody.appendChild(row);
@@ -785,4 +800,38 @@ function updateNavbarButtons(activeView) {
         buttons[buttonMap[activeView]].classList.remove('btn-outline-light');
         buttons[buttonMap[activeView]].classList.add('btn-light');
     }
+}
+
+// Data update functions
+async function updatePerformanceData() {
+    try {
+        const response = await fetch('/api/crypto-portfolio');
+        const data = await response.json();
+        if (data && data.cryptocurrencies) {
+            window.tradingApp.updatePerformanceTable(data.cryptocurrencies);
+        }
+    } catch (error) {
+        console.error('Error updating performance data:', error);
+    }
+}
+
+async function updateHoldingsData() {
+    try {
+        const response = await fetch('/api/crypto-portfolio');
+        const data = await response.json();
+        if (data && data.cryptocurrencies) {
+            window.tradingApp.updateHoldingsTable(data.cryptocurrencies);
+        }
+    } catch (error) {
+        console.error('Error updating holdings data:', error);
+    }
+}
+
+// Add missing functions referenced in the HTML
+function buyCrypto(symbol) {
+    window.tradingApp.showToast(`Buy order for ${symbol} - Feature coming soon`, 'info');
+}
+
+function sellCrypto(symbol) {
+    window.tradingApp.showToast(`Sell order for ${symbol} - Feature coming soon`, 'info');
 }
