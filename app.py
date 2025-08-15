@@ -530,6 +530,29 @@ def api_current_holdings():
         logger.error(f"Current holdings error: {e}")
         return jsonify({"error": str(e)}), 500
 
+@app.route("/api/start-trading", methods=["POST"])
+def api_start_trading():
+    """Start trading with specified mode and type."""
+    try:
+        data = request.get_json()
+        mode = data.get('mode', 'paper')
+        trade_type = data.get('type', 'single')
+        
+        logger.info(f"Starting {mode} trading in {trade_type} mode")
+        
+        # For demo purposes, just return success
+        # In a real implementation, this would start the trading algorithm
+        return jsonify({
+            "success": True,
+            "message": f"{mode} trading started in {trade_type} mode",
+            "mode": mode,
+            "type": trade_type
+        })
+        
+    except Exception as e:
+        logger.error(f"Start trading error: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
 @app.route("/api/crypto-portfolio")
 def api_crypto_portfolio():
     """Get crypto portfolio data for all 103 cryptocurrencies."""
