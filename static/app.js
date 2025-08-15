@@ -30,6 +30,9 @@ class TradingApp {
         // Debug flag to bypass cache
         this.bypassCache = true;
         
+        // Currency selection state
+        this.selectedCurrency = 'USD'; // Default currency
+        
         this.init();
     }
     
@@ -47,6 +50,19 @@ class TradingApp {
     }
     
     setupEventListeners() {
+        // Currency selector event listener
+        const currencyDropdown = document.getElementById('currency-selector');
+        if (currencyDropdown) {
+            // Set initial selected currency from dropdown
+            this.selectedCurrency = currencyDropdown.value || 'USD';
+            
+            currencyDropdown.addEventListener('change', (e) => {
+                const selected = e.target.value;
+                console.log('Currency changed to:', selected);
+                this.setSelectedCurrency(selected);
+            });
+        }
+        
         // Remove duplicate interval setup - handled by startAutoUpdate()
         
         // Start countdown timer (only once during initialization)
@@ -341,11 +357,20 @@ class TradingApp {
         }
     }
     
-    formatCurrency(amount, currency = 'USD') {
+    formatCurrency(amount, currency = null) {
+        // Use selected currency if not specified
+        const targetCurrency = currency || this.selectedCurrency || 'USD';
         return new Intl.NumberFormat('en-US', {
             style: 'currency',
-            currency: currency
+            currency: targetCurrency
         }).format(amount);
+    }
+    
+    setSelectedCurrency(currency) {
+        this.selectedCurrency = currency;
+        console.log('Currency changed to:', currency);
+        // Refresh all tables with new currency formatting
+        this.updateCryptoPortfolio();
     }
     
     updateTradingStatus(tradingStatus) {
@@ -415,8 +440,8 @@ class TradingApp {
             // Update summary statistics
             if (data.summary) {
                 document.getElementById('crypto-total-count').textContent = data.summary.total_cryptos;
-                document.getElementById('crypto-current-value').textContent = this.formatCurrency(data.summary.total_current_value);
-                document.getElementById('crypto-total-pnl').textContent = this.formatCurrency(data.summary.total_pnl);
+                document.getElementById('crypto-current-value').textContent = this.formatCurrency(data.summary.total_current_value, this.selectedCurrency);
+                document.getElementById('crypto-total-pnl').textContent = this.formatCurrency(data.summary.total_pnl, this.selectedCurrency);
                 
                 const pnlElement = document.getElementById('crypto-total-pnl');
                 const pnlClass = data.summary.total_pnl >= 0 ? 'text-success' : 'text-danger';
@@ -530,13 +555,13 @@ class TradingApp {
             nameCell.textContent = crypto.name || '-';
             
             const priceCell = document.createElement('td');
-            priceCell.textContent = this.formatCurrency(price);
+            priceCell.textContent = this.formatCurrency(price, this.selectedCurrency);
             
             const quantityCell = document.createElement('td');
             quantityCell.textContent = quantity.toFixed(6);
             
             const valueCell = document.createElement('td');
-            valueCell.textContent = this.formatCurrency(value);
+            valueCell.textContent = this.formatCurrency(value, this.selectedCurrency);
             
             const pnlCell = document.createElement('td');
             const pnlSpan = document.createElement('span');
@@ -637,11 +662,11 @@ class TradingApp {
                 crypto.current_price.toFixed(6) : 
                 crypto.current_price.toFixed(2);
             const quantity = crypto.quantity.toFixed(4);
-            const currentValue = this.formatCurrency(crypto.current_value);
-            const pnl = this.formatCurrency(crypto.pnl);
+            const currentValue = this.formatCurrency(crypto.current_value, this.selectedCurrency);
+            const pnl = this.formatCurrency(crypto.pnl, this.selectedCurrency);
             const pnlPercent = crypto.pnl_percent.toFixed(2);
-            const targetSell = this.formatCurrency(crypto.target_sell_price);
-            const targetBuy = this.formatCurrency(crypto.target_buy_price);
+            const targetSell = this.formatCurrency(crypto.target_sell_price, this.selectedCurrency);
+            const targetBuy = this.formatCurrency(crypto.target_buy_price, this.selectedCurrency);
             
             // Determine colors and indicators
             const pnlClass = crypto.pnl >= 0 ? 'text-success' : 'text-danger';
@@ -776,8 +801,8 @@ class TradingApp {
                 crypto.current_price.toFixed(6) : 
                 crypto.current_price.toFixed(2);
             const quantity = crypto.quantity.toFixed(4);
-            const currentValue = this.formatCurrency(crypto.current_value);
-            const pnl = this.formatCurrency(crypto.pnl);
+            const currentValue = this.formatCurrency(crypto.current_value, this.selectedCurrency);
+            const pnl = this.formatCurrency(crypto.pnl, this.selectedCurrency);
             const pnlPercent = crypto.pnl_percent.toFixed(2);
             
             // Determine PnL colors and signal
@@ -884,9 +909,9 @@ class TradingApp {
                 crypto.current_price.toFixed(6) : 
                 crypto.current_price.toFixed(2);
             const quantity = crypto.quantity.toFixed(4);
-            const currentValue = this.formatCurrency(crypto.current_value);
-            const initialValue = this.formatCurrency(crypto.initial_value);
-            const pnl = this.formatCurrency(crypto.pnl);
+            const currentValue = this.formatCurrency(crypto.current_value, this.selectedCurrency);
+            const initialValue = this.formatCurrency(crypto.initial_value, this.selectedCurrency);
+            const pnl = this.formatCurrency(crypto.pnl, this.selectedCurrency);
             const pnlPercent = crypto.pnl_percent.toFixed(2);
             
             // Determine colors and indicators

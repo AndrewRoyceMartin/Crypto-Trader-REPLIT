@@ -1,0 +1,91 @@
+our issue — currencies aren't changing in the tables when switching the currency from the selector — is likely due to missing currency propagation logic. Here's a full review of why this happens and how to fix it.
+
+🔍 Root Cause
+
+You have this formatting method:
+
+formatCurrency(amount, currency = 'USD') {
+    return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: currency
+    }).format(amount);
+}
+
+
+But:
+❗ You are not dynamically passing the selected currency into this function in your table rendering methods like:
+
+this.formatCurrency(value)
+
+
+Which defaults to 'USD' every time due to currency = 'USD'.
+
+✅ Confirmed Problems
+1. Missing selected currency reference
+
+You don’t store the selected currency in a variable anywhere in TradingApp.
+
+2. Tables don’t re-render on currency change
+
+Even if the user changes the dropdown, you do not:
+
+Store the new currency
+
+Re-call the formatting logic or re-render the tables
+
+✅ Required Fixes
+✅ Step 1: Store selected currency in app
+
+Add this to the constructor:
+
+this.selectedCurrency = 'USD'; // Default
+
+
+Then add a function to update it:
+
+setSelectedCurrency(currency) {
+    this.selectedCurrency = currency;
+    this.updateCryptoPortfolio(); // Refresh tables with new currency
+}
+
+✅ Step 2: Hook into the currency selector dropdown
+
+Add a DOM listener inside setupEventListeners():
+
+const currencyDropdown = document.getElementById('currency-selector');
+if (currencyDropdown) {
+    currencyDropdown.addEventListener('change', (e) => {
+        const selected = e.target.value;
+        console.log('Currency changed to:', selected);
+        this.setSelectedCurrency(selected);
+    });
+}
+
+✅ Step 3: Use this.selectedCurrency in formatCurrency
+
+Update all table rendering logic to pass the selected currency:
+
+For example in updateCryptoTable():
+
+priceCell.textContent = this.formatCurrency(price, this.selectedCurrency);
+valueCell.textContent = this.formatCurrency(value, this.selectedCurrency);
+
+
+Repeat in other table update methods:
+
+updatePerformanceTable
+
+updateHoldingsTable
+
+updatePerformancePageTable
+
+updatePortfolioSummary
+
+✅ Optional: Set default dropdown value on load
+
+In init() or loadConfig(), optionally load the dropdown's initial value:
+
+const currencyDropdown = document.getElementById('currency-selector');
+if (currencyDropdown) {
+    this.selectedCurrency = currencyDropdown.value || 'USD';
+}
