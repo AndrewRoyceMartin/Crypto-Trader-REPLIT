@@ -1,0 +1,128 @@
+also check why the CoinGecko API: status isnt updating correctly
+ChatGPT said:
+
+Great — let's tackle the CoinGecko API status not updating issue.
+
+Your function that handles the API connection status display is:
+
+async updatePriceSourceStatus()
+
+
+And it gets triggered inside updateDashboard():
+
+this.updatePriceSourceStatus();
+
+
+Let’s walk through it step-by-step and debug what could be going wrong.
+
+✅ What the Function Does
+async updatePriceSourceStatus() {
+    try {
+        const response = await fetch('/api/price-source-status');
+        if (!response.ok) return;
+
+        const data = await response.json();
+
+        const serverConnectionText = document.getElementById('server-connection-text');
+        if (serverConnectionText) {
+            if (data.connected) {
+                serverConnectionText.textContent = 'Connected';
+                serverConnectionText.className = 'text-success ms-1';
+            } else {
+                serverConnectionText.textContent = `Disconnected (${data.last_update || 'unknown'})`;
+                serverConnectionText.className = 'text-danger ms-1';
+            }
+        }
+
+    } catch (error) {
+        console.error('Price source status update failed:', error);
+    }
+}
+
+🔍 Key Things to Check
+1. ✅ HTML Element ID
+
+Your code updates this element:
+
+document.getElementById('server-connection-text')
+
+
+🔧 Check in your HTML that this element actually exists:
+
+<span id="server-connection-text" class="ms-1 text-muted">Checking...</span>
+
+
+If it doesn't exist, nothing will update, and no error will be shown.
+
+2. 🚫 API Response Not OK
+
+Check this block:
+
+const response = await fetch('/api/price-source-status');
+if (!response.ok) return;
+
+
+➡️ This fails silently if the API returns a non-200 status. You won’t see anything update.
+
+✅ Go to DevTools → Network tab → Look for /api/price-source-status
+
+Does it return 200 OK?
+
+What is the actual JSON payload?
+
+Should look like:
+
+{
+  "connected": true,
+  "last_update": "2025-08-16T11:00:00Z"
+}
+
+
+If you see an error (e.g., 500 or 404), that's your culprit.
+
+3. 🧠 The updateDashboard() function runs?
+
+Ensure that updateDashboard() is actually running every minute or so, and that it calls:
+
+this.updatePriceSourceStatus();
+
+
+Look in console logs for anything from:
+
+console.log('Loading progress:', ...)
+
+
+Or drop in a test log:
+
+console.log('Calling updatePriceSourceStatus...');
+
+
+If you don’t see this, then something’s breaking updateDashboard() earlier.
+
+4. ⚠️ Backend not sending correct connected flag
+
+Even if /api/price-source-status works, if it returns:
+
+{ "connected": null }
+
+
+Your if (data.connected) check will fail, and you'll always see "Disconnected".
+
+✅ Add a debug log right before:
+
+console.log('Price source status:', data);
+
+5. 🧪 Test manually in the console
+
+Try running this in your browser console:
+
+await tradingApp.updatePriceSourceStatus()
+
+
+And see what happens to the #server-connection-text element. If nothing changes, either:
+
+Element is missing
+
+API returns error
+
+connected field is falsy

@@ -216,20 +216,49 @@ class TradingApp {
             if (!response.ok) return;
             
             const data = await response.json();
+            console.log('Price source status response:', data);
             
             const serverConnectionText = document.getElementById('server-connection-text');
             if (serverConnectionText) {
-                if (data.connected) {
+                // Check both 'status' and 'connected' fields for compatibility
+                const isConnected = data.status === 'connected' || data.connected === true;
+                
+                if (isConnected) {
                     serverConnectionText.textContent = 'Connected';
                     serverConnectionText.className = 'text-success ms-1';
+                    
+                    // Update icon color
+                    const statusIcon = document.querySelector('#server-connection-status .fas.fa-wifi');
+                    if (statusIcon) {
+                        statusIcon.className = 'fas fa-wifi text-success me-1';
+                    }
                 } else {
-                    serverConnectionText.textContent = `Disconnected (${data.last_update || 'unknown'})`;
+                    const lastUpdate = data.last_update ? new Date(data.last_update).toLocaleTimeString() : 'unknown';
+                    serverConnectionText.textContent = `Disconnected (${lastUpdate})`;
                     serverConnectionText.className = 'text-danger ms-1';
+                    
+                    // Update icon color
+                    const statusIcon = document.querySelector('#server-connection-status .fas.fa-wifi');
+                    if (statusIcon) {
+                        statusIcon.className = 'fas fa-wifi text-danger me-1';
+                    }
                 }
             }
             
         } catch (error) {
             console.error('Price source status update failed:', error);
+            
+            // Show error state
+            const serverConnectionText = document.getElementById('server-connection-text');
+            if (serverConnectionText) {
+                serverConnectionText.textContent = 'Error';
+                serverConnectionText.className = 'text-warning ms-1';
+                
+                const statusIcon = document.querySelector('#server-connection-status .fas.fa-wifi');
+                if (statusIcon) {
+                    statusIcon.className = 'fas fa-wifi text-warning me-1';
+                }
+            }
         }
     }
     
