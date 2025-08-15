@@ -52,6 +52,9 @@
             
             <div class="navbar-nav ms-auto">
                 <div class="nav-item d-flex align-items-center">
+                    <button class="btn btn-sm btn-outline-danger me-3" onclick="resetEntireProgram()">
+                        <i class="fas fa-power-off me-1"></i>Reset
+                    </button>
                     <div class="me-3">
                         <select class="form-select form-select-sm" id="currency-selector" onchange="changeCurrency()" style="min-width: 80px; font-size: 0.8rem;">
                             <option value="USD" selected>USD</option>
@@ -314,14 +317,9 @@
                         
                         <!-- Portfolio Actions -->
                         <div class="row mb-3">
-                            <div class="col-md-6">
+                            <div class="col-md-12">
                                 <button class="btn btn-outline-info btn-sm w-100" onclick="exportPortfolio()">
-                                    <i class="fas fa-download me-1"></i>Export Data
-                                </button>
-                            </div>
-                            <div class="col-md-6">
-                                <button class="btn btn-outline-danger btn-sm w-100" onclick="resetEntireProgram()">
-                                    <i class="fas fa-power-off me-1"></i>Reset Entire Program
+                                    <i class="fas fa-download me-1"></i>Export Portfolio Data
                                 </button>
                             </div>
                         </div>
@@ -492,14 +490,9 @@
                         
                         <!-- Portfolio Actions -->
                         <div class="row mb-3">
-                            <div class="col-md-6">
+                            <div class="col-md-12">
                                 <button class="btn btn-outline-info btn-sm w-100" onclick="exportPortfolio()">
-                                    <i class="fas fa-download me-1"></i>Export Data
-                                </button>
-                            </div>
-                            <div class="col-md-6">
-                                <button class="btn btn-outline-danger btn-sm w-100" onclick="resetEntireProgram()">
-                                    <i class="fas fa-power-off me-1"></i>Reset Entire Program
+                                    <i class="fas fa-download me-1"></i>Export Portfolio Data
                                 </button>
                             </div>
                         </div>
