@@ -282,6 +282,62 @@ class TradingApp {
         }, 1000);
     }
     
+    displayEmptyPortfolioMessage() {
+        // Display helpful message when portfolio is empty
+        const tableIds = ['crypto-table', 'performance-table', 'holdings-table', 'performance-page-table'];
+        
+        tableIds.forEach(tableId => {
+            const tableBody = document.getElementById(tableId);
+            if (tableBody) {
+                tableBody.innerHTML = '';
+                const row = document.createElement('tr');
+                const cell = document.createElement('td');
+                cell.colSpan = 10; // Adjust based on table columns
+                cell.className = 'text-center text-warning p-4';
+                cell.innerHTML = `
+                    <div class="mb-2">
+                        <i class="fas fa-exclamation-triangle fa-2x text-warning"></i>
+                    </div>
+                    <h5>Portfolio Empty</h5>
+                    <p class="mb-3">Start trading to populate your cryptocurrency portfolio with live data.</p>
+                    <button class="btn btn-success" onclick="startTrading('paper', 'portfolio')">
+                        <i class="fas fa-play"></i> Start Paper Trading
+                    </button>
+                `;
+                row.appendChild(cell);
+                tableBody.appendChild(row);
+            }
+        });
+        
+        // Update summary statistics to show empty state
+        this.updateSummaryForEmptyPortfolio();
+    }
+    
+    updateSummaryForEmptyPortfolio() {
+        // Update summary stats to show empty state
+        const summaryElements = {
+            'crypto-total-count': '0',
+            'crypto-current-value': '$0.00',
+            'crypto-total-pnl': '$0.00'
+        };
+        
+        Object.entries(summaryElements).forEach(([id, value]) => {
+            const element = document.getElementById(id);
+            if (element) {
+                element.textContent = value;
+                if (id === 'crypto-total-pnl') {
+                    element.className = 'mb-0 text-secondary';
+                }
+            }
+        });
+        
+        // Update crypto symbols display
+        const symbolsContainer = document.getElementById('crypto-symbols');
+        if (symbolsContainer) {
+            symbolsContainer.innerHTML = '<span class="badge bg-warning">Portfolio empty - Start trading to populate</span>';
+        }
+    }
+    
     formatCurrency(amount, currency = 'USD') {
         return new Intl.NumberFormat('en-US', {
             style: 'currency',
@@ -315,6 +371,19 @@ class TradingApp {
             
             this.updateLoadingProgress(60, 'Processing market data...');
             const data = await response.json();
+            
+            // DEBUG: Log the actual portfolio response to check data
+            console.log('Portfolio response:', data);
+            console.log('Cryptocurrencies count:', data.cryptocurrencies ? data.cryptocurrencies.length : 0);
+            
+            // CRITICAL: Check if portfolio is empty and needs trading to be started
+            if (!data.cryptocurrencies || data.cryptocurrencies.length === 0) {
+                console.log('Portfolio is empty - user needs to start trading to populate data');
+                this.displayEmptyPortfolioMessage();
+                this.hideLoadingProgress();
+                this.isUpdatingPortfolio = false;
+                return;
+            }
             
             // CRITICAL: Check for failed price retrieval and display warnings
             if (data.price_validation && data.price_validation.failed_symbols && data.price_validation.failed_symbols.length > 0) {
