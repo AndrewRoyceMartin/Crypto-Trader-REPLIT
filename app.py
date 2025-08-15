@@ -363,41 +363,7 @@ def api_portfolio_data():
             "total_pnl": 1245.50,
             "total_pnl_percent": 11.15,
             "holdings": [],
-            "recent_trades": recent_initial_trades if recent_initial_trades else [
-                {
-                    "id": 1,
-                    "symbol": "BTC/USDT",
-                    "side": "BUY",
-                    "quantity": 0.001,
-                    "price": 120500,
-                    "timestamp": "2025-08-14T11:45:00Z",
-                    "pnl": 125.30,
-                    "realized_pnl": 125.30,
-                    "status": "completed"
-                },
-                {
-                    "id": 2,
-                    "symbol": "ETH/USDT", 
-                    "side": "SELL",
-                    "quantity": 0.2,
-                    "price": 4720,
-                    "timestamp": "2025-08-14T10:30:00Z",
-                    "pnl": -45.20,
-                    "realized_pnl": -45.20,
-                    "status": "completed"
-                },
-                {
-                    "id": 3,
-                    "symbol": "SOL/USDT",
-                    "side": "BUY", 
-                    "quantity": 5.0,
-                    "price": 203.40,
-                    "timestamp": "2025-08-14T09:15:00Z",
-                    "pnl": 75.85,
-                    "realized_pnl": 75.85,
-                    "status": "completed"
-                }
-            ]
+            "recent_trades": recent_initial_trades
         }
         
         # Add holdings using live prices
@@ -447,41 +413,7 @@ def api_status():
             "daily_pnl": 450.67,
             "daily_pnl_percent": 3.76
         },
-        "recent_trades": recent_initial_trades if recent_initial_trades else [
-            {
-                "id": 1,
-                "symbol": "BTC/USDT",
-                "side": "BUY",
-                "quantity": 0.001,
-                "price": 120500,
-                "timestamp": "2025-08-14T11:45:00Z",
-                "pnl": 125.30,
-                "realized_pnl": 125.30,
-                "status": "completed"
-            },
-            {
-                "id": 2,
-                "symbol": "ETH/USDT",
-                "side": "SELL", 
-                "quantity": 0.2,
-                "price": 4720,
-                "timestamp": "2025-08-14T10:30:00Z",
-                "pnl": -45.20,
-                "realized_pnl": -45.20,
-                "status": "completed"
-            },
-            {
-                "id": 3,
-                "symbol": "SOL/USDT",
-                "side": "BUY",
-                "quantity": 5.0,
-                "price": 203.40,
-                "timestamp": "2025-08-14T09:15:00Z", 
-                "pnl": 75.85,
-                "realized_pnl": 75.85,
-                "status": "completed"
-            }
-        ],
+        "recent_trades": recent_initial_trades,
         "server_uptime_seconds": (datetime.utcnow() - server_start_time).total_seconds()
     })
 
