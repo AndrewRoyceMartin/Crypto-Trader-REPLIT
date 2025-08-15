@@ -22,10 +22,13 @@ class TradingApp {
         
         // API caching to prevent duplicate requests
         this.apiCache = {
-            status: { data: null, timestamp: 0, ttl: 5000 }, // 5-second cache
-            portfolio: { data: null, timestamp: 0, ttl: 6000 }, // 6-second cache
+            status: { data: null, timestamp: 0, ttl: 1000 }, // 1-second cache (debug)
+            portfolio: { data: null, timestamp: 0, ttl: 1000 }, // 1-second cache (debug)
             config: { data: null, timestamp: 0, ttl: 30000 } // 30-second cache
         };
+        
+        // Debug flag to bypass cache
+        this.bypassCache = true;
         
         this.init();
     }
@@ -366,15 +369,34 @@ class TradingApp {
             // Show loading progress
             this.updateLoadingProgress(20, 'Fetching cryptocurrency data...');
             
-            const response = await fetch('/api/crypto-portfolio');
-            if (!response.ok) return;
+            // Force bypass all caching for debugging
+            const timestamp = Date.now();
+            const response = await fetch(`/api/crypto-portfolio?_bypass_cache=${timestamp}&debug=1`, {
+                cache: 'no-cache',
+                headers: {
+                    'Cache-Control': 'no-cache',
+                    'Pragma': 'no-cache'
+                }
+            });
+            
+            console.log('API Response Status:', response.status, response.statusText);
+            console.log('API Response URL:', response.url);
+            
+            if (!response.ok) {
+                console.error('API request failed:', response.status, response.statusText);
+                const errorText = await response.text();
+                console.error('Error response body:', errorText);
+                return;
+            }
             
             this.updateLoadingProgress(60, 'Processing market data...');
             const data = await response.json();
             
-            // DEBUG: Log the actual portfolio response to check data
-            console.log('Portfolio response:', data);
+            // DEBUG: Comprehensive API response logging
+            console.log('Crypto portfolio API response:', data);
+            console.log('Response summary:', data.summary);
             console.log('Cryptocurrencies count:', data.cryptocurrencies ? data.cryptocurrencies.length : 0);
+            console.log('First few cryptos:', data.cryptocurrencies ? data.cryptocurrencies.slice(0, 3) : 'None');
             
             // CRITICAL: Check if portfolio is empty and needs trading to be started
             if (!data.cryptocurrencies || data.cryptocurrencies.length === 0) {
