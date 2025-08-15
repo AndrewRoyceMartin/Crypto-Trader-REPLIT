@@ -453,18 +453,27 @@ class TradingApp {
     }
     
     updatePerformanceTable(cryptos) {
+        console.log('updatePerformanceTable called with:', cryptos?.length || 0, 'cryptocurrencies');
         const tableBody = document.getElementById('crypto-portfolio-table');
-        if (!tableBody) return;
+        console.log('Table element found:', !!tableBody);
+        
+        if (!tableBody) {
+            console.error('crypto-portfolio-table element not found!');
+            return;
+        }
         
         // Clear existing content
         tableBody.innerHTML = '';
         
         if (!cryptos || cryptos.length === 0) {
+            console.log('No crypto data provided');
             const row = document.createElement('tr');
             row.innerHTML = '<td colspan="13" class="text-center text-muted">No performance data available</td>';
             tableBody.appendChild(row);
             return;
         }
+        
+        console.log('Populating table with', cryptos.length, 'rows');
         
         // Populate performance table
         cryptos.forEach(crypto => {
@@ -531,6 +540,8 @@ class TradingApp {
             
             tableBody.appendChild(row);
         });
+        
+        console.log('Portfolio table updated with', cryptos.length, 'rows');
     }
     
     updateHoldingsTable(cryptos) {
