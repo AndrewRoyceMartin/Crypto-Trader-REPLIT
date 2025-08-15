@@ -36,6 +36,14 @@ CACHE_FILE            = "warmup_cache.parquet"                        # persiste
 
 # Warm-up state & TTL cache
 warmup = {"started": False, "done": False, "error": "", "loaded": []}
+# Global trading state
+trading_state = {
+    "mode": "stopped",
+    "active": False,
+    "strategy": None,
+    "start_time": None,
+    "type": None
+}
 # (symbol, timeframe) -> {"df": pd.DataFrame, "ts": datetime}
 _price_cache = {}
 _cache_lock = threading.RLock()
@@ -328,11 +336,13 @@ def api_status():
         "symbols_loaded": warmup.get("loaded", []),
         "last_update": datetime.utcnow().isoformat(),
         "trading_status": {
-            "mode": "paper",
-            "active": True,
-            "strategy": "Bollinger Bands",
-            "trades_today": 3,
-            "last_trade": "2025-08-14T11:45:00Z"
+            "mode": trading_state["mode"],
+            "active": trading_state["active"],
+            "strategy": trading_state["strategy"],
+            "type": trading_state["type"],
+            "start_time": trading_state["start_time"],
+            "trades_today": 0,
+            "last_trade": None
         },
         "portfolio": {
             "total_value": 12450.67,
@@ -540,8 +550,15 @@ def api_start_trading():
         
         logger.info(f"Starting {mode} trading in {trade_type} mode")
         
-        # For demo purposes, just return success
-        # In a real implementation, this would start the trading algorithm
+        # Update global trading state
+        trading_state.update({
+            "mode": mode,
+            "active": True,
+            "strategy": "Bollinger Bands",
+            "type": trade_type,
+            "start_time": datetime.utcnow().isoformat()
+        })
+        
         return jsonify({
             "success": True,
             "message": f"{mode} trading started in {trade_type} mode",
@@ -851,6 +868,15 @@ def api_reset_entire_program():
         # Clear any in-memory state
         global server_start_time
         server_start_time = datetime.utcnow()
+        
+        # Reset trading state to stopped
+        trading_state.update({
+            "mode": "stopped",
+            "active": False,
+            "strategy": None,
+            "type": None,
+            "start_time": None
+        })
         
         return jsonify({
             "success": True,
