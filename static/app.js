@@ -1271,6 +1271,11 @@ function showMainDashboard() {
     // Update navbar button states
     updateNavbarButtons('main');
     
+    // Refresh portfolio data when switching to main dashboard
+    if (window.tradingApp) {
+        window.tradingApp.updateCryptoPortfolio();
+    }
+    
     console.log('Switched to Main Dashboard');
 }
 
@@ -1288,6 +1293,11 @@ function showPerformanceDashboard() {
     // Update navbar button states
     updateNavbarButtons('performance');
     
+    // Refresh portfolio data when switching to performance dashboard
+    if (window.tradingApp) {
+        window.tradingApp.updateCryptoPortfolio();
+    }
+    
     console.log('Switched to Performance Dashboard');
 }
 
@@ -1304,6 +1314,11 @@ function showCurrentPositions() {
     
     // Update navbar button states
     updateNavbarButtons('holdings');
+    
+    // Refresh portfolio data when switching to current holdings
+    if (window.tradingApp) {
+        window.tradingApp.updateCryptoPortfolio();
+    }
     
     console.log('Switched to Current Holdings');
 }
@@ -1407,7 +1422,9 @@ async function startTrading(mode, type) {
         const data = await response.json();
         if (data.success) {
             window.tradingApp.showToast(`${mode} trading started successfully in ${type} mode`, 'success');
-            // Update trading status display
+            // Update trading status display and refresh portfolio data
+            window.tradingApp.updateDashboard();
+            window.tradingApp.updateCryptoPortfolio();
             window.tradingApp.updateTradingStatusDisplay(mode, type);
         } else {
             window.tradingApp.showToast(`Failed to start trading: ${data.error}`, 'error');
@@ -1439,7 +1456,8 @@ async function buyCrypto(symbol) {
         const data = await response.json();
         if (data.success) {
             window.tradingApp.showToast(`Successfully bought $${amount} worth of ${symbol}`, 'success');
-            window.tradingApp.updateDashboard(); // Refresh data
+            window.tradingApp.updateDashboard(); // Refresh dashboard data
+            window.tradingApp.updateCryptoPortfolio(); // Refresh portfolio tables
         } else {
             window.tradingApp.showToast(`Buy failed: ${data.error}`, 'error');
         }
@@ -1470,7 +1488,8 @@ async function sellCrypto(symbol) {
         const data = await response.json();
         if (data.success) {
             window.tradingApp.showToast(`Successfully sold ${quantity} ${symbol}`, 'success');
-            window.tradingApp.updateDashboard(); // Refresh data
+            window.tradingApp.updateDashboard(); // Refresh dashboard data
+            window.tradingApp.updateCryptoPortfolio(); // Refresh portfolio tables
         } else {
             window.tradingApp.showToast(`Sell failed: ${data.error}`, 'error');
         }
