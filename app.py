@@ -73,8 +73,15 @@ def create_initial_purchase_trades(mode, trade_type):
         from src.data.price_api import CryptoPriceAPI
         price_api = CryptoPriceAPI()
         
-        # Get current prices for all crypto symbols to create purchase records
-        symbols = ["BTC", "ETH", "SOL", "XRP", "DOGE", "ADA", "AVAX", "LINK", "UNI", "BNB"]
+        # Get current prices for top cryptocurrencies to create purchase records
+        # Note: Limited by CoinGecko API, but we'll expand as much as possible
+        symbols = [
+            "BTC", "ETH", "SOL", "XRP", "DOGE", "ADA", "AVAX", "LINK", "UNI", "BNB", 
+            "DOT", "MATIC", "LTC", "ATOM", "ICP", "ETC", "VET", "FIL", "TRX", "ALGO",
+            "XLM", "AAVE", "THETA", "EGLD", "EOS", "AXS", "MANA", "SAND", "CHZ", "ENJ",
+            "BAT", "ZEC", "QTUM", "ICX", "ZIL", "RVN", "WAVES", "ONT", "OMG", "LSK",
+            "ARK", "KMD", "NANO", "DASH", "NEO", "GAS", "XTZ", "COMP", "YFI", "SNX"
+        ]
         live_prices = price_api.get_multiple_prices(symbols)
         
         initial_trades = []

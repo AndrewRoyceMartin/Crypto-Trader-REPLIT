@@ -837,17 +837,80 @@ class TradingApp {
         const tableBody = document.getElementById('trades-table');
         if (!tableBody) return;
         
+        // Store all trades for filtering
+        this.allTrades = trades || [];
+        
+        // Apply current filters
+        this.applyTradeFilters();
+    }
+    
+    applyTradeFilters() {
+        const tableBody = document.getElementById('trades-table');
+        if (!tableBody || !this.allTrades) return;
+        
+        // Get filter values
+        const symbolFilter = document.getElementById('trades-filter')?.value.toLowerCase() || '';
+        const actionFilter = document.getElementById('trades-action-filter')?.value || '';
+        const timeFilter = document.getElementById('trades-time-filter')?.value || '';
+        const pnlFilter = document.getElementById('trades-pnl-filter')?.value || '';
+        
+        // Filter trades based on criteria
+        let filteredTrades = this.allTrades.filter(trade => {
+            // Symbol filter
+            if (symbolFilter && !trade.symbol.toLowerCase().includes(symbolFilter)) {
+                return false;
+            }
+            
+            // Action filter
+            if (actionFilter && trade.side !== actionFilter) {
+                return false;
+            }
+            
+            // Time filter
+            if (timeFilter) {
+                const tradeDate = new Date(trade.timestamp);
+                const now = new Date();
+                const timeDiff = now - tradeDate;
+                
+                let maxAge = 0;
+                switch (timeFilter) {
+                    case '24h': maxAge = 24 * 60 * 60 * 1000; break;
+                    case '3d': maxAge = 3 * 24 * 60 * 60 * 1000; break;
+                    case '7d': maxAge = 7 * 24 * 60 * 60 * 1000; break;
+                    case '1m': maxAge = 30 * 24 * 60 * 60 * 1000; break;
+                    case '6m': maxAge = 6 * 30 * 24 * 60 * 60 * 1000; break;
+                    case '1y': maxAge = 365 * 24 * 60 * 60 * 1000; break;
+                }
+                
+                if (timeDiff > maxAge) {
+                    return false;
+                }
+            }
+            
+            // P&L filter
+            if (pnlFilter) {
+                const pnl = trade.pnl || 0;
+                if (pnlFilter === 'positive' && pnl <= 0) return false;
+                if (pnlFilter === 'negative' && pnl >= 0) return false;
+            }
+            
+            return true;
+        });
+        
         // Clear existing content
         tableBody.innerHTML = '';
         
-        if (!trades || trades.length === 0) {
+        if (!filteredTrades || filteredTrades.length === 0) {
             const row = document.createElement('tr');
-            row.innerHTML = '<td colspan="6" class="text-center text-muted">No trades yet</td>';
+            row.innerHTML = '<td colspan="6" class="text-center text-muted">No trades match the current filters</td>';
             tableBody.appendChild(row);
             return;
         }
         
-        trades.forEach(trade => {
+        // Sort trades by timestamp (newest first)
+        filteredTrades.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+        
+        filteredTrades.forEach(trade => {
             const row = document.createElement('tr');
             
             // Format timestamp
@@ -1053,6 +1116,29 @@ async function updateHoldingsData() {
     } catch (error) {
         console.error('Error updating holdings data:', error);
     }
+}
+
+// Filter functions for trades table
+function filterTradesTable() {
+    if (window.tradingApp && window.tradingApp.applyTradeFilters) {
+        window.tradingApp.applyTradeFilters();
+    }
+}
+
+function clearTradesFilters() {
+    // Clear all filter inputs
+    const symbolFilter = document.getElementById('trades-filter');
+    const actionFilter = document.getElementById('trades-action-filter');
+    const timeFilter = document.getElementById('trades-time-filter');
+    const pnlFilter = document.getElementById('trades-pnl-filter');
+    
+    if (symbolFilter) symbolFilter.value = '';
+    if (actionFilter) actionFilter.value = '';
+    if (timeFilter) timeFilter.value = '';
+    if (pnlFilter) pnlFilter.value = '';
+    
+    // Reapply filters (which will show all trades)
+    filterTradesTable();
 }
 
 // Add missing functions referenced in the HTML
