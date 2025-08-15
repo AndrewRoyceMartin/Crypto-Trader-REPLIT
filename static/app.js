@@ -100,7 +100,7 @@ class TradingApp {
             }
             
         } catch (error) {
-            console.error('Status update failed:', {});
+            console.error('Status update failed:', error);
         }
         
         // Update price source status only (portfolio updates separately to avoid loops)
