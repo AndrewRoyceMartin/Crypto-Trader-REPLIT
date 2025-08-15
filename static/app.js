@@ -1001,6 +1001,12 @@ async function resetEntireProgram() {
                     cryptoSymbolsEl.innerHTML = '<span class="badge bg-secondary">Empty portfolio - Start trading to populate</span>';
                 }
                 
+                // Clear recent trades display
+                const tradesTable = document.getElementById('trades-table');
+                if (tradesTable) {
+                    tradesTable.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No trades yet</td></tr>';
+                }
+                
                 // Force refresh portfolio data to show empty state
                 setTimeout(() => {
                     window.tradingApp.loadPortfolioData();

@@ -997,9 +997,10 @@ def api_reset_entire_program():
         })
         
         # Reset portfolio to empty state (no holdings until trading starts again)
-        global portfolio_initialized
+        global portfolio_initialized, recent_initial_trades
         portfolio_initialized = False
-        logger.info("Portfolio reset to empty state")
+        recent_initial_trades = []  # Clear all trades
+        logger.info("Portfolio and trades reset to empty state")
         
         return jsonify({
             "success": True,
