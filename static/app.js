@@ -662,36 +662,7 @@ class TradingApp {
         });
     }
     
-    showToast(message, type = 'info') {
-        const toast = document.createElement('div');
-        toast.className = `alert alert-${type === 'error' ? 'danger' : type} position-fixed`;
-        toast.style.top = '20px';
-        toast.style.right = '20px';
-        toast.style.zIndex = '9999';
-        
-        // Create close button safely
-        const closeButton = document.createElement('button');
-        closeButton.type = 'button';
-        closeButton.className = 'btn-close';
-        closeButton.onclick = function() { this.parentElement.remove(); };
-        
-        // Add message as text content (prevents XSS)
-        const messageSpan = document.createElement('span');
-        messageSpan.textContent = message;
-        
-        // Append elements safely
-        toast.appendChild(closeButton);
-        toast.appendChild(messageSpan);
-        
-        document.body.appendChild(toast);
-        
-        // Auto-remove after 5 seconds
-        setTimeout(() => {
-            if (toast.parentElement) {
-                toast.remove();
-            }
-        }, 5000);
-    }
+
     
     displayPriceDataWarning(failedSymbols) {
         // Create or update warning banner for failed price data
@@ -757,30 +728,42 @@ class TradingApp {
         console.log('Charts initialized');
     }
     
+    loadPortfolioData() {
+        // Load portfolio data - used after reset operations
+        this.updateCryptoPortfolio();
+    }
+    
     showToast(message, type = 'info') {
-        // Create toast notification
-        const toastContainer = document.getElementById('toast-container') || this.createToastContainer();
-        
+        // Create simple alert-style toast (no Bootstrap dependency)
         const toast = document.createElement('div');
-        toast.className = `toast align-items-center text-white bg-${type === 'error' ? 'danger' : type === 'success' ? 'success' : type === 'warning' ? 'warning' : 'primary'} border-0`;
-        toast.setAttribute('role', 'alert');
-        toast.innerHTML = `
-            <div class="d-flex">
-                <div class="toast-body">${message}</div>
-                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
-            </div>
-        `;
+        toast.className = `alert alert-${type === 'error' ? 'danger' : type === 'success' ? 'success' : type === 'warning' ? 'warning' : 'primary'} position-fixed`;
+        toast.style.top = '20px';
+        toast.style.right = '20px';
+        toast.style.zIndex = '9999';
+        toast.style.minWidth = '300px';
         
-        toastContainer.appendChild(toast);
+        // Create close button safely
+        const closeButton = document.createElement('button');
+        closeButton.type = 'button';
+        closeButton.className = 'btn-close';
+        closeButton.onclick = function() { this.parentElement.remove(); };
         
-        // Show toast using Bootstrap
-        const bsToast = new bootstrap.Toast(toast);
-        bsToast.show();
+        // Add message as text content (prevents XSS)
+        const messageSpan = document.createElement('span');
+        messageSpan.textContent = message;
         
-        // Remove toast element after it's hidden
-        toast.addEventListener('hidden.bs.toast', () => {
-            toast.remove();
-        });
+        // Append elements safely
+        toast.appendChild(closeButton);
+        toast.appendChild(messageSpan);
+        
+        document.body.appendChild(toast);
+        
+        // Auto-remove after 5 seconds
+        setTimeout(() => {
+            if (toast.parentElement) {
+                toast.remove();
+            }
+        }, 5000);
     }
     
     createToastContainer() {
