@@ -523,62 +523,173 @@ def api_current_holdings():
 
 @app.route("/api/crypto-portfolio")
 def api_crypto_portfolio():
-    """Get crypto portfolio data for the crypto dashboard section."""
+    """Get crypto portfolio data for all 103 cryptocurrencies."""
     if not warmup["done"]:
         return jsonify({"error": "System still initializing"}), 503
     
     try:
         from src.data.price_api import CryptoPriceAPI
+        
+        # Define all 103 cryptocurrencies with fallback prices
+        all_cryptos = [
+            # Top Tier - Established market leaders
+            {"symbol": "BTC", "name": "Bitcoin", "rank": 1, "fallback_price": 65000},
+            {"symbol": "ETH", "name": "Ethereum", "rank": 2, "fallback_price": 3500},
+            {"symbol": "SOL", "name": "Solana", "rank": 3, "fallback_price": 150},
+            {"symbol": "XRP", "name": "XRP", "rank": 4, "fallback_price": 0.50},
+            {"symbol": "DOGE", "name": "Dogecoin", "rank": 5, "fallback_price": 0.15},
+            {"symbol": "BNB", "name": "BNB", "rank": 6, "fallback_price": 600},
+            {"symbol": "ADA", "name": "Cardano", "rank": 7, "fallback_price": 0.45},
+            {"symbol": "AVAX", "name": "Avalanche", "rank": 8, "fallback_price": 25},
+            {"symbol": "LINK", "name": "Chainlink", "rank": 9, "fallback_price": 15},
+            {"symbol": "UNI", "name": "Uniswap", "rank": 10, "fallback_price": 8},
+            
+            # Major Cryptocurrencies - 11-50
+            {"symbol": "USDC", "name": "USD Coin", "rank": 11, "fallback_price": 1.0},
+            {"symbol": "SHIB", "name": "Shiba Inu", "rank": 12, "fallback_price": 0.00002},
+            {"symbol": "LTC", "name": "Litecoin", "rank": 13, "fallback_price": 85},
+            {"symbol": "BCH", "name": "Bitcoin Cash", "rank": 14, "fallback_price": 150},
+            {"symbol": "NEAR", "name": "NEAR Protocol", "rank": 15, "fallback_price": 3.2},
+            {"symbol": "ICP", "name": "Internet Computer", "rank": 16, "fallback_price": 8.5},
+            {"symbol": "LEO", "name": "LEO Token", "rank": 17, "fallback_price": 6.8},
+            {"symbol": "TON", "name": "Toncoin", "rank": 18, "fallback_price": 2.1},
+            {"symbol": "APT", "name": "Aptos", "rank": 19, "fallback_price": 7.5},
+            {"symbol": "STX", "name": "Stacks", "rank": 20, "fallback_price": 1.8},
+            {"symbol": "ARB", "name": "Arbitrum", "rank": 21, "fallback_price": 1.2},
+            {"symbol": "OP", "name": "Optimism", "rank": 22, "fallback_price": 2.3},
+            {"symbol": "IMX", "name": "Immutable X", "rank": 23, "fallback_price": 1.5},
+            {"symbol": "MNT", "name": "Mantle", "rank": 24, "fallback_price": 0.65},
+            {"symbol": "HBAR", "name": "Hedera", "rank": 25, "fallback_price": 0.08},
+            {"symbol": "VET", "name": "VeChain", "rank": 26, "fallback_price": 0.032},
+            {"symbol": "DOT", "name": "Polkadot", "rank": 27, "fallback_price": 6.8},
+            {"symbol": "MATIC", "name": "Polygon", "rank": 28, "fallback_price": 0.85},
+            {"symbol": "ATOM", "name": "Cosmos", "rank": 29, "fallback_price": 8.2},
+            {"symbol": "FIL", "name": "Filecoin", "rank": 30, "fallback_price": 5.4},
+            {"symbol": "AAVE", "name": "Aave", "rank": 31, "fallback_price": 95},
+            {"symbol": "MKR", "name": "Maker", "rank": 32, "fallback_price": 1500},
+            {"symbol": "COMP", "name": "Compound", "rank": 33, "fallback_price": 48},
+            {"symbol": "CRV", "name": "Curve DAO", "rank": 34, "fallback_price": 0.75},
+            {"symbol": "SNX", "name": "Synthetix", "rank": 35, "fallback_price": 2.8},
+            {"symbol": "SUSHI", "name": "SushiSwap", "rank": 36, "fallback_price": 1.2},
+            {"symbol": "1INCH", "name": "1inch", "rank": 37, "fallback_price": 0.42},
+            {"symbol": "SAND", "name": "The Sandbox", "rank": 38, "fallback_price": 0.38},
+            {"symbol": "MANA", "name": "Decentraland", "rank": 39, "fallback_price": 0.45},
+            {"symbol": "AXS", "name": "Axie Infinity", "rank": 40, "fallback_price": 6.8},
+            {"symbol": "BADGER", "name": "Badger DAO", "rank": 41, "fallback_price": 3.2},
+            {"symbol": "AMP", "name": "Amp", "rank": 42, "fallback_price": 0.008},
+            {"symbol": "GALA", "name": "Gala", "rank": 43, "fallback_price": 0.032},
+            {"symbol": "FTM", "name": "Fantom", "rank": 44, "fallback_price": 0.45},
+            {"symbol": "ALGO", "name": "Algorand", "rank": 45, "fallback_price": 0.18},
+            {"symbol": "FLOW", "name": "Flow", "rank": 46, "fallback_price": 0.68},
+            {"symbol": "THETA", "name": "Theta Network", "rank": 47, "fallback_price": 1.2},
+            {"symbol": "EGLD", "name": "MultiversX", "rank": 48, "fallback_price": 32},
+            {"symbol": "GRT", "name": "The Graph", "rank": 49, "fallback_price": 0.15},
+            {"symbol": "FET", "name": "Fetch.ai", "rank": 50, "fallback_price": 1.8},
+            
+            # Mid-cap tokens 51-103
+            {"symbol": "LRC", "name": "Loopring", "rank": 51, "fallback_price": 0.25},
+            {"symbol": "ENJ", "name": "Enjin Coin", "rank": 52, "fallback_price": 0.35},
+            {"symbol": "CHZ", "name": "Chiliz", "rank": 53, "fallback_price": 0.08},
+            {"symbol": "BAT", "name": "Basic Attention Token", "rank": 54, "fallback_price": 0.22},
+            {"symbol": "XTZ", "name": "Tezos", "rank": 55, "fallback_price": 0.95},
+            {"symbol": "MINA", "name": "Mina Protocol", "rank": 56, "fallback_price": 0.58},
+            {"symbol": "KCS", "name": "KuCoin Shares", "rank": 57, "fallback_price": 9.5},
+            {"symbol": "YFI", "name": "yearn.finance", "rank": 58, "fallback_price": 6800},
+            {"symbol": "ZEC", "name": "Zcash", "rank": 59, "fallback_price": 28},
+            {"symbol": "DASH", "name": "Dash", "rank": 60, "fallback_price": 32},
+            {"symbol": "DCR", "name": "Decred", "rank": 61, "fallback_price": 15},
+            {"symbol": "WAVES", "name": "Waves", "rank": 62, "fallback_price": 1.8},
+            {"symbol": "ZIL", "name": "Zilliqa", "rank": 63, "fallback_price": 0.025},
+            {"symbol": "BAL", "name": "Balancer", "rank": 64, "fallback_price": 2.8},
+            {"symbol": "BAND", "name": "Band Protocol", "rank": 65, "fallback_price": 1.5},
+            {"symbol": "OCEAN", "name": "Ocean Protocol", "rank": 66, "fallback_price": 0.58},
+            {"symbol": "UMA", "name": "UMA Protocol", "rank": 67, "fallback_price": 2.3},
+            {"symbol": "ALPHA", "name": "Alpha Finance", "rank": 68, "fallback_price": 0.08},
+            {"symbol": "ANKR", "name": "Ankr", "rank": 69, "fallback_price": 0.035},
+            {"symbol": "SKL", "name": "SKALE Network", "rank": 70, "fallback_price": 0.048},
+            {"symbol": "CTSI", "name": "Cartesi", "rank": 71, "fallback_price": 0.15},
+            {"symbol": "CELR", "name": "Celer Network", "rank": 72, "fallback_price": 0.018},
+            {"symbol": "STORJ", "name": "Storj", "rank": 73, "fallback_price": 0.42},
+            {"symbol": "RSR", "name": "Reserve Rights", "rank": 74, "fallback_price": 0.0045},
+            {"symbol": "REN", "name": "Ren Protocol", "rank": 75, "fallback_price": 0.065},
+            {"symbol": "KNC", "name": "Kyber Network", "rank": 76, "fallback_price": 0.68},
+            {"symbol": "NMR", "name": "Numeraire", "rank": 77, "fallback_price": 15},
+            {"symbol": "BNT", "name": "Bancor", "rank": 78, "fallback_price": 0.58},
+            {"symbol": "KAVA", "name": "Kava", "rank": 79, "fallback_price": 0.85},
+            {"symbol": "COTI", "name": "COTI", "rank": 80, "fallback_price": 0.078},
+            {"symbol": "NKN", "name": "NKN", "rank": 81, "fallback_price": 0.085},
+            {"symbol": "OGN", "name": "Origin Protocol", "rank": 82, "fallback_price": 0.12},
+            {"symbol": "NANO", "name": "Nano", "rank": 83, "fallback_price": 0.88},
+            {"symbol": "RVN", "name": "Ravencoin", "rank": 84, "fallback_price": 0.022},
+            {"symbol": "DGB", "name": "DigiByte", "rank": 85, "fallback_price": 0.0085},
+            {"symbol": "SC", "name": "Siacoin", "rank": 86, "fallback_price": 0.0048},
+            {"symbol": "HOT", "name": "Holo", "rank": 87, "fallback_price": 0.00185},
+            {"symbol": "IOST", "name": "IOST", "rank": 88, "fallback_price": 0.0088},
+            {"symbol": "DUSK", "name": "Dusk Network", "rank": 89, "fallback_price": 0.15},
+            {"symbol": "WIN", "name": "WINkLink", "rank": 90, "fallback_price": 0.000085},
+            {"symbol": "BTT", "name": "BitTorrent", "rank": 91, "fallback_price": 0.00000088},
+            {"symbol": "TWT", "name": "Trust Wallet Token", "rank": 92, "fallback_price": 0.95},
+            {"symbol": "JST", "name": "JUST", "rank": 93, "fallback_price": 0.028},
+            {"symbol": "SXP", "name": "Solar", "rank": 94, "fallback_price": 0.32},
+            {"symbol": "HARD", "name": "Kava Lend", "rank": 95, "fallback_price": 0.18},
+            {"symbol": "SUN", "name": "Sun Token", "rank": 96, "fallback_price": 0.0065},
+            {"symbol": "ICX", "name": "ICON", "rank": 97, "fallback_price": 0.22},
+            {"symbol": "ONT", "name": "Ontology", "rank": 98, "fallback_price": 0.24},
+            {"symbol": "QTUM", "name": "Qtum", "rank": 99, "fallback_price": 2.8},
+            {"symbol": "LSK", "name": "Lisk", "rank": 100, "fallback_price": 0.95},
+            {"symbol": "STEEM", "name": "Steem", "rank": 101, "fallback_price": 0.18},
+            {"symbol": "BTS", "name": "BitShares", "rank": 102, "fallback_price": 0.0085},
+            {"symbol": "ARDR", "name": "Ardor", "rank": 103, "fallback_price": 0.065}
+        ]
+        
+        # Get live prices for the top cryptos we can fetch
         price_api = CryptoPriceAPI()
-        symbols = ["BTC", "ETH", "SOL", "XRP", "DOGE", "ADA", "AVAX", "LINK", "UNI", "BNB"]
-        live_prices = price_api.get_multiple_prices(symbols)
+        live_symbols = ["BTC", "ETH", "SOL", "XRP", "DOGE", "ADA", "AVAX", "LINK", "UNI", "BNB"]
+        live_prices = price_api.get_multiple_prices(live_symbols)
         
         cryptocurrencies = []
         total_initial_value = 0
         total_current_value = 0
         
-        # Cryptocurrency names mapping
-        crypto_names = {
-            "BTC": "Bitcoin",
-            "ETH": "Ethereum", 
-            "SOL": "Solana",
-            "XRP": "XRP",
-            "DOGE": "Dogecoin",
-            "ADA": "Cardano",
-            "AVAX": "Avalanche",
-            "LINK": "Chainlink",
-            "UNI": "Uniswap",
-            "BNB": "BNB"
-        }
+        for crypto in all_cryptos:
+            symbol = crypto["symbol"]
+            initial_value = 10.0  # Always $10 per crypto
+            
+            # Use live price if available, otherwise fallback price
+            if symbol in live_prices and 'price' in live_prices[symbol]:
+                current_price = live_prices[symbol]['price']
+                is_live = live_prices[symbol].get('is_live', True)
+            else:
+                current_price = crypto["fallback_price"]
+                is_live = False
+            
+            # Calculate $10 worth of this cryptocurrency
+            quantity = initial_value / current_price
+            current_value = current_price * quantity
+            pnl = current_value - initial_value
+            pnl_percent = (pnl / initial_value) * 100
+            
+            total_initial_value += initial_value
+            total_current_value += current_value
+            
+            cryptocurrencies.append({
+                "rank": crypto["rank"],
+                "symbol": symbol,
+                "name": crypto["name"],
+                "quantity": quantity,
+                "current_price": current_price,
+                "initial_value": initial_value,
+                "current_value": current_value,
+                "pnl": pnl,
+                "pnl_percent": pnl_percent,
+                "target_buy_price": current_price * 0.95,  # 5% below
+                "target_sell_price": current_price * 1.10,  # 10% above
+                "projected_sell_pnl": current_value * 0.10,  # 10% profit
+                "is_live": is_live
+            })
         
-        rank = 1
-        for symbol, price_info in live_prices.items():
-            if 'price' in price_info:
-                initial_value = 10.0  # Starting value - $10 per crypto
-                quantity = initial_value / price_info['price']  # Calculate $10 worth of this crypto
-                current_value = price_info['price'] * quantity
-                pnl = current_value - initial_value
-                pnl_percent = (pnl / initial_value) * 100
-                
-                total_initial_value += initial_value
-                total_current_value += current_value
-                
-                cryptocurrencies.append({
-                    "rank": rank,
-                    "symbol": symbol,
-                    "name": crypto_names.get(symbol, symbol),
-                    "quantity": quantity,
-                    "current_price": price_info['price'],
-                    "initial_value": initial_value,
-                    "current_value": current_value,
-                    "pnl": pnl,
-                    "pnl_percent": pnl_percent,
-                    "target_buy_price": price_info['price'] * 0.95,  # 5% below current
-                    "target_sell_price": price_info['price'] * 1.10,  # 10% above current
-                    "projected_sell_pnl": current_value * 0.10,  # 10% profit target
-                    "is_live": price_info.get('is_live', True)
-                })
-                rank += 1
+        # Sort by rank
+        cryptocurrencies.sort(key=lambda x: x["rank"])
         
         total_pnl = total_current_value - total_initial_value
         total_pnl_percent = (total_pnl / total_initial_value) * 100 if total_initial_value > 0 else 0
