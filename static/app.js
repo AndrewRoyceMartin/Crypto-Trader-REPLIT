@@ -867,8 +867,13 @@ async function resetEntireProgram() {
                 // Clear portfolio display to show no holdings
                 const cryptoSymbolsEl = document.getElementById('crypto-symbols');
                 if (cryptoSymbolsEl) {
-                    cryptoSymbolsEl.innerHTML = '<span class="badge bg-secondary">No holdings - Portfolio reset</span>';
+                    cryptoSymbolsEl.innerHTML = '<span class="badge bg-secondary">Empty portfolio - Start trading to populate</span>';
                 }
+                
+                // Force refresh portfolio data to show empty state
+                setTimeout(() => {
+                    window.tradingApp.loadPortfolioData();
+                }, 1000);
                 
                 // Reload after a short delay to show the message
                 setTimeout(() => {

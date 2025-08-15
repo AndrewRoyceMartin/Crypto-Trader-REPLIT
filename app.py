@@ -44,8 +44,8 @@ trading_state = {
     "start_time": None,
     "type": None
 }
-# Portfolio reset flag
-portfolio_reset_flag = False
+# Portfolio state - starts empty, only populates when trading begins
+portfolio_initialized = False
 # (symbol, timeframe) -> {"df": pd.DataFrame, "ts": datetime}
 _price_cache = {}
 _cache_lock = threading.RLock()
@@ -561,9 +561,10 @@ def api_start_trading():
             "start_time": datetime.utcnow().isoformat()
         })
         
-        # Restore portfolio when trading starts
-        global portfolio_reset_flag
-        portfolio_reset_flag = False
+        # Initialize portfolio when trading starts
+        global portfolio_initialized
+        portfolio_initialized = True
+        logger.info("Portfolio initialized - trading started")
         
         return jsonify({
             "success": True,
@@ -582,10 +583,10 @@ def api_crypto_portfolio():
     if not warmup["done"]:
         return jsonify({"error": "System still initializing"}), 503
     
-    # Check if portfolio has been reset
-    global portfolio_reset_flag
-    if portfolio_reset_flag:
-        # Return empty portfolio (no holdings)
+    # Check if portfolio has been initialized (only after trading starts)
+    global portfolio_initialized
+    if not portfolio_initialized:
+        # Return empty portfolio until trading starts
         return jsonify({
             "summary": {
                 "total_cryptos": 0,
@@ -899,11 +900,10 @@ def api_reset_entire_program():
             "start_time": None
         })
         
-        # Reset portfolio holdings to zero (clear all owned quantities)
-        # Set a global flag to indicate portfolio should show zero holdings
-        global portfolio_reset_flag
-        portfolio_reset_flag = True
-        logger.info("Portfolio holdings reset to zero")
+        # Reset portfolio to empty state (no holdings until trading starts again)
+        global portfolio_initialized
+        portfolio_initialized = False
+        logger.info("Portfolio reset to empty state")
         
         return jsonify({
             "success": True,
