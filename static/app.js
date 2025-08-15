@@ -245,6 +245,7 @@ class TradingApp {
                 this.updatePerformancePageTable(data.cryptocurrencies);
                 this.updateHoldingsTable(data.cryptocurrencies);
                 this.updatePortfolioSummary(data.summary, data.cryptocurrencies);
+                await this.updateRecentTrades(); // Add this to update trades
                 this.updateLoadingProgress(100, 'Complete!');
                 
                 // Hide progress bar after completion
@@ -816,6 +817,62 @@ class TradingApp {
             tradingStatusEl.textContent = status.status;
             tradingStatusEl.className = `badge ${status.status === 'Active' ? 'bg-success' : 'bg-secondary'}`;
         }
+    }
+    
+    async updateRecentTrades() {
+        try {
+            const response = await fetch('/api/status');
+            if (!response.ok) return;
+            
+            const data = await response.json();
+            if (data && data.recent_trades) {
+                this.displayRecentTrades(data.recent_trades);
+            }
+        } catch (error) {
+            console.error('Error updating recent trades:', error);
+        }
+    }
+    
+    displayRecentTrades(trades) {
+        const tableBody = document.getElementById('trades-table');
+        if (!tableBody) return;
+        
+        // Clear existing content
+        tableBody.innerHTML = '';
+        
+        if (!trades || trades.length === 0) {
+            const row = document.createElement('tr');
+            row.innerHTML = '<td colspan="6" class="text-center text-muted">No trades yet</td>';
+            tableBody.appendChild(row);
+            return;
+        }
+        
+        trades.forEach(trade => {
+            const row = document.createElement('tr');
+            
+            // Format timestamp
+            const timestamp = new Date(trade.timestamp).toLocaleString();
+            
+            // Format values
+            const price = this.formatCurrency(trade.price);
+            const quantity = trade.quantity.toFixed(6);
+            const pnl = trade.pnl ? this.formatCurrency(trade.pnl) : '$0.00';
+            
+            // Determine colors
+            const sideClass = trade.side === 'BUY' ? 'text-success' : 'text-danger';
+            const pnlClass = trade.pnl >= 0 ? 'text-success' : 'text-danger';
+            
+            row.innerHTML = `
+                <td><small>${timestamp}</small></td>
+                <td><strong>${trade.symbol}</strong></td>
+                <td><span class="badge ${trade.side === 'BUY' ? 'bg-success' : 'bg-danger'}">${trade.side}</span></td>
+                <td>${quantity}</td>
+                <td>${price}</td>
+                <td class="${pnlClass}">${pnl}</td>
+            `;
+            
+            tableBody.appendChild(row);
+        });
     }
 }
 
