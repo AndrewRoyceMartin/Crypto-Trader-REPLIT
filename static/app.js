@@ -32,6 +32,7 @@ class TradingApp {
         
         // Currency selection state
         this.selectedCurrency = 'USD'; // Default currency
+        this.exchangeRates = { USD: 1 }; // Base USD rates
         
         this.init();
     }
@@ -45,8 +46,10 @@ class TradingApp {
         // Load data immediately on startup with debounce
         this.debouncedUpdateDashboard();
         
-        // Load portfolio data immediately to populate cryptocurrency tables
-        this.updateCryptoPortfolio();
+        // Load exchange rates and portfolio data
+        this.fetchExchangeRates().then(() => {
+            this.updateCryptoPortfolio();
+        });
     }
     
     setupEventListeners() {
@@ -360,16 +363,48 @@ class TradingApp {
     formatCurrency(amount, currency = null) {
         // Use selected currency if not specified
         const targetCurrency = currency || this.selectedCurrency || 'USD';
+        
+        // Apply exchange rate conversion
+        const rate = this.exchangeRates[targetCurrency] || 1;
+        const convertedAmount = amount * rate;
+        
         return new Intl.NumberFormat('en-US', {
             style: 'currency',
             currency: targetCurrency
-        }).format(amount);
+        }).format(convertedAmount);
     }
     
-    setSelectedCurrency(currency) {
+    async fetchExchangeRates() {
+        try {
+            console.log('Fetching exchange rates...');
+            const response = await fetch('/api/exchange-rates');
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            const data = await response.json();
+            this.exchangeRates = data.rates;
+            console.log('Exchange rates loaded:', this.exchangeRates);
+        } catch (error) {
+            console.error('Failed to fetch exchange rates:', error);
+            // Fallback to basic rates if API fails
+            this.exchangeRates = { 
+                USD: 1, 
+                EUR: 0.92, 
+                GBP: 0.79, 
+                AUD: 1.52 
+            };
+            console.log('Using fallback exchange rates:', this.exchangeRates);
+        }
+    }
+    
+    async setSelectedCurrency(currency) {
         this.selectedCurrency = currency;
         console.log('Currency changed to:', currency);
-        // Refresh all tables with new currency formatting
+        
+        // Fetch latest exchange rates for accurate conversion
+        await this.fetchExchangeRates();
+        
+        // Refresh all tables with new currency formatting and conversion
         this.updateCryptoPortfolio();
     }
     

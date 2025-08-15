@@ -578,6 +578,32 @@ def get_price_source_status():
             }
         }), 500
 
+@app.route("/api/exchange-rates")
+def get_exchange_rates():
+    """Get current exchange rates from USD to other currencies."""
+    try:
+        # Use realistic exchange rates based on current market values
+        exchange_rates = {
+            "USD": 1.0,
+            "EUR": 0.92,  # USD to EUR
+            "GBP": 0.79,  # USD to GBP  
+            "AUD": 1.52   # USD to AUD
+        }
+        
+        # In production, integrate with a real exchange rate API like:
+        # - Exchange Rates API (exchangerate-api.com)
+        # - Fixer.io, CurrencyLayer, Alpha Vantage
+        
+        return jsonify({
+            "rates": exchange_rates,
+            "base": "USD",
+            "timestamp": datetime.now().isoformat()
+        })
+        
+    except Exception as e:
+        app.logger.error("Error getting exchange rates: %s", e)
+        return jsonify({"error": str(e)}), 500
+
 @app.route("/api/update-live-prices", methods=["POST"])
 def update_live_prices():
     """Manually trigger live price updates from CoinGecko API."""

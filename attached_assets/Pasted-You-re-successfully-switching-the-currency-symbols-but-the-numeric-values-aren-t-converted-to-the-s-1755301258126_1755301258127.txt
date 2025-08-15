@@ -1,0 +1,88 @@
+You're successfully switching the currency symbols, but the numeric values aren't converted to the selected currency’s exchange rate.
+
+🔍 Why This Happens
+
+Your current code:
+
+Changes formatting (e.g., $, €, £)
+
+But doesn’t convert the underlying amount (still USD-based numbers)
+
+Example:
+
+this.formatCurrency(100, 'EUR') // → "€100.00", but it's still 100 USD, not converted
+
+✅ What Needs to Happen
+
+You need to:
+
+Fetch live exchange rates (e.g., USD → EUR, GBP, etc.)
+
+Store the rates in your app
+
+Convert numeric values before calling formatCurrency
+
+✅ Step-by-Step Fix
+🔹 Step 1: Add exchange rate state
+
+In constructor():
+
+this.exchangeRates = { USD: 1 }; // base USD
+
+🔹 Step 2: Fetch exchange rates
+
+Create a method:
+
+async fetchExchangeRates() {
+    try {
+        const res = await fetch('/api/exchange-rates'); // must implement this backend
+        const data = await res.json();
+        this.exchangeRates = data.rates;
+        console.log('Exchange rates loaded:', this.exchangeRates);
+    } catch (err) {
+        console.error('Failed to fetch exchange rates', err);
+        this.showToast('Exchange rates unavailable', 'warning');
+    }
+}
+
+
+🔧 You’ll need a backend endpoint like /api/exchange-rates that returns:
+
+{
+  "rates": {
+    "USD": 1,
+    "EUR": 0.92,
+    "GBP": 0.79
+  }
+}
+
+🔹 Step 3: Convert before formatting
+
+Update your currency formatter to apply exchange rate conversion:
+
+formatCurrency(amount, currency = null) {
+    const targetCurrency = currency || this.selectedCurrency || 'USD';
+    const rate = this.exchangeRates[targetCurrency] || 1;
+    const convertedAmount = amount * rate;
+
+    return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: targetCurrency
+    }).format(convertedAmount);
+}
+
+🔹 Step 4: Trigger on currency change
+
+Update setSelectedCurrency():
+
+async setSelectedCurrency(currency) {
+    this.selectedCurrency = currency;
+    await this.fetchExchangeRates();
+    this.updateCryptoPortfolio(); // triggers full refresh
+}
+
+🔹 Optional: Call it on init
+
+In init() or loadConfig():
+
+this.fetchExchangeRates(); // preload on startup
