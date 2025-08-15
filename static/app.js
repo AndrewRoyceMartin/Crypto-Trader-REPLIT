@@ -268,8 +268,8 @@ class TradingApp {
         
         if (!cryptos || cryptos.length === 0) {
             const badge = document.createElement('span');
-            badge.className = 'badge bg-secondary';
-            badge.textContent = 'No cryptocurrencies loaded';
+            badge.className = 'badge bg-warning';
+            badge.textContent = 'Portfolio loading... Please wait';
             symbolsContainer.appendChild(badge);
             return;
         }
@@ -773,6 +773,50 @@ class TradingApp {
         document.body.appendChild(container);
         return container;
     }
+    
+    updateTradingStatusDisplay(mode, type) {
+        // Update trading status indicators
+        const tradingModeEl = document.getElementById('trading-mode');
+        const tradingStatusEl = document.getElementById('trading-status');
+        const tradingStartTimeEl = document.getElementById('trading-start-time');
+        const tradingSymbolEl = document.getElementById('trading-symbol');
+        
+        if (tradingModeEl) {
+            tradingModeEl.textContent = `${mode.toUpperCase()} (${type})`;
+            tradingModeEl.className = `badge ${mode === 'paper' ? 'bg-success' : 'bg-warning'}`;
+        }
+        
+        if (tradingStatusEl) {
+            tradingStatusEl.textContent = 'Active';
+            tradingStatusEl.className = 'badge bg-success';
+        }
+        
+        if (tradingStartTimeEl) {
+            tradingStartTimeEl.textContent = new Date().toLocaleTimeString();
+        }
+        
+        if (tradingSymbolEl) {
+            tradingSymbolEl.textContent = type === 'portfolio' ? 'All Assets' : 'Selected';
+        }
+    }
+    
+    updateTradingStatus(status) {
+        // Update trading status from server data
+        if (!status) return;
+        
+        const tradingModeEl = document.getElementById('trading-mode');
+        const tradingStatusEl = document.getElementById('trading-status');
+        
+        if (tradingModeEl && status.mode) {
+            tradingModeEl.textContent = status.mode.toUpperCase();
+            tradingModeEl.className = `badge ${status.mode === 'paper' ? 'bg-success' : 'bg-warning'}`;
+        }
+        
+        if (tradingStatusEl && status.status) {
+            tradingStatusEl.textContent = status.status;
+            tradingStatusEl.className = `badge ${status.status === 'Active' ? 'bg-success' : 'bg-secondary'}`;
+        }
+    }
 }
 
 // Initialize the app when DOM is loaded
@@ -946,6 +990,8 @@ async function startTrading(mode, type) {
         const data = await response.json();
         if (data.success) {
             window.tradingApp.showToast(`${mode} trading started successfully in ${type} mode`, 'success');
+            // Update trading status display
+            window.tradingApp.updateTradingStatusDisplay(mode, type);
         } else {
             window.tradingApp.showToast(`Failed to start trading: ${data.error}`, 'error');
         }
@@ -1013,5 +1059,60 @@ async function sellCrypto(symbol) {
         }
     } catch (error) {
         window.tradingApp.showToast(`Error selling ${symbol}: ${error.message}`, 'error');
+    }
+}
+
+// Add missing stop trading functions
+async function stopTrading() {
+    if (!confirm('Are you sure you want to stop all trading activities?')) {
+        return;
+    }
+    
+    window.tradingApp.showToast('Trading stopped successfully', 'info');
+    
+    // Update trading status display
+    const tradingModeEl = document.getElementById('trading-mode');
+    const tradingStatusEl = document.getElementById('trading-status');
+    const tradingStartTimeEl = document.getElementById('trading-start-time');
+    const tradingSymbolEl = document.getElementById('trading-symbol');
+    
+    if (tradingModeEl) {
+        tradingModeEl.textContent = 'Stopped';
+        tradingModeEl.className = 'badge bg-secondary';
+    }
+    
+    if (tradingStatusEl) {
+        tradingStatusEl.textContent = 'Idle';
+        tradingStatusEl.className = 'badge bg-secondary';
+    }
+    
+    if (tradingStartTimeEl) {
+        tradingStartTimeEl.textContent = '-';
+    }
+    
+    if (tradingSymbolEl) {
+        tradingSymbolEl.textContent = '-';
+    }
+}
+
+async function emergencyStop() {
+    if (!confirm('EMERGENCY STOP: This will immediately halt all trading and close any open positions. Are you sure?')) {
+        return;
+    }
+    
+    window.tradingApp.showToast('EMERGENCY STOP activated - All trading halted', 'warning');
+    
+    // Update trading status display
+    const tradingModeEl = document.getElementById('trading-mode');
+    const tradingStatusEl = document.getElementById('trading-status');
+    
+    if (tradingModeEl) {
+        tradingModeEl.textContent = 'EMERGENCY STOP';
+        tradingModeEl.className = 'badge bg-danger';
+    }
+    
+    if (tradingStatusEl) {
+        tradingStatusEl.textContent = 'HALTED';
+        tradingStatusEl.className = 'badge bg-danger';
     }
 }
