@@ -913,7 +913,7 @@ class TradingApp {
         
         if (!filteredTrades || filteredTrades.length === 0) {
             const row = document.createElement('tr');
-            row.innerHTML = '<td colspan="6" class="text-center text-muted">No trades match the current filters</td>';
+            row.innerHTML = '<td colspan="7" class="text-center text-muted">No trades match the current filters</td>';
             tableBody.appendChild(row);
             return;
         }
@@ -937,6 +937,7 @@ class TradingApp {
             const pnlClass = trade.pnl >= 0 ? 'text-success' : 'text-danger';
             
             row.innerHTML = `
+                <td><span class="badge bg-secondary">#${trade.trade_id || (filteredTrades.indexOf(trade) + 1)}</span></td>
                 <td><small>${timestamp}</small></td>
                 <td><strong>${trade.symbol}</strong></td>
                 <td><span class="badge ${trade.side === 'BUY' ? 'bg-success' : 'bg-danger'}">${trade.side}</span></td>
@@ -1004,7 +1005,7 @@ async function resetEntireProgram() {
                 // Clear recent trades display
                 const tradesTable = document.getElementById('trades-table');
                 if (tradesTable) {
-                    tradesTable.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No trades yet</td></tr>';
+                    tradesTable.innerHTML = '<tr><td colspan="7" class="text-center text-muted">No trades yet</td></tr>';
                 }
                 
                 // Force refresh portfolio data to show empty state

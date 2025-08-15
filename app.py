@@ -85,13 +85,15 @@ def create_initial_purchase_trades(mode, trade_type):
         live_prices = price_api.get_multiple_prices(symbols)
         
         initial_trades = []
+        trade_counter = 1
         for symbol, price_info in live_prices.items():
             if isinstance(price_info, dict) and 'price' in price_info:
                 current_price = price_info['price']
                 quantity = 10.0 / current_price  # $10 worth
                 
-                # Create trade record
+                # Create trade record with unique trade number
                 trade_record = {
+                    "trade_id": trade_counter,
                     "symbol": f"{symbol}/USDT",
                     "side": "BUY",
                     "quantity": quantity,
@@ -103,6 +105,7 @@ def create_initial_purchase_trades(mode, trade_type):
                     "status": "completed"
                 }
                 initial_trades.append(trade_record)
+                trade_counter += 1
                 
         logger.info(f"Created {len(initial_trades)} initial purchase trades for portfolio setup")
         
