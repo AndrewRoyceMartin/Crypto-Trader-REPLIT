@@ -523,10 +523,11 @@ class TradingApp {
                 <td>$${price}</td>
                 <td>${currentValue}</td>
                 <td>${targetSell}</td>
+                <td>${approachingPercent}%</td>
+                <td>${targetBuy}</td>
+                <td>${this.formatCurrency(crypto.projected_sell_pnl || 0)}</td>
                 <td class="${pnlClass}">${pnl}</td>
                 <td class="${pnlClass}">${pnlIcon} ${pnlPercent}%</td>
-                <td><small class="text-muted">${lastUpdated}</small></td>
-                <td>${signal}</td>
                 <td>
                     <button class="btn btn-sm btn-outline-success me-1" onclick="buyCrypto('${crypto.symbol}')" title="Buy">
                         <i class="fas fa-plus"></i>
@@ -535,7 +536,6 @@ class TradingApp {
                         <i class="fas fa-minus"></i>
                     </button>
                 </td>
-                <td><small class="text-info">${targetProximity}</small></td>
             `;
             
             tableBody.appendChild(row);
