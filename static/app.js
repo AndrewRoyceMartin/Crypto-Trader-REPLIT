@@ -839,6 +839,31 @@ async function resetEntireProgram() {
             
             if (data.success) {
                 window.tradingApp.showToast('Portfolio reset successfully! All values back to $10 each.', 'success');
+                
+                // Reset trading status to stopped state
+                const tradingModeEl = document.getElementById('trading-mode');
+                const tradingStatusEl = document.getElementById('trading-status');
+                const tradingStartTimeEl = document.getElementById('trading-start-time');
+                const tradingSymbolEl = document.getElementById('trading-symbol');
+                
+                if (tradingModeEl) {
+                    tradingModeEl.textContent = 'Stopped';
+                    tradingModeEl.className = 'badge bg-secondary';
+                }
+                
+                if (tradingStatusEl) {
+                    tradingStatusEl.textContent = 'Idle';
+                    tradingStatusEl.className = 'badge bg-secondary';
+                }
+                
+                if (tradingStartTimeEl) {
+                    tradingStartTimeEl.textContent = '-';
+                }
+                
+                if (tradingSymbolEl) {
+                    tradingSymbolEl.textContent = '-';
+                }
+                
                 // Reload after a short delay to show the message
                 setTimeout(() => {
                     location.reload();
