@@ -492,29 +492,38 @@ def api_portfolio_performance():
 
 @app.route("/api/current-holdings")
 def api_current_holdings():
-    """Get current portfolio holdings."""
+    """Get current holdings for the holdings dashboard section - top 10 cryptos only."""
     if not warmup["done"]:
         return jsonify({"error": "System still initializing"}), 503
     
     try:
-        # Get live prices for holdings
+        # Get live prices for top 10 cryptos only
         from src.data.price_api import CryptoPriceAPI
         price_api = CryptoPriceAPI()
-        symbols = ["BTC", "ETH", "SOL", "XRP", "DOGE"]
-        live_prices = price_api.get_multiple_prices(symbols)
+        top_symbols = ["BTC", "ETH", "SOL", "XRP", "DOGE", "ADA", "AVAX", "LINK", "UNI", "BNB"]
+        live_prices = price_api.get_multiple_prices(top_symbols)
         
         holdings = []
         for symbol, price_info in live_prices.items():
             if 'price' in price_info:
-                quantity = 0.025 if symbol == "BTC" else (0.8 if symbol == "ETH" else 15.0)
+                # Calculate $10 worth of each crypto
+                initial_value = 10.0
+                current_price = price_info['price']
+                quantity = initial_value / current_price
+                current_value = current_price * quantity
+                
                 holdings.append({
                     "symbol": symbol,
                     "quantity": quantity,
-                    "current_price": price_info['price'],
-                    "value": price_info['price'] * quantity,
-                    "allocation_percent": 20.0,  # Equal allocation for demo
+                    "current_price": current_price,
+                    "value": current_value,
+                    "allocation_percent": 10.0,  # 10% each for top 10
                     "is_live": price_info.get('is_live', True)
                 })
+        
+        # Sort by value (highest first) and limit to top 10
+        holdings.sort(key=lambda x: x["value"], reverse=True)
+        holdings = holdings[:10]
         
         return jsonify({"holdings": holdings})
     except Exception as e:
