@@ -38,6 +38,9 @@ class TradingApp {
         
         // Load data immediately on startup with debounce
         this.debouncedUpdateDashboard();
+        
+        // Load portfolio data immediately to populate cryptocurrency tables
+        this.updateCryptoPortfolio();
     }
     
     setupEventListeners() {
@@ -54,6 +57,7 @@ class TradingApp {
                 this.startAutoUpdate();
                 // Use debounced update when page becomes visible
                 this.debouncedUpdateDashboard();
+                this.updateCryptoPortfolio(); // Also refresh portfolio when page becomes visible
             }
         });
         
@@ -67,6 +71,7 @@ class TradingApp {
         if (!this.updateInterval) {
             this.updateInterval = setInterval(() => {
                 this.debouncedUpdateDashboard();
+                this.updateCryptoPortfolio(); // Also update portfolio data every 60 seconds
             }, 60000); // Reduced from 30s to 60s to prevent rate limiting
         }
     }
