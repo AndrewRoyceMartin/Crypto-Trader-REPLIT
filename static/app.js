@@ -57,7 +57,7 @@ class TradingApp {
         if (!this.updateInterval) {
             this.updateInterval = setInterval(() => {
                 this.updateDashboard();
-            }, 30000);
+            }, 60000); // Reduced from 30s to 60s to prevent rate limiting
         }
     }
     
@@ -103,10 +103,7 @@ class TradingApp {
             console.error('Status update failed:', {});
         }
         
-        // Update crypto portfolio data
-        this.updateCryptoPortfolio();
-        
-        // Update price source status
+        // Update price source status only (portfolio updates separately to avoid loops)
         this.updatePriceSourceStatus();
     }
     
@@ -210,6 +207,13 @@ class TradingApp {
     }
     
     async updateCryptoPortfolio() {
+        // Prevent concurrent updates
+        if (this.isUpdatingPortfolio) {
+            console.log('Portfolio update already in progress, skipping...');
+            return;
+        }
+        this.isUpdatingPortfolio = true;
+        
         try {
             // Show loading progress
             this.updateLoadingProgress(20, 'Fetching cryptocurrency data...');
@@ -257,6 +261,8 @@ class TradingApp {
         } catch (error) {
             console.error('Error updating crypto portfolio:', error);
             this.updateLoadingProgress(0, 'Error loading data');
+        } finally {
+            this.isUpdatingPortfolio = false;
         }
     }
     
@@ -468,7 +474,7 @@ class TradingApp {
         if (!cryptos || cryptos.length === 0) {
             console.log('No crypto data provided');
             const row = document.createElement('tr');
-            row.innerHTML = '<td colspan="13" class="text-center text-muted">No performance data available</td>';
+            row.innerHTML = '<td colspan="13" class="text-center text-muted">No cryptocurrency data available - Start trading to populate portfolio</td>';
             tableBody.appendChild(row);
             return;
         }
@@ -525,7 +531,7 @@ class TradingApp {
                 <td>${targetSell}</td>
                 <td>${approachingPercent}%</td>
                 <td>${targetBuy}</td>
-                <td>${this.formatCurrency(crypto.projected_sell_pnl || 0)}</td>
+                <td>${this.formatCurrency(crypto.projected_sell_pnl || crypto.pnl || 0)}</td>
                 <td class="${pnlClass}">${pnl}</td>
                 <td class="${pnlClass}">${pnlIcon} ${pnlPercent}%</td>
                 <td>
