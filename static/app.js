@@ -738,6 +738,41 @@ class TradingApp {
         // Basic chart initialization - placeholder for actual chart setup
         console.log('Charts initialized');
     }
+    
+    showToast(message, type = 'info') {
+        // Create toast notification
+        const toastContainer = document.getElementById('toast-container') || this.createToastContainer();
+        
+        const toast = document.createElement('div');
+        toast.className = `toast align-items-center text-white bg-${type === 'error' ? 'danger' : type === 'success' ? 'success' : type === 'warning' ? 'warning' : 'primary'} border-0`;
+        toast.setAttribute('role', 'alert');
+        toast.innerHTML = `
+            <div class="d-flex">
+                <div class="toast-body">${message}</div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        `;
+        
+        toastContainer.appendChild(toast);
+        
+        // Show toast using Bootstrap
+        const bsToast = new bootstrap.Toast(toast);
+        bsToast.show();
+        
+        // Remove toast element after it's hidden
+        toast.addEventListener('hidden.bs.toast', () => {
+            toast.remove();
+        });
+    }
+    
+    createToastContainer() {
+        const container = document.createElement('div');
+        container.id = 'toast-container';
+        container.className = 'toast-container position-fixed top-0 end-0 p-3';
+        container.style.zIndex = '1050';
+        document.body.appendChild(container);
+        return container;
+    }
 }
 
 // Initialize the app when DOM is loaded
@@ -884,6 +919,41 @@ async function updateHoldingsData() {
 }
 
 // Add missing functions referenced in the HTML
+async function startTrading(mode, type) {
+    if (mode === 'live') {
+        if (!confirm('Are you sure you want to start LIVE trading? This will use real money and cannot be undone!')) {
+            return;
+        }
+        window.tradingApp.showToast('Live trading is not enabled in this demo version', 'warning');
+        return;
+    }
+    
+    // Paper trading mode
+    window.tradingApp.showToast(`Starting ${mode} trading in ${type} mode...`, 'info');
+    
+    try {
+        const response = await fetch('/api/start-trading', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                mode: mode,
+                type: type
+            })
+        });
+        
+        const data = await response.json();
+        if (data.success) {
+            window.tradingApp.showToast(`${mode} trading started successfully in ${type} mode`, 'success');
+        } else {
+            window.tradingApp.showToast(`Failed to start trading: ${data.error}`, 'error');
+        }
+    } catch (error) {
+        window.tradingApp.showToast(`Error starting trading: ${error.message}`, 'error');
+    }
+}
+
 async function buyCrypto(symbol) {
     const amount = prompt(`Enter USD amount to buy ${symbol}:`, '25.00');
     if (!amount || isNaN(amount) || parseFloat(amount) <= 0) {
