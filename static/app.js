@@ -20,6 +20,13 @@ class TradingApp {
         this.dashboardUpdateDebounce = 2000; // 2 second debounce
         this.pendingDashboardUpdate = null;
         
+        // API caching to prevent duplicate requests
+        this.apiCache = {
+            status: { data: null, timestamp: 0, ttl: 5000 }, // 5-second cache
+            portfolio: { data: null, timestamp: 0, ttl: 6000 }, // 6-second cache
+            config: { data: null, timestamp: 0, ttl: 30000 } // 30-second cache
+        };
+        
         this.init();
     }
     
@@ -89,6 +96,35 @@ class TradingApp {
         }
     }
     
+    async fetchWithCache(endpoint, cacheKey) {
+        const cache = this.apiCache[cacheKey];
+        const now = Date.now();
+        
+        // Return cached data if still valid
+        if (cache && cache.data && (now - cache.timestamp) < cache.ttl) {
+            return cache.data;
+        }
+        
+        try {
+            const response = await fetch(endpoint);
+            if (!response.ok) return null;
+            
+            const data = await response.json();
+            
+            // Update cache
+            this.apiCache[cacheKey] = {
+                data: data,
+                timestamp: now,
+                ttl: cache.ttl
+            };
+            
+            return data;
+        } catch (error) {
+            console.error(`Error fetching ${endpoint}:`, error);
+            return null;
+        }
+    }
+
     async updateDashboard() {
         // Implement debounce to prevent overlapping calls
         const now = Date.now();
@@ -105,38 +141,37 @@ class TradingApp {
         
         this.lastDashboardUpdate = now;
         
-        try {
-            const response = await fetch('/api/status');
-            if (!response.ok) return;
+        // Use cached API call to get status data
+        const data = await this.fetchWithCache('/api/status', 'status');
+        if (!data) return;
+        
+        // Update uptime display
+        if (data.uptime !== undefined) {
+            this.updateUptimeDisplay(data.uptime);
+        }
+        
+        // Update portfolio values from status endpoint
+        if (data.portfolio) {
+            const portfolioValueEl = document.getElementById('portfolio-value');
+            const portfolioPnlEl = document.getElementById('portfolio-pnl');
             
-            const data = await response.json();
-            
-            // Update uptime display
-            if (data.uptime !== undefined) {
-                this.updateUptimeDisplay(data.uptime);
+            if (portfolioValueEl) {
+                portfolioValueEl.textContent = this.formatCurrency(data.portfolio.total_value || 0);
             }
-            
-            // Update portfolio values from status endpoint
-            if (data.portfolio) {
-                const portfolioValueEl = document.getElementById('portfolio-value');
-                const portfolioPnlEl = document.getElementById('portfolio-pnl');
-                
-                if (portfolioValueEl) {
-                    portfolioValueEl.textContent = this.formatCurrency(data.portfolio.total_value || 0);
-                }
-                if (portfolioPnlEl) {
-                    portfolioPnlEl.textContent = this.formatCurrency(data.portfolio.daily_pnl || 0);
-                    portfolioPnlEl.className = (data.portfolio.daily_pnl || 0) >= 0 ? 'text-success' : 'text-danger';
-                }
+            if (portfolioPnlEl) {
+                portfolioPnlEl.textContent = this.formatCurrency(data.portfolio.daily_pnl || 0);
+                portfolioPnlEl.className = (data.portfolio.daily_pnl || 0) >= 0 ? 'text-success' : 'text-danger';
             }
-            
-            // Update trading status
-            if (data.trading_status) {
-                this.updateTradingStatus(data.trading_status);
-            }
-            
-        } catch (error) {
-            console.error('Status update failed:', error);
+        }
+        
+        // Update trading status
+        if (data.trading_status) {
+            this.updateTradingStatus(data.trading_status);
+        }
+        
+        // Update recent trades using the same cached data
+        if (data.recent_trades) {
+            this.displayRecentTrades(data.recent_trades);
         }
         
         // Update price source status only (portfolio updates separately to avoid loops)
@@ -198,14 +233,18 @@ class TradingApp {
     }
     
     async loadConfig() {
-        try {
-            const response = await fetch('/api/config');
-            if (response.ok) {
-                const config = await response.json();
-                console.log('Config loaded:', config);
-            }
-        } catch (error) {
-            console.error('Failed to load config:', error);
+        // Use cached API call for config data
+        const config = await this.fetchWithCache('/api/config', 'config');
+        if (!config) return;
+        
+        console.log('Config loaded:', config);
+        
+        // Store config for later use
+        this.config = config;
+        
+        // Apply configuration
+        if (config.update_interval) {
+            // Update interval is handled by startAutoUpdate()
         }
     }
     
@@ -970,16 +1009,10 @@ class TradingApp {
     }
     
     async updateRecentTrades() {
-        try {
-            const response = await fetch('/api/status');
-            if (!response.ok) return;
-            
-            const data = await response.json();
-            if (data && data.recent_trades) {
-                this.displayRecentTrades(data.recent_trades);
-            }
-        } catch (error) {
-            console.error('Error updating recent trades:', error);
+        // Use cached API call to get status data (eliminates duplicate request)
+        const data = await this.fetchWithCache('/api/status', 'status');
+        if (data && data.recent_trades) {
+            this.displayRecentTrades(data.recent_trades);
         }
     }
     
