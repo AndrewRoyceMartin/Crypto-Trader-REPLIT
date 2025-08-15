@@ -46,6 +46,8 @@ trading_state = {
 }
 # Portfolio state - starts empty, only populates when trading begins
 portfolio_initialized = False
+# Recent initial trades for display
+recent_initial_trades = []
 # (symbol, timeframe) -> {"df": pd.DataFrame, "ts": datetime}
 _price_cache = {}
 _cache_lock = threading.RLock()
@@ -64,6 +66,45 @@ def cache_get(sym: str, tf: str):
     if (datetime.utcnow() - item["ts"]).total_seconds() > PRICE_TTL_SEC:
         return None
     return item["df"]
+
+def create_initial_purchase_trades(mode, trade_type):
+    """Create trade records for initial $10 portfolio purchases."""
+    try:
+        from src.data.price_api import CryptoPriceAPI
+        price_api = CryptoPriceAPI()
+        
+        # Get current prices for all crypto symbols to create purchase records
+        symbols = ["BTC", "ETH", "SOL", "XRP", "DOGE", "ADA", "AVAX", "LINK", "UNI", "BNB"]
+        live_prices = price_api.get_multiple_prices(symbols)
+        
+        initial_trades = []
+        for symbol, price_info in live_prices.items():
+            if isinstance(price_info, dict) and 'price' in price_info:
+                current_price = price_info['price']
+                quantity = 10.0 / current_price  # $10 worth
+                
+                # Create trade record
+                trade_record = {
+                    "symbol": f"{symbol}/USDT",
+                    "side": "BUY",
+                    "quantity": quantity,
+                    "price": current_price,
+                    "total_value": 10.0,
+                    "type": "INITIAL_PURCHASE",
+                    "mode": mode,
+                    "timestamp": datetime.utcnow().isoformat(),
+                    "status": "completed"
+                }
+                initial_trades.append(trade_record)
+                
+        logger.info(f"Created {len(initial_trades)} initial purchase trades for portfolio setup")
+        
+        # Store trades in global variable for status endpoint
+        global recent_initial_trades
+        recent_initial_trades = initial_trades[:5]  # Keep last 5 for display
+        
+    except Exception as e:
+        logger.error(f"Error creating initial purchase trades: {e}")
 
 def background_warmup():
     """Background warmup with minimal symbols and no heavy initialization."""
@@ -388,7 +429,7 @@ def api_status():
             "strategy": trading_state["strategy"],
             "type": trading_state["type"],
             "start_time": trading_state["start_time"],
-            "trades_today": 0,
+            "trades_today": len(recent_initial_trades) if recent_initial_trades else 0,
             "last_trade": None
         },
         "portfolio": {
@@ -610,6 +651,9 @@ def api_start_trading():
         global portfolio_initialized
         portfolio_initialized = True
         logger.info("Portfolio initialized - trading started")
+        
+        # Create initial purchase trades for the portfolio
+        create_initial_purchase_trades(mode, trade_type)
         
         return jsonify({
             "success": True,
