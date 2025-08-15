@@ -358,11 +358,19 @@ class TradingApp {
         // Clear existing content
         tableBody.innerHTML = '';
         
-        // Sort cryptos by market cap rank
+        // Handle empty state first
+        if (!cryptos || cryptos.length === 0) {
+            const row = document.createElement('tr');
+            row.innerHTML = '<td colspan="8" class="text-center text-muted">No cryptocurrency data available</td>';
+            tableBody.appendChild(row);
+            return;
+        }
+        
+        // Sort cryptos by market cap rank and render once
         const sortedCryptos = [...cryptos].sort((a, b) => (a.rank || 999) - (b.rank || 999));
         
         sortedCryptos.forEach(crypto => {
-            const row = tableBody.insertRow();
+            const row = document.createElement('tr');
             
             // Format values
             const price = typeof crypto.current_price === 'number' ? crypto.current_price : 0;
@@ -370,104 +378,28 @@ class TradingApp {
             const value = typeof crypto.current_value === 'number' ? crypto.current_value : 0;
             const pnlPercent = typeof crypto.pnl_percent === 'number' ? crypto.pnl_percent : 0;
             
-            // Create cells
-            const rankCell = row.insertCell(0);
-            const symbolCell = row.insertCell(1);
-            const nameCell = row.insertCell(2);
-            const priceCell = row.insertCell(3);
-            const quantityCell = row.insertCell(4);
-            const valueCell = row.insertCell(5);
-            const pnlPercentCell = row.insertCell(6);
-            const updatedCell = row.insertCell(7);
-            
-            // Fill cells with data
-            rankCell.textContent = crypto.rank || '-';
-            symbolCell.innerHTML = `<span class="fw-bold text-primary">${crypto.symbol || '-'}</span>`;
-            nameCell.textContent = crypto.name || '-';
-            priceCell.textContent = this.formatCurrency(price);
-            quantityCell.textContent = quantity.toFixed(6);
-            valueCell.textContent = this.formatCurrency(value);
-            
-            // Color-code P&L percentage
+            // Determine P&L class
             const pnlClass = pnlPercent >= 0 ? 'text-success' : 'text-danger';
-            pnlPercentCell.innerHTML = `<span class="${pnlClass} fw-bold">${pnlPercent.toFixed(2)}%</span>`;
             
             // Format last updated
-            if (crypto.last_updated) {
-                const updateTime = new Date(crypto.last_updated);
-                updatedCell.innerHTML = `<small class="text-muted">${updateTime.toLocaleTimeString()}</small>`;
-            } else {
-                updatedCell.innerHTML = '<small class="text-muted">-</small>';
-            }
+            const lastUpdated = crypto.last_updated ? 
+                new Date(crypto.last_updated).toLocaleTimeString() : 
+                '-';
+            
+            // Build row content using createElement for better control
+            row.innerHTML = `
+                <td>${crypto.rank || '-'}</td>
+                <td><span class="fw-bold text-primary">${crypto.symbol || '-'}</span></td>
+                <td>${crypto.name || '-'}</td>
+                <td>${this.formatCurrency(price)}</td>
+                <td>${quantity.toFixed(6)}</td>
+                <td>${this.formatCurrency(value)}</td>
+                <td><span class="${pnlClass} fw-bold">${pnlPercent.toFixed(2)}%</span></td>
+                <td><small class="text-muted">${lastUpdated}</small></td>
+            `;
             
             // Add hover effect
             row.classList.add('table-row-hover');
-        });
-        
-        if (!cryptos || cryptos.length === 0) {
-            const row = document.createElement('tr');
-            row.innerHTML = '<td colspan="13" class="text-center text-muted">No cryptocurrency data available</td>';
-            tableBody.appendChild(row);
-            return;
-        }
-        
-        // Populate table with cryptocurrency data
-        cryptos.forEach(crypto => {
-            const row = document.createElement('tr');
-            
-            // Format values
-            const price = crypto.current_price < 1 ? 
-                crypto.current_price.toFixed(6) : 
-                crypto.current_price.toFixed(2);
-            const quantity = crypto.quantity.toFixed(4);
-            const currentValue = this.formatCurrency(crypto.current_value);
-            const pnl = this.formatCurrency(crypto.pnl);
-            const pnlPercent = crypto.pnl_percent.toFixed(2);
-            const targetBuy = crypto.target_buy_price ? this.formatCurrency(crypto.target_buy_price) : '-';
-            const targetSell = crypto.target_sell_price ? this.formatCurrency(crypto.target_sell_price) : '-';
-            
-            // Determine PnL colors
-            const pnlClass = crypto.pnl >= 0 ? 'text-success' : 'text-danger';
-            const pnlIcon = crypto.pnl >= 0 ? '↗' : '↘';
-            
-            // Signal based on current price vs target prices
-            let signal = 'HOLD';
-            let signalClass = 'badge bg-secondary';
-            if (crypto.target_buy_price && crypto.current_price <= crypto.target_buy_price) {
-                signal = 'BUY';
-                signalClass = 'badge bg-success';
-            } else if (crypto.target_sell_price && crypto.current_price >= crypto.target_sell_price) {
-                signal = 'SELL';
-                signalClass = 'badge bg-danger';
-            }
-            
-            row.innerHTML = `
-                <td><strong>${crypto.symbol}</strong></td>
-                <td>${crypto.name}</td>
-                <td>#${crypto.rank}</td>
-                <td>$${price}</td>
-                <td>${quantity}</td>
-                <td>${currentValue}</td>
-                <td>${targetSell}</td>
-                <td class="${pnlClass}">${pnl}</td>
-                <td class="${pnlClass}">${pnlIcon} ${pnlPercent}%</td>
-                <td class="text-muted small">Just now</td>
-                <td><span class="${signalClass}">${signal}</span></td>
-                <td>
-                    <button class="btn btn-sm btn-outline-success me-1" onclick="buyCrypto('${crypto.symbol}')" title="Buy ${crypto.symbol}">
-                        <i class="fas fa-plus"></i>
-                    </button>
-                    <button class="btn btn-sm btn-outline-danger" onclick="sellCrypto('${crypto.symbol}')" title="Sell ${crypto.symbol}">
-                        <i class="fas fa-minus"></i>
-                    </button>
-                </td>
-                <td class="text-muted">
-                    ${crypto.target_buy_price ? 
-                        (crypto.current_price <= crypto.target_buy_price ? '🎯 At buy target' : `${((crypto.current_price - crypto.target_buy_price) / crypto.target_buy_price * 100).toFixed(1)}% above`) :
-                        '-'
-                    }
-                </td>
-            `;
             
             tableBody.appendChild(row);
         });
