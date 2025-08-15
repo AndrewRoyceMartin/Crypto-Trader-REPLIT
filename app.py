@@ -554,8 +554,8 @@ def api_crypto_portfolio():
         rank = 1
         for symbol, price_info in live_prices.items():
             if 'price' in price_info:
-                initial_value = 100.0  # Starting value
-                quantity = initial_value / 100.0  # Assuming initial price of $100 for calculation
+                initial_value = 10.0  # Starting value - $10 per crypto
+                quantity = initial_value / price_info['price']  # Calculate $10 worth of this crypto
                 current_value = price_info['price'] * quantity
                 pnl = current_value - initial_value
                 pnl_percent = (pnl / initial_value) * 100

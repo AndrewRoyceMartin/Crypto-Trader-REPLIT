@@ -29,15 +29,15 @@ class TradingApp {
     }
     
     setupEventListeners() {
-        // Auto-refresh every 60 seconds (once per minute to reduce CoinGecko API usage)
+        // Auto-refresh every 30 seconds (prevent CoinGecko 429 rate limit errors)
         this.updateInterval = setInterval(() => {
             this.updateDashboard();
-        }, 60000);
+        }, 30000);
         
         // Start countdown timer
         this.startCountdown();
         
-        // Handle page visibility change
+        // Handle page visibility change - pause updates when hidden
         document.addEventListener('visibilitychange', () => {
             if (document.hidden) {
                 this.stopAutoUpdate();
@@ -46,12 +46,6 @@ class TradingApp {
                 this.updateDashboard();
             }
         });
-        
-        // Add page auto-refresh every 5 minutes
-        setInterval(() => {
-            console.log('Auto-refreshing page...');
-            window.location.reload();
-        }, 5 * 60 * 1000); // 5 minutes
         
         // Handle window unload
         window.addEventListener('beforeunload', () => {
@@ -63,7 +57,7 @@ class TradingApp {
         if (!this.updateInterval) {
             this.updateInterval = setInterval(() => {
                 this.updateDashboard();
-            }, 60000);
+            }, 30000);
         }
     }
     
