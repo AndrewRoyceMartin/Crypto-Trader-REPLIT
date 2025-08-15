@@ -15,6 +15,11 @@ class TradingApp {
             trades: []
         };
         
+        // Debounce mechanism to prevent overlapping dashboard updates
+        this.lastDashboardUpdate = 0;
+        this.dashboardUpdateDebounce = 2000; // 2 second debounce
+        this.pendingDashboardUpdate = null;
+        
         this.init();
     }
     
@@ -24,15 +29,12 @@ class TradingApp {
         this.startAutoUpdate();
         this.loadConfig();
         
-        // Load data immediately on startup
-        this.updateDashboard();
+        // Load data immediately on startup with debounce
+        this.debouncedUpdateDashboard();
     }
     
     setupEventListeners() {
-        // Auto-refresh every 30 seconds (prevent CoinGecko 429 rate limit errors)
-        this.updateInterval = setInterval(() => {
-            this.updateDashboard();
-        }, 30000);
+        // Remove duplicate interval setup - handled by startAutoUpdate()
         
         // Start countdown timer
         this.startCountdown();
@@ -43,7 +45,8 @@ class TradingApp {
                 this.stopAutoUpdate();
             } else {
                 this.startAutoUpdate();
-                this.updateDashboard();
+                // Use debounced update when page becomes visible
+                this.debouncedUpdateDashboard();
             }
         });
         
@@ -56,7 +59,7 @@ class TradingApp {
     startAutoUpdate() {
         if (!this.updateInterval) {
             this.updateInterval = setInterval(() => {
-                this.updateDashboard();
+                this.debouncedUpdateDashboard();
             }, 60000); // Reduced from 30s to 60s to prevent rate limiting
         }
     }
@@ -69,6 +72,21 @@ class TradingApp {
     }
     
     async updateDashboard() {
+        // Implement debounce to prevent overlapping calls
+        const now = Date.now();
+        if (now - this.lastDashboardUpdate < this.dashboardUpdateDebounce) {
+            // Clear any pending update and schedule a new one
+            if (this.pendingDashboardUpdate) {
+                clearTimeout(this.pendingDashboardUpdate);
+            }
+            this.pendingDashboardUpdate = setTimeout(() => {
+                this.updateDashboard();
+            }, this.dashboardUpdateDebounce - (now - this.lastDashboardUpdate));
+            return;
+        }
+        
+        this.lastDashboardUpdate = now;
+        
         try {
             const response = await fetch('/api/status');
             if (!response.ok) return;
@@ -105,6 +123,11 @@ class TradingApp {
         
         // Update price source status only (portfolio updates separately to avoid loops)
         this.updatePriceSourceStatus();
+    }
+    
+    debouncedUpdateDashboard() {
+        // Simple wrapper to call updateDashboard with debounce logic built-in
+        this.updateDashboard();
     }
     
     async updatePriceSourceStatus() {
