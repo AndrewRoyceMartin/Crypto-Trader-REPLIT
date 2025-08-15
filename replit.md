@@ -54,6 +54,14 @@ The `RiskManager` enforces multiple safety layers, including portfolio-level lim
 ### Web Interface
 A Flask-based web interface provides real-time monitoring, portfolio visualization with Chart.js, and user interaction capabilities. It features a streamlined three-dashboard system (Main Portfolio, Performance Dashboard, Current Holdings), professional news ticker with breaking crypto market updates, and a professional footer. ATO tax export functionality is prominent. Rate limiting ensures compliance with CoinGecko API limits (6-second update intervals).
 
+#### Enhanced Recent Trades System (Updated: 2025-08-15)
+- **Complete Trade Display**: Shows ALL trades without artificial limits (expanded from 10 to 50+ cryptocurrencies)
+- **Unique Trade Identifiers**: Sequential trade numbers (#1, #2, #3...) for easy reference and tracking
+- **Advanced Filtering System**: Time-based filters (24hrs, 3 days, 7 days, 1 month, 6 months, 1 year), symbol search, action filters (BUY/SELL), and P&L analysis
+- **Professional Table Structure**: 7-column layout with Trade #, Time, Symbol, Action, Size, Price, and P&L
+- **Real-time Updates**: Instant filtering and sorting with persistent filter states
+- **Reset Compatibility**: Complete reset functionality that properly clears all trade history
+
 #### Connection Management & Monitoring (Updated: 2025-08-14)
 - **Intelligent Uptime Tracking**: System uptime counter tracks only connected time, automatically resetting on connection loss and restarting fresh on reconnection
 - **Connection-Aware Trading Controls**: Trading countdown stops during connection outages, automatically resumes when reconnected, and trading buttons validate connection status before execution
