@@ -598,6 +598,92 @@ def api_crypto_portfolio():
         logger.error(f"Crypto portfolio error: {e}")
         return jsonify({"error": str(e)}), 500
 
+@app.route("/api/paper-trade/buy", methods=["POST"])
+def paper_trade_buy():
+    """Execute a paper buy trade."""
+    if not warmup["done"]:
+        return jsonify({"error": "System still initializing"}), 503
+    
+    try:
+        data = request.get_json()
+        symbol = data.get('symbol')
+        amount = float(data.get('amount', 0))
+        
+        if not symbol or amount <= 0:
+            return jsonify({"success": False, "error": "Invalid symbol or amount"}), 400
+        
+        # Get current price from live data
+        from src.data.price_api import CryptoPriceAPI
+        price_api = CryptoPriceAPI()
+        current_price = price_api.get_price(symbol)
+        
+        if not current_price:
+            return jsonify({"success": False, "error": f"Unable to get current price for {symbol}"}), 400
+        
+        quantity = amount / current_price
+        
+        # Log the trade
+        logger.info(f"Paper buy: {quantity:.6f} {symbol} at ${current_price:.4f} (total: ${amount})")
+        
+        return jsonify({
+            "success": True,
+            "message": f"Paper bought {quantity:.6f} {symbol} at ${current_price:.4f}",
+            "trade": {
+                "symbol": symbol,
+                "action": "BUY",
+                "quantity": quantity,
+                "price": current_price,
+                "total_cost": amount
+            }
+        })
+        
+    except Exception as e:
+        logger.error(f"Error in paper buy trade: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+@app.route("/api/paper-trade/sell", methods=["POST"])
+def paper_trade_sell():
+    """Execute a paper sell trade."""
+    if not warmup["done"]:
+        return jsonify({"error": "System still initializing"}), 503
+    
+    try:
+        data = request.get_json()
+        symbol = data.get('symbol')
+        quantity = float(data.get('quantity', 0))
+        
+        if not symbol or quantity <= 0:
+            return jsonify({"success": False, "error": "Invalid symbol or quantity"}), 400
+        
+        # Get current price from live data
+        from src.data.price_api import CryptoPriceAPI
+        price_api = CryptoPriceAPI()
+        current_price = price_api.get_price(symbol)
+        
+        if not current_price:
+            return jsonify({"success": False, "error": f"Unable to get current price for {symbol}"}), 400
+        
+        total_value = quantity * current_price
+        
+        # Log the trade
+        logger.info(f"Paper sell: {quantity:.6f} {symbol} at ${current_price:.4f} (total: ${total_value})")
+        
+        return jsonify({
+            "success": True,
+            "message": f"Paper sold {quantity:.6f} {symbol} at ${current_price:.4f}",
+            "trade": {
+                "symbol": symbol,
+                "action": "SELL",
+                "quantity": quantity,
+                "price": current_price,
+                "total_value": total_value
+            }
+        })
+        
+    except Exception as e:
+        logger.error(f"Error in paper sell trade: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
 @app.route("/api/reset-entire-program", methods=["POST"])
 def api_reset_entire_program():
     """Reset the entire trading system to initial state."""

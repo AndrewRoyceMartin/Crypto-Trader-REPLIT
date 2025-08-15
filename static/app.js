@@ -879,10 +879,64 @@ async function updateHoldingsData() {
 }
 
 // Add missing functions referenced in the HTML
-function buyCrypto(symbol) {
-    window.tradingApp.showToast(`Buy order for ${symbol} - Feature coming soon`, 'info');
+async function buyCrypto(symbol) {
+    const amount = prompt(`Enter USD amount to buy ${symbol}:`, '25.00');
+    if (!amount || isNaN(amount) || parseFloat(amount) <= 0) {
+        window.tradingApp.showToast('Invalid amount entered', 'error');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/paper-trade/buy', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                symbol: symbol,
+                amount: parseFloat(amount)
+            })
+        });
+        
+        const data = await response.json();
+        if (data.success) {
+            window.tradingApp.showToast(`Successfully bought $${amount} worth of ${symbol}`, 'success');
+            window.tradingApp.updateDashboard(); // Refresh data
+        } else {
+            window.tradingApp.showToast(`Buy failed: ${data.error}`, 'error');
+        }
+    } catch (error) {
+        window.tradingApp.showToast(`Error buying ${symbol}: ${error.message}`, 'error');
+    }
 }
 
-function sellCrypto(symbol) {
-    window.tradingApp.showToast(`Sell order for ${symbol} - Feature coming soon`, 'info');
+async function sellCrypto(symbol) {
+    const quantity = prompt(`Enter quantity of ${symbol} to sell:`, '0.001');
+    if (!quantity || isNaN(quantity) || parseFloat(quantity) <= 0) {
+        window.tradingApp.showToast('Invalid quantity entered', 'error');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/paper-trade/sell', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                symbol: symbol,
+                quantity: parseFloat(quantity)
+            })
+        });
+        
+        const data = await response.json();
+        if (data.success) {
+            window.tradingApp.showToast(`Successfully sold ${quantity} ${symbol}`, 'success');
+            window.tradingApp.updateDashboard(); // Refresh data
+        } else {
+            window.tradingApp.showToast(`Sell failed: ${data.error}`, 'error');
+        }
+    } catch (error) {
+        window.tradingApp.showToast(`Error selling ${symbol}: ${error.message}`, 'error');
+    }
 }
