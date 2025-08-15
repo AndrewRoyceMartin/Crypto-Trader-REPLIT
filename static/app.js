@@ -1341,12 +1341,60 @@ class TradingApp {
             tableBody.appendChild(row);
         });
     }
+    
+    async exportATOTax() {
+        try {
+            this.showToast('Preparing ATO tax export...', 'info');
+            
+            const response = await fetch('/api/export/ato', {
+                method: 'GET',
+                headers: {
+                    'Accept': 'text/csv'
+                }
+            });
+            
+            if (!response.ok) {
+                throw new Error(`Export failed: ${response.statusText}`);
+            }
+            
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            
+            // Generate filename with current date
+            const today = new Date().toISOString().slice(0, 10);
+            a.download = `ato_crypto_tax_export_${today}.csv`;
+            
+            // Trigger download
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+            
+            this.showToast('ATO tax export downloaded successfully!', 'success');
+            
+        } catch (error) {
+            console.error('ATO export error:', error);
+            this.showToast(`Failed to export ATO data: ${error.message}`, 'error');
+        }
+    }
 }
 
 // Initialize the app when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
     window.tradingApp = new TradingApp();
 });
+
+// Global function for ATO Export button
+async function exportATOTax() {
+    if (window.tradingApp) {
+        await window.tradingApp.exportATOTax();
+    } else {
+        console.error('Trading app not initialized');
+        alert('System not ready. Please wait a moment and try again.');
+    }
+}
 
 // Trading functions
 async function resetEntireProgram() {
