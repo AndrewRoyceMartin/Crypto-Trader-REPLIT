@@ -101,7 +101,7 @@ def create_initial_purchase_trades(mode, trade_type):
         
         # Store trades in global variable for status endpoint
         global recent_initial_trades
-        recent_initial_trades = initial_trades[:5]  # Keep last 5 for display
+        recent_initial_trades = initial_trades  # Keep ALL trades for display
         
     except Exception as e:
         logger.error(f"Error creating initial purchase trades: {e}")
