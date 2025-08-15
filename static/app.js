@@ -36,7 +36,7 @@ class TradingApp {
     setupEventListeners() {
         // Remove duplicate interval setup - handled by startAutoUpdate()
         
-        // Start countdown timer
+        // Start countdown timer (only once during initialization)
         this.startCountdown();
         
         // Handle page visibility change - pause updates when hidden
@@ -50,9 +50,9 @@ class TradingApp {
             }
         });
         
-        // Handle window unload
+        // Handle window unload - cleanup all intervals
         window.addEventListener('beforeunload', () => {
-            this.stopAutoUpdate();
+            this.cleanup();
         });
     }
     
@@ -68,6 +68,24 @@ class TradingApp {
         if (this.updateInterval) {
             clearInterval(this.updateInterval);
             this.updateInterval = null;
+        }
+    }
+    
+    stopCountdown() {
+        if (this.countdownInterval) {
+            clearInterval(this.countdownInterval);
+            this.countdownInterval = null;
+        }
+    }
+    
+    cleanup() {
+        // Comprehensive cleanup method to prevent memory leaks
+        this.stopAutoUpdate();
+        this.stopCountdown();
+        
+        if (this.pendingDashboardUpdate) {
+            clearTimeout(this.pendingDashboardUpdate);
+            this.pendingDashboardUpdate = null;
         }
     }
     
@@ -192,8 +210,10 @@ class TradingApp {
     }
     
     startCountdown() {
+        // Prevent multiple countdown intervals
         if (this.countdownInterval) {
             clearInterval(this.countdownInterval);
+            this.countdownInterval = null;
         }
         
         this.countdown = 5;
@@ -208,7 +228,12 @@ class TradingApp {
                     countdownElement.textContent = 'System Ready';
                     countdownElement.className = 'badge bg-success ms-3';
                     clearInterval(this.countdownInterval);
+                    this.countdownInterval = null; // Prevent memory leaks
                 }
+            } else {
+                // If element doesn't exist, clear the interval to prevent memory leak
+                clearInterval(this.countdownInterval);
+                this.countdownInterval = null;
             }
         }, 1000);
     }
