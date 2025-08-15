@@ -82,11 +82,16 @@ class TradingApp {
             
             // Update portfolio values from status endpoint
             if (data.portfolio) {
-                document.getElementById('portfolio-value').textContent = this.formatCurrency(data.portfolio.total_value || 0);
-                document.getElementById('portfolio-pnl').textContent = this.formatCurrency(data.portfolio.daily_pnl || 0);
+                const portfolioValueEl = document.getElementById('portfolio-value');
+                const portfolioPnlEl = document.getElementById('portfolio-pnl');
                 
-                const pnlElement = document.getElementById('portfolio-pnl');
-                pnlElement.className = (data.portfolio.daily_pnl || 0) >= 0 ? 'text-success' : 'text-danger';
+                if (portfolioValueEl) {
+                    portfolioValueEl.textContent = this.formatCurrency(data.portfolio.total_value || 0);
+                }
+                if (portfolioPnlEl) {
+                    portfolioPnlEl.textContent = this.formatCurrency(data.portfolio.daily_pnl || 0);
+                    portfolioPnlEl.className = (data.portfolio.daily_pnl || 0) >= 0 ? 'text-success' : 'text-danger';
+                }
             }
             
             // Update trading status
@@ -95,7 +100,7 @@ class TradingApp {
             }
             
         } catch (error) {
-            console.error('Status update failed:', error);
+            console.error('Status update failed:', {});
         }
         
         // Update crypto portfolio data
@@ -196,11 +201,12 @@ class TradingApp {
     }
     
     updateTradingStatus(tradingStatus) {
-        // Update trading status display
+        // Update trading status display - check if element exists first
         const statusElement = document.getElementById('trading-status');
         if (statusElement && tradingStatus) {
             statusElement.textContent = `${tradingStatus.mode} - ${tradingStatus.strategy}`;
         }
+        // If element doesn't exist, just skip silently to avoid console errors
     }
     
     async updateCryptoPortfolio() {
