@@ -274,8 +274,13 @@ class TradingApp {
             return;
         }
         
-        // Create badges for each crypto with price and PnL info
-        cryptos.forEach(crypto => {
+        // Sort by current value (highest first) and limit to top 10
+        const topCryptos = [...cryptos]
+            .sort((a, b) => (b.current_value || 0) - (a.current_value || 0))
+            .slice(0, 10);
+        
+        // Create badges for top 10 cryptos only
+        topCryptos.forEach(crypto => {
             const badge = document.createElement('span');
             const pnlClass = crypto.pnl >= 0 ? 'bg-success' : 'bg-danger';
             badge.className = `badge ${pnlClass} me-1 mb-1`;
