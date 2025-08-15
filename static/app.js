@@ -378,25 +378,50 @@ class TradingApp {
             const value = typeof crypto.current_value === 'number' ? crypto.current_value : 0;
             const pnlPercent = typeof crypto.pnl_percent === 'number' ? crypto.pnl_percent : 0;
             
-            // Determine P&L class
-            const pnlClass = pnlPercent >= 0 ? 'text-success' : 'text-danger';
+            // Create cells with safe DOM manipulation
+            const rankCell = document.createElement('td');
+            rankCell.textContent = crypto.rank || '-';
             
-            // Format last updated
-            const lastUpdated = crypto.last_updated ? 
-                new Date(crypto.last_updated).toLocaleTimeString() : 
-                '-';
+            const symbolCell = document.createElement('td');
+            const symbolSpan = document.createElement('span');
+            symbolSpan.className = 'fw-bold text-primary';
+            symbolSpan.textContent = crypto.symbol || '-';
+            symbolCell.appendChild(symbolSpan);
             
-            // Build row content using createElement for better control
-            row.innerHTML = `
-                <td>${crypto.rank || '-'}</td>
-                <td><span class="fw-bold text-primary">${crypto.symbol || '-'}</span></td>
-                <td>${crypto.name || '-'}</td>
-                <td>${this.formatCurrency(price)}</td>
-                <td>${quantity.toFixed(6)}</td>
-                <td>${this.formatCurrency(value)}</td>
-                <td><span class="${pnlClass} fw-bold">${pnlPercent.toFixed(2)}%</span></td>
-                <td><small class="text-muted">${lastUpdated}</small></td>
-            `;
+            const nameCell = document.createElement('td');
+            nameCell.textContent = crypto.name || '-';
+            
+            const priceCell = document.createElement('td');
+            priceCell.textContent = this.formatCurrency(price);
+            
+            const quantityCell = document.createElement('td');
+            quantityCell.textContent = quantity.toFixed(6);
+            
+            const valueCell = document.createElement('td');
+            valueCell.textContent = this.formatCurrency(value);
+            
+            const pnlCell = document.createElement('td');
+            const pnlSpan = document.createElement('span');
+            pnlSpan.className = `${pnlPercent >= 0 ? 'text-success' : 'text-danger'} fw-bold`;
+            pnlSpan.textContent = `${pnlPercent.toFixed(2)}%`;
+            pnlCell.appendChild(pnlSpan);
+            
+            const updatedCell = document.createElement('td');
+            const updatedSmall = document.createElement('small');
+            updatedSmall.className = 'text-muted';
+            updatedSmall.textContent = crypto.last_updated ? 
+                new Date(crypto.last_updated).toLocaleTimeString() : '-';
+            updatedCell.appendChild(updatedSmall);
+            
+            // Append all cells to row
+            row.appendChild(rankCell);
+            row.appendChild(symbolCell);
+            row.appendChild(nameCell);
+            row.appendChild(priceCell);
+            row.appendChild(quantityCell);
+            row.appendChild(valueCell);
+            row.appendChild(pnlCell);
+            row.appendChild(updatedCell);
             
             // Add hover effect
             row.classList.add('table-row-hover');
@@ -454,7 +479,11 @@ class TradingApp {
         if (!cryptos || cryptos.length === 0) {
             console.log('No crypto data provided');
             const row = document.createElement('tr');
-            row.innerHTML = '<td colspan="13" class="text-center text-muted">No cryptocurrency data available - Start trading to populate portfolio</td>';
+            const cell = document.createElement('td');
+            cell.colSpan = 13;
+            cell.className = 'text-center text-muted';
+            cell.textContent = 'No cryptocurrency data available - Start trading to populate portfolio';
+            row.appendChild(cell);
             tableBody.appendChild(row);
             return;
         }
@@ -501,28 +530,80 @@ class TradingApp {
                 (crypto.current_price <= crypto.target_buy_price ? '🎯 At buy target' : `${((crypto.current_price - crypto.target_buy_price) / crypto.target_buy_price * 100).toFixed(1)}% above`) :
                 '-';
 
-            row.innerHTML = `
-                <td><span class="badge bg-primary">#${crypto.rank}</span></td>
-                <td><strong>${crypto.symbol}</strong></td>
-                <td>${crypto.name}</td>
-                <td>${quantity}</td>
-                <td>$${price}</td>
-                <td>${currentValue}</td>
-                <td>${targetSell}</td>
-                <td>${approachingPercent}%</td>
-                <td>${targetBuy}</td>
-                <td>${this.formatCurrency(crypto.projected_sell_pnl || crypto.pnl || 0)}</td>
-                <td class="${pnlClass}">${pnl}</td>
-                <td class="${pnlClass}">${pnlIcon} ${pnlPercent}%</td>
-                <td>
-                    <button class="btn btn-sm btn-outline-success me-1" onclick="buyCrypto('${crypto.symbol}')" title="Buy">
-                        <i class="fas fa-plus"></i>
-                    </button>
-                    <button class="btn btn-sm btn-outline-danger" onclick="sellCrypto('${crypto.symbol}')" title="Sell">
-                        <i class="fas fa-minus"></i>
-                    </button>
-                </td>
-            `;
+            // Create cells with safe DOM manipulation
+            const rankCell = document.createElement('td');
+            const rankBadge = document.createElement('span');
+            rankBadge.className = 'badge bg-primary';
+            rankBadge.textContent = `#${crypto.rank}`;
+            rankCell.appendChild(rankBadge);
+            
+            const symbolCell = document.createElement('td');
+            const symbolStrong = document.createElement('strong');
+            symbolStrong.textContent = crypto.symbol;
+            symbolCell.appendChild(symbolStrong);
+            
+            const nameCell = document.createElement('td');
+            nameCell.textContent = crypto.name;
+            
+            const quantityCell = document.createElement('td');
+            quantityCell.textContent = quantity;
+            
+            const priceCell = document.createElement('td');
+            priceCell.textContent = `$${price}`;
+            
+            const valueCell = document.createElement('td');
+            valueCell.textContent = currentValue;
+            
+            const targetSellCell = document.createElement('td');
+            targetSellCell.textContent = targetSell;
+            
+            const approachingCell = document.createElement('td');
+            approachingCell.textContent = `${approachingPercent}%`;
+            
+            const targetBuyCell = document.createElement('td');
+            targetBuyCell.textContent = targetBuy;
+            
+            const projectedPnlCell = document.createElement('td');
+            projectedPnlCell.textContent = this.formatCurrency(crypto.projected_sell_pnl || crypto.pnl || 0);
+            
+            const pnlValueCell = document.createElement('td');
+            pnlValueCell.className = pnlClass;
+            pnlValueCell.textContent = pnl;
+            
+            const pnlPercentCell = document.createElement('td');
+            pnlPercentCell.className = pnlClass;
+            pnlPercentCell.textContent = `${pnlIcon} ${pnlPercent}%`;
+            
+            const actionsCell = document.createElement('td');
+            const buyBtn = document.createElement('button');
+            buyBtn.className = 'btn btn-sm btn-outline-success me-1';
+            buyBtn.title = 'Buy';
+            buyBtn.onclick = () => buyCrypto(crypto.symbol);
+            buyBtn.innerHTML = '<i class="fas fa-plus"></i>';
+            
+            const sellBtn = document.createElement('button');
+            sellBtn.className = 'btn btn-sm btn-outline-danger';
+            sellBtn.title = 'Sell';
+            sellBtn.onclick = () => sellCrypto(crypto.symbol);
+            sellBtn.innerHTML = '<i class="fas fa-minus"></i>';
+            
+            actionsCell.appendChild(buyBtn);
+            actionsCell.appendChild(sellBtn);
+            
+            // Append all cells
+            row.appendChild(rankCell);
+            row.appendChild(symbolCell);
+            row.appendChild(nameCell);
+            row.appendChild(quantityCell);
+            row.appendChild(priceCell);
+            row.appendChild(valueCell);
+            row.appendChild(targetSellCell);
+            row.appendChild(approachingCell);
+            row.appendChild(targetBuyCell);
+            row.appendChild(projectedPnlCell);
+            row.appendChild(pnlValueCell);
+            row.appendChild(pnlPercentCell);
+            row.appendChild(actionsCell);
             
             tableBody.appendChild(row);
         });
@@ -539,7 +620,11 @@ class TradingApp {
         
         if (!cryptos || cryptos.length === 0) {
             const row = document.createElement('tr');
-            row.innerHTML = '<td colspan="11" class="text-center text-muted">No holdings data available</td>';
+            const cell = document.createElement('td');
+            cell.colSpan = 11;
+            cell.className = 'text-center text-muted';
+            cell.textContent = 'No holdings data available';
+            row.appendChild(cell);
             tableBody.appendChild(row);
             return;
         }
@@ -575,19 +660,60 @@ class TradingApp {
             // Calculate position percentage (simplified as equal weight)
             const positionPercent = (100 / cryptos.length).toFixed(1);
             
-            row.innerHTML = `
-                <td><strong>${crypto.symbol}</strong></td>
-                <td>${crypto.name}</td>
-                <td>${quantity}</td>
-                <td>$${price}</td>
-                <td>${currentValue}</td>
-                <td>${positionPercent}%</td>
-                <td class="${pnlClass}">${pnl}</td>
-                <td class="${pnlClass}">${pnlIcon} ${pnlPercent}%</td>
-                <td>$${price}</td>
-                <td class="${pnlClass}">${this.formatCurrency(Math.max(0, crypto.pnl))}</td>
-                <td><span class="${signalClass}">${signal}</span></td>
-            `;
+            // Create cells with safe DOM manipulation
+            const symbolCell = document.createElement('td');
+            const symbolStrong = document.createElement('strong');
+            symbolStrong.textContent = crypto.symbol;
+            symbolCell.appendChild(symbolStrong);
+            
+            const nameCell = document.createElement('td');
+            nameCell.textContent = crypto.name;
+            
+            const quantityCell = document.createElement('td');
+            quantityCell.textContent = quantity;
+            
+            const priceCell = document.createElement('td');
+            priceCell.textContent = `$${price}`;
+            
+            const valueCell = document.createElement('td');
+            valueCell.textContent = currentValue;
+            
+            const positionCell = document.createElement('td');
+            positionCell.textContent = `${positionPercent}%`;
+            
+            const pnlValueCell = document.createElement('td');
+            pnlValueCell.className = pnlClass;
+            pnlValueCell.textContent = pnl;
+            
+            const pnlPercentCell = document.createElement('td');
+            pnlPercentCell.className = pnlClass;
+            pnlPercentCell.textContent = `${pnlIcon} ${pnlPercent}%`;
+            
+            const currentPriceCell = document.createElement('td');
+            currentPriceCell.textContent = `$${price}`;
+            
+            const realizedPnlCell = document.createElement('td');
+            realizedPnlCell.className = pnlClass;
+            realizedPnlCell.textContent = this.formatCurrency(Math.max(0, crypto.pnl));
+            
+            const signalCell = document.createElement('td');
+            const signalBadge = document.createElement('span');
+            signalBadge.className = signalClass;
+            signalBadge.textContent = signal;
+            signalCell.appendChild(signalBadge);
+            
+            // Append all cells
+            row.appendChild(symbolCell);
+            row.appendChild(nameCell);
+            row.appendChild(quantityCell);
+            row.appendChild(priceCell);
+            row.appendChild(valueCell);
+            row.appendChild(positionCell);
+            row.appendChild(pnlValueCell);
+            row.appendChild(pnlPercentCell);
+            row.appendChild(currentPriceCell);
+            row.appendChild(realizedPnlCell);
+            row.appendChild(signalCell);
             
             tableBody.appendChild(row);
         });
@@ -602,7 +728,11 @@ class TradingApp {
         
         if (!cryptos || cryptos.length === 0) {
             const row = document.createElement('tr');
-            row.innerHTML = '<td colspan="10" class="text-center text-muted">No performance data available</td>';
+            const cell = document.createElement('td');
+            cell.colSpan = 10;
+            cell.className = 'text-center text-muted';
+            cell.textContent = 'No performance data available';
+            row.appendChild(cell);
             tableBody.appendChild(row);
             return;
         }
@@ -625,18 +755,58 @@ class TradingApp {
             const pnlClass = crypto.pnl >= 0 ? 'text-success' : 'text-danger';
             const pnlIcon = crypto.pnl >= 0 ? '↗' : '↘';
             
-            row.innerHTML = `
-                <td><span class="badge bg-primary">#${crypto.rank}</span></td>
-                <td><strong>${crypto.symbol}</strong></td>
-                <td>${crypto.name}</td>
-                <td>${initialValue}</td>
-                <td>${currentValue}</td>
-                <td class="${pnlClass}">${pnl}</td>
-                <td class="${pnlClass}">${pnlIcon} ${pnlPercent}%</td>
-                <td>$${price}</td>
-                <td>${quantity}</td>
-                <td><small class="text-muted">Now</small></td>
-            `;
+            // Create cells with safe DOM manipulation
+            const rankCell = document.createElement('td');
+            const rankBadge = document.createElement('span');
+            rankBadge.className = 'badge bg-primary';
+            rankBadge.textContent = `#${crypto.rank}`;
+            rankCell.appendChild(rankBadge);
+            
+            const symbolCell = document.createElement('td');
+            const symbolStrong = document.createElement('strong');
+            symbolStrong.textContent = crypto.symbol;
+            symbolCell.appendChild(symbolStrong);
+            
+            const nameCell = document.createElement('td');
+            nameCell.textContent = crypto.name;
+            
+            const initialValueCell = document.createElement('td');
+            initialValueCell.textContent = initialValue;
+            
+            const currentValueCell = document.createElement('td');
+            currentValueCell.textContent = currentValue;
+            
+            const pnlValueCell = document.createElement('td');
+            pnlValueCell.className = pnlClass;
+            pnlValueCell.textContent = pnl;
+            
+            const pnlPercentCell = document.createElement('td');
+            pnlPercentCell.className = pnlClass;
+            pnlPercentCell.textContent = `${pnlIcon} ${pnlPercent}%`;
+            
+            const priceCell = document.createElement('td');
+            priceCell.textContent = `$${price}`;
+            
+            const quantityCell = document.createElement('td');
+            quantityCell.textContent = quantity;
+            
+            const timeCell = document.createElement('td');
+            const timeSmall = document.createElement('small');
+            timeSmall.className = 'text-muted';
+            timeSmall.textContent = 'Now';
+            timeCell.appendChild(timeSmall);
+            
+            // Append all cells
+            row.appendChild(rankCell);
+            row.appendChild(symbolCell);
+            row.appendChild(nameCell);
+            row.appendChild(initialValueCell);
+            row.appendChild(currentValueCell);
+            row.appendChild(pnlValueCell);
+            row.appendChild(pnlPercentCell);
+            row.appendChild(priceCell);
+            row.appendChild(quantityCell);
+            row.appendChild(timeCell);
             
             tableBody.appendChild(row);
         });
@@ -882,7 +1052,11 @@ class TradingApp {
         
         if (!filteredTrades || filteredTrades.length === 0) {
             const row = document.createElement('tr');
-            row.innerHTML = '<td colspan="7" class="text-center text-muted">No trades match the current filters</td>';
+            const cell = document.createElement('td');
+            cell.colSpan = 7;
+            cell.className = 'text-center text-muted';
+            cell.textContent = 'No trades match the current filters';
+            row.appendChild(cell);
             tableBody.appendChild(row);
             return;
         }
@@ -905,15 +1079,47 @@ class TradingApp {
             const sideClass = trade.side === 'BUY' ? 'text-success' : 'text-danger';
             const pnlClass = trade.pnl >= 0 ? 'text-success' : 'text-danger';
             
-            row.innerHTML = `
-                <td><span class="badge bg-secondary">#${trade.trade_id || (filteredTrades.indexOf(trade) + 1)}</span></td>
-                <td><small>${timestamp}</small></td>
-                <td><strong>${trade.symbol}</strong></td>
-                <td><span class="badge ${trade.side === 'BUY' ? 'bg-success' : 'bg-danger'}">${trade.side}</span></td>
-                <td>${quantity}</td>
-                <td>${price}</td>
-                <td class="${pnlClass}">${pnl}</td>
-            `;
+            // Create cells with safe DOM manipulation
+            const idCell = document.createElement('td');
+            const idBadge = document.createElement('span');
+            idBadge.className = 'badge bg-secondary';
+            idBadge.textContent = `#${trade.trade_id || (filteredTrades.indexOf(trade) + 1)}`;
+            idCell.appendChild(idBadge);
+            
+            const timeCell = document.createElement('td');
+            const timeSmall = document.createElement('small');
+            timeSmall.textContent = timestamp;
+            timeCell.appendChild(timeSmall);
+            
+            const symbolCell = document.createElement('td');
+            const symbolStrong = document.createElement('strong');
+            symbolStrong.textContent = trade.symbol;
+            symbolCell.appendChild(symbolStrong);
+            
+            const sideCell = document.createElement('td');
+            const sideBadge = document.createElement('span');
+            sideBadge.className = `badge ${trade.side === 'BUY' ? 'bg-success' : 'bg-danger'}`;
+            sideBadge.textContent = trade.side;
+            sideCell.appendChild(sideBadge);
+            
+            const quantityCell = document.createElement('td');
+            quantityCell.textContent = quantity;
+            
+            const priceCell = document.createElement('td');
+            priceCell.textContent = price;
+            
+            const pnlCell = document.createElement('td');
+            pnlCell.className = pnlClass;
+            pnlCell.textContent = pnl;
+            
+            // Append all cells
+            row.appendChild(idCell);
+            row.appendChild(timeCell);
+            row.appendChild(symbolCell);
+            row.appendChild(sideCell);
+            row.appendChild(quantityCell);
+            row.appendChild(priceCell);
+            row.appendChild(pnlCell);
             
             tableBody.appendChild(row);
         });
@@ -974,7 +1180,14 @@ async function resetEntireProgram() {
                 // Clear recent trades display
                 const tradesTable = document.getElementById('trades-table');
                 if (tradesTable) {
-                    tradesTable.innerHTML = '<tr><td colspan="7" class="text-center text-muted">No trades yet</td></tr>';
+                    tradesTable.innerHTML = '';
+                    const row = document.createElement('tr');
+                    const cell = document.createElement('td');
+                    cell.colSpan = 7;
+                    cell.className = 'text-center text-muted';
+                    cell.textContent = 'No trades yet';
+                    row.appendChild(cell);
+                    tradesTable.appendChild(row);
                 }
                 
                 // Force refresh portfolio data to show empty state
