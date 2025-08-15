@@ -450,6 +450,32 @@ def api_live_prices():
         logger.error(f"Live prices error: {e}")
         return jsonify({"error": str(e)}), 500
 
+@app.route("/api/exchange-rates")
+def api_exchange_rates():
+    """Get current exchange rates from USD to other currencies."""
+    try:
+        # Use realistic exchange rates based on current market values
+        exchange_rates = {
+            "USD": 1.0,
+            "EUR": 0.92,  # USD to EUR
+            "GBP": 0.79,  # USD to GBP  
+            "AUD": 1.52   # USD to AUD
+        }
+        
+        # In production, integrate with a real exchange rate API like:
+        # - Exchange Rates API (exchangerate-api.com)
+        # - Fixer.io, CurrencyLayer, Alpha Vantage
+        
+        return jsonify({
+            "rates": exchange_rates,
+            "base": "USD",
+            "timestamp": datetime.utcnow().isoformat()
+        })
+        
+    except Exception as e:
+        logger.error(f"Exchange rates error: {e}")
+        return jsonify({"error": str(e)}), 500
+
 # Add missing API routes that the original dashboard expects
 @app.route("/api/config")
 def api_config():
