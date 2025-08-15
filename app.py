@@ -353,7 +353,7 @@ def api_portfolio_data():
             "total_pnl": 1245.50,
             "total_pnl_percent": 11.15,
             "holdings": [],
-            "recent_trades": [
+            "recent_trades": recent_initial_trades if recent_initial_trades else [
                 {
                     "id": 1,
                     "symbol": "BTC/USDT",
@@ -437,7 +437,7 @@ def api_status():
             "daily_pnl": 450.67,
             "daily_pnl_percent": 3.76
         },
-        "recent_trades": [
+        "recent_trades": recent_initial_trades if recent_initial_trades else [
             {
                 "id": 1,
                 "symbol": "BTC/USDT",
