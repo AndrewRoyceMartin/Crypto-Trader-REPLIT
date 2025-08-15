@@ -44,6 +44,8 @@ trading_state = {
     "start_time": None,
     "type": None
 }
+# Portfolio reset flag
+portfolio_reset_flag = False
 # (symbol, timeframe) -> {"df": pd.DataFrame, "ts": datetime}
 _price_cache = {}
 _cache_lock = threading.RLock()
@@ -559,6 +561,10 @@ def api_start_trading():
             "start_time": datetime.utcnow().isoformat()
         })
         
+        # Restore portfolio when trading starts
+        global portfolio_reset_flag
+        portfolio_reset_flag = False
+        
         return jsonify({
             "success": True,
             "message": f"{mode} trading started in {trade_type} mode",
@@ -575,6 +581,21 @@ def api_crypto_portfolio():
     """Get crypto portfolio data for all 103 cryptocurrencies."""
     if not warmup["done"]:
         return jsonify({"error": "System still initializing"}), 503
+    
+    # Check if portfolio has been reset
+    global portfolio_reset_flag
+    if portfolio_reset_flag:
+        # Return empty portfolio (no holdings)
+        return jsonify({
+            "summary": {
+                "total_cryptos": 0,
+                "total_initial_value": 0,
+                "total_current_value": 0,
+                "total_pnl": 0,
+                "total_pnl_percent": 0
+            },
+            "cryptocurrencies": []
+        })
     
     try:
         from src.data.price_api import CryptoPriceAPI
@@ -878,9 +899,15 @@ def api_reset_entire_program():
             "start_time": None
         })
         
+        # Reset portfolio holdings to zero (clear all owned quantities)
+        # Set a global flag to indicate portfolio should show zero holdings
+        global portfolio_reset_flag
+        portfolio_reset_flag = True
+        logger.info("Portfolio holdings reset to zero")
+        
         return jsonify({
             "success": True,
-            "message": "System reset successfully. All data cleared and portfolio reset to initial state."
+            "message": "System reset successfully. All holdings cleared and trading state reset."
         })
         
     except Exception as e:
