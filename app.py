@@ -382,9 +382,11 @@ def start_trading():
         global recent_initial_trades
         recent_initial_trades = create_initial_purchase_trades(mode, trading_mode)
         
+        # Handle case where recent_initial_trades might be None
+        trade_count = len(recent_initial_trades) if recent_initial_trades else 0
         return jsonify({
             "success": True, 
-            "message": f"{mode.title()} portfolio trading started for {len(recent_initial_trades)} assets"
+            "message": f"{mode.title()} portfolio trading started for {trade_count} assets"
         })
         
     except Exception as e:
