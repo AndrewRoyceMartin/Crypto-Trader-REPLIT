@@ -346,7 +346,7 @@ class TradingApp {
                 const cell = document.createElement('td');
                 // Set appropriate column span based on table type
                 if (tableId === 'crypto-tracked-table') {
-                    cell.colSpan = 12; // Main tracked table has 12 columns
+                    cell.colSpan = 13; // Main tracked table has 13 columns
                 } else if (tableId === 'performance-table-body') {
                     cell.colSpan = 10; // Performance table has 10 columns
                 } else if (tableId === 'positions-table-body') {
@@ -621,10 +621,10 @@ class TradingApp {
         // Clear existing content
         tableBody.innerHTML = '';
         
-        // Handle empty state first
+        // Handle empty state first  
         if (!cryptos || cryptos.length === 0) {
             const row = document.createElement('tr');
-            row.innerHTML = '<td colspan="12" class="text-center text-muted">No cryptocurrency data available</td>';
+            row.innerHTML = '<td colspan="7" class="text-center text-muted">No cryptocurrency data available</td>';
             tableBody.appendChild(row);
             return;
         }
