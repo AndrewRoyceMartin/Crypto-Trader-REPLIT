@@ -140,6 +140,12 @@ class TradingApp {
             clearTimeout(this.pendingDashboardUpdate);
             this.pendingDashboardUpdate = null;
         }
+        
+        // Stop chart updates
+        if (this.chartUpdateInterval) {
+            clearInterval(this.chartUpdateInterval);
+            this.chartUpdateInterval = null;
+        }
     }
     
     async fetchWithCache(endpoint, cacheKey, bypassCache = false) {
