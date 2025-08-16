@@ -720,13 +720,23 @@ class TradingApp {
     }
     
     hideLoadingProgress() {
-        // Progress bars are automatically hidden when tables get populated with actual data
-        // No explicit hiding needed since we replace loading content with real data
+        // Hide the loading progress bar directly without affecting parent containers
         const progressBar = document.getElementById('crypto-loading-progress');
-        if (progressBar && progressBar.parentElement) {
-            // Fade out the progress indicator
-            progressBar.parentElement.style.display = 'none';
+        if (progressBar) {
+            progressBar.style.display = 'none';
         }
+        
+        // Also hide any loading text elements
+        const progressText = document.getElementById('crypto-loading-text');
+        if (progressText) {
+            progressText.style.display = 'none';
+        }
+        
+        // Hide the entire loading row if it exists (contains the progress indicator)
+        const loadingRows = document.querySelectorAll('tr:has(.progress)');
+        loadingRows.forEach(row => {
+            row.style.display = 'none';
+        });
     }
     
     updatePerformanceTable(cryptos) {
