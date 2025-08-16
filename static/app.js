@@ -591,10 +591,17 @@ class TradingApp {
                     total_pnl: totalPnl,
                     total_pnl_percent: data.total_pnl_percent || 0
                 }, holdings);
-                try {
-                    await this.updateRecentTrades();
-                } catch (tradesError) {
-                    console.error('Error updating recent trades (non-fatal):', tradesError);
+                // FIXED: Update recent trades from the API response
+                if (data.recent_trades) {
+                    console.log('Updating recent trades:', data.recent_trades.length, 'trades found');
+                    this.displayRecentTrades(data.recent_trades);
+                } else {
+                    console.log('No recent trades data in API response, fetching separately');
+                    try {
+                        await this.updateRecentTrades();
+                    } catch (tradesError) {
+                        console.error('Error updating recent trades (non-fatal):', tradesError);
+                    }
                 }
                 this.updateLoadingProgress(100, 'Complete!');
                 
