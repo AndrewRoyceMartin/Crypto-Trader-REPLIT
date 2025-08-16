@@ -316,9 +316,27 @@ def render_full_dashboard():
 # Add essential routes from original web interface
 @app.route("/api/crypto-portfolio")
 def api_crypto_portfolio():
-    """Get portfolio data."""
+    """Get portfolio data - respects reset state."""
     if not warmup["done"]:
         return jsonify({"error": "System still initializing"}), 503
+    
+    # Check if portfolio has been initialized (only after trading starts)
+    global portfolio_initialized
+    if not portfolio_initialized:
+        # Return completely empty portfolio until trading starts
+        return jsonify({
+            "holdings": [],
+            "recent_trades": [],
+            "total_value": 0,
+            "total_pnl": 0,
+            "total_pnl_percent": 0,
+            "summary": {
+                "total_cryptos": 0,
+                "total_current_value": 0,
+                "total_pnl": 0,
+                "total_pnl_percent": 0
+            }
+        })
     
     try:
         # Get live prices for calculations
@@ -333,7 +351,7 @@ def api_crypto_portfolio():
             "total_pnl": 1245.50,
             "total_pnl_percent": 11.15,
             "holdings": [],
-            "recent_trades": recent_initial_trades
+            "recent_trades": recent_initial_trades or []
         }
         
         # Add holdings using live prices
@@ -378,8 +396,9 @@ def start_trading():
             "type": trading_mode
         })
         
-        # Create initial portfolio trades for display
-        global recent_initial_trades
+        # Initialize portfolio when trading starts
+        global portfolio_initialized, recent_initial_trades
+        portfolio_initialized = True
         recent_initial_trades = create_initial_purchase_trades(mode, trading_mode)
         
         # Handle case where recent_initial_trades might be None
