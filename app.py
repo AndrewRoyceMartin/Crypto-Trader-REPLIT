@@ -73,14 +73,34 @@ def create_initial_purchase_trades(mode, trade_type):
         from src.data.price_api import CryptoPriceAPI
         price_api = CryptoPriceAPI()
         
-        # Get current prices for top cryptocurrencies to create purchase records
-        # Note: Limited by CoinGecko API, but we'll expand as much as possible
+        # Get current prices for comprehensive cryptocurrency list
+        # Use all major cryptocurrencies supported by CoinGecko API
         symbols = [
+            # Top 20 by market cap
             "BTC", "ETH", "SOL", "XRP", "DOGE", "ADA", "AVAX", "LINK", "UNI", "BNB", 
-            "DOT", "MATIC", "LTC", "ATOM", "ICP", "ETC", "VET", "FIL", "TRX", "ALGO",
-            "XLM", "AAVE", "THETA", "EGLD", "EOS", "AXS", "MANA", "SAND", "CHZ", "ENJ",
-            "BAT", "ZEC", "QTUM", "ICX", "ZIL", "RVN", "WAVES", "ONT", "OMG", "LSK",
-            "ARK", "KMD", "NANO", "DASH", "NEO", "GAS", "XTZ", "COMP", "YFI", "SNX"
+            "DOT", "MATIC", "LTC", "ATOM", "ICP", "NEAR", "APT", "STX", "IMX", "HBAR",
+            # DeFi tokens
+            "AAVE", "SUSHI", "COMP", "YFI", "SNX", "CRV", "BAL", "ALPHA", "CREAM", "BADGER",
+            # Gaming & NFT
+            "AXS", "MANA", "SAND", "ENJ", "CHZ", "FLOW", "WAX", "GALA", "ILV", "AUDIO",
+            # Layer 2 & Infrastructure  
+            "ARB", "OP", "EGLD", "FTM", "LUNA", "ALGO", "XTZ", "VET", "FIL", "THETA",
+            # Meme & Community
+            "SHIB", "PEPE", "FLOKI", "BABYDOGE", "ELON", "DOGO", "AKITA", "KISHU", "SAITAMA", "LEASH",
+            # Exchange tokens
+            "FTT", "KCS", "HT", "OKB", "LEO", "CRO", "GT", "BGB", "WBT", "BKEX",
+            # Privacy & Security
+            "XMR", "ZEC", "DASH", "ZCASH", "BEAM", "GRIN", "FIRO", "ARRR", "NAV", "PIVX",
+            # Enterprise & Business
+            "XLM", "XDC", "HBAR", "IOTA", "NANO", "RVN", "DGB", "SYS", "VTC", "MONA",
+            # Traditional Finance Bridge
+            "XRP", "XLM", "USDC", "USDT", "BUSD", "DAI", "TUSD", "USDP", "FRAX", "LUSD",
+            # Alternative platforms
+            "EOS", "TRX", "ONT", "NEO", "GAS", "WAN", "ICX", "QTUM", "LSK", "ARK",
+            # Emerging projects
+            "KMD", "ZIL", "WAVES", "OMG", "BAT", "ZRX", "STORJ", "GNT", "REP", "LRC",
+            # Additional promising projects
+            "RNDR", "JUP", "WIF", "BONK", "PYTH", "JTO", "BOME", "SLERF", "MEW", "POPCAT"
         ]
         live_prices = price_api.get_multiple_prices(symbols)
         
@@ -343,13 +363,34 @@ def api_crypto_portfolio():
         from src.data.price_api import CryptoPriceAPI
         price_api = CryptoPriceAPI()
         
-        # Use the same symbol list as the initial trades function
+        # Get all available cryptocurrencies from the price API
+        # Use comprehensive symbol list - all major cryptocurrencies supported by CoinGecko
         symbols = [
+            # Top 20 by market cap
             "BTC", "ETH", "SOL", "XRP", "DOGE", "ADA", "AVAX", "LINK", "UNI", "BNB", 
-            "DOT", "MATIC", "LTC", "ATOM", "ICP", "ETC", "VET", "FIL", "TRX", "ALGO",
-            "XLM", "AAVE", "THETA", "EGLD", "EOS", "AXS", "MANA", "SAND", "CHZ", "ENJ",
-            "BAT", "ZEC", "QTUM", "ICX", "ZIL", "RVN", "WAVES", "ONT", "OMG", "LSK",
-            "ARK", "KMD", "NANO", "DASH", "NEO", "GAS", "XTZ", "COMP", "YFI", "SNX"
+            "DOT", "MATIC", "LTC", "ATOM", "ICP", "NEAR", "APT", "STX", "IMX", "HBAR",
+            # DeFi tokens
+            "AAVE", "SUSHI", "COMP", "YFI", "SNX", "CRV", "BAL", "ALPHA", "CREAM", "BADGER",
+            # Gaming & NFT
+            "AXS", "MANA", "SAND", "ENJ", "CHZ", "FLOW", "WAX", "GALA", "ILV", "AUDIO",
+            # Layer 2 & Infrastructure  
+            "ARB", "OP", "EGLD", "FTM", "LUNA", "ALGO", "XTZ", "VET", "FIL", "THETA",
+            # Meme & Community
+            "SHIB", "PEPE", "FLOKI", "BABYDOGE", "ELON", "DOGO", "AKITA", "KISHU", "SAITAMA", "LEASH",
+            # Exchange tokens
+            "FTT", "KCS", "HT", "OKB", "LEO", "CRO", "GT", "BGB", "WBT", "BKEX",
+            # Privacy & Security
+            "XMR", "ZEC", "DASH", "ZCASH", "BEAM", "GRIN", "FIRO", "ARRR", "NAV", "PIVX",
+            # Enterprise & Business
+            "XLM", "XDC", "HBAR", "IOTA", "NANO", "RVN", "DGB", "SYS", "VTC", "MONA",
+            # Traditional Finance Bridge
+            "XRP", "XLM", "USDC", "USDT", "BUSD", "DAI", "TUSD", "USDP", "FRAX", "LUSD",
+            # Alternative platforms
+            "EOS", "TRX", "ONT", "NEO", "GAS", "WAN", "ICX", "QTUM", "LSK", "ARK",
+            # Emerging projects
+            "KMD", "ZIL", "WAVES", "OMG", "BAT", "ZRX", "STORJ", "GNT", "REP", "LRC",
+            # Additional promising projects
+            "RNDR", "JUP", "WIF", "BONK", "PYTH", "JTO", "BOME", "SLERF", "MEW", "POPCAT"
         ]
         live_prices = price_api.get_multiple_prices(symbols)
         
