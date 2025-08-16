@@ -1,0 +1,64 @@
+💱 Currency not changing everywhere (root causes)
+1) Hardcoded $ strings bypass conversion
+
+Several places still render prices with string templates instead of formatCurrency, so the dropdown won’t change these cells.
+
+Update these to use this.formatCurrency(..):
+
+updateCryptoSymbols
+
+// before
+const price = crypto.current_price < 1 ? crypto.current_price.toFixed(6) : crypto.current_price.toFixed(2);
+badge.textContent = `${crypto.symbol} $${price} (${pnl})`;
+
+// after
+const priceText = this.formatCurrency(crypto.current_price);
+const pnlText = this.formatCurrency(crypto.pnl); // optional, if you want currency not raw number
+badge.textContent = `${crypto.symbol} ${priceText} (${crypto.pnl >= 0 ? '+' : ''}${crypto.pnl.toFixed(2)}%)`;
+
+
+(If you want P&L in currency, use pnlText.)
+
+updateHoldingsTable
+
+// before
+priceCell.textContent = `$${price}`;
+currentPriceCell.textContent = `$${price}`;
+
+// after
+priceCell.textContent = this.formatCurrency(crypto.current_price);
+currentPriceCell.textContent = this.formatCurrency(crypto.current_price);
+
+
+updatePerformancePageTable
+
+// before
+priceCell.textContent = `$${price}`;
+
+// after
+priceCell.textContent = this.formatCurrency(crypto.current_price);
+
+
+updateCryptoTable (you already did this correctly 👍: this.formatCurrency(price, this.selectedCurrency) and this.formatCurrency(value, this.selectedCurrency)).
+
+Anywhere you print totals:
+You’re already using this.formatCurrency(...) for totals and summary cards — that’s good.
+
+2) Some values rendered with .toFixed() are actually prices or currency values
+
+Using .toFixed(..) is fine for quantities, but for money you should pass the raw number into formatCurrency and let it convert + format consistently.
+
+Check these:
+
+updatePerformanceTable uses:
+
+const formattedPrice = currentPrice > 0 ? this.formatCurrency(currentPrice) : '$0.00';
+const formattedValue = value > 0 ? this.formatCurrency(value) : '$0.00';
+const formattedPnl = Math.abs(pnl) > 0 ? this.formatCurrency(Math.abs(pnl)) : '$0.00';
+
+
+Replace the '$0.00' fallbacks with this.formatCurrency(0) so the symbol and locale follow the selection:
+
+const formattedPrice = this.formatCurrency(currentPrice || 0);
+const formattedValue = this.formatCurrency(value || 0);
+const formattedPnl   = this.formatCurrency(Math.abs(pnl) || 0);

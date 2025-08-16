@@ -579,13 +579,11 @@ class TradingApp {
             const pnlClass = crypto.pnl >= 0 ? 'bg-success' : 'bg-danger';
             badge.className = `badge ${pnlClass} me-1 mb-1`;
             
-            const price = crypto.current_price < 1 ? 
-                crypto.current_price.toFixed(6) : 
-                crypto.current_price.toFixed(2);
-            const pnl = crypto.pnl >= 0 ? `+${crypto.pnl.toFixed(2)}` : crypto.pnl.toFixed(2);
+            const priceText = this.formatCurrency(crypto.current_price);
+            const pnlText = crypto.pnl >= 0 ? `+${crypto.pnl_percent.toFixed(2)}%` : `${crypto.pnl_percent.toFixed(2)}%`;
             
-            badge.textContent = `${crypto.symbol} $${price} (${pnl})`;
-            badge.setAttribute('title', `${crypto.name}: $${price}, P&L: ${pnl}`);
+            badge.textContent = `${crypto.symbol} ${priceText} (${pnlText})`;
+            badge.setAttribute('title', `${crypto.name}: ${priceText}, P&L: ${pnlText}`);
             symbolsContainer.appendChild(badge);
         });
     }
@@ -767,9 +765,9 @@ class TradingApp {
             const formattedQuantity = quantity > 1 ? quantity.toFixed(4) : quantity.toFixed(8);
             
             // Create formatted price with proper fallback
-            const formattedPrice = currentPrice > 0 ? this.formatCurrency(currentPrice) : '$0.00';
-            const formattedValue = value > 0 ? this.formatCurrency(value) : '$0.00';
-            const formattedPnl = Math.abs(pnl) > 0 ? this.formatCurrency(Math.abs(pnl)) : '$0.00';
+            const formattedPrice = this.formatCurrency(currentPrice || 0);
+            const formattedValue = this.formatCurrency(value || 0);
+            const formattedPnl = this.formatCurrency(Math.abs(pnl) || 0);
             
             row.innerHTML = `
                 <td><span class="badge bg-primary">#${rank}</span></td>
@@ -852,7 +850,7 @@ class TradingApp {
             quantityCell.textContent = quantity;
             
             const priceCell = document.createElement('td');
-            priceCell.textContent = `$${price}`;
+            priceCell.textContent = this.formatCurrency(crypto.current_price);
             
             const valueCell = document.createElement('td');
             valueCell.textContent = currentValue;
@@ -869,7 +867,7 @@ class TradingApp {
             pnlPercentCell.textContent = `${pnlIcon} ${pnlPercent}%`;
             
             const currentPriceCell = document.createElement('td');
-            currentPriceCell.textContent = `$${price}`;
+            currentPriceCell.textContent = this.formatCurrency(crypto.current_price);
             
             const realizedPnlCell = document.createElement('td');
             realizedPnlCell.className = pnlClass;
@@ -988,7 +986,7 @@ class TradingApp {
             pnlPercentCell.textContent = `${pnlIcon} ${pnlPercent}%`;
             
             const priceCell = document.createElement('td');
-            priceCell.textContent = `$${price}`;
+            priceCell.textContent = this.formatCurrency(crypto.current_price);
             
             const quantityCell = document.createElement('td');
             quantityCell.textContent = quantity;
