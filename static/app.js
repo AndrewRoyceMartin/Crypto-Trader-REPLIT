@@ -2146,57 +2146,5 @@ async function sellCrypto(symbol) {
     }
 }
 
-// Add missing stop trading functions
-async function stopTrading() {
-    if (!confirm('Are you sure you want to stop all trading activities?')) {
-        return;
-    }
-    
-    window.tradingApp.showToast('Trading stopped successfully', 'info');
-    
-    // Update trading status display
-    const tradingModeEl = document.getElementById('trading-mode');
-    const tradingStatusEl = document.getElementById('trading-status');
-    const tradingStartTimeEl = document.getElementById('trading-start-time');
-    const tradingSymbolEl = document.getElementById('trading-symbol');
-    
-    if (tradingModeEl) {
-        tradingModeEl.textContent = 'Stopped';
-        tradingModeEl.className = 'badge bg-secondary';
-    }
-    
-    if (tradingStatusEl) {
-        tradingStatusEl.textContent = 'Idle';
-        tradingStatusEl.className = 'badge bg-secondary';
-    }
-    
-    if (tradingStartTimeEl) {
-        tradingStartTimeEl.textContent = '-';
-    }
-    
-    if (tradingSymbolEl) {
-        tradingSymbolEl.textContent = '-';
-    }
-}
-
-async function emergencyStop() {
-    if (!confirm('EMERGENCY STOP: This will immediately halt all trading and close any open positions. Are you sure?')) {
-        return;
-    }
-    
-    window.tradingApp.showToast('EMERGENCY STOP activated - All trading halted', 'warning');
-    
-    // Update trading status display
-    const tradingModeEl = document.getElementById('trading-mode');
-    const tradingStatusEl = document.getElementById('trading-status');
-    
-    if (tradingModeEl) {
-        tradingModeEl.textContent = 'EMERGENCY STOP';
-        tradingModeEl.className = 'badge bg-danger';
-    }
-    
-    if (tradingStatusEl) {
-        tradingStatusEl.textContent = 'HALTED';
-        tradingStatusEl.className = 'badge bg-danger';
-    }
-}
+// REMOVED: Duplicate stopTrading and emergencyStop functions
+// The server-calling versions defined earlier (lines 1847-1891) are kept as they provide proper API integration
