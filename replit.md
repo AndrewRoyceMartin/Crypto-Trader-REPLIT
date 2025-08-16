@@ -71,6 +71,13 @@ A Flask-based web interface provides real-time monitoring, portfolio visualizati
 - **Trading Validation**: All trading functions now prevent execution during API connection outages to ensure data integrity
 - **News Interface Removal**: Breaking news ticker completely removed for cleaner, distraction-free interface
 
+### Master Portfolio Assets (Updated: 2025-08-16)
+- **Hardcoded Asset Universe**: Definitive list of 103 cryptocurrencies stored in `src/data/portfolio_assets.py`
+- **Consistent Data Loading**: Eliminates API mapping uncertainties by using predetermined asset list
+- **Portfolio Categories**: 8 distinct categories covering Top Market Cap (25), DeFi (15), Gaming/NFT (15), Layer 2 (12), Meme (10), Exchange Tokens (8), Privacy (8), Enterprise (10)
+- **Investment Structure**: Each asset represents exactly $10 initial investment when trading begins
+- **Future Compatibility**: Hardcoded list can be matched with live trading APIs during production deployment
+
 ### Technical Indicators
 The `TechnicalIndicators` class provides vectorized calculations for indicators like Bollinger Bands and ATR, utilizing pandas for efficient time series data processing.
 

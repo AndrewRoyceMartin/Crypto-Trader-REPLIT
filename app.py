@@ -73,35 +73,11 @@ def create_initial_purchase_trades(mode, trade_type):
         from src.data.price_api import CryptoPriceAPI
         price_api = CryptoPriceAPI()
         
-        # Get current prices for comprehensive cryptocurrency list
-        # Use all major cryptocurrencies supported by CoinGecko API
-        symbols = [
-            # Top 20 by market cap
-            "BTC", "ETH", "SOL", "XRP", "DOGE", "ADA", "AVAX", "LINK", "UNI", "BNB", 
-            "DOT", "MATIC", "LTC", "ATOM", "ICP", "NEAR", "APT", "STX", "IMX", "HBAR",
-            # DeFi tokens
-            "AAVE", "SUSHI", "COMP", "YFI", "SNX", "CRV", "BAL", "ALPHA", "CREAM", "BADGER",
-            # Gaming & NFT
-            "AXS", "MANA", "SAND", "ENJ", "CHZ", "FLOW", "WAX", "GALA", "ILV", "AUDIO",
-            # Layer 2 & Infrastructure  
-            "ARB", "OP", "EGLD", "FTM", "LUNA", "ALGO", "XTZ", "VET", "FIL", "THETA",
-            # Meme & Community
-            "SHIB", "PEPE", "FLOKI", "BABYDOGE", "ELON", "DOGO", "AKITA", "KISHU", "SAITAMA", "LEASH",
-            # Exchange tokens
-            "FTT", "KCS", "HT", "OKB", "LEO", "CRO", "GT", "BGB", "WBT", "BKEX",
-            # Privacy & Security
-            "XMR", "ZEC", "DASH", "ZCASH", "BEAM", "GRIN", "FIRO", "ARRR", "NAV", "PIVX",
-            # Enterprise & Business
-            "XLM", "XDC", "HBAR", "IOTA", "NANO", "RVN", "DGB", "SYS", "VTC", "MONA",
-            # Traditional Finance Bridge
-            "XRP", "XLM", "USDC", "USDT", "BUSD", "DAI", "TUSD", "USDP", "FRAX", "LUSD",
-            # Alternative platforms
-            "EOS", "TRX", "ONT", "NEO", "GAS", "WAN", "ICX", "QTUM", "LSK", "ARK",
-            # Emerging projects
-            "KMD", "ZIL", "WAVES", "OMG", "BAT", "ZRX", "STORJ", "GNT", "REP", "LRC",
-            # Additional promising projects
-            "RNDR", "JUP", "WIF", "BONK", "PYTH", "JTO", "BOME", "SLERF", "MEW", "POPCAT"
-        ]
+        # Import master portfolio assets list
+        from src.data.portfolio_assets import get_portfolio_assets
+        
+        # Use the hardcoded master list of 103 cryptocurrency assets
+        symbols = get_portfolio_assets()
         live_prices = price_api.get_multiple_prices(symbols)
         
         initial_trades = []
@@ -363,35 +339,11 @@ def api_crypto_portfolio():
         from src.data.price_api import CryptoPriceAPI
         price_api = CryptoPriceAPI()
         
-        # Get all available cryptocurrencies from the price API
-        # Use comprehensive symbol list - all major cryptocurrencies supported by CoinGecko
-        symbols = [
-            # Top 20 by market cap
-            "BTC", "ETH", "SOL", "XRP", "DOGE", "ADA", "AVAX", "LINK", "UNI", "BNB", 
-            "DOT", "MATIC", "LTC", "ATOM", "ICP", "NEAR", "APT", "STX", "IMX", "HBAR",
-            # DeFi tokens
-            "AAVE", "SUSHI", "COMP", "YFI", "SNX", "CRV", "BAL", "ALPHA", "CREAM", "BADGER",
-            # Gaming & NFT
-            "AXS", "MANA", "SAND", "ENJ", "CHZ", "FLOW", "WAX", "GALA", "ILV", "AUDIO",
-            # Layer 2 & Infrastructure  
-            "ARB", "OP", "EGLD", "FTM", "LUNA", "ALGO", "XTZ", "VET", "FIL", "THETA",
-            # Meme & Community
-            "SHIB", "PEPE", "FLOKI", "BABYDOGE", "ELON", "DOGO", "AKITA", "KISHU", "SAITAMA", "LEASH",
-            # Exchange tokens
-            "FTT", "KCS", "HT", "OKB", "LEO", "CRO", "GT", "BGB", "WBT", "BKEX",
-            # Privacy & Security
-            "XMR", "ZEC", "DASH", "ZCASH", "BEAM", "GRIN", "FIRO", "ARRR", "NAV", "PIVX",
-            # Enterprise & Business
-            "XLM", "XDC", "HBAR", "IOTA", "NANO", "RVN", "DGB", "SYS", "VTC", "MONA",
-            # Traditional Finance Bridge
-            "XRP", "XLM", "USDC", "USDT", "BUSD", "DAI", "TUSD", "USDP", "FRAX", "LUSD",
-            # Alternative platforms
-            "EOS", "TRX", "ONT", "NEO", "GAS", "WAN", "ICX", "QTUM", "LSK", "ARK",
-            # Emerging projects
-            "KMD", "ZIL", "WAVES", "OMG", "BAT", "ZRX", "STORJ", "GNT", "REP", "LRC",
-            # Additional promising projects
-            "RNDR", "JUP", "WIF", "BONK", "PYTH", "JTO", "BOME", "SLERF", "MEW", "POPCAT"
-        ]
+        # Import master portfolio assets list
+        from src.data.portfolio_assets import get_portfolio_assets
+        
+        # Use the hardcoded master list of 103 cryptocurrency assets
+        symbols = get_portfolio_assets()
         live_prices = price_api.get_multiple_prices(symbols)
         
         # Calculate portfolio data from live prices
@@ -399,9 +351,10 @@ def api_crypto_portfolio():
         total_value = 0
         total_initial_value = 0
         
-        # Add holdings using current live prices
-        for symbol, price_info in live_prices.items():
-            if 'price' in price_info:
+        # Process ONLY the hardcoded master portfolio assets in exact order
+        for symbol in symbols:  # Use the exact 103 symbols from master list
+            if symbol in live_prices and 'price' in live_prices[symbol]:
+                price_info = live_prices[symbol]
                 current_price = price_info['price']
                 # $10 initial investment per crypto
                 initial_investment = 10.0
@@ -418,6 +371,26 @@ def api_crypto_portfolio():
                     "pnl": pnl,
                     "pnl_percent": pnl_percent,
                     "is_live": price_info.get('is_live', True)
+                })
+                
+                total_value += current_value
+                total_initial_value += initial_investment
+            else:
+                # Create entry with fallback price for missing symbols
+                logger.warning(f"Using fallback price for missing master asset: {symbol}")
+                current_price = 1.0  # Fallback price
+                initial_investment = 10.0
+                quantity = initial_investment / current_price
+                current_value = quantity * current_price
+                
+                holdings.append({
+                    "symbol": symbol,
+                    "quantity": round(quantity, 8),
+                    "current_price": current_price,
+                    "value": current_value,
+                    "pnl": 0.0,
+                    "pnl_percent": 0.0,
+                    "is_live": False
                 })
                 
                 total_value += current_value
