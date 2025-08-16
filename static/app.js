@@ -568,8 +568,22 @@ class TradingApp {
                 this.updateLoadingProgress(80, 'Updating displays...');
                 this.updateCryptoSymbols(holdings);
                 this.updateCryptoTable(holdings);
-                this.updatePerformanceTable(holdings);
-                this.updatePerformancePageTable(holdings);
+                
+                // FIXED: Conditional table rendering to prevent conflicts
+                // Check which dashboard is currently visible and render appropriate table
+                const performanceDashboard = document.getElementById('performance-dashboard');
+                const isPerformancePageVisible = performanceDashboard && 
+                    (performanceDashboard.style.display !== 'none' && 
+                     !performanceDashboard.classList.contains('d-none'));
+                
+                if (isPerformancePageVisible) {
+                    // Only update the performance page table when performance dashboard is visible
+                    this.updatePerformancePageTable(holdings);
+                } else {
+                    // Update the standard performance table for other views
+                    this.updatePerformanceTable(holdings);
+                }
+                
                 this.updateHoldingsTable(holdings);
                 this.updatePortfolioSummary({ 
                     total_cryptos: holdings.length, 
