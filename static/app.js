@@ -38,8 +38,15 @@ class TradingApp {
     }
     
     // Utility function to safely convert values to numbers for .toFixed() calls
-    num(value, defaultValue = 0) {
-        return Number.isFinite(Number(value)) ? Number(value) : defaultValue;
+    num(v, d = 0) {
+        const n = Number(v);
+        return Number.isFinite(n) ? n : d;
+    }
+    
+    // Helper for safe formatted fixed-point numbers
+    fmtFixed(v, p, d = '0') {
+        const n = this.num(v);
+        return n.toFixed(p);
     }
     
     init() {
@@ -600,8 +607,9 @@ class TradingApp {
             const pnlClass = crypto.pnl >= 0 ? 'bg-success' : 'bg-danger';
             badge.className = `badge ${pnlClass} me-1 mb-1`;
             
-            const priceText = this.formatCurrency(crypto.current_price);
-            const pnlText = crypto.pnl >= 0 ? `+${this.num(crypto.pnl_percent).toFixed(2)}%` : `${this.num(crypto.pnl_percent).toFixed(2)}%`;
+            const priceText = this.formatCurrency(this.num(crypto.current_price));
+            const pp = this.num(crypto.pnl_percent).toFixed(2);
+            const pnlText = crypto.pnl >= 0 ? `+${pp}%` : `${pp}%`;
             
             badge.textContent = `${crypto.symbol} ${priceText} (${pnlText})`;
             badge.setAttribute('title', `${crypto.name}: ${priceText}, P&L: ${pnlText}`);
@@ -837,15 +845,12 @@ class TradingApp {
         cryptos.forEach(crypto => {
             const row = document.createElement('tr');
             
-            // Format values with safe number conversion
-            const safePrice = this.num(crypto.current_price);
-            const price = safePrice < 1 ? 
-                safePrice.toFixed(6) : 
-                safePrice.toFixed(2);
-            const quantity = this.num(crypto.quantity).toFixed(4);
-            const currentValue = this.formatCurrency(this.num(crypto.current_value), this.selectedCurrency);
-            const pnl = this.formatCurrency(this.num(crypto.pnl), this.selectedCurrency);
-            const pnlPercent = this.num(crypto.pnl_percent).toFixed(2);
+            // Format values with safe number conversion using helper methods
+            const qty = this.num(crypto.quantity);
+            const cp = this.num(crypto.current_price);
+            const cv = this.num(crypto.current_value);
+            const pnlNum = this.num(crypto.pnl);
+            const pp = this.num(crypto.pnl_percent);
             
             // Determine PnL colors and signal
             const pnlClass = crypto.pnl >= 0 ? 'text-success' : 'text-danger';
@@ -875,13 +880,13 @@ class TradingApp {
             nameCell.textContent = crypto.name;
             
             const quantityCell = document.createElement('td');
-            quantityCell.textContent = quantity;
+            quantityCell.textContent = qty.toFixed(4);
             
             const priceCell = document.createElement('td');
-            priceCell.textContent = this.formatCurrency(crypto.current_price);
+            priceCell.textContent = this.formatCurrency(cp);
             
             const valueCell = document.createElement('td');
-            valueCell.textContent = currentValue;
+            valueCell.textContent = this.formatCurrency(cv, this.selectedCurrency);
             
             const positionCell = document.createElement('td');
             positionCell.textContent = `${positionPercent}%`;
@@ -970,16 +975,13 @@ class TradingApp {
         cryptos.forEach(crypto => {
             const row = document.createElement('tr');
             
-            // Format values with safe number conversion
-            const safePrice = this.num(crypto.current_price);
-            const price = safePrice < 1 ? 
-                safePrice.toFixed(6) : 
-                safePrice.toFixed(2);
-            const quantity = this.num(crypto.quantity).toFixed(4);
-            const currentValue = this.formatCurrency(this.num(crypto.current_value), this.selectedCurrency);
-            const initialValue = this.formatCurrency(this.num(crypto.initial_value || crypto.value), this.selectedCurrency);
-            const pnl = this.formatCurrency(this.num(crypto.pnl), this.selectedCurrency);
-            const pnlPercent = this.num(crypto.pnl_percent).toFixed(2);
+            // Format values with safe number conversion using helper methods
+            const qty = this.num(crypto.quantity);
+            const cp = this.num(crypto.current_price);
+            const initVal = this.num(crypto.initial_value || crypto.value);
+            const curVal = this.num(crypto.current_value);
+            const pnlNum = this.num(crypto.pnl);
+            const pp = this.num(crypto.pnl_percent);
             
             // Determine colors and indicators
             const pnlClass = crypto.pnl >= 0 ? 'text-success' : 'text-danger';
@@ -1000,11 +1002,17 @@ class TradingApp {
             const nameCell = document.createElement('td');
             nameCell.textContent = crypto.name;
             
+            const quantityCell = document.createElement('td');
+            quantityCell.textContent = qty.toFixed(4);
+            
+            const priceCell = document.createElement('td');
+            priceCell.textContent = this.formatCurrency(cp);
+            
             const initialValueCell = document.createElement('td');
-            initialValueCell.textContent = initialValue;
+            initialValueCell.textContent = this.formatCurrency(initVal, this.selectedCurrency);
             
             const currentValueCell = document.createElement('td');
-            currentValueCell.textContent = currentValue;
+            currentValueCell.textContent = this.formatCurrency(curVal, this.selectedCurrency);
             
             const pnlValueCell = document.createElement('td');
             pnlValueCell.className = pnlClass;

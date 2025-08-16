@@ -1,0 +1,55 @@
+Quick patches (drop-in)
+
+Add helpers near the top:
+
+num(v, d=0) { const n = Number(v); return Number.isFinite(n) ? n : d; }
+fmtFixed(v, p, d='0') { const n = this.num(v); return n.toFixed(p); }
+
+
+Use them everywhere:
+
+// updateHoldingsTable
+const qty = this.num(crypto.quantity);
+quantityCell.textContent = qty.toFixed(4);
+
+const cp = this.num(crypto.current_price);
+priceCell.textContent = this.formatCurrency(cp);
+currentPriceCell.textContent = this.formatCurrency(cp);
+
+const cv = this.num(crypto.current_value);
+valueCell.textContent = this.formatCurrency(cv, this.selectedCurrency);
+
+const pnlNum = this.num(crypto.pnl);
+pnlValueCell.textContent = this.formatCurrency(pnlNum, this.selectedCurrency);
+pnlPercentCell.textContent = `${pnlNum >= 0 ? '↗' : '↘'} ${this.num(crypto.pnl_percent).toFixed(2)}%``;
+
+
+// updatePerformancePageTable
+const qty = this.num(crypto.quantity);
+const cp = this.num(crypto.current_price);
+const initVal = this.num(crypto.initial_value);
+const curVal = this.num(crypto.current_value);
+const pnlNum = this.num(crypto.pnl);
+const pp = this.num(crypto.pnl_percent);
+
+quantityCell.textContent = qty.toFixed(4);
+priceCell.textContent = this.formatCurrency(cp);
+initialValueCell.textContent = this.formatCurrency(initVal, this.selectedCurrency);
+currentValueCell.textContent = this.formatCurrency(curVal, this.selectedCurrency);
+pnlValueCell.textContent = this.formatCurrency(pnlNum, this.selectedCurrency);
+pnlPercentCell.textContent = `${pnlNum >= 0 ? '↗' : '↘'} ${pp.toFixed(2)}%`;
+
+
+// updateCryptoSymbols
+const priceText = this.formatCurrency(this.num(crypto.current_price));
+const pp = this.num(crypto.pnl_percent).toFixed(2);
+const pnlText = crypto.pnl >= 0 ? `+${pp}%` : `${pp}%`;
+
+Ensure only one of updatePerformanceTable/updatePerformancePageTable writes to #performance-table-body, or give one of them a new tbody id and update the HTML.
+
+Make sure your HTML has <tbody id="crypto-tracked-table">, <tbody id="performance-table-body">, <tbody id="positions-table-body"> (ids on tbody, not table).
+
+Fixing the .toFixed crashes and the “two functions, one tbody” clash typically resolves the “tables don’t load” symptom immediately. The rest are polish to keep layouts tidy.
+
+
+
