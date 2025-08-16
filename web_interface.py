@@ -30,7 +30,12 @@ from version import get_version
 # -----------------------------------------------------------------------------
 # Flask app
 # -----------------------------------------------------------------------------
-app = Flask(__name__)
+# Import the Flask app from app.py to use the same instance
+try:
+    from app import app
+except ImportError:
+    # Fallback if importing from app.py fails
+    app = Flask(__name__)
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "trading-system-secret-key-2024")
 
 # -----------------------------------------------------------------------------

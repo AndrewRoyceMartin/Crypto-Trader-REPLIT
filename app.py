@@ -314,8 +314,8 @@ def render_full_dashboard():
         """
 
 # Add essential routes from original web interface
-@app.route("/api/portfolio-data")
-def api_portfolio_data():
+@app.route("/api/crypto-portfolio")
+def api_crypto_portfolio():
     """Get portfolio data."""
     if not warmup["done"]:
         return jsonify({"error": "System still initializing"}), 503
@@ -354,6 +354,41 @@ def api_portfolio_data():
         return jsonify(portfolio_data)
     except Exception as e:
         logger.error(f"Portfolio data error: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+
+@app.route("/api/start_trading", methods=["POST"])
+def start_trading():
+    """Start trading with portfolio mode."""
+    try:
+        data = request.get_json(force=True) or {}
+        mode = data.get("mode", "paper").lower()
+        trading_mode = data.get("trading_mode", "portfolio")
+        
+        if trading_state["active"]:
+            return jsonify({"error": "Trading is already running"}), 400
+            
+        # Start portfolio trading
+        trading_state.update({
+            "mode": mode,
+            "active": True,
+            "strategy": "portfolio",
+            "start_time": datetime.utcnow(),
+            "type": trading_mode
+        })
+        
+        # Create initial portfolio trades for display
+        global recent_initial_trades
+        recent_initial_trades = create_initial_purchase_trades(mode, trading_mode)
+        
+        return jsonify({
+            "success": True, 
+            "message": f"{mode.title()} portfolio trading started for {len(recent_initial_trades)} assets"
+        })
+        
+    except Exception as e:
+        logger.error(f"Error starting trading: {e}")
         return jsonify({"error": str(e)}), 500
 
 @app.route("/api/status")
@@ -715,27 +750,6 @@ def api_start_trading():
         logger.error(f"Start trading error: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
 
-@app.route("/api/crypto-portfolio")
-def api_crypto_portfolio():
-    """Get crypto portfolio data for all 103 cryptocurrencies."""
-    if not warmup["done"]:
-        return jsonify({"error": "System still initializing"}), 503
-    
-    # Check if portfolio has been initialized (only after trading starts)
-    global portfolio_initialized
-    if not portfolio_initialized:
-        # Return empty portfolio until trading starts
-        return jsonify({
-            "summary": {
-                "total_cryptos": 0,
-                "total_initial_value": 0,
-                "total_current_value": 0,
-                "total_pnl": 0,
-                "total_pnl_percent": 0
-            },
-            "cryptocurrencies": []
-        })
-    
     try:
         from src.data.price_api import CryptoPriceAPI
         
