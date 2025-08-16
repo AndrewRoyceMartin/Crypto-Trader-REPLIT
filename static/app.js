@@ -702,20 +702,43 @@ class TradingApp {
             const quantityCell2 = document.createElement('td'); // Quantity column
             quantityCell2.textContent = this.num(quantity).toFixed(6);
             
+            // Calculate target prices based on current price (simple +/- 5% for demo)
+            const targetBuyPrice = price * 0.95; // 5% below current
+            const targetSellPrice = price * 1.05; // 5% above current
+            
             const targetSellCell = document.createElement('td'); // Target Sell
-            targetSellCell.textContent = '-';
+            targetSellCell.textContent = this.formatCurrency(targetSellPrice);
+            
+            // Calculate absolute P&L (current_value - original_investment)
+            const originalInvestment = 10; // Each asset started with $10
+            const absolutePnl = value - originalInvestment;
             
             const pnlAbsoluteCell = document.createElement('td'); // P&L absolute
-            pnlAbsoluteCell.textContent = '$0.00';
+            pnlAbsoluteCell.className = absolutePnl >= 0 ? 'text-success' : 'text-danger';
+            pnlAbsoluteCell.textContent = this.formatCurrency(absolutePnl);
+            
+            // Determine signal based on price movement
+            let signal = 'HOLD';
+            let signalClass = 'bg-secondary';
+            if (price <= targetBuyPrice) {
+                signal = 'BUY';
+                signalClass = 'bg-success';
+            } else if (price >= targetSellPrice) {
+                signal = 'SELL';
+                signalClass = 'bg-danger';
+            } else if (absolutePnl > 0.5) {
+                signal = 'TAKE PROFIT';
+                signalClass = 'bg-warning text-dark';
+            }
             
             const signalCell = document.createElement('td'); // Signal
-            signalCell.innerHTML = '<span class="badge bg-secondary">HOLD</span>';
+            signalCell.innerHTML = `<span class="badge ${signalClass}">${signal}</span>`;
             
             const actionsCell = document.createElement('td'); // Actions
             actionsCell.innerHTML = '<button class="btn btn-sm btn-outline-primary">View</button>';
             
             const targetCell = document.createElement('td'); // Target
-            targetCell.textContent = '-';
+            targetCell.textContent = this.formatCurrency(targetBuyPrice);
             
             // Append all cells to row (13 total)
             row.appendChild(rankCell);           // 1

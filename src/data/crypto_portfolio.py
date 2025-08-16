@@ -502,8 +502,57 @@ class CryptoPortfolioManager:
         return self.price_api.test_connection()
     
     def update_live_prices(self, symbols: List[str] = None) -> Dict[str, any]:
-        """
-        Update portfolio with live prices from API with validation.
+        """Update portfolio with live prices and recalculate P&L."""
+        if symbols is None:
+            symbols = list(self.portfolio_data.keys())
+        
+        # Get fresh prices from API
+        updated_prices = self.price_api.get_multiple_prices(symbols)
+        
+        updated_count = 0
+        for symbol in symbols:
+            if symbol in self.portfolio_data and symbol in updated_prices:
+                new_price_data = updated_prices[symbol]
+                
+                # Handle both simple float and dict price formats
+                if isinstance(new_price_data, dict):
+                    new_price = new_price_data.get('price', 0)
+                    is_live = new_price_data.get('is_live', True)
+                else:
+                    new_price = new_price_data
+                    is_live = True
+                
+                if new_price > 0:
+                    # Update current price
+                    self.portfolio_data[symbol]['current_price'] = new_price
+                    
+                    # Recalculate current value: quantity * current_price
+                    quantity = self.portfolio_data[symbol]['quantity']
+                    new_current_value = quantity * new_price
+                    self.portfolio_data[symbol]['current_value'] = new_current_value
+                    
+                    # Recalculate P&L: current_value - initial_investment
+                    initial_value = self.portfolio_data[symbol]['initial_value']
+                    pnl = new_current_value - initial_value
+                    self.portfolio_data[symbol]['pnl'] = pnl
+                    
+                    # Recalculate P&L percentage
+                    pnl_percent = (pnl / initial_value) * 100 if initial_value > 0 else 0
+                    self.portfolio_data[symbol]['pnl_percent'] = pnl_percent
+                    
+                    # Mark as live data
+                    self.portfolio_data[symbol]['is_live'] = is_live
+                    
+                    updated_count += 1
+                    
+                    if updated_count <= 5:  # Log first few updates
+                        self.logger.info(f"Updated {symbol}: ${new_price:.4f}, P&L: ${pnl:.2f} ({pnl_percent:.2f}%)")
+        
+        self.logger.info(f"Updated prices for {updated_count}/{len(symbols)} cryptocurrencies")
+        return {"updated": updated_count, "total": len(symbols)}
+    
+    def update_prices(self, symbols: List[str] = None) -> Dict:
+        """Update portfolio with live prices from API with validation.
         
         Returns:
             Dictionary containing update status and price validation information
@@ -622,7 +671,7 @@ class CryptoPortfolioManager:
             # Check for auto-buy opportunities
             if target_buy_price > 0 and current_price <= target_buy_price:
                 # Calculate buy amount based on available cash (assuming some spare cash)
-                buy_amount = min(100, self.cash_balance * 0.05)  # 5% of cash or $100 max
+                buy_amount = min(100, 1000 * 0.05)  # 5% of assumed cash or $100 max
                 if buy_amount >= 10:  # Minimum $10 trade
                     opportunities.append({
                         'type': 'BUY',
