@@ -818,17 +818,21 @@ class TradingApp {
     }
     
     hideLoadingProgress() {
+        // FIXED: More specific and safer selector targeting only the crypto loading progress
         const progressBar = document.getElementById('crypto-loading-progress');
-        if (progressBar) progressBar.style.display = 'none';
+        if (progressBar) {
+            progressBar.style.display = 'none';
+            
+            // Only hide the parent row of the specific crypto loading progress
+            const row = progressBar.closest('tr');
+            if (row) row.style.display = 'none';
+        }
 
         const progressText = document.getElementById('crypto-loading-text');
         if (progressText) progressText.style.display = 'none';
 
-        // safer than 'tr:has(.progress)' - find progress elements and hide their parent rows
-        document.querySelectorAll('.progress').forEach(el => {
-            const row = el.closest('tr');
-            if (row) row.style.display = 'none';
-        });
+        // SAFETY: No longer using generic '.progress' selector that could affect other progress bars
+        // Instead, we target only the specific loading row by finding the crypto loading progress element
     }
     
     updatePerformanceTable(cryptos) {
