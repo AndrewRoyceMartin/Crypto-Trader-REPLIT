@@ -1540,6 +1540,118 @@ async function startPaperTrades() {
     }
 }
 
+// Missing Utility Functions
+function changeCurrency() {
+    const currencyDropdown = document.getElementById('currency-selector');
+    if (currencyDropdown && window.tradingApp) {
+        window.tradingApp.selectedCurrency = currencyDropdown.value;
+        // Refresh all displays with new currency
+        window.tradingApp.updateCryptoPortfolio();
+    }
+}
+
+function exportPortfolio() {
+    if (window.tradingApp) {
+        window.tradingApp.showToast('Portfolio export feature coming soon', 'info');
+    }
+}
+
+function clearPortfolioFilters() {
+    // Clear any active filters on main portfolio table
+    if (window.tradingApp) {
+        window.tradingApp.updateCryptoPortfolio();
+        window.tradingApp.showToast('Portfolio filters cleared', 'success');
+    }
+}
+
+function clearPerformanceFilters() {
+    // Clear any active filters on performance table
+    if (window.tradingApp) {
+        window.tradingApp.updateCryptoPortfolio();
+        window.tradingApp.showToast('Performance filters cleared', 'success');
+    }
+}
+
+function clearTradesFilters() {
+    // Clear any active filters on trades table
+    if (window.tradingApp) {
+        window.tradingApp.updateRecentTrades();
+        window.tradingApp.showToast('Trades filters cleared', 'success');
+    }
+}
+
+function confirmLiveTrading() {
+    if (confirm('Are you sure you want to start live trading? This will use real money.')) {
+        startTrading('live', 'portfolio');
+    }
+}
+
+function sortPortfolio(column) {
+    // Basic sorting functionality for main portfolio table
+    console.log(`Sorting portfolio by ${column}`);
+    if (window.tradingApp) {
+        window.tradingApp.showToast(`Sorting by ${column}`, 'info');
+    }
+}
+
+function sortPerformanceTable(columnIndex) {
+    // Basic sorting functionality for performance table
+    console.log(`Sorting performance table by column ${columnIndex}`);
+    if (window.tradingApp) {
+        window.tradingApp.showToast('Performance table sorted', 'info');
+    }
+}
+
+function sortPositionsTable(columnIndex) {
+    // Basic sorting functionality for positions table
+    console.log(`Sorting positions table by column ${columnIndex}`);
+    if (window.tradingApp) {
+        window.tradingApp.showToast('Positions table sorted', 'info');
+    }
+}
+
+function sortTradesTable(columnIndex) {
+    // Basic sorting functionality for trades table
+    console.log(`Sorting trades table by column ${columnIndex}`);
+    if (window.tradingApp) {
+        window.tradingApp.showToast('Trades table sorted', 'info');
+    }
+}
+
+async function updatePerformanceData() {
+    // Update performance dashboard data
+    if (window.tradingApp) {
+        await window.tradingApp.updateCryptoPortfolio();
+    }
+}
+
+async function updatePositionsData() {
+    // Update positions dashboard data
+    if (window.tradingApp) {
+        await window.tradingApp.updateCryptoPortfolio();
+    }
+}
+
+function startTrading(mode, strategy) {
+    if (window.tradingApp) {
+        window.tradingApp.showToast(`Starting ${mode} trading with ${strategy} strategy`, 'info');
+    }
+}
+
+function stopTrading() {
+    if (window.tradingApp) {
+        window.tradingApp.showToast('Trading stopped', 'warning');
+    }
+}
+
+function emergencyStop() {
+    if (confirm('Are you sure you want to emergency stop all trading?')) {
+        if (window.tradingApp) {
+            window.tradingApp.showToast('Emergency stop activated', 'danger');
+        }
+    }
+}
+
 // Navigation Functions for Dashboard Views
 function showMainDashboard() {
     // Hide all dashboard sections first

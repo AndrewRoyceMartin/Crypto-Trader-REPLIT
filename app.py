@@ -167,37 +167,7 @@ def background_warmup():
         
     except Exception as e:
         # Even if warmup fails completely, mark as done so app can start
-        warmup.update({"error": str(e), "done": True})  # Changed to True
-        logger.error(f"Warmup error: {e} - continuing anyway")
-        
-        # Fetch minimal data for just a few symbols
-        successful_loads = 0
-        for i, sym in enumerate(WATCHLIST[:MAX_STARTUP_SYMBOLS]):
-            try:
-                ohlcv = ex.fetch_ohlcv(sym, timeframe='1h', limit=STARTUP_OHLCV_LIMIT)
-                import pandas as pd
-                df = pd.DataFrame(ohlcv, columns=["ts","open","high","low","close","volume"])
-                df["ts"] = pd.to_datetime(df["ts"], unit="ms", utc=True)
-                df.set_index("ts", inplace=True)
-                cache_put(sym, '1h', df)
-                warmup["loaded"].append(sym)
-                successful_loads += 1
-                logger.info(f"Warmed up {sym}")
-            except Exception as fe:
-                logger.warning(f"Warmup fetch failed for {sym}: {fe}")
-            time.sleep(WARMUP_SLEEP_SEC)
-            
-        # Consider warmup done even if some symbols failed
-        # As long as we tried all symbols or have at least one success
-        warmup["done"] = True
-        if successful_loads > 0:
-            logger.info(f"Warmup complete: {successful_loads}/{MAX_STARTUP_SYMBOLS} symbols loaded: {', '.join(warmup['loaded'])}")
-        else:
-            logger.warning("Warmup complete but no symbols loaded - continuing with empty cache")
-        
-    except Exception as e:
-        # Even if warmup fails completely, mark as done so app can start
-        warmup.update({"error": str(e), "done": True})  # Changed to True
+        warmup.update({"error": str(e), "done": True})
         logger.error(f"Warmup error: {e} - continuing anyway")
 
 def get_df(symbol: str, timeframe: str):
