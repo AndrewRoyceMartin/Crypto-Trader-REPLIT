@@ -987,64 +987,19 @@ class TradingApp {
             const pnlClass = crypto.pnl >= 0 ? 'text-success' : 'text-danger';
             const pnlIcon = crypto.pnl >= 0 ? '↗' : '↘';
             
-            // Create cells with safe DOM manipulation
-            const rankCell = document.createElement('td');
-            const rankBadge = document.createElement('span');
-            rankBadge.className = 'badge bg-primary';
-            rankBadge.textContent = `#${crypto.rank}`;
-            rankCell.appendChild(rankBadge);
-            
-            const symbolCell = document.createElement('td');
-            const symbolStrong = document.createElement('strong');
-            symbolStrong.textContent = crypto.symbol;
-            symbolCell.appendChild(symbolStrong);
-            
-            const nameCell = document.createElement('td');
-            nameCell.textContent = crypto.name;
-            
-            const quantityCell = document.createElement('td');
-            quantityCell.textContent = qty.toFixed(4);
-            
-            const priceCell = document.createElement('td');
-            priceCell.textContent = this.formatCurrency(cp);
-            
-            const initialValueCell = document.createElement('td');
-            initialValueCell.textContent = this.formatCurrency(initVal, this.selectedCurrency);
-            
-            const currentValueCell = document.createElement('td');
-            currentValueCell.textContent = this.formatCurrency(curVal, this.selectedCurrency);
-            
-            const pnlValueCell = document.createElement('td');
-            pnlValueCell.className = pnlClass;
-            pnlValueCell.textContent = pnl;
-            
-            const pnlPercentCell = document.createElement('td');
-            pnlPercentCell.className = pnlClass;
-            pnlPercentCell.textContent = `${pnlIcon} ${pnlPercent}%`;
-            
-            const priceCell = document.createElement('td');
-            priceCell.textContent = this.formatCurrency(crypto.current_price);
-            
-            const quantityCell = document.createElement('td');
-            quantityCell.textContent = quantity;
-            
-            const timeCell = document.createElement('td');
-            const timeSmall = document.createElement('small');
-            timeSmall.className = 'text-muted';
-            timeSmall.textContent = 'Now';
-            timeCell.appendChild(timeSmall);
-            
-            // Append all cells
-            row.appendChild(rankCell);
-            row.appendChild(symbolCell);
-            row.appendChild(nameCell);
-            row.appendChild(initialValueCell);
-            row.appendChild(currentValueCell);
-            row.appendChild(pnlValueCell);
-            row.appendChild(pnlPercentCell);
-            row.appendChild(priceCell);
-            row.appendChild(quantityCell);
-            row.appendChild(timeCell);
+            // Create a simplified performance row matching the 10-column structure
+            row.innerHTML = `
+                <td><span class="badge bg-primary">#${crypto.rank}</span></td>
+                <td><strong>${crypto.symbol}</strong></td>
+                <td>${crypto.name}</td>
+                <td>1</td>
+                <td>${this.formatCurrency(initVal, this.selectedCurrency)}</td>
+                <td>${this.formatCurrency(curVal, this.selectedCurrency)}</td>
+                <td class="${pnlClass}">${this.formatCurrency(pnlNum, this.selectedCurrency)}</td>
+                <td class="${pnlClass}">${pnlNum >= 0 ? '↗' : '↘'} ${pp.toFixed(2)}%</td>
+                <td class="${pnlClass}">${pp.toFixed(2)}%</td>
+                <td class="${pnlClass}"><span class="badge ${pnlNum >= 0 ? 'bg-success' : 'bg-danger'}">${pnlNum >= 0 ? 'Winner' : 'Loser'}</span></td>
+            `;
             
             tableBody.appendChild(row);
         });
