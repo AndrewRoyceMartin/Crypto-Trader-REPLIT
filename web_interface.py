@@ -85,11 +85,24 @@ def initialize_system():
     # Initialize crypto portfolio with 103 cryptos at $10 each - ALWAYS FRESH
     crypto_portfolio = CryptoPortfolioManager(initial_value_per_crypto=10.0)
     
-    # Force portfolio data initialization if empty
-    if not crypto_portfolio.portfolio_data:
-        app.logger.warning("Portfolio data is empty after initialization, forcing reload...")
+    # Force portfolio data initialization if empty - ensure 103 cryptos are always loaded
+    if not crypto_portfolio.portfolio_data or len(crypto_portfolio.portfolio_data) < 103:
+        app.logger.warning(f"Portfolio data incomplete ({len(crypto_portfolio.portfolio_data)} cryptos), forcing full reload...")
         crypto_portfolio.portfolio_data = crypto_portfolio._initialize_portfolio()
         app.logger.info(f"Force-initialized portfolio with {len(crypto_portfolio.portfolio_data)} cryptocurrencies")
+        
+        # Verify the portfolio loaded correctly
+        if len(crypto_portfolio.portfolio_data) >= 103:
+            app.logger.info("✅ SUCCESS: Portfolio loaded with all 103 cryptocurrencies")
+            # Log first few cryptos to verify they have proper prices
+            sample_symbols = list(crypto_portfolio.portfolio_data.keys())[:5]
+            for symbol in sample_symbols:
+                crypto_data = crypto_portfolio.portfolio_data[symbol]
+                price = crypto_data.get('current_price', 0)
+                value = crypto_data.get('current_value', 0)
+                app.logger.info(f"  {symbol}: ${price:.4f}/coin, ${value:.2f} total value")
+        else:
+            app.logger.error(f"❌ FAILED: Only {len(crypto_portfolio.portfolio_data)} cryptocurrencies loaded")
     
     # NEVER load old state during system initialization - always start fresh with $10
     # This ensures portfolio always has correct $10 initial values
