@@ -1068,12 +1068,12 @@ def api_reset_entire_program():
         return jsonify({"error": "System still initializing"}), 503
     
     try:
-        # Clear cache and reset system state
+        # Clear all cache files and reset system state
         import os
         import sqlite3
         
-        # Clear cache database if it exists
-        cache_files = ["cache.db", "warmup_cache.parquet", "trading.db"]
+        # Clear cache database and persistent files
+        cache_files = ["cache.db", "warmup_cache.parquet", "trading.db", "app.log", "trading.log"]
         for cache_file in cache_files:
             if os.path.exists(cache_file):
                 try:
@@ -1082,7 +1082,13 @@ def api_reset_entire_program():
                 except Exception as e:
                     logger.warning(f"Could not remove {cache_file}: {e}")
         
-        # Clear any in-memory state
+        # Clear in-memory price cache completely
+        global _price_cache
+        with _cache_lock:
+            _price_cache.clear()
+            logger.info("Cleared in-memory price cache")
+        
+        # Reset server start time and uptime tracking
         global server_start_time
         server_start_time = datetime.utcnow()
         
@@ -1095,11 +1101,22 @@ def api_reset_entire_program():
             "start_time": None
         })
         
-        # Reset portfolio to empty state (no holdings until trading starts again)
+        # Reset portfolio to completely empty state
         global portfolio_initialized, recent_initial_trades
         portfolio_initialized = False
         recent_initial_trades = []  # Clear all trades
-        logger.info("Portfolio and trades reset to empty state")
+        
+        # Clear any cached price API data
+        try:
+            from src.data.price_api import CryptoPriceAPI
+            price_api = CryptoPriceAPI()
+            if hasattr(price_api, 'clear_cache'):
+                price_api.clear_cache()
+                logger.info("Cleared price API cache")
+        except Exception as e:
+            logger.warning(f"Could not clear price API cache: {e}")
+        
+        logger.info("Complete system reset: portfolio, trades, caches, and state cleared")
         
         return jsonify({
             "success": True,
