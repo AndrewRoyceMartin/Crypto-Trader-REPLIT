@@ -345,29 +345,51 @@ def api_crypto_portfolio():
         symbols = ["BTC", "ETH", "SOL", "XRP", "DOGE"]
         live_prices = price_api.get_multiple_prices(symbols)
         
-        # Create portfolio data with live prices
-        portfolio_data = {
-            "total_value": 12450.67,
-            "total_pnl": 1245.50,
-            "total_pnl_percent": 11.15,
-            "holdings": [],
-            "recent_trades": recent_initial_trades or []
-        }
+        # Calculate portfolio data from live prices
+        holdings = []
+        total_value = 0
+        total_initial_value = 0
         
-        # Add holdings using live prices
+        # Add holdings using current live prices
         for symbol, price_info in live_prices.items():
             if 'price' in price_info:
-                quantity = 0.1 if symbol == "BTC" else (1.0 if symbol == "ETH" else 10.0)
-                value = price_info['price'] * quantity
-                portfolio_data["holdings"].append({
+                current_price = price_info['price']
+                # $10 initial investment per crypto
+                initial_investment = 10.0
+                quantity = initial_investment / current_price
+                current_value = quantity * current_price
+                pnl = current_value - initial_investment
+                pnl_percent = (pnl / initial_investment) * 100 if initial_investment > 0 else 0
+                
+                holdings.append({
                     "symbol": symbol,
-                    "quantity": quantity,
-                    "current_price": price_info['price'],
-                    "value": value,
-                    "pnl": value * 0.1,  # 10% profit
-                    "pnl_percent": 10.0,
+                    "quantity": round(quantity, 8),
+                    "current_price": current_price,
+                    "value": current_value,
+                    "pnl": pnl,
+                    "pnl_percent": pnl_percent,
                     "is_live": price_info.get('is_live', True)
                 })
+                
+                total_value += current_value
+                total_initial_value += initial_investment
+        
+        total_pnl = total_value - total_initial_value
+        total_pnl_percent = (total_pnl / total_initial_value) * 100 if total_initial_value > 0 else 0
+        
+        portfolio_data = {
+            "holdings": holdings,
+            "recent_trades": recent_initial_trades or [],
+            "total_value": total_value,
+            "total_pnl": total_pnl,
+            "total_pnl_percent": total_pnl_percent,
+            "summary": {
+                "total_cryptos": len(holdings),
+                "total_current_value": total_value,
+                "total_pnl": total_pnl,
+                "total_pnl_percent": total_pnl_percent
+            }
+        }
         
         return jsonify(portfolio_data)
     except Exception as e:
