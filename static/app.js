@@ -601,7 +601,7 @@ class TradingApp {
             badge.className = `badge ${pnlClass} me-1 mb-1`;
             
             const priceText = this.formatCurrency(crypto.current_price);
-            const pnlText = crypto.pnl >= 0 ? `+${crypto.pnl_percent.toFixed(2)}%` : `${crypto.pnl_percent.toFixed(2)}%`;
+            const pnlText = crypto.pnl >= 0 ? `+${this.num(crypto.pnl_percent).toFixed(2)}%` : `${this.num(crypto.pnl_percent).toFixed(2)}%`;
             
             badge.textContent = `${crypto.symbol} ${priceText} (${pnlText})`;
             badge.setAttribute('title', `${crypto.name}: ${priceText}, P&L: ${pnlText}`);
