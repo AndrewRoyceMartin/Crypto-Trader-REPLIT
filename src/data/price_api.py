@@ -172,7 +172,21 @@ class CryptoPriceAPI:
             "CRV": "curve-dao-token",
             "UMA": "uma",
             "ENJN": "enjincoin",
-            "GALA": "gala"
+            "GALA": "gala",
+            # Additional missing mappings from logs
+            "CREAM": "cream-2",
+            "BADGER": "badger-dao",
+            "LEND": "ethlend",
+            "RUNE": "thorchain",
+            "CAKE": "pancakeswap-token",
+            "BAKE": "bakerytoken",
+            "WAX": "wax",
+            "ILV": "illuvium",
+            "AUDIO": "audius",
+            "REVV": "revv",
+            "AMP": "amp-token",
+            "ZEC": "zcash",
+            "XLM": "stellar"
         }
     
     def _rate_limit(self):

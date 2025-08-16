@@ -33,12 +33,21 @@ class CryptoPortfolioManager:
         # Always do fresh initialization - don't load old state in constructor
         self.portfolio_data = self._initialize_portfolio()
         
-        # Log first few cryptos to verify $10 initialization
+        # CRITICAL FIX: Force immediate price update to calculate P&L correctly
+        self.logger.info("Force-updating prices to calculate real-time P&L...")
+        update_result = self.update_prices()
+        self.logger.info(f"Price update completed: {update_result.get('live_prices', 0)} live prices")
+        
+        # Log first few cryptos to verify $10 initialization and P&L calculations
         if self.portfolio_data:
             sample_symbols = list(self.portfolio_data.keys())[:3]
             for symbol in sample_symbols:
-                initial_val = self.portfolio_data[symbol]['initial_value']
-                self.logger.info(f"Initialized {symbol} with ${initial_val} initial value")
+                crypto_data = self.portfolio_data[symbol]
+                initial_val = crypto_data['initial_value']
+                current_val = crypto_data['current_value']
+                pnl = crypto_data['pnl']
+                pnl_percent = crypto_data['pnl_percent']
+                self.logger.info(f"Initialized {symbol}: ${initial_val} → ${current_val:.2f}, P&L: ${pnl:.2f} ({pnl_percent:.2f}%)")
         
         self.logger.info(f"Initialized portfolio with ${self.initial_value} per cryptocurrency")
         
@@ -241,6 +250,9 @@ class CryptoPortfolioManager:
             # Calculate correct quantity: $10 worth of the asset at initial price
             quantity = self.initial_value / base_price  # This gives us $10 worth of the asset
             
+            # CRITICAL FIX: Initialize current_value properly from the start
+            initial_current_value = quantity * base_price  # Should equal $10 initially
+            
             portfolio[symbol] = {
                 "name": crypto["name"],
                 "rank": crypto["rank"],
@@ -248,9 +260,9 @@ class CryptoPortfolioManager:
                 "initial_price": base_price,
                 "current_price": base_price,  # Will be updated with live prices
                 "initial_value": self.initial_value,  # Always $10 initial investment
-                "current_value": quantity * base_price,  # Will fluctuate: quantity × current_price
-                "pnl": 0.0,
-                "pnl_percent": 0.0,
+                "current_value": initial_current_value,  # Will fluctuate: quantity × current_price
+                "pnl": initial_current_value - self.initial_value,  # Calculate initial P&L
+                "pnl_percent": ((initial_current_value - self.initial_value) / self.initial_value) * 100,
                 "target_sell_price": self._calculate_target_sell_price(base_price, crypto["rank"]),
                 "target_buy_price": self._calculate_target_buy_price(base_price, crypto["rank"]),
                 "projected_sell_pnl": float(self._calculate_target_sell_price(base_price, crypto["rank"]) * quantity) - float(self.initial_value),
