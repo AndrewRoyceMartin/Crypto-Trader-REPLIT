@@ -1035,34 +1035,38 @@ class TradingApp {
     updatePortfolioSummary(summary, cryptos) {
         if (!summary) return;
         
-        // Update main summary card
-        document.getElementById('summary-total-value').textContent = this.formatCurrency(summary.total_current_value);
+        const safeSet = (id, text, className) => {
+            const el = document.getElementById(id);
+            if (!el) return;
+            if (text !== undefined) el.textContent = text;
+            if (className !== undefined) el.className = className;
+        };
         
-        const changeElement = document.getElementById('summary-total-change');
+        safeSet('summary-total-value', this.formatCurrency(summary.total_current_value));
+        
         const changeValue = summary.total_pnl || 0;
         const changePercent = summary.total_pnl_percent || 0;
+        safeSet(
+            'summary-total-change',
+            `${changeValue >= 0 ? '+' : ''}${this.formatCurrency(changeValue)} (${this.num(changePercent).toFixed(2)}%)`,
+            `badge ${changeValue >= 0 ? 'bg-success' : 'bg-danger'}`
+        );
         
-        changeElement.textContent = `${changeValue >= 0 ? '+' : ''}${this.formatCurrency(changeValue)} (${changePercent.toFixed(2)}%)`;
-        changeElement.className = `badge ${changeValue >= 0 ? 'bg-success' : 'bg-danger'}`;
+        safeSet('summary-total-assets', summary.total_cryptos || 0);
+        safeSet('summary-portfolio-value', this.formatCurrency(summary.total_current_value));
         
-        // Update summary stats
-        document.getElementById('summary-total-assets').textContent = summary.total_cryptos || 0;
-        document.getElementById('summary-portfolio-value').textContent = this.formatCurrency(summary.total_current_value);
+        safeSet(
+            'summary-24h-change',
+            `${changePercent >= 0 ? '+' : ''}${this.num(changePercent).toFixed(2)}%`,
+            `mb-0 fw-bold ${changePercent >= 0 ? 'text-success' : 'text-danger'}`
+        );
         
-        const dailyChangeElement = document.getElementById('summary-24h-change');
-        dailyChangeElement.textContent = `${changePercent >= 0 ? '+' : ''}${changePercent.toFixed(2)}%`;
-        dailyChangeElement.className = `mb-0 fw-bold ${changePercent >= 0 ? 'text-success' : 'text-danger'}`;
-        
-        // Find best performer
         if (cryptos && cryptos.length > 0) {
-            const bestPerformer = cryptos.reduce((best, crypto) => {
-                const currentPnlPercent = crypto.pnl_percent || 0;
-                const bestPnlPercent = best.pnl_percent || 0;
-                return currentPnlPercent > bestPnlPercent ? crypto : best;
-            });
-            
-            document.getElementById('summary-best-performer').textContent = bestPerformer.symbol;
-            document.getElementById('summary-best-performance').textContent = `+${(bestPerformer.pnl_percent || 0).toFixed(2)}%`;
+            const bestPerformer = cryptos.reduce((best, c) =>
+                (c.pnl_percent || 0) > (best.pnl_percent || 0) ? c : best
+            );
+            safeSet('summary-best-performer', bestPerformer.symbol);
+            safeSet('summary-best-performance', `+${this.num(bestPerformer.pnl_percent || 0).toFixed(2)}%`);
         }
     }
 
