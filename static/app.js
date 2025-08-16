@@ -364,8 +364,8 @@ class TradingApp {
         // Update summary stats to show empty state
         const summaryElements = {
             'crypto-total-count': '0',
-            'crypto-current-value': '$0.00',
-            'crypto-total-pnl': '$0.00'
+            'crypto-current-value': this.formatCurrency(0),
+            'crypto-total-pnl': this.formatCurrency(0)
         };
         
         Object.entries(summaryElements).forEach(([id, value]) => {
@@ -429,6 +429,12 @@ class TradingApp {
         // Fetch latest exchange rates for accurate conversion
         await this.fetchExchangeRates();
         
+        // Guard against missing exchange rate keys
+        if (!this.exchangeRates[currency]) {
+            this.showToast(`No exchange rate for ${currency}. Using USD.`, 'warning');
+            this.selectedCurrency = 'USD'; // Fallback to USD
+        }
+        
         // Refresh all tables with new currency formatting and conversion
         this.updateCryptoPortfolio();
     }
@@ -443,7 +449,7 @@ class TradingApp {
     }
     
     async updateCryptoPortfolio() {
-        // Store current data for dashboard switching
+        // Reset current data - will be set after successful load
         this.currentCryptoData = null;
         // Prevent concurrent updates
         if (this.isUpdatingPortfolio) {
@@ -504,9 +510,14 @@ class TradingApp {
                 this.displayPriceDataWarning(data.price_validation.failed_symbols);
             }
             
-            // Update summary statistics - use holdings data for summary calculations
-            const totalValue = data.total_value || 0;
-            const totalPnl = data.total_pnl || 0;
+            // Update summary statistics - prefer summary data, fallback to calculations
+            const totalValue = (data.summary?.total_current_value) 
+                             ?? data.total_value 
+                             ?? holdings.reduce((s, c) => s + (c.current_value || c.value || 0), 0);
+
+            const totalPnl = (data.summary?.total_pnl) 
+                           ?? data.total_pnl 
+                           ?? holdings.reduce((s, c) => s + (c.pnl || 0), 0);
             
             if (document.getElementById('crypto-total-count')) {
                 document.getElementById('crypto-total-count').textContent = holdings.length;
@@ -524,6 +535,9 @@ class TradingApp {
             
             // Update crypto symbols display and all tables using holdings data
             if (holdings && holdings.length > 0) {
+                // Store current data for dashboard switching
+                this.currentCryptoData = holdings;
+                
                 this.updateLoadingProgress(80, 'Updating displays...');
                 this.updateCryptoSymbols(holdings);
                 this.updateCryptoTable(holdings);

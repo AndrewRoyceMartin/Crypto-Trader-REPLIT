@@ -1,0 +1,63 @@
+3) Exchange rates lifecycle / missing rate keys
+
+formatCurrency multiplies by this.exchangeRates[targetCurrency]. If your /api/exchange-rates doesn’t include a key that matches the dropdown value (e.g., dropdown says AUD but API returns AUS), you’ll silently fall back to 1 and see no change.
+
+Make sure the dropdown values exactly match your rates keys.
+Add a small guard/toast:
+
+async setSelectedCurrency(currency) {
+  this.selectedCurrency = currency;
+  await this.fetchExchangeRates();
+  if (!this.exchangeRates[currency]) {
+    this.showToast(`No exchange rate for ${currency}. Using USD.`, 'warning');
+  }
+  this.updateCryptoPortfolio();
+}
+
+🧠 Data handling polish (prevents confusion)
+
+In updateCryptoPortfolio, you set this.currentCryptoData = null; but never set it back. Later, your navigation tries to reuse currentCryptoData:
+
+// after computing holdings:
+this.currentCryptoData = holdings;
+
+
+Your totals:
+
+const totalValue = data.total_value || 0;
+const totalPnl   = data.total_pnl || 0;
+
+
+Many backends put these under data.summary. Prefer:
+
+const totalValue = (data.summary?.total_current_value) 
+                 ?? data.total_value 
+                 ?? holdings.reduce((s, c) => s + (c.current_value || 0), 0);
+
+const totalPnl   = (data.summary?.total_pnl) 
+                 ?? data.total_pnl 
+                 ?? holdings.reduce((s, c) => s + (c.pnl || 0), 0);
+
+
+fetchWithCache: you have this.bypassCache = true but never honor it. If you mean to bypass for debugging, do:
+
+const url = this.bypassCache ? `${endpoint}?_t=${Date.now()}` : endpoint;
+const response = await fetch(url, { cache: 'no-cache' });
+
+✅ Quick patch list
+
+Delete the stray block after updatePerformanceTable (the one starting with const valueCell = document.createElement('td');).
+
+Replace all $${price} occurrences with this.formatCurrency(crypto.current_price).
+
+Replace every '$0.00' fallback with this.formatCurrency(0).
+
+In updateCryptoSymbols, use formatCurrency for price and (optionally) P&L.
+
+After computing holdings in updateCryptoPortfolio, set this.currentCryptoData = holdings;.
+
+Ensure dropdown values match this.exchangeRates keys; add a warning if missing.
+
+(Optional) Improve totals computation as shown above.
+
+If you want, I can give you a ready-to-paste diff for the three table functions (updateCryptoSymbols, updateHoldingsTable, updatePerformancePageTable) with the currency-safe formatting baked in.
