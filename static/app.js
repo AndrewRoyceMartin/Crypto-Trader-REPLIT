@@ -481,12 +481,17 @@ class TradingApp {
             
             // DEBUG: Comprehensive API response logging
             console.log('Crypto portfolio API response:', data);
-            console.log('Response summary:', data.summary);
-            console.log('Cryptocurrencies count:', data.cryptocurrencies ? data.cryptocurrencies.length : 0);
-            console.log('First few cryptos:', data.cryptocurrencies ? data.cryptocurrencies.slice(0, 3) : 'None');
+            
+            // Handle both response formats: holdings and cryptocurrencies
+            const holdings = data.holdings || data.cryptocurrencies || [];
+            const summary = data.summary || {};
+            
+            console.log('Response summary:', summary);
+            console.log('Holdings/Cryptocurrencies count:', holdings.length);
+            console.log('First few cryptos:', holdings.slice(0, 3).length > 0 ? holdings.slice(0, 3) : 'None');
             
             // CRITICAL: Check if portfolio is empty and needs trading to be started
-            if (!data.cryptocurrencies || data.cryptocurrencies.length === 0) {
+            if (!holdings || holdings.length === 0) {
                 console.log('Portfolio is empty - user needs to start trading to populate data');
                 this.displayEmptyPortfolioMessage();
                 this.hideLoadingProgress();
@@ -499,26 +504,38 @@ class TradingApp {
                 this.displayPriceDataWarning(data.price_validation.failed_symbols);
             }
             
-            // Update summary statistics
-            if (data.summary) {
-                document.getElementById('crypto-total-count').textContent = data.summary.total_cryptos;
-                document.getElementById('crypto-current-value').textContent = this.formatCurrency(data.summary.total_current_value, this.selectedCurrency);
-                document.getElementById('crypto-total-pnl').textContent = this.formatCurrency(data.summary.total_pnl, this.selectedCurrency);
+            // Update summary statistics - use holdings data for summary calculations
+            const totalValue = data.total_value || 0;
+            const totalPnl = data.total_pnl || 0;
+            
+            if (document.getElementById('crypto-total-count')) {
+                document.getElementById('crypto-total-count').textContent = holdings.length;
+            }
+            if (document.getElementById('crypto-current-value')) {
+                document.getElementById('crypto-current-value').textContent = this.formatCurrency(totalValue, this.selectedCurrency);
+            }
+            if (document.getElementById('crypto-total-pnl')) {
+                document.getElementById('crypto-total-pnl').textContent = this.formatCurrency(totalPnl, this.selectedCurrency);
                 
                 const pnlElement = document.getElementById('crypto-total-pnl');
-                const pnlClass = data.summary.total_pnl >= 0 ? 'text-success' : 'text-danger';
+                const pnlClass = totalPnl >= 0 ? 'text-success' : 'text-danger';
                 pnlElement.className = `mb-0 ${pnlClass}`;
             }
             
-            // Update crypto symbols display and all tables
-            if (data.cryptocurrencies) {
+            // Update crypto symbols display and all tables using holdings data
+            if (holdings && holdings.length > 0) {
                 this.updateLoadingProgress(80, 'Updating displays...');
-                this.updateCryptoSymbols(data.cryptocurrencies);
-                this.updateCryptoTable(data.cryptocurrencies);
-                this.updatePerformanceTable(data.cryptocurrencies);
-                this.updatePerformancePageTable(data.cryptocurrencies);
-                this.updateHoldingsTable(data.cryptocurrencies);
-                this.updatePortfolioSummary(data.summary, data.cryptocurrencies);
+                this.updateCryptoSymbols(holdings);
+                this.updateCryptoTable(holdings);
+                this.updatePerformanceTable(holdings);
+                this.updatePerformancePageTable(holdings);
+                this.updateHoldingsTable(holdings);
+                this.updatePortfolioSummary({ 
+                    total_cryptos: holdings.length, 
+                    total_current_value: totalValue, 
+                    total_pnl: totalPnl,
+                    total_pnl_percent: data.total_pnl_percent || 0
+                }, holdings);
                 await this.updateRecentTrades(); // Add this to update trades
                 this.updateLoadingProgress(100, 'Complete!');
                 
