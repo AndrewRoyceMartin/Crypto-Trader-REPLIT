@@ -918,11 +918,11 @@ class TradingApp {
             
             const pnlValueCell = document.createElement('td');
             pnlValueCell.className = pnlClass;
-            pnlValueCell.textContent = pnl;
+            pnlValueCell.textContent = this.formatCurrency(pnlNum);
             
             const pnlPercentCell = document.createElement('td');
             pnlPercentCell.className = pnlClass;
-            pnlPercentCell.textContent = `${pnlIcon} ${pnlPercent}%`;
+            pnlPercentCell.textContent = `${pnlIcon} ${pp.toFixed(2)}%`;
             
             const currentPriceCell = document.createElement('td');
             currentPriceCell.textContent = this.formatCurrency(crypto.current_price);
