@@ -331,7 +331,7 @@ class TradingApp {
     
     displayEmptyPortfolioMessage() {
         // Display helpful message when portfolio is empty
-        const tableIds = ['crypto-tracked-table', 'crypto-portfolio-table', 'performance-table-body', 'positions-table-body'];
+        const tableIds = ['crypto-tracked-table', 'performance-table-body', 'positions-table-body'];
         
         tableIds.forEach(tableId => {
             const tableBody = document.getElementById(tableId);
@@ -603,30 +603,22 @@ class TradingApp {
     }
     
     updateCryptoTable(cryptos) {
-        // Update both main tracked table and portfolio table
+        // Update main tracked table only
         const tableBody = document.getElementById('crypto-tracked-table');
-        const portfolioTableBody = document.getElementById('crypto-portfolio-table');
         
         if (!tableBody) {
             console.error('Table element not found: crypto-tracked-table');
             return;
         }
         
-        // Clear existing content for both tables
+        // Clear existing content
         tableBody.innerHTML = '';
-        if (portfolioTableBody) portfolioTableBody.innerHTML = '';
         
         // Handle empty state first
         if (!cryptos || cryptos.length === 0) {
             const row = document.createElement('tr');
             row.innerHTML = '<td colspan="13" class="text-center text-muted">No cryptocurrency data available</td>';
             tableBody.appendChild(row);
-            
-            if (portfolioTableBody) {
-                const portfolioRow = document.createElement('tr');
-                portfolioRow.innerHTML = '<td colspan="9" class="text-center text-muted">No cryptocurrency data available</td>';
-                portfolioTableBody.appendChild(portfolioRow);
-            }
             return;
         }
         
