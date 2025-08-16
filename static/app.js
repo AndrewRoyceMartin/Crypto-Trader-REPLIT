@@ -625,6 +625,8 @@ class TradingApp {
     }
     
     updateCryptoTable(cryptos) {
+        console.log('updateCryptoTable called with:', cryptos?.length || 0, 'cryptocurrencies');
+        
         // Update main tracked table only
         const tableBody = document.getElementById('crypto-tracked-table');
         
@@ -633,16 +635,21 @@ class TradingApp {
             return;
         }
         
+        console.log('Main crypto table element found:', !!tableBody);
+        
         // Clear existing content
         tableBody.innerHTML = '';
         
         // Handle empty state first  
         if (!cryptos || cryptos.length === 0) {
+            console.log('No crypto data, showing empty state');
             const row = document.createElement('tr');
             row.innerHTML = '<td colspan="13" class="text-center text-muted">No cryptocurrency data available</td>';
             tableBody.appendChild(row);
             return;
         }
+        
+        console.log('Populating main crypto table with', cryptos.length, 'rows');
         
         // Sort cryptos by market cap rank and render once
         const sortedCryptos = [...cryptos].sort((a, b) => (a.rank || 999) - (b.rank || 999));
@@ -730,6 +737,8 @@ class TradingApp {
             
             tableBody.appendChild(row);
         });
+        
+        console.log('Main crypto table updated with', sortedCryptos.length, 'rows');
     }
     
     updateLoadingProgress(percent, message = '') {
