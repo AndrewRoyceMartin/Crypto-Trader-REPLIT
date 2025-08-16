@@ -1,0 +1,53 @@
+Fix (safe chart init + no crash):
+initializeCharts() {
+  // Don’t let charts kill the app if Chart.js or adapters aren’t loaded
+  if (!window.Chart) {
+    console.warn('Chart.js not found – skipping chart initialization.');
+    return;
+  }
+
+  try {
+    const portfolioCtx = document.getElementById('portfolioChart');
+    if (portfolioCtx) {
+      this.portfolioChart = new Chart(portfolioCtx, {
+        type: 'line',
+        data: { labels: [], datasets: [{ label: 'Portfolio Value ($)', data: [], tension: 0.4, fill: true }] },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { title: { display: true, text: 'Portfolio Performance Over Time' }, legend: { display: false } },
+          // If you use type:'time', be sure the time scale + adapter are loaded.
+          // Otherwise, remove 'type: time' and feed preformatted labels instead.
+          scales: {
+            // comment this block out if no 'time' adapter is loaded
+            x: { type: 'time', time: { unit: 'hour', displayFormats: { hour: 'HH:mm' } } },
+            y: { beginAtZero: false, ticks: { callback: v => '$' + Number(v).toLocaleString() } }
+          },
+          interaction: { intersect: false, mode: 'index' }
+        }
+      });
+    }
+
+    const pnlCtx = document.getElementById('pnlChart');
+    if (pnlCtx) {
+      this.pnlChart = new Chart(pnlCtx, {
+        type: 'doughnut',
+        data: { labels: ['Profitable', 'Break-even', 'Losing'], datasets: [{ data: [0, 0, 0] }] },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { title: { display: true, text: 'P&L Distribution' }, legend: { position: 'bottom' } } }
+      });
+    }
+
+    const performersCtx = document.getElementById('performersChart');
+    if (performersCtx) {
+      this.performersChart = new Chart(performersCtx, {
+        type: 'bar',
+        data: { labels: [], datasets: [{ label: 'P&L %', data: [], borderWidth: 0 }] },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { title: { display: true, text: 'Top/Bottom Performers' }, legend: { display: false } } }
+      });
+    }
+
+    console.log('Performance charts initialized with Chart.js');
+    this.updatePerformanceCharts(); // ok now
+  } catch (e) {
+    console.error('Chart initialization failed – continuing without charts:', e);
+  }
+}

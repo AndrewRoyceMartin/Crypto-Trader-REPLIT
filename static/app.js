@@ -1141,136 +1141,136 @@ class TradingApp {
     }
 
     initializeCharts() {
-        // Portfolio Performance Chart
-        const portfolioCtx = document.getElementById('portfolioChart');
-        if (portfolioCtx) {
-            this.portfolioChart = new Chart(portfolioCtx, {
-                type: 'line',
-                data: {
-                    labels: [],
-                    datasets: [{
-                        label: 'Portfolio Value ($)',
-                        data: [],
-                        borderColor: '#007bff',
-                        backgroundColor: 'rgba(0, 123, 255, 0.1)',
-                        tension: 0.4,
-                        fill: true
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        title: {
-                            display: true,
-                            text: 'Portfolio Performance Over Time'
-                        },
-                        legend: {
-                            display: false
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: false,
-                            ticks: {
-                                callback: function(value) {
-                                    return '$' + value.toLocaleString();
-                                }
-                            }
-                        },
-                        x: {
-                            type: 'time',
-                            time: {
-                                unit: 'hour',
-                                displayFormats: {
-                                    hour: 'HH:mm'
-                                }
-                            }
-                        }
-                    },
-                    interaction: {
-                        intersect: false,
-                        mode: 'index'
-                    }
-                }
-            });
+        // Don't let charts kill the app if Chart.js or adapters aren't loaded
+        if (!window.Chart) {
+            console.warn('Chart.js not found – skipping chart initialization.');
+            return;
         }
 
-        // P&L Distribution Chart
-        const pnlCtx = document.getElementById('pnlChart');
-        if (pnlCtx) {
-            this.pnlChart = new Chart(pnlCtx, {
-                type: 'doughnut',
-                data: {
-                    labels: ['Profitable', 'Break-even', 'Losing'],
-                    datasets: [{
-                        data: [0, 0, 0],
-                        backgroundColor: ['#28a745', '#ffc107', '#dc3545'],
-                        borderWidth: 0
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        title: {
-                            display: true,
-                            text: 'P&L Distribution'
+        try {
+            const portfolioCtx = document.getElementById('portfolioChart');
+            if (portfolioCtx) {
+                this.portfolioChart = new Chart(portfolioCtx, {
+                    type: 'line',
+                    data: {
+                        labels: [],
+                        datasets: [{
+                            label: 'Portfolio Value ($)',
+                            data: [],
+                            borderColor: '#007bff',
+                            backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: 'Portfolio Performance Over Time'
+                            },
+                            legend: {
+                                display: false
+                            }
                         },
-                        legend: {
-                            position: 'bottom'
+                        scales: {
+                            y: {
+                                beginAtZero: false,
+                                ticks: {
+                                    callback: function(value) {
+                                        return '$' + Number(value).toLocaleString();
+                                    }
+                                }
+                            }
+                            // Removed x-axis time configuration to prevent Chart.js adapter errors
+                        },
+                        interaction: {
+                            intersect: false,
+                            mode: 'index'
                         }
                     }
-                }
-            });
-        }
+                });
+            }
 
-        // Top Performers Chart
-        const performersCtx = document.getElementById('performersChart');
-        if (performersCtx) {
-            this.performersChart = new Chart(performersCtx, {
-                type: 'bar',
-                data: {
-                    labels: [],
-                    datasets: [{
-                        label: 'P&L %',
-                        data: [],
-                        backgroundColor: function(context) {
-                            const value = context.parsed.y;
-                            return value >= 0 ? '#28a745' : '#dc3545';
-                        },
-                        borderWidth: 0
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        title: {
-                            display: true,
-                            text: 'Top/Bottom Performers'
-                        },
-                        legend: {
-                            display: false
-                        }
+            const pnlCtx = document.getElementById('pnlChart');
+            if (pnlCtx) {
+                this.pnlChart = new Chart(pnlCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Profitable', 'Break-even', 'Losing'],
+                        datasets: [{
+                            data: [0, 0, 0],
+                            backgroundColor: ['#28a745', '#ffc107', '#dc3545'],
+                            borderWidth: 0
+                        }]
                     },
-                    scales: {
-                        y: {
-                            ticks: {
-                                callback: function(value) {
-                                    return value + '%';
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: 'P&L Distribution'
+                            },
+                            legend: {
+                                position: 'bottom'
+                            }
+                        }
+                    }
+                });
+            }
+
+            const performersCtx = document.getElementById('performersChart');
+            if (performersCtx) {
+                this.performersChart = new Chart(performersCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: [],
+                        datasets: [{
+                            label: 'P&L %',
+                            data: [],
+                            backgroundColor: function(context) {
+                                const value = context.parsed.y;
+                                return value >= 0 ? '#28a745' : '#dc3545';
+                            },
+                            borderWidth: 0
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: 'Top/Bottom Performers'
+                            },
+                            legend: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            y: {
+                                ticks: {
+                                    callback: function(value) {
+                                        return value + '%';
+                                    }
                                 }
                             }
                         }
                     }
-                }
-            });
-        }
+                });
+            }
 
-        console.log('Performance charts initialized with Chart.js');
-        
-        // Update charts with initial data
-        this.updatePerformanceCharts();
+            console.log('Performance charts initialized with Chart.js');
+            
+            // Update charts with initial data
+            this.updatePerformanceCharts();
+            
+        } catch (e) {
+            console.error('Chart initialization failed – continuing without charts:', e);
+        }
     }
 
     async updatePerformanceCharts() {
@@ -1308,25 +1308,25 @@ class TradingApp {
                 this.performersChart.update('none');
             }
 
-            // Update Portfolio Value Chart with mock time series data
+            // Update Portfolio Value Chart with time series data
             if (this.portfolioChart) {
                 const totalValue = data.summary?.total_current_value || 1030;
-                const now = new Date();
                 
-                // Generate last 24 hours of data points (every hour)
-                const timePoints = [];
+                // Generate last 24 hours of data points (every hour) with formatted labels
+                const timeLabels = [];
                 const valuePoints = [];
                 
                 for (let i = 23; i >= 0; i--) {
-                    const time = new Date(now.getTime() - (i * 60 * 60 * 1000));
+                    const time = new Date(Date.now() - (i * 60 * 60 * 1000));
                     const variation = (Math.sin(i * 0.5) * 0.02 + Math.random() * 0.01 - 0.005); // ±2% variation
                     const value = totalValue * (1 + variation);
                     
-                    timePoints.push(time);
+                    // Format time as string to avoid Chart.js time adapter issues
+                    timeLabels.push(time.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }));
                     valuePoints.push(value);
                 }
                 
-                this.portfolioChart.data.labels = timePoints;
+                this.portfolioChart.data.labels = timeLabels;
                 this.portfolioChart.data.datasets[0].data = valuePoints;
                 this.portfolioChart.update('none');
             }
