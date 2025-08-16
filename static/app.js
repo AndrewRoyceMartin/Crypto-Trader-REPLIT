@@ -339,7 +339,16 @@ class TradingApp {
                 tableBody.innerHTML = '';
                 const row = document.createElement('tr');
                 const cell = document.createElement('td');
-                cell.colSpan = 10; // Adjust based on table columns
+                // Set appropriate column span based on table type
+                if (tableId === 'crypto-tracked-table') {
+                    cell.colSpan = 12; // Main tracked table has 12 columns
+                } else if (tableId === 'performance-table-body') {
+                    cell.colSpan = 10; // Performance table has 10 columns
+                } else if (tableId === 'positions-table-body') {
+                    cell.colSpan = 11; // Holdings table has 11 columns
+                } else {
+                    cell.colSpan = 10; // Default fallback
+                }
                 cell.className = 'text-center text-warning p-4';
                 cell.innerHTML = `
                     <div class="mb-2">
@@ -617,7 +626,7 @@ class TradingApp {
         // Handle empty state first
         if (!cryptos || cryptos.length === 0) {
             const row = document.createElement('tr');
-            row.innerHTML = '<td colspan="13" class="text-center text-muted">No cryptocurrency data available</td>';
+            row.innerHTML = '<td colspan="12" class="text-center text-muted">No cryptocurrency data available</td>';
             tableBody.appendChild(row);
             return;
         }
@@ -739,7 +748,7 @@ class TradingApp {
             console.log('No crypto data provided');
             const row = document.createElement('tr');
             const cell = document.createElement('td');
-            cell.colSpan = 7; // Adjusted for simplified table structure
+            cell.colSpan = 10; // Performance table has 10 columns
             cell.className = 'text-center text-muted';
             cell.textContent = 'No cryptocurrency holdings. Start trading to populate portfolio.';
             row.appendChild(cell);
@@ -939,7 +948,7 @@ class TradingApp {
         if (!cryptos || cryptos.length === 0) {
             const row = document.createElement('tr');
             const cell = document.createElement('td');
-            cell.colSpan = 10;
+            cell.colSpan = 10; // Performance page table has 10 columns
             cell.className = 'text-center text-muted';
             cell.textContent = 'No performance data available';
             row.appendChild(cell);
