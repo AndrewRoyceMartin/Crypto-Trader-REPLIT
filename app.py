@@ -480,13 +480,18 @@ def api_exchange_rates():
 def api_export_ato():
     """Export cryptocurrency trading data for Australian Tax Office (ATO) reporting."""
     try:
-        # Initialize trading system if needed
-        portfolio_initialized = False
-        if not portfolio_initialized:
-            # Portfolio is empty - inform user they need to start trading first
+        # Create a simplified export based on what we know works
+        logger.info("Generating ATO export with current portfolio data")
+        
+        # Get portfolio data from the same source the dashboard uses
+        portfolio_response = get_crypto_portfolio()
+        if not portfolio_response or not portfolio_response.get('cryptocurrencies'):
             return jsonify({
-                "error": "No trading data available. Start trading first to generate reportable transactions."
+                "error": "No portfolio data available. Start trading first to generate reportable transactions."
             }), 400
+        
+        cryptocurrencies = portfolio_response['cryptocurrencies']
+        logger.info(f"Creating ATO export for {len(cryptocurrencies)} cryptocurrency holdings")
         
         # For now, create a sample CSV structure for ATO reporting
         import io
@@ -510,32 +515,27 @@ def api_export_ato():
             'Notes'
         ])
         
-        # Add sample data showing the expected format
-        # In a real implementation, this would pull from the database
-        sample_date = datetime.now().strftime('%Y-%m-%d')
-        writer.writerow([
-            sample_date,
-            'Purchase',
-            'Bitcoin (BTC)',
-            '0.00085270',
-            '175,000.00',
-            '10.00',
-            'Paper Trading Demo',
-            'TXN001',
-            'Initial portfolio allocation - $10 investment'
-        ])
+        # Add trading data from current portfolio holdings
+        aud_rate = 1.52  # USD to AUD conversion rate
+        today = datetime.now().strftime('%Y-%m-%d')
         
-        writer.writerow([
-            sample_date,
-            'Purchase', 
-            'Ethereum (ETH)',
-            '0.002259',
-            '4,427.53',
-            '10.00',
-            'Paper Trading Demo',
-            'TXN002',
-            'Initial portfolio allocation - $10 investment'
-        ])
+        for i, crypto in enumerate(cryptocurrencies):
+            # Calculate initial purchase price in USD then convert to AUD
+            initial_price_usd = crypto['initial_value'] / crypto['quantity'] if crypto['quantity'] > 0 else 0
+            initial_price_aud = initial_price_usd * aud_rate
+            total_value_aud = crypto['initial_value'] * aud_rate
+            
+            writer.writerow([
+                today,
+                'Purchase',
+                f"{crypto['name']} ({crypto['symbol']})",
+                f"{crypto['quantity']:.8f}",
+                f"{initial_price_aud:.2f}",
+                f"{total_value_aud:.2f}",
+                'Paper Trading System',
+                f"TXN{i+1:06d}",
+                f"Initial portfolio allocation - ${crypto['initial_value']:.2f} investment"
+            ])
         
         # Add informational comment
         writer.writerow([])
@@ -558,7 +558,7 @@ def api_export_ato():
             }
         )
         
-        logger.info("ATO export generated successfully")
+        logger.info(f"ATO export generated successfully with {len(cryptocurrencies)} transactions")
         return response
         
     except Exception as e:
