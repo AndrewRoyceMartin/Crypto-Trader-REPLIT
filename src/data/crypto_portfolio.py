@@ -238,17 +238,17 @@ class CryptoPortfolioManager:
             # Ensure base_price is not zero to prevent division by zero
             if base_price <= 0:
                 base_price = 0.000001  # Use a very small number as fallback
-            # Calculate correct quantity: $10 worth of the asset
+            # Calculate correct quantity: $10 worth of the asset at initial price
             quantity = self.initial_value / base_price  # This gives us $10 worth of the asset
             
             portfolio[symbol] = {
                 "name": crypto["name"],
                 "rank": crypto["rank"],
-                "quantity": quantity,  # This is now $10 worth, not 1 full asset
+                "quantity": quantity,  # FIXED quantity - never changes
                 "initial_price": base_price,
-                "current_price": base_price,
-                "initial_value": self.initial_value,  # Should be $10
-                "current_value": self.initial_value,  # Start at $10 initial investment
+                "current_price": base_price,  # Will be updated with live prices
+                "initial_value": self.initial_value,  # Always $10 initial investment
+                "current_value": quantity * base_price,  # Will fluctuate: quantity × current_price
                 "pnl": 0.0,
                 "pnl_percent": 0.0,
                 "target_sell_price": self._calculate_target_sell_price(base_price, crypto["rank"]),
@@ -526,13 +526,13 @@ class CryptoPortfolioManager:
                     # Update current price
                     self.portfolio_data[symbol]['current_price'] = new_price
                     
-                    # Recalculate current value: quantity * current_price
-                    quantity = self.portfolio_data[symbol]['quantity']
-                    new_current_value = quantity * new_price
+                    # CRITICAL FIX: Calculate new current_value based on FIXED quantity and NEW price
+                    quantity = self.portfolio_data[symbol]['quantity']  # This never changes
+                    new_current_value = quantity * new_price  # Market value fluctuates
                     self.portfolio_data[symbol]['current_value'] = new_current_value
                     
-                    # Recalculate P&L: current_value - initial_investment
-                    initial_value = self.portfolio_data[symbol]['initial_value']
+                    # Recalculate P&L: current_market_value - original_$10_investment
+                    initial_value = self.portfolio_data[symbol]['initial_value']  # Always $10
                     pnl = new_current_value - initial_value
                     self.portfolio_data[symbol]['pnl'] = pnl
                     

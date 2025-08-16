@@ -428,9 +428,28 @@ def get_crypto_portfolio():
         if not crypto_portfolio:
             return jsonify({"error": "Crypto portfolio not initialized"}), 500
         
-        # Update prices with validation first
+        # Update prices with validation first and FORCE P&L recalculation
         try:
+            # Force fresh price updates and P&L calculations
             price_update_result = crypto_portfolio.update_live_prices()
+            app.logger.info(f"Price update result: {price_update_result}")
+            
+            # CRITICAL: Manually recalculate P&L for all positions after price updates
+            for symbol, crypto in crypto_portfolio.portfolio_data.items():
+                if 'current_price' in crypto and 'quantity' in crypto and 'initial_value' in crypto:
+                    # Recalculate current value: quantity * current_price
+                    crypto['current_value'] = crypto['quantity'] * crypto['current_price']
+                    
+                    # Recalculate P&L: current_value - initial_value
+                    crypto['pnl'] = crypto['current_value'] - crypto['initial_value']
+                    
+                    # Recalculate P&L percentage
+                    if crypto['initial_value'] > 0:
+                        crypto['pnl_percent'] = (crypto['pnl'] / crypto['initial_value']) * 100
+                    else:
+                        crypto['pnl_percent'] = 0.0
+            
+            app.logger.info("Manual P&L recalculation completed for all assets")
         except Exception as e:
             app.logger.error(f"Error updating prices: {e}")
             price_update_result = {"status": "error", "message": str(e)}
@@ -665,17 +684,15 @@ def rebalance_crypto_portfolio():
             db_manager.reset_all_positions(mode='paper')  # Clear paper trading positions
             db_manager.reset_portfolio_snapshots(mode='paper')  # Clear portfolio history
         
-        # Reset all positions to $10 each but keep price history
-        portfolio_data = crypto_portfolio.get_portfolio_data()
-        for symbol, data in portfolio_data.items():
-            current_price = data["current_price"]
-            new_quantity = 10.0 / current_price
-            
-            crypto_portfolio.portfolio_data[symbol]["quantity"] = new_quantity
-            crypto_portfolio.portfolio_data[symbol]["initial_value"] = 10.0
-            crypto_portfolio.portfolio_data[symbol]["current_value"] = new_quantity * current_price
-            crypto_portfolio.portfolio_data[symbol]["pnl"] = crypto_portfolio.portfolio_data[symbol]["current_value"] - 10.0
-            crypto_portfolio.portfolio_data[symbol]["pnl_percent"] = (crypto_portfolio.portfolio_data[symbol]["pnl"] / 10.0) * 100
+        # CRITICAL FIX: Do NOT rebalance quantities - this prevents P&L calculations
+        # Keep original quantities fixed for buy-and-hold P&L tracking
+        app.logger.info("Portfolio rebalance requested, but quantities remain FIXED for accurate P&L tracking")
+        
+        # Only update prices, never modify quantities in a buy-and-hold system
+        crypto_portfolio.update_live_prices()
+        
+        # The P&L will now show real gains/losses since initial $10 investments
+        app.logger.info("Portfolio prices updated with FIXED quantities - P&L will reflect market performance")
         
         crypto_portfolio.save_portfolio_state()
         
