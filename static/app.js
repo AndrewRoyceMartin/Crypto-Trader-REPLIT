@@ -506,6 +506,7 @@ class TradingApp {
                 console.error('API request failed:', response.status, response.statusText);
                 const errorText = await response.text();
                 console.error('Error response body:', errorText);
+                this.hideLoadingProgress();
                 return;
             }
             
@@ -1548,7 +1549,6 @@ class TradingApp {
             const pnl = trade.pnl ? this.formatCurrency(trade.pnl) : '$0.00';
             
             // Determine colors
-            const sideClass = trade.side === 'BUY' ? 'text-success' : 'text-danger';
             const pnlClass = trade.pnl >= 0 ? 'text-success' : 'text-danger';
             
             // Create cells with safe DOM manipulation
