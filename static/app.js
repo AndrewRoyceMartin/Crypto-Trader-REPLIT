@@ -123,12 +123,12 @@ class TradingApp {
         }
     }
     
-    async fetchWithCache(endpoint, cacheKey) {
+    async fetchWithCache(endpoint, cacheKey, bypassCache = false) {
         const cache = this.apiCache[cacheKey];
         const now = Date.now();
         
-        // Return cached data if still valid
-        if (cache && cache.data && (now - cache.timestamp) < cache.ttl) {
+        // Return cached data if still valid and not bypassing cache
+        if (!bypassCache && cache && cache.data && (now - cache.timestamp) < cache.ttl) {
             return cache.data;
         }
         
@@ -142,7 +142,7 @@ class TradingApp {
             this.apiCache[cacheKey] = {
                 data: data,
                 timestamp: now,
-                ttl: cache.ttl
+                ttl: cache ? cache.ttl : 30000 // Default 30 second TTL
             };
             
             return data;
@@ -448,14 +448,7 @@ class TradingApp {
         this.updateCryptoPortfolio();
     }
     
-    updateTradingStatus(tradingStatus) {
-        // Update trading status display - check if element exists first
-        const statusElement = document.getElementById('trading-status');
-        if (statusElement && tradingStatus) {
-            statusElement.textContent = `${tradingStatus.mode} - ${tradingStatus.strategy}`;
-        }
-        // If element doesn't exist, just skip silently to avoid console errors
-    }
+    // First updateTradingStatus method removed - was being overwritten by the second method
     
     async updateCryptoPortfolio() {
         // Reset current data - will be set after successful load
