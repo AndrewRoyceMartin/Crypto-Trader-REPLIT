@@ -71,6 +71,12 @@ def initialize_system():
     """Initialize the trading system components (idempotent)."""
     global config, db_manager, crypto_portfolio, _initialized
     if _initialized:
+        # Even if initialized, check if crypto_portfolio is empty and reinitialize
+        if crypto_portfolio and len(crypto_portfolio.get_portfolio_data()) == 0:
+            app.logger.warning("Crypto portfolio is empty, forcing reinitialization...")
+            crypto_portfolio.portfolio_data = crypto_portfolio._initialize_portfolio()
+            crypto_portfolio.save_portfolio_state()
+            app.logger.info(f"Portfolio reinitialized with {len(crypto_portfolio.portfolio_data)} cryptocurrencies")
         return
     config = Config()
     setup_logging(config.get("logging", "level", "INFO"))
@@ -425,8 +431,20 @@ def get_crypto_portfolio():
     """Get detailed cryptocurrency portfolio data with price validation."""
     try:
         initialize_system()
+        
+        # CRITICAL FIX: Force fresh portfolio initialization if missing or empty
+        global crypto_portfolio
         if not crypto_portfolio:
-            return jsonify({"error": "Crypto portfolio not initialized"}), 500
+            app.logger.warning("Crypto portfolio not initialized, creating new instance...")
+            crypto_portfolio = CryptoPortfolioManager(initial_value_per_crypto=10.0)
+        
+        portfolio_data = crypto_portfolio.get_portfolio_data()
+        if not portfolio_data or len(portfolio_data) == 0:
+            app.logger.warning("Portfolio is empty, forcing fresh initialization with 103 cryptocurrencies...")
+            crypto_portfolio.portfolio_data = crypto_portfolio._initialize_portfolio()
+            crypto_portfolio.save_portfolio_state()
+            app.logger.info(f"Portfolio forcefully reinitialized with {len(crypto_portfolio.portfolio_data)} cryptocurrencies")
+            portfolio_data = crypto_portfolio.get_portfolio_data()  # Get the fresh data
         
         # Update prices with validation first and FORCE P&L recalculation
         try:
@@ -824,7 +842,7 @@ def clear_trading_data():
         app.logger.error("Error clearing trading data: %s", e)
         return jsonify({"success": False, "error": str(e)}), 500
 
-@app.route("/api/populate-initial-trades", methods=["POST"])
+@app.route("/api/populate-initial-trades", methods=["GET", "POST"])
 def populate_initial_trades():
     """Populate initial trading data for display purposes."""
     try:
