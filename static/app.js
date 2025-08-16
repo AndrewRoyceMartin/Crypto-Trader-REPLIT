@@ -443,6 +443,8 @@ class TradingApp {
     }
     
     async updateCryptoPortfolio() {
+        // Store current data for dashboard switching
+        this.currentCryptoData = null;
         // Prevent concurrent updates
         if (this.isUpdatingPortfolio) {
             console.log('Portfolio update already in progress, skipping...');
@@ -959,6 +961,30 @@ class TradingApp {
             
             tableBody.appendChild(row);
         });
+    }
+    
+    updatePositionsSummary(cryptos) {
+        if (!cryptos || cryptos.length === 0) return;
+        
+        // Calculate summary metrics
+        const totalPositions = cryptos.length;
+        const totalValue = cryptos.reduce((sum, crypto) => sum + (crypto.current_value || 0), 0);
+        const totalPnL = cryptos.reduce((sum, crypto) => sum + (crypto.pnl || 0), 0);
+        const strongGains = cryptos.filter(crypto => (crypto.pnl_percent || 0) > 20).length;
+        
+        // Update summary elements
+        const totalCountEl = document.getElementById('pos-total-count');
+        const totalValueEl = document.getElementById('pos-total-value');
+        const unrealizedPnlEl = document.getElementById('pos-unrealized-pnl');
+        const strongGainsEl = document.getElementById('pos-strong-gains');
+        
+        if (totalCountEl) totalCountEl.textContent = totalPositions;
+        if (totalValueEl) totalValueEl.textContent = this.formatCurrency(totalValue, this.selectedCurrency);
+        if (unrealizedPnlEl) {
+            unrealizedPnlEl.textContent = this.formatCurrency(totalPnL, this.selectedCurrency);
+            unrealizedPnlEl.className = totalPnL >= 0 ? 'text-success' : 'text-danger';
+        }
+        if (strongGainsEl) strongGainsEl.textContent = strongGains;
     }
     
     updatePerformancePageTable(cryptos) {
@@ -1551,8 +1577,13 @@ function showPerformanceDashboard() {
     // Update navbar button states
     updateNavbarButtons('performance');
     
-    // Refresh portfolio data when switching to performance dashboard
+    // Refresh portfolio data and update performance-specific table
     if (window.tradingApp) {
+        // Update the performance dashboard table with current data
+        if (window.tradingApp.currentCryptoData) {
+            window.tradingApp.updatePerformancePageTable(window.tradingApp.currentCryptoData);
+        }
+        // Also trigger a portfolio update
         window.tradingApp.updateCryptoPortfolio();
     }
     
@@ -1573,8 +1604,14 @@ function showCurrentPositions() {
     // Update navbar button states
     updateNavbarButtons('holdings');
     
-    // Refresh portfolio data when switching to current holdings
+    // Refresh portfolio data and update holdings-specific table
     if (window.tradingApp) {
+        // Update the current holdings table with current data
+        if (window.tradingApp.currentCryptoData) {
+            window.tradingApp.updateHoldingsTable(window.tradingApp.currentCryptoData);
+            window.tradingApp.updatePositionsSummary(window.tradingApp.currentCryptoData);
+        }
+        // Also trigger a portfolio update
         window.tradingApp.updateCryptoPortfolio();
     }
     
