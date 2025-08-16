@@ -1,0 +1,84 @@
+Failed to export ATO data: Export failed: Internal Server Error
+🔍 Likely Reasons the ATO Export Button Fails
+Backend /api/export/ato Endpoint is Failing
+
+The frontend JavaScript calls:
+
+js
+Copy
+Edit
+const response = await fetch('/api/export/ato', {
+    method: 'GET',
+    headers: {
+        'Accept': 'text/csv'
+    }
+});
+If the API is returning an HTTP 500, it means the backend threw an unhandled error.
+
+Missing or Corrupt Trade Data
+
+If the backend tries to export tax data but the portfolio is empty or malformed, it might crash. Especially if any of the following are true:
+
+Trades table is empty
+
+PnL data is missing or null
+
+Timestamps or symbols are undefined
+
+Unexpected Data or Format Error on Server
+
+The backend code might be assuming a certain data shape (e.g., valid symbol, price, pnl), and crashing if that isn't true.
+
+No Response Body
+
+If the backend doesn't return a CSV blob or sets the wrong content-type, it may throw:
+
+js
+Copy
+Edit
+throw new Error(`Export failed: ${response.statusText}`);
+✅ How to Debug & Fix
+1. Check Server Logs
+Look at your backend/server logs for the exact traceback error related to /api/export/ato. It will likely show which line is causing the 500.
+
+2. Verify Trade Data Exists
+Ensure that:
+
+There are completed trades in your system (recent_trades)
+
+trade.symbol, trade.price, trade.timestamp, and trade.pnl are all valid for each entry.
+
+3. Improve Error Message in Frontend
+Update this line to include the actual response body:
+
+js
+Copy
+Edit
+throw new Error(`Export failed: ${await response.text()}`);
+So change:
+
+js
+Copy
+Edit
+if (!response.ok) {
+    throw new Error(`Export failed: ${response.statusText}`);
+}
+To:
+
+js
+Copy
+Edit
+if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Export failed: ${response.statusText} - ${errorText}`);
+}
+This will show more useful details in the toast popup or console.
+
+4. Confirm MIME Type on Backend
+The server should return:
+
+http
+Copy
+Edit
+Content-Type: text/csv
+And not JSON or plain text. If it's returning an error as HTML or JSON, the frontend won't be able to download it.
