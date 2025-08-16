@@ -572,20 +572,30 @@ class TradingApp {
     }
     
     updateCryptoTable(cryptos) {
+        // Update both main tracked table and portfolio table
         const tableBody = document.getElementById('crypto-tracked-table');
+        const portfolioTableBody = document.getElementById('crypto-portfolio-table');
+        
         if (!tableBody) {
             console.error('Table element not found: crypto-tracked-table');
             return;
         }
         
-        // Clear existing content
+        // Clear existing content for both tables
         tableBody.innerHTML = '';
+        if (portfolioTableBody) portfolioTableBody.innerHTML = '';
         
         // Handle empty state first
         if (!cryptos || cryptos.length === 0) {
             const row = document.createElement('tr');
-            row.innerHTML = '<td colspan="8" class="text-center text-muted">No cryptocurrency data available</td>';
+            row.innerHTML = '<td colspan="13" class="text-center text-muted">No cryptocurrency data available</td>';
             tableBody.appendChild(row);
+            
+            if (portfolioTableBody) {
+                const portfolioRow = document.createElement('tr');
+                portfolioRow.innerHTML = '<td colspan="9" class="text-center text-muted">No cryptocurrency data available</td>';
+                portfolioTableBody.appendChild(portfolioRow);
+            }
             return;
         }
         
@@ -813,14 +823,6 @@ class TradingApp {
             actionsCell.appendChild(buyBtn);
             actionsCell.appendChild(sellBtn);
             
-            const pnlCell = document.createElement('td');
-            pnlCell.className = pnlClass;
-            pnlCell.textContent = pnl;
-            
-            const pnlPercentCell = document.createElement('td');
-            pnlPercentCell.className = pnlClass;
-            pnlPercentCell.textContent = `${pnlIcon} ${pnlPercent}%`;
-            
             const updatedCell = document.createElement('td');
             updatedCell.textContent = lastUpdated;
             
@@ -830,24 +832,20 @@ class TradingApp {
             const targetCell = document.createElement('td');
             targetCell.textContent = targetProximity;
             
-            // Append all cells in the correct order to match HTML table headers
-            row.appendChild(rankCell);          // Rank
-            row.appendChild(symbolCell);        // Symbol  
-            row.appendChild(nameCell);          // Name
-            row.appendChild(quantityCell);      // Quantity
-            row.appendChild(priceCell);         // Current Price
-            row.appendChild(valueCell);         // Value
-            row.appendChild(targetSellCell);    // Target Sell
-            row.appendChild(pnlCell);           // P&L
-            row.appendChild(pnlPercentCell);    // P&L %
-            row.appendChild(updatedCell);       // Updated
-            row.appendChild(signalCell);        // Signal
-            row.appendChild(actionsCell);       // Actions
-            row.appendChild(targetCell);        // Target
-            row.appendChild(projectedPnlCell);
-            row.appendChild(pnlValueCell);
-            row.appendChild(pnlPercentCell);
-            row.appendChild(actionsCell);
+            // Append all cells in the correct order to match HTML table headers (13 columns total)
+            row.appendChild(rankCell);          // 1. Rank
+            row.appendChild(symbolCell);        // 2. Symbol  
+            row.appendChild(nameCell);          // 3. Name
+            row.appendChild(quantityCell);      // 4. Quantity
+            row.appendChild(priceCell);         // 5. Current Price
+            row.appendChild(valueCell);         // 6. Value
+            row.appendChild(targetSellCell);    // 7. Target Sell
+            row.appendChild(pnlValueCell);      // 8. P&L
+            row.appendChild(pnlPercentCell);    // 9. P&L %
+            row.appendChild(updatedCell);       // 10. Updated
+            row.appendChild(signalCell);        // 11. Signal
+            row.appendChild(actionsCell);       // 12. Actions
+            row.appendChild(targetCell);        // 13. Target
             
             tableBody.appendChild(row);
         });
