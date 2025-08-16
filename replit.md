@@ -86,6 +86,8 @@ A Flask-based web interface provides real-time monitoring, portfolio visualizati
 - **Currency Conversion**: All price displays use consistent `formatCurrency()` method with exchange rate conversion
 - **Error Handling**: Proper empty state management and loading progress indicators
 - **Data Integrity**: Eliminated orphaned table references and incorrect DOM selectors
+- **Exception Safety**: Added `num()` utility function to protect all `.toFixed()` calls from undefined/string values
+- **Column Accuracy**: Correct colspan counts matching exact header counts for proper alignment
 
 ### Technical Indicators
 The `TechnicalIndicators` class provides vectorized calculations for indicators like Bollinger Bands and ATR, utilizing pandas for efficient time series data processing.

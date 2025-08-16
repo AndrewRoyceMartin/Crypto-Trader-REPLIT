@@ -787,9 +787,9 @@ class TradingApp {
             const pnlClass = pnl >= 0 ? 'text-success' : 'text-danger';
             const pnlSign = pnl >= 0 ? '+' : '';
             
-            // Format quantity with appropriate precision
-            const safeQuantity = this.num(quantity);
-            const formattedQuantity = safeQuantity > 1 ? safeQuantity.toFixed(4) : safeQuantity.toFixed(8);
+            // Format quantity with appropriate precision using safe number conversion
+            const q = this.num(quantity);
+            const formattedQuantity = q > 1 ? q.toFixed(4) : q.toFixed(8);
             
             // Create formatted price with proper fallback
             const formattedPrice = this.formatCurrency(currentPrice || 0);
@@ -1296,7 +1296,7 @@ class TradingApp {
             
             // Format values
             const price = this.formatCurrency(trade.price);
-            const quantity = trade.quantity.toFixed(6);
+            const quantity = this.num(trade.quantity).toFixed(6);
             const pnl = trade.pnl ? this.formatCurrency(trade.pnl) : '$0.00';
             
             // Determine colors
