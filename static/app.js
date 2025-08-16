@@ -564,7 +564,11 @@ class TradingApp {
                     total_pnl: totalPnl,
                     total_pnl_percent: data.total_pnl_percent || 0
                 }, holdings);
-                await this.updateRecentTrades(); // Add this to update trades
+                try {
+                    await this.updateRecentTrades();
+                } catch (tradesError) {
+                    console.error('Error updating recent trades (non-fatal):', tradesError);
+                }
                 this.updateLoadingProgress(100, 'Complete!');
                 
                 // Hide progress bar after completion
@@ -575,6 +579,9 @@ class TradingApp {
             
         } catch (error) {
             console.error('Error updating crypto portfolio:', error);
+            console.error('Error stack trace:', error.stack);
+            console.error('Error name:', error.name);
+            console.error('Error message:', error.message);
             this.updateLoadingProgress(0, 'Error loading data');
         } finally {
             this.isUpdatingPortfolio = false;
@@ -632,7 +639,7 @@ class TradingApp {
         // Handle empty state first  
         if (!cryptos || cryptos.length === 0) {
             const row = document.createElement('tr');
-            row.innerHTML = '<td colspan="7" class="text-center text-muted">No cryptocurrency data available</td>';
+            row.innerHTML = '<td colspan="13" class="text-center text-muted">No cryptocurrency data available</td>';
             tableBody.appendChild(row);
             return;
         }
@@ -684,15 +691,39 @@ class TradingApp {
                 new Date(crypto.last_updated).toLocaleTimeString() : '-';
             updatedCell.appendChild(updatedSmall);
             
-            // Append all cells to row
-            row.appendChild(rankCell);
-            row.appendChild(symbolCell);
-            row.appendChild(nameCell);
-            row.appendChild(priceCell);
-            row.appendChild(quantityCell);
-            row.appendChild(valueCell);
-            row.appendChild(pnlCell);
-            row.appendChild(updatedCell);
+            // Create additional cells to match the 13-column table structure
+            const quantityCell2 = document.createElement('td'); // Quantity column
+            quantityCell2.textContent = this.num(quantity).toFixed(6);
+            
+            const targetSellCell = document.createElement('td'); // Target Sell
+            targetSellCell.textContent = '-';
+            
+            const pnlAbsoluteCell = document.createElement('td'); // P&L absolute
+            pnlAbsoluteCell.textContent = '$0.00';
+            
+            const signalCell = document.createElement('td'); // Signal
+            signalCell.innerHTML = '<span class="badge bg-secondary">HOLD</span>';
+            
+            const actionsCell = document.createElement('td'); // Actions
+            actionsCell.innerHTML = '<button class="btn btn-sm btn-outline-primary">View</button>';
+            
+            const targetCell = document.createElement('td'); // Target
+            targetCell.textContent = '-';
+            
+            // Append all cells to row (13 total)
+            row.appendChild(rankCell);           // 1
+            row.appendChild(symbolCell);         // 2
+            row.appendChild(nameCell);           // 3
+            row.appendChild(quantityCell2);      // 4
+            row.appendChild(priceCell);          // 5
+            row.appendChild(valueCell);          // 6
+            row.appendChild(targetSellCell);     // 7
+            row.appendChild(pnlAbsoluteCell);    // 8
+            row.appendChild(pnlCell);            // 9
+            row.appendChild(updatedCell);        // 10
+            row.appendChild(signalCell);         // 11
+            row.appendChild(actionsCell);        // 12
+            row.appendChild(targetCell);         // 13
             
             // Add hover effect
             row.classList.add('table-row-hover');
