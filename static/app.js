@@ -579,10 +579,8 @@ class TradingApp {
                 if (isPerformancePageVisible) {
                     // Only update the performance page table when performance dashboard is visible
                     this.updatePerformancePageTable(holdings);
-                } else {
-                    // Update the standard performance table for other views
-                    this.updatePerformanceTable(holdings);
                 }
+                // No need to update standard performance table since main dashboard doesn't have one
                 
                 this.updateHoldingsTable(holdings);
                 this.updatePortfolioSummary({ 
@@ -842,13 +840,13 @@ class TradingApp {
         // Instead, we target only the specific loading row by finding the crypto loading progress element
     }
     
-    updatePerformanceTable(cryptos) {
+    updatePerformanceTable(cryptos, bodyId = 'performance-table-body') {
         console.log('updatePerformanceTable called with:', cryptos?.length || 0, 'cryptocurrencies');
-        const tableBody = document.getElementById('performance-table-body');
+        const tableBody = document.getElementById(bodyId);
         console.log('Table element found:', !!tableBody);
         
         if (!tableBody) {
-            console.error('performance-table-body element not found!');
+            console.error(`${bodyId} element not found!`);
             return;
         }
         
@@ -1049,56 +1047,9 @@ class TradingApp {
     }
     
     updatePerformancePageTable(cryptos) {
-        const tableBody = document.getElementById('performance-table-body');
-        if (!tableBody) return;
-        
-        // Clear existing content
-        tableBody.innerHTML = '';
-        
-        if (!cryptos || cryptos.length === 0) {
-            const row = document.createElement('tr');
-            const cell = document.createElement('td');
-            cell.colSpan = 10; // Performance page table has 10 columns
-            cell.className = 'text-center text-muted';
-            cell.textContent = 'No performance data available';
-            row.appendChild(cell);
-            tableBody.appendChild(row);
-            return;
-        }
-        
-        // Populate performance page table with different structure
-        cryptos.forEach(crypto => {
-            const row = document.createElement('tr');
-            
-            // Format values with safe number conversion using helper methods
-            const qty = this.num(crypto.quantity);
-            const cp = this.num(crypto.current_price);
-            const initVal = this.num(crypto.initial_value || crypto.value);
-            const curVal = this.num(crypto.current_value);
-            const pnlNum = this.num(crypto.pnl);
-            const pp = this.num(crypto.pnl_percent);
-            
-            // Determine colors and indicators
-            const pnlClass = crypto.pnl >= 0 ? 'text-success' : 'text-danger';
-            const pnlIcon = crypto.pnl >= 0 ? '↗' : '↘';
-            
-            // Create a simplified performance row matching the 10-column structure
-            row.innerHTML = `
-                <td><span class="badge bg-primary">#${crypto.rank}</span></td>
-                <td><strong>${crypto.symbol}</strong></td>
-                <td>${crypto.name}</td>
-                <td>1</td>
-                <td>${this.formatCurrency(initVal, this.selectedCurrency)}</td>
-                <td>${this.formatCurrency(curVal, this.selectedCurrency)}</td>
-                <td class="${pnlClass}">${this.formatCurrency(pnlNum, this.selectedCurrency)}</td>
-                <td class="${pnlClass}">${pnlNum >= 0 ? '↗' : '↘'} ${pp.toFixed(2)}%</td>
-                <td class="${pnlClass}">${pp.toFixed(2)}%</td>
-                <td class="${pnlClass}"><span class="badge ${pnlNum >= 0 ? 'bg-success' : 'bg-danger'}">${pnlNum >= 0 ? 'Winner' : 'Loser'}</span></td>
-            `;
-            
-            tableBody.appendChild(row);
-        });
+        this.updatePerformanceTable(cryptos, 'performance-page-table-body');
     }
+
     
 
     
@@ -2100,7 +2051,8 @@ async function updatePerformanceData() {
         const response = await fetch('/api/crypto-portfolio');
         const data = await response.json();
         if (data && data.cryptocurrencies) {
-            window.tradingApp.updatePerformanceTable(data.cryptocurrencies);
+            // Always update the performance page table since this is called from performance dashboard
+            window.tradingApp.updatePerformancePageTable(data.cryptocurrencies);
         }
     } catch (error) {
         console.error('Error updating performance data:', error);
