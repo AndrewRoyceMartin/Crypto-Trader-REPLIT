@@ -95,10 +95,12 @@ A Flask-based web interface provides real-time monitoring, portfolio visualizati
 ### Table Rendering System (Completed: 2025-08-16)
 - **Separated Table Bodies**: Each dashboard view targets dedicated table elements to prevent data conflicts
   - Main Dashboard: `updateCryptoTable()` → `#crypto-tracked-table`
-  - Performance Dashboard: `updatePerformanceTable()` → `#performance-table-body`
+  - Performance Dashboard: `updatePerformancePageTable()` → `#performance-page-table-body`
   - Current Holdings: `updateHoldingsTable()` → `#positions-table-body`
+- **DOM ID Collision Resolution**: Fixed performance table conflicts with distinct tbody IDs and unified update functions
+- **Array Mutation Protection**: Charts use `[...holdings].sort()` to prevent table reordering during chart updates
 - **Currency Conversion**: All price displays use consistent `formatCurrency()` method with exchange rate conversion
-- **Error Handling**: Proper empty state management and loading progress indicators
+- **Error Handling**: Proper empty state management and loading progress indicators with correct table targeting
 - **Data Integrity**: Eliminated orphaned table references and incorrect DOM selectors
 - **Exception Safety**: Added `num(v, d=0)` and `fmtFixed(v, p)` utility functions to protect all `.toFixed()` calls
 - **Column Accuracy**: Correct colspan counts matching exact header counts (13, 10, 11 columns)

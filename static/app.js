@@ -1275,8 +1275,8 @@ class TradingApp {
 
             // Update Top/Bottom Performers Chart
             if (this.performersChart) {
-                // Get top 5 gainers and top 5 losers
-                const sorted = holdings.sort((a, b) => (b.pnl_percent || 0) - (a.pnl_percent || 0));
+                // Get top 5 gainers and top 5 losers (create copy to avoid mutating original array)
+                const sorted = [...holdings].sort((a, b) => (b.pnl_percent || 0) - (a.pnl_percent || 0));
                 const topPerformers = sorted.slice(0, 5).concat(sorted.slice(-5));
                 
                 this.performersChart.data.labels = topPerformers.map(h => h.symbol);
