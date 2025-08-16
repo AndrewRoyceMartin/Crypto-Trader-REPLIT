@@ -729,11 +729,11 @@ class TradingApp {
     
     updatePerformanceTable(cryptos) {
         console.log('updatePerformanceTable called with:', cryptos?.length || 0, 'cryptocurrencies');
-        const tableBody = document.getElementById('crypto-tracked-table');
+        const tableBody = document.getElementById('performance-table-body');
         console.log('Table element found:', !!tableBody);
         
         if (!tableBody) {
-            console.error('crypto-tracked-table element not found!');
+            console.error('performance-table-body element not found!');
             return;
         }
         
