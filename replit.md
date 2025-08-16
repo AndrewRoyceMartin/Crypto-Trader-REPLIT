@@ -63,6 +63,11 @@ A Flask-based web interface provides real-time monitoring, portfolio visualizati
 - **Error Resolution**: Fixed JavaScript undefined variables (`pnl`, `pnlPercent`) in updateHoldingsTable
 - **Cross-Browser Support**: Replaced `:has()` selector with universal `.closest()` method
 
+### Current Holdings Page Enhancement (Updated: 2025-08-16)
+- **Target Sell Price Column**: Changed "Avg Buy Price" to "Target Sell Price" in Current Holdings table
+- **Dynamic Price Display**: Shows calculated target sell price (current price * 1.1) when no specific target is set
+- **Enhanced Trading Strategy**: Holdings page now displays actionable sell targets rather than historical buy prices
+
 ### Enhanced Recent Trades System (Updated: 2025-08-15)
 - **Complete Trade Display**: Shows ALL trades without artificial limits (expanded from 10 to 50+ cryptocurrencies)
 - **Unique Trade Identifiers**: Sequential trade numbers (#1, #2, #3...) for easy reference and tracking

@@ -994,8 +994,8 @@ class TradingApp {
             pnlPercentCell.className = pnlClass;
             pnlPercentCell.textContent = `${pnlIcon} ${pp.toFixed(2)}%`;
             
-            const currentPriceCell = document.createElement('td');
-            currentPriceCell.textContent = this.formatCurrency(crypto.current_price);
+            const targetSellPriceCell = document.createElement('td');
+            targetSellPriceCell.textContent = this.formatCurrency(crypto.target_sell_price || crypto.current_price * 1.1);
             
             const realizedPnlCell = document.createElement('td');
             realizedPnlCell.className = pnlClass;
@@ -1016,7 +1016,7 @@ class TradingApp {
             row.appendChild(positionCell);
             row.appendChild(pnlValueCell);
             row.appendChild(pnlPercentCell);
-            row.appendChild(currentPriceCell);
+            row.appendChild(targetSellPriceCell);
             row.appendChild(realizedPnlCell);
             row.appendChild(signalCell);
             
