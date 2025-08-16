@@ -74,6 +74,12 @@ def initialize_system():
     # Initialize crypto portfolio with 103 cryptos at $10 each - ALWAYS FRESH
     crypto_portfolio = CryptoPortfolioManager(initial_value_per_crypto=10.0)
     
+    # Force portfolio data initialization if empty
+    if not crypto_portfolio.portfolio_data:
+        app.logger.warning("Portfolio data is empty after initialization, forcing reload...")
+        crypto_portfolio.portfolio_data = crypto_portfolio._initialize_portfolio()
+        app.logger.info(f"Force-initialized portfolio with {len(crypto_portfolio.portfolio_data)} cryptocurrencies")
+    
     # NEVER load old state during system initialization - always start fresh with $10
     # This ensures portfolio always has correct $10 initial values
     app.logger.info("System initialized with fresh portfolio - $10 per cryptocurrency")
@@ -1385,7 +1391,7 @@ def get_portfolio_data():
 @app.route("/api/start_trading", methods=["POST"])
 def start_trading():
     try:
-        data = _require_json()
+        data = request.get_json(force=True)
         mode = data.get("mode", "paper").lower()
         symbol = data.get("symbol", "BTC/USDT")
         timeframe = data.get("timeframe", "1h")

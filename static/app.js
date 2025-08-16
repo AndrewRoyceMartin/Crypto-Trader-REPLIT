@@ -1852,7 +1852,8 @@ async function startTrading(mode, type) {
                 mode: mode,
                 symbol: 'BTC/USDT',
                 timeframe: '1h',
-                trading_mode: type
+                trading_mode: type,
+                confirmation: true
             })
         });
         
