@@ -688,11 +688,11 @@ class TradingApp {
     
     updatePerformanceTable(cryptos) {
         console.log('updatePerformanceTable called with:', cryptos?.length || 0, 'cryptocurrencies');
-        const tableBody = document.getElementById('crypto-portfolio-table');
+        const tableBody = document.getElementById('crypto-tracked-table');
         console.log('Table element found:', !!tableBody);
         
         if (!tableBody) {
-            console.error('crypto-portfolio-table element not found!');
+            console.error('crypto-tracked-table element not found!');
             return;
         }
         
