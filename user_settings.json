@@ -1,0 +1,7 @@
+{
+  "email_notifications": {
+    "enabled": true,
+    "recipient_email": "trader@example.com",
+    "sender_email": "trading-system@replit.app"
+  }
+}

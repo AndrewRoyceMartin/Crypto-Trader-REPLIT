@@ -1632,22 +1632,50 @@ async function updatePositionsData() {
     }
 }
 
-function startTrading(mode, strategy) {
-    if (window.tradingApp) {
-        window.tradingApp.showToast(`Starting ${mode} trading with ${strategy} strategy`, 'info');
+// Removed duplicate function - using async implementation below
+
+async function stopTrading() {
+    try {
+        const response = await fetch('/api/stop_trading', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        const data = await response.json();
+        if (data.success) {
+            window.tradingApp.showToast('Trading stopped successfully', 'success');
+            window.tradingApp.updateDashboard();
+            window.tradingApp.updateCryptoPortfolio();
+        } else {
+            window.tradingApp.showToast(`Failed to stop trading: ${data.error}`, 'error');
+        }
+    } catch (error) {
+        window.tradingApp.showToast(`Error stopping trading: ${error.message}`, 'error');
     }
 }
 
-function stopTrading() {
-    if (window.tradingApp) {
-        window.tradingApp.showToast('Trading stopped', 'warning');
-    }
-}
-
-function emergencyStop() {
-    if (confirm('Are you sure you want to emergency stop all trading?')) {
-        if (window.tradingApp) {
-            window.tradingApp.showToast('Emergency stop activated', 'danger');
+async function emergencyStop() {
+    if (confirm('Are you sure you want to emergency stop all trading? This will immediately halt all trading operations.')) {
+        try {
+            const response = await fetch('/api/emergency_stop', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            const data = await response.json();
+            if (data.success) {
+                window.tradingApp.showToast('Emergency stop activated successfully', 'warning');
+                window.tradingApp.updateDashboard();
+                window.tradingApp.updateCryptoPortfolio();
+            } else {
+                window.tradingApp.showToast(`Emergency stop failed: ${data.error}`, 'error');
+            }
+        } catch (error) {
+            window.tradingApp.showToast(`Error activating emergency stop: ${error.message}`, 'error');
         }
     }
 }
@@ -1815,14 +1843,16 @@ async function startTrading(mode, type) {
     window.tradingApp.showToast(`Starting ${mode} trading in ${type} mode...`, 'info');
     
     try {
-        const response = await fetch('/api/start-trading', {
+        const response = await fetch('/api/start_trading', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
                 mode: mode,
-                type: type
+                symbol: 'BTC/USDT',
+                timeframe: '1h',
+                trading_mode: type
             })
         });
         

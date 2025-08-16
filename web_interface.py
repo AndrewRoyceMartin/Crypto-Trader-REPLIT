@@ -432,6 +432,13 @@ def get_crypto_portfolio():
         
         try:
             portfolio_data = crypto_portfolio.get_portfolio_data()
+            app.logger.info(f"Retrieved portfolio data with {len(portfolio_data)} cryptocurrencies")
+            if not portfolio_data:
+                app.logger.error("Portfolio data is empty - this should not happen!")
+                # Force re-initialization if empty
+                crypto_portfolio.portfolio_data = crypto_portfolio._initialize_portfolio()
+                portfolio_data = crypto_portfolio.get_portfolio_data()
+                app.logger.info(f"Re-initialized portfolio with {len(portfolio_data)} cryptocurrencies")
         except Exception as e:
             app.logger.error(f"Error getting portfolio data: {e}")
             raise e
@@ -454,6 +461,7 @@ def get_crypto_portfolio():
         
         # Convert to list format for easier frontend consumption
         crypto_list = []
+        app.logger.info(f"Converting {len(portfolio_data)} cryptocurrencies to list format")
         for symbol, data in portfolio_data.items():
             try:
                 # Calculate projected P&L based on target sell price
