@@ -352,7 +352,7 @@ def api_crypto_portfolio():
         total_initial_value = 0
         
         # Process ONLY the hardcoded master portfolio assets in exact order
-        for symbol in symbols:  # Use the exact 103 symbols from master list
+        for rank, symbol in enumerate(symbols, 1):  # Use the exact 103 symbols from master list with rank
             if symbol in live_prices and 'price' in live_prices[symbol]:
                 price_info = live_prices[symbol]
                 current_price = price_info['price']
@@ -364,10 +364,13 @@ def api_crypto_portfolio():
                 pnl_percent = (pnl / initial_investment) * 100 if initial_investment > 0 else 0
                 
                 holdings.append({
+                    "rank": rank,
                     "symbol": symbol,
+                    "name": symbol,  # Add name field
                     "quantity": round(quantity, 8),
                     "current_price": current_price,
                     "value": current_value,
+                    "current_value": current_value,  # Alias for compatibility
                     "pnl": pnl,
                     "pnl_percent": pnl_percent,
                     "is_live": price_info.get('is_live', True)
@@ -384,10 +387,13 @@ def api_crypto_portfolio():
                 current_value = quantity * current_price
                 
                 holdings.append({
+                    "rank": rank,
                     "symbol": symbol,
+                    "name": symbol,  # Add name field
                     "quantity": round(quantity, 8),
                     "current_price": current_price,
                     "value": current_value,
+                    "current_value": current_value,  # Alias for compatibility
                     "pnl": 0.0,
                     "pnl_percent": 0.0,
                     "is_live": False

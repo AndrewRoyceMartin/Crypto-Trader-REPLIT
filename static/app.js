@@ -732,9 +732,9 @@ class TradingApp {
             console.log('No crypto data provided');
             const row = document.createElement('tr');
             const cell = document.createElement('td');
-            cell.colSpan = 13;
+            cell.colSpan = 7; // Adjusted for simplified table structure
             cell.className = 'text-center text-muted';
-            cell.textContent = 'No cryptocurrency data available - Start trading to populate portfolio';
+            cell.textContent = 'No cryptocurrency holdings. Start trading to populate portfolio.';
             row.appendChild(cell);
             tableBody.appendChild(row);
             return;
@@ -742,66 +742,53 @@ class TradingApp {
         
         console.log('Populating table with', cryptos.length, 'rows');
         
-        // Populate performance table
-        cryptos.forEach(crypto => {
+        // Sort by rank (which preserves the master portfolio order)
+        const sortedCryptos = [...cryptos].sort((a, b) => (a.rank || 999) - (b.rank || 999));
+        
+        // Populate simple performance table for tracked cryptocurrencies
+        sortedCryptos.forEach((crypto, index) => {
             const row = document.createElement('tr');
             
-            // Format values with proper P&L calculation
-            const price = crypto.current_price < 1 ? 
-                crypto.current_price.toFixed(6) : 
-                crypto.current_price.toFixed(2);
-            const quantity = crypto.quantity.toFixed(4);
-            const currentValue = this.formatCurrency(crypto.current_value, this.selectedCurrency);
-            const pnl = this.formatCurrency(crypto.pnl, this.selectedCurrency);
-            const pnlPercent = crypto.pnl_percent.toFixed(2);
-            const targetSell = this.formatCurrency(crypto.target_sell_price, this.selectedCurrency);
-            const targetBuy = this.formatCurrency(crypto.target_buy_price, this.selectedCurrency);
+            // Ensure all required fields exist with proper defaults
+            const rank = crypto.rank || (index + 1);
+            const symbol = crypto.symbol || 'UNKNOWN';
+            const currentPrice = crypto.current_price || 0;
+            const quantity = crypto.quantity || 0;
+            const value = crypto.value || crypto.current_value || 0;
+            const pnl = crypto.pnl || 0;
+            const pnlPercent = crypto.pnl_percent || 0;
+            const isLive = crypto.is_live !== false; // Default to true unless explicitly false
             
-            // Determine colors and indicators
-            const pnlClass = crypto.pnl >= 0 ? 'text-success' : 'text-danger';
-            const pnlIcon = crypto.pnl >= 0 ? '↗' : '↘';
+            // Format P&L color and sign
+            const pnlClass = pnl >= 0 ? 'text-success' : 'text-danger';
+            const pnlSign = pnl >= 0 ? '+' : '';
             
-            // Calculate approaching sell percentage
-            let approachingPercent = 0;
-            if (crypto.target_sell_price && crypto.current_price) {
-                approachingPercent = ((crypto.current_price / crypto.target_sell_price) * 100).toFixed(1);
-            }
+            // Format quantity with appropriate precision
+            const formattedQuantity = quantity > 1 ? quantity.toFixed(4) : quantity.toFixed(8);
             
-            // Calculate the last updated time
-            const lastUpdated = crypto.last_updated ? new Date(crypto.last_updated).toLocaleTimeString() : '-';
+            // Create formatted price with proper fallback
+            const formattedPrice = currentPrice > 0 ? this.formatCurrency(currentPrice) : '$0.00';
+            const formattedValue = value > 0 ? this.formatCurrency(value) : '$0.00';
+            const formattedPnl = Math.abs(pnl) > 0 ? this.formatCurrency(Math.abs(pnl)) : '$0.00';
             
-            // Determine trading signal
-            const signal = crypto.current_price <= crypto.target_buy_price ? 
-                '<span class="badge bg-success">BUY</span>' : 
-                crypto.current_price >= crypto.target_sell_price ? 
-                '<span class="badge bg-danger">SELL</span>' : 
-                '<span class="badge bg-secondary">HOLD</span>';
+            row.innerHTML = `
+                <td><span class="badge bg-primary">#${rank}</span></td>
+                <td>
+                    <strong>${symbol}</strong>
+                    ${isLive ? '<span class="badge bg-success ms-1" title="Live market data">Live</span>' : '<span class="badge bg-warning ms-1" title="Fallback price data">Cache</span>'}
+                </td>
+                <td><strong>${formattedPrice}</strong></td>
+                <td>${formattedQuantity}</td>
+                <td><strong>${formattedValue}</strong></td>
+                <td class="${pnlClass}"><strong>${pnlSign}${formattedPnl}</strong></td>
+                <td class="${pnlClass}"><strong>${pnlSign}${pnlPercent.toFixed(2)}%</strong></td>
+            `;
             
-            // Calculate target proximity
-            const targetProximity = crypto.target_buy_price ? 
-                (crypto.current_price <= crypto.target_buy_price ? '🎯 At buy target' : `${((crypto.current_price - crypto.target_buy_price) / crypto.target_buy_price * 100).toFixed(1)}% above`) :
-                '-';
+            tableBody.appendChild(row);
+        });
 
-            // Create cells with safe DOM manipulation
-            const rankCell = document.createElement('td');
-            const rankBadge = document.createElement('span');
-            rankBadge.className = 'badge bg-primary';
-            rankBadge.textContent = `#${crypto.rank}`;
-            rankCell.appendChild(rankBadge);
-            
-            const symbolCell = document.createElement('td');
-            const symbolStrong = document.createElement('strong');
-            symbolStrong.textContent = crypto.symbol;
-            symbolCell.appendChild(symbolStrong);
-            
-            const nameCell = document.createElement('td');
-            nameCell.textContent = crypto.name;
-            
-            const quantityCell = document.createElement('td');
-            quantityCell.textContent = quantity;
-            
-            const priceCell = document.createElement('td');
-            priceCell.textContent = `$${price}`;
+        console.log('Portfolio table updated with', sortedCryptos.length, 'rows');
+    }
             
             const valueCell = document.createElement('td');
             valueCell.textContent = currentValue;
