@@ -356,7 +356,7 @@ class TradingApp {
     
     displayEmptyPortfolioMessage() {
         // Display helpful message when portfolio is empty
-        const tableIds = ['crypto-tracked-table', 'performance-table-body', 'positions-table-body'];
+        const tableIds = ['crypto-tracked-table', 'performance-page-table-body', 'positions-table-body'];
         
         tableIds.forEach(tableId => {
             const tableBody = document.getElementById(tableId);
@@ -367,8 +367,8 @@ class TradingApp {
                 // Set appropriate column span based on table type
                 if (tableId === 'crypto-tracked-table') {
                     cell.colSpan = 13; // Main tracked table has 13 columns
-                } else if (tableId === 'performance-table-body') {
-                    cell.colSpan = 10; // Performance table has 10 columns
+                } else if (tableId === 'performance-page-table-body') {
+                    cell.colSpan = 10; // Performance page table has 10 columns
                 } else if (tableId === 'positions-table-body') {
                     cell.colSpan = 11; // Holdings table has 11 columns
                 } else {
