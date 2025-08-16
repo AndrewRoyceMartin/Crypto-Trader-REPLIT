@@ -813,16 +813,37 @@ class TradingApp {
             actionsCell.appendChild(buyBtn);
             actionsCell.appendChild(sellBtn);
             
-            // Append all cells
-            row.appendChild(rankCell);
-            row.appendChild(symbolCell);
-            row.appendChild(nameCell);
-            row.appendChild(quantityCell);
-            row.appendChild(priceCell);
-            row.appendChild(valueCell);
-            row.appendChild(targetSellCell);
-            row.appendChild(approachingCell);
-            row.appendChild(targetBuyCell);
+            const pnlCell = document.createElement('td');
+            pnlCell.className = pnlClass;
+            pnlCell.textContent = pnl;
+            
+            const pnlPercentCell = document.createElement('td');
+            pnlPercentCell.className = pnlClass;
+            pnlPercentCell.textContent = `${pnlIcon} ${pnlPercent}%`;
+            
+            const updatedCell = document.createElement('td');
+            updatedCell.textContent = lastUpdated;
+            
+            const signalCell = document.createElement('td');
+            signalCell.innerHTML = signal;
+            
+            const targetCell = document.createElement('td');
+            targetCell.textContent = targetProximity;
+            
+            // Append all cells in the correct order to match HTML table headers
+            row.appendChild(rankCell);          // Rank
+            row.appendChild(symbolCell);        // Symbol  
+            row.appendChild(nameCell);          // Name
+            row.appendChild(quantityCell);      // Quantity
+            row.appendChild(priceCell);         // Current Price
+            row.appendChild(valueCell);         // Value
+            row.appendChild(targetSellCell);    // Target Sell
+            row.appendChild(pnlCell);           // P&L
+            row.appendChild(pnlPercentCell);    // P&L %
+            row.appendChild(updatedCell);       // Updated
+            row.appendChild(signalCell);        // Signal
+            row.appendChild(actionsCell);       // Actions
+            row.appendChild(targetCell);        // Target
             row.appendChild(projectedPnlCell);
             row.appendChild(pnlValueCell);
             row.appendChild(pnlPercentCell);
@@ -1391,6 +1412,17 @@ document.addEventListener('DOMContentLoaded', function() {
 async function exportATOTax() {
     if (window.tradingApp) {
         await window.tradingApp.exportATOTax();
+    } else {
+        console.error('Trading app not initialized');
+        alert('System not ready. Please wait a moment and try again.');
+    }
+}
+
+// Global function for crypto portfolio refresh button
+function refreshCryptoPortfolio() {
+    if (window.tradingApp) {
+        window.tradingApp.updateCryptoPortfolio();
+        window.tradingApp.showToast('Portfolio refreshed', 'info');
     } else {
         console.error('Trading app not initialized');
         alert('System not ready. Please wait a moment and try again.');
