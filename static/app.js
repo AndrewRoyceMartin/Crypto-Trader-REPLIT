@@ -2050,9 +2050,10 @@ async function updatePerformanceData() {
     try {
         const response = await fetch('/api/crypto-portfolio');
         const data = await response.json();
-        if (data && data.cryptocurrencies) {
+        const cryptos = data.holdings || data.cryptocurrencies || [];
+        if (cryptos.length > 0) {
             // Always update the performance page table since this is called from performance dashboard
-            window.tradingApp.updatePerformancePageTable(data.cryptocurrencies);
+            window.tradingApp.updatePerformancePageTable(cryptos);
         }
     } catch (error) {
         console.error('Error updating performance data:', error);
@@ -2063,8 +2064,9 @@ async function updateHoldingsData() {
     try {
         const response = await fetch('/api/crypto-portfolio');
         const data = await response.json();
-        if (data && data.cryptocurrencies) {
-            window.tradingApp.updateHoldingsTable(data.cryptocurrencies);
+        const cryptos = data.holdings || data.cryptocurrencies || [];
+        if (cryptos.length > 0) {
+            window.tradingApp.updateHoldingsTable(cryptos);
         }
     } catch (error) {
         console.error('Error updating holdings data:', error);
