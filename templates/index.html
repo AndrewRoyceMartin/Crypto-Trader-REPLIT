@@ -36,17 +36,25 @@
                     <i class="fas fa-home me-1"></i>
                     Dashboard
                 </button>
+                <button class="btn btn-outline-light btn-sm me-2" onclick="showPortfolioPage()">
+                    <i class="fas fa-wallet me-1"></i>
+                    Portfolio
+                </button>
                 <button class="btn btn-outline-light btn-sm me-2" onclick="showPerformanceDashboard()">
                     <i class="fas fa-chart-bar me-1"></i>
                     Performance
                 </button>
                 <button class="btn btn-outline-light btn-sm me-2" onclick="showCurrentPositions()">
                     <i class="fas fa-coins me-1"></i>
-                    Current Holdings
+                    Holdings
+                </button>
+                <button class="btn btn-outline-light btn-sm me-2" onclick="showRecentTrades()">
+                    <i class="fas fa-exchange-alt me-1"></i>
+                    Recent Trades
                 </button>
                 <button class="btn btn-outline-success btn-sm" onclick="exportATOTax()">
                     <i class="fas fa-file-invoice-dollar me-1"></i>
-                    ATO Tax Export
+                    ATO Export
                 </button>
             </div>
             
@@ -424,25 +432,21 @@
 
 
 
-        <!-- Data Tables Row -->
+        <!-- Portfolio Summary Card (Compact View for Dashboard) -->
         <div class="row mb-4">
             <div class="col-12">
                 <div class="card">
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <h5 class="mb-0">
                             <i class="fas fa-coins me-2"></i>
-                            Cryptocurrency Portfolio (103 Assets - $10 Each)
-                            <i class="fas fa-info-circle text-info ms-2" 
-                               data-bs-toggle="tooltip" 
-                               data-bs-placement="top" 
-                               title="Complete cryptocurrency portfolio overview with 103 cryptocurrencies ($10 initial investment each = $1,030 total). Real-time prices, P&L tracking, trading signals, and profit/loss calculations with live CoinGecko API integration."></i>
+                            Portfolio Overview
                         </h5>
-                        <button class="btn btn-outline-primary btn-sm" onclick="refreshCryptoPortfolio()">
-                            <i class="fas fa-sync-alt me-1"></i>Refresh
+                        <button class="btn btn-outline-primary btn-sm" onclick="showPortfolioPage()">
+                            <i class="fas fa-eye me-1"></i>View Full Portfolio
                         </button>
                     </div>
                     <div class="card-body">
-                        <div class="row mb-3">
+                        <div class="row">
                             <div class="col-md-2">
                                 <div class="text-center">
                                     <h6 class="text-muted mb-1">Total Assets</h6>
@@ -487,6 +491,96 @@
                             </div>
                         </div>
 
+                        <!-- Crypto Symbols Display -->
+                        <div class="row mt-3">
+                            <div class="col-12">
+                                <h6 class="text-muted mb-2">Current Holdings:</h6>
+                                <div id="crypto-symbols" class="d-flex flex-wrap">
+                                    <span class="badge bg-warning">Portfolio loading...</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+    </div>
+
+    <!-- Portfolio Page (Hidden by default) -->
+    <div id="portfolio-page" class="container-fluid py-4" style="display: none;">
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="fas fa-coins me-2"></i>
+                            Cryptocurrency Portfolio (103 Assets - $10 Each)
+                            <i class="fas fa-info-circle text-info ms-2" 
+                               data-bs-toggle="tooltip" 
+                               data-bs-placement="top" 
+                               title="Complete cryptocurrency portfolio overview with 103 cryptocurrencies ($10 initial investment each = $1,030 total). Real-time prices, P&L tracking, trading signals, and profit/loss calculations with live CoinGecko API integration."></i>
+                        </h5>
+                        <button class="btn btn-outline-primary btn-sm" onclick="refreshCryptoPortfolio()">
+                            <i class="fas fa-sync-alt me-1"></i>Refresh
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div class="row mb-3">
+                            <div class="col-md-2">
+                                <div class="text-center">
+                                    <h6 class="text-muted mb-1">Total Assets</h6>
+                                    <h5 id="portfolio-crypto-total-count" class="text-info mb-0">103</h5>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="text-center">
+                                    <h6 class="text-muted mb-1">Initial Value</h6>
+                                    <h5 id="portfolio-crypto-initial-value" class="text-secondary mb-0">$1,030</h5>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="text-center">
+                                    <h6 class="text-muted mb-1">Current Value</h6>
+                                    <h5 id="portfolio-crypto-current-value" class="text-primary mb-0">$0.00</h5>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="text-center">
+                                    <h6 class="text-muted mb-1">Total P&L</h6>
+                                    <h5 id="portfolio-crypto-total-pnl" class="mb-0">$0.00</h5>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="text-center">
+                                    <h6 class="text-muted mb-1">P&L %</h6>
+                                    <h5 id="portfolio-crypto-pnl-percent" class="mb-0">0.00%</h5>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="text-center">
+                                    <h6 class="text-muted mb-1">Status</h6>
+                                    <span id="portfolio-crypto-status" 
+                                          class="badge bg-success" 
+                                          style="cursor: pointer;"
+                                          data-bs-toggle="tooltip" 
+                                          data-bs-placement="top" 
+                                          data-bs-html="true"
+                                          title="">Live</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Crypto Symbols Display -->
+                        <div class="row mb-3">
+                            <div class="col-12">
+                                <h6 class="text-muted mb-2">Current Holdings:</h6>
+                                <div id="portfolio-crypto-symbols" class="d-flex flex-wrap">
+                                    <span class="badge bg-warning">Portfolio loading...</span>
+                                </div>
+                            </div>
+                        </div>
                         
                         <!-- Portfolio Actions -->
                         <div class="row mb-3">
@@ -579,10 +673,11 @@
                 </div>
             </div>
         </div>
+    </div>
 
-        <!-- Data Tables Row -->
+    <!-- Recent Trades Page (Hidden by default) -->
+    <div id="recent-trades-page" class="container-fluid py-4" style="display: none;">
         <div class="row">
-            <!-- Recent Trades -->
             <div class="col-lg-12">
                 <div class="card">
                     <div class="card-header">
@@ -677,8 +772,6 @@
                     </div>
                 </div>
             </div>
-
-
         </div>
     </div>
 

@@ -1368,6 +1368,51 @@ class TradingApp {
         this.updateCryptoPortfolio();
     }
     
+    syncPortfolioValues() {
+        // Sync values from main dashboard to portfolio page
+        const mainIds = [
+            'crypto-total-count',
+            'crypto-initial-value', 
+            'crypto-current-value',
+            'crypto-total-pnl',
+            'crypto-pnl-percent',
+            'crypto-status'
+        ];
+        
+        const portfolioIds = [
+            'portfolio-crypto-total-count',
+            'portfolio-crypto-initial-value',
+            'portfolio-crypto-current-value', 
+            'portfolio-crypto-total-pnl',
+            'portfolio-crypto-pnl-percent',
+            'portfolio-crypto-status'
+        ];
+        
+        // Copy values from main dashboard to portfolio page
+        for (let i = 0; i < mainIds.length; i++) {
+            const mainEl = document.getElementById(mainIds[i]);
+            const portfolioEl = document.getElementById(portfolioIds[i]);
+            
+            if (mainEl && portfolioEl) {
+                if (mainEl.tagName === 'SPAN' || mainEl.classList.contains('badge')) {
+                    portfolioEl.className = mainEl.className;
+                    portfolioEl.textContent = mainEl.textContent;
+                    portfolioEl.title = mainEl.title || '';
+                } else {
+                    portfolioEl.textContent = mainEl.textContent;
+                }
+            }
+        }
+        
+        // Sync crypto symbols display
+        const mainSymbols = document.getElementById('crypto-symbols');
+        const portfolioSymbols = document.getElementById('portfolio-crypto-symbols');
+        
+        if (mainSymbols && portfolioSymbols) {
+            portfolioSymbols.innerHTML = mainSymbols.innerHTML;
+        }
+    }
+    
     showToast(message, type = 'info') {
         // Create simple alert-style toast (no Bootstrap dependency)
         const toast = document.createElement('div');
@@ -1973,6 +2018,57 @@ function showCurrentPositions() {
     }
     
     console.log('Switched to Current Holdings');
+}
+
+// New navigation functions for separate pages
+function showPortfolioPage() {
+    // Hide all sections
+    hideAllSections();
+    
+    // Show portfolio page
+    const portfolioPage = document.getElementById('portfolio-page');
+    if (portfolioPage) portfolioPage.style.display = 'block';
+    
+    // Update the portfolio data and sync values
+    if (window.tradingApp) {
+        window.tradingApp.updateCryptoPortfolio();
+        window.tradingApp.syncPortfolioValues();
+    }
+    
+    console.log('Switched to Portfolio Page');
+}
+
+function showRecentTrades() {
+    // Hide all sections
+    hideAllSections();
+    
+    // Show recent trades page
+    const recentTradesPage = document.getElementById('recent-trades-page');
+    if (recentTradesPage) recentTradesPage.style.display = 'block';
+    
+    // Update the trades data
+    if (window.tradingApp) {
+        window.tradingApp.updateRecentTrades();
+    }
+    
+    console.log('Switched to Recent Trades Page');
+}
+
+function hideAllSections() {
+    // Hide all dashboard and page sections
+    const sections = [
+        'main-dashboard',
+        'portfolio-page', 
+        'performance-dashboard',
+        'positions-dashboard',
+        'current-holdings',
+        'recent-trades-page'
+    ];
+    
+    sections.forEach(sectionId => {
+        const section = document.getElementById(sectionId);
+        if (section) section.style.display = 'none';
+    });
 }
 
 function updateNavbarButtons(activeView) {
