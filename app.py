@@ -339,10 +339,18 @@ def api_crypto_portfolio():
         })
     
     try:
-        # Get live prices for calculations
+        # Get live prices for all cryptocurrencies in the portfolio
         from src.data.price_api import CryptoPriceAPI
         price_api = CryptoPriceAPI()
-        symbols = ["BTC", "ETH", "SOL", "XRP", "DOGE"]
+        
+        # Use the same symbol list as the initial trades function
+        symbols = [
+            "BTC", "ETH", "SOL", "XRP", "DOGE", "ADA", "AVAX", "LINK", "UNI", "BNB", 
+            "DOT", "MATIC", "LTC", "ATOM", "ICP", "ETC", "VET", "FIL", "TRX", "ALGO",
+            "XLM", "AAVE", "THETA", "EGLD", "EOS", "AXS", "MANA", "SAND", "CHZ", "ENJ",
+            "BAT", "ZEC", "QTUM", "ICX", "ZIL", "RVN", "WAVES", "ONT", "OMG", "LSK",
+            "ARK", "KMD", "NANO", "DASH", "NEO", "GAS", "XTZ", "COMP", "YFI", "SNX"
+        ]
         live_prices = price_api.get_multiple_prices(symbols)
         
         # Calculate portfolio data from live prices
