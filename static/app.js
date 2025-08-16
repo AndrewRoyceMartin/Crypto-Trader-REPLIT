@@ -728,22 +728,16 @@ class TradingApp {
     }
     
     hideLoadingProgress() {
-        // Hide the loading progress bar directly without affecting parent containers
         const progressBar = document.getElementById('crypto-loading-progress');
-        if (progressBar) {
-            progressBar.style.display = 'none';
-        }
-        
-        // Also hide any loading text elements
+        if (progressBar) progressBar.style.display = 'none';
+
         const progressText = document.getElementById('crypto-loading-text');
-        if (progressText) {
-            progressText.style.display = 'none';
-        }
-        
-        // Hide the entire loading row if it exists (contains the progress indicator)
-        const loadingRows = document.querySelectorAll('tr:has(.progress)');
-        loadingRows.forEach(row => {
-            row.style.display = 'none';
+        if (progressText) progressText.style.display = 'none';
+
+        // safer than 'tr:has(.progress)' - find progress elements and hide their parent rows
+        document.querySelectorAll('.progress').forEach(el => {
+            const row = el.closest('tr');
+            if (row) row.style.display = 'none';
         });
     }
     
