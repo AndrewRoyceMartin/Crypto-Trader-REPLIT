@@ -711,9 +711,6 @@ class TradingApp {
             const priceCell = document.createElement('td');
             priceCell.textContent = this.formatCurrency(price, this.selectedCurrency);
             
-            const quantityCell = document.createElement('td');
-            quantityCell.textContent = this.num(quantity).toFixed(6);
-            
             const valueCell = document.createElement('td');
             valueCell.textContent = this.formatCurrency(value, this.selectedCurrency);
             
@@ -730,9 +727,9 @@ class TradingApp {
                 new Date(crypto.last_updated).toLocaleTimeString() : '-';
             updatedCell.appendChild(updatedSmall);
             
-            // Create additional cells to match the 13-column table structure
-            const quantityCell2 = document.createElement('td'); // Quantity column
-            quantityCell2.textContent = this.num(quantity).toFixed(6);
+            // Create quantity cell to match the 13-column table structure
+            const quantityCell = document.createElement('td'); // Quantity column
+            quantityCell.textContent = this.num(quantity).toFixed(6);
             
             // Calculate target prices based on current price (simple +/- 5% for demo)
             const targetBuyPrice = price * 0.95; // 5% below current
@@ -773,19 +770,19 @@ class TradingApp {
             targetCell.textContent = this.formatCurrency(targetBuyPrice);
             
             // Append all cells to row (13 total)
-            row.appendChild(rankCell);           // 1
-            row.appendChild(symbolCell);         // 2
-            row.appendChild(nameCell);           // 3
-            row.appendChild(quantityCell2);      // 4
-            row.appendChild(priceCell);          // 5
-            row.appendChild(valueCell);          // 6
-            row.appendChild(targetSellCell);     // 7
-            row.appendChild(pnlAbsoluteCell);    // 8
-            row.appendChild(pnlCell);            // 9
-            row.appendChild(updatedCell);        // 10
-            row.appendChild(signalCell);         // 11
-            row.appendChild(actionsCell);        // 12
-            row.appendChild(targetCell);         // 13
+            row.appendChild(rankCell);           // 1. Rank
+            row.appendChild(symbolCell);         // 2. Symbol
+            row.appendChild(nameCell);           // 3. Name
+            row.appendChild(quantityCell);       // 4. Quantity
+            row.appendChild(priceCell);          // 5. Current Price
+            row.appendChild(valueCell);          // 6. Value
+            row.appendChild(targetSellCell);     // 7. Target Sell
+            row.appendChild(pnlAbsoluteCell);    // 8. P&L ($)
+            row.appendChild(pnlCell);            // 9. P&L (%)
+            row.appendChild(updatedCell);        // 10. Updated
+            row.appendChild(signalCell);         // 11. Signal
+            row.appendChild(actionsCell);        // 12. Actions
+            row.appendChild(targetCell);         // 13. Target Buy
             
             // Add hover effect
             row.classList.add('table-row-hover');
