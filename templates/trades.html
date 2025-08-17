@@ -309,16 +309,25 @@
         return new bootstrap.Tooltip(tooltipTriggerEl);
       });
 
-      // Start periodic updates
-      updateRecentTrades();
-      setInterval(updateRecentTrades, 6000);
+      // Start periodic updates - use tradingApp method
+      if (window.tradingApp) {
+        window.tradingApp.updateRecentTrades();
+        setInterval(() => window.tradingApp.updateRecentTrades(), 6000);
+      }
       
       console.log('Trades page initialized');
     });
 
     // Enhanced trades display with KPIs and charts
     const originalDisplayRecentTrades = window.displayRecentTrades;
-    window.displayRecentTrades = function(trades) {
+    window.displayRecentTrades = function(tradesData) {
+      // Handle wrapped response from API
+      let trades = tradesData;
+      if (tradesData && typeof tradesData === 'object' && tradesData.trades) {
+        trades = tradesData.trades;
+        console.log(`Extracted ${trades.length} trades from wrapped response`);
+      }
+      
       // Call original function first
       if (originalDisplayRecentTrades) {
         originalDisplayRecentTrades(trades);
@@ -330,6 +339,19 @@
       // Update charts
       updateTradesCharts(trades);
     };
+
+    // Also override the tradingApp method to ensure KPIs get updated
+    if (window.tradingApp && window.tradingApp.displayRecentTrades) {
+      const originalTradingAppDisplay = window.tradingApp.displayRecentTrades;
+      window.tradingApp.displayRecentTrades = function(trades) {
+        // Call original method
+        originalTradingAppDisplay.call(this, trades);
+        
+        // Update KPIs with trades data
+        updateTradesKPIs(trades);
+        updateTradesCharts(trades);
+      };
+    }
 
     function updateTradesKPIs(trades) {
       if (!trades || !Array.isArray(trades)) {
@@ -343,14 +365,16 @@
       let lastTradeTime = "—";
 
       trades.forEach(trade => {
-        if (trade.realized_pnl !== undefined) {
-          totalRealized += trade.realized_pnl;
+        // Handle different field names (pnl vs realized_pnl)
+        const pnl = trade.pnl !== undefined ? trade.pnl : trade.realized_pnl;
+        if (pnl !== undefined && pnl !== null) {
+          totalRealized += pnl;
+          if (pnl > 0) {
+            winningTrades++;
+          }
         }
         if (trade.fee) {
           totalFees += trade.fee;
-        }
-        if (trade.realized_pnl > 0) {
-          winningTrades++;
         }
       });
 
@@ -394,7 +418,8 @@
       const sortedTrades = [...trades].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
       let cumulativePnL = 0;
       const data = sortedTrades.map(trade => {
-        cumulativePnL += (trade.realized_pnl || 0);
+        const pnl = trade.pnl !== undefined ? trade.pnl : trade.realized_pnl || 0;
+        cumulativePnL += pnl;
         return {
           x: new Date(trade.timestamp),
           y: cumulativePnL
@@ -445,7 +470,10 @@
       const ctx = document.getElementById('trades-hist-chart');
       if (!ctx) return;
 
-      const pnlValues = trades.map(trade => trade.realized_pnl || 0).filter(pnl => pnl !== 0);
+      const pnlValues = trades.map(trade => {
+        const pnl = trade.pnl !== undefined ? trade.pnl : trade.realized_pnl || 0;
+        return pnl;
+      }).filter(pnl => pnl !== 0);
       
       if (pnlValues.length === 0) {
         if (window.pnlHistogramChart) {
