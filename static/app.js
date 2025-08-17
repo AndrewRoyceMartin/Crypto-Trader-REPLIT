@@ -57,6 +57,29 @@ class TradingApp {
         return document.getElementById('trades-table-body') || document.getElementById('trades-table');
     }
 
+    // Add this method inside the TradingApp class
+    normalizeTrades(trades) {
+        if (!Array.isArray(trades)) return [];
+        return trades.map(t => {
+            // pick timestamp-like field
+            const ts = t.timestamp || t.ts || t.time || t.date || null;
+            // try to coerce numbers safely
+            const num = (v) => {
+                const n = Number(v);
+                return Number.isFinite(n) ? n : 0;
+            };
+            return {
+                timestamp: ts,                                 // ISO string or epoch ok
+                symbol: t.symbol || t.pair || t.market || '',  // symbol
+                side: (t.side || '').toUpperCase(),            // "BUY"/"SELL"
+                price: num(t.price || t.fill_price || t.avg_price),
+                quantity: num(t.quantity || t.qty || t.amount),
+                pnl: num(t.pnl || t.profit || t.realized_pnl),
+                trade_id: t.trade_id || t.id || t.order_id || ''
+            };
+        }).filter(t => t.timestamp && t.symbol);
+    }
+
     init() {
         this.setupEventListeners();
         this.initializeCharts();
