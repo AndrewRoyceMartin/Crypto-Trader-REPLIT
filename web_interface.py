@@ -445,11 +445,14 @@ def get_crypto_portfolio():
                 "total_cryptos": len(holdings_list),
                 "total_current_value": okx_portfolio_data['total_current_value'],
                 "total_pnl": okx_portfolio_data['total_pnl'],
-                "total_pnl_percent": okx_portfolio_data['total_pnl_percent']
+                "total_pnl_percent": okx_portfolio_data['total_pnl_percent'],
+                "cash_balance": okx_portfolio_data['cash_balance']
             },
             "total_pnl": okx_portfolio_data['total_pnl'],
             "total_pnl_percent": okx_portfolio_data['total_pnl_percent'],
-            "total_value": okx_portfolio_data['total_current_value'],
+            "total_current_value": okx_portfolio_data['total_current_value'],
+            "cash_balance": okx_portfolio_data['cash_balance'],
+            "last_update": okx_portfolio_data['last_update'],
             "exchange_info": {
                 "exchange": "Simulated OKX",
                 "last_update": okx_portfolio_data['last_update'],
