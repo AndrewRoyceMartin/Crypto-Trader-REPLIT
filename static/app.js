@@ -1569,6 +1569,63 @@ async function startTrading(mode, type) {
         window.tradingApp.showToast(`Error starting trading: ${error.message}`, 'error');
     }
 }
+
+async function executeTakeProfit() {
+    if (!confirm('Execute take profit for all positions above 2% profit? This will sell profitable positions and reinvest proceeds.')) {
+        return;
+    }
+    
+    const button = document.getElementById('take-profit-btn');
+    const originalText = button.innerHTML;
+    button.disabled = true;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Processing...';
+    
+    window.tradingApp.showToast('Executing take profit trades...', 'info');
+    
+    try {
+        const response = await fetch('/api/execute-take-profit', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            const trades = data.executed_trades || [];
+            const profit = data.total_profit || 0;
+            const reinvested = data.reinvested_amount || 0;
+            
+            if (trades.length > 0) {
+                window.tradingApp.showToast(
+                    `Take profit executed: ${trades.length} trades, $${profit.toFixed(2)} profit, $${reinvested.toFixed(2)} reinvested`, 
+                    'success'
+                );
+                
+                // Refresh portfolio and trades data
+                await window.tradingApp.updateCryptoPortfolio();
+                await window.tradingApp.updateDashboard();
+                
+                // Show detailed results
+                console.log('Take profit results:', {
+                    trades_executed: trades.length,
+                    total_profit: profit,
+                    reinvested_amount: reinvested,
+                    trades: trades
+                });
+            } else {
+                window.tradingApp.showToast('No positions met take profit criteria (2% profit threshold)', 'info');
+            }
+        } else {
+            window.tradingApp.showToast(`Take profit failed: ${data.error}`, 'error');
+        }
+    } catch (error) {
+        console.error('Take profit error:', error);
+        window.tradingApp.showToast(`Take profit error: ${error.message}`, 'error');
+    } finally {
+        button.disabled = false;
+        button.innerHTML = originalText;
+    }
+}
 async function buyCrypto(symbol) {
     const amount = prompt(`Enter USD amount to buy ${symbol}:`, '25.00');
     if (!amount || isNaN(amount) || parseFloat(amount) <= 0) return window.tradingApp.showToast('Invalid amount', 'error');
