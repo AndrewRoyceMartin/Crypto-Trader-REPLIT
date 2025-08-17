@@ -351,6 +351,10 @@ def api_crypto_portfolio():
                 holding['unrealized_pnl'] = holding.get('current_value', 0) - initial_investment
                 holding['avg_entry_price'] = initial_investment / holding.get('quantity', 1) if holding.get('quantity', 0) > 0 else 0
             
+            # Initialize summary if it doesn't exist
+            if 'summary' not in portfolio_data:
+                portfolio_data['summary'] = {}
+            
             # Enhanced summary with comprehensive KPIs
             portfolio_data['summary'].update({
                 'total_assets_tracked': len(holdings),
