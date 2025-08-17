@@ -340,6 +340,34 @@ def render_performance_page():
         logger.error(f"Error rendering performance page: {e}")
         return render_loading_skeleton(f"Performance Error: {e}", error=True)
 
+@app.route('/holdings')
+def holdings():
+    """Dedicated holdings page showing current positions and portfolio analytics"""
+    start_warmup()
+    
+    if warmup["done"] and not warmup["error"]:
+        # System ready - serve holdings page
+        return render_holdings_page()
+    elif warmup["done"] and warmup["error"]:
+        # System failed to initialize properly
+        return render_loading_skeleton(f"System Error: {warmup['error']}", error=True)
+    else:
+        # Show loading skeleton while warming up
+        return render_loading_skeleton()
+
+def render_holdings_page():
+    """Render the dedicated holdings page."""
+    try:
+        from flask import render_template
+        from version import get_version
+        import time
+        
+        cache_version = int(time.time())
+        return render_template("holdings.html", cache_version=cache_version, version=get_version())
+    except Exception as e:
+        logger.error(f"Error rendering holdings page: {e}")
+        return render_loading_skeleton(f"Holdings Error: {e}", error=True)
+
 def render_full_dashboard():
     """Render the original trading dashboard using templates."""
     try:

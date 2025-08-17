@@ -108,6 +108,11 @@
               <i class="fas fa-chart-bar me-1"></i> Performance
             </a>
           </li>
+          <li class="nav-item me-2">
+            <a class="btn btn-outline-light btn-sm" href="{{ url_for('holdings') }}">
+              <i class="fas fa-coins me-1"></i> Holdings
+            </a>
+          </li>
         </ul>
         <div class="navbar-text text-end text-white-50 small">
           <i class="fas fa-code-branch me-1"></i> v{{ version|default('dev') }}
