@@ -1480,21 +1480,188 @@ function confirmLiveTrading() {
         startTrading('live', 'portfolio');
     }
 }
+// Global variables to track sort state
+let tableSortState = {
+    portfolio: { column: null, direction: 'asc' },
+    positions: { column: null, direction: 'asc' },
+    trades: { column: null, direction: 'asc' },
+    performance: { column: null, direction: 'asc' }
+};
+
 function sortPortfolio(column) {
     console.log(`Sorting portfolio by ${column}`);
-    if (window.tradingApp) window.tradingApp.showToast(`Sorting by ${column}`, 'info');
+    
+    const table = document.querySelector('#positions-table-body');
+    if (!table) {
+        console.warn('Portfolio table not found');
+        return;
+    }
+    
+    sortTableByColumn(table, column, 'portfolio');
+    if (window.tradingApp) window.tradingApp.showToast(`Portfolio sorted by ${column}`, 'success');
 }
+
 function sortPerformanceTable(columnIndex) {
     console.log(`Sorting performance table by column ${columnIndex}`);
-    if (window.tradingApp) window.tradingApp.showToast('Performance table sorted', 'info');
+    
+    const table = document.querySelector('#attribution-table, #trades-table');
+    if (!table) {
+        console.warn('Performance table not found');
+        return;
+    }
+    
+    sortTableByColumnIndex(table, columnIndex, 'performance');
+    if (window.tradingApp) window.tradingApp.showToast('Performance table sorted', 'success');
 }
+
 function sortPositionsTable(columnIndex) {
     console.log(`Sorting positions table by column ${columnIndex}`);
-    if (window.tradingApp) window.tradingApp.showToast('Positions table sorted', 'info');
+    
+    const table = document.querySelector('#positions-table-body');
+    if (!table) {
+        console.warn('Positions table not found');
+        return;
+    }
+    
+    sortTableByColumnIndex(table, columnIndex, 'positions');
+    if (window.tradingApp) window.tradingApp.showToast('Positions table sorted', 'success');
 }
+
 function sortTradesTable(columnIndex) {
     console.log(`Sorting trades table by column ${columnIndex}`);
-    if (window.tradingApp) window.tradingApp.showToast('Trades table sorted', 'info');
+    
+    const table = document.querySelector('#trades-table');
+    if (!table) {
+        console.warn('Trades table not found');
+        return;
+    }
+    
+    sortTableByColumnIndex(table, columnIndex, 'trades');
+    if (window.tradingApp) window.tradingApp.showToast('Trades table sorted', 'success');
+}
+
+function sortTableByColumn(tableBody, column, tableType) {
+    const rows = Array.from(tableBody.getElementsByTagName('tr'));
+    if (rows.length <= 1) return; // No data to sort
+    
+    // Determine if we need to reverse direction
+    const state = tableSortState[tableType];
+    const ascending = state.column === column ? state.direction === 'desc' : true;
+    
+    // Update sort state
+    state.column = column;
+    state.direction = ascending ? 'asc' : 'desc';
+    
+    // Get column index based on column name
+    const columnMap = {
+        'symbol': 0, 'name': 1, 'quantity': 2, 'price': 3, 'current_price': 3,
+        'value': 4, 'current_value': 4, 'position_percent': 5, 'pnl': 6, 
+        'pnl_percent': 7, 'target_sell': 8, 'potential_profit': 9, 'status': 10
+    };
+    
+    const columnIndex = columnMap[column] || 0;
+    
+    rows.sort((a, b) => {
+        const aVal = getCellValue(a, columnIndex);
+        const bVal = getCellValue(b, columnIndex);
+        
+        // Handle numeric vs string comparison
+        const aNum = parseFloat(aVal.replace(/[$,%]/g, ''));
+        const bNum = parseFloat(bVal.replace(/[$,%]/g, ''));
+        
+        if (!isNaN(aNum) && !isNaN(bNum)) {
+            return ascending ? aNum - bNum : bNum - aNum;
+        } else {
+            return ascending ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+        }
+    });
+    
+    // Reorder the table
+    rows.forEach(row => tableBody.appendChild(row));
+    
+    // Update sort indicators
+    updateSortIndicators(tableType, column, ascending);
+}
+
+function sortTableByColumnIndex(tableBody, columnIndex, tableType) {
+    const rows = Array.from(tableBody.getElementsByTagName('tr'));
+    if (rows.length <= 1) return; // No data to sort
+    
+    // Determine if we need to reverse direction
+    const state = tableSortState[tableType];
+    const ascending = state.column === columnIndex ? state.direction === 'desc' : true;
+    
+    // Update sort state
+    state.column = columnIndex;
+    state.direction = ascending ? 'asc' : 'desc';
+    
+    rows.sort((a, b) => {
+        const aVal = getCellValue(a, columnIndex);
+        const bVal = getCellValue(b, columnIndex);
+        
+        // Handle numeric vs string comparison
+        const aNum = parseFloat(aVal.replace(/[$,%]/g, ''));
+        const bNum = parseFloat(bVal.replace(/[$,%]/g, ''));
+        
+        if (!isNaN(aNum) && !isNaN(bNum)) {
+            return ascending ? aNum - bNum : bNum - aNum;
+        } else {
+            return ascending ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+        }
+    });
+    
+    // Reorder the table
+    rows.forEach(row => tableBody.appendChild(row));
+    
+    // Update sort indicators for column index
+    updateSortIndicatorsByIndex(tableType, columnIndex, ascending);
+}
+
+function getCellValue(row, columnIndex) {
+    const cell = row.cells[columnIndex];
+    if (!cell) return '';
+    
+    // Get text content, handling various formats
+    let value = cell.textContent || cell.innerText || '';
+    
+    // Clean up value for comparison
+    value = value.trim();
+    
+    // Handle special cases
+    if (value === '—' || value === '-' || value === 'N/A') {
+        return '';
+    }
+    
+    return value;
+}
+
+function updateSortIndicators(tableType, column, ascending) {
+    // Reset all sort icons for this table type
+    const allIcons = document.querySelectorAll(`[id*="sort-${column}"], [id*="sort-${tableType}"]`);
+    allIcons.forEach(icon => {
+        icon.className = 'fas fa-sort text-white';
+    });
+    
+    // Set active sort icon
+    const activeIcon = document.getElementById(`sort-${column}`) || 
+                      document.getElementById(`sort-${tableType}-${column}`);
+    if (activeIcon) {
+        activeIcon.className = ascending ? 'fas fa-sort-up text-warning' : 'fas fa-sort-down text-warning';
+    }
+}
+
+function updateSortIndicatorsByIndex(tableType, columnIndex, ascending) {
+    // Reset all sort icons for this table type
+    const allIcons = document.querySelectorAll(`[id*="${tableType}-sort-"]`);
+    allIcons.forEach(icon => {
+        icon.className = 'fas fa-sort ms-1';
+    });
+    
+    // Set active sort icon
+    const activeIcon = document.getElementById(`${tableType}-sort-${columnIndex}`);
+    if (activeIcon) {
+        activeIcon.className = ascending ? 'fas fa-sort-up text-warning ms-1' : 'fas fa-sort-down text-warning ms-1';
+    }
 }
 async function updatePerformanceData() {
     try {
