@@ -1,9 +1,12 @@
 # bot.py
 # Backtest + grid search + OKX Demo paper trading
-# Adds: CSV trade log, daily loss cap, heartbeat, and a tiny /health HTTP server (Replit-friendly)
+# Adds: CSV trade log, daily loss cap, heartbeat, tiny /health HTTP server
+# Improvements: mark-to-market equity, realistic exits, dynamic Sharpe scaling, leaner OHLCV pulls,
+# min-notional/amount checks, partial-fill handling for IOC, timeframe-aligned sleep,
+# VWAP tracking for multi-leg positions (optional scaling-in), IOC retries with price nudging.
 
 import os, sys, time, math, threading, traceback, csv
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from itertools import product
 from typing import Dict, List, Tuple, Optional
 from http.server import BaseHTTPRequestHandler, HTTPServer
@@ -33,8 +36,17 @@ def env_int(key: str, default: int) -> int:
 
 def env_bool(key: str, default: bool) -> bool:
     v = os.getenv(key)
-    if v is None: return default
+    if v is None:
+        return default
     return str(v).strip().lower() in ("1","true","t","yes","y","on")
+
+# IOC retry tuning
+IOC_RETRIES       = env_int("IOC_RETRIES", 2)            # extra attempts after first
+PRICE_NUDGE_BPS   = env_float("PRICE_NUDGE_BPS", 5.0)    # per retry, bps aggressiveness (0.01% = 1bps)
+CAP_FLATTEN       = env_bool("CAP_FLATTEN", False)       # flatten on daily cap hit
+ALLOW_SCALE_IN    = env_bool("ALLOW_SCALE_IN", False)    # allow multi-leg adds
+MAX_SCALE_INS     = env_int("MAX_SCALE_INS", 2)          # max additional entries after initial
+SCALE_IN_GAP_PCT  = env_float("SCALE_IN_GAP_PCT", 0.007) # require price to be this much below last add
 
 # ==============================
 # Parameters / defaults
@@ -44,14 +56,14 @@ class Params:
     timeframe: str = os.getenv("TIMEFRAME", "1h")
     lookback: int = env_int("LOOKBACK", 2000)
     band_window: int = env_int("BAND_WINDOW", 20)
-    k: float = env_float("BB_K", 1.5)                  # from your optimizer
+    k: float = env_float("BB_K", 1.5)
     tp: float = env_float("TP_PCT", 0.02)              # 2%
     sl: float = env_float("SL_PCT", 0.01)              # 1%
     fee: float = env_float("FEE_RATE", 0.001)          # 0.10%
     slip: float = env_float("SLIPPAGE_PCT", 0.0005)    # 5 bps
     risk: float = env_float("RISK_PER_TRADE", 0.01)    # 1% of equity
     start_equity: float = env_float("START_EQUITY", 10_000.0)
-    daily_loss_cap: float = env_float("DAILY_LOSS_CAP_PCT", 0.03)  # 3% default
+    daily_loss_cap: float = env_float("DAILY_LOSS_CAP_PCT", 0.03)  # 3%
     symbol_okx: str = os.getenv("SYMBOL_OKX", "BTC/USDT")
     symbol_kraken: str = os.getenv("SYMBOL_KRAKEN", "BTC/AUD")
 
@@ -70,7 +82,6 @@ class HealthHandler(BaseHTTPRequestHandler):
         self.wfile.write(msg)
 
 def start_health_server():
-    # Use a fixed port for bot health server to avoid conflicts with Flask app
     port = int(os.getenv("BOT_HEALTH_PORT", "8001"))
     server = HTTPServer(("0.0.0.0", port), HealthHandler)
     t = threading.Thread(target=server.serve_forever, daemon=True)
@@ -116,67 +127,89 @@ def bollinger(close: pd.Series, window: int, k: float) -> Tuple[pd.Series, pd.Se
     sd = close.rolling(window).std(ddof=0)
     return ma, ma + k*sd, ma - k*sd
 
+def infer_bars_per_year(idx: pd.DatetimeIndex) -> float:
+    if len(idx) < 3:
+        return 252.0
+    diffs_ns = np.diff(idx.asi8)
+    med_secs = float(np.median(diffs_ns)) / 1e9
+    if med_secs <= 0:
+        return 252.0
+    return (365.0 * 24.0 * 3600.0) / med_secs
+
 # ==============================
 # Backtest
 # ==============================
 def backtest(df: pd.DataFrame, P: Params) -> Dict[str, float]:
-    df = df.copy().dropna()
-    _, up, lo = bollinger(df["close"], P.band_window, P.k)
+    df = df.copy()
+    ma, up, lo = bollinger(df["close"], P.band_window, P.k)
     df["bb_up"], df["bb_lo"] = up, lo
     df["next_open"] = df["open"].shift(-1)
-    df = df.dropna()
+    df = df.dropna(subset=["bb_up","bb_lo","next_open"])
 
-    eq, pos, entry = P.start_equity, 0.0, 0.0
-    curve = []
-    trades = 0
+    eq_cash = P.start_equity
+    pos, entry = 0.0, 0.0
+    curve = []; trades = 0
 
     for ts, r in df.iterrows():
-        px, nxt = float(r["close"]), float(r["next_open"])
+        px = float(r["close"]); hi = float(r["high"]); lw = float(r["low"])
+        nxt_open = float(r["next_open"])
+        bb_up = float(r["bb_up"]); bb_lo = float(r["bb_lo"])
 
-        # EXIT
+        # EXIT (assume intra-bar trigger: stop first if both)
         if pos > 0.0:
             stop = entry*(1 - P.sl); take = entry*(1 + P.tp)
-            if px >= float(r["bb_up"]) or px >= take or float(r["low"]) <= stop:
-                fill = nxt*(1 - P.slip)
-                pnl  = pos*(fill - entry) - P.fee*(fill + entry)*pos
-                eq  += pnl
-                pos  = 0.0
-                trades += 1
+            hit_stop = lw <= stop
+            hit_take = (hi >= take) or (hi >= bb_up)
+            fill_px = None
+            if hit_stop and hit_take:
+                fill_px = stop*(1 - P.slip)
+            elif hit_stop:
+                fill_px = stop*(1 - P.slip)
+            elif hit_take:
+                tgt = max(take, bb_up)
+                fill_px = tgt*(1 - P.slip)
+            if fill_px is not None:
+                gross = pos*(fill_px - entry)
+                fees  = P.fee*(fill_px + entry)*pos
+                pnl   = gross - fees
+                eq_cash += pnl
+                pos = 0.0; entry = 0.0; trades += 1
 
         # ENTRY
-        if pos == 0.0 and px <= float(r["bb_lo"]):
-            fill = nxt*(1 + P.slip)
-            risk_per_unit = fill*P.sl
-            qty = max(0.0, (P.risk*eq)/risk_per_unit)
+        if pos == 0.0 and (lw <= bb_lo):
+            fill_px = nxt_open*(1 + P.slip)
+            risk_per_unit = max(1e-12, fill_px*P.sl)
+            qty = max(0.0, (P.risk*eq_cash)/risk_per_unit)
             if qty > 0.0:
-                pos, entry = qty, fill
+                pos, entry = qty, fill_px
 
-        curve.append({"ts": ts, "equity": eq})
+        # MTM equity
+        eq_mtm = eq_cash + (pos * (px - entry) if pos>0 else 0.0)
+        curve.append({"ts": ts, "equity": eq_mtm})
 
     curve = pd.DataFrame(curve).set_index("ts")
-    ret = curve["equity"].pct_change().fillna(0)
-    sharpe = (ret.mean()/ret.std()*np.sqrt(252)) if ret.std()!=0 else 0.0
-    maxdd = (curve["equity"]/curve["equity"].cummax() - 1).min() if len(curve) else 0.0
+    if curve.empty:
+        return {"final_equity": float(P.start_equity), "trades": 0, "Sharpe~": 0.0, "MaxDD": 0.0}
 
-    return {
-        "final_equity": float(curve["equity"].iloc[-1]) if len(curve) else float(P.start_equity),
-        "trades": trades,
-        "Sharpe~": float(sharpe),
-        "MaxDD": float(maxdd),
-    }
+    ret = curve["equity"].pct_change().fillna(0.0)
+    ann_factor = infer_bars_per_year(curve.index)
+    vol = ret.std()
+    sharpe = float((ret.mean()/vol)*math.sqrt(ann_factor)) if vol!=0 else 0.0
+    maxdd = float((curve["equity"]/curve["equity"].cummax() - 1.0).min())
+    return {"final_equity": float(curve["equity"].iloc[-1]), "trades": trades, "Sharpe~": sharpe, "MaxDD": maxdd}
 
 # ==============================
 # Optimizer
 # ==============================
 def optimize_params(df: pd.DataFrame, P: Params,
-                    k_grid=(1.25, 1.5, 1.75, 2.0, 2.25),
-                    tp_grid=(0.01, 0.015, 0.02, 0.025),
-                    sl_grid=(0.0075, 0.01, 0.0125, 0.015),
+                    k_grid=(1.25,1.5,1.75,2.0,2.25),
+                    tp_grid=(0.01,0.015,0.02,0.025),
+                    sl_grid=(0.0075,0.01,0.0125,0.015),
                     min_trades: int = 8,
                     top_n: int = 15) -> List[Dict[str, float]]:
     results: List[Dict[str, float]] = []
     for k, tp, sl in product(k_grid, tp_grid, sl_grid):
-        Pk = Params(**{**P.__dict__, "k": k, "tp": tp, "sl": sl})
+        Pk = replace(P, k=k, tp=tp, sl=sl)
         m = backtest(df, Pk)
         if m["trades"] >= min_trades:
             results.append({"k": k, "tp": tp, "sl": sl, **m})
@@ -187,8 +220,9 @@ def try_timeframes(ex: ccxt.Exchange, symbol: str, P: Params,
                    tfs=("30m","1h","2h","4h")) -> Dict[str, List[Dict[str, float]]]:
     out: Dict[str, List[Dict[str, float]]] = {}
     for tf in tfs:
-        df = fetch_history(ex, symbol, tf, P.lookback)
-        out[tf] = optimize_params(df, P)
+        limit = max(5*P.band_window, 200)
+        df = fetch_history(ex, symbol, tf, limit)
+        out[tf]] = optimize_params(df, P)
     return out
 
 # ==============================
@@ -199,10 +233,8 @@ def make_exchange(name: str) -> ccxt.Exchange:
     if name == "okx":
         ex = ccxt.okx({'enableRateLimit': True})
         if env_bool("OKX_DEMO", True):
-            # OKX Demo (paper)
             ex.set_sandbox_mode(True)
             ex.headers = {**(ex.headers or {}), "x-simulated-trading": "1"}
-        # If API keys provided, set them (for live/paper orders)
         k = os.getenv("OKX_API_KEY"); s = os.getenv("OKX_API_SECRET"); p = os.getenv("OKX_API_PASSPHRASE")
         if k and s and p:
             ex.apiKey, ex.secret, ex.password = k, s, p
@@ -218,21 +250,120 @@ def make_exchange(name: str) -> ccxt.Exchange:
         raise ValueError("Supported exchanges: okx | kraken")
 
 # ==============================
+# Order helpers: minimums + partial fills
+# ==============================
+def get_market(ex: ccxt.Exchange, symbol: str) -> dict:
+    try:
+        return ex.market(symbol)
+    except Exception:
+        ex.load_markets()
+        return ex.market(symbol)
+
+def get_minimums(ex: ccxt.Exchange, symbol: str) -> Tuple[Optional[float], Optional[float], Optional[float], float]:
+    m = get_market(ex, symbol)
+    limits = m.get("limits", {}) or {}
+    amt_min  = (limits.get("amount", {}) or {}).get("min")
+    cost_min = (limits.get("cost", {}) or {}).get("min")
+    price_min = (limits.get("price", {}) or {}).get("min")
+    prec = (m.get("precision", {}) or {}).get("amount", 8)
+    step = 10 ** (-(int(prec) if isinstance(prec, int) else 8))
+    return amt_min, cost_min, price_min, float(step)
+
+def adjust_qty_for_minimums(ex: ccxt.Exchange, symbol: str, qty: float, price: float) -> Tuple[float, str]:
+    amt_min, cost_min, _pm, step = get_minimums(ex, symbol)
+    q = max(0.0, float(qty))
+    note = ""
+    if cost_min:
+        target_q = cost_min / max(price, 1e-12)
+        if q < target_q:
+            q = target_q; note = "bumped_to_min_cost"
+    if amt_min and q < amt_min:
+        q = max(q, amt_min); note = "bumped_to_min_amount" if not note else note + "+amount"
+    for _ in range(20):
+        q = float(ex.amount_to_precision(symbol, q))
+        if q <= 0: break
+        notional = q * price
+        if (not cost_min or notional + 1e-12 >= cost_min) and (not amt_min or q + 1e-12 >= amt_min):
+            return q, note
+        q = q + step
+    return 0.0, "qty_below_min"
+
+def place_limit_ioc_and_get_fill(ex: ccxt.Exchange, symbol: str, side: str, qty: float, price: float) -> dict:
+    price_p = float(ex.price_to_precision(symbol, price))
+    qty_p   = float(ex.amount_to_precision(symbol, qty))
+    order = ex.create_order(symbol, 'limit', side, qty_p, price_p, {'timeInForce': 'IOC'})
+    oid = order.get("id")
+    try:
+        time.sleep(0.25)
+        if oid:
+            order = ex.fetch_order(oid, symbol)
+    except Exception:
+        pass
+    filled = float(order.get("filled") or 0)
+    avg    = order.get("average")
+    if avg is None:
+        trades = order.get("trades") or []
+        if trades:
+            fsum = 0.0; csum = 0.0
+            for t in trades:
+                amt = float(t.get("amount") or 0)
+                prc = float(t.get("price") or 0)
+                cost = float(t.get("cost") or (amt * prc))
+                fsum += amt; csum += cost
+            if fsum > 0:
+                avg = csum / fsum
+                filled = fsum
+    avg_price = float(avg or (price_p if filled > 0 else 0.0))
+    remaining = float(order.get("remaining") or max(0.0, qty_p - filled))
+    status    = order.get("status") or "unknown"
+    return {"id": oid, "filled": filled, "avg_price": avg_price, "remaining": remaining, "status": status, "raw": order}
+
+def ioc_with_retries(ex: ccxt.Exchange, symbol: str, side: str, qty: float, ref_px: float,
+                     retries: int = IOC_RETRIES, bps: float = PRICE_NUDGE_BPS) -> Tuple[float, float, List[dict]]:
+    """
+    Tries IOC up to (1 + retries) times, nudging price each attempt.
+    Returns: (total_filled_qty, vwap_price, list_of_order_summaries)
+    """
+    orders = []
+    remaining = max(0.0, qty)
+    filled_sum = 0.0
+    cost_sum = 0.0
+    for attempt in range(retries + 1):
+        if remaining <= 0:
+            break
+        # nudge price each attempt
+        nudge = (bps / 10000.0) * attempt
+        if side.lower() == "buy":
+            px = ref_px * (1 + 0.001 + nudge)   # cross + nudge up
+        else:
+            px = ref_px * (1 - 0.001 - nudge)   # cross + nudge down
+        adj_qty, note = adjust_qty_for_minimums(ex, symbol, remaining, px)
+        if adj_qty <= 0:
+            break
+        r = place_limit_ioc_and_get_fill(ex, symbol, side, adj_qty, px)
+        orders.append({**r, "note": note, "attempt": attempt})
+        if r["filled"] > 0:
+            filled_sum += r["filled"]
+            cost_sum   += r["filled"] * r["avg_price"]
+            remaining   = max(0.0, remaining - r["filled"])
+        else:
+            # if first attempt got nothing, still try a couple nudges
+            continue
+    vwap = (cost_sum / filled_sum) if filled_sum > 0 else 0.0
+    return filled_sum, vwap, orders
+
+# ==============================
 # Paper trading (OKX Demo)
 # ==============================
-def place_limit_ioc(ex: ccxt.Exchange, symbol: str, side: str, qty: float, price: float) -> dict:
-    price = float(ex.price_to_precision(symbol, price))
-    qty   = float(ex.amount_to_precision(symbol, qty))
-    return ex.create_order(symbol, 'limit', side, qty, price, {'timeInForce': 'IOC'})
-
 @dataclass
 class PaperState:
     position_qty: float = 0.0
-    entry_price: float = 0.0
+    entry_price: float = 0.0    # VWAP cost basis of open position
     equity: float = P.start_equity
     day_str: str = ""
     peak_equity_today: float = P.start_equity
     trading_enabled: bool = True
+    scale_ins: int = 0           # number of adds after initial entry
 
 def today_syd_str() -> str:
     return pd.Timestamp.now(tz=SYD).strftime("%Y-%m-%d")
@@ -243,84 +374,156 @@ def reset_daily_if_needed(state: PaperState):
         state.day_str = cur_day
         state.peak_equity_today = state.equity
         state.trading_enabled = True
+        state.scale_ins = 0
         print(f"[daily] reset for {cur_day}. equity={state.equity:.2f}")
 
-def check_daily_cap(state: PaperState, cap_pct: float):
-    # Update peak equity
+def check_daily_cap(state: PaperState, cap_pct: float) -> bool:
     if state.equity > state.peak_equity_today:
         state.peak_equity_today = state.equity
     dd = (state.equity / state.peak_equity_today) - 1.0
     if dd <= -cap_pct:
         state.trading_enabled = False
-        print(f"[risk] Daily loss cap hit ({cap_pct*100:.2f}%). Pausing until next day. equity={state.equity:.2f}, peak={state.peak_equity_today:.2f}")
+        print(f"[risk] Daily loss cap hit ({cap_pct*100:.2f}%). Pausing. equity={state.equity:.2f}, peak={state.peak_equity_today:.2f}")
+        return True
+    return False
+
+def timeframe_to_seconds(tf: str) -> int:
+    tf = tf.strip().lower()
+    units = {'m': 60, 'h': 3600, 'd': 86400}
+    n = int(''.join([c for c in tf if c.isdigit()]) or 1)
+    u = tf[-1]
+    return n * units.get(u, 3600)
+
+def realize_pnl_on_sell(state: PaperState, filled: float, avg_px: float, P: Params) -> float:
+    if filled <= 0:
+        return 0.0
+    gross = filled * (avg_px - state.entry_price)
+    fees  = P.fee * (avg_px + state.entry_price) * filled
+    pnl   = gross - fees
+    state.equity += pnl
+    state.position_qty = max(0.0, state.position_qty - filled)
+    # entry_price (cost basis) remains same for remaining qty
+    if state.position_qty == 0.0:
+        state.entry_price = 0.0
+    return pnl
+
+def update_vwap_on_buy(state: PaperState, add_qty: float, avg_px: float):
+    if add_qty <= 0:
+        return
+    if state.position_qty <= 0:
+        state.position_qty = add_qty
+        state.entry_price  = avg_px
+    else:
+        new_qty = state.position_qty + add_qty
+        state.entry_price = (state.entry_price * state.position_qty + avg_px * add_qty) / new_qty
+        state.position_qty = new_qty
 
 def live_paper_loop_okx(symbol: str, P: Params):
     ex = make_exchange("okx")
     ex.load_markets()
 
+    live_limit = max(5 * P.band_window, 200)
     state = PaperState(equity=P.start_equity, day_str=today_syd_str(), peak_equity_today=P.start_equity)
     print(f"[paper] starting OKX Demo on {symbol} | timeframe={P.timeframe} | start_equity={P.start_equity}")
 
     start_health_server()
+    sleep_s = max(30, timeframe_to_seconds(P.timeframe) // 2)
 
     while True:
         try:
             heartbeat()
             reset_daily_if_needed(state)
-            check_daily_cap(state, P.daily_loss_cap)
+            cap_hit = check_daily_cap(state, P.daily_loss_cap)
 
-            df = fetch_history(ex, symbol, P.timeframe, P.lookback)
-            _, up, lo = bollinger(df["close"], P.band_window, P.k)
+            df = fetch_history(ex, symbol, P.timeframe, live_limit)
+            ma, up, lo = bollinger(df["close"], P.band_window, P.k)
             last = df.iloc[-1]
-            px = float(last["close"])
+            px = float(last["close"]); hi = float(last["high"]); lw = float(last["low"])
             bb_up, bb_lo = float(up.iloc[-1]), float(lo.iloc[-1])
             ts = df.index[-1].isoformat()
 
-            # EXIT
+            # Optional: flatten if daily cap hit
+            if cap_hit and CAP_FLATTEN and state.position_qty > 0.0:
+                filled, vwap, orders = ioc_with_retries(ex, symbol, 'sell', state.position_qty, px)
+                if filled > 0:
+                    pnl = realize_pnl_on_sell(state, filled, vwap, P)
+                    append_trade_csv({
+                        "ts": ts, "symbol": symbol, "side": "sell", "qty": f"{filled:.8f}",
+                        "price": f"{vwap:.2f}", "order_id": orders[-1]["id"] if orders else "",
+                        "event": "CAP_FLATTEN", "pnl": f"{pnl:.2f}", "equity_after": f"{state.equity:.2f}",
+                        "notes": f"retries={len(orders)-1}"
+                    })
+                    print(f"[FLAT] filled={filled:.6f} @~{vwap:.2f} pnl={pnl:.2f} eq={state.equity:.2f}")
+                else:
+                    append_trade_csv({
+                        "ts": ts, "symbol": symbol, "side": "sell", "qty": f"{state.position_qty:.8f}",
+                        "price": f"{px:.2f}", "order_id": "", "event": "NOFILL",
+                        "pnl": "", "equity_after": f"{state.equity:.2f}", "notes": "cap_flatten"
+                    })
+
+            # EXIT (stop/take/band)
             if state.position_qty > 0.0:
                 stop = state.entry_price*(1 - P.sl)
                 take = state.entry_price*(1 + P.tp)
-                if px >= bb_up or px >= take or float(last["low"]) <= stop:
-                    price = px * (1 - 0.001)  # cross the spread
-                    resp = place_limit_ioc(ex, symbol, 'sell', state.position_qty, price)
-                    fill_price = price
-                    gross = state.position_qty * (fill_price - state.entry_price)
-                    fees = P.fee * (fill_price + state.entry_price) * state.position_qty
-                    pnl = gross - fees
-                    state.equity += pnl
-                    append_trade_csv({
-                        "ts": ts, "symbol": symbol, "side": "sell", "qty": f"{state.position_qty:.8f}",
-                        "price": f"{fill_price:.2f}", "order_id": resp.get("id"),
-                        "event": "EXIT", "pnl": f"{pnl:.2f}", "equity_after": f"{state.equity:.2f}",
-                        "notes": f"bb_up={bb_up:.2f} stop={stop:.2f} take={take:.2f}"
-                    })
-                    print(f"[EXIT] qty={state.position_qty:.6f} @~{fill_price:.2f} pnl={pnl:.2f} eq={state.equity:.2f}")
-                    state.position_qty = 0.0
-                    state.entry_price = 0.0
+                hit_stop = lw <= stop
+                hit_take = (hi >= take) or (hi >= bb_up)
+                if hit_stop or hit_take:
+                    filled, vwap, orders = ioc_with_retries(ex, symbol, 'sell', state.position_qty, px)
+                    if filled > 0:
+                        pnl = realize_pnl_on_sell(state, filled, vwap, P)
+                        append_trade_csv({
+                            "ts": ts, "symbol": symbol, "side": "sell", "qty": f"{filled:.8f}",
+                            "price": f"{vwap:.2f}", "order_id": orders[-1]["id"] if orders else "",
+                            "event": "EXIT", "pnl": f"{pnl:.2f}", "equity_after": f"{state.equity:.2f}",
+                            "notes": f"bb_up={bb_up:.2f} stop={stop:.2f} take={take:.2f} retries={len(orders)-1}"
+                        })
+                        print(f"[EXIT] filled={filled:.6f} @~{vwap:.2f} pnl={pnl:.2f} eq={state.equity:.2f}")
+                    else:
+                        append_trade_csv({
+                            "ts": ts, "symbol": symbol, "side": "sell", "qty": f"{state.position_qty:.8f}",
+                            "price": f"{px:.2f}", "order_id": "", "event": "NOFILL",
+                            "pnl": "", "equity_after": f"{state.equity:.2f}", "notes": "exit_nofill"
+                        })
 
-            # ENTRY
-            if state.trading_enabled and state.position_qty == 0.0 and px <= bb_lo:
-                risk_per_unit = max(1e-12, px * P.sl)
-                dollars = P.risk * state.equity
-                qty = max(0.0, dollars / risk_per_unit)
-                if qty > 0.0:
-                    price = px * (1 + 0.001)
-                    resp = place_limit_ioc(ex, symbol, 'buy', qty, price)
-                    state.position_qty = qty
-                    state.entry_price = px  # approximate
-                    append_trade_csv({
-                        "ts": ts, "symbol": symbol, "side": "buy", "qty": f"{qty:.8f}",
-                        "price": f"{price:.2f}", "order_id": resp.get("id"),
-                        "event": "ENTRY", "pnl": "", "equity_after": f"{state.equity:.2f}",
-                        "notes": f"bb_lo={bb_lo:.2f}"
-                    })
-                    print(f"[ENTRY] qty={qty:.6f} @~{price:.2f} eq={state.equity:.2f}")
+            # ENTRY or SCALE-IN
+            can_enter = (lw <= bb_lo) and state.trading_enabled and not cap_hit
+            if can_enter:
+                # if flat -> normal entry sizing; if in position and scaling allowed -> add
+                is_scale_in = (state.position_qty > 0.0 and ALLOW_SCALE_IN and state.scale_ins < MAX_SCALE_INS)
+                gap_ok = (px <= state.entry_price*(1 - SCALE_IN_GAP_PCT)) if is_scale_in else True
+                if (state.position_qty == 0.0) or (is_scale_in and gap_ok):
+                    risk_per_unit = max(1e-12, px * P.sl)
+                    dollars = P.risk * state.equity
+                    raw_qty = max(0.0, dollars / risk_per_unit)
+                    if raw_qty > 0:
+                        filled, vwap, orders = ioc_with_retries(ex, symbol, 'buy', raw_qty, px)
+                        if filled > 0:
+                            update_vwap_on_buy(state, filled, vwap)
+                            if is_scale_in:
+                                state.scale_ins += 1
+                            append_trade_csv({
+                                "ts": ts, "symbol": symbol, "side": "buy", "qty": f"{filled:.8f}",
+                                "price": f"{vwap:.2f}", "order_id": orders[-1]["id"] if orders else "",
+                                "event": "ENTRY" if state.scale_ins==0 else "ADD",
+                                "pnl": "", "equity_after": f"{state.equity:.2f}",
+                                "notes": f"bb_lo={bb_lo:.2f} retries={len(orders)-1} scale_ins={state.scale_ins}"
+                            })
+                            tag = "ENTRY" if state.scale_ins==0 else f"ADD#{state.scale_ins}"
+                            print(f"[{tag}] filled={filled:.6f} @~{vwap:.2f} pos={state.position_qty:.6f} vwap={state.entry_price:.2f}")
+                        else:
+                            append_trade_csv({
+                                "ts": ts, "symbol": symbol, "side": "buy", "qty": f"{raw_qty:.8f}",
+                                "price": f"{px:.2f}", "order_id": "", "event": "NOFILL",
+                                "pnl": "", "equity_after": f"{state.equity:.2f}",
+                                "notes": f"entry_nofill retries={len(orders)-1}"
+                            })
+                            print(f"[ENTRY] no fill (req {raw_qty:.6f})")
 
         except Exception as e:
             print("[loop] error:", e)
             print(traceback.format_exc())
 
-        time.sleep(60)  # run once/min; bars are typically 1h
+        time.sleep(sleep_s)
 
 # ==============================
 # CLI entrypoints
@@ -328,18 +531,18 @@ def live_paper_loop_okx(symbol: str, P: Params):
 def run_backtest():
     EXCHANGE = os.getenv("EXCHANGE", "okx").lower()
     SYMBOL   = P.symbol_okx if EXCHANGE == "okx" else P.symbol_kraken
-    ex = make_exchange(EXCHANGE)
-    ex.load_markets()
-    df = fetch_history(ex, SYMBOL, P.timeframe, P.lookback)
+    ex = make_exchange(EXCHANGE); ex.load_markets()
+    limit = max(5 * P.band_window, min(P.lookback, 3000))
+    df = fetch_history(ex, SYMBOL, P.timeframe, limit)
     baseline = backtest(df, P)
     print("Baseline", EXCHANGE.upper(), SYMBOL, P.timeframe, "→", baseline)
 
 def run_optimize():
     EXCHANGE = os.getenv("EXCHANGE", "okx").lower()
     SYMBOL   = P.symbol_okx if EXCHANGE == "okx" else P.symbol_kraken
-    ex = make_exchange(EXCHANGE)
-    ex.load_markets()
-    df = fetch_history(ex, SYMBOL, P.timeframe, P.lookback)
+    ex = make_exchange(EXCHANGE); ex.load_markets()
+    limit = max(5 * P.band_window, min(P.lookback, 3000))
+    df = fetch_history(ex, SYMBOL, P.timeframe, limit)
     top = optimize_params(df, P)
     print("\nTop params on", P.timeframe)
     if not top:
@@ -353,7 +556,6 @@ def run_optimize():
         print(tf, rows[0] if rows else "No result")
 
 def run_paper():
-    # OKX Demo paper loop
     symbol = P.symbol_okx
     live_paper_loop_okx(symbol, P)
 
