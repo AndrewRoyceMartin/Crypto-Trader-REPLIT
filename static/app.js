@@ -2433,6 +2433,21 @@ function updateElementSafely(elementId, value) {
     }
 }
 
+// Format currency with proper symbols and conversion
+function formatCurrency(amount, currency = null, exchangeRate = 1) {
+    if (typeof amount !== 'number' || isNaN(amount)) {
+        return '$0.00';
+    }
+    
+    const convertedAmount = amount * exchangeRate;
+    const symbol = getCurrencySymbol(currency || getCurrentCurrency());
+    
+    return symbol + Number(convertedAmount).toLocaleString('en-US', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    });
+}
+
 // Enhanced portfolio summary update function
 function updatePortfolioSummary(portfolioData) {
     console.log("Updating enhanced portfolio summary with KPIs");
@@ -2555,16 +2570,23 @@ function initializePortfolioCharts() {
                     plugins: {
                         title: {
                             display: true,
-                            text: 'Portfolio Value Trend'
+                            text: 'Portfolio Value Trend',
+                            color: '#333'
                         },
                         legend: {
                             display: false
                         }
                     },
                     scales: {
+                        x: {
+                            ticks: {
+                                color: '#333'
+                            }
+                        },
                         y: {
                             beginAtZero: false,
                             ticks: {
+                                color: '#333',
                                 callback: function(value) {
                                     return '$' + Number(value).toLocaleString();
                                 }
@@ -2599,10 +2621,14 @@ function initializePortfolioCharts() {
                     plugins: {
                         title: {
                             display: true,
-                            text: 'Position Distribution'
+                            text: 'Position Distribution',
+                            color: '#333'
                         },
                         legend: {
-                            position: 'bottom'
+                            position: 'bottom',
+                            labels: {
+                                color: '#333'
+                            }
                         }
                     }
                 }
@@ -2636,15 +2662,22 @@ function initializePortfolioCharts() {
                     plugins: {
                         title: {
                             display: true,
-                            text: 'Top/Bottom Performers'
+                            text: 'Top/Bottom Performers',
+                            color: '#333'
                         },
                         legend: {
                             display: false
                         }
                     },
                     scales: {
+                        x: {
+                            ticks: {
+                                color: '#333'
+                            }
+                        },
                         y: {
                             ticks: {
+                                color: '#333',
                                 callback: function(value) {
                                     return value + '%';
                                 }
