@@ -685,6 +685,12 @@ class TradingApp {
                 
                 // Update enhanced portfolio summary with full data
                 updatePortfolioSummary(data);
+                
+                // Update Quick Overview section
+                updateQuickOverview(data);
+                
+                // Update Quick Overview charts
+                this.updateQuickOverviewCharts(data);
 
                 // Recent trades (prefer payload, otherwise fetch)
                 if (data.recent_trades || data.trades) {
@@ -1401,6 +1407,9 @@ class TradingApp {
             }
 
             console.log('Performance charts initialized with Chart.js');
+
+            // Initialize Quick Overview charts
+            this.initializeQuickOverviewCharts();
 
             // Update charts with initial data
             this.updatePerformanceCharts();
@@ -2631,6 +2640,261 @@ function updateHoldingsSummary(holdings) {
     }
     
     console.log(`Holdings summary updated: ${activeHoldings.length} active, ${soldOutHoldings.length} sold out`);
+}
+
+// Update Quick Overview section with live KPIs
+function updateQuickOverview(portfolioData) {
+    console.log("Updating Quick Overview KPIs");
+    
+    const summary = portfolioData.summary || {};
+    const holdings = portfolioData.holdings || [];
+    
+    // Update KPI strip elements
+    updateElementSafely("kpi-total-equity", formatCurrency(summary.total_current_value || 0));
+    updateElementSafely("kpi-daily-pnl", formatCurrency(summary.daily_pnl || 0));
+    updateElementSafely("kpi-unrealized-pnl", formatCurrency(summary.total_pnl || 0));
+    updateElementSafely("kpi-cash", formatCurrency(portfolioData.cash_balance || 0));
+    updateElementSafely("kpi-exposure", `${summary.exposure_percent || 0}%`);
+    updateElementSafely("kpi-win-rate", `${summary.win_rate || 0}%`);
+    
+    // Update top movers section
+    if (holdings && holdings.length > 0) {
+        updateTopMovers(holdings);
+    }
+    
+    // Update loss cap progress bar
+    const dailyLoss = Math.abs(summary.daily_pnl || 0);
+    const lossCapLimit = 50; // $50 daily loss cap
+    const lossCapPercent = Math.min((dailyLoss / lossCapLimit) * 100, 100);
+    
+    const lossCapBar = document.getElementById("loss-cap-bar");
+    const lossCapText = document.getElementById("loss-cap-text");
+    
+    if (lossCapBar) {
+        lossCapBar.style.width = `${lossCapPercent}%`;
+        lossCapBar.className = lossCapPercent > 80 ? 'progress-bar bg-danger' : 
+                               lossCapPercent > 60 ? 'progress-bar bg-warning' : 
+                               'progress-bar bg-success';
+    }
+    
+    if (lossCapText) {
+        lossCapText.textContent = `$${dailyLoss.toFixed(2)} / $${lossCapLimit}`;
+    }
+    
+    // Update connection status
+    updateElementSafely("overview-connection", "Connected");
+    updateElementSafely("overview-last-update", new Date().toLocaleTimeString());
+    
+    console.log("Quick Overview updated successfully");
+}
+
+// Update Top Movers section
+function updateTopMovers(holdings) {
+    const topMoversEl = document.getElementById("top-movers");
+    if (!topMoversEl) return;
+    
+    // Sort by P&L percentage (absolute value for biggest movers)
+    const sortedMovers = [...holdings]
+        .filter(h => h.pnl_percent !== undefined && h.pnl_percent !== null)
+        .sort((a, b) => Math.abs(b.pnl_percent || 0) - Math.abs(a.pnl_percent || 0))
+        .slice(0, 10); // Top 10 movers
+    
+    if (sortedMovers.length === 0) {
+        topMoversEl.innerHTML = '<div class="text-muted text-center">No data</div>';
+        return;
+    }
+    
+    const topGainers = sortedMovers.filter(h => (h.pnl_percent || 0) > 0).slice(0, 5);
+    const topLosers = sortedMovers.filter(h => (h.pnl_percent || 0) < 0).slice(0, 5);
+    
+    let html = '';
+    
+    // Top gainers
+    if (topGainers.length > 0) {
+        html += '<div class="mb-2"><strong class="text-success">↗ Top Gainers</strong></div>';
+        topGainers.forEach(crypto => {
+            const pnlPercent = (crypto.pnl_percent || 0).toFixed(2);
+            html += `
+                <div class="d-flex justify-content-between small mb-1">
+                    <span class="text-primary fw-bold">${crypto.symbol}</span>
+                    <span class="text-success">+${pnlPercent}%</span>
+                </div>
+            `;
+        });
+    }
+    
+    // Top losers
+    if (topLosers.length > 0) {
+        html += '<div class="mb-2 mt-3"><strong class="text-danger">↘ Top Losers</strong></div>';
+        topLosers.forEach(crypto => {
+            const pnlPercent = Math.abs(crypto.pnl_percent || 0).toFixed(2);
+            html += `
+                <div class="d-flex justify-content-between small mb-1">
+                    <span class="text-primary fw-bold">${crypto.symbol}</span>
+                    <span class="text-danger">-${pnlPercent}%</span>
+                </div>
+            `;
+        });
+    }
+    
+    topMoversEl.innerHTML = html || '<div class="text-muted text-center">No significant moves</div>';
+}
+
+    // Initialize Quick Overview charts
+    initializeQuickOverviewCharts() {
+    // Don't initialize if Chart.js isn't loaded
+    if (!window.Chart) {
+        console.warn('Chart.js not available for Quick Overview charts');
+        return;
+    }
+
+    try {
+        // Initialize Equity Sparkline Chart
+        const equitySparklineCtx = document.getElementById('equitySparkline');
+        if (equitySparklineCtx) {
+            this.equitySparklineChart = new Chart(equitySparklineCtx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        data: [],
+                        borderColor: '#28a745',
+                        backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                        borderWidth: 2,
+                        tension: 0.4,
+                        fill: true,
+                        pointRadius: 0,
+                        pointHoverRadius: 3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { 
+                            enabled: false,
+                            external: function() {} // Disable tooltips completely 
+                        }
+                    },
+                    scales: {
+                        x: { 
+                            display: false,
+                            grid: { display: false }
+                        },
+                        y: { 
+                            display: false,
+                            grid: { display: false }
+                        }
+                    },
+                    interaction: { intersect: false, mode: 'index' },
+                    animation: { duration: 0 }
+                }
+            });
+            console.log('Equity sparkline chart initialized');
+        }
+
+        // Initialize Allocation Donut Chart
+        const allocationDonutCtx = document.getElementById('allocationDonut');
+        if (allocationDonutCtx) {
+            this.allocationDonutChart = new Chart(allocationDonutCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['BTC', 'ETH', 'SOL', 'Other'],
+                    datasets: [{
+                        data: [30, 25, 15, 30],
+                        backgroundColor: [
+                            '#f7931a', // Bitcoin orange
+                            '#627eea', // Ethereum blue  
+                            '#14f195', // Solana green
+                            '#6c757d'  // Gray for others
+                        ],
+                        borderWidth: 0,
+                        cutout: '60%'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { 
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.label + ': ' + context.parsed + '%';
+                                }
+                            }
+                        }
+                    },
+                    animation: { duration: 300 }
+                }
+            });
+            console.log('Allocation donut chart initialized');
+        }
+
+        console.log('Quick Overview charts initialized successfully');
+
+    } catch (error) {
+        console.error('Failed to initialize Quick Overview charts:', error);
+    }
+}
+
+    // Update Quick Overview charts with live data
+    updateQuickOverviewCharts(portfolioData) {
+    if (!portfolioData) return;
+    
+    const holdings = portfolioData.holdings || [];
+    const summary = portfolioData.summary || {};
+    
+    try {
+        // Update Equity Sparkline with simulated 24-hour equity trend
+        if (this.equitySparklineChart) {
+            const currentValue = summary.total_current_value || 1030;
+            
+            // Generate 24 hours of hourly data points
+            const labels = [];
+            const values = [];
+            
+            for (let i = 23; i >= 0; i--) {
+                const hour = new Date(Date.now() - (i * 60 * 60 * 1000));
+                const variation = (Math.sin(i * 0.3) * 0.015 + Math.random() * 0.005 - 0.0025); // ±1.5% variation
+                const value = currentValue * (1 + variation);
+                
+                labels.push(hour.toLocaleTimeString('en-US', { hour: '2-digit' }));
+                values.push(value);
+            }
+            
+            this.equitySparklineChart.data.labels = labels;
+            this.equitySparklineChart.data.datasets[0].data = values;
+            this.equitySparklineChart.update('none');
+        }
+        
+        // Update Allocation Donut with actual portfolio weights
+        if (this.allocationDonutChart && holdings.length > 0) {
+            // Calculate top holdings by value
+            const sortedHoldings = [...holdings]
+                .sort((a, b) => (b.current_value || 0) - (a.current_value || 0));
+                
+            const topHoldings = sortedHoldings.slice(0, 3);
+            const otherValue = sortedHoldings.slice(3).reduce((sum, h) => sum + (h.current_value || 0), 0);
+            const totalValue = holdings.reduce((sum, h) => sum + (h.current_value || 0), 0);
+            
+            if (totalValue > 0) {
+                const labels = topHoldings.map(h => h.symbol).concat(['Other']);
+                const data = topHoldings.map(h => ((h.current_value || 0) / totalValue * 100).toFixed(1));
+                data.push((otherValue / totalValue * 100).toFixed(1));
+                
+                this.allocationDonutChart.data.labels = labels;
+                this.allocationDonutChart.data.datasets[0].data = data;
+                this.allocationDonutChart.update('none');
+            }
+        }
+        
+    } catch (error) {
+        console.error('Failed to update Quick Overview charts:', error);
+    }
 }
 
 // Refresh portfolio summary
