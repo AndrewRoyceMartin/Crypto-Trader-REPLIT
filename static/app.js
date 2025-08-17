@@ -2209,6 +2209,55 @@ function showCurrentPositions() {
     console.log('Switched to Current Holdings');
 }
 
+async function executeTakeProfit() {
+    // Get button element to show loading state
+    const button = document.getElementById('take-profit-btn');
+    if (!button) return;
+    
+    // Show loading state
+    const originalText = button.innerHTML;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Processing...';
+    button.disabled = true;
+    
+    try {
+        const response = await fetch('/api/execute-take-profit', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+
+        const data = await response.json();
+        
+        if (data.success) {
+            const executedCount = data.executed_trades?.length || 0;
+            if (executedCount > 0) {
+                window.tradingApp.showToast(`Take profit executed on ${executedCount} cryptocurrency(ies)`, 'success');
+                
+                // Show details of executed trades
+                data.executed_trades.forEach(trade => {
+                    console.log(`Take profit executed: ${trade.symbol} at $${trade.price} (${trade.profit_pct}% profit)`);
+                });
+                
+                // Refresh data displays
+                window.tradingApp.updateDashboard();
+                window.tradingApp.updateCryptoPortfolio();
+            } else {
+                window.tradingApp.showToast('No cryptocurrencies currently meet take profit conditions', 'info');
+            }
+        } else {
+            window.tradingApp.showToast(`Take profit failed: ${data.error}`, 'error');
+        }
+    } catch (error) {
+        window.tradingApp.showToast(`Error executing take profit: ${error.message}`, 'error');
+        console.error('Take profit execution error:', error);
+    } finally {
+        // Restore button state
+        button.innerHTML = originalText;
+        button.disabled = false;
+    }
+}
+
 // New navigation functions for separate pages
 function showPortfolioPage() {
     // Hide all sections
