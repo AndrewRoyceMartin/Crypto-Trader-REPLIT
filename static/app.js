@@ -827,13 +827,19 @@ class TradingApp {
 
             // Quantity cell (to make 13 columns) - Show zero if sold out
             const quantityCell = document.createElement('td');
-            const displayQuantity = crypto.has_position === false ? 0 : quantity;
+            
+            // Check if this is a sold out position (low value indicates sold position)
+            const isSoldOut = value <= 0.01 || crypto.has_position === false || quantity <= 0;
+            const displayQuantity = isSoldOut ? 0 : quantity;
+            
             quantityCell.textContent = this.num(displayQuantity).toFixed(6);
             
-            // Highlight sold out positions
-            if (!crypto.has_position || quantity <= 0 || value <= 0.01) {
+            // Highlight sold out positions with special styling
+            if (isSoldOut) {
                 quantityCell.classList.add('text-warning');
                 quantityCell.style.fontWeight = 'bold';
+                quantityCell.style.backgroundColor = '#fff3cd'; // Light yellow background
+                quantityCell.title = 'Position sold through trading';
             }
 
             // Calculate target prices based on current price (simple +/- 5% for demo)
@@ -2543,9 +2549,9 @@ function updateHoldingsSummary(holdings) {
         return;
     }
     
-    // Separate active holdings from sold-out positions
-    const activeHoldings = holdings.filter(h => h.has_position && (h.quantity > 0 || h.current_value > 0.01));
-    const soldOutHoldings = holdings.filter(h => !h.has_position || h.quantity <= 0 || h.current_value <= 0.01);
+    // Separate active holdings from sold-out positions (use current_value as main indicator)
+    const activeHoldings = holdings.filter(h => h.current_value > 0.01);
+    const soldOutHoldings = holdings.filter(h => h.current_value <= 0.01);
     
     // Update summary counts
     updateElementSafely("holdings-total-assets", holdings.length);
