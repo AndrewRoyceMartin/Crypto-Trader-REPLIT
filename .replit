@@ -4,7 +4,7 @@ expertMode = true
 
 [nix]
 channel = "stable-25_05"
-packages = ["glibcLocales", "prow", "jq"]
+packages = ["glibcLocales", "jq", "prow"]
 
 [workflows]
 runButton = "Project"

@@ -9,8 +9,15 @@ import sys
 import logging
 import threading
 import time
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from flask import Flask, jsonify, request
+
+# For local timezone support
+try:
+    import pytz
+    LOCAL_TZ = pytz.timezone('America/New_York')  # Default to EST/EDT, user can change
+except ImportError:
+    LOCAL_TZ = timezone.utc  # Fallback to UTC if pytz not available
 
 # Set up logging for deployment
 logging.basicConfig(
@@ -55,7 +62,7 @@ _cache_lock = threading.RLock()
 def cache_put(sym: str, tf: str, df):
     """Store DataFrame in cache with TTL."""
     with _cache_lock:
-        _price_cache[(sym, tf)] = {"df": df, "ts": datetime.utcnow()}
+        _price_cache[(sym, tf)] = {"df": df, "ts": datetime.now(LOCAL_TZ)}
 
 def cache_get(sym: str, tf: str):
     """Retrieve DataFrame from cache if not expired."""
@@ -63,7 +70,7 @@ def cache_get(sym: str, tf: str):
         item = _price_cache.get((sym, tf))
     if not item:
         return None
-    if (datetime.utcnow() - item["ts"]).total_seconds() > PRICE_TTL_SEC:
+    if (datetime.now(LOCAL_TZ) - item["ts"]).total_seconds() > PRICE_TTL_SEC:
         return None
     return item["df"]
 
@@ -95,7 +102,7 @@ def create_initial_purchase_trades(mode, trade_type):
                     "total_value": 10.0,  # Each investment is $10
                     "type": "INITIAL_PURCHASE",
                     "mode": mode,
-                    "timestamp": datetime.utcnow().isoformat(),
+                    "timestamp": datetime.now(LOCAL_TZ).isoformat(),
                     "status": "completed"
                 }
                 initial_trades.append(trade_record)
@@ -524,7 +531,7 @@ def start_trading():
             "mode": mode,
             "active": True,
             "strategy": "portfolio",
-            "start_time": datetime.utcnow(),
+            "start_time": datetime.now(LOCAL_TZ),
             "type": trading_mode
         })
         
@@ -645,9 +652,9 @@ def api_status():
     return jsonify({
         "status": "operational",
         "ready": True,
-        "uptime": (datetime.utcnow() - server_start_time).total_seconds(),
+        "uptime": (datetime.now(LOCAL_TZ) - server_start_time).total_seconds(),
         "symbols_loaded": warmup.get("loaded", []),
-        "last_update": datetime.utcnow().isoformat(),
+        "last_update": datetime.now(LOCAL_TZ).isoformat(),
         "trading_status": {
             "mode": trading_state["mode"],
             "active": trading_state["active"],
@@ -663,11 +670,11 @@ def api_status():
             "daily_pnl_percent": 3.76
         },
         "recent_trades": recent_initial_trades,
-        "server_uptime_seconds": (datetime.utcnow() - server_start_time).total_seconds()
+        "server_uptime_seconds": (datetime.now(LOCAL_TZ) - server_start_time).total_seconds()
     })
 
 # Global server start time for uptime calculation
-server_start_time = datetime.utcnow()
+server_start_time = datetime.now(LOCAL_TZ)
 
 @app.route("/api/live-prices")
 def api_live_prices():
@@ -690,7 +697,7 @@ def api_live_prices():
                     formatted_prices[symbol] = {
                         'price': price,
                         'is_live': True,
-                        'timestamp': datetime.utcnow().isoformat(),
+                        'timestamp': datetime.now(LOCAL_TZ).isoformat(),
                         'source': 'OKX_Simulation'
                     }
                 else:
@@ -698,7 +705,7 @@ def api_live_prices():
                     formatted_prices[symbol] = {
                         'price': 1.0,
                         'is_live': False,
-                        'timestamp': datetime.utcnow().isoformat(),
+                        'timestamp': datetime.now(LOCAL_TZ).isoformat(),
                         'source': 'OKX_Fallback'
                     }
             except Exception as sym_error:
@@ -706,7 +713,7 @@ def api_live_prices():
                 formatted_prices[symbol] = {
                     'price': 1.0,
                     'is_live': False,
-                    'timestamp': datetime.utcnow().isoformat(),
+                    'timestamp': datetime.now(LOCAL_TZ).isoformat(),
                     'source': 'OKX_Error_Fallback'
                 }
         
@@ -734,7 +741,7 @@ def api_exchange_rates():
         return jsonify({
             "rates": exchange_rates,
             "base": "USD",
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.now(LOCAL_TZ).isoformat()
         })
         
     except Exception as e:
@@ -779,7 +786,7 @@ def api_export_ato():
         
         # Add trading data from current portfolio holdings
         aud_rate = 1.52  # USD to AUD conversion rate
-        today = datetime.now().strftime('%Y-%m-%d')
+        today = datetime.now(LOCAL_TZ).strftime('%Y-%m-%d')
         
         for i, crypto in enumerate(cryptocurrencies):
             # Calculate initial purchase price in USD then convert to AUD
@@ -804,7 +811,7 @@ def api_export_ato():
         writer.writerow(['# ATO Cryptocurrency Tax Reporting'])
         writer.writerow(['# This export contains all cryptocurrency transactions for tax reporting'])
         writer.writerow(['# Consult with a tax professional for proper ATO compliance'])
-        writer.writerow(['# Generated on:', datetime.now().strftime('%Y-%m-%d %H:%M:%S')])
+        writer.writerow(['# Generated on:', datetime.now(LOCAL_TZ).strftime('%Y-%m-%d %H:%M:%S')])
         
         output.seek(0)
         csv_data = output.getvalue()
@@ -816,7 +823,7 @@ def api_export_ato():
             csv_data,
             mimetype='text/csv',
             headers={
-                'Content-Disposition': f'attachment; filename=ato_crypto_export_{datetime.now().strftime("%Y%m%d")}.csv'
+                'Content-Disposition': f'attachment; filename=ato_crypto_export_{datetime.now(LOCAL_TZ).strftime("%Y%m%d")}.csv'
             }
         )
         
@@ -890,7 +897,7 @@ def api_price_source_status():
             "status": "connected" if is_connected else "disconnected",
             "api_provider": "OKX_Simulated_Exchange",
             "exchange_type": "Simulated",
-            "last_update": datetime.utcnow().isoformat(),
+            "last_update": datetime.now(LOCAL_TZ).isoformat(),
             "symbols_loaded": warmup.get("loaded", [])
         })
         
@@ -921,7 +928,7 @@ def api_portfolio_summary():
             "total_pnl_percent": okx_portfolio['total_pnl_percent'],
             "total_cryptos": len(okx_portfolio['holdings']),
             "cash_balance": okx_portfolio.get('cash_balance', 0),
-            "last_update": okx_portfolio.get('last_update', datetime.utcnow().isoformat())
+            "last_update": okx_portfolio.get('last_update', datetime.now(LOCAL_TZ).isoformat())
         }
         return jsonify(summary)
     except Exception as e:
@@ -1017,7 +1024,7 @@ def api_start_trading():
             "active": True,
             "strategy": "Bollinger Bands",
             "type": trade_type,
-            "start_time": datetime.utcnow().isoformat()
+            "start_time": datetime.now(LOCAL_TZ).isoformat()
         })
         
         # Initialize portfolio when trading starts
@@ -1354,7 +1361,7 @@ def api_reset_entire_program():
         
         # Reset server start time and uptime tracking
         global server_start_time
-        server_start_time = datetime.utcnow()
+        server_start_time = datetime.now(LOCAL_TZ)
         
         # Reset trading state to stopped
         trading_state.update({
@@ -1411,12 +1418,12 @@ def render_loading_skeleton(message="Loading live cryptocurrency data...", error
     """Render a loading skeleton UI that polls /ready endpoint."""
     elapsed = ""
     if warmup.get("start_time"):
-        elapsed_sec = (datetime.now() - warmup["start_time"]).total_seconds()
+        elapsed_sec = (datetime.now(LOCAL_TZ) - warmup["start_time"]).total_seconds()
         elapsed = f" ({elapsed_sec:.1f}s)"
     
     elapsed_sec = 0
     if warmup.get("start_time"):
-        elapsed_sec = (datetime.now() - warmup["start_time"]).total_seconds()
+        elapsed_sec = (datetime.now(LOCAL_TZ) - warmup["start_time"]).total_seconds()
     progress_width = min(90, (elapsed_sec / STARTUP_TIMEOUT_SEC) * 100) if elapsed_sec else 0
     status_color = "red" if error else "orange"
     
@@ -1509,7 +1516,7 @@ def api_okx_status():
             'exchange_name': 'OKX Exchange',
             'trading_mode': 'Paper Trading',
             'initialized': True,
-            'last_sync': datetime.utcnow().isoformat() if connected else None,
+            'last_sync': datetime.now(LOCAL_TZ).isoformat() if connected else None,
             'market_status': 'open' if connected else 'closed'
         }
         

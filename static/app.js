@@ -80,10 +80,69 @@ class TradingApp {
             const now = new Date();
             const diffMs = now - date;
             const diffHours = diffMs / (1000 * 60 * 60);
-            if (diffHours < 24) {
-                return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+            
+            // Always show local time with timezone info for clarity
+            if (diffHours < 1) {
+                const diffMins = Math.floor(diffMs / (1000 * 60));
+                return `${diffMins}min ago`;
+            } else if (diffHours < 24) {
+                return date.toLocaleTimeString([], { 
+                    hour: '2-digit', 
+                    minute: '2-digit',
+                    hour12: true 
+                });
+            } else if (diffHours < 168) { // Less than 7 days
+                return date.toLocaleDateString([], { 
+                    weekday: 'short',
+                    hour: '2-digit', 
+                    minute: '2-digit',
+                    hour12: true 
+                });
             }
-            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            return date.toLocaleDateString([], { 
+                month: 'short', 
+                day: 'numeric',
+                hour: '2-digit', 
+                minute: '2-digit',
+                hour12: true 
+            });
+        } catch {
+            return 'N/A';
+        }
+    }
+    
+    formatDateTime(timestamp) {
+        if (!timestamp) return 'N/A';
+        try {
+            const date = new Date(timestamp);
+            if (isNaN(date.getTime())) return 'Invalid';
+            
+            return date.toLocaleString([], {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: true
+            });
+        } catch {
+            return 'N/A';
+        }
+    }
+    
+    formatTimeOnly(timestamp) {
+        if (!timestamp) return 'N/A';
+        try {
+            const date = new Date(timestamp);
+            if (isNaN(date.getTime())) return 'Invalid';
+            
+            return date.toLocaleTimeString([], {
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: true
+            });
         } catch {
             return 'N/A';
         }
@@ -282,7 +341,7 @@ class TradingApp {
                     serverConnectionText.className = 'text-success ms-1';
                     if (statusIcon) statusIcon.className = 'fas fa-wifi text-success me-1';
                 } else {
-                    const lastUpdate = data.last_update ? new Date(data.last_update).toLocaleTimeString() : 'unknown';
+                    const lastUpdate = data.last_update ? this.formatTimeOnly(data.last_update) : 'unknown';
                     serverConnectionText.textContent = `Disconnected (${lastUpdate})`;
                     serverConnectionText.className = 'text-danger ms-1';
                     if (statusIcon) statusIcon.className = 'fas fa-wifi text-danger me-1';
@@ -319,7 +378,7 @@ class TradingApp {
                     okxConnectionText.className = 'text-success ms-1';
                     if (statusIcon) statusIcon.className = 'fas fa-server text-success me-1';
                 } else {
-                    const lastSync = data.status.last_sync ? new Date(data.status.last_sync).toLocaleTimeString() : 'never';
+                    const lastSync = data.status.last_sync ? this.formatTimeOnly(data.status.last_sync) : 'never';
                     okxConnectionText.textContent = `Offline (${lastSync})`;
                     okxConnectionText.className = 'text-danger ms-1';
                     if (statusIcon) statusIcon.className = 'fas fa-server text-danger me-1';
@@ -2124,7 +2183,7 @@ function updateQuickOverview(portfolioData) {
     if (lossCapText) lossCapText.textContent = `$${dailyLoss.toFixed(2)} / $${lossCapLimit}`;
 
     updateElementSafely("overview-connection", "Connected");
-    updateElementSafely("overview-last-update", new Date().toLocaleTimeString());
+    updateElementSafely("overview-last-update", window.tradingApp.formatTimeOnly(new Date()));
 }
 function updateTopMovers(holdings) {
     const el = document.getElementById("top-movers");
@@ -2243,7 +2302,7 @@ function updateQuickOverviewCharts(portfolioData) {
             for (let i = 23; i >= 0; i--) {
                 const hour = new Date(Date.now() - (i * 60 * 60 * 1000));
                 const variation = (Math.sin(i * 0.3) * 0.015 + Math.random() * 0.005 - 0.0025);
-                labels.push(hour.toLocaleTimeString('en-US', { hour: '2-digit' }));
+                labels.push(hour.toLocaleTimeString([], { hour: '2-digit', hour12: true }));
                 values.push(currentValue * (1 + variation));
             }
             window.equitySparklineChart.data.labels = labels;

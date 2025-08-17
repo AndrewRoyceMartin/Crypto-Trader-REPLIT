@@ -457,8 +457,8 @@
       const today = new Date();
       const oneYearAgo = new Date(today.getFullYear() - 1, today.getMonth(), today.getDate());
       
-      document.getElementById('perf-date-end').value = today.toISOString().split('T')[0];
-      document.getElementById('perf-date-start').value = oneYearAgo.toISOString().split('T')[0];
+      document.getElementById('perf-date-end').value = today.toLocaleDateString('en-CA'); // YYYY-MM-DD format
+      document.getElementById('perf-date-start').value = oneYearAgo.toLocaleDateString('en-CA');
     }
 
     function attachEventListeners() {
@@ -513,8 +513,8 @@
           break;
       }
 
-      document.getElementById('perf-date-start').value = start.toISOString().split('T')[0];
-      document.getElementById('perf-date-end').value = end.toISOString().split('T')[0];
+      document.getElementById('perf-date-start').value = start.toLocaleDateString('en-CA');
+      document.getElementById('perf-date-end').value = end.toLocaleDateString('en-CA');
     }
 
     async function loadInitialData() {
@@ -935,7 +935,11 @@
     }
 
     function formatDate(dateString) {
-      return new Date(dateString).toLocaleDateString();
+      return new Date(dateString).toLocaleDateString([], {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      });
     }
 
     function createHistogramBins(data, numBins) {
