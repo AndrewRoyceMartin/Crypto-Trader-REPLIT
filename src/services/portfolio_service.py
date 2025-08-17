@@ -201,18 +201,37 @@ class PortfolioService:
                             pnl = current_value - cost_basis
                             pnl_percent = (pnl / cost_basis) * 100 if cost_basis > 0 else 0
                             
+                            # Mark as live position
+                            has_position = True
+                            
                         else:
-                            # Use simulated historical purchase price for assets without real positions
-                            price_variation = (hash(symbol) % 20 - 10) / 100.0  # -10% to +10% variation
-                            historical_purchase_price = current_price * (1 - price_variation)
+                            # Check if this position has been fully sold (has trading history but no current position)
+                            has_trading_history = any(
+                                trade.get('instId', '').replace('-USDT-SWAP', '') == symbol 
+                                for trade in self.exchange.trades
+                            )
                             
-                            # Calculate quantity based on historical purchase price
-                            quantity = initial_investment / historical_purchase_price
-                            current_value = quantity * current_price
-                            
-                            # Calculate P&L based on price movement from purchase to now
-                            pnl = current_value - initial_investment
-                            pnl_percent = (pnl / initial_investment) * 100
+                            if has_trading_history:
+                                # Position was sold - show zero holdings
+                                quantity = 0.0
+                                current_value = 0.0
+                                pnl = -initial_investment  # Show full loss if position sold
+                                pnl_percent = -100.0
+                                has_position = False
+                                
+                            else:
+                                # Use simulated historical purchase price for assets without real positions
+                                price_variation = (hash(symbol) % 20 - 10) / 100.0  # -10% to +10% variation
+                                historical_purchase_price = current_price * (1 - price_variation)
+                                
+                                # Calculate quantity based on historical purchase price
+                                quantity = initial_investment / historical_purchase_price
+                                current_value = quantity * current_price
+                                
+                                # Calculate P&L based on price movement from purchase to now
+                                pnl = current_value - initial_investment
+                                pnl_percent = (pnl / initial_investment) * 100
+                                has_position = True
                         
                         holdings.append({
                             "rank": rank,
@@ -225,7 +244,7 @@ class PortfolioService:
                             "pnl": pnl,
                             "pnl_percent": pnl_percent,
                             "is_live": True,  # All OKX prices are simulated "live"
-                            "has_position": symbol in actual_positions  # Track real vs simulated
+                            "has_position": has_position  # Track real vs simulated positions
                         })
                         
                         total_value += current_value

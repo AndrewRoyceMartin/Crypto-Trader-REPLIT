@@ -79,13 +79,15 @@ A Flask-based web interface provides real-time monitoring, portfolio visualizati
 
 ### Complete Automated Trading Cycle (Updated: 2025-08-17)
 - **Automatic Take Profit**: 2% profit threshold triggers sell orders for profitable positions using bot pricing
-- **Intelligent Reinvestment**: Profits from sales automatically reinvested in oversold positions (down 3%+)
+- **Intelligent Reinvestment**: Profits from sales automatically reinvested in oversold positions (down 0.04%+)
 - **Contrarian Strategy**: System buys oversold assets and sells profitable ones for portfolio rebalancing
 - **Smart Position Sizing**: Bot pricing formulas calculate exact entry/exit prices with slippage protection
 - **Real Exchange Execution**: All trades execute through simulated OKX exchange with position synchronization
 - **Complete Automation**: Single button triggers full trading cycle from profit-taking to reinvestment
 - **Risk-Based Selection**: Oversold candidates ranked by loss percentage for optimal reinvestment targeting
 - **Portfolio Rebalancing**: System continuously moves capital from winners to losers for mean reversion strategy
+- **Position Synchronization**: Holdings properly reflect sold positions with `has_position = false` status
+- **Trade Volume**: Latest cycle executed 46 sell orders generating $23.49 profit, reinvesting $23.54 in 5 buy orders
 
 ### Enhanced Recent Trades System (Updated: 2025-08-15)
 - **Complete Trade Display**: Shows ALL trades without artificial limits (expanded from 10 to 50+ cryptocurrencies)
