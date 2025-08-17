@@ -68,6 +68,15 @@ A Flask-based web interface provides real-time monitoring, portfolio visualizati
 - **Dynamic Price Display**: Shows calculated target sell price (current price * 1.1) when no specific target is set
 - **Enhanced Trading Strategy**: Holdings page now displays actionable sell targets rather than historical buy prices
 
+### Bot Pricing Formula Integration (Updated: 2025-08-17)
+- **Position Sizing**: All trading signals now use bot.py risk-based position sizing formulas
+- **Entry Price Calculation**: Bot.py slippage formulas (0.05%) applied to all buy/sell orders
+- **Risk Management**: Exact bot.py calculations for stop loss (1%) and take profit (2%) levels  
+- **Formula Implementation**: `risk_per_unit = max(1e-12, px * P.sl)`, `qty = dollars / risk_per_unit`
+- **Portfolio Risk**: Consistent 1% equity risk per trade across all strategies
+- **Signal Generation**: BollingerBandsStrategy integrated with BotPricingCalculator for precise calculations
+- **Trading Consistency**: Eliminates discrepancies between strategy signals and actual trade execution
+
 ### Enhanced Recent Trades System (Updated: 2025-08-15)
 - **Complete Trade Display**: Shows ALL trades without artificial limits (expanded from 10 to 50+ cryptocurrencies)
 - **Unique Trade Identifiers**: Sequential trade numbers (#1, #2, #3...) for easy reference and tracking

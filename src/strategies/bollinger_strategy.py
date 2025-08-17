@@ -7,6 +7,7 @@ import numpy as np
 from typing import List
 from .base import BaseStrategy, Signal
 from ..indicators.technical import TechnicalIndicators
+from ..utils.bot_pricing import BotPricingCalculator, BotParams
 
 
 class BollingerBandsStrategy(BaseStrategy):
@@ -20,6 +21,15 @@ class BollingerBandsStrategy(BaseStrategy):
             config: Configuration object
         """
         super().__init__(config)
+        
+        # Initialize bot pricing calculator for accurate position sizing
+        self.bot_pricing = BotPricingCalculator(BotParams(
+            risk_per_trade=0.01,     # 1% risk per trade (from bot.py P.risk)
+            stop_loss_pct=0.01,      # 1% stop loss (from bot.py P.sl)
+            take_profit_pct=0.02,    # 2% take profit (from bot.py P.tp)
+            fee_rate=0.001,          # 0.1% fee (from bot.py P.fee)
+            slippage_pct=0.0005      # 0.05% slippage (from bot.py P.slip)
+        ))
         
         # Optimized strategy parameters
         self.bb_period = config.get_int('strategy', 'bb_period', 20)
@@ -247,13 +257,19 @@ class BollingerBandsStrategy(BaseStrategy):
                     # Fall back to confidence-based sizing
                     final_position_size = volatility_adjusted_size * (0.5 + confidence * 0.5)
                 
+                # Use bot.py pricing formulas for accurate position sizing
+                assumed_equity = 50000  # Default equity (would be passed from trader in real implementation)
+                bot_quantity, risk_amount = self.bot_pricing.calculate_position_size(current_price, assumed_equity)
+                bot_entry_price = self.bot_pricing.calculate_entry_price(current_price, 'buy')
+                bot_stop_loss, bot_take_profit = self.bot_pricing.calculate_stop_take_prices(bot_entry_price, 'buy')
+                
                 signal = Signal(
                     action='buy',
-                    price=current_price,
-                    size=final_position_size,
+                    price=bot_entry_price,     # Entry price with slippage from bot.py
+                    size=bot_quantity,         # Quantity calculated using bot.py formula
                     confidence=confidence,
-                    stop_loss=stop_loss,
-                    take_profit=take_profit
+                    stop_loss=bot_stop_loss,   # Stop loss using bot.py formula
+                    take_profit=bot_take_profit # Take profit using bot.py formula
                 )
                 
                 if self.validate_signal(signal):
@@ -319,13 +335,19 @@ class BollingerBandsStrategy(BaseStrategy):
                 else:
                     final_sell_size = volatility_adjusted_size * (0.5 + confidence * 0.5)
                 
+                # Use bot.py pricing formulas for sell signals
+                assumed_equity = 50000  # Default equity
+                bot_quantity, risk_amount = self.bot_pricing.calculate_position_size(current_price, assumed_equity)  
+                bot_entry_price = self.bot_pricing.calculate_entry_price(current_price, 'sell')
+                bot_stop_loss, bot_take_profit = self.bot_pricing.calculate_stop_take_prices(bot_entry_price, 'sell')
+                
                 signal = Signal(
                     action='sell',
-                    price=current_price,
-                    size=final_sell_size,
+                    price=bot_entry_price,     # Entry price with slippage from bot.py
+                    size=bot_quantity,         # Quantity using bot.py formula
                     confidence=confidence,
-                    stop_loss=stop_loss,
-                    take_profit=take_profit
+                    stop_loss=bot_stop_loss,   # Stop loss using bot.py formula
+                    take_profit=bot_take_profit # Take profit using bot.py formula
                 )
                 
                 if self.validate_signal(signal):

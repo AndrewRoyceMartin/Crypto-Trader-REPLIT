@@ -9,6 +9,7 @@ from typing import Dict, List, Optional
 from datetime import datetime
 from src.exchanges.simulated_okx import SimulatedOKX
 from src.data.portfolio_assets import MASTER_PORTFOLIO_ASSETS as PORTFOLIO_ASSETS
+from src.utils.bot_pricing import BotPricingCalculator, BotParams
 
 
 class PortfolioService:
