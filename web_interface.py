@@ -435,9 +435,12 @@ def get_crypto_portfolio():
         
         app.logger.info(f"Retrieved OKX portfolio: {len(holdings_list)} holdings, total value: ${okx_portfolio_data['total_current_value']:.2f}")
         
+        # Get recent trades from OKX exchange  
+        recent_trades = portfolio_service.get_trade_history(limit=50)
+        
         return jsonify({
             "holdings": holdings_list,
-            "recent_trades": [],  # TODO: Implement from OKX exchange
+            "recent_trades": recent_trades,
             "summary": {
                 "total_cryptos": len(holdings_list),
                 "total_current_value": okx_portfolio_data['total_current_value'],

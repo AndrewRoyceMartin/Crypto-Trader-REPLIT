@@ -1249,6 +1249,44 @@ def render_loading_skeleton(message="Loading live cryptocurrency data...", error
     </html>
     """
 
+# OKX Exchange Status Endpoint  
+@app.route("/api/okx-status")
+def api_okx_status():
+    """Get OKX exchange connection status."""
+    try:
+        # Use portfolio service to get exchange status
+        from src.services.portfolio_service import PortfolioService
+        from src.exchanges.simulated_okx import SimulatedOKX
+        
+        # Initialize OKX exchange for status check
+        config = {"demo": True}
+        exchange = SimulatedOKX(config)
+        connected = exchange.connect()
+        
+        status = {
+            'connected': connected,
+            'exchange_type': 'Simulated OKX',
+            'initialized': True,
+            'last_sync': datetime.utcnow().isoformat() if connected else None,
+            'market_status': 'open' if connected else 'closed'
+        }
+        
+        return jsonify({
+            'success': True,
+            'status': status
+        })
+    except Exception as e:
+        logger.error(f"OKX status error: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'status': {
+                'connected': False,
+                'exchange_type': 'Simulated OKX',
+                'error': 'Failed to check exchange status'
+            }
+        }), 500
+
 # Ensure this can be imported for WSGI as well
 application = app
 
