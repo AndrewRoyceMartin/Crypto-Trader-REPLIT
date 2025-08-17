@@ -2647,11 +2647,11 @@ function updatePositionTable(holdings) {
         row.innerHTML = `
             <td><strong class="text-primary">${holding.symbol}</strong></td>
             <td class="small text-muted">${holding.name}</td>
-            <td>${formatNumber(holding.quantity, 8)}</td>
-            <td>${formatCurrency(holding.current_price)}</td>
-            <td>${formatCurrency(holding.current_value)}</td>
+            <td>${(holding.quantity || 0).toFixed(8)}</td>
+            <td>$${(holding.current_price || 0).toFixed(4)}</td>
+            <td>$${(holding.current_value || 0).toFixed(2)}</td>
             <td>${(holding.allocation_percent || 0).toFixed(2)}%</td>
-            <td class="${pnlClass}">${formatCurrency(holding.unrealized_pnl || 0)}</td>
+            <td class="${pnlClass}">$${(holding.unrealized_pnl || 0).toFixed(2)}</td>
             <td class="${pnlClass}">${pnlSign}${(holding.pnl_percent || 0).toFixed(2)}%</td>
             <td>-</td>
             <td>-</td>
@@ -2667,10 +2667,10 @@ function updatePositionTable(holdings) {
     const strongGains = filteredHoldings.filter(h => (h.pnl_percent || 0) >= 5).length;
     
     updateElementSafely('pos-total-count', totalPositions);
-    updateElementSafely('pos-total-value', formatCurrency(totalValue));
+    updateElementSafely('pos-total-value', this.formatCurrency ? this.formatCurrency(totalValue) : `$${totalValue.toFixed(2)}`);
     if (document.getElementById('pos-unrealized-pnl')) {
         const element = document.getElementById('pos-unrealized-pnl');
-        element.textContent = formatCurrency(totalPnL);
+        element.textContent = this.formatCurrency ? this.formatCurrency(totalPnL) : `$${totalPnL.toFixed(2)}`;
         element.className = totalPnL >= 0 ? 'text-success' : 'text-danger';
     }
     updateElementSafely('pos-strong-gains', strongGains);
