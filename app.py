@@ -190,6 +190,11 @@ def get_df(symbol: str, timeframe: str):
         import pandas as pd
         return pd.DataFrame()
 
+def get_portfolio_service():
+    """Get a PortfolioService instance for API calls."""
+    from src.services.portfolio_service import PortfolioService
+    return PortfolioService()
+
 def initialize_system():
     """Initialize only essential components - no network I/O."""
     try:
