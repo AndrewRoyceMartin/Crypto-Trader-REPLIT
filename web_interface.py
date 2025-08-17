@@ -24,6 +24,7 @@ from src.trading.enhanced_trader import EnhancedTrader
 from src.exchanges.okx_adapter import OKXAdapter  # (kept for future use)
 from src.exchanges.kraken_adapter import KrakenAdapter  # (kept for future use)
 from src.data.crypto_portfolio import CryptoPortfolioManager
+from src.services.portfolio_service import get_portfolio_service
 from src.utils.email_service import email_service
 from version import get_version
 
@@ -71,48 +72,26 @@ def initialize_system():
     """Initialize the trading system components (idempotent)."""
     global config, db_manager, crypto_portfolio, _initialized
     if _initialized:
-        # Even if initialized, check if crypto_portfolio is empty and reinitialize
-        if crypto_portfolio and len(crypto_portfolio.get_portfolio_data()) == 0:
-            app.logger.warning("Crypto portfolio is empty, forcing reinitialization...")
-            crypto_portfolio.portfolio_data = crypto_portfolio._initialize_portfolio()
-            crypto_portfolio.save_portfolio_state()
-            app.logger.info(f"Portfolio reinitialized with {len(crypto_portfolio.portfolio_data)} cryptocurrencies")
         return
+        
     config = Config()
     setup_logging(config.get("logging", "level", "INFO"))
     db_manager = DatabaseManager()
     
-    # Initialize crypto portfolio with 103 cryptos at $10 each - ALWAYS FRESH
+    # Initialize OKX Exchange Portfolio Service
+    try:
+        portfolio_service = get_portfolio_service()
+        app.logger.info("✅ SUCCESS: Simulated OKX Exchange connected and portfolio initialized")
+        app.logger.info("Portfolio now draws data from Simulated OKX Exchange with live prices")
+    except Exception as e:
+        app.logger.error(f"❌ FAILED: Could not initialize OKX portfolio service: {str(e)}")
+        raise
+    
+    # Keep legacy crypto_portfolio for compatibility (but OKX service is primary)
     crypto_portfolio = CryptoPortfolioManager(initial_value_per_crypto=10.0)
     
-    # Force portfolio data initialization if empty - ensure 103 cryptos are always loaded
-    if not crypto_portfolio.portfolio_data or len(crypto_portfolio.portfolio_data) < 103:
-        app.logger.warning(f"Portfolio data incomplete ({len(crypto_portfolio.portfolio_data)} cryptos), forcing full reload...")
-        crypto_portfolio.portfolio_data = crypto_portfolio._initialize_portfolio()
-        app.logger.info(f"Force-initialized portfolio with {len(crypto_portfolio.portfolio_data)} cryptocurrencies")
-        
-        # Verify the portfolio loaded correctly
-        if len(crypto_portfolio.portfolio_data) >= 103:
-            app.logger.info("✅ SUCCESS: Portfolio loaded with all 103 cryptocurrencies")
-            # Log first few cryptos to verify they have proper prices
-            sample_symbols = list(crypto_portfolio.portfolio_data.keys())[:5]
-            for symbol in sample_symbols:
-                crypto_data = crypto_portfolio.portfolio_data[symbol]
-                price = crypto_data.get('current_price', 0)
-                value = crypto_data.get('current_value', 0)
-                app.logger.info(f"  {symbol}: ${price:.4f}/coin, ${value:.2f} total value")
-        else:
-            app.logger.error(f"❌ FAILED: Only {len(crypto_portfolio.portfolio_data)} cryptocurrencies loaded")
-    
-    # NEVER load old state during system initialization - always start fresh with $10
-    # This ensures portfolio always has correct $10 initial values
-    app.logger.info("System initialized with fresh portfolio - $10 per cryptocurrency")
-    
-    # Start background price simulation
-    start_portfolio_updates()
-    
     _initialized = True
-    app.logger.info("Trading system initialized with crypto portfolio")
+    app.logger.info("Trading system initialized with Simulated OKX Exchange")
 
 def start_portfolio_updates():
     """Start background thread to update crypto portfolio prices."""
@@ -441,154 +420,43 @@ def get_portfolio_history():
 
 @app.route("/api/crypto-portfolio")
 def get_crypto_portfolio():
-    """Get detailed cryptocurrency portfolio data with price validation."""
+    """Get detailed cryptocurrency portfolio data from Simulated OKX Exchange."""
     try:
         initialize_system()
         
-        # CRITICAL FIX: Force fresh portfolio initialization if missing or empty
-        global crypto_portfolio
-        if not crypto_portfolio:
-            app.logger.warning("Crypto portfolio not initialized, creating new instance...")
-            crypto_portfolio = CryptoPortfolioManager(initial_value_per_crypto=10.0)
+        # Get portfolio service instance  
+        portfolio_service = get_portfolio_service()
         
-        portfolio_data = crypto_portfolio.get_portfolio_data()
-        if not portfolio_data or len(portfolio_data) == 0:
-            app.logger.warning("Portfolio is empty, forcing fresh initialization with 103 cryptocurrencies...")
-            crypto_portfolio.portfolio_data = crypto_portfolio._initialize_portfolio()
-            crypto_portfolio.save_portfolio_state()
-            app.logger.info(f"Portfolio forcefully reinitialized with {len(crypto_portfolio.portfolio_data)} cryptocurrencies")
-            portfolio_data = crypto_portfolio.get_portfolio_data()  # Get the fresh data
+        # Get portfolio data from OKX exchange
+        okx_portfolio_data = portfolio_service.get_portfolio_data()
         
-        # Update prices with validation first and FORCE P&L recalculation
-        try:
-            # Force fresh price updates and P&L calculations
-            price_update_result = crypto_portfolio.update_live_prices()
-            app.logger.info(f"Price update result: {price_update_result}")
-            
-            # CRITICAL: Manually recalculate P&L for all positions after price updates
-            for symbol, crypto in crypto_portfolio.portfolio_data.items():
-                if 'current_price' in crypto and 'quantity' in crypto and 'initial_value' in crypto:
-                    # Recalculate current value: quantity * current_price
-                    crypto['current_value'] = crypto['quantity'] * crypto['current_price']
-                    
-                    # Recalculate P&L: current_value - initial_value
-                    crypto['pnl'] = crypto['current_value'] - crypto['initial_value']
-                    
-                    # Recalculate P&L percentage
-                    if crypto['initial_value'] > 0:
-                        crypto['pnl_percent'] = (crypto['pnl'] / crypto['initial_value']) * 100
-                    else:
-                        crypto['pnl_percent'] = 0.0
-            
-            app.logger.info("Manual P&L recalculation completed for all assets")
-        except Exception as e:
-            app.logger.error(f"Error updating prices: {e}")
-            price_update_result = {"status": "error", "message": str(e)}
+        # Convert to expected frontend format
+        holdings_list = okx_portfolio_data['holdings']
         
-        try:
-            summary = crypto_portfolio.get_portfolio_summary()
-        except Exception as e:
-            app.logger.error(f"Error getting portfolio summary: {e}")
-            raise e
+        app.logger.info(f"Retrieved OKX portfolio: {len(holdings_list)} holdings, total value: ${okx_portfolio_data['total_current_value']:.2f}")
         
-        try:
-            portfolio_data = crypto_portfolio.get_portfolio_data()
-            app.logger.info(f"Retrieved portfolio data with {len(portfolio_data)} cryptocurrencies")
-            if not portfolio_data:
-                app.logger.error("Portfolio data is empty - this should not happen!")
-                # Force re-initialization if empty
-                crypto_portfolio.portfolio_data = crypto_portfolio._initialize_portfolio()
-                portfolio_data = crypto_portfolio.get_portfolio_data()
-                app.logger.info(f"Re-initialized portfolio with {len(portfolio_data)} cryptocurrencies")
-        except Exception as e:
-            app.logger.error(f"Error getting portfolio data: {e}")
-            raise e
-        
-        # Check for auto-trading opportunities and execute them
-        opportunities = crypto_portfolio.check_auto_trading_opportunities()
-        if opportunities:
-            app.logger.info(f"Found {len(opportunities)} auto-trading opportunities")
-            
-            executed_count = 0
-            for opportunity in opportunities:
-                if crypto_portfolio.execute_auto_trade(opportunity, db_manager):
-                    executed_count += 1
-                    
-            if executed_count > 0:
-                app.logger.info(f"Executed {executed_count} automatic trades")
-                # Refresh portfolio data after trades
-                summary = crypto_portfolio.get_portfolio_summary()
-                portfolio_data = crypto_portfolio.get_portfolio_data()
-        
-        # Convert to list format for easier frontend consumption
-        crypto_list = []
-        app.logger.info(f"Converting {len(portfolio_data)} cryptocurrencies to list format")
-        for symbol, data in portfolio_data.items():
-            try:
-                # Calculate projected P&L based on target sell price
-                target_sell_price = float(data.get("target_sell_price", 0)) if data.get("target_sell_price") is not None else 0.0
-                projected_sell_pnl = 0.0
-                if target_sell_price and target_sell_price > 0:
-                    quantity = float(data["quantity"])
-                    current_value = float(data["current_value"])
-                    projected_value = quantity * target_sell_price
-                    projected_sell_pnl = projected_value - current_value
-            except (TypeError, ValueError) as e:
-                app.logger.error(f"Error calculating projected P&L for {symbol}: {e}, data types: {[(k, type(v)) for k, v in data.items()]}")
-                target_sell_price = 0.0
-                projected_sell_pnl = 0.0
-            
-            crypto_list.append({
-                "symbol": symbol,
-                "name": data["name"],
-                "rank": int(data["rank"]) if data["rank"] is not None else 0,
-                "quantity": round(float(data["quantity"]), 6),
-                "current_price": round(float(data["current_price"]), 4),
-                "current_value": round(float(data["current_value"]), 2),
-                "initial_value": float(data["initial_value"]),
-                "pnl": round(float(data["pnl"]), 2),
-                "pnl_percent": round(float(data["pnl_percent"]), 2),
-                "target_sell_price": round(float(data.get("target_sell_price", 0)), 4) if data.get("target_sell_price") is not None else 0,
-                "target_buy_price": round(float(data.get("target_buy_price", 0)), 4) if data.get("target_buy_price") is not None else 0,
-                "projected_sell_pnl": round(projected_sell_pnl, 2)
-            })
-        
-        # Sort by current value (largest positions first)
-        crypto_list.sort(key=lambda x: x["current_value"], reverse=True)
-        
-        # Safely handle summary data types
-        try:
-            safe_summary = {
-                "total_cryptos": int(summary["number_of_cryptos"]),
-                "total_initial_value": round(float(summary["total_initial_value"]), 2),
-                "total_current_value": round(float(summary["total_current_value"]), 2),
-                "total_pnl": round(float(summary["total_pnl"]), 2),
-                "total_pnl_percent": round(float(summary["total_pnl_percent"]), 2),
-                "top_gainers": summary["top_gainers"],
-                "top_losers": summary["top_losers"],
-                "largest_positions": summary["largest_positions"]
-            }
-        except (TypeError, ValueError) as e:
-            app.logger.error(f"Error processing summary data: {e}, summary types: {[(k, type(v)) for k, v in summary.items()]}")
-            safe_summary = {
-                "total_cryptos": 0,
-                "total_initial_value": 0.0,
-                "total_current_value": 0.0,
-                "total_pnl": 0.0,
-                "total_pnl_percent": 0.0,
-                "top_gainers": [],
-                "top_losers": [],
-                "largest_positions": []
-            }
-
         return jsonify({
-            "summary": safe_summary,
-            "cryptocurrencies": crypto_list,
-            "price_validation": price_update_result
+            "holdings": holdings_list,
+            "recent_trades": [],  # TODO: Implement from OKX exchange
+            "summary": {
+                "total_cryptos": len(holdings_list),
+                "total_current_value": okx_portfolio_data['total_current_value'],
+                "total_pnl": okx_portfolio_data['total_pnl'],
+                "total_pnl_percent": okx_portfolio_data['total_pnl_percent']
+            },
+            "total_pnl": okx_portfolio_data['total_pnl'],
+            "total_pnl_percent": okx_portfolio_data['total_pnl_percent'],
+            "total_value": okx_portfolio_data['total_current_value'],
+            "exchange_info": {
+                "exchange": "Simulated OKX",
+                "last_update": okx_portfolio_data['last_update'],
+                "cash_balance": okx_portfolio_data['cash_balance']
+            }
         })
         
     except Exception as e:
-        app.logger.error("Error getting crypto portfolio: %s", e)
+        app.logger.error("Error getting OKX portfolio: %s", e)
+        # Fallback to legacy system if OKX fails
         return jsonify({"error": str(e)}), 500
 
 @app.route("/api/price-source-status")
