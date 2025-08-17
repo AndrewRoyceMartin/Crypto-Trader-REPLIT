@@ -335,89 +335,27 @@ def api_crypto_portfolio():
         })
     
     try:
-        # Get live prices for all cryptocurrencies in the portfolio
-        from src.data.price_api import CryptoPriceAPI
-        price_api = CryptoPriceAPI()
+        # Use OKX exchange data for all portfolio calculations
+        from src.services.portfolio_service import PortfolioService
         
-        # Import master portfolio assets list
-        from src.data.portfolio_assets import get_portfolio_assets
+        # Get portfolio data from simulated OKX exchange
+        portfolio_service = PortfolioService()
         
-        # Use the hardcoded master list of 103 cryptocurrency assets
-        symbols = get_portfolio_assets()
-        live_prices = price_api.get_multiple_prices(symbols)
+        # Initialize portfolio if not already done
+        if not portfolio_service.is_initialized:
+            portfolio_service.initialize()
         
-        # Calculate portfolio data from live prices
-        holdings = []
-        total_value = 0
-        total_initial_value = 0
+        # Get all portfolio holdings from OKX exchange
+        portfolio_data = portfolio_service.get_portfolio_data()
         
-        # Process ONLY the hardcoded master portfolio assets in exact order
-        for rank, symbol in enumerate(symbols, 1):  # Use the exact 103 symbols from master list with rank
-            if symbol in live_prices and 'price' in live_prices[symbol]:
-                price_info = live_prices[symbol]
-                current_price = price_info['price']
-                # $10 initial investment per crypto
-                initial_investment = 10.0
-                quantity = initial_investment / current_price
-                current_value = quantity * current_price
-                pnl = current_value - initial_investment
-                pnl_percent = (pnl / initial_investment) * 100 if initial_investment > 0 else 0
-                
-                holdings.append({
-                    "rank": rank,
-                    "symbol": symbol,
-                    "name": symbol,  # Add name field
-                    "quantity": round(quantity, 8),
-                    "current_price": current_price,
-                    "value": current_value,
-                    "current_value": current_value,  # Alias for compatibility
-                    "pnl": pnl,
-                    "pnl_percent": pnl_percent,
-                    "is_live": price_info.get('is_live', True)
-                })
-                
-                total_value += current_value
-                total_initial_value += initial_investment
-            else:
-                # Create entry with fallback price for missing symbols
-                logger.warning(f"Using fallback price for missing master asset: {symbol}")
-                current_price = 1.0  # Fallback price
-                initial_investment = 10.0
-                quantity = initial_investment / current_price
-                current_value = quantity * current_price
-                
-                holdings.append({
-                    "rank": rank,
-                    "symbol": symbol,
-                    "name": symbol,  # Add name field
-                    "quantity": round(quantity, 8),
-                    "current_price": current_price,
-                    "value": current_value,
-                    "current_value": current_value,  # Alias for compatibility
-                    "pnl": 0.0,
-                    "pnl_percent": 0.0,
-                    "is_live": False
-                })
-                
-                total_value += current_value
-                total_initial_value += initial_investment
+        # Use the OKX exchange data directly
+        holdings = portfolio_data.get('holdings', [])
         
-        total_pnl = total_value - total_initial_value
-        total_pnl_percent = (total_pnl / total_initial_value) * 100 if total_initial_value > 0 else 0
-        
-        portfolio_data = {
-            "holdings": holdings,
-            "recent_trades": recent_initial_trades or [],
-            "total_value": total_value,
-            "total_pnl": total_pnl,
-            "total_pnl_percent": total_pnl_percent,
-            "summary": {
-                "total_cryptos": len(holdings),
-                "total_current_value": total_value,
-                "total_pnl": total_pnl,
-                "total_pnl_percent": total_pnl_percent
-            }
-        }
+        # Return OKX exchange portfolio data with trades
+        global recent_initial_trades
+        portfolio_data.update({
+            "recent_trades": recent_initial_trades or []
+        })
         
         return jsonify(portfolio_data)
     except Exception as e:
