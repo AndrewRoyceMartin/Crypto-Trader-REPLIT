@@ -2590,23 +2590,51 @@ function updatePortfolioSummary(portfolioData) {
     // Store data globally for chart updates
     window.lastPortfolioData = portfolioData;
     
-    // Update main KPIs with safe element updates
-    updateElementSafely("summary-total-value", formatCurrency(summary.total_current_value || 0));
+    // Calculate totals from holdings data similar to Quick Overview
+    let totalValue = 0;
+    let totalUnrealizedPnl = 0;
+    let totalCostBasis = 0;
+    
+    holdings.forEach(holding => {
+        if (holding.has_position) {
+            totalValue += holding.current_value || 0;
+            totalUnrealizedPnl += holding.unrealized_pnl || 0;
+            totalCostBasis += holding.cost_basis || 0;
+        }
+    });
+    
+    const cashBalance = portfolioData.cash_balance || 0;
+    const totalPortfolioValue = totalValue + cashBalance;
+    const totalPnlPercent = totalCostBasis > 0 ? ((totalUnrealizedPnl / totalCostBasis) * 100) : 0;
+    
+    // Update main KPIs with calculated values
+    updateElementSafely("summary-total-value", formatCurrency(totalPortfolioValue));
+    
+    // Update total change (same as unrealized P&L for accuracy)
+    const totalChangeElement = document.getElementById("summary-total-change");
+    if (totalChangeElement) {
+        const changeClass = totalUnrealizedPnl >= 0 ? "bg-success" : "bg-danger";
+        const prefix = totalUnrealizedPnl >= 0 ? "+" : "";
+        totalChangeElement.innerHTML = `${prefix}${formatCurrency(totalUnrealizedPnl)} (${prefix}${totalPnlPercent.toFixed(2)}%)`;
+        totalChangeElement.className = `badge ${changeClass} mb-1`;
+    }
     
     // Update 24h change with color coding
-    const change24h = summary.total_pnl || 0;
-    const change24hPercent = summary.total_pnl_percent || 0;
+    const change24h = summary.daily_pnl || 0;
     const change24hElement = document.getElementById("summary-24h-change");
     if (change24hElement) {
-        const changeClass = change24h >= 0 ? "bg-success" : "bg-danger";
+        const changeClass = change24h >= 0 ? "text-success" : "text-danger";
         const arrow = change24h >= 0 ? "↗" : "↘";
-        change24hElement.innerHTML = `<span class="badge ${changeClass}">${arrow} $${fmtFixed(change24h, 2)} (${fmtFixed(change24hPercent, 2)}%)</span>`;
+        const prefix = change24h >= 0 ? "+" : "";
+        change24hElement.innerHTML = `${arrow} ${prefix}${formatCurrency(change24h)}`;
+        change24hElement.className = `mb-0 fw-bold ${changeClass}`;
     }
     
     // Update other KPIs
-    updateElementSafely("summary-total-assets", summary.total_assets_tracked || 103);
-    updateElementSafely("summary-cash-balance", formatCurrency(summary.cash_balance || portfolioData.cash_balance || 0));
-    updateElementSafely("summary-win-rate", `${summary.win_rate || 0}%`);
+    updateElementSafely("summary-total-assets", summary.total_assets_tracked || holdings.length);
+    updateElementSafely("summary-cash-balance", formatCurrency(cashBalance));
+    updateElementSafely("summary-win-rate", `${(summary.win_rate || 0).toFixed(1)}%`);
+    updateElementSafely("summary-portfolio-value", formatCurrency(totalPortfolioValue));
     
     // Update holdings summary
     updateHoldingsSummary(holdings);
@@ -2615,20 +2643,35 @@ function updatePortfolioSummary(portfolioData) {
     const bestPerformer = summary.best_performer || {symbol: "N/A", pnl_percent: 0, name: "N/A"};
     const worstPerformer = summary.worst_performer || {symbol: "N/A", pnl_percent: 0, name: "N/A"};
     
-    const bestElement = document.querySelector("#summary-best-performer span");
+    const bestElement = document.getElementById("summary-best-performer");
+    const bestPerfElement = document.getElementById("summary-best-performance");
     const worstElement = document.querySelector("#summary-worst-performer span");
     
     if (bestElement && bestPerformer.symbol !== "N/A") {
-        bestElement.innerHTML = `${bestPerformer.symbol}<br><small>(+${fmtFixed(bestPerformer.pnl_percent, 2)}%)</small>`;
+        bestElement.textContent = bestPerformer.symbol;
+        if (bestPerfElement) {
+            bestPerfElement.textContent = `+${bestPerformer.pnl_percent.toFixed(2)}%`;
+        }
     } else if (bestElement) {
         bestElement.textContent = "N/A";
+        if (bestPerfElement) bestPerfElement.textContent = "+0.00%";
     }
     
     if (worstElement && worstPerformer.symbol !== "N/A") {
-        worstElement.innerHTML = `${worstPerformer.symbol}<br><small>(${fmtFixed(worstPerformer.pnl_percent, 2)}%)</small>`;
+        worstElement.innerHTML = `${worstPerformer.symbol} <small>(${worstPerformer.pnl_percent.toFixed(2)}%)</small>`;
     } else if (worstElement) {
         worstElement.textContent = "N/A";
     }
+    
+    console.log("Portfolio Summary KPIs:", {
+        totalPortfolioValue: totalPortfolioValue,
+        totalUnrealizedPnl: totalUnrealizedPnl,
+        totalPnlPercent: totalPnlPercent.toFixed(2) + '%',
+        cashBalance: cashBalance,
+        totalAssets: holdings.length,
+        bestPerformer: bestPerformer.symbol,
+        worstPerformer: worstPerformer.symbol
+    });
     
     // Update position counts with enhanced metrics
     updateElementSafely("profitable-positions", `${summary.profitable_positions || 0}`);
