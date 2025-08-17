@@ -218,6 +218,8 @@ class PortfolioService:
                                 pnl = -initial_investment  # Show full loss if position sold
                                 pnl_percent = -100.0
                                 has_position = False
+                                cost_basis = initial_investment
+                                avg_price = historical_purchase_price if 'historical_purchase_price' in locals() else current_price
                                 
                             else:
                                 # Use simulated historical purchase price for assets without real positions
@@ -241,8 +243,12 @@ class PortfolioService:
                             "current_price": current_price,
                             "value": current_value,
                             "current_value": current_value,
+                            "cost_basis": getattr(locals(), 'cost_basis', initial_investment),
+                            "avg_entry_price": getattr(locals(), 'avg_price', current_price),
                             "pnl": pnl,
                             "pnl_percent": pnl_percent,
+                            "unrealized_pnl": pnl,
+                            "allocation_percent": (current_value / total_value * 100) if total_value > 0 else 0,
                             "is_live": True,  # All OKX prices are simulated "live"
                             "has_position": has_position  # Track real vs simulated positions
                         })

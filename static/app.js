@@ -825,9 +825,16 @@ class TradingApp {
                 new Date(crypto.last_updated).toLocaleTimeString() : '-';
             updatedCell.appendChild(updatedSmall);
 
-            // Quantity cell (to make 13 columns)
+            // Quantity cell (to make 13 columns) - Show zero if sold out
             const quantityCell = document.createElement('td');
-            quantityCell.textContent = this.num(quantity).toFixed(6);
+            const displayQuantity = crypto.has_position === false ? 0 : quantity;
+            quantityCell.textContent = this.num(displayQuantity).toFixed(6);
+            
+            // Highlight sold out positions
+            if (!crypto.has_position || quantity <= 0 || value <= 0.01) {
+                quantityCell.classList.add('text-warning');
+                quantityCell.style.fontWeight = 'bold';
+            }
 
             // Calculate target prices based on current price (simple +/- 5% for demo)
             const targetBuyPrice = price * 0.95; // 5% below current
