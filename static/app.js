@@ -2722,17 +2722,57 @@ function updateHoldingsSummary(holdings) {
 // Update Quick Overview section with live KPIs
 function updateQuickOverview(portfolioData) {
     console.log("Updating Quick Overview KPIs");
+    console.log("Portfolio data received:", portfolioData);
     
     const summary = portfolioData.summary || {};
     const holdings = portfolioData.holdings || [];
     
-    // Update KPI strip elements
-    updateElementSafely("kpi-total-equity", formatCurrency(summary.total_current_value || 0));
-    updateElementSafely("kpi-daily-pnl", formatCurrency(summary.daily_pnl || 0));
-    updateElementSafely("kpi-unrealized-pnl", formatCurrency(summary.total_pnl || 0));
-    updateElementSafely("kpi-cash", formatCurrency(portfolioData.cash_balance || 0));
-    updateElementSafely("kpi-exposure", `${summary.exposure_percent || 0}%`);
-    updateElementSafely("kpi-win-rate", `${summary.win_rate || 0}%`);
+    // Calculate totals from holdings data
+    let totalValue = 0;
+    let totalUnrealizedPnl = 0;
+    let totalCostBasis = 0;
+    
+    holdings.forEach(holding => {
+        if (holding.has_position) {
+            totalValue += holding.current_value || 0;
+            totalUnrealizedPnl += holding.unrealized_pnl || 0;
+            totalCostBasis += holding.cost_basis || 0;
+        }
+    });
+    
+    // Update KPI strip elements with calculated values
+    const cashBalance = portfolioData.cash_balance || 0;
+    const totalEquity = totalValue + cashBalance;
+    const dailyPnl = summary.daily_pnl || 0;
+    const exposure = totalEquity > 0 ? ((totalValue / totalEquity) * 100) : 0;
+    const winRate = summary.win_rate || 0;
+    
+    updateElementSafely("kpi-total-equity", formatCurrency(totalEquity));
+    updateElementSafely("kpi-daily-pnl", formatCurrency(dailyPnl));
+    updateElementSafely("kpi-unrealized-pnl", formatCurrency(totalUnrealizedPnl));
+    updateElementSafely("kpi-cash", formatCurrency(cashBalance));
+    updateElementSafely("kpi-exposure", `${exposure.toFixed(1)}%`);
+    updateElementSafely("kpi-win-rate", `${winRate.toFixed(1)}%`);
+    
+    console.log("Quick Overview KPIs:", {
+        totalEquity: totalEquity,
+        dailyPnl: dailyPnl,
+        unrealizedPnl: totalUnrealizedPnl,
+        cashBalance: cashBalance,
+        exposure: exposure.toFixed(1) + '%',
+        winRate: winRate.toFixed(1) + '%'
+    });
+    
+    // Add color coding for P&L values
+    const dailyPnlElement = document.getElementById("kpi-daily-pnl");
+    const unrealizedPnlElement = document.getElementById("kpi-unrealized-pnl");
+    
+    if (dailyPnlElement) {
+        dailyPnlElement.className = dailyPnl >= 0 ? "h5 mb-0 text-success" : "h5 mb-0 text-danger";
+    }
+    if (unrealizedPnlElement) {
+        unrealizedPnlElement.className = totalUnrealizedPnl >= 0 ? "h5 mb-0 text-success" : "h5 mb-0 text-danger";
+    }
     
     // Update top movers section
     if (holdings && holdings.length > 0) {
