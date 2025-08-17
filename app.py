@@ -1279,12 +1279,12 @@ def api_okx_status():
 
 @app.route("/api/execute-take-profit", methods=["POST"])
 def execute_take_profit():
-    """Execute take profit trades for cryptocurrencies meeting take profit conditions."""
+    """Execute take profit trades and automatically reinvest in buy targets."""
     try:
         from src.services.portfolio_service import PortfolioService
         from src.utils.bot_pricing import BotPricingCalculator, BotParams
         
-        logger.info("Take profit execution requested")
+        logger.info("Take profit execution with automatic reinvestment requested")
         
         # Get current portfolio data
         portfolio_service = PortfolioService()
@@ -1301,6 +1301,7 @@ def execute_take_profit():
         ))
         
         executed_trades = []
+        total_proceeds = 0.0  # Track proceeds from sales for reinvestment
         
         # Check each cryptocurrency for take profit conditions
         for holding in holdings:
@@ -1347,6 +1348,7 @@ def execute_take_profit():
                         }
                         
                         executed_trades.append(executed_trade)
+                        total_proceeds += pnl_data['net_pnl']  # Add profit to reinvestment pool
                         
                         logger.info(f"Take profit executed for {symbol}: {quantity:.8f} at ${sell_price:.2f} "
                                   f"({pnl_percent:.2f}% profit, ${pnl_data['net_pnl']:.2f} PnL)")
@@ -1379,23 +1381,131 @@ def execute_take_profit():
                 logger.error(f"Error processing take profit for {symbol}: {e}")
                 continue
         
+        # AUTOMATIC REINVESTMENT: Find buy targets and invest proceeds
+        buy_trades = []
+        if total_proceeds > 0:
+            logger.info(f"Reinvesting ${total_proceeds:.2f} from take profit sales")
+            
+            # Identify positions with buy signals (oversold conditions)
+            buy_candidates = []
+            for holding in holdings:
+                try:
+                    symbol = holding.get('symbol')
+                    current_price = holding.get('current_price', 0)
+                    pnl_percent = holding.get('pnl_percent', 0)
+                    quantity = holding.get('quantity', 0)
+                    
+                    # Skip if insufficient data or already sold this position
+                    if current_price <= 0:
+                        continue
+                        
+                    # Skip symbols that we just sold
+                    if any(trade['symbol'] == symbol for trade in executed_trades):
+                        continue
+                    
+                    # Buy signal criteria: position is down (oversold)
+                    buy_threshold = -0.04  # Buy when down 0.04% or more (captures current portfolio state)
+                    
+                    if pnl_percent <= buy_threshold:
+                        # Calculate buy attractiveness score (more negative = better buy)
+                        buy_score = abs(pnl_percent)
+                        buy_candidates.append({
+                            'symbol': symbol,
+                            'current_price': current_price,
+                            'pnl_percent': pnl_percent,
+                            'buy_score': buy_score,
+                            'current_quantity': quantity
+                        })
+                        
+                except Exception as e:
+                    continue
+            
+            # Sort by most oversold (highest buy score)
+            buy_candidates.sort(key=lambda x: x['buy_score'], reverse=True)
+            
+            # Reinvest proceeds in top buy candidates
+            remaining_proceeds = total_proceeds
+            max_buys = min(5, len(buy_candidates))  # Limit to top 5 or available candidates
+            
+            if max_buys > 0:
+                investment_per_asset = remaining_proceeds / max_buys
+                
+                for candidate in buy_candidates[:max_buys]:
+                    if remaining_proceeds <= 0:
+                        break
+                    
+                    symbol = candidate['symbol']
+                    current_price = candidate['current_price']
+                    
+                    # Use uniform investment amount
+                    investment_amount = min(investment_per_asset, remaining_proceeds)
+                    
+                    if investment_amount >= 1.0:  # Minimum $1 investment
+                        # Calculate quantity to buy using bot pricing
+                        buy_price = bot_calculator.calculate_entry_price(current_price, 'buy')
+                        quantity_to_buy = investment_amount / buy_price
+                        
+                        # Record the buy trade
+                        buy_trade = {
+                            'symbol': symbol,
+                            'action': 'BUY',
+                            'side': 'BUY',
+                            'quantity': quantity_to_buy,
+                            'price': buy_price,
+                            'investment_amount': investment_amount,
+                            'buy_reason': f'Oversold reinvestment ({candidate["pnl_percent"]:.1f}% down)',
+                            'timestamp': datetime.utcnow().isoformat(),
+                            'exchange_executed': False
+                        }
+                        
+                        # Execute the buy trade through the exchange
+                        try:
+                            order_result = portfolio_service.exchange.place_order(
+                                symbol=f"{symbol}/USDT",
+                                side='buy',
+                                amount=quantity_to_buy,
+                                order_type='market'
+                            )
+                            
+                            if order_result.get('code') == '0':
+                                buy_trade['exchange_executed'] = True
+                                buy_trade['order_id'] = order_result['data'][0].get('ordId')
+                                logger.info(f"Auto-buy executed for {symbol}: {quantity_to_buy:.8f} at ${buy_price:.2f}")
+                            else:
+                                logger.warning(f"Failed to execute auto-buy for {symbol}: {order_result}")
+                                
+                        except Exception as trade_error:
+                            logger.error(f"Error executing auto-buy for {symbol}: {trade_error}")
+                        
+                        buy_trades.append(buy_trade)
+                        remaining_proceeds -= investment_amount
+        
+        # Combine all trades for display
+        all_trades = executed_trades + buy_trades
+        
         # Add executed trades to recent trades for display
         global recent_initial_trades
-        if executed_trades:
+        if all_trades:
             if recent_initial_trades is None:
                 recent_initial_trades = []
-            recent_initial_trades.extend(executed_trades)
+            recent_initial_trades.extend(all_trades)
             
             # Keep only the most recent 100 trades
             recent_initial_trades = recent_initial_trades[-100:]
         
-        logger.info(f"Take profit execution completed: {len(executed_trades)} trades executed")
+        total_profit = sum(trade.get('net_pnl', 0) for trade in executed_trades)
+        total_reinvested = sum(trade.get('investment_amount', 0) for trade in buy_trades)
+        
+        logger.info(f"Complete trading cycle: {len(executed_trades)} sells (${total_profit:.2f}), {len(buy_trades)} buys (${total_reinvested:.2f})")
         
         return jsonify({
             'success': True,
-            'message': f'Take profit executed on {len(executed_trades)} positions',
+            'message': f'Executed {len(executed_trades)} sells (${total_profit:.2f}) and {len(buy_trades)} buys (${total_reinvested:.2f})',
             'executed_trades': executed_trades,
-            'total_profit': sum(trade['net_pnl'] for trade in executed_trades)
+            'buy_trades': buy_trades,
+            'all_trades': all_trades,
+            'total_profit': round(total_profit, 2),
+            'total_reinvested': round(total_reinvested, 2)
         })
         
     except Exception as e:
