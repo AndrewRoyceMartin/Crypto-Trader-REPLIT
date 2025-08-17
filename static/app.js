@@ -2593,7 +2593,11 @@ function initializePortfolioCharts() {
                         title: {
                             display: true,
                             text: 'Portfolio Value Trend',
-                            color: '#333'
+                            color: '#000',
+                            font: {
+                                size: 14,
+                                weight: 'bold'
+                            }
                         },
                         legend: {
                             display: false
@@ -2602,13 +2606,21 @@ function initializePortfolioCharts() {
                     scales: {
                         x: {
                             ticks: {
-                                color: '#333'
+                                color: '#000',
+                                font: {
+                                    size: 11,
+                                    weight: 'bold'
+                                }
                             }
                         },
                         y: {
                             beginAtZero: false,
                             ticks: {
-                                color: '#333',
+                                color: '#000',
+                                font: {
+                                    size: 11,
+                                    weight: 'bold'
+                                },
                                 callback: function(value) {
                                     return '$' + Number(value).toLocaleString();
                                 }
@@ -2644,12 +2656,20 @@ function initializePortfolioCharts() {
                         title: {
                             display: true,
                             text: 'Position Distribution',
-                            color: '#333'
+                            color: '#000',
+                            font: {
+                                size: 14,
+                                weight: 'bold'
+                            }
                         },
                         legend: {
                             position: 'bottom',
                             labels: {
-                                color: '#333'
+                                color: '#000',
+                                font: {
+                                    size: 11,
+                                    weight: 'bold'
+                                }
                             }
                         }
                     }
@@ -2685,7 +2705,11 @@ function initializePortfolioCharts() {
                         title: {
                             display: true,
                             text: 'Top/Bottom Performers',
-                            color: '#333'
+                            color: '#000',
+                            font: {
+                                size: 14,
+                                weight: 'bold'
+                            }
                         },
                         legend: {
                             display: false
@@ -2694,12 +2718,20 @@ function initializePortfolioCharts() {
                     scales: {
                         x: {
                             ticks: {
-                                color: '#333'
+                                color: '#000',
+                                font: {
+                                    size: 11,
+                                    weight: 'bold'
+                                }
                             }
                         },
                         y: {
                             ticks: {
-                                color: '#333',
+                                color: '#000',
+                                font: {
+                                    size: 11,
+                                    weight: 'bold'
+                                },
                                 callback: function(value) {
                                     return value + '%';
                                 }
