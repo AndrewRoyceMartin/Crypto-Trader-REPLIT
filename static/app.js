@@ -949,7 +949,8 @@ class TradingApp {
             console.log('No crypto data provided');
             const row = document.createElement('tr');
             const cell = document.createElement('td');
-            cell.colSpan = 10; // Performance table has 10 columns
+            // Updated colspan for new performance table with 12 columns
+            cell.colSpan = bodyId === 'performance-page-table-body' ? 12 : 10;
             cell.className = 'text-center text-muted';
             cell.textContent = 'No cryptocurrency holdings. Start trading to populate portfolio.';
             row.appendChild(cell);
@@ -962,13 +963,17 @@ class TradingApp {
         // Sort by rank (which preserves the master portfolio order)
         const sortedCryptos = [...cryptos].sort((a, b) => (a.rank || 999) - (b.rank || 999));
 
-        // Populate simple performance table for tracked cryptocurrencies
+        // Check if this is the performance page table to add enhanced columns
+        const isPerformancePage = bodyId === 'performance-page-table-body';
+
+        // Populate performance table with appropriate columns
         sortedCryptos.forEach((crypto, index) => {
             const row = document.createElement('tr');
 
             // Ensure all required fields exist with proper defaults
             const rank = crypto.rank || (index + 1);
             const symbol = crypto.symbol || 'UNKNOWN';
+            const name = crypto.name || symbol;
             const currentPrice = crypto.current_price || 0;
             const quantity = crypto.quantity || 0;
             const value = crypto.value || crypto.current_value || 0;
@@ -976,36 +981,72 @@ class TradingApp {
             const pnlPercent = crypto.pnl_percent || 0;
             const isLive = crypto.is_live !== false; // Default to true unless explicitly false
 
+            // Calculate purchase price from the initial investment
+            const initialInvestment = 10; // $10 initial investment per crypto
+            const purchasePrice = quantity > 0 ? initialInvestment / quantity : 0;
+            
+            // Calculate target sell price (10% above current price)
+            const targetSellPrice = currentPrice * 1.1;
+            
+            // Calculate unrealized P&L properly
+            const unrealizedPnl = (currentPrice - purchasePrice) * quantity;
+            const unrealizedPnlPercent = purchasePrice > 0 ? ((currentPrice - purchasePrice) / purchasePrice) * 100 : 0;
+
             // Format P&L color and sign
-            const pnlClass = pnl >= 0 ? 'text-success' : 'text-danger';
-            const pnlSign = pnl >= 0 ? '+' : '';
+            const pnlClass = unrealizedPnl >= 0 ? 'text-success' : 'text-danger';
+            const pnlSign = unrealizedPnl >= 0 ? '+' : '';
 
-            // Format quantity with appropriate precision using safe number conversion
-            const q = this.num(quantity);
-            const formattedQuantity = q > 1 ? q.toFixed(4) : q.toFixed(8);
+            // Format quantities and prices with appropriate precision
+            const formattedQuantity = this.num(quantity) > 1 ? this.num(quantity).toFixed(4) : this.num(quantity).toFixed(8);
+            const formattedPurchasePrice = this.formatCurrency(purchasePrice);
+            const formattedCurrentPrice = this.formatCurrency(currentPrice);
+            const formattedTargetPrice = this.formatCurrency(targetSellPrice);
+            const formattedValue = this.formatCurrency(value);
+            const formattedUnrealizedPnl = this.formatCurrency(Math.abs(unrealizedPnl));
 
-            // Create formatted price with proper fallback
-            const formattedPrice = this.formatCurrency(currentPrice || 0);
-            const formattedValue = this.formatCurrency(value || 0);
-            const formattedPnl = this.formatCurrency(Math.abs(pnl) || 0);
+            if (isPerformancePage) {
+                // Performance page table with enhanced columns
+                const daysInvested = Math.floor((Date.now() - new Date('2025-08-01').getTime()) / (1000 * 60 * 60 * 24));
+                const status = unrealizedPnl >= 0 ? 'Winner' : 'Loser';
+                const statusClass = unrealizedPnl >= 0 ? 'bg-success' : 'bg-danger';
 
-            row.innerHTML = `
-                <td><span class="badge bg-primary">#${rank}</span></td>
-                <td>
-                    <strong>${symbol}</strong>
-                    ${isLive ? '<span class="badge bg-success ms-1" title="Live market data">Live</span>' : '<span class="badge bg-warning ms-1" title="Fallback price data">Cache</span>'}
-                </td>
-                <td><strong>${formattedPrice}</strong></td>
-                <td>${formattedQuantity}</td>
-                <td><strong>${formattedValue}</strong></td>
-                <td class="${pnlClass}"><strong>${pnlSign}${formattedPnl}</strong></td>
-                <td class="${pnlClass}"><strong>${pnlSign}${this.num(pnlPercent).toFixed(2)}%</strong></td>
-            `;
+                row.innerHTML = `
+                    <td><span class="badge bg-primary">#${rank}</span></td>
+                    <td>
+                        <strong>${symbol}</strong>
+                        ${isLive ? '<span class="badge bg-success ms-1" title="Live OKX data">Live</span>' : '<span class="badge bg-warning ms-1" title="Simulation data">Sim</span>'}
+                    </td>
+                    <td class="text-muted">${name}</td>
+                    <td><strong>${formattedPurchasePrice}</strong></td>
+                    <td><strong class="text-primary">${formattedCurrentPrice}</strong></td>
+                    <td><strong class="text-info">${formattedTargetPrice}</strong></td>
+                    <td><strong>${formattedValue}</strong></td>
+                    <td><strong>${formattedValue}</strong></td>
+                    <td class="${pnlClass}"><strong>${pnlSign}${formattedUnrealizedPnl}</strong></td>
+                    <td class="${pnlClass}"><strong>${pnlSign}${this.num(unrealizedPnlPercent).toFixed(2)}%</strong></td>
+                    <td class="text-muted">${daysInvested}</td>
+                    <td><span class="badge ${statusClass}">${status}</span></td>
+                `;
+            } else {
+                // Standard performance table (simplified version)
+                row.innerHTML = `
+                    <td><span class="badge bg-primary">#${rank}</span></td>
+                    <td>
+                        <strong>${symbol}</strong>
+                        ${isLive ? '<span class="badge bg-success ms-1" title="Live OKX data">Live</span>' : '<span class="badge bg-warning ms-1" title="Simulation data">Sim</span>'}
+                    </td>
+                    <td><strong class="text-primary">${formattedCurrentPrice}</strong></td>
+                    <td>${formattedQuantity}</td>
+                    <td><strong>${formattedValue}</strong></td>
+                    <td class="${pnlClass}"><strong>${pnlSign}${formattedUnrealizedPnl}</strong></td>
+                    <td class="${pnlClass}"><strong>${pnlSign}${this.num(unrealizedPnlPercent).toFixed(2)}%</strong></td>
+                `;
+            }
 
             tableBody.appendChild(row);
         });
 
-        console.log('Portfolio table updated with', sortedCryptos.length, 'rows');
+        console.log('Performance table updated with', sortedCryptos.length, 'rows');
     }
 
     updateHoldingsTable(cryptos) {
