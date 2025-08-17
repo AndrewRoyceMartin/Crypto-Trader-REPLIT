@@ -427,6 +427,63 @@ def start_trading():
         logger.error(f"Error starting trading: {e}")
         return jsonify({"error": str(e)}), 500
 
+@app.route("/api/trade-history")
+def api_trade_history():
+    """Get all trade history records."""
+    try:
+        global recent_initial_trades, portfolio_service
+        
+        # Get trades from multiple sources
+        all_trades = []
+        
+        # Add recent initial trades (from portfolio initialization)
+        if recent_initial_trades:
+            all_trades.extend(recent_initial_trades)
+        
+        # Add trades from portfolio service exchange
+        if portfolio_service:
+            try:
+                exchange_trades = portfolio_service.get_trade_history(limit=1000)  # Get up to 1000 trades
+                # Convert exchange trades to display format
+                for trade in exchange_trades:
+                    formatted_trade = {
+                        'id': trade.get('id', len(all_trades) + 1),
+                        'symbol': trade['symbol'],
+                        'action': trade['side'],  # BUY/SELL
+                        'quantity': trade['quantity'],
+                        'price': trade['price'],
+                        'timestamp': trade['timestamp'],
+                        'total_value': trade['total_value'],
+                        'pnl': trade.get('pnl', 0),
+                        'source': 'exchange'
+                    }
+                    all_trades.append(formatted_trade)
+            except Exception as e:
+                logger.warning(f"Could not get exchange trades: {e}")
+        
+        # Sort all trades by timestamp (newest first)
+        all_trades.sort(key=lambda x: x.get('timestamp', ''), reverse=True)
+        
+        # Assign sequential trade numbers
+        for i, trade in enumerate(all_trades):
+            trade['trade_number'] = i + 1
+        
+        logger.info(f"Returning {len(all_trades)} total trade records")
+        return jsonify({
+            "success": True,
+            "trades": all_trades,
+            "total_count": len(all_trades)
+        })
+        
+    except Exception as e:
+        logger.error(f"Trade history error: {e}")
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/api/recent-trades")  
+def api_recent_trades():
+    """Get recent trades (alias for compatibility)."""
+    return api_trade_history()
+
 @app.route("/api/status")
 def api_status():
     """Get system status - expected by dashboard."""
