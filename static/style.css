@@ -196,6 +196,66 @@ body {
     vertical-align: middle;
 }
 
+/* Recent Trades Table Styling */
+.card-body .table {
+    table-layout: fixed;
+    width: 100%;
+}
+
+.card-body .table.table-sm th,
+.card-body .table.table-sm td {
+    padding: 0.4rem 0.2rem;
+    font-size: 0.8rem;
+    vertical-align: middle;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Recent Trades Table Column Widths */
+.table.table-sm th:nth-child(1),
+.table.table-sm td:nth-child(1) {
+    width: 8%;
+}
+
+.table.table-sm th:nth-child(2),
+.table.table-sm td:nth-child(2) {
+    width: 15%;
+}
+
+.table.table-sm th:nth-child(3),
+.table.table-sm td:nth-child(3) {
+    width: 12%;
+    font-weight: 600;
+}
+
+.table.table-sm th:nth-child(4),
+.table.table-sm td:nth-child(4) {
+    width: 10%;
+}
+
+.table.table-sm th:nth-child(5),
+.table.table-sm td:nth-child(5) {
+    width: 18%;
+}
+
+.table.table-sm th:nth-child(6),
+.table.table-sm td:nth-child(6) {
+    width: 18%;
+}
+
+.table.table-sm th:nth-child(7),
+.table.table-sm td:nth-child(7) {
+    width: 19%;
+}
+
+/* Recent Trades Container */
+.table-responsive {
+    overflow-x: auto;
+    border-radius: 0.375rem;
+}
+
 /* Badges */
 .badge {
     font-size: 0.75rem;
