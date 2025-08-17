@@ -799,7 +799,11 @@ class TradingApp {
         const tableBody = document.getElementById('crypto-tracked-table');
 
         if (!tableBody) {
-            console.error('Table element not found: crypto-tracked-table');
+            // Only log error if we're on a page that should have this table
+            const currentPage = window.location.pathname;
+            if (currentPage === '/holdings' || currentPage === '/') {
+                console.error('Table element not found: crypto-tracked-table');
+            }
             return;
         }
 
@@ -2539,7 +2543,19 @@ function updateElementSafely(elementId, value) {
     if (element) {
         element.textContent = value;
     } else {
-        console.warn(`Element ${elementId} not found for update`);
+        // Only warn for elements that should exist on current page
+        const currentPage = window.location.pathname;
+        const expectedElements = {
+            '/': ['kpi-total-equity', 'kpi-daily-pnl', 'kpi-unrealized-pnl', 'kpi-cash', 'kpi-exposure', 'kpi-win-rate'],
+            '/portfolio': ['summary-total-value', 'summary-total-change', 'summary-total-assets', 'summary-cash-balance'],
+            '/holdings': ['holdings-total-assets', 'holdings-active-count', 'holdings-zero-count']
+        };
+        
+        // Only warn if this element is expected on current page
+        const pageElements = expectedElements[currentPage] || [];
+        if (pageElements.includes(elementId)) {
+            console.warn(`Element ${elementId} not found for update`);
+        }
     }
 }
 
@@ -2636,8 +2652,10 @@ function updatePortfolioSummary(portfolioData) {
     updateElementSafely("summary-win-rate", `${(summary.win_rate || 0).toFixed(1)}%`);
     updateElementSafely("summary-portfolio-value", formatCurrency(totalPortfolioValue));
     
-    // Update holdings summary
-    updateHoldingsSummary(holdings);
+    // Update holdings summary (only if elements exist)
+    if (document.getElementById("holdings-total-assets")) {
+        updateHoldingsSummary(holdings);
+    }
     
     // Update best/worst performers with enhanced display
     const bestPerformer = summary.best_performer || {symbol: "N/A", pnl_percent: 0, name: "N/A"};
@@ -2673,9 +2691,13 @@ function updatePortfolioSummary(portfolioData) {
         worstPerformer: worstPerformer.symbol
     });
     
-    // Update position counts with enhanced metrics
-    updateElementSafely("profitable-positions", `${summary.profitable_positions || 0}`);
-    updateElementSafely("daily-pnl", `$${fmtFixed(summary.daily_pnl || 0, 2)}`);
+    // Update position counts with enhanced metrics (only if elements exist)
+    if (document.getElementById("profitable-positions")) {
+        updateElementSafely("profitable-positions", `${summary.profitable_positions || 0}`);
+    }
+    if (document.getElementById("daily-pnl")) {
+        updateElementSafely("daily-pnl", `$${fmtFixed(summary.daily_pnl || 0, 2)}`);
+    }
     
     console.log("Enhanced portfolio summary updated successfully");
 }
