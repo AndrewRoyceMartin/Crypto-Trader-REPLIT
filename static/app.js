@@ -2433,19 +2433,41 @@ function updateElementSafely(elementId, value) {
     }
 }
 
-// Format currency with proper symbols and conversion
-function formatCurrency(amount, currency = null, exchangeRate = 1) {
+// Simple currency formatting for portfolio summary
+function formatCurrency(amount) {
     if (typeof amount !== 'number' || isNaN(amount)) {
         return '$0.00';
     }
     
-    const convertedAmount = amount * exchangeRate;
-    const symbol = getCurrencySymbol(currency || getCurrentCurrency());
-    
-    return symbol + Number(convertedAmount).toLocaleString('en-US', {
+    return '$' + Number(amount).toLocaleString('en-US', {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2
     });
+}
+
+// Get currency symbol helper
+function getCurrencySymbol(currency = 'USD') {
+    const symbols = {
+        'USD': '$',
+        'EUR': '€',
+        'GBP': '£',
+        'JPY': '¥'
+    };
+    return symbols[currency] || '$';
+}
+
+// Get current currency helper
+function getCurrentCurrency() {
+    const selector = document.getElementById('currency-selector');
+    return selector ? selector.value : 'USD';
+}
+
+// Safe number formatting helper
+function fmtFixed(value, decimals = 2) {
+    if (typeof value !== 'number' || isNaN(value)) {
+        return '0.00';
+    }
+    return Number(value).toFixed(decimals);
 }
 
 // Enhanced portfolio summary update function
