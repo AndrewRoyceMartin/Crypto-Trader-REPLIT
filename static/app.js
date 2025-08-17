@@ -686,11 +686,9 @@ class TradingApp {
                 // Update enhanced portfolio summary with full data
                 updatePortfolioSummary(data);
                 
-                // Update Quick Overview section
-                updateQuickOverview(data);
-                
-                // Update Quick Overview charts
-                this.updateQuickOverviewCharts(data);
+                // Update complete Dashboard Overview
+                const trades = data.recent_trades || data.trades || [];
+                renderDashboardOverview(data, trades);
 
                 // Recent trades (prefer payload, otherwise fetch)
                 if (data.recent_trades || data.trades) {
@@ -1409,7 +1407,7 @@ class TradingApp {
             console.log('Performance charts initialized with Chart.js');
 
             // Initialize Quick Overview charts
-            this.initializeQuickOverviewCharts();
+            initializeQuickOverviewCharts();
 
             // Update charts with initial data
             this.updatePerformanceCharts();
@@ -2740,8 +2738,62 @@ function updateTopMovers(holdings) {
     topMoversEl.innerHTML = html || '<div class="text-muted text-center">No significant moves</div>';
 }
 
-    // Initialize Quick Overview charts
-    initializeQuickOverviewCharts() {
+// Render Dashboard Overview - comprehensive function to update all Quick Overview elements
+function renderDashboardOverview(portfolioData, recentTrades = []) {
+    console.log("Rendering complete Dashboard Overview");
+    
+    // Update all KPI elements
+    updateQuickOverview(portfolioData);
+    
+    // Update charts with portfolio data
+    updateQuickOverviewCharts(portfolioData);
+    
+    // Update recent trades preview (first 5 trades)
+    updateRecentTradesPreview(recentTrades.slice(0, 5));
+    
+    console.log("Dashboard Overview rendered successfully");
+}
+
+// Update Recent Trades Preview in Quick Overview
+function updateRecentTradesPreview(trades) {
+    const previewBody = document.getElementById("recent-trades-preview-body");
+    if (!previewBody) return;
+    
+    if (!trades || trades.length === 0) {
+        previewBody.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-3">No recent trades</td></tr>';
+        return;
+    }
+    
+    let html = '';
+    trades.forEach((trade, index) => {
+        const tradeDate = new Date(trade.timestamp || Date.now()).toLocaleDateString();
+        const tradeTime = new Date(trade.timestamp || Date.now()).toLocaleTimeString('en-US', { 
+            hour: '2-digit', 
+            minute: '2-digit' 
+        });
+        
+        const actionClass = trade.action === 'BUY' ? 'bg-success' : 'bg-danger';
+        const sizeFormatted = parseFloat(trade.size || 0).toFixed(4);
+        const priceFormatted = formatCurrency(trade.price || 0);
+        
+        html += `
+            <tr>
+                <td><small class="text-muted">${tradeDate}</small><br><small>${tradeTime}</small></td>
+                <td><strong class="text-primary">${trade.symbol}</strong></td>
+                <td><span class="badge ${actionClass}">${trade.action}</span></td>
+                <td class="text-end">
+                    <div><small>${sizeFormatted}</small></div>
+                    <div><small class="text-muted">${priceFormatted}</small></div>
+                </td>
+            </tr>
+        `;
+    });
+    
+    previewBody.innerHTML = html;
+}
+
+// Initialize Quick Overview charts
+function initializeQuickOverviewCharts() {
     // Don't initialize if Chart.js isn't loaded
     if (!window.Chart) {
         console.warn('Chart.js not available for Quick Overview charts');
@@ -2752,7 +2804,7 @@ function updateTopMovers(holdings) {
         // Initialize Equity Sparkline Chart
         const equitySparklineCtx = document.getElementById('equitySparkline');
         if (equitySparklineCtx) {
-            this.equitySparklineChart = new Chart(equitySparklineCtx, {
+            window.equitySparklineChart = new Chart(equitySparklineCtx, {
                 type: 'line',
                 data: {
                     labels: [],
@@ -2797,7 +2849,7 @@ function updateTopMovers(holdings) {
         // Initialize Allocation Donut Chart
         const allocationDonutCtx = document.getElementById('allocationDonut');
         if (allocationDonutCtx) {
-            this.allocationDonutChart = new Chart(allocationDonutCtx, {
+            window.allocationDonutChart = new Chart(allocationDonutCtx, {
                 type: 'doughnut',
                 data: {
                     labels: ['BTC', 'ETH', 'SOL', 'Other'],
@@ -2841,8 +2893,8 @@ function updateTopMovers(holdings) {
     }
 }
 
-    // Update Quick Overview charts with live data
-    updateQuickOverviewCharts(portfolioData) {
+// Update Quick Overview charts with live data  
+function updateQuickOverviewCharts(portfolioData) {
     if (!portfolioData) return;
     
     const holdings = portfolioData.holdings || [];
@@ -2850,7 +2902,7 @@ function updateTopMovers(holdings) {
     
     try {
         // Update Equity Sparkline with simulated 24-hour equity trend
-        if (this.equitySparklineChart) {
+        if (window.equitySparklineChart) {
             const currentValue = summary.total_current_value || 1030;
             
             // Generate 24 hours of hourly data points
@@ -2866,13 +2918,13 @@ function updateTopMovers(holdings) {
                 values.push(value);
             }
             
-            this.equitySparklineChart.data.labels = labels;
-            this.equitySparklineChart.data.datasets[0].data = values;
-            this.equitySparklineChart.update('none');
+            window.equitySparklineChart.data.labels = labels;
+            window.equitySparklineChart.data.datasets[0].data = values;
+            window.equitySparklineChart.update('none');
         }
         
         // Update Allocation Donut with actual portfolio weights
-        if (this.allocationDonutChart && holdings.length > 0) {
+        if (window.allocationDonutChart && holdings.length > 0) {
             // Calculate top holdings by value
             const sortedHoldings = [...holdings]
                 .sort((a, b) => (b.current_value || 0) - (a.current_value || 0));
@@ -2886,9 +2938,9 @@ function updateTopMovers(holdings) {
                 const data = topHoldings.map(h => ((h.current_value || 0) / totalValue * 100).toFixed(1));
                 data.push((otherValue / totalValue * 100).toFixed(1));
                 
-                this.allocationDonutChart.data.labels = labels;
-                this.allocationDonutChart.data.datasets[0].data = data;
-                this.allocationDonutChart.update('none');
+                window.allocationDonutChart.data.labels = labels;
+                window.allocationDonutChart.data.datasets[0].data = data;
+                window.allocationDonutChart.update('none');
             }
         }
         
