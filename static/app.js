@@ -1505,11 +1505,11 @@ class TradingApp {
     }
 
     displayRecentTrades(trades) {
-        const tableBody = this.getTradesTbody();
+        const tableBody = document.getElementById('trades-table');
         if (!tableBody) return;
 
-        // Store all trades for filtering (normalized)
-        this.allTrades = this.normalizeTrades(trades);
+        // Normalize before storing
+        this.allTrades = this.normalizeTrades(trades || []);
 
         // Apply current filters
         this.applyTradeFilters();
