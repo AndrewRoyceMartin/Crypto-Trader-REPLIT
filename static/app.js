@@ -1498,10 +1498,24 @@ class TradingApp {
     }
 
     async updateRecentTrades() {
-        // Use cached API call to get status data (allow cache bypass)
-        const data = await this.fetchWithCache('/api/status', 'status', this.bypassCache);
-        const trades = data?.recent_trades || data?.trades || [];
-        this.displayRecentTrades(trades);
+        // First try the cached status
+        const status = await this.fetchWithCache('/api/status', 'status');
+        if (status?.recent_trades?.length) {
+            console.log('[trades] from /api/status:', status.recent_trades.length);
+            this.displayRecentTrades(status.recent_trades);
+            return;
+        }
+        // Fallback endpoint (if your backend exposes it)
+        try {
+            const r = await fetch('/api/recent-trades', { cache: 'no-cache' });
+            if (r.ok) {
+                const data = await r.json();
+                console.log('[trades] from /api/recent-trades:', (data?.recent_trades || data || []).length);
+                this.displayRecentTrades(data.recent_trades || data || []);
+            }
+        } catch (e) {
+            console.error('Failed to fetch recent trades fallback:', e);
+        }
     }
 
     displayRecentTrades(trades) {
