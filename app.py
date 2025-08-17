@@ -368,6 +368,34 @@ def render_holdings_page():
         logger.error(f"Error rendering holdings page: {e}")
         return render_loading_skeleton(f"Holdings Error: {e}", error=True)
 
+@app.route('/trades')
+def trades():
+    """Dedicated trades page showing trading history with analytics"""
+    start_warmup()
+    
+    if warmup["done"] and not warmup["error"]:
+        # System ready - serve trades page
+        return render_trades_page()
+    elif warmup["done"] and warmup["error"]:
+        # System failed to initialize properly
+        return render_loading_skeleton(f"System Error: {warmup['error']}", error=True)
+    else:
+        # Show loading skeleton while warming up
+        return render_loading_skeleton()
+
+def render_trades_page():
+    """Render the dedicated trades page."""
+    try:
+        from flask import render_template
+        from version import get_version
+        import time
+        
+        cache_version = int(time.time())
+        return render_template("trades.html", cache_version=cache_version, version=get_version())
+    except Exception as e:
+        logger.error(f"Error rendering trades page: {e}")
+        return render_loading_skeleton(f"Trades Error: {e}", error=True)
+
 def render_full_dashboard():
     """Render the original trading dashboard using templates."""
     try:
