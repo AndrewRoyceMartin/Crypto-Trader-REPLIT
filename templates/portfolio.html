@@ -89,17 +89,17 @@
     <!-- Modern Portfolio Summary Card -->
     <div class="row mb-4">
       <div class="col-12">
-        <div class="card border-0 shadow-lg" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 20px;">
+        <div class="card border-0 shadow-lg" style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); border-radius: 20px;">
           <div class="card-header border-0 pb-0" style="background: transparent;">
             <div class="d-flex justify-content-between align-items-center">
-              <h4 class="mb-0 text-white fw-bold">
-                <i class="fas fa-chart-pie me-2" style="color: #ffd700;"></i> Portfolio Overview
+              <h4 class="mb-0 text-dark fw-bold">
+                <i class="fas fa-chart-pie me-2" style="color: #0d6efd;"></i> Portfolio Overview
               </h4>
               <div class="d-flex gap-2">
-                <button class="btn btn-outline-light btn-sm border-2 px-3" onclick="refreshCryptoPortfolio()" style="border-radius: 25px;">
+                <button class="btn btn-outline-dark btn-sm border-2 px-3" onclick="refreshCryptoPortfolio()" style="border-radius: 25px;">
                   <i class="fas fa-sync-alt me-1"></i> Refresh
                 </button>
-                <button class="btn btn-warning btn-sm px-3" onclick="exportATOTax()" style="border-radius: 25px;">
+                <button class="btn btn-primary btn-sm px-3" onclick="exportATOTax()" style="border-radius: 25px;">
                   <i class="fas fa-file-export me-1"></i> Export
                 </button>
               </div>
@@ -113,7 +113,7 @@
                   <div class="kpi-icon">
                     <i class="fas fa-wallet text-warning"></i>
                   </div>
-                  <h3 id="summary-total-value" class="kpi-value text-white mb-1">$0.00</h3>
+                  <h3 id="summary-total-value" class="kpi-value text-dark mb-1">$0.00</h3>
                   <small class="kpi-label">Total Portfolio Value</small>
                 </div>
               </div>
@@ -164,7 +164,7 @@
                   <div class="kpi-icon">
                     <i class="fas fa-dollar-sign text-warning"></i>
                   </div>
-                  <h3 id="summary-cash-balance" class="kpi-value text-white mb-1">$0.00</h3>
+                  <h3 id="summary-cash-balance" class="kpi-value text-dark mb-1">$0.00</h3>
                   <small class="kpi-label">Cash Balance</small>
                 </div>
               </div>
@@ -173,7 +173,7 @@
                   <div class="kpi-icon">
                     <i class="fas fa-percentage text-info"></i>
                   </div>
-                  <h3 id="summary-win-rate" class="kpi-value text-white mb-1">0%</h3>
+                  <h3 id="summary-win-rate" class="kpi-value text-dark mb-1">0%</h3>
                   <small class="kpi-label">Win Rate</small>
                 </div>
               </div>
@@ -183,8 +183,8 @@
             <div class="row text-center">
               <div class="col-md-4 offset-md-2">
                 <div class="secondary-metric">
-                  <small class="text-light opacity-75 text-uppercase fw-bold">24h Performance</small>
-                  <div id="summary-24h-change" class="h5 fw-bold text-warning mt-1">+0.00%</div>
+                  <small class="text-muted text-uppercase fw-bold">24h Performance</small>
+                  <div id="summary-24h-change" class="h5 fw-bold text-primary mt-1">+0.00%</div>
                 </div>
               </div>
               <div class="col-md-4">
