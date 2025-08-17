@@ -1,529 +1,59 @@
-// Trading System Web Interface JavaScript - Clean Version
+// Trading System Web Interface JavaScript - Cleaned & Harmonized
 
 class TradingApp {
     constructor() {
         this.updateInterval = null;
-        this.portfolioChart = null;
-        this.returnsChart = null;
-        this.tradesChart = null;
+        this.chartUpdateInterval = null;
+
+        // Charts
+        this.portfolioChart = null;   // line
+        this.pnlChart = null;         // doughnut
+        this.performersChart = null;  // bar
+
+        // State
         this.isLiveConfirmationPending = false;
         this.countdownInterval = null;
         this.countdown = 5;
-        this.chartData = {
-            portfolio: [],
-            returns: [],
-            trades: []
-        };
 
         // store trades for filtering
         this.allTrades = [];
 
-        // Debounce mechanism to prevent overlapping dashboard updates
+        // Debounce to prevent overlapping dashboard updates
         this.lastDashboardUpdate = 0;
-        this.dashboardUpdateDebounce = 2000; // 2 second debounce
+        this.dashboardUpdateDebounce = 2000; // 2 seconds
         this.pendingDashboardUpdate = null;
 
-        // API caching to prevent duplicate requests
+        // API cache
         this.apiCache = {
-            status: { data: null, timestamp: 0, ttl: 1000 }, // 1-second cache (debug)
-            portfolio: { data: null, timestamp: 0, ttl: 1000 }, // 1-second cache (debug)
-            config: { data: null, timestamp: 0, ttl: 30000 } // 30-second cache
+            status:    { data: null, timestamp: 0, ttl: 1000 },  // 1s
+            portfolio: { data: null, timestamp: 0, ttl: 1000 },  // 1s
+            config:    { data: null, timestamp: 0, ttl: 30000 }  // 30s
         };
 
-        // Debug flag to bypass cache
+        // Debug: force network fetches
         this.bypassCache = true;
 
-        // Currency selection state
-        this.selectedCurrency = 'USD'; // Default currency
-        this.exchangeRates = { USD: 1 }; // Base USD rates
+        // Currency
+        this.selectedCurrency = 'USD';
+        this.exchangeRates = { USD: 1 };
+
+        // scratch
+        this.currentCryptoData = null;
 
         this.init();
     }
 
-    // Utility function to safely convert values to numbers for .toFixed() calls
+    // ---------- Utils ----------
     num(v, d = 0) {
         const n = Number(v);
         return Number.isFinite(n) ? n : d;
     }
-
-    // Helper for safe formatted fixed-point numbers
     fmtFixed(v, p, d = '0') {
         const n = this.num(v);
         return n.toFixed(p);
     }
-
-    // Helper: get trades <tbody> robustly
-    getTradesTbody() {
-        return document.getElementById('trades-table');
-    }
-
-    // Add this method inside the TradingApp class
-    normalizeTrades(trades) {
-        if (!Array.isArray(trades)) return [];
-        return trades.map(t => {
-            // pick timestamp-like field
-            const ts = t.timestamp || t.ts || t.time || t.date || null;
-            // try to coerce numbers safely
-            const num = (v) => {
-                const n = Number(v);
-                return Number.isFinite(n) ? n : 0;
-            };
-            return {
-                timestamp: ts,                                 // ISO string or epoch ok
-                symbol: t.symbol || t.pair || t.market || '',  // symbol
-                side: (t.side || '').toUpperCase(),            // "BUY"/"SELL"
-                price: num(t.price || t.fill_price || t.avg_price),
-                quantity: num(t.quantity || t.qty || t.amount),
-                pnl: num(t.pnl || t.profit || t.realized_pnl),
-                trade_id: t.trade_id || t.id || t.order_id || ''
-            };
-        }).filter(t => t.timestamp && t.symbol);
-    }
-
-    init() {
-        this.setupEventListeners();
-        this.initializeCharts();
-        this.startAutoUpdate();
-        this.loadConfig();
-
-        // Load data immediately on startup with debounce
-        this.debouncedUpdateDashboard();
-
-        // Load exchange rates and portfolio data
-        this.fetchExchangeRates().then(() => {
-            this.updateCryptoPortfolio();
-        });
-    }
-
-    setupEventListeners() {
-        // Currency selector event listener
-        const currencyDropdown = document.getElementById('currency-selector');
-        if (currencyDropdown) {
-            // Set initial selected currency from dropdown
-            this.selectedCurrency = currencyDropdown.value || 'USD';
-
-            currencyDropdown.addEventListener('change', (e) => {
-                const selected = e.target.value;
-                console.log('Currency changed to:', selected);
-                this.setSelectedCurrency(selected);
-            });
-        }
-
-        // Remove duplicate interval setup - handled by startAutoUpdate()
-
-        // Start countdown timer (only once during initialization)
-        this.startCountdown();
-
-        // Handle page visibility change - pause updates when hidden
-        document.addEventListener('visibilitychange', () => {
-            if (document.hidden) {
-                this.stopAutoUpdate();
-            } else {
-                this.startAutoUpdate();
-                // Use debounced update when page becomes visible
-                this.debouncedUpdateDashboard();
-                this.updateCryptoPortfolio(); // Also refresh portfolio when page becomes visible
-            }
-        });
-
-        // Handle window unload - cleanup all intervals
-        window.addEventListener('beforeunload', () => {
-            this.cleanup();
-        });
-    }
-
-    startAutoUpdate() {
-        // Start chart updates
-        if (!this.chartUpdateInterval) {
-            this.chartUpdateInterval = setInterval(() => {
-                this.updatePerformanceCharts();
-            }, 30000); // Update charts every 30 seconds
-        }
-
-        if (!this.updateInterval) {
-            this.updateInterval = setInterval(() => {
-                this.debouncedUpdateDashboard();
-                this.updateCryptoPortfolio(); // Also update portfolio data every 60 seconds
-            }, 60000); // Reduced from 30s to 60s to prevent rate limiting
-        }
-    }
-
-    stopAutoUpdate() {
-        if (this.updateInterval) {
-            clearInterval(this.updateInterval);
-            this.updateInterval = null;
-        }
-    }
-
-    stopCountdown() {
-        if (this.countdownInterval) {
-            clearInterval(this.countdownInterval);
-            this.countdownInterval = null;
-        }
-    }
-
-    cleanup() {
-        // Comprehensive cleanup method to prevent memory leaks
-        this.stopAutoUpdate();
-        this.stopCountdown();
-
-        if (this.pendingDashboardUpdate) {
-            clearTimeout(this.pendingDashboardUpdate);
-            this.pendingDashboardUpdate = null;
-        }
-
-        // Stop chart updates
-        if (this.chartUpdateInterval) {
-            clearInterval(this.chartUpdateInterval);
-            this.chartUpdateInterval = null;
-        }
-    }
-
-    async fetchWithCache(endpoint, cacheKey, bypassCache = false) {
-        const cache = this.apiCache[cacheKey];
-        const now = Date.now();
-
-        // Return cached data if still valid and not bypassing cache
-        if (!bypassCache && cache && cache.data && (now - cache.timestamp) < cache.ttl) {
-            return cache.data;
-        }
-
-        try {
-            const response = await fetch(endpoint);
-            if (!response.ok) return null;
-
-            const data = await response.json();
-
-            // Update cache
-            this.apiCache[cacheKey] = {
-                data: data,
-                timestamp: now,
-                ttl: cache ? cache.ttl : 30000 // Default 30 second TTL
-            };
-
-            return data;
-        } catch (error) {
-            console.error(`Error fetching ${endpoint}:`, error);
-            return null;
-        }
-    }
-
-    async updateDashboard() {
-        // Implement debounce to prevent overlapping calls
-        const now = Date.now();
-        if (now - this.lastDashboardUpdate < this.dashboardUpdateDebounce) {
-            // Clear any pending update and schedule a new one
-            if (this.pendingDashboardUpdate) {
-                clearTimeout(this.pendingDashboardUpdate);
-            }
-            this.pendingDashboardUpdate = setTimeout(() => {
-                this.updateDashboard();
-            }, this.dashboardUpdateDebounce - (now - this.lastDashboardUpdate));
-            return;
-        }
-
-        this.lastDashboardUpdate = now;
-
-        // Use cached API call to get status data
-        const data = await this.fetchWithCache('/api/status', 'status', this.bypassCache);
-        if (!data) return;
-
-        // Update uptime display
-        if (data.uptime !== undefined) {
-            this.updateUptimeDisplay(data.uptime);
-        }
-
-        // Update portfolio values from status endpoint
-        if (data.portfolio) {
-            const portfolioValueEl = document.getElementById('portfolio-value');
-            const portfolioPnlEl = document.getElementById('portfolio-pnl');
-
-            if (portfolioValueEl) {
-                portfolioValueEl.textContent = this.formatCurrency(data.portfolio.total_value || 0);
-            }
-            if (portfolioPnlEl) {
-                portfolioPnlEl.textContent = this.formatCurrency(data.portfolio.daily_pnl || 0);
-                portfolioPnlEl.className = (data.portfolio.daily_pnl || 0) >= 0 ? 'text-success' : 'text-danger';
-            }
-        }
-
-        // Update trading status
-        if (data.trading_status) {
-            this.updateTradingStatus(data.trading_status);
-        }
-
-        // Update recent trades using the same cached data
-        const trades = data.recent_trades || data.trades || [];
-        console.log('Updating recent trades from status:', trades.length, 'trades found');
-        
-        // If no trades from status, try trade history endpoint
-        if (trades.length === 0) {
-            this.updateRecentTrades();
-        } else {
-            this.displayDashboardRecentTrades(trades);
-        }
-
-        // Update price source status only (portfolio updates separately to avoid loops)
-        this.updatePriceSourceStatus();
-        
-        // Update OKX exchange status
-        this.updateOKXStatus();
-    }
-
-    debouncedUpdateDashboard() {
-        // Simple wrapper to call updateDashboard with debounce logic built-in
-        this.updateDashboard();
-    }
-
-    async updatePriceSourceStatus() {
-        try {
-            const response = await fetch('/api/price-source-status');
-            if (!response.ok) return;
-
-            const data = await response.json();
-            console.log('Price source status response:', data);
-
-            const serverConnectionText = document.getElementById('server-connection-text');
-            if (serverConnectionText) {
-                // Check both 'status' and 'connected' fields for compatibility
-                const isConnected = data.status === 'connected' || data.connected === true;
-
-                if (isConnected) {
-                    serverConnectionText.textContent = 'Connected';
-                    serverConnectionText.className = 'text-success ms-1';
-
-                    // Update icon color to exchange icon for OKX API
-                    const statusIcon = document.querySelector('#server-connection-status .fas.fa-exchange-alt');
-                    if (statusIcon) {
-                        statusIcon.className = 'fas fa-exchange-alt text-success me-1';
-                    }
-                } else {
-                    const lastUpdate = data.last_update ? new Date(data.last_update).toLocaleTimeString() : 'unknown';
-                    serverConnectionText.textContent = `Disconnected (${lastUpdate})`;
-                    serverConnectionText.className = 'text-danger ms-1';
-
-                    // Update icon color to exchange icon for OKX API  
-                    const statusIcon = document.querySelector('#server-connection-status .fas.fa-exchange-alt');
-                    if (statusIcon) {
-                        statusIcon.className = 'fas fa-exchange-alt text-danger me-1';
-                    }
-                }
-            }
-
-        } catch (error) {
-            console.error('Price source status update failed:', error);
-
-            // Show error state
-            const serverConnectionText = document.getElementById('server-connection-text');
-            if (serverConnectionText) {
-                serverConnectionText.textContent = 'Error';
-                serverConnectionText.className = 'text-warning ms-1';
-
-                const statusIcon = document.querySelector('#server-connection-status .fas.fa-exchange-alt');
-                if (statusIcon) {
-                    statusIcon.className = 'fas fa-exchange-alt text-warning me-1';
-                }
-            }
-        }
-    }
-
-    async updateOKXStatus() {
-        try {
-            const response = await fetch('/api/okx-status');
-            if (!response.ok) return;
-
-            const data = await response.json();
-            console.log('OKX exchange status response:', data);
-
-            const okxConnectionText = document.getElementById('okx-connection-text');
-            if (okxConnectionText && data.status) {
-                const isConnected = data.status.connected === true;
-                const connectionType = data.status.connection_type || 'Live';
-                const tradingMode = data.status.trading_mode || 'Trading';
-
-                if (isConnected) {
-                    // Show connection type (Simulated or Live)
-                    okxConnectionText.textContent = connectionType;
-                    okxConnectionText.className = 'text-success ms-1';
-
-                    // Update icon color to server icon for Trading Mode
-                    const statusIcon = document.querySelector('#okx-connection-status .fas.fa-server');
-                    if (statusIcon) {
-                        statusIcon.className = 'fas fa-server text-success me-1';
-                    }
-                } else {
-                    const lastSync = data.status.last_sync ? new Date(data.status.last_sync).toLocaleTimeString() : 'never';
-                    okxConnectionText.textContent = `Offline (${lastSync})`;
-                    okxConnectionText.className = 'text-danger ms-1';
-
-                    // Update icon color
-                    const statusIcon = document.querySelector('#okx-connection-status .fas.fa-server');
-                    if (statusIcon) {
-                        statusIcon.className = 'fas fa-server text-danger me-1';
-                    }
-                }
-
-                // Add tooltip with detailed exchange and trading mode info
-                const statusElement = document.getElementById('okx-connection-status');
-                if (statusElement) {
-                    statusElement.title = `${data.status.exchange_name || 'OKX Exchange'} - ${tradingMode} - ${data.status.initialized ? 'Initialized' : 'Not Initialized'}`;
-                }
-            }
-
-        } catch (error) {
-            console.error('OKX exchange status update failed:', error);
-
-            // Show error state
-            const okxConnectionText = document.getElementById('okx-connection-text');
-            if (okxConnectionText) {
-                okxConnectionText.textContent = 'Error';
-                okxConnectionText.className = 'text-warning ms-1';
-
-                const statusIcon = document.querySelector('#okx-connection-status .fas.fa-server');
-                if (statusIcon) {
-                    statusIcon.className = 'fas fa-server text-warning me-1';
-                }
-            }
-        }
-    }
-
-    updateUptimeDisplay(serverUptimeSeconds) {
-        const uptimeElement = document.getElementById('system-uptime');
-
-        if (uptimeElement && serverUptimeSeconds !== undefined) {
-            const uptimeText = this.formatUptime(serverUptimeSeconds);
-            uptimeElement.textContent = uptimeText;
-        }
-    }
-
-    formatUptime(totalSeconds) {
-        const hours = Math.floor(totalSeconds / 3600);
-        const minutes = Math.floor((totalSeconds % 3600) / 60);
-        const seconds = Math.floor(totalSeconds % 60);
-
-        // Format as hh:mm:ss with zero padding
-        return [
-            hours.toString().padStart(2, '0'),
-            minutes.toString().padStart(2, '0'),
-            seconds.toString().padStart(2, '0')
-        ].join(':');
-    }
-
-    async loadConfig() {
-        // Use cached API call for config data
-        const config = await this.fetchWithCache('/api/config', 'config', this.bypassCache);
-        if (!config) return;
-
-        console.log('Config loaded:', config);
-
-        // Store config for later use
-        this.config = config;
-
-        // Apply configuration
-        if (config.update_interval) {
-            // Update interval is handled by startAutoUpdate()
-        }
-    }
-
-    startCountdown() {
-        // Prevent multiple countdown intervals
-        if (this.countdownInterval) {
-            clearInterval(this.countdownInterval);
-            this.countdownInterval = null;
-        }
-
-        this.countdown = 5;
-        this.countdownInterval = setInterval(() => {
-            const countdownElement = document.getElementById('trading-countdown');
-            if (countdownElement) {
-                if (this.countdown > 0) {
-                    countdownElement.textContent = `Starting in ${this.countdown}s`;
-                    countdownElement.className = 'badge bg-warning ms-3';
-                    this.countdown--;
-                } else {
-                    countdownElement.textContent = 'System Ready';
-                    countdownElement.className = 'badge bg-success ms-3';
-                    clearInterval(this.countdownInterval);
-                    this.countdownInterval = null; // Prevent memory leaks
-                }
-            } else {
-                // If element doesn't exist, clear the interval to prevent memory leak
-                clearInterval(this.countdownInterval);
-                this.countdownInterval = null;
-            }
-        }, 1000);
-    }
-
-    displayEmptyPortfolioMessage() {
-        // Display helpful message when portfolio is empty
-        const tableIds = ['crypto-tracked-table', 'performance-page-table-body', 'positions-table-body'];
-
-        tableIds.forEach(tableId => {
-            const tableBody = document.getElementById(tableId);
-            if (tableBody) {
-                tableBody.innerHTML = '';
-                const row = document.createElement('tr');
-                const cell = document.createElement('td');
-                // Set appropriate column span based on table type
-                if (tableId === 'crypto-tracked-table') {
-                    cell.colSpan = 13; // Main tracked table has 13 columns
-                } else if (tableId === 'performance-page-table-body') {
-                    cell.colSpan = 10; // Performance page table has 10 columns
-                } else if (tableId === 'positions-table-body') {
-                    cell.colSpan = 11; // Holdings table has 11 columns
-                } else {
-                    cell.colSpan = 10; // Default fallback
-                }
-                cell.className = 'text-center text-warning p-4';
-                cell.innerHTML = `
-                    <div class="mb-2">
-                        <i class="fas fa-exclamation-triangle fa-2x text-warning"></i>
-                    </div>
-                    <h5>Portfolio Empty</h5>
-                    <p class="mb-3">Start trading to populate your cryptocurrency portfolio with live data.</p>
-                    <button class="btn btn-success" onclick="startTrading('paper', 'portfolio')">
-                        <i class="fas fa-play"></i> Start Paper Trading
-                    </button>
-                `;
-                row.appendChild(cell);
-                tableBody.appendChild(row);
-            }
-        });
-
-        // Update summary statistics to show empty state
-        this.updateSummaryForEmptyPortfolio();
-    }
-
-    updateSummaryForEmptyPortfolio() {
-        // Update summary stats to show empty state
-        const summaryElements = {
-            'crypto-total-count': '0',
-            'crypto-current-value': this.formatCurrency(0),
-            'crypto-total-pnl': this.formatCurrency(0)
-        };
-
-        Object.entries(summaryElements).forEach(([id, value]) => {
-            const element = document.getElementById(id);
-            if (element) {
-                element.textContent = value;
-                if (id === 'crypto-total-pnl') {
-                    element.className = 'mb-0 text-secondary';
-                }
-            }
-        });
-
-        // Update crypto symbols display
-        const symbolsContainer = document.getElementById('crypto-symbols');
-        if (symbolsContainer) {
-            symbolsContainer.innerHTML = '<span class="badge bg-warning">Portfolio empty - Start trading to populate</span>';
-        }
-    }
-
     formatCurrency(amount, currency = null) {
-        // Use selected currency if not specified
         const targetCurrency = currency || this.selectedCurrency || 'USD';
-
-        // Apply exchange rate conversion
         const rate = this.exchangeRates[targetCurrency] || 1;
         const convertedAmount = (Number(amount) || 0) * rate;
 
@@ -532,82 +62,421 @@ class TradingApp {
             currency: targetCurrency
         }).format(convertedAmount);
     }
-
+    formatUptime(totalSeconds) {
+        const hours = Math.floor(totalSeconds / 3600);
+        const minutes = Math.floor((totalSeconds % 3600) / 60);
+        const seconds = Math.floor(totalSeconds % 60);
+        return [
+            hours.toString().padStart(2, '0'),
+            minutes.toString().padStart(2, '0'),
+            seconds.toString().padStart(2, '0')
+        ].join(':');
+    }
     formatTradeTime(timestamp) {
         if (!timestamp) return 'N/A';
-        
         try {
             const date = new Date(timestamp);
             if (isNaN(date.getTime())) return 'Invalid';
-            
             const now = new Date();
             const diffMs = now - date;
             const diffHours = diffMs / (1000 * 60 * 60);
-            
             if (diffHours < 24) {
-                // Show time only for today
-                return date.toLocaleTimeString('en-US', { 
-                    hour: '2-digit', 
-                    minute: '2-digit' 
-                });
-            } else {
-                // Show date for older trades
-                return date.toLocaleDateString('en-US', { 
-                    month: 'short', 
-                    day: 'numeric' 
-                });
+                return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
             }
-        } catch (e) {
+            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        } catch {
             return 'N/A';
         }
+    }
+    getTradesTbody() {
+        return document.getElementById('trades-table');
+    }
+
+    // Normalize trades from various backends (single canonical version)
+    normalizeTrades(trades = []) {
+        return (trades || []).map((t, i) => {
+            const ts = t.timestamp || t.ts || t.time || t.date;
+            const side = (t.side || t.action || '').toString().toUpperCase(); // BUY/SELL
+            const qty = this.num(t.quantity ?? t.qty ?? t.amount ?? t.size, 0);
+            const price = this.num(t.price ?? t.avg_price ?? t.fill_price ?? t.execution_price, 0);
+            const pnl = this.num(t.pnl ?? t.realized_pnl ?? t.profit, 0);
+            const id = t.trade_id || t.id || t.order_id || t.clientOrderId || (i + 1);
+            return {
+                trade_id: id,
+                timestamp: ts,
+                symbol: t.symbol || t.pair || t.asset || '',
+                side,
+                quantity: qty,
+                price,
+                pnl
+            };
+        });
+    }
+
+    // ---------- Init / lifecycle ----------
+    init() {
+        this.setupEventListeners();
+        this.initializeCharts();
+        this.startAutoUpdate();
+        this.loadConfig();
+
+        // Initial fetches
+        this.debouncedUpdateDashboard();
+
+        this.fetchExchangeRates().then(() => {
+            this.updateCryptoPortfolio();
+        });
+    }
+
+    setupEventListeners() {
+        const currencyDropdown = document.getElementById('currency-selector');
+        if (currencyDropdown) {
+            this.selectedCurrency = currencyDropdown.value || 'USD';
+            currencyDropdown.addEventListener('change', (e) => {
+                this.setSelectedCurrency(e.target.value);
+            });
+        }
+
+        this.startCountdown();
+
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                this.stopAutoUpdate();
+            } else {
+                this.startAutoUpdate();
+                this.debouncedUpdateDashboard();
+                this.updateCryptoPortfolio();
+            }
+        });
+
+        window.addEventListener('beforeunload', () => this.cleanup());
+    }
+
+    startAutoUpdate() {
+        if (!this.chartUpdateInterval) {
+            this.chartUpdateInterval = setInterval(() => {
+                this.updatePerformanceCharts();
+            }, 30000);
+        }
+        if (!this.updateInterval) {
+            this.updateInterval = setInterval(() => {
+                this.debouncedUpdateDashboard();
+                this.updateCryptoPortfolio();
+            }, 60000);
+        }
+    }
+    stopAutoUpdate() {
+        if (this.updateInterval) {
+            clearInterval(this.updateInterval);
+            this.updateInterval = null;
+        }
+    }
+    stopCountdown() {
+        if (this.countdownInterval) {
+            clearInterval(this.countdownInterval);
+            this.countdownInterval = null;
+        }
+    }
+    cleanup() {
+        this.stopAutoUpdate();
+        this.stopCountdown();
+        if (this.pendingDashboardUpdate) {
+            clearTimeout(this.pendingDashboardUpdate);
+            this.pendingDashboardUpdate = null;
+        }
+        if (this.chartUpdateInterval) {
+            clearInterval(this.chartUpdateInterval);
+            this.chartUpdateInterval = null;
+        }
+    }
+
+    // ---------- Networking / cache ----------
+    async fetchWithCache(endpoint, cacheKey, bypassCache = false) {
+        const cache = this.apiCache[cacheKey];
+        const now = Date.now();
+
+        if (!bypassCache && cache && cache.data && (now - cache.timestamp) < cache.ttl) {
+            return cache.data;
+        }
+
+        try {
+            const response = await fetch(endpoint, { cache: 'no-cache' });
+            if (!response.ok) return null;
+            const data = await response.json();
+            this.apiCache[cacheKey] = {
+                data,
+                timestamp: now,
+                ttl: cache ? cache.ttl : 30000
+            };
+            return data;
+        } catch (error) {
+            console.error(`Error fetching ${endpoint}:`, error);
+            return null;
+        }
+    }
+
+    // ---------- Dashboard ----------
+    async updateDashboard() {
+        const now = Date.now();
+        if (now - this.lastDashboardUpdate < this.dashboardUpdateDebounce) {
+            if (this.pendingDashboardUpdate) clearTimeout(this.pendingDashboardUpdate);
+            this.pendingDashboardUpdate = setTimeout(() => this.updateDashboard(),
+                this.dashboardUpdateDebounce - (now - this.lastDashboardUpdate));
+            return;
+        }
+        this.lastDashboardUpdate = now;
+
+        const data = await this.fetchWithCache('/api/status', 'status', this.bypassCache);
+        if (!data) return;
+
+        if (typeof data.uptime === 'number') {
+            this.updateUptimeDisplay(data.uptime);
+        }
+
+        // Update quick KPIs if status has portfolio summary
+        if (data.portfolio) {
+            const kpiEquityEl = document.getElementById('kpi-total-equity');
+            const kpiDailyEl  = document.getElementById('kpi-daily-pnl');
+            if (kpiEquityEl) kpiEquityEl.textContent = this.formatCurrency(data.portfolio.total_value || 0);
+            if (kpiDailyEl) {
+                const v = this.num(data.portfolio.daily_pnl);
+                kpiDailyEl.textContent = this.formatCurrency(v);
+                kpiDailyEl.className = v >= 0 ? 'h5 mb-0 text-success' : 'h5 mb-0 text-danger';
+            }
+        }
+
+        // Trading status
+        if (data.trading_status) this.updateTradingStatus(data.trading_status);
+
+        // Recent trades
+        const trades = data.recent_trades || data.trades || [];
+        if (trades.length === 0) {
+            await this.updateRecentTrades();
+        } else {
+            this.displayDashboardRecentTrades(trades);
+        }
+
+        // Status widgets
+        this.updatePriceSourceStatus();
+        this.updateOKXStatus();
+    }
+
+    debouncedUpdateDashboard() {
+        this.updateDashboard();
+    }
+
+    async updatePriceSourceStatus() {
+        try {
+            const response = await fetch('/api/price-source-status', { cache: 'no-cache' });
+            if (!response.ok) return;
+            const data = await response.json();
+
+            const serverConnectionText = document.getElementById('server-connection-text');
+            const statusIcon = document.querySelector('#server-connection-status i.fas'); // generic icon under this container
+
+            const isConnected = data.status === 'connected' || data.connected === true;
+
+            if (serverConnectionText) {
+                if (isConnected) {
+                    serverConnectionText.textContent = 'Connected';
+                    serverConnectionText.className = 'text-success ms-1';
+                    if (statusIcon) statusIcon.className = 'fas fa-wifi text-success me-1';
+                } else {
+                    const lastUpdate = data.last_update ? new Date(data.last_update).toLocaleTimeString() : 'unknown';
+                    serverConnectionText.textContent = `Disconnected (${lastUpdate})`;
+                    serverConnectionText.className = 'text-danger ms-1';
+                    if (statusIcon) statusIcon.className = 'fas fa-wifi text-danger me-1';
+                }
+            }
+        } catch (error) {
+            console.error('Price source status update failed:', error);
+            const serverConnectionText = document.getElementById('server-connection-text');
+            const statusIcon = document.querySelector('#server-connection-status i.fas');
+            if (serverConnectionText) {
+                serverConnectionText.textContent = 'Error';
+                serverConnectionText.className = 'text-warning ms-1';
+            }
+            if (statusIcon) statusIcon.className = 'fas fa-wifi text-warning me-1';
+        }
+    }
+
+    async updateOKXStatus() {
+        try {
+            const response = await fetch('/api/okx-status', { cache: 'no-cache' });
+            if (!response.ok) return;
+
+            const data = await response.json();
+            const okxConnectionText = document.getElementById('okx-connection-text');
+            const statusIcon = document.querySelector('#okx-connection-status .fas.fa-server');
+
+            if (okxConnectionText && data.status) {
+                const isConnected  = data.status.connected === true;
+                const connectionType = data.status.connection_type || 'Live';
+                const tradingMode = data.status.trading_mode || 'Trading';
+
+                if (isConnected) {
+                    okxConnectionText.textContent = connectionType;
+                    okxConnectionText.className = 'text-success ms-1';
+                    if (statusIcon) statusIcon.className = 'fas fa-server text-success me-1';
+                } else {
+                    const lastSync = data.status.last_sync ? new Date(data.status.last_sync).toLocaleTimeString() : 'never';
+                    okxConnectionText.textContent = `Offline (${lastSync})`;
+                    okxConnectionText.className = 'text-danger ms-1';
+                    if (statusIcon) statusIcon.className = 'fas fa-server text-danger me-1';
+                }
+
+                const statusElement = document.getElementById('okx-connection-status');
+                if (statusElement) {
+                    statusElement.title = `${data.status.exchange_name || 'OKX Exchange'} - ${tradingMode} - ${data.status.initialized ? 'Initialized' : 'Not Initialized'}`;
+                }
+            }
+        } catch (error) {
+            console.error('OKX exchange status update failed:', error);
+            const okxConnectionText = document.getElementById('okx-connection-text');
+            const statusIcon = document.querySelector('#okx-connection-status .fas.fa-server');
+            if (okxConnectionText) {
+                okxConnectionText.textContent = 'Error';
+                okxConnectionText.className = 'text-warning ms-1';
+            }
+            if (statusIcon) statusIcon.className = 'fas fa-server text-warning me-1';
+        }
+    }
+
+    updateUptimeDisplay(serverUptimeSeconds) {
+        const uptimeElement = document.getElementById('system-uptime');
+        if (uptimeElement && serverUptimeSeconds !== undefined) {
+            uptimeElement.textContent = this.formatUptime(serverUptimeSeconds);
+        }
+    }
+
+    async loadConfig() {
+        const config = await this.fetchWithCache('/api/config', 'config', this.bypassCache);
+        if (!config) return;
+        this.config = config;
+    }
+
+    startCountdown() {
+        if (this.countdownInterval) clearInterval(this.countdownInterval);
+
+        this.countdown = 5;
+        this.countdownInterval = setInterval(() => {
+            const el = document.getElementById('trading-countdown');
+            if (!el) {
+                clearInterval(this.countdownInterval);
+                this.countdownInterval = null;
+                return;
+            }
+            if (this.countdown > 0) {
+                el.textContent = `Starting in ${this.countdown}s`;
+                el.className = 'badge bg-warning ms-3';
+                this.countdown--;
+            } else {
+                el.textContent = 'System Ready';
+                el.className = 'badge bg-success ms-3';
+                clearInterval(this.countdownInterval);
+                this.countdownInterval = null;
+            }
+        }, 1000);
+    }
+
+    showToast(message, type = 'info') {
+        const toast = document.createElement('div');
+        toast.className = `alert alert-${type === 'error' ? 'danger' : type === 'success' ? 'success' : type === 'warning' ? 'warning' : 'primary'} position-fixed`;
+        toast.style.top = '20px';
+        toast.style.right = '20px';
+        toast.style.zIndex = '9999';
+        toast.style.minWidth = '300px';
+
+        const closeButton = document.createElement('button');
+        closeButton.type = 'button';
+        closeButton.className = 'btn-close';
+        closeButton.onclick = function () { this.parentElement.remove(); };
+
+        const messageSpan = document.createElement('span');
+        messageSpan.textContent = message;
+
+        toast.appendChild(closeButton);
+        toast.appendChild(messageSpan);
+        document.body.appendChild(toast);
+
+        setTimeout(() => toast.parentElement && toast.remove(), 5000);
     }
 
     async fetchExchangeRates() {
         try {
-            console.log('Fetching exchange rates...');
-            const response = await fetch('/api/exchange-rates');
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-            }
+            const response = await fetch('/api/exchange-rates', { cache: 'no-cache' });
+            if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             const data = await response.json();
-            this.exchangeRates = data.rates;
-            console.log('Exchange rates loaded:', this.exchangeRates);
+            this.exchangeRates = data.rates || { USD: 1 };
         } catch (error) {
             console.error('Failed to fetch exchange rates:', error);
-            // Fallback to basic rates if API fails
-            this.exchangeRates = { 
-                USD: 1, 
-                EUR: 0.92, 
-                GBP: 0.79, 
-                AUD: 1.52 
-            };
-            console.log('Using fallback exchange rates:', this.exchangeRates);
+            // Sensible fallbacks
+            this.exchangeRates = { USD: 1, EUR: 0.92, GBP: 0.79, AUD: 1.52 };
         }
     }
 
     async setSelectedCurrency(currency) {
         this.selectedCurrency = currency;
-        console.log('Currency changed to:', currency);
-
-        // Fetch latest exchange rates for accurate conversion
         await this.fetchExchangeRates();
-
-        // Guard against missing exchange rate keys
         if (!this.exchangeRates[currency]) {
             this.showToast(`No exchange rate for ${currency}. Using USD.`, 'warning');
-            this.selectedCurrency = 'USD'; // Fallback to USD
+            this.selectedCurrency = 'USD';
         }
-
-        // Refresh all tables with new currency formatting and conversion
         this.updateCryptoPortfolio();
     }
 
-    // First updateTradingStatus method removed - was being overwritten by the second method
+    // ---------- Portfolio / Tables ----------
+    displayEmptyPortfolioMessage() {
+        const tableIds = ['crypto-tracked-table', 'performance-page-table-body', 'positions-table-body'];
+        tableIds.forEach(tableId => {
+            const tableBody = document.getElementById(tableId);
+            if (!tableBody) return;
+            tableBody.innerHTML = '';
+            const row = document.createElement('tr');
+            const cell = document.createElement('td');
+
+            if (tableId === 'crypto-tracked-table')      cell.colSpan = 13;
+            else if (tableId === 'performance-page-table-body') cell.colSpan = 12;
+            else if (tableId === 'positions-table-body') cell.colSpan = 11;
+            else cell.colSpan = 10;
+
+            cell.className = 'text-center text-warning p-4';
+            cell.innerHTML = `
+                <div class="mb-2">
+                    <i class="fas fa-exclamation-triangle fa-2x text-warning"></i>
+                </div>
+                <h5>Portfolio Empty</h5>
+                <p class="mb-3">Start trading to populate your cryptocurrency portfolio with live data.</p>
+                <button class="btn btn-success" onclick="startTrading('paper', 'portfolio')">
+                    <i class="fas fa-play"></i> Start Paper Trading
+                </button>
+            `;
+            row.appendChild(cell);
+            tableBody.appendChild(row);
+        });
+        this.updateSummaryForEmptyPortfolio();
+    }
+
+    updateSummaryForEmptyPortfolio() {
+        const summaryElements = {
+            'crypto-total-count': '0',
+            'crypto-current-value': this.formatCurrency(0),
+            'crypto-total-pnl': this.formatCurrency(0)
+        };
+        Object.entries(summaryElements).forEach(([id, value]) => {
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.textContent = value;
+            if (id === 'crypto-total-pnl') el.className = 'mb-0 text-secondary';
+        });
+
+        const symbolsContainer = document.getElementById('crypto-symbols');
+        if (symbolsContainer) {
+            symbolsContainer.innerHTML = '<span class="badge bg-warning">Portfolio empty - Start trading to populate</span>';
+        }
+    }
 
     async updateCryptoPortfolio() {
-        // Reset current data - will be set after successful load
-        this.currentCryptoData = null;
-        // Prevent concurrent updates
         if (this.isUpdatingPortfolio) {
             console.log('Portfolio update already in progress, skipping...');
             return;
@@ -615,21 +484,12 @@ class TradingApp {
         this.isUpdatingPortfolio = true;
 
         try {
-            // Show loading progress
             this.updateLoadingProgress(20, 'Fetching cryptocurrency data...');
-
-            // Force bypass all caching for debugging
-            const timestamp = Date.now();
-            const response = await fetch(`/api/crypto-portfolio?_bypass_cache=${timestamp}&debug=1`, {
+            const ts = Date.now();
+            const response = await fetch(`/api/crypto-portfolio?_bypass_cache=${ts}&debug=1`, {
                 cache: 'no-cache',
-                headers: {
-                    'Cache-Control': 'no-cache',
-                    'Pragma': 'no-cache'
-                }
+                headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
             });
-
-            console.log('API Response Status:', response.status, response.statusText);
-            console.log('API Response URL:', response.url);
 
             if (!response.ok) {
                 console.error('API request failed:', response.status, response.statusText);
@@ -642,40 +502,29 @@ class TradingApp {
             this.updateLoadingProgress(60, 'Processing market data...');
             const data = await response.json();
 
-            // DEBUG: Comprehensive API response logging
-            console.log('Crypto portfolio API response:', data);
-
-            // Handle both response formats: holdings and cryptocurrencies
             const holdings = data.holdings || data.cryptocurrencies || [];
             const summary = data.summary || {};
 
-            console.log('Response summary:', summary);
-            console.log('Holdings/Cryptocurrencies count:', holdings.length);
-            console.log('First few cryptos:', holdings.slice(0, 3).length > 0 ? holdings.slice(0, 3) : 'None');
-
-            // CRITICAL: Check if portfolio is empty and needs trading to be started
             if (!holdings || holdings.length === 0) {
-                console.log('Portfolio is empty - user needs to start trading to populate data');
                 this.displayEmptyPortfolioMessage();
                 this.hideLoadingProgress();
                 this.isUpdatingPortfolio = false;
                 return;
             }
 
-            // CRITICAL: Check for failed price retrieval and display warnings
-            if (data.price_validation && data.price_validation.failed_symbols && data.price_validation.failed_symbols.length > 0) {
+            if (data.price_validation?.failed_symbols?.length) {
                 this.displayPriceDataWarning(data.price_validation.failed_symbols);
             }
 
-            // Update summary statistics - prefer summary data, fallback to calculations
-            const totalValue = (data.summary?.total_current_value) 
-                             ?? data.total_value 
-                             ?? holdings.reduce((s, c) => s + (c.current_value || c.value || 0), 0);
+            const totalValue = (data.summary?.total_current_value)
+                            ?? data.total_value
+                            ?? holdings.reduce((s, c) => s + (c.current_value || c.value || 0), 0);
 
-            const totalPnl = (data.summary?.total_pnl) 
-                           ?? data.total_pnl 
+            const totalPnl = (data.summary?.total_pnl)
+                           ?? data.total_pnl
                            ?? holdings.reduce((s, c) => s + (c.pnl || 0), 0);
 
+            // Display KPIs (optional if present)
             if (document.getElementById('crypto-total-count')) {
                 document.getElementById('crypto-total-count').textContent = holdings.length;
             }
@@ -683,73 +532,49 @@ class TradingApp {
                 document.getElementById('crypto-current-value').textContent = this.formatCurrency(totalValue, this.selectedCurrency);
             }
             if (document.getElementById('crypto-total-pnl')) {
-                document.getElementById('crypto-total-pnl').textContent = this.formatCurrency(totalPnl, this.selectedCurrency);
-
-                const pnlElement = document.getElementById('crypto-total-pnl');
-                const pnlClass = totalPnl >= 0 ? 'text-success' : 'text-danger';
-                pnlElement.className = `mb-0 ${pnlClass}`;
+                const pnlEl = document.getElementById('crypto-total-pnl');
+                pnlEl.textContent = this.formatCurrency(totalPnl, this.selectedCurrency);
+                pnlEl.className = `mb-0 ${totalPnl >= 0 ? 'text-success' : 'text-danger'}`;
             }
 
-            // Update crypto symbols display and all tables using holdings data
-            if (holdings && holdings.length > 0) {
-                // Store current data for dashboard switching
-                this.currentCryptoData = holdings;
+            // Persist and render
+            this.currentCryptoData = holdings;
 
-                this.updateLoadingProgress(80, 'Updating displays...');
-                this.updateCryptoSymbols(holdings);
-                this.updateCryptoTable(holdings);
+            this.updateLoadingProgress(80, 'Updating displays...');
+            this.updateCryptoSymbols(holdings);
+            this.updateCryptoTable(holdings);
 
-                // Conditional: performance page table only if visible
-                const performanceDashboard = document.getElementById('performance-dashboard');
-                const isPerformancePageVisible = performanceDashboard && 
-                    (performanceDashboard.style.display !== 'none' && 
-                     !performanceDashboard.classList.contains('d-none'));
+            // Update holdings widgets/table (if present on page)
+            this.updateHoldingsTable(holdings);
+            this.updatePositionsSummary(holdings);
 
-                if (isPerformancePageVisible) {
-                    this.updatePerformancePageTable(holdings);
-                }
+            // Small summary widget method (class-local)
+            this.updatePortfolioSummary({
+                total_cryptos: holdings.length,
+                total_current_value: totalValue,
+                total_pnl: totalPnl,
+                total_pnl_percent: data.total_pnl_percent || 0
+            }, holdings);
 
-                this.updateHoldingsTable(holdings);
-                this.updatePortfolioSummary({ 
-                    total_cryptos: holdings.length, 
-                    total_current_value: totalValue, 
-                    total_pnl: totalPnl,
-                    total_pnl_percent: data.total_pnl_percent || 0
-                }, holdings);
-                
-                // Update enhanced portfolio summary with full data
-                updatePortfolioSummary(data);
-                
-                // Update complete Dashboard Overview
-                const trades = data.recent_trades || data.trades || [];
-                renderDashboardOverview(data, trades);
+            // Big UI aggregation update (global function, renamed)
+            updatePortfolioSummaryUI(data);
 
-                // Recent trades (prefer payload, otherwise fetch)
-                if (data.recent_trades || data.trades) {
-                    const trades = data.recent_trades || data.trades || [];
-                    console.log('Updating recent trades:', trades.length, 'trades found');
-                    this.displayRecentTrades(trades);
-                } else {
-                    console.log('No recent trades data in API response, fetching separately');
-                    try {
-                        await this.updateRecentTrades();
-                    } catch (tradesError) {
-                        console.error('Error updating recent trades (non-fatal):', tradesError);
-                    }
-                }
-                this.updateLoadingProgress(100, 'Complete!');
+            // Dashboard Overview (KPIs + quick charts + recent trades preview)
+            const trades = data.recent_trades || data.trades || [];
+            renderDashboardOverview(data, trades);
 
-                // Hide progress bar after completion
-                setTimeout(() => {
-                    this.hideLoadingProgress();
-                }, 1000);
+            // Recent trades full table preview/fetch
+            if (trades.length) {
+                this.displayRecentTrades(trades);
+            } else {
+                await this.updateRecentTrades().catch(e => console.error('Recent trades fetch failed (non-fatal):', e));
             }
+
+            this.updateLoadingProgress(100, 'Complete!');
+            setTimeout(() => this.hideLoadingProgress(), 1000);
 
         } catch (error) {
             console.error('Error updating crypto portfolio:', error);
-            console.error('Error stack trace:', error.stack);
-            console.error('Error name:', error.name);
-            console.error('Error message:', error.message);
             this.updateLoadingProgress(0, 'Error loading data');
         } finally {
             this.isUpdatingPortfolio = false;
@@ -760,7 +585,6 @@ class TradingApp {
         const symbolsContainer = document.getElementById('crypto-symbols');
         if (!symbolsContainer) return;
 
-        // Clear existing content
         symbolsContainer.innerHTML = '';
 
         if (!cryptos || cryptos.length === 0) {
@@ -771,21 +595,17 @@ class TradingApp {
             return;
         }
 
-        // Sort by current value (highest first) and limit to top 10
         const topCryptos = [...cryptos]
             .sort((a, b) => (b.current_value || 0) - (a.current_value || 0))
             .slice(0, 10);
 
-        // Create badges for top 10 cryptos only
         topCryptos.forEach(crypto => {
             const badge = document.createElement('span');
-            const pnlClass = crypto.pnl >= 0 ? 'bg-success' : 'bg-danger';
+            const pnlClass = (crypto.pnl || 0) >= 0 ? 'bg-success' : 'bg-danger';
             badge.className = `badge ${pnlClass} me-1 mb-1`;
-
             const priceText = this.formatCurrency(this.num(crypto.current_price));
             const pp = this.num(crypto.pnl_percent).toFixed(2);
-            const pnlText = crypto.pnl >= 0 ? `+${pp}%` : `${pp}%`;
-
+            const pnlText = (crypto.pnl || 0) >= 0 ? `+${pp}%` : `${pp}%`;
             badge.textContent = `${crypto.symbol} ${priceText} (${pnlText})`;
             badge.setAttribute('title', `${crypto.name}: ${priceText}, P&L: ${pnlText}`);
             symbolsContainer.appendChild(badge);
@@ -793,49 +613,28 @@ class TradingApp {
     }
 
     updateCryptoTable(cryptos) {
-        console.log('updateCryptoTable called with:', cryptos?.length || 0, 'cryptocurrencies');
-
-        // Update main tracked table only
         const tableBody = document.getElementById('crypto-tracked-table');
+        if (!tableBody) return;
 
-        if (!tableBody) {
-            // Only log error if we're on a page that should have this table
-            const currentPage = window.location.pathname;
-            if (currentPage === '/holdings' || currentPage === '/') {
-                console.error('Table element not found: crypto-tracked-table');
-            }
-            return;
-        }
-
-        console.log('Main crypto table element found:', !!tableBody);
-
-        // Clear existing content
         tableBody.innerHTML = '';
 
-        // Handle empty state first  
         if (!cryptos || cryptos.length === 0) {
-            console.log('No crypto data, showing empty state');
             const row = document.createElement('tr');
             row.innerHTML = '<td colspan="13" class="text-center text-muted">No cryptocurrency data available</td>';
             tableBody.appendChild(row);
             return;
         }
 
-        console.log('Populating main crypto table with', cryptos.length, 'rows');
-
-        // Sort cryptos by market cap rank and render once
         const sortedCryptos = [...cryptos].sort((a, b) => (a.rank || 999) - (b.rank || 999));
 
         sortedCryptos.forEach(crypto => {
             const row = document.createElement('tr');
 
-            // Format values
-            const price = typeof crypto.current_price === 'number' ? crypto.current_price : 0;
-            const quantity = typeof crypto.quantity === 'number' ? crypto.quantity : 0;
-            const value = typeof crypto.current_value === 'number' ? crypto.current_value : 0;
-            const pnlPercent = typeof crypto.pnl_percent === 'number' ? crypto.pnl_percent : 0;
+            const price = this.num(crypto.current_price);
+            const quantity = this.num(crypto.quantity);
+            const value = this.num(crypto.current_value);
+            const pnlPercent = this.num(crypto.pnl_percent);
 
-            // Create cells with safe DOM manipulation
             const rankCell = document.createElement('td');
             rankCell.textContent = crypto.rank || '-';
 
@@ -848,102 +647,77 @@ class TradingApp {
             const nameCell = document.createElement('td');
             nameCell.textContent = crypto.name || '-';
 
+            // Quantity (sold-out highlight)
+            const quantityCell = document.createElement('td');
+            const isSoldOut = value <= 0.01 || crypto.has_position === false || quantity <= 0;
+            quantityCell.textContent = this.num(isSoldOut ? 0 : quantity).toFixed(6);
+            if (isSoldOut) {
+                quantityCell.classList.add('text-warning');
+                quantityCell.style.fontWeight = 'bold';
+                quantityCell.style.backgroundColor = '#fff3cd';
+                quantityCell.title = 'Position sold through trading';
+            }
+
             const priceCell = document.createElement('td');
             priceCell.textContent = this.formatCurrency(price, this.selectedCurrency);
 
             const valueCell = document.createElement('td');
             valueCell.textContent = this.formatCurrency(value, this.selectedCurrency);
 
+            const targetSellCell = document.createElement('td');
+            const targetSellPrice = price * 1.05;
+            targetSellCell.textContent = this.formatCurrency(targetSellPrice);
+
+            const pnlAbsoluteCell = document.createElement('td');
+            const originalInvestment = 10; // per-asset seed
+            const absolutePnl = value - originalInvestment;
+            pnlAbsoluteCell.className = absolutePnl >= 0 ? 'text-success' : 'text-danger';
+            pnlAbsoluteCell.textContent = this.formatCurrency(absolutePnl);
+
             const pnlCell = document.createElement('td');
             const pnlSpan = document.createElement('span');
             pnlSpan.className = `${pnlPercent >= 0 ? 'text-success' : 'text-danger'} fw-bold`;
-            pnlSpan.textContent = `${this.num(pnlPercent).toFixed(2)}%`;
+            pnlSpan.textContent = `${pnlPercent.toFixed(2)}%`;
             pnlCell.appendChild(pnlSpan);
 
             const updatedCell = document.createElement('td');
             const updatedSmall = document.createElement('small');
             updatedSmall.className = 'text-muted';
-            updatedSmall.textContent = crypto.last_updated ? 
-                new Date(crypto.last_updated).toLocaleTimeString() : '-';
+            updatedSmall.textContent = crypto.last_updated ? new Date(crypto.last_updated).toLocaleTimeString() : '-';
             updatedCell.appendChild(updatedSmall);
 
-            // Quantity cell (to make 13 columns) - Show zero if sold out
-            const quantityCell = document.createElement('td');
-            
-            // Check if this is a sold out position (low value indicates sold position)
-            const isSoldOut = value <= 0.01 || crypto.has_position === false || quantity <= 0;
-            const displayQuantity = isSoldOut ? 0 : quantity;
-            
-            quantityCell.textContent = this.num(displayQuantity).toFixed(6);
-            
-            // Highlight sold out positions with special styling
-            if (isSoldOut) {
-                quantityCell.classList.add('text-warning');
-                quantityCell.style.fontWeight = 'bold';
-                quantityCell.style.backgroundColor = '#fff3cd'; // Light yellow background
-                quantityCell.title = 'Position sold through trading';
-            }
-
-            // Calculate target prices based on current price (simple +/- 5% for demo)
-            const targetBuyPrice = price * 0.95; // 5% below current
-            const targetSellPrice = price * 1.05; // 5% above current
-
-            const targetSellCell = document.createElement('td'); // Target Sell
-            targetSellCell.textContent = this.formatCurrency(targetSellPrice);
-
-            // Calculate absolute P&L (current_value - original_investment)
-            const originalInvestment = 10; // Each asset started with $10
-            const absolutePnl = value - originalInvestment;
-
-            const pnlAbsoluteCell = document.createElement('td'); // P&L absolute
-            pnlAbsoluteCell.className = absolutePnl >= 0 ? 'text-success' : 'text-danger';
-            pnlAbsoluteCell.textContent = this.formatCurrency(absolutePnl);
-
-            // Determine signal based on price movement
-            let signal = 'HOLD';
-            let signalClass = 'bg-secondary';
-            if (price <= targetBuyPrice) {
-                signal = 'BUY';
-                signalClass = 'bg-success';
-            } else if (price >= targetSellPrice) {
-                signal = 'SELL';
-                signalClass = 'bg-danger';
-            } else if (absolutePnl > 0.5) {
-                signal = 'TAKE PROFIT';
-                signalClass = 'bg-warning text-dark';
-            }
-
-            const signalCell = document.createElement('td'); // Signal
+            // Signal
+            const signalCell = document.createElement('td');
+            const targetBuyPrice = price * 0.95;
+            let signal = 'HOLD', signalClass = 'bg-secondary';
+            if (price <= targetBuyPrice)            { signal = 'BUY';  signalClass = 'bg-success'; }
+            else if (price >= targetSellPrice)      { signal = 'SELL'; signalClass = 'bg-danger'; }
+            else if (absolutePnl > 0.5)             { signal = 'TAKE PROFIT'; signalClass = 'bg-warning text-dark'; }
             signalCell.innerHTML = `<span class="badge ${signalClass}">${signal}</span>`;
 
-            const actionsCell = document.createElement('td'); // Actions
+            const actionsCell = document.createElement('td');
             actionsCell.innerHTML = '<button class="btn btn-sm btn-outline-primary">View</button>';
 
-            const targetCell = document.createElement('td'); // Target Buy
-            targetCell.textContent = this.formatCurrency(targetBuyPrice);
+            const targetBuyCell = document.createElement('td');
+            targetBuyCell.textContent = this.formatCurrency(targetBuyPrice);
 
-            // Append all cells to row (13 total)
-            row.appendChild(rankCell);           // 1. Rank
-            row.appendChild(symbolCell);         // 2. Symbol
-            row.appendChild(nameCell);           // 3. Name
-            row.appendChild(quantityCell);       // 4. Quantity
-            row.appendChild(priceCell);          // 5. Current Price
-            row.appendChild(valueCell);          // 6. Value
-            row.appendChild(targetSellCell);     // 7. Target Sell
-            row.appendChild(pnlAbsoluteCell);    // 8. P&L ($)
-            row.appendChild(pnlCell);            // 9. P&L (%)
-            row.appendChild(updatedCell);        // 10. Updated
-            row.appendChild(signalCell);         // 11. Signal
-            row.appendChild(actionsCell);        // 12. Actions
-            row.appendChild(targetCell);         // 13. Target Buy
+            row.appendChild(rankCell);
+            row.appendChild(symbolCell);
+            row.appendChild(nameCell);
+            row.appendChild(quantityCell);
+            row.appendChild(priceCell);
+            row.appendChild(valueCell);
+            row.appendChild(targetSellCell);
+            row.appendChild(pnlAbsoluteCell);
+            row.appendChild(pnlCell);
+            row.appendChild(updatedCell);
+            row.appendChild(signalCell);
+            row.appendChild(actionsCell);
+            row.appendChild(targetBuyCell);
 
-            // Add hover effect
             row.classList.add('table-row-hover');
-
             tableBody.appendChild(row);
         });
-
-        console.log('Main crypto table updated with', sortedCryptos.length, 'rows');
     }
 
     updateLoadingProgress(percent, message = '') {
@@ -953,8 +727,6 @@ class TradingApp {
         if (progressBar) {
             progressBar.style.width = `${percent}%`;
             progressBar.setAttribute('aria-valuenow', percent);
-
-            // Add visual feedback
             if (percent === 100) {
                 progressBar.className = 'progress-bar bg-success';
                 setTimeout(() => {
@@ -964,50 +736,31 @@ class TradingApp {
                 }, 500);
             }
         }
-
         if (progressText) {
             progressText.textContent = message || `${percent}%`;
         }
-
         console.log(`Loading progress: ${percent}% - ${message}`);
     }
-
     hideLoadingProgress() {
-        // FIXED: More specific and safer selector targeting only the crypto loading progress
         const progressBar = document.getElementById('crypto-loading-progress');
         if (progressBar) {
             progressBar.style.display = 'none';
-
-            // Only hide the parent row of the specific crypto loading progress
             const row = progressBar.closest('tr');
             if (row) row.style.display = 'none';
         }
-
         const progressText = document.getElementById('crypto-loading-text');
         if (progressText) progressText.style.display = 'none';
-
-        // SAFETY: No longer using generic '.progress' selector that could affect other progress bars
-        // Instead, we target only the specific loading row by finding the crypto loading progress element
     }
 
     updatePerformanceTable(cryptos, bodyId = 'performance-table-body') {
-        console.log('updatePerformanceTable called with:', cryptos?.length || 0, 'cryptocurrencies');
         const tableBody = document.getElementById(bodyId);
-        console.log('Table element found:', !!tableBody);
+        if (!tableBody) return;
 
-        if (!tableBody) {
-            console.error(`${bodyId} element not found!`);
-            return;
-        }
-
-        // Clear existing content
         tableBody.innerHTML = '';
 
         if (!cryptos || cryptos.length === 0) {
-            console.log('No crypto data provided');
             const row = document.createElement('tr');
             const cell = document.createElement('td');
-            // Updated colspan for new performance table with 12 columns
             cell.colSpan = bodyId === 'performance-page-table-body' ? 12 : 10;
             cell.className = 'text-center text-muted';
             cell.textContent = 'No cryptocurrency holdings. Start trading to populate portfolio.';
@@ -1016,57 +769,39 @@ class TradingApp {
             return;
         }
 
-        console.log('Populating table with', cryptos.length, 'rows');
-
-        // Sort by rank (which preserves the master portfolio order)
-        const sortedCryptos = [...cryptos].sort((a, b) => (a.rank || 999) - (b.rank || 999));
-
-        // Check if this is the performance page table to add enhanced columns
+        const sorted = [...cryptos].sort((a, b) => (a.rank || 999) - (b.rank || 999));
         const isPerformancePage = bodyId === 'performance-page-table-body';
 
-        // Populate performance table with appropriate columns
-        sortedCryptos.forEach((crypto, index) => {
+        sorted.forEach((crypto, index) => {
             const row = document.createElement('tr');
 
-            // Ensure all required fields exist with proper defaults
             const rank = crypto.rank || (index + 1);
             const symbol = crypto.symbol || 'UNKNOWN';
             const name = crypto.name || symbol;
-            const currentPrice = crypto.current_price || 0;
-            const quantity = crypto.quantity || 0;
-            const value = crypto.value || crypto.current_value || 0;
-            const pnl = crypto.pnl || 0;
-            const pnlPercent = crypto.pnl_percent || 0;
-            const isLive = crypto.is_live !== false; // Default to true unless explicitly false
+            const currentPrice = this.num(crypto.current_price);
+            const quantity = this.num(crypto.quantity);
+            const value = this.num(crypto.value || crypto.current_value);
+            const isLive = crypto.is_live !== false;
 
-            // Calculate purchase price from the initial investment
-            const initialInvestment = 10; // $10 initial investment per crypto
-            const purchasePrice = quantity > 0 ? initialInvestment / quantity : 0;
-            
-            // Calculate target sell price (10% above current price)
+            const purchasePrice = quantity > 0 ? 10 / quantity : 0; // $10 initial investment
             const targetSellPrice = currentPrice * 1.1;
-            
-            // Use backend P&L calculations if available, otherwise calculate frontend P&L
-            const backendPnl = crypto.pnl || 0;
-            const backendPnlPercent = crypto.pnl_percent || 0;
-            
-            // Use backend values if they exist and are non-zero, otherwise calculate frontend P&L
+
+            const backendPnl = this.num(crypto.pnl);
+            const backendPnlPercent = this.num(crypto.pnl_percent);
+
             let finalPnl, finalPnlPercent;
             if (backendPnl !== 0 || backendPnlPercent !== 0) {
                 finalPnl = backendPnl;
                 finalPnlPercent = backendPnlPercent;
             } else {
-                // Fallback to frontend calculation
                 finalPnl = (currentPrice - purchasePrice) * quantity;
                 finalPnlPercent = purchasePrice > 0 ? ((currentPrice - purchasePrice) / purchasePrice) * 100 : 0;
             }
 
-            // Format P&L color and sign
             const pnlClass = finalPnl >= 0 ? 'text-success' : 'text-danger';
             const pnlSign = finalPnl >= 0 ? '+' : '';
 
-            // Format quantities and prices with appropriate precision
-            const formattedQuantity = this.num(quantity) > 1 ? this.num(quantity).toFixed(4) : this.num(quantity).toFixed(8);
+            const formattedQuantity = this.num(quantity) > 1 ? quantity.toFixed(4) : quantity.toFixed(8);
             const formattedPurchasePrice = this.formatCurrency(purchasePrice);
             const formattedCurrentPrice = this.formatCurrency(currentPrice);
             const formattedTargetPrice = this.formatCurrency(targetSellPrice);
@@ -1074,7 +809,6 @@ class TradingApp {
             const formattedUnrealizedPnl = this.formatCurrency(Math.abs(finalPnl));
 
             if (isPerformancePage) {
-                // Performance page table with enhanced columns
                 const daysInvested = Math.floor((Date.now() - new Date('2025-08-01').getTime()) / (1000 * 60 * 60 * 24));
                 const status = finalPnl >= 0 ? 'Winner' : 'Loser';
                 const statusClass = finalPnl >= 0 ? 'bg-success' : 'bg-danger';
@@ -1097,7 +831,6 @@ class TradingApp {
                     <td><span class="badge ${statusClass}">${status}</span></td>
                 `;
             } else {
-                // Standard performance table (simplified version)
                 row.innerHTML = `
                     <td><span class="badge bg-primary">#${rank}</span></td>
                     <td>
@@ -1114,15 +847,12 @@ class TradingApp {
 
             tableBody.appendChild(row);
         });
-
-        console.log('Performance table updated with', sortedCryptos.length, 'rows');
     }
 
     updateHoldingsTable(cryptos) {
         const tableBody = document.getElementById('positions-table-body');
         if (!tableBody) return;
 
-        // Clear existing content
         tableBody.innerHTML = '';
 
         if (!cryptos || cryptos.length === 0) {
@@ -1136,150 +866,69 @@ class TradingApp {
             return;
         }
 
-        // Populate holdings table (similar to main table but simplified)
         cryptos.forEach(crypto => {
             const row = document.createElement('tr');
 
-            // Format values with safe number conversion using helper methods
             const qty = this.num(crypto.quantity);
             const cp = this.num(crypto.current_price);
             const cv = this.num(crypto.current_value);
             const pnlNum = this.num(crypto.pnl);
             const pp = this.num(crypto.pnl_percent);
 
-            // Determine PnL colors and signal
-            const pnlClass = crypto.pnl >= 0 ? 'text-success' : 'text-danger';
-            const pnlIcon = crypto.pnl >= 0 ? '↗' : '↘';
+            const pnlClass = pnlNum >= 0 ? 'text-success' : 'text-danger';
+            const pnlIcon = pnlNum >= 0 ? '↗' : '↘';
 
-            // Signal based on current price vs target prices
             let signal = 'HOLD';
             let signalClass = 'badge bg-secondary';
-            if (crypto.target_buy_price && crypto.current_price <= crypto.target_buy_price) {
-                signal = 'BUY';
-                signalClass = 'badge bg-success';
-            } else if (crypto.target_sell_price && crypto.current_price >= crypto.target_sell_price) {
-                signal = 'SELL';
-                signalClass = 'badge bg-danger';
+            if (crypto.target_buy_price && cp <= crypto.target_buy_price) {
+                signal = 'BUY';  signalClass = 'badge bg-success';
+            } else if (crypto.target_sell_price && cp >= crypto.target_sell_price) {
+                signal = 'SELL'; signalClass = 'badge bg-danger';
             }
 
-            // Calculate position percentage (simplified as equal weight)
-            const positionPercent = this.num(100 / cryptos.length).toFixed(1);
+            const positionPercent = (100 / cryptos.length).toFixed(1);
 
-            // Create cells with safe DOM manipulation
-            const symbolCell = document.createElement('td');
-            const symbolStrong = document.createElement('strong');
-            symbolStrong.textContent = crypto.symbol;
-            symbolCell.appendChild(symbolStrong);
-
-            const nameCell = document.createElement('td');
-            nameCell.textContent = crypto.name;
-
-            const quantityCell = document.createElement('td');
-            quantityCell.textContent = qty.toFixed(4);
-
-            const priceCell = document.createElement('td');
-            priceCell.textContent = this.formatCurrency(cp);
-
-            const valueCell = document.createElement('td');
-            valueCell.textContent = this.formatCurrency(cv, this.selectedCurrency);
-
-            const positionCell = document.createElement('td');
-            positionCell.textContent = `${positionPercent}%`;
-
-            const pnlValueCell = document.createElement('td');
-            pnlValueCell.className = pnlClass;
-            pnlValueCell.textContent = this.formatCurrency(pnlNum);
-
-            const pnlPercentCell = document.createElement('td');
-            pnlPercentCell.className = pnlClass;
-            pnlPercentCell.textContent = `${pnlIcon} ${pp.toFixed(2)}%`;
-
-            const targetSellPriceCell = document.createElement('td');
-            targetSellPriceCell.textContent = this.formatCurrency(crypto.target_sell_price || crypto.current_price * 1.1);
-
-            const realizedPnlCell = document.createElement('td');
-            realizedPnlCell.className = pnlClass;
-            realizedPnlCell.textContent = this.formatCurrency(Math.max(0, crypto.pnl));
-
-            const signalCell = document.createElement('td');
-            const signalBadge = document.createElement('span');
-            signalBadge.className = signalClass;
-            signalBadge.textContent = signal;
-            signalCell.appendChild(signalBadge);
-
-            // Append all cells
-            row.appendChild(symbolCell);
-            row.appendChild(nameCell);
-            row.appendChild(quantityCell);
-            row.appendChild(priceCell);
-            row.appendChild(valueCell);
-            row.appendChild(positionCell);
-            row.appendChild(pnlValueCell);
-            row.appendChild(pnlPercentCell);
-            row.appendChild(targetSellPriceCell);
-            row.appendChild(realizedPnlCell);
-            row.appendChild(signalCell);
-
+            row.innerHTML = `
+                <td><strong>${crypto.symbol || ''}</strong></td>
+                <td>${crypto.name || ''}</td>
+                <td>${qty.toFixed(4)}</td>
+                <td>${this.formatCurrency(cp)}</td>
+                <td>${this.formatCurrency(cv, this.selectedCurrency)}</td>
+                <td>${positionPercent}%</td>
+                <td class="${pnlClass}">${this.formatCurrency(pnlNum)}</td>
+                <td class="${pnlClass}">${pnlIcon} ${pp.toFixed(2)}%</td>
+                <td>${this.formatCurrency(crypto.target_sell_price || cp * 1.1)}</td>
+                <td class="${pnlClass}">${this.formatCurrency(Math.max(0, pnlNum))}</td>
+                <td><span class="${signalClass}">${signal}</span></td>
+            `;
             tableBody.appendChild(row);
         });
     }
 
     updatePositionsSummary(cryptos) {
         if (!cryptos || cryptos.length === 0) return;
-
-        // Calculate summary metrics
         const totalPositions = cryptos.length;
-        const totalValue = cryptos.reduce((sum, crypto) => sum + (crypto.current_value || 0), 0);
-        const totalPnL = cryptos.reduce((sum, crypto) => sum + (crypto.pnl || 0), 0);
-        const strongGains = cryptos.filter(crypto => (crypto.pnl_percent || 0) > 20).length;
+        const totalValue = cryptos.reduce((sum, c) => sum + (c.current_value || 0), 0);
+        const totalPnL = cryptos.reduce((sum, c) => sum + (c.pnl || 0), 0);
+        const strongGains = cryptos.filter(c => (c.pnl_percent || 0) > 20).length;
 
-        // Update summary elements
-        const totalCountEl = document.getElementById('pos-total-count');
-        const totalValueEl = document.getElementById('pos-total-value');
-        const unrealizedPnlEl = document.getElementById('pos-unrealized-pnl');
-        const strongGainsEl = document.getElementById('pos-strong-gains');
+        const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
 
-        if (totalCountEl) totalCountEl.textContent = totalPositions;
-        if (totalValueEl) totalValueEl.textContent = this.formatCurrency(totalValue, this.selectedCurrency);
-        if (unrealizedPnlEl) {
-            unrealizedPnlEl.textContent = this.formatCurrency(totalPnL, this.selectedCurrency);
-            unrealizedPnlEl.className = totalPnL >= 0 ? 'text-success' : 'text-danger';
+        set('pos-total-count', totalPositions);
+        const tvEl = document.getElementById('pos-total-value');
+        if (tvEl) tvEl.textContent = this.formatCurrency(totalValue, this.selectedCurrency);
+
+        const upnlEl = document.getElementById('pos-unrealized-pnl');
+        if (upnlEl) {
+            upnlEl.textContent = this.formatCurrency(totalPnL, this.selectedCurrency);
+            upnlEl.className = totalPnL >= 0 ? 'text-success' : 'text-danger';
         }
-        if (strongGainsEl) strongGainsEl.textContent = strongGains;
+        set('pos-strong-gains', strongGains);
     }
 
-    updatePerformancePageTable(cryptos) {
-        this.updatePerformanceTable(cryptos, 'performance-page-table-body');
-    }
-
-    displayPriceDataWarning(failedSymbols) {
-        // Create or update warning banner for failed price data
-        let warningBanner = document.getElementById('price-data-warning');
-        if (!warningBanner) {
-            warningBanner = document.createElement('div');
-            warningBanner.id = 'price-data-warning';
-            warningBanner.className = 'alert alert-danger alert-dismissible fade show mb-3';
-            warningBanner.role = 'alert';
-
-            // Insert at top of main container
-            const container = document.querySelector('.container-fluid');
-            if (container) {
-                container.insertBefore(warningBanner, container.firstChild);
-            }
-        }
-
-        warningBanner.innerHTML = `
-            <i class="fas fa-exclamation-triangle me-2"></i>
-            <strong>CRITICAL: Price Data Unavailable</strong>
-            <br>Live price data could not be retrieved from CoinGecko API for: ${failedSymbols.join(', ')}
-            <br>This system NEVER uses simulated prices. Please check your internet connection or try refreshing.
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        `;
-    }
-
+    // Small summary method (class-local)
     updatePortfolioSummary(summary, cryptos) {
         if (!summary) return;
-
         const safeSet = (id, text, className) => {
             const el = document.getElementById(id);
             if (!el) return;
@@ -1288,84 +937,57 @@ class TradingApp {
         };
 
         safeSet('summary-total-value', this.formatCurrency(summary.total_current_value));
-
         const changeValue = summary.total_pnl || 0;
         const changePercent = summary.total_pnl_percent || 0;
-        safeSet(
-            'summary-total-change',
-            `${changeValue >= 0 ? '+' : ''}${this.formatCurrency(changeValue)} (${this.num(changePercent).toFixed(2)}%)`,
-            `badge ${changeValue >= 0 ? 'bg-success' : 'bg-danger'}`
-        );
 
         safeSet('summary-total-assets', summary.total_cryptos || 0);
-        safeSet('summary-portfolio-value', this.formatCurrency(summary.total_current_value));
-
-        safeSet(
-            'summary-24h-change',
+        safeSet('summary-24h-change',
             `${changePercent >= 0 ? '+' : ''}${this.num(changePercent).toFixed(2)}%`,
-            `mb-0 fw-bold ${changePercent >= 0 ? 'text-success' : 'text-danger'}`
-        );
+            `mb-0 fw-bold ${changePercent >= 0 ? 'text-success' : 'text-danger'}`);
 
         if (cryptos && cryptos.length > 0) {
-            const bestPerformer = cryptos.reduce((best, c) =>
-                (c.pnl_percent || 0) > (best.pnl_percent || 0) ? c : best
-            );
-            safeSet('summary-best-performer', bestPerformer.symbol);
-            safeSet('summary-best-performance', `+${this.num(bestPerformer.pnl_percent || 0).toFixed(2)}%`);
+            const best = cryptos.reduce((best, c) => (c.pnl_percent || 0) > (best.pnl_percent || 0) ? c : best);
+            safeSet('summary-best-performer', best.symbol);
+            safeSet('summary-best-performance', `+${this.num(best.pnl_percent || 0).toFixed(2)}%`);
         }
     }
 
+    displayPriceDataWarning(failedSymbols) {
+        let warningBanner = document.getElementById('price-data-warning');
+        if (!warningBanner) {
+            warningBanner = document.createElement('div');
+            warningBanner.id = 'price-data-warning';
+            warningBanner.className = 'alert alert-danger alert-dismissible fade show mb-3';
+            warningBanner.role = 'alert';
+            const container = document.querySelector('.container-fluid');
+            if (container) container.insertBefore(warningBanner, container.firstChild);
+        }
+        warningBanner.innerHTML = `
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            <strong>CRITICAL: Price Data Unavailable</strong>
+            <br>Live price data could not be retrieved for: ${failedSymbols.join(', ')}
+            <br>This system NEVER uses simulated prices. Please check your internet connection or try refreshing.
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        `;
+    }
+
+    // ---------- Charts ----------
     initializeCharts() {
-        // Don't let charts kill the app if Chart.js or adapters aren't loaded
         if (!window.Chart) {
             console.warn('Chart.js not found – skipping chart initialization.');
             return;
         }
-
         try {
             const portfolioCtx = document.getElementById('portfolioChart');
             if (portfolioCtx) {
                 this.portfolioChart = new Chart(portfolioCtx, {
                     type: 'line',
-                    data: {
-                        labels: [],
-                        datasets: [{
-                            label: 'Portfolio Value ($)',
-                            data: [],
-                            borderColor: '#007bff',
-                            backgroundColor: 'rgba(0, 123, 255, 0.1)',
-                            tension: 0.4,
-                            fill: true
-                        }]
-                    },
+                    data: { labels: [], datasets: [{ label: 'Portfolio Value ($)', data: [], borderColor: '#007bff', backgroundColor: 'rgba(0, 123, 255, 0.1)', tension: 0.4, fill: true }]},
                     options: {
-                        responsive: true,
-                        maintainAspectRatio: true,
-                        aspectRatio: 2,
-                        plugins: {
-                            title: {
-                                display: true,
-                                text: 'Portfolio Performance Over Time'
-                            },
-                            legend: {
-                                display: false
-                            }
-                        },
-                        scales: {
-                            y: {
-                                beginAtZero: false,
-                                ticks: {
-                                    callback: function(value) {
-                                        return '$' + Number(value).toLocaleString();
-                                    }
-                                }
-                            }
-                            // Removed x-axis time configuration to prevent Chart.js adapter errors
-                        },
-                        interaction: {
-                            intersect: false,
-                            mode: 'index'
-                        }
+                        responsive: true, maintainAspectRatio: true, aspectRatio: 2,
+                        plugins: { title: { display: true, text: 'Portfolio Performance Over Time' }, legend: { display: false } },
+                        scales: { y: { beginAtZero: false, ticks: { callback: v => '$' + Number(v).toLocaleString() } } },
+                        interaction: { intersect: false, mode: 'index' }
                     }
                 });
             }
@@ -1376,29 +998,10 @@ class TradingApp {
                     type: 'doughnut',
                     data: {
                         labels: ['Profitable', 'Break-even', 'Losing'],
-                        datasets: [{
-                            data: [0, 0, 0],
-                            backgroundColor: [
-                                'rgba(54, 162, 235, 0.8)',   // Blue for profitable
-                                'rgba(255, 206, 86, 0.8)',   // Yellow for break-even  
-                                'rgba(255, 99, 132, 0.8)'    // Red for losing
-                            ],
-                            borderWidth: 0
-                        }]
+                        datasets: [{ data: [0,0,0], backgroundColor: ['rgba(54,162,235,0.8)', 'rgba(255,206,86,0.8)', 'rgba(255,99,132,0.8)'], borderWidth: 0 }]
                     },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: true,
-                        aspectRatio: 1,
-                        plugins: {
-                            title: {
-                                display: true,
-                                text: 'P&L Distribution'
-                            },
-                            legend: {
-                                position: 'bottom'
-                            }
-                        }
+                    options: { responsive: true, maintainAspectRatio: true, aspectRatio: 1,
+                        plugins: { title: { display: true, text: 'P&L Distribution' }, legend: { position: 'bottom' } }
                     }
                 });
             }
@@ -1407,52 +1010,17 @@ class TradingApp {
             if (performersCtx) {
                 this.performersChart = new Chart(performersCtx, {
                     type: 'bar',
-                    data: {
-                        labels: [],
-                        datasets: [{
-                            label: 'P&L %',
-                            data: [],
-                            backgroundColor: function(context) {
-                                const value = context.parsed.y;
-                                return value >= 0 ? 'rgba(75, 192, 192, 0.8)' : 'rgba(255, 99, 132, 0.8)';
-                            },
-                            borderWidth: 0
-                        }]
-                    },
+                    data: { labels: [], datasets: [{ label: 'P&L %', data: [], backgroundColor: ctx => (ctx.parsed.y >= 0 ? 'rgba(75,192,192,0.8)' : 'rgba(255,99,132,0.8)'), borderWidth: 0 }] },
                     options: {
-                        responsive: true,
-                        maintainAspectRatio: true,
-                        aspectRatio: 2,
-                        plugins: {
-                            title: {
-                                display: true,
-                                text: 'Top/Bottom Performers'
-                            },
-                            legend: {
-                                display: false
-                            }
-                        },
-                        scales: {
-                            y: {
-                                ticks: {
-                                    callback: function(value) {
-                                        return value + '%';
-                                    }
-                                }
-                            }
-                        }
+                        responsive: true, maintainAspectRatio: true, aspectRatio: 2,
+                        plugins: { title: { display: true, text: 'Top/Bottom Performers' }, legend: { display: false } },
+                        scales: { y: { ticks: { callback: v => v + '%' } } }
                     }
                 });
             }
 
-            console.log('Performance charts initialized with Chart.js');
-
-            // Initialize Quick Overview charts
-            initializeQuickOverviewCharts();
-
-            // Update charts with initial data
+            // Seed charts
             this.updatePerformanceCharts();
-
         } catch (e) {
             console.error('Chart initialization failed – continuing without charts:', e);
         }
@@ -1460,269 +1028,83 @@ class TradingApp {
 
     async updatePerformanceCharts() {
         try {
-            // Get portfolio data for charts
-            const response = await fetch('/api/crypto-portfolio');
+            const response = await fetch('/api/crypto-portfolio', { cache: 'no-cache' });
             if (!response.ok) return;
 
             const data = await response.json();
             const holdings = data.holdings || [];
 
-            if (holdings.length === 0) {
-                console.log('No holdings data for charts');
-                return;
-            }
+            if (holdings.length === 0) return;
 
-            // Update P&L Distribution Chart
             if (this.pnlChart) {
                 const profitable = holdings.filter(h => (h.pnl || 0) > 0.01).length;
                 const losing = holdings.filter(h => (h.pnl || 0) < -0.01).length;
                 const breakeven = holdings.length - profitable - losing;
-
                 this.pnlChart.data.datasets[0].data = [profitable, breakeven, losing];
                 this.pnlChart.update('none');
             }
 
-            // Update Top/Bottom Performers Chart
             if (this.performersChart) {
-                // Get top 5 gainers and top 5 losers (create copy to avoid mutating original array)
                 const sorted = [...holdings].sort((a, b) => (b.pnl_percent || 0) - (a.pnl_percent || 0));
                 const topPerformers = sorted.slice(0, 5).concat(sorted.slice(-5));
-
                 this.performersChart.data.labels = topPerformers.map(h => h.symbol);
                 this.performersChart.data.datasets[0].data = topPerformers.map(h => h.pnl_percent || 0);
                 this.performersChart.update('none');
             }
 
-            // Update Portfolio Value Chart with time series data
             if (this.portfolioChart) {
                 const totalValue = data.summary?.total_current_value || 1030;
-
-                // Generate last 24 hours of data points (every hour) with formatted labels
-                const timeLabels = [];
-                const valuePoints = [];
-
+                const labels = [];
+                const values = [];
                 for (let i = 23; i >= 0; i--) {
                     const time = new Date(Date.now() - (i * 60 * 60 * 1000));
-                    const variation = (Math.sin(i * 0.5) * 0.02 + Math.random() * 0.01 - 0.005); // ±2% variation
-                    const value = totalValue * (1 + variation);
-
-                    // Format time as string to avoid Chart.js time adapter issues
-                    timeLabels.push(time.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }));
-                    valuePoints.push(value);
+                    const variation = (Math.sin(i * 0.5) * 0.02 + Math.random() * 0.01 - 0.005);
+                    labels.push(time.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }));
+                    values.push(totalValue * (1 + variation));
                 }
-
-                this.portfolioChart.data.labels = timeLabels;
-                this.portfolioChart.data.datasets[0].data = valuePoints;
+                this.portfolioChart.data.labels = labels;
+                this.portfolioChart.data.datasets[0].data = values;
                 this.portfolioChart.update('none');
             }
-
-            console.log('Performance charts updated with live data');
-
         } catch (error) {
             console.error('Error updating performance charts:', error);
         }
     }
 
-    loadPortfolioData() {
-        // Load portfolio data - used after reset operations
-        this.updateCryptoPortfolio();
-    }
-
-    syncPortfolioValues() {
-        // Sync values from main dashboard to portfolio page
-        const mainIds = [
-            'crypto-total-count',
-            'crypto-initial-value', 
-            'crypto-current-value',
-            'crypto-total-pnl',
-            'crypto-pnl-percent',
-            'crypto-status'
-        ];
-
-        const portfolioIds = [
-            'portfolio-crypto-total-count',
-            'portfolio-crypto-initial-value',
-            'portfolio-crypto-current-value', 
-            'portfolio-crypto-total-pnl',
-            'portfolio-crypto-pnl-percent',
-            'portfolio-crypto-status'
-        ];
-
-        // Copy values from main dashboard to portfolio page
-        for (let i = 0; i < mainIds.length; i++) {
-            const mainEl = document.getElementById(mainIds[i]);
-            const portfolioEl = document.getElementById(portfolioIds[i]);
-
-            if (mainEl && portfolioEl) {
-                if (mainEl.tagName === 'SPAN' || mainEl.classList.contains('badge')) {
-                    portfolioEl.className = mainEl.className;
-                    portfolioEl.textContent = mainEl.textContent;
-                    portfolioEl.title = mainEl.title || '';
-                } else {
-                    portfolioEl.textContent = mainEl.textContent;
-                }
-            }
-        }
-
-        // Sync crypto symbols display
-        const mainSymbols = document.getElementById('crypto-symbols');
-        const portfolioSymbols = document.getElementById('portfolio-crypto-symbols');
-
-        if (mainSymbols && portfolioSymbols) {
-            portfolioSymbols.innerHTML = mainSymbols.innerHTML;
-        }
-    }
-
-    showToast(message, type = 'info') {
-        // Create simple alert-style toast (no Bootstrap dependency)
-        const toast = document.createElement('div');
-        toast.className = `alert alert-${type === 'error' ? 'danger' : type === 'success' ? 'success' : type === 'warning' ? 'warning' : 'primary'} position-fixed`;
-        toast.style.top = '20px';
-        toast.style.right = '20px';
-        toast.style.zIndex = '9999';
-        toast.style.minWidth = '300px';
-
-        // Create close button safely
-        const closeButton = document.createElement('button');
-        closeButton.type = 'button';
-        closeButton.className = 'btn-close';
-        closeButton.onclick = function() { this.parentElement.remove(); };
-
-        // Add message as text content (prevents XSS)
-        const messageSpan = document.createElement('span');
-        messageSpan.textContent = message;
-
-        // Append elements safely
-        toast.appendChild(closeButton);
-        toast.appendChild(messageSpan);
-
-        document.body.appendChild(toast);
-
-        // Auto-remove after 5 seconds
-        setTimeout(() => {
-            if (toast.parentElement) {
-                toast.remove();
-            }
-        }, 5000);
-    }
-
-    createToastContainer() {
-        const container = document.createElement('div');
-        container.id = 'toast-container';
-        container.className = 'toast-container position-fixed top-0 end-0 p-3';
-        container.style.zIndex = '1050';
-        document.body.appendChild(container);
-        return container;
-    }
-
-    updateTradingStatusDisplay(mode, type) {
-        // Update trading status indicators
-        const tradingModeEl = document.getElementById('trading-mode');
-        const tradingStatusEl = document.getElementById('trading-status');
-        const tradingStartTimeEl = document.getElementById('trading-start-time');
-        const tradingSymbolEl = document.getElementById('trading-symbol');
-
-        if (tradingModeEl) {
-            tradingModeEl.textContent = `${mode.toUpperCase()} (${type})`;
-            tradingModeEl.className = `badge ${mode === 'paper' ? 'bg-success' : 'bg-warning'}`;
-        }
-
-        if (tradingStatusEl) {
-            tradingStatusEl.textContent = 'Active';
-            tradingStatusEl.className = 'badge bg-success';
-        }
-
-        if (tradingStartTimeEl) {
-            tradingStartTimeEl.textContent = new Date().toLocaleTimeString();
-        }
-
-        if (tradingSymbolEl) {
-            tradingSymbolEl.textContent = type === 'portfolio' ? 'All Assets' : 'Selected';
-        }
-    }
-
-    updateTradingStatus(status) {
-        // Update trading status from server data
-        if (!status) return;
-
-        const tradingModeEl = document.getElementById('trading-mode');
-        const tradingStatusEl = document.getElementById('trading-status');
-
-        if (tradingModeEl && status.mode) {
-            tradingModeEl.textContent = status.mode.toUpperCase();
-            tradingModeEl.className = `badge ${status.mode === 'paper' ? 'bg-success' : 'bg-warning'}`;
-        }
-
-        if (tradingStatusEl && status.status) {
-            tradingStatusEl.textContent = status.status;
-            tradingStatusEl.className = `badge ${status.status === 'Active' ? 'bg-success' : 'bg-secondary'}`;
-        }
-    }
-
-    // Normalize trades from various backends
-    normalizeTrades(trades = []) {
-        return (trades || []).map((t, i) => {
-            const ts = t.timestamp || t.ts || t.time || t.date;
-            const side = (t.side || t.action || '').toString().toUpperCase(); // BUY/SELL
-            const qty = this.num(t.quantity ?? t.qty ?? t.amount ?? t.size, 0);
-            const price = this.num(t.price ?? t.avg_price ?? t.fill_price ?? t.execution_price, 0);
-            const pnl = this.num(t.pnl ?? t.realized_pnl ?? t.profit, 0);
-            const id = t.trade_id || t.id || t.order_id || t.clientOrderId || (i + 1);
-            return {
-                trade_id: id,
-                timestamp: ts,
-                symbol: t.symbol || t.pair || t.asset || '',
-                side,
-                quantity: qty,
-                price,
-                pnl
-            };
-        });
-    }
-
+    // ---------- Trades ----------
     async updateRecentTrades() {
-        // Use the new comprehensive trade history endpoint
         try {
             const r = await fetch('/api/trade-history', { cache: 'no-cache' });
             if (r.ok) {
                 const data = await r.json();
                 const trades = data.trades || data.recent_trades || data || [];
-                console.log('Updating recent trades:', trades.length, 'trades found');
                 this.displayRecentTrades(trades);
                 return;
             }
         } catch (e) {
             console.error('Failed to fetch trade history:', e);
         }
-        
-        // Fallback to status endpoint
+
         try {
             const status = await this.fetchWithCache('/api/status', 'status');
             if (status?.recent_trades?.length) {
-                console.log('[trades] from /api/status fallback:', status.recent_trades.length);
                 this.displayRecentTrades(status.recent_trades);
                 return;
             }
         } catch (e) {
             console.error('Failed to fetch trades from status:', e);
         }
-        
-        // If no trades found anywhere, show empty message
+
         this.displayDashboardRecentTrades([]);
     }
 
     displayRecentTrades(trades) {
-        const tableBody = document.getElementById('trades-table');
+        const tableBody = this.getTradesTbody();
         if (!tableBody) {
-            // Try dashboard preview table
             this.displayDashboardRecentTrades(trades);
             return;
         }
-
-        // Normalize before storing
         this.allTrades = this.normalizeTrades(trades || []);
-
-        // Apply current filters
         this.applyTradeFilters();
     }
 
@@ -1730,34 +1112,30 @@ class TradingApp {
         const tableBody = document.getElementById('recent-trades-preview-body');
         if (!tableBody) return;
 
-        const normalizedTrades = this.normalizeTrades(trades || []);
-        
-        // Show only last 5 trades for dashboard preview
-        const recentTrades = normalizedTrades.slice(0, 5);
-        
-        if (recentTrades.length === 0) {
+        const normalized = this.normalizeTrades(trades || []);
+        const recent = normalized.slice(0, 5);
+
+        if (recent.length === 0) {
             tableBody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-3">No trades yet</td></tr>';
             return;
         }
 
         let html = '';
-        recentTrades.forEach((trade, index) => {
-            const sideClass = trade.side?.toLowerCase() === 'buy' ? 'trade-buy' : 'trade-sell';
-            const pnlClass = (trade.pnl || 0) >= 0 ? 'pnl-positive' : 'pnl-negative';
-            
+        recent.forEach((t, idx) => {
+            const pnlClass = (t.pnl || 0) >= 0 ? 'text-success' : 'text-danger';
+            const sideBadge = t.side === 'BUY' ? 'badge bg-success' : 'badge bg-danger';
             html += `
                 <tr>
-                    <td>${index + 1}</td>
-                    <td class="text-start">${this.formatTradeTime(trade.timestamp)}</td>
-                    <td><strong>${trade.symbol || trade.Symbol || ''}</strong></td>
-                    <td><span class="${sideClass}">${(trade.side || trade.Side || '').toUpperCase()}</span></td>
-                    <td class="text-end">${this.formatCurrency(trade.quantity || trade.Quantity || trade.size || 0)}</td>
-                    <td class="text-end">${this.formatCurrency(trade.price || trade.Price || 0)}</td>
-                    <td class="text-end ${pnlClass}">${this.formatCurrency(trade.pnl || trade.PnL || 0)}</td>
+                    <td>${idx + 1}</td>
+                    <td class="text-start">${this.formatTradeTime(t.timestamp)}</td>
+                    <td><strong>${t.symbol}</strong></td>
+                    <td><span class="${sideBadge}">${t.side}</span></td>
+                    <td class="text-end">${this.num(t.quantity).toFixed(6)}</td>
+                    <td class="text-end">${this.formatCurrency(t.price)}</td>
+                    <td class="text-end ${pnlClass}">${this.formatCurrency(t.pnl)}</td>
                 </tr>
             `;
         });
-        
         tableBody.innerHTML = html;
     }
 
@@ -1765,13 +1143,11 @@ class TradingApp {
         const tableBody = this.getTradesTbody();
         if (!tableBody || !this.allTrades) return;
 
-        // Get filter values
         const symbolFilter = document.getElementById('trades-filter')?.value.toLowerCase() || '';
         const actionFilter = (document.getElementById('trades-action-filter')?.value || '').toUpperCase();
         const timeFilter = document.getElementById('trades-time-filter')?.value || '';
         const pnlFilter = document.getElementById('trades-pnl-filter')?.value || '';
 
-        // Safe time parser
         const parseTime = (t) => {
             if (!t) return 0;
             const d = new Date(t);
@@ -1779,19 +1155,10 @@ class TradingApp {
             return Number.isFinite(n) ? n : 0;
         };
 
-        // Filter trades based on criteria
-        let filteredTrades = this.allTrades.filter(trade => {
-            // Symbol filter
-            if (symbolFilter && !(trade.symbol || '').toLowerCase().includes(symbolFilter)) {
-                return false;
-            }
+        let filtered = this.allTrades.filter(trade => {
+            if (symbolFilter && !(trade.symbol || '').toLowerCase().includes(symbolFilter)) return false;
+            if (actionFilter && (trade.side || '').toUpperCase() !== actionFilter) return false;
 
-            // Action filter (BUY/SELL)
-            if (actionFilter && (trade.side || '').toUpperCase() !== actionFilter) {
-                return false;
-            }
-
-            // Time filter
             if (timeFilter) {
                 const tradeMs = parseTime(trade.timestamp);
                 const now = Date.now();
@@ -1806,13 +1173,9 @@ class TradingApp {
                     case '6m': maxAge = 6 * 30 * 24 * 60 * 60 * 1000; break;
                     case '1y': maxAge = 365 * 24 * 60 * 60 * 1000; break;
                 }
-
-                if (!(tradeMs > 0) || age > maxAge) {
-                    return false;
-                }
+                if (!(tradeMs > 0) || age > maxAge) return false;
             }
 
-            // P&L filter
             const pnl = Number(trade.pnl) || 0;
             if (pnlFilter === 'positive' && pnl <= 0) return false;
             if (pnlFilter === 'negative' && pnl >= 0) return false;
@@ -1820,10 +1183,9 @@ class TradingApp {
             return true;
         });
 
-        // Clear existing content
         tableBody.innerHTML = '';
 
-        if (!filteredTrades || filteredTrades.length === 0) {
+        if (!filtered.length) {
             const row = document.createElement('tr');
             const cell = document.createElement('td');
             cell.colSpan = 7;
@@ -1834,26 +1196,18 @@ class TradingApp {
             return;
         }
 
-        // Sort trades by timestamp (newest first)
-        filteredTrades.sort((a, b) => (parseTime(b.timestamp) - parseTime(a.timestamp)));
+        filtered.sort((a, b) => (parseTime(b.timestamp) - parseTime(a.timestamp)));
 
-        filteredTrades.forEach(trade => {
+        filtered.forEach(trade => {
             const row = document.createElement('tr');
-
-            // Format timestamp
             const ms = parseTime(trade.timestamp);
             const timestamp = ms ? new Date(ms).toLocaleString() : '-';
-
-            // Format values
             const price = this.formatCurrency(trade.price || 0);
             const quantity = this.num(trade.quantity).toFixed(6);
             const pnl = Number.isFinite(trade.pnl) ? this.formatCurrency(trade.pnl) : this.formatCurrency(0);
-
-            // Determine colors
             const pnlClass = (Number(trade.pnl) || 0) >= 0 ? 'text-success' : 'text-danger';
             const sideUp = (trade.side || '').toUpperCase();
 
-            // Create cells with safe DOM manipulation
             row.innerHTML = `
                 <td><span class="badge bg-secondary">#${trade.trade_id}</span></td>
                 <td><small>${timestamp}</small></td>
@@ -1863,316 +1217,236 @@ class TradingApp {
                 <td>${price}</td>
                 <td class="${pnlClass}">${pnl}</td>
             `;
-
             tableBody.appendChild(row);
         });
     }
 
+    // ---------- Misc ----------
     async exportATOTax() {
         try {
             this.showToast('Preparing ATO tax export...', 'info');
-
             const response = await fetch('/api/export/ato', {
                 method: 'GET',
-                headers: {
-                    'Accept': 'text/csv'
-                }
+                headers: { 'Accept': 'text/csv' }
             });
-
             if (!response.ok) {
                 const errorText = await response.text();
                 throw new Error(`Export failed: ${response.statusText} - ${errorText}`);
             }
-
             const blob = await response.blob();
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-
-            // Generate filename with current date
             const today = new Date().toISOString().slice(0, 10);
             a.download = `ato_crypto_tax_export_${today}.csv`;
-
-            // Trigger download
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
             window.URL.revokeObjectURL(url);
-
             this.showToast('ATO tax export downloaded successfully!', 'success');
-
         } catch (error) {
             console.error('ATO export error:', error);
             this.showToast(`Failed to export ATO data: ${error.message}`, 'error');
         }
     }
-}
 
-// Initialize the app when DOM is loaded
-document.addEventListener('DOMContentLoaded', function() {
-    window.tradingApp = new TradingApp();
-});
+    updateTradingStatus(status) {
+        if (!status) return;
+        const modeEl = document.getElementById('trading-mode');
+        const statusEl = document.getElementById('trading-status');
 
-// Global function for ATO Export button
-async function exportATOTax() {
-    if (window.tradingApp) {
-        await window.tradingApp.exportATOTax();
-    } else {
-        console.error('Trading app not initialized');
-        alert('System not ready. Please wait a moment and try again.');
+        if (modeEl && status.mode) {
+            modeEl.textContent = status.mode.toUpperCase();
+            modeEl.className = `badge ${status.mode === 'paper' ? 'bg-success' : 'bg-warning'}`;
+        }
+        if (statusEl && status.status) {
+            statusEl.textContent = status.status;
+            statusEl.className = `badge ${status.status === 'Active' ? 'bg-success' : 'bg-secondary'}`;
+        }
+
+        const startTimeEl = document.getElementById('trading-start-time');
+        if (startTimeEl && status.started_at) {
+            try {
+                startTimeEl.textContent = new Date(status.started_at).toLocaleTimeString();
+            } catch {}
+        }
+        const symbolEl = document.getElementById('trading-symbol');
+        if (symbolEl && status.symbol) {
+            symbolEl.textContent = status.symbol;
+        }
+    }
+
+    updateTradingStatusDisplay(mode, type) {
+        const tradingModeEl = document.getElementById('trading-mode');
+        const tradingStatusEl = document.getElementById('trading-status');
+        const tradingStartTimeEl = document.getElementById('trading-start-time');
+        const tradingSymbolEl = document.getElementById('trading-symbol');
+
+        if (tradingModeEl) {
+            tradingModeEl.textContent = `${mode.toUpperCase()} (${type})`;
+            tradingModeEl.className = `badge ${mode === 'paper' ? 'bg-success' : 'bg-warning'}`;
+        }
+        if (tradingStatusEl) {
+            tradingStatusEl.textContent = 'Active';
+            tradingStatusEl.className = 'badge bg-success';
+        }
+        if (tradingStartTimeEl) tradingStartTimeEl.textContent = new Date().toLocaleTimeString();
+        if (tradingSymbolEl) tradingSymbolEl.textContent = type === 'portfolio' ? 'All Assets' : 'Selected';
     }
 }
 
-// Global function for crypto portfolio refresh button
+// ---------- Boot ----------
+document.addEventListener('DOMContentLoaded', function () {
+    window.tradingApp = new TradingApp();
+});
+
+// ---------- Global helpers wired to UI ----------
+async function exportATOTax() {
+    if (window.tradingApp) await window.tradingApp.exportATOTax();
+}
 function refreshCryptoPortfolio() {
     if (window.tradingApp) {
         window.tradingApp.updateCryptoPortfolio();
         window.tradingApp.showToast('Portfolio refreshed', 'info');
-    } else {
-        console.error('Trading app not initialized');
-        alert('System not ready. Please wait a moment and try again.');
     }
 }
-
-// Trading functions
 async function resetEntireProgram() {
-    if (confirm('Are you sure you want to reset the entire trading system? This will reset all portfolio values back to $10 each and clear all trading data. This cannot be undone.')) {
-        try {
-            // Call the web_interface.py reset endpoint which properly handles portfolio reset
-            const response = await fetch('/api/reset-entire-program', { 
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            });
-            const data = await response.json();
-
-            if (data.success) {
-                window.tradingApp.showToast('Portfolio reset successfully! All values back to $10 each.', 'success');
-
-                // Reset trading status to stopped state
-                const tradingModeEl = document.getElementById('trading-mode');
-                const tradingStatusEl = document.getElementById('trading-status');
-                const tradingStartTimeEl = document.getElementById('trading-start-time');
-                const tradingSymbolEl = document.getElementById('trading-symbol');
-
-                if (tradingModeEl) {
-                    tradingModeEl.textContent = 'Stopped';
-                    tradingModeEl.className = 'badge bg-secondary';
-                }
-
-                if (tradingStatusEl) {
-                    tradingStatusEl.textContent = 'Idle';
-                    tradingStatusEl.className = 'badge bg-secondary';
-                }
-
-                if (tradingStartTimeEl) {
-                    tradingStartTimeEl.textContent = '-';
-                }
-
-                if (tradingSymbolEl) {
-                    tradingSymbolEl.textContent = '-';
-                }
-
-                // Clear portfolio display to show no holdings
-                const cryptoSymbolsEl = document.getElementById('crypto-symbols');
-                if (cryptoSymbolsEl) {
-                    cryptoSymbolsEl.innerHTML = '<span class="badge bg-secondary">Empty portfolio - Start trading to populate</span>';
-                }
-
-                // Clear recent trades display
-                const tradesTable = document.getElementById('trades-table');
-                if (tradesTable) {
-                    tradesTable.innerHTML = '';
-                    const row = document.createElement('tr');
-                    const cell = document.createElement('td');
-                    cell.colSpan = 7;
-                    cell.className = 'text-center text-muted';
-                    cell.textContent = 'No trades yet';
-                    row.appendChild(cell);
-                    tradesTable.appendChild(row);
-                }
-
-                // Force refresh portfolio data to show empty state
-                setTimeout(() => {
-                    window.tradingApp.loadPortfolioData();
-                }, 1000);
-
-                // Reload after a short delay to show the message
-                setTimeout(() => {
-                    location.reload();
-                }, 2500);
-            } else {
-                window.tradingApp.showToast('Failed to reset portfolio: ' + (data.error || 'Unknown error'), 'error');
-            }
-        } catch (error) {
-            console.error('Reset error:', error);
-            window.tradingApp.showToast('Error resetting portfolio: ' + error.message, 'error');
-        }
-    }
-}
-
-async function startPaperTrades() {
+    if (!confirm('Reset the entire system? This resets all values to $10 and clears trading data.')) return;
     try {
-        // For now, just show a message that paper trading is already active
-        window.tradingApp.showToast('Paper trading is already active in the system', 'info');
+        const response = await fetch('/api/reset-entire-program', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        const data = await response.json();
+        if (data.success) {
+            window.tradingApp.showToast('Portfolio reset successfully!', 'success');
+            const modeEl = document.getElementById('trading-mode');
+            const statusEl = document.getElementById('trading-status');
+            const startEl = document.getElementById('trading-start-time');
+            const symEl = document.getElementById('trading-symbol');
+
+            if (modeEl) { modeEl.textContent = 'Stopped'; modeEl.className = 'badge bg-secondary'; }
+            if (statusEl) { statusEl.textContent = 'Idle'; statusEl.className = 'badge bg-secondary'; }
+            if (startEl) startEl.textContent = '-';
+            if (symEl) symEl.textContent = '-';
+
+            const tradesTable = document.getElementById('trades-table');
+            if (tradesTable) {
+                tradesTable.innerHTML = '<tr><td colspan="7" class="text-center text-muted">No trades yet</td></tr>';
+            }
+
+            setTimeout(() => window.tradingApp.loadPortfolioData(), 1000);
+            setTimeout(() => location.reload(), 2500);
+        } else {
+            window.tradingApp.showToast('Failed to reset portfolio: ' + (data.error || 'Unknown error'), 'error');
+        }
     } catch (error) {
-        window.tradingApp.showToast('Error starting paper trades: ' + error.message, 'error');
+        console.error('Reset error:', error);
+        window.tradingApp.showToast('Error resetting portfolio: ' + error.message, 'error');
     }
 }
-
-// Missing Utility Functions
 function changeCurrency() {
-    const currencyDropdown = document.getElementById('currency-selector');
-    if (currencyDropdown && window.tradingApp) {
-        window.tradingApp.selectedCurrency = currencyDropdown.value;
-        // Refresh all displays with new currency
-        window.tradingApp.updateCryptoPortfolio();
+    const dd = document.getElementById('currency-selector');
+    if (dd && window.tradingApp) {
+        window.tradingApp.setSelectedCurrency(dd.value);
     }
 }
-
-function exportPortfolio() {
-    if (window.tradingApp) {
-        window.tradingApp.showToast('Portfolio export feature coming soon', 'info');
-    }
-}
-
 function clearPortfolioFilters() {
-    // Clear any active filters on main portfolio table
     if (window.tradingApp) {
         window.tradingApp.updateCryptoPortfolio();
         window.tradingApp.showToast('Portfolio filters cleared', 'success');
     }
 }
-
 function clearPerformanceFilters() {
-    // Clear any active filters on performance table
     if (window.tradingApp) {
         window.tradingApp.updateCryptoPortfolio();
         window.tradingApp.showToast('Performance filters cleared', 'success');
     }
 }
-
 function confirmLiveTrading() {
-    if (confirm('Are you sure you want to start live trading? This will use real money.')) {
+    if (confirm('Start LIVE trading? This will use real money.')) {
         startTrading('live', 'portfolio');
     }
 }
-
 function sortPortfolio(column) {
-    // Basic sorting functionality for main portfolio table
     console.log(`Sorting portfolio by ${column}`);
-    if (window.tradingApp) {
-        window.tradingApp.showToast(`Sorting by ${column}`, 'info');
-    }
+    if (window.tradingApp) window.tradingApp.showToast(`Sorting by ${column}`, 'info');
 }
-
 function sortPerformanceTable(columnIndex) {
-    // Basic sorting functionality for performance table
     console.log(`Sorting performance table by column ${columnIndex}`);
-    if (window.tradingApp) {
-        window.tradingApp.showToast('Performance table sorted', 'info');
-    }
+    if (window.tradingApp) window.tradingApp.showToast('Performance table sorted', 'info');
 }
-
 function sortPositionsTable(columnIndex) {
-    // Basic sorting functionality for positions table
     console.log(`Sorting positions table by column ${columnIndex}`);
-    if (window.tradingApp) {
-        window.tradingApp.showToast('Positions table sorted', 'info');
-    }
+    if (window.tradingApp) window.tradingApp.showToast('Positions table sorted', 'info');
 }
-
 function sortTradesTable(columnIndex) {
-    // Basic sorting functionality for trades table
     console.log(`Sorting trades table by column ${columnIndex}`);
-    if (window.tradingApp) {
-        window.tradingApp.showToast('Trades table sorted', 'info');
-    }
+    if (window.tradingApp) window.tradingApp.showToast('Trades table sorted', 'info');
 }
-
 async function updatePerformanceData() {
     try {
-        const response = await fetch('/api/crypto-portfolio');
+        const response = await fetch('/api/crypto-portfolio', { cache: 'no-cache' });
         const data = await response.json();
         const cryptos = data.holdings || data.cryptocurrencies || [];
-        if (cryptos.length > 0) {
-            // Always update the performance page table since this is called from performance dashboard
-            window.tradingApp.updatePerformancePageTable(cryptos);
-        }
+        if (cryptos.length > 0) window.tradingApp.updatePerformancePageTable(cryptos);
     } catch (error) {
         console.error('Error updating performance data:', error);
     }
 }
-
 async function updateHoldingsData() {
     try {
-        const response = await fetch('/api/crypto-portfolio');
+        const response = await fetch('/api/crypto-portfolio', { cache: 'no-cache' });
         const data = await response.json();
         const cryptos = data.holdings || data.cryptocurrencies || [];
-        if (cryptos.length > 0) {
-            window.tradingApp.updateHoldingsTable(cryptos);
-        }
+        if (cryptos.length > 0) window.tradingApp.updateHoldingsTable(cryptos);
     } catch (error) {
         console.error('Error updating holdings data:', error);
     }
 }
-
-// Filter functions for trades table
-function filterTradesTable() {
-    if (window.tradingApp && window.tradingApp.applyTradeFilters) {
-        window.tradingApp.applyTradeFilters();
+async function updatePositionsData() {
+    try {
+        const response = await fetch('/api/crypto-portfolio', { cache: 'no-cache' });
+        const data = await response.json();
+        const cryptos = data.holdings || data.cryptocurrencies || [];
+        if (cryptos.length > 0) {
+            window.tradingApp.updateHoldingsTable(cryptos);
+            window.tradingApp.updatePositionsSummary(cryptos);
+        }
+    } catch (error) {
+        console.error('Error updating positions data:', error);
     }
 }
-
+function filterTradesTable() {
+    if (window.tradingApp?.applyTradeFilters) window.tradingApp.applyTradeFilters();
+}
 function clearTradesFilters() {
-    // Clear all filter inputs
-    const symbolFilter = document.getElementById('trades-filter');
-    const actionFilter = document.getElementById('trades-action-filter');
-    const timeFilter = document.getElementById('trades-time-filter');
-    const pnlFilter = document.getElementById('trades-pnl-filter');
-
-    if (symbolFilter) symbolFilter.value = '';
-    if (actionFilter) actionFilter.value = '';
-    if (timeFilter) timeFilter.value = '';
-    if (pnlFilter) pnlFilter.value = '';
-
-    // Reapply filters (which will show all trades)
+    const ids = ['trades-filter','trades-action-filter','trades-time-filter','trades-pnl-filter'];
+    ids.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
     filterTradesTable();
 }
-
-// Add missing functions referenced in the HTML
 async function startTrading(mode, type) {
     if (mode === 'live') {
-        if (!confirm('Are you sure you want to start LIVE trading? This will use real money and cannot be undone!')) {
-            return;
-        }
-        window.tradingApp.showToast('Live trading is not enabled in this demo version', 'warning');
+        if (!confirm('Are you sure you want to start LIVE trading? This will use real money.')) return;
+        window.tradingApp.showToast('Live trading is not enabled in this demo', 'warning');
         return;
     }
-
-    // Paper trading mode
     window.tradingApp.showToast(`Starting ${mode} trading in ${type} mode...`, 'info');
-
     try {
         const response = await fetch('/api/start_trading', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                mode: mode,
+                mode,
                 symbol: 'BTC/USDT',
                 timeframe: '1h',
                 trading_mode: type,
                 confirmation: true
             })
         });
-
         const data = await response.json();
         if (data.success) {
-            window.tradingApp.showToast(`${mode} trading started successfully in ${type} mode`, 'success');
-            // Update trading status display and refresh portfolio data
+            window.tradingApp.showToast(`${mode} trading started successfully (${type})`, 'success');
             window.tradingApp.updateDashboard();
             window.tradingApp.updateCryptoPortfolio();
             window.tradingApp.updateTradingStatusDisplay(mode, type);
@@ -2183,31 +1457,20 @@ async function startTrading(mode, type) {
         window.tradingApp.showToast(`Error starting trading: ${error.message}`, 'error');
     }
 }
-
 async function buyCrypto(symbol) {
     const amount = prompt(`Enter USD amount to buy ${symbol}:`, '25.00');
-    if (!amount || isNaN(amount) || parseFloat(amount) <= 0) {
-        window.tradingApp.showToast('Invalid amount entered', 'error');
-        return;
-    }
-
+    if (!amount || isNaN(amount) || parseFloat(amount) <= 0) return window.tradingApp.showToast('Invalid amount', 'error');
     try {
         const response = await fetch('/api/paper-trade/buy', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                symbol: symbol,
-                amount: parseFloat(amount)
-            })
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ symbol, amount: parseFloat(amount) })
         });
-
         const data = await response.json();
         if (data.success) {
-            window.tradingApp.showToast(`Successfully bought $${amount} worth of ${symbol}`, 'success');
-            window.tradingApp.updateDashboard(); // Refresh dashboard data
-            window.tradingApp.updateCryptoPortfolio(); // Refresh portfolio tables
+            window.tradingApp.showToast(`Bought $${amount} ${symbol}`, 'success');
+            window.tradingApp.updateDashboard();
+            window.tradingApp.updateCryptoPortfolio();
         } else {
             window.tradingApp.showToast(`Buy failed: ${data.error}`, 'error');
         }
@@ -2215,31 +1478,20 @@ async function buyCrypto(symbol) {
         window.tradingApp.showToast(`Error buying ${symbol}: ${error.message}`, 'error');
     }
 }
-
 async function sellCrypto(symbol) {
     const quantity = prompt(`Enter quantity of ${symbol} to sell:`, '0.001');
-    if (!quantity || isNaN(quantity) || parseFloat(quantity) <= 0) {
-        window.tradingApp.showToast('Invalid quantity entered', 'error');
-        return;
-    }
-
+    if (!quantity || isNaN(quantity) || parseFloat(quantity) <= 0) return window.tradingApp.showToast('Invalid quantity', 'error');
     try {
         const response = await fetch('/api/paper-trade/sell', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                symbol: symbol,
-                quantity: parseFloat(quantity)
-            })
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ symbol, quantity: parseFloat(quantity) })
         });
-
         const data = await response.json();
         if (data.success) {
-            window.tradingApp.showToast(`Successfully sold ${quantity} ${symbol}`, 'success');
-            window.tradingApp.updateDashboard(); // Refresh dashboard data
-            window.tradingApp.updateCryptoPortfolio(); // Refresh portfolio tables
+            window.tradingApp.showToast(`Sold ${quantity} ${symbol}`, 'success');
+            window.tradingApp.updateDashboard();
+            window.tradingApp.updateCryptoPortfolio();
         } else {
             window.tradingApp.showToast(`Sell failed: ${data.error}`, 'error');
         }
@@ -2248,533 +1500,144 @@ async function sellCrypto(symbol) {
     }
 }
 
-// Navigation Functions for Dashboard Views
+// Old in-page section toggles kept for compatibility (index now uses separate pages)
 function showMainDashboard() {
-    // Hide all dashboard sections first
-    const performanceDashboard = document.getElementById('performance-dashboard');
-    const currentHoldings = document.getElementById('current-holdings');
-    const mainDashboard = document.getElementById('main-dashboard');
-
-    // Show main dashboard and hide others
-    if (mainDashboard) mainDashboard.style.display = 'block';
-    if (performanceDashboard) performanceDashboard.style.display = 'none';
-    if (currentHoldings) currentHoldings.style.display = 'none';
-
-    // Update navbar button states
+    const ids = ['main-dashboard','performance-dashboard','current-holdings','recent-trades-page'];
+    ids.forEach(id => { const el = document.getElementById(id); if (el) el.style.display = (id === 'main-dashboard' ? 'block' : 'none'); });
     updateNavbarButtons('main');
-
-    // Refresh portfolio data when switching to main dashboard
-    if (window.tradingApp) {
-        window.tradingApp.updateCryptoPortfolio();
-    }
-
-    console.log('Switched to Main Dashboard');
+    window.tradingApp?.updateCryptoPortfolio();
 }
-
 function showPerformanceDashboard() {
-    // Hide all dashboard sections first
-    const mainDashboard = document.getElementById('main-dashboard');
-    const currentHoldings = document.getElementById('current-holdings');
-    const performanceDashboard = document.getElementById('performance-dashboard');
-
-    // Show performance dashboard and hide others
-    if (performanceDashboard) performanceDashboard.style.display = 'block';
-    if (mainDashboard) mainDashboard.style.display = 'none';
-    if (currentHoldings) currentHoldings.style.display = 'none';
-
-    // Update navbar button states
+    const ids = ['main-dashboard','performance-dashboard','current-holdings','recent-trades-page'];
+    ids.forEach(id => { const el = document.getElementById(id); if (el) el.style.display = (id === 'performance-dashboard' ? 'block' : 'none'); });
     updateNavbarButtons('performance');
-
-    // Refresh portfolio data and update performance-specific table
-    if (window.tradingApp) {
-        // Update the performance dashboard table with current data
-        if (window.tradingApp.currentCryptoData) {
-            window.tradingApp.updatePerformancePageTable(window.tradingApp.currentCryptoData);
-        }
-        // Also trigger a portfolio update
-        window.tradingApp.updateCryptoPortfolio();
+    if (window.tradingApp?.currentCryptoData) {
+        window.tradingApp.updatePerformancePageTable(window.tradingApp.currentCryptoData);
     }
-
-    console.log('Switched to Performance Dashboard');
+    window.tradingApp?.updateCryptoPortfolio();
 }
-
 function showCurrentPositions() {
-    // Hide all dashboard sections first
-    const mainDashboard = document.getElementById('main-dashboard');
-    const performanceDashboard = document.getElementById('performance-dashboard');
-    const currentHoldings = document.getElementById('current-holdings');
-
-    // Show current holdings and hide others
-    if (currentHoldings) currentHoldings.style.display = 'block';
-    if (mainDashboard) mainDashboard.style.display = 'none';
-    if (performanceDashboard) performanceDashboard.style.display = 'none';
-
-    // Update navbar button states
+    const ids = ['main-dashboard','performance-dashboard','current-holdings','recent-trades-page'];
+    ids.forEach(id => { const el = document.getElementById(id); if (el) el.style.display = (id === 'current-holdings' ? 'block' : 'none'); });
     updateNavbarButtons('holdings');
-
-    // Refresh portfolio data and update holdings-specific table
-    if (window.tradingApp) {
-        // Update the current holdings table with current data
-        if (window.tradingApp.currentCryptoData) {
-            window.tradingApp.updateHoldingsTable(window.tradingApp.currentCryptoData);
-            window.tradingApp.updatePositionsSummary(window.tradingApp.currentCryptoData);
-        }
-        // Also trigger a portfolio update
-        window.tradingApp.updateCryptoPortfolio();
+    if (window.tradingApp?.currentCryptoData) {
+        window.tradingApp.updateHoldingsTable(window.tradingApp.currentCryptoData);
+        window.tradingApp.updatePositionsSummary(window.tradingApp.currentCryptoData);
     }
-
-    console.log('Switched to Current Holdings');
+    window.tradingApp?.updateCryptoPortfolio();
 }
-
-async function executeTakeProfit() {
-    // Get button element to show loading state
-    const button = document.getElementById('take-profit-btn');
-    if (!button) return;
-    
-    // Show loading state
-    const originalText = button.innerHTML;
-    button.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Processing...';
-    button.disabled = true;
-    
-    try {
-        const response = await fetch('/api/execute-take-profit', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        });
-
-        const data = await response.json();
-        
-        if (data.success) {
-            const executedCount = data.executed_trades?.length || 0;
-            if (executedCount > 0) {
-                window.tradingApp.showToast(`Take profit executed on ${executedCount} cryptocurrency(ies)`, 'success');
-                
-                // Show details of executed trades
-                data.executed_trades.forEach(trade => {
-                    console.log(`Take profit executed: ${trade.symbol} at $${trade.price} (${trade.profit_pct}% profit)`);
-                });
-                
-                // Refresh data displays
-                window.tradingApp.updateDashboard();
-                window.tradingApp.updateCryptoPortfolio();
-            } else {
-                window.tradingApp.showToast('No cryptocurrencies currently meet take profit conditions', 'info');
-            }
-        } else {
-            window.tradingApp.showToast(`Take profit failed: ${data.error}`, 'error');
-        }
-    } catch (error) {
-        window.tradingApp.showToast(`Error executing take profit: ${error.message}`, 'error');
-        console.error('Take profit execution error:', error);
-    } finally {
-        // Restore button state
-        button.innerHTML = originalText;
-        button.disabled = false;
-    }
-}
-
-// New navigation functions for separate pages
-function showPortfolioPage() {
-    // Hide all sections
-    hideAllSections();
-
-    // Show main dashboard which contains the portfolio table
-    const mainDashboard = document.getElementById('main-dashboard');
-    if (mainDashboard) mainDashboard.style.display = 'block';
-
-    // Update the portfolio data and sync values
-    if (window.tradingApp) {
-        window.tradingApp.updateCryptoPortfolio();
-        window.tradingApp.syncPortfolioValues();
-    }
-
-    console.log('Switched to Portfolio Page (Main Dashboard)');
-}
-
 function showRecentTrades() {
-    // Hide all sections
-    hideAllSections();
-
-    // Show recent trades page
-    const recentTradesPage = document.getElementById('recent-trades-page');
-    if (recentTradesPage) recentTradesPage.style.display = 'block';
-
-    // Update the trades data
-    if (window.tradingApp) {
-        window.tradingApp.updateRecentTrades();
-    }
-
-    console.log('Switched to Recent Trades Page');
+    const ids = ['main-dashboard','performance-dashboard','current-holdings','recent-trades-page'];
+    ids.forEach(id => { const el = document.getElementById(id); if (el) el.style.display = (id === 'recent-trades-page' ? 'block' : 'none'); });
+    window.tradingApp?.updateRecentTrades();
 }
-
 function hideAllSections() {
-    // Hide all dashboard and page sections
-    const sections = [
-        'main-dashboard',
-        'performance-dashboard',
-        'positions-dashboard',
-        'current-holdings',
-        'recent-trades-page'
-    ];
-
-    sections.forEach(sectionId => {
-        const section = document.getElementById(sectionId);
-        if (section) section.style.display = 'none';
-    });
+    const sections = ['main-dashboard','performance-dashboard','positions-dashboard','current-holdings','recent-trades-page'];
+    sections.forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
 }
-
 function updateNavbarButtons(activeView) {
-    // Get all navigation buttons
     const buttons = document.querySelectorAll('.navbar-nav .btn');
-
-    // Remove active classes
-    buttons.forEach(btn => {
-        btn.classList.remove('btn-light');
-        btn.classList.add('btn-outline-light');
-    });
-
-    // Add active class to current view
-    const buttonMap = {
-        'main': 0,
-        'performance': 1,
-        'holdings': 2
-    };
-
-    if (buttonMap[activeView] !== undefined && buttons[buttonMap[activeView]]) {
-        buttons[buttonMap[activeView]].classList.remove('btn-outline-light');
-        buttons[buttonMap[activeView]].classList.add('btn-light');
+    buttons.forEach(btn => { btn.classList.remove('btn-light'); btn.classList.add('btn-outline-light'); });
+    const map = { 'main': 0, 'performance': 1, 'holdings': 2 };
+    if (map[activeView] !== undefined && buttons[map[activeView]]) {
+        buttons[map[activeView]].classList.remove('btn-outline-light');
+        buttons[map[activeView]].classList.add('btn-light');
     }
 }
 
-// Debug functions for browser console testing
+// ---------- Debug helpers ----------
 window.debugTrades = {
-    // Test 1: Check what the server returns
     async checkServerData() {
         try {
-            const response = await fetch('/api/status');
+            const response = await fetch('/api/status', { cache: 'no-cache' });
             const data = await response.json();
             console.log('Server trades data:', data.recent_trades);
-            console.log('Data type:', typeof data.recent_trades);
-            if (data.recent_trades && data.recent_trades.length > 0) {
-                console.log('First trade keys:', Object.keys(data.recent_trades[0]));
-            }
+            if (data.recent_trades?.length) console.log('First trade keys:', Object.keys(data.recent_trades[0]));
             return data.recent_trades;
-        } catch (e) {
-            console.error('Failed to fetch server data:', e);
-        }
+        } catch (e) { console.error('Failed to fetch server data:', e); }
     },
-
-    // Test 2: Test normalization with mock data
     testNormalizer() {
         const rawTrades = [
-            { 
-                ts: new Date().toISOString(), 
-                symbol: 'BTC/USDT', 
-                side: 'buy', 
-                qty: '0.01', 
-                price: '65000', 
-                pnl: '12.34', 
-                order_id: 'abc123' 
-            },
-            { 
-                timestamp: Date.now(), 
-                pair: 'ETH/USDT', 
-                side: 'SELL', 
-                quantity: 0.5, 
-                fill_price: 4200.50, 
-                profit: -5.67, 
-                id: 'def456' 
-            }
+            { ts: new Date().toISOString(), symbol: 'BTC/USDT', side: 'buy', qty: '0.01', price: '65000', pnl: '12.34', order_id: 'abc123' },
+            { timestamp: Date.now(), pair: 'ETH/USDT', side: 'SELL', quantity: 0.5, fill_price: 4200.50, profit: -5.67, id: 'def456' }
         ];
-        
-        console.log('Raw trades:', rawTrades);
-        if (window.tradingApp) {
-            const normalized = window.tradingApp.normalizeTrades(rawTrades);
-            console.log('Normalized trades:', normalized);
-            
-            // Display them
-            console.log('Displaying normalized trades...');
-            window.tradingApp.displayRecentTrades(rawTrades);
-            
-            return normalized;
-        } else {
-            console.error('tradingApp not available');
-        }
+        const normalized = window.tradingApp.normalizeTrades(rawTrades);
+        console.log('Normalized trades:', normalized);
+        window.tradingApp.displayRecentTrades(rawTrades);
+        return normalized;
     },
-
-    // Test 3: Check if table element exists
     checkTableElement() {
         const table = document.getElementById('trades-table');
-        console.log('Table element found:', !!table);
-        console.log('Table element:', table);
+        console.log('Table element found:', !!table, table);
         if (table) {
             console.log('Table children count:', table.children.length);
             console.log('Table innerHTML length:', table.innerHTML.length);
         }
         return table;
     },
-
-    // Test 4: Check case sensitivity issues
     testCaseSensitivity() {
         const testTrades = [
             { timestamp: Date.now(), symbol: 'BTC', side: 'buy', price: 65000, quantity: 0.01, pnl: 10 },
             { timestamp: Date.now(), symbol: 'ETH', side: 'BUY', price: 4200, quantity: 0.5, pnl: -5 },
             { timestamp: Date.now(), symbol: 'SOL', side: 'sell', price: 190, quantity: 2, pnl: 8 }
         ];
-        
-        if (window.tradingApp) {
-            console.log('Testing case normalization...');
-            window.tradingApp.displayRecentTrades(testTrades);
-            
-            // Check if sides are normalized to uppercase
-            const normalized = window.tradingApp.normalizeTrades(testTrades);
-            console.log('Normalized sides:', normalized.map(t => t.side));
-        }
+        window.tradingApp.displayRecentTrades(testTrades);
+        const normalized = window.tradingApp.normalizeTrades(testTrades);
+        console.log('Normalized sides:', normalized.map(t => t.side));
     }
 };
 
-console.log('Debug functions loaded. Use window.debugTrades.checkServerData(), testNormalizer(), checkTableElement(), or testCaseSensitivity()');
+console.log('Debug functions loaded.');
 
-// Portfolio-specific chart and display functions
-function updatePortfolioCharts(portfolioData) {
-    const holdings = portfolioData.holdings || [];
-    
-    // Render allocation chart
-    renderAllocationChart(holdings);
-    
-    // Update exposure metrics  
-    updateExposureMetrics(holdings);
-}
-
-function renderAllocationChart(holdings) {
-    const canvas = document.getElementById('allocationChart');
-    if (!canvas) return;
-    
-    // Clear any existing chart
-    if (window.allocationChart) {
-        window.allocationChart.destroy();
-    }
-    
-    // Get top 10 assets by allocation
-    const sortedHoldings = [...holdings]
-        .filter(h => h.has_position)
-        .sort((a, b) => (b.current_value || 0) - (a.current_value || 0))
-        .slice(0, 10);
-    
-    const labels = sortedHoldings.map(h => h.symbol);
-    const data = sortedHoldings.map(h => h.current_value || 0);
-    const colors = [
-        '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF',
-        '#FF9F40', '#FF6384', '#C9CBCF', '#4BC0C0', '#FF6384'
-    ];
-    
-    window.allocationChart = new Chart(canvas.getContext('2d'), {
-        type: 'doughnut',
-        data: {
-            labels: labels,
-            datasets: [{
-                data: data,
-                backgroundColor: colors,
-                borderWidth: 1
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    position: 'right',
-                    labels: {
-                        boxWidth: 12,
-                        padding: 8,
-                        fontSize: 11
-                    }
-                }
-            }
-        }
-    });
-}
-
-function updateExposureMetrics(holdings) {
-    if (!holdings || holdings.length === 0) return;
-    
-    const totalValue = holdings.reduce((sum, h) => sum + (h.current_value || 0), 0);
-    const longPositions = holdings.filter(h => h.has_position && (h.current_value || 0) > 0);
-    const longValue = longPositions.reduce((sum, h) => sum + (h.current_value || 0), 0);
-    const longExposure = totalValue > 0 ? ((longValue / totalValue) * 100) : 0;
-    
-    // Find largest position
-    const largestPosition = holdings.reduce((max, h) => 
-        (h.current_value || 0) > (max.current_value || 0) ? h : max, holdings[0] || {});
-    const largestPercent = totalValue > 0 ? (((largestPosition.current_value || 0) / totalValue) * 100) : 0;
-    
-    // Update progress bars
-    const updateProgressBar = (id, percent) => {
-        const element = document.getElementById(id);
-        const textElement = document.getElementById(id + '-text');
-        if (element) element.style.width = Math.min(percent, 100) + '%';
-        if (textElement) textElement.textContent = percent.toFixed(1) + '%';
-    };
-    
-    updateProgressBar('exposure-long', longExposure);
-    updateProgressBar('exposure-stable', 0); // Stablecoin detection would need server-side logic
-    updateProgressBar('exposure-largest', largestPercent);
-}
-
-function updatePositionTable(holdings) {
-    const tableBody = document.getElementById('positions-table-body');
-    if (!tableBody) return;
-    
-    const filteredHoldings = holdings.filter(h => h.has_position);
-    
-    // Clear and populate table
-    tableBody.innerHTML = '';
-    
-    if (filteredHoldings.length === 0) {
-        const row = document.createElement('tr');
-        row.innerHTML = '<td colspan="11" class="text-center text-muted">No positions found</td>';
-        tableBody.appendChild(row);
-        return;
-    }
-    
-    filteredHoldings.forEach(holding => {
-        const row = document.createElement('tr');
-        const pnlClass = (holding.pnl_percent || 0) >= 0 ? 'text-success' : 'text-danger';
-        const pnlSign = (holding.pnl_percent || 0) >= 0 ? '+' : '';
-        
-        row.innerHTML = `
-            <td><strong class="text-primary">${holding.symbol}</strong></td>
-            <td class="small text-muted">${holding.name}</td>
-            <td>${(holding.quantity || 0).toFixed(8)}</td>
-            <td>$${(holding.current_price || 0).toFixed(4)}</td>
-            <td>$${(holding.current_value || 0).toFixed(2)}</td>
-            <td>${(holding.allocation_percent || 0).toFixed(2)}%</td>
-            <td class="${pnlClass}">$${(holding.unrealized_pnl || 0).toFixed(2)}</td>
-            <td class="${pnlClass}">${pnlSign}${(holding.pnl_percent || 0).toFixed(2)}%</td>
-            <td>-</td>
-            <td>-</td>
-            <td><span class="badge bg-success">Active</span></td>
-        `;
-        tableBody.appendChild(row);
-    });
-    
-    // Update summary metrics at bottom of table
-    const totalPositions = filteredHoldings.length;
-    const totalValue = filteredHoldings.reduce((sum, h) => sum + (h.current_value || 0), 0);
-    const totalPnL = filteredHoldings.reduce((sum, h) => sum + (h.unrealized_pnl || 0), 0);
-    const strongGains = filteredHoldings.filter(h => (h.pnl_percent || 0) >= 5).length;
-    
-    updateElementSafely('pos-total-count', totalPositions);
-    updateElementSafely('pos-total-value', this.formatCurrency ? this.formatCurrency(totalValue) : `$${totalValue.toFixed(2)}`);
-    if (document.getElementById('pos-unrealized-pnl')) {
-        const element = document.getElementById('pos-unrealized-pnl');
-        element.textContent = this.formatCurrency ? this.formatCurrency(totalPnL) : `$${totalPnL.toFixed(2)}`;
-        element.className = totalPnL >= 0 ? 'text-success' : 'text-danger';
-    }
-    updateElementSafely('pos-strong-gains', strongGains);
-}
-
-// Utility function for safe DOM element updates
+// ---------- Portfolio Summary & Quick Overview (global UI helpers) ----------
 function updateElementSafely(elementId, value) {
     const element = document.getElementById(elementId);
     if (element) {
         element.textContent = value;
     } else {
-        // Only warn for elements that should exist on current page
         const currentPage = window.location.pathname;
         const expectedElements = {
             '/': ['kpi-total-equity', 'kpi-daily-pnl', 'kpi-unrealized-pnl', 'kpi-cash', 'kpi-exposure', 'kpi-win-rate'],
             '/portfolio': ['summary-total-value', 'summary-total-change', 'summary-total-assets', 'summary-cash-balance'],
             '/holdings': ['holdings-total-assets', 'holdings-active-count', 'holdings-zero-count']
         };
-        
-        // Only warn if this element is expected on current page
         const pageElements = expectedElements[currentPage] || [];
         if (pageElements.includes(elementId)) {
             console.warn(`Element ${elementId} not found for update`);
         }
     }
 }
-
-// Simple currency formatting for portfolio summary
 function formatCurrency(amount) {
-    if (typeof amount !== 'number' || isNaN(amount)) {
-        return '$0.00';
-    }
-    
-    return '$' + Number(amount).toLocaleString('en-US', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
-    });
+    if (typeof amount !== 'number' || isNaN(amount)) return '$0.00';
+    return '$' + Number(amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
-
-// Get currency symbol helper
-function getCurrencySymbol(currency = 'USD') {
-    const symbols = {
-        'USD': '$',
-        'EUR': '€',
-        'GBP': '£',
-        'JPY': '¥'
-    };
-    return symbols[currency] || '$';
-}
-
-// Get current currency helper
-function getCurrentCurrency() {
-    const selector = document.getElementById('currency-selector');
-    return selector ? selector.value : 'USD';
-}
-
-// Safe number formatting helper
 function fmtFixed(value, decimals = 2) {
-    if (typeof value !== 'number' || isNaN(value)) {
-        return '0.00';
-    }
+    if (typeof value !== 'number' || isNaN(value)) return '0.00';
     return Number(value).toFixed(decimals);
 }
 
-// Enhanced portfolio summary update function
-function updatePortfolioSummary(portfolioData) {
-    console.log("Updating enhanced portfolio summary with KPIs");
-    
+// RENAMED: Big UI updater
+function updatePortfolioSummaryUI(portfolioData) {
     const summary = portfolioData.summary || {};
     const holdings = portfolioData.holdings || [];
-    
-    // Store data globally for chart updates
+
     window.lastPortfolioData = portfolioData;
-    
-    // Calculate totals from holdings data similar to Quick Overview
-    let totalValue = 0;
-    let totalUnrealizedPnl = 0;
-    let totalCostBasis = 0;
-    
-    holdings.forEach(holding => {
-        if (holding.has_position) {
-            totalValue += holding.current_value || 0;
-            totalUnrealizedPnl += holding.unrealized_pnl || 0;
-            totalCostBasis += holding.cost_basis || 0;
+
+    let totalValue = 0, totalUnrealizedPnl = 0, totalCostBasis = 0;
+    holdings.forEach(h => {
+        if (h.has_position) {
+            totalValue += h.current_value || 0;
+            totalUnrealizedPnl += h.unrealized_pnl || 0;
+            totalCostBasis += h.cost_basis || 0;
         }
     });
-    
+
     const cashBalance = portfolioData.cash_balance || 0;
     const totalPortfolioValue = totalValue + cashBalance;
     const totalPnlPercent = totalCostBasis > 0 ? ((totalUnrealizedPnl / totalCostBasis) * 100) : 0;
-    
-    // Update main KPIs with calculated values
+
     updateElementSafely("summary-total-value", formatCurrency(totalPortfolioValue));
-    
-    // Update total change (same as unrealized P&L for accuracy)
-    const totalChangeElement = document.getElementById("summary-total-change");
-    if (totalChangeElement) {
-        const changeClass = totalUnrealizedPnl >= 0 ? "bg-success" : "bg-danger";
-        const prefix = totalUnrealizedPnl >= 0 ? "+" : "";
-        totalChangeElement.innerHTML = `${prefix}${formatCurrency(totalUnrealizedPnl)} (${prefix}${totalPnlPercent.toFixed(2)}%)`;
-        totalChangeElement.className = `badge ${changeClass} mb-1`;
-    }
-    
-    // Update 24h change with color coding
+
     const change24h = summary.daily_pnl || 0;
     const change24hElement = document.getElementById("summary-24h-change");
     if (change24hElement) {
@@ -2784,104 +1647,60 @@ function updatePortfolioSummary(portfolioData) {
         change24hElement.innerHTML = `${arrow} ${prefix}${formatCurrency(change24h)}`;
         change24hElement.className = `mb-0 fw-bold ${changeClass}`;
     }
-    
-    // Update other KPIs
+
     updateElementSafely("summary-total-assets", summary.total_assets_tracked || holdings.length);
     updateElementSafely("summary-cash-balance", formatCurrency(cashBalance));
     updateElementSafely("summary-win-rate", `${(summary.win_rate || 0).toFixed(1)}%`);
     updateElementSafely("summary-portfolio-value", formatCurrency(totalPortfolioValue));
-    
-    // Update holdings summary (only if elements exist)
+
+    // Holdings summary if present on page
     if (document.getElementById("holdings-total-assets")) {
         updateHoldingsSummary(holdings);
     }
-    
-    // Update best/worst performers with enhanced display
-    const bestPerformer = summary.best_performer || {symbol: "N/A", pnl_percent: 0, name: "N/A"};
-    const worstPerformer = summary.worst_performer || {symbol: "N/A", pnl_percent: 0, name: "N/A"};
-    
-    const bestElement = document.getElementById("summary-best-performer");
-    const bestPerfElement = document.getElementById("summary-best-performance");
-    const worstElement = document.querySelector("#summary-worst-performer span");
-    
-    if (bestElement && bestPerformer.symbol !== "N/A") {
-        bestElement.textContent = bestPerformer.symbol;
-        if (bestPerfElement) {
-            bestPerfElement.textContent = `+${bestPerformer.pnl_percent.toFixed(2)}%`;
-        }
-    } else if (bestElement) {
-        bestElement.textContent = "N/A";
-        if (bestPerfElement) bestPerfElement.textContent = "+0.00%";
+
+    const best = summary.best_performer || { symbol: "N/A", pnl_percent: 0 };
+    const worst = summary.worst_performer || { symbol: "N/A", pnl_percent: 0 };
+
+    const bestEl = document.getElementById("summary-best-performer");
+    const bestPerfEl = document.getElementById("summary-best-performance");
+    const worstEl = document.querySelector("#summary-worst-performer span");
+
+    if (bestEl) {
+        bestEl.textContent = best.symbol || "N/A";
+        if (bestPerfEl) bestPerfEl.textContent = `+${(best.pnl_percent || 0).toFixed(2)}%`;
     }
-    
-    if (worstElement && worstPerformer.symbol !== "N/A") {
-        worstElement.innerHTML = `${worstPerformer.symbol} <small>(${worstPerformer.pnl_percent.toFixed(2)}%)</small>`;
-    } else if (worstElement) {
-        worstElement.textContent = "N/A";
+    if (worstEl) {
+        worstEl.textContent = worst.symbol !== "N/A" ? `${worst.symbol}` : "N/A";
     }
-    
-    console.log("Portfolio Summary KPIs:", {
-        totalPortfolioValue: totalPortfolioValue,
-        totalUnrealizedPnl: totalUnrealizedPnl,
-        totalPnlPercent: totalPnlPercent.toFixed(2) + '%',
-        cashBalance: cashBalance,
-        totalAssets: holdings.length,
-        bestPerformer: bestPerformer.symbol,
-        worstPerformer: worstPerformer.symbol
-    });
-    
-    // Update position counts with enhanced metrics (only if elements exist)
-    if (document.getElementById("profitable-positions")) {
-        updateElementSafely("profitable-positions", `${summary.profitable_positions || 0}`);
-    }
-    if (document.getElementById("daily-pnl")) {
-        updateElementSafely("daily-pnl", `$${fmtFixed(summary.daily_pnl || 0, 2)}`);
-    }
-    
-    console.log("Enhanced portfolio summary updated successfully");
-    
-    // Update Portfolio-specific charts and displays
+
+    // Portfolio page widgets/charts (if on that page)
     if (window.location.pathname === '/portfolio') {
-        updatePortfolioCharts(portfolioData);
-        updateExposureMetrics(holdings);
-        updatePositionTable(holdings);
+        updatePortfolioChartsUI(portfolioData);
+        updateExposureMetrics(holdings); // no-op if its IDs aren't present
+        updatePositionTable(holdings);   // no-op if its IDs aren't present
     }
 }
 
-// Update holdings summary with active vs sold out positions
 function updateHoldingsSummary(holdings) {
-    console.log("Updating holdings summary...");
-    
-    if (!holdings || !Array.isArray(holdings)) {
-        console.warn("No holdings data provided for summary");
-        return;
-    }
-    
-    // Separate active holdings from sold-out positions (use current_value as main indicator)
-    const activeHoldings = holdings.filter(h => h.current_value > 0.01);
-    const soldOutHoldings = holdings.filter(h => h.current_value <= 0.01);
-    
-    // Update summary counts
+    const active = holdings.filter(h => (h.current_value || 0) > 0.01);
+    const sold   = holdings.filter(h => (h.current_value || 0) <= 0.01);
+
     updateElementSafely("holdings-total-assets", holdings.length);
-    updateElementSafely("holdings-active-count", activeHoldings.length);
-    updateElementSafely("holdings-zero-count", soldOutHoldings.length);
-    
-    // Calculate total holdings value (only active positions)
-    const totalHoldingsValue = activeHoldings.reduce((sum, h) => sum + (h.current_value || 0), 0);
+    updateElementSafely("holdings-active-count", active.length);
+    updateElementSafely("holdings-zero-count", sold.length);
+
+    const totalHoldingsValue = active.reduce((sum, h) => sum + (h.current_value || 0), 0);
     updateElementSafely("holdings-total-value", formatCurrency(totalHoldingsValue));
-    
-    // Update performance metrics in summary
-    updateElementSafely("active-positions", activeHoldings.length);
-    updateElementSafely("zero-positions", soldOutHoldings.length);
-    updateElementSafely("active-holdings-count", activeHoldings.length);
-    updateElementSafely("zero-holdings-count", soldOutHoldings.length);
-    
-    // Update active holdings list
+
+    updateElementSafely("active-positions", active.length);
+    updateElementSafely("zero-positions", sold.length);
+    updateElementSafely("active-holdings-count", active.length);
+    updateElementSafely("zero-holdings-count", sold.length);
+
     const activeListEl = document.getElementById('active-holdings-list');
     if (activeListEl) {
-        if (activeHoldings.length > 0) {
-            // Sort by current value descending
-            const sortedActive = activeHoldings.sort((a, b) => (b.current_value || 0) - (a.current_value || 0));
+        if (active.length) {
+            const sortedActive = [...active].sort((a, b) => (b.current_value || 0) - (a.current_value || 0));
             activeListEl.innerHTML = sortedActive.map(h => {
                 const pnlClass = (h.pnl_percent || 0) >= 0 ? 'text-success' : 'text-danger';
                 const pnlIcon = (h.pnl_percent || 0) >= 0 ? '↗' : '↘';
@@ -2901,665 +1720,298 @@ function updateHoldingsSummary(holdings) {
             activeListEl.innerHTML = '<div class="text-muted text-center py-3">No active holdings</div>';
         }
     }
-    
-    // Update sold out holdings list
+
     const soldListEl = document.getElementById('zero-holdings-list');
     if (soldListEl) {
-        if (soldOutHoldings.length > 0) {
-            // Sort alphabetically for sold out positions
-            const sortedSold = soldOutHoldings.sort((a, b) => a.symbol.localeCompare(b.symbol));
-            soldListEl.innerHTML = sortedSold.map(h => {
-                const lastPrice = formatCurrency(h.current_price || 0);
-                return `
-                    <div class="d-flex justify-content-between align-items-center py-1 border-bottom">
-                        <div>
-                            <strong class="text-warning">${h.symbol}</strong>
-                            <small class="text-muted ms-2">Sold out</small>
-                        </div>
-                        <div class="text-muted">
-                            <small>Last: ${lastPrice}</small>
-                        </div>
+        if (sold.length) {
+            const sortedSold = [...sold].sort((a, b) => (a.symbol || '').localeCompare(b.symbol || ''));
+            soldListEl.innerHTML = sortedSold.map(h => `
+                <div class="d-flex justify-content-between align-items-center py-1 border-bottom">
+                    <div>
+                        <strong class="text-warning">${h.symbol}</strong>
+                        <small class="text-muted ms-2">Sold out</small>
                     </div>
-                `;
-            }).join('');
+                    <div class="text-muted"><small>Last: ${formatCurrency(h.current_price || 0)}</small></div>
+                </div>
+            `).join('');
         } else {
             soldListEl.innerHTML = '<div class="text-muted text-center py-3">No sold positions</div>';
         }
     }
-    
-    console.log(`Holdings summary updated: ${activeHoldings.length} active, ${soldOutHoldings.length} sold out`);
 }
 
-// Update Quick Overview section with live KPIs
+// Dashboard KPIs + quick charts + preview
 function updateQuickOverview(portfolioData) {
-    console.log("Updating Quick Overview KPIs");
-    console.log("Portfolio data received:", portfolioData);
-    
     const summary = portfolioData.summary || {};
     const holdings = portfolioData.holdings || [];
-    
-    // Calculate totals from holdings data
-    let totalValue = 0;
-    let totalUnrealizedPnl = 0;
-    let totalCostBasis = 0;
-    
-    holdings.forEach(holding => {
-        if (holding.has_position) {
-            totalValue += holding.current_value || 0;
-            totalUnrealizedPnl += holding.unrealized_pnl || 0;
-            totalCostBasis += holding.cost_basis || 0;
+
+    let totalValue = 0, totalUnrealizedPnl = 0, totalCostBasis = 0;
+    holdings.forEach(h => {
+        if (h.has_position) {
+            totalValue += h.current_value || 0;
+            totalUnrealizedPnl += h.unrealized_pnl || 0;
+            totalCostBasis += h.cost_basis || 0;
         }
     });
-    
-    // Update KPI strip elements with calculated values
+
     const cashBalance = portfolioData.cash_balance || 0;
     const totalEquity = totalValue + cashBalance;
     const dailyPnl = summary.daily_pnl || 0;
     const exposure = totalEquity > 0 ? ((totalValue / totalEquity) * 100) : 0;
     const winRate = summary.win_rate || 0;
-    
+
     updateElementSafely("kpi-total-equity", formatCurrency(totalEquity));
     updateElementSafely("kpi-daily-pnl", formatCurrency(dailyPnl));
     updateElementSafely("kpi-unrealized-pnl", formatCurrency(totalUnrealizedPnl));
     updateElementSafely("kpi-cash", formatCurrency(cashBalance));
     updateElementSafely("kpi-exposure", `${exposure.toFixed(1)}%`);
     updateElementSafely("kpi-win-rate", `${winRate.toFixed(1)}%`);
-    
-    console.log("Quick Overview KPIs:", {
-        totalEquity: totalEquity,
-        dailyPnl: dailyPnl,
-        unrealizedPnl: totalUnrealizedPnl,
-        cashBalance: cashBalance,
-        exposure: exposure.toFixed(1) + '%',
-        winRate: winRate.toFixed(1) + '%'
-    });
-    
-    // Add color coding for P&L values
-    const dailyPnlElement = document.getElementById("kpi-daily-pnl");
-    const unrealizedPnlElement = document.getElementById("kpi-unrealized-pnl");
-    
-    if (dailyPnlElement) {
-        dailyPnlElement.className = dailyPnl >= 0 ? "h5 mb-0 text-success" : "h5 mb-0 text-danger";
-    }
-    if (unrealizedPnlElement) {
-        unrealizedPnlElement.className = totalUnrealizedPnl >= 0 ? "h5 mb-0 text-success" : "h5 mb-0 text-danger";
-    }
-    
-    // Update top movers section
-    if (holdings && holdings.length > 0) {
-        updateTopMovers(holdings);
-    }
-    
-    // Update loss cap progress bar
+
+    const dailyPnlEl = document.getElementById("kpi-daily-pnl");
+    const unrlEl = document.getElementById("kpi-unrealized-pnl");
+    if (dailyPnlEl) dailyPnlEl.className = dailyPnl >= 0 ? "h5 mb-0 text-success" : "h5 mb-0 text-danger";
+    if (unrlEl)     unrlEl.className     = totalUnrealizedPnl >= 0 ? "h5 mb-0 text-success" : "h5 mb-0 text-danger";
+
+    if (holdings.length) updateTopMovers(holdings);
+
     const dailyLoss = Math.abs(summary.daily_pnl || 0);
-    const lossCapLimit = 50; // $50 daily loss cap
+    const lossCapLimit = 50;
     const lossCapPercent = Math.min((dailyLoss / lossCapLimit) * 100, 100);
-    
     const lossCapBar = document.getElementById("loss-cap-bar");
     const lossCapText = document.getElementById("loss-cap-text");
-    
     if (lossCapBar) {
         lossCapBar.style.width = `${lossCapPercent}%`;
-        lossCapBar.className = lossCapPercent > 80 ? 'progress-bar bg-danger' : 
-                               lossCapPercent > 60 ? 'progress-bar bg-warning' : 
-                               'progress-bar bg-success';
+        lossCapBar.className = lossCapPercent > 80 ? 'progress-bar bg-danger'
+                            : lossCapPercent > 60 ? 'progress-bar bg-warning'
+                            : 'progress-bar bg-success';
     }
-    
-    if (lossCapText) {
-        lossCapText.textContent = `$${dailyLoss.toFixed(2)} / $${lossCapLimit}`;
-    }
-    
-    // Update connection status
+    if (lossCapText) lossCapText.textContent = `$${dailyLoss.toFixed(2)} / $${lossCapLimit}`;
+
     updateElementSafely("overview-connection", "Connected");
     updateElementSafely("overview-last-update", new Date().toLocaleTimeString());
-    
-    console.log("Quick Overview updated successfully");
 }
-
-// Update Top Movers section
 function updateTopMovers(holdings) {
-    const topMoversEl = document.getElementById("top-movers");
-    if (!topMoversEl) return;
-    
-    // Sort by P&L percentage (absolute value for biggest movers)
-    const sortedMovers = [...holdings]
+    const el = document.getElementById("top-movers");
+    if (!el) return;
+
+    const sorted = [...holdings]
         .filter(h => h.pnl_percent !== undefined && h.pnl_percent !== null)
         .sort((a, b) => Math.abs(b.pnl_percent || 0) - Math.abs(a.pnl_percent || 0))
-        .slice(0, 10); // Top 10 movers
-    
-    if (sortedMovers.length === 0) {
-        topMoversEl.innerHTML = '<div class="text-muted text-center">No data</div>';
+        .slice(0, 10);
+
+    if (!sorted.length) {
+        el.innerHTML = '<div class="text-muted text-center">No data</div>';
         return;
     }
-    
-    const topGainers = sortedMovers.filter(h => (h.pnl_percent || 0) > 0).slice(0, 5);
-    const topLosers = sortedMovers.filter(h => (h.pnl_percent || 0) < 0).slice(0, 5);
-    
+
+    const gainers = sorted.filter(h => (h.pnl_percent || 0) > 0).slice(0, 5);
+    const losers  = sorted.filter(h => (h.pnl_percent || 0) < 0).slice(0, 5);
+
     let html = '';
-    
-    // Top gainers
-    if (topGainers.length > 0) {
+    if (gainers.length) {
         html += '<div class="mb-2"><strong class="text-success">↗ Top Gainers</strong></div>';
-        topGainers.forEach(crypto => {
-            const pnlPercent = (crypto.pnl_percent || 0).toFixed(2);
-            html += `
-                <div class="d-flex justify-content-between small mb-1">
-                    <span class="text-primary fw-bold">${crypto.symbol}</span>
-                    <span class="text-success">+${pnlPercent}%</span>
-                </div>
-            `;
-        });
+        gainers.forEach(c => html += `
+            <div class="d-flex justify-content-between small mb-1">
+                <span class="text-primary fw-bold">${c.symbol}</span>
+                <span class="text-success">+${(c.pnl_percent || 0).toFixed(2)}%</span>
+            </div>
+        `);
     }
-    
-    // Top losers
-    if (topLosers.length > 0) {
+    if (losers.length) {
         html += '<div class="mb-2 mt-3"><strong class="text-danger">↘ Top Losers</strong></div>';
-        topLosers.forEach(crypto => {
-            const pnlPercent = Math.abs(crypto.pnl_percent || 0).toFixed(2);
-            html += `
-                <div class="d-flex justify-content-between small mb-1">
-                    <span class="text-primary fw-bold">${crypto.symbol}</span>
-                    <span class="text-danger">-${pnlPercent}%</span>
-                </div>
-            `;
-        });
+        losers.forEach(c => html += `
+            <div class="d-flex justify-content-between small mb-1">
+                <span class="text-primary fw-bold">${c.symbol}</span>
+                <span class="text-danger">-${Math.abs(c.pnl_percent || 0).toFixed(2)}%</span>
+            </div>
+        `);
     }
-    
-    topMoversEl.innerHTML = html || '<div class="text-muted text-center">No significant moves</div>';
+    el.innerHTML = html || '<div class="text-muted text-center">No significant moves</div>';
 }
-
-// Render Dashboard Overview - comprehensive function to update all Quick Overview elements
 function renderDashboardOverview(portfolioData, recentTrades = []) {
-    console.log("Rendering complete Dashboard Overview");
-    
-    // Update all KPI elements
     updateQuickOverview(portfolioData);
-    
-    // Update charts with portfolio data
     updateQuickOverviewCharts(portfolioData);
-    
-    // Update recent trades preview (first 5 trades)
     updateRecentTradesPreview(recentTrades.slice(0, 5));
-    
-    console.log("Dashboard Overview rendered successfully");
 }
 
-// Update Recent Trades Preview in Quick Overview
+// Recent Trades quick preview (used if some pages still call it)
 function updateRecentTradesPreview(trades) {
     const previewBody = document.getElementById("recent-trades-preview-body");
     if (!previewBody) return;
-    
-    if (!trades || trades.length === 0) {
-        previewBody.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-3">No recent trades</td></tr>';
+
+    const normalized = window.tradingApp?.normalizeTrades(trades || []) || [];
+    if (!normalized.length) {
+        previewBody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-3">No recent trades</td></tr>';
         return;
     }
-    
+
     let html = '';
-    trades.forEach((trade, index) => {
-        const tradeDate = new Date(trade.timestamp || Date.now()).toLocaleDateString();
-        const tradeTime = new Date(trade.timestamp || Date.now()).toLocaleTimeString('en-US', { 
-            hour: '2-digit', 
-            minute: '2-digit' 
-        });
-        
-        const actionClass = trade.action === 'BUY' ? 'bg-success' : 'bg-danger';
-        const sizeFormatted = parseFloat(trade.size || 0).toFixed(4);
-        const priceFormatted = formatCurrency(trade.price || 0);
-        
+    normalized.slice(0, 5).forEach((t, i) => {
+        const pnlClass = (t.pnl || 0) >= 0 ? 'text-success' : 'text-danger';
+        const sideBadge = t.side === 'BUY' ? 'badge bg-success' : 'badge bg-danger';
         html += `
             <tr>
-                <td><small class="text-muted">${tradeDate}</small><br><small>${tradeTime}</small></td>
-                <td><strong class="text-primary">${trade.symbol}</strong></td>
-                <td><span class="badge ${actionClass}">${trade.action}</span></td>
-                <td class="text-end">
-                    <div><small>${sizeFormatted}</small></div>
-                    <div><small class="text-muted">${priceFormatted}</small></div>
-                </td>
+                <td>${i + 1}</td>
+                <td class="text-start">${window.tradingApp.formatTradeTime(t.timestamp)}</td>
+                <td><strong>${t.symbol}</strong></td>
+                <td><span class="${sideBadge}">${t.side}</span></td>
+                <td class="text-end">${window.tradingApp.num(t.quantity).toFixed(6)}</td>
+                <td class="text-end">${window.tradingApp.formatCurrency(t.price)}</td>
+                <td class="text-end ${pnlClass}">${window.tradingApp.formatCurrency(t.pnl)}</td>
             </tr>
         `;
     });
-    
     previewBody.innerHTML = html;
 }
 
-// Initialize Quick Overview charts
+// Quick Overview charts
 function initializeQuickOverviewCharts() {
-    // Don't initialize if Chart.js isn't loaded
     if (!window.Chart) {
         console.warn('Chart.js not available for Quick Overview charts');
         return;
     }
-
     try {
-        // Initialize Equity Sparkline Chart
         const equitySparklineCtx = document.getElementById('equitySparkline');
         if (equitySparklineCtx) {
             window.equitySparklineChart = new Chart(equitySparklineCtx, {
                 type: 'line',
-                data: {
-                    labels: [],
-                    datasets: [{
-                        data: [],
-                        borderColor: '#28a745',
-                        backgroundColor: 'rgba(40, 167, 69, 0.1)',
-                        borderWidth: 2,
-                        tension: 0.4,
-                        fill: true,
-                        pointRadius: 0,
-                        pointHoverRadius: 3
-                    }]
-                },
+                data: { labels: [], datasets: [{ data: [], borderColor: '#28a745', backgroundColor: 'rgba(40, 167, 69, 0.1)', borderWidth: 2, tension: 0.4, fill: true, pointRadius: 0, pointHoverRadius: 3 }]},
                 options: {
-                    responsive: true,
-                    maintainAspectRatio: true,
-                    aspectRatio: 3,
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: { 
-                            enabled: false,
-                            external: function() {} // Disable tooltips completely 
-                        }
-                    },
-                    scales: {
-                        x: { 
-                            display: false,
-                            grid: { display: false }
-                        },
-                        y: { 
-                            display: false,
-                            grid: { display: false }
-                        }
-                    },
-                    interaction: { intersect: false, mode: 'index' },
-                    animation: { duration: 0 }
+                    responsive: true, maintainAspectRatio: true, aspectRatio: 3,
+                    plugins: { legend: { display: false }, tooltip: { enabled: false, external: function(){} } },
+                    scales: { x: { display: false, grid: { display: false } }, y: { display: false, grid: { display: false } } },
+                    interaction: { intersect: false, mode: 'index' }, animation: { duration: 0 }
                 }
             });
-            console.log('Equity sparkline chart initialized');
         }
-
-        // Initialize Allocation Donut Chart
         const allocationDonutCtx = document.getElementById('allocationDonut');
         if (allocationDonutCtx) {
             window.allocationDonutChart = new Chart(allocationDonutCtx, {
                 type: 'doughnut',
-                data: {
-                    labels: ['BTC', 'ETH', 'SOL', 'Other'],
-                    datasets: [{
-                        data: [30, 25, 15, 30],
-                        backgroundColor: [
-                            '#f7931a', // Bitcoin orange
-                            '#627eea', // Ethereum blue  
-                            '#14f195', // Solana green
-                            '#6c757d'  // Gray for others
-                        ],
-                        borderWidth: 0,
-                        cutout: '60%'
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: true,
-                    aspectRatio: 1,
-                    plugins: {
-                        legend: { 
-                            display: false
-                        },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    return context.label + ': ' + context.parsed + '%';
-                                }
-                            }
-                        }
-                    },
-                    animation: { duration: 300 }
-                }
+                data: { labels: ['BTC','ETH','SOL','Other'], datasets: [{ data: [30,25,15,30], backgroundColor: ['#f7931a','#627eea','#14f195','#6c757d'], borderWidth: 0, cutout: '60%' }]},
+                options: { responsive: true, maintainAspectRatio: true, aspectRatio: 1, plugins: { legend: { display: false } }, animation: { duration: 300 } }
             });
-            console.log('Allocation donut chart initialized');
         }
-
-        console.log('Quick Overview charts initialized successfully');
-
     } catch (error) {
         console.error('Failed to initialize Quick Overview charts:', error);
     }
 }
-
-// Update Quick Overview charts with live data  
 function updateQuickOverviewCharts(portfolioData) {
     if (!portfolioData) return;
-    
     const holdings = portfolioData.holdings || [];
     const summary = portfolioData.summary || {};
-    
     try {
-        // Update Equity Sparkline with simulated 24-hour equity trend
         if (window.equitySparklineChart) {
             const currentValue = summary.total_current_value || 1030;
-            
-            // Generate 24 hours of hourly data points
-            const labels = [];
-            const values = [];
-            
+            const labels = [], values = [];
             for (let i = 23; i >= 0; i--) {
                 const hour = new Date(Date.now() - (i * 60 * 60 * 1000));
-                const variation = (Math.sin(i * 0.3) * 0.015 + Math.random() * 0.005 - 0.0025); // ±1.5% variation
-                const value = currentValue * (1 + variation);
-                
+                const variation = (Math.sin(i * 0.3) * 0.015 + Math.random() * 0.005 - 0.0025);
                 labels.push(hour.toLocaleTimeString('en-US', { hour: '2-digit' }));
-                values.push(value);
+                values.push(currentValue * (1 + variation));
             }
-            
             window.equitySparklineChart.data.labels = labels;
             window.equitySparklineChart.data.datasets[0].data = values;
             window.equitySparklineChart.update('none');
         }
-        
-        // Update Allocation Donut with actual portfolio weights
         if (window.allocationDonutChart && holdings.length > 0) {
-            // Calculate top holdings by value
-            const sortedHoldings = [...holdings]
-                .sort((a, b) => (b.current_value || 0) - (a.current_value || 0));
-                
-            const topHoldings = sortedHoldings.slice(0, 3);
-            const otherValue = sortedHoldings.slice(3).reduce((sum, h) => sum + (h.current_value || 0), 0);
-            const totalValue = holdings.reduce((sum, h) => sum + (h.current_value || 0), 0);
-            
-            if (totalValue > 0) {
-                const labels = topHoldings.map(h => h.symbol).concat(['Other']);
-                const data = topHoldings.map(h => ((h.current_value || 0) / totalValue * 100).toFixed(1));
-                data.push((otherValue / totalValue * 100).toFixed(1));
-                
+            const sorted = [...holdings].sort((a, b) => (b.current_value || 0) - (a.current_value || 0));
+            const top = sorted.slice(0, 3);
+            const otherValue = sorted.slice(3).reduce((s, h) => s + (h.current_value || 0), 0);
+            const total = holdings.reduce((s, h) => s + (h.current_value || 0), 0);
+            if (total > 0) {
+                const labels = top.map(h => h.symbol).concat(['Other']);
+                const data = top.map(h => ((h.current_value || 0) / total * 100).toFixed(1));
+                data.push((otherValue / total * 100).toFixed(1));
                 window.allocationDonutChart.data.labels = labels;
                 window.allocationDonutChart.data.datasets[0].data = data;
                 window.allocationDonutChart.update('none');
             }
         }
-        
     } catch (error) {
         console.error('Failed to update Quick Overview charts:', error);
     }
 }
 
-// Refresh portfolio summary
-function refreshPortfolioSummary() {
-    console.log("Refreshing enhanced portfolio summary...");
-    if (window.portfolioManager && typeof window.portfolioManager.loadCryptocurrencyData === "function") {
-        window.portfolioManager.loadCryptocurrencyData();
-    } else {
-        loadCryptocurrencyData();
-    }
+// ---- Portfolio-page specific helpers (safe no-ops on dashboard) ----
+function updatePortfolioChartsUI(portfolioData) {
+    const holdings = portfolioData.holdings || [];
+    renderAllocationChart(holdings);
+    updateExposureMetrics(holdings);
 }
+function renderAllocationChart(holdings) {
+    const canvas = document.getElementById('allocationChart');
+    if (!canvas || !window.Chart) return;
+    if (window.allocationChart) window.allocationChart.destroy();
 
-// Toggle portfolio charts visibility
-function togglePortfolioCharts() {
-    console.log("Toggling portfolio charts display...");
-    const chartsSection = document.getElementById('portfolio-charts-section');
-    const button = event.target.closest('button');
-    
-    if (chartsSection.style.display === 'none') {
-        chartsSection.style.display = 'flex';
-        button.innerHTML = '<i class="fas fa-chart-pie me-1"></i>Hide Charts';
-        
-        // Initialize charts when shown for the first time
-        if (!window.portfolioChartsInitialized) {
-            initializePortfolioCharts();
-            window.portfolioChartsInitialized = true;
-        }
-        
-        // Update charts with current data
-        updatePortfolioCharts();
-    } else {
-        chartsSection.style.display = 'none';
-        button.innerHTML = '<i class="fas fa-chart-pie me-1"></i>Charts';
-    }
+    const sorted = [...holdings].filter(h => h.has_position).sort((a, b) => (b.current_value || 0) - (a.current_value || 0)).slice(0, 10);
+    const labels = sorted.map(h => h.symbol);
+    const data = sorted.map(h => h.current_value || 0);
+    const colors = ['#FF6384','#36A2EB','#FFCE56','#4BC0C0','#9966FF','#FF9F40','#FF6384','#C9CBCF','#4BC0C0','#FF6384'];
+
+    window.allocationChart = new Chart(canvas.getContext('2d'), {
+        type: 'doughnut',
+        data: { labels, datasets: [{ data, backgroundColor: colors, borderWidth: 1 }] },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { boxWidth: 12, padding: 8 } } } }
+    });
 }
+function updateExposureMetrics(holdings) {
+    // left as a safe no-op unless exposure bar IDs exist on the page
+    if (!holdings?.length) return;
+    const totalValue = holdings.reduce((sum, h) => sum + (h.current_value || 0), 0);
+    const longValue = holdings.filter(h => h.has_position && (h.current_value || 0) > 0)
+                              .reduce((sum, h) => sum + (h.current_value || 0), 0);
+    const longExposure = totalValue > 0 ? ((longValue / totalValue) * 100) : 0;
 
-// Initialize portfolio charts
-function initializePortfolioCharts() {
-    console.log("Initializing enhanced portfolio charts...");
-    
-    if (!window.Chart) {
-        console.warn('Chart.js not found – skipping portfolio chart initialization.');
+    const updateBar = (id, pct) => {
+        const el = document.getElementById(id);
+        const txt = document.getElementById(id + '-text');
+        if (el) el.style.width = Math.min(pct, 100) + '%';
+        if (txt) txt.textContent = pct.toFixed(1) + '%';
+    };
+    updateBar('exposure-long', longExposure);
+    // Stable/ Largest bars require matching IDs in the page to have effect.
+}
+function updatePositionTable(holdings) {
+    const tableBody = document.getElementById('positions-table-body');
+    if (!tableBody) return;
+    const filtered = holdings.filter(h => h.has_position);
+    tableBody.innerHTML = '';
+    if (!filtered.length) {
+        tableBody.innerHTML = '<tr><td colspan="11" class="text-center text-muted">No positions found</td></tr>';
         return;
     }
+    filtered.forEach(h => {
+        const pnlClass = (h.pnl_percent || 0) >= 0 ? 'text-success' : 'text-danger';
+        const pnlSign = (h.pnl_percent || 0) >= 0 ? '+' : '';
+        tableBody.innerHTML += `
+            <tr>
+                <td><strong class="text-primary">${h.symbol}</strong></td>
+                <td class="small text-muted">${h.name}</td>
+                <td>${(h.quantity || 0).toFixed(8)}</td>
+                <td>$${(h.current_price || 0).toFixed(4)}</td>
+                <td>$${(h.current_value || 0).toFixed(2)}</td>
+                <td>${(h.allocation_percent || 0).toFixed(2)}%</td>
+                <td class="${pnlClass}">$${(h.unrealized_pnl || 0).toFixed(2)}</td>
+                <td class="${pnlClass}">${pnlSign}${(h.pnl_percent || 0).toFixed(2)}%</td>
+                <td>-</td>
+                <td>-</td>
+                <td><span class="badge bg-success">Active</span></td>
+            </tr>
+        `;
+    });
+    const totalPositions = filtered.length;
+    const totalValue = filtered.reduce((s, h) => s + (h.current_value || 0), 0);
+    const totalPnL = filtered.reduce((s, h) => s + (h.unrealized_pnl || 0), 0);
+    const strongGains = filtered.filter(h => (h.pnl_percent || 0) >= 5).length;
 
-    try {
-        // Portfolio Value Trend Chart
-        const portfolioCtx = document.getElementById('portfolioChart');
-        if (portfolioCtx) {
-            window.portfolioValueChart = new Chart(portfolioCtx, {
-                type: 'line',
-                data: {
-                    labels: ['1h ago', '45m ago', '30m ago', '15m ago', 'Now'],
-                    datasets: [{
-                        label: 'Portfolio Value ($)',
-                        data: [1025, 1028, 1022, 1030, 1025], // Sample data
-                        borderColor: '#007bff',
-                        backgroundColor: 'rgba(0, 123, 255, 0.1)',
-                        tension: 0.4,
-                        fill: true
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: true,
-                    aspectRatio: 2,
-                    plugins: {
-                        title: {
-                            display: true,
-                            text: 'Portfolio Value Trend',
-                            color: '#000',
-                            font: {
-                                size: 14,
-                                weight: 'bold'
-                            }
-                        },
-                        legend: {
-                            display: false
-                        }
-                    },
-                    scales: {
-                        x: {
-                            ticks: {
-                                color: '#000',
-                                font: {
-                                    size: 11,
-                                    weight: 'bold'
-                                }
-                            }
-                        },
-                        y: {
-                            beginAtZero: false,
-                            ticks: {
-                                color: '#000',
-                                font: {
-                                    size: 11,
-                                    weight: 'bold'
-                                },
-                                callback: function(value) {
-                                    return '$' + Number(value).toLocaleString();
-                                }
-                            }
-                        }
-                    }
-                }
-            });
-        }
-
-        // P&L Distribution Chart
-        const pnlCtx = document.getElementById('pnlChart');
-        if (pnlCtx) {
-            window.pnlDistributionChart = new Chart(pnlCtx, {
-                type: 'doughnut',
-                data: {
-                    labels: ['Profitable', 'Break-even', 'Losing'],
-                    datasets: [{
-                        data: [34, 15, 54], // Sample data
-                        backgroundColor: [
-                            '#28a745',
-                            '#6c757d', 
-                            '#dc3545'
-                        ],
-                        borderWidth: 2,
-                        borderColor: '#fff'
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: true,
-                    aspectRatio: 1,
-                    plugins: {
-                        title: {
-                            display: true,
-                            text: 'Position Distribution',
-                            color: '#000',
-                            font: {
-                                size: 14,
-                                weight: 'bold'
-                            }
-                        },
-                        legend: {
-                            position: 'bottom',
-                            labels: {
-                                color: '#000',
-                                font: {
-                                    size: 11,
-                                    weight: 'bold'
-                                }
-                            }
-                        }
-                    }
-                }
-            });
-        }
-
-        // Performance Chart (Top/Bottom performers)
-        const performanceCtx = document.getElementById('performanceChart');
-        if (performanceCtx) {
-            window.performanceChart = new Chart(performanceCtx, {
-                type: 'bar',
-                data: {
-                    labels: ['FIL', 'SUSHI', 'AKITA', 'KISHU', 'BTC'], // Sample data
-                    datasets: [{
-                        label: 'P&L %',
-                        data: [9.89, 9.89, 9.89, -0.05, -0.05], // Sample data
-                        backgroundColor: function(context) {
-                            const value = context.raw;
-                            return value >= 0 ? '#28a745' : '#dc3545';
-                        },
-                        borderColor: function(context) {
-                            const value = context.raw;
-                            return value >= 0 ? '#1e7e34' : '#bd2130';
-                        },
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: true,
-                    aspectRatio: 2,
-                    plugins: {
-                        title: {
-                            display: true,
-                            text: 'Top/Bottom Performers',
-                            color: '#000',
-                            font: {
-                                size: 14,
-                                weight: 'bold'
-                            }
-                        },
-                        legend: {
-                            display: false
-                        }
-                    },
-                    scales: {
-                        x: {
-                            ticks: {
-                                color: '#000',
-                                font: {
-                                    size: 11,
-                                    weight: 'bold'
-                                }
-                            }
-                        },
-                        y: {
-                            ticks: {
-                                color: '#000',
-                                font: {
-                                    size: 11,
-                                    weight: 'bold'
-                                },
-                                callback: function(value) {
-                                    return value + '%';
-                                }
-                            }
-                        }
-                    }
-                }
-            });
-        }
-
-        console.log("Portfolio charts initialized successfully");
-    } catch (error) {
-        console.error('Portfolio chart initialization failed:', error);
+    updateElementSafely('pos-total-count', totalPositions);
+    const tvEl = document.getElementById('pos-total-value');
+    if (tvEl) tvEl.textContent = formatCurrency(totalValue);
+    const upnlEl = document.getElementById('pos-unrealized-pnl');
+    if (upnlEl) {
+        upnlEl.textContent = formatCurrency(totalPnL);
+        upnlEl.className = totalPnL >= 0 ? 'text-success' : 'text-danger';
     }
+    updateElementSafely('pos-strong-gains', strongGains);
 }
-
-// Update portfolio charts with current data
-function updatePortfolioCharts() {
-    console.log("Updating portfolio charts with live data...");
-    
-    // Get current portfolio data from the latest API response
-    if (window.lastPortfolioData && window.lastPortfolioData.holdings && window.lastPortfolioData.summary) {
-        const holdings = window.lastPortfolioData.holdings;
-        const summary = window.lastPortfolioData.summary;
-        
-        try {
-            // Update P&L Distribution Chart
-            if (window.pnlDistributionChart) {
-                window.pnlDistributionChart.data.datasets[0].data = [
-                    summary.profitable_positions || 0,
-                    summary.breakeven_positions || 0,
-                    summary.losing_positions || 0
-                ];
-                window.pnlDistributionChart.update();
-            }
-            
-            // Update Performance Chart with top/bottom performers
-            if (window.performanceChart && holdings.length > 0) {
-                // Get top 3 performers and bottom 2
-                const sortedHoldings = [...holdings].sort((a, b) => (b.pnl_percent || 0) - (a.pnl_percent || 0));
-                const topPerformers = sortedHoldings.slice(0, 3);
-                const bottomPerformers = sortedHoldings.slice(-2);
-                const performers = [...topPerformers, ...bottomPerformers];
-                
-                window.performanceChart.data.labels = performers.map(h => h.symbol);
-                window.performanceChart.data.datasets[0].data = performers.map(h => (h.pnl_percent || 0).toFixed(2));
-                window.performanceChart.update();
-            }
-            
-            // Portfolio value chart would need historical data - for now showing current value
-            if (window.portfolioValueChart) {
-                const currentValue = summary.total_current_value || 1030;
-                // Simulate some historical variation for demo purposes
-                const historicalValues = [
-                    currentValue * 0.995,
-                    currentValue * 1.003, 
-                    currentValue * 0.998,
-                    currentValue * 1.007,
-                    currentValue
-                ];
-                window.portfolioValueChart.data.datasets[0].data = historicalValues;
-                window.portfolioValueChart.update();
-            }
-            
-            console.log("Portfolio charts updated with live data");
-        } catch (error) {
-            console.error('Error updating portfolio charts:', error);
-        }
-    } else {
-        console.warn("No portfolio data available for chart updates");
-    }
-}
-
