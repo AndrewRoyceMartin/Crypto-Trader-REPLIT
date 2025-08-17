@@ -287,20 +287,20 @@ class TradingApp {
                     serverConnectionText.textContent = 'Connected';
                     serverConnectionText.className = 'text-success ms-1';
 
-                    // Update icon color
-                    const statusIcon = document.querySelector('#server-connection-status .fas.fa-wifi');
+                    // Update icon color to exchange icon for OKX API
+                    const statusIcon = document.querySelector('#server-connection-status .fas.fa-exchange-alt');
                     if (statusIcon) {
-                        statusIcon.className = 'fas fa-wifi text-success me-1';
+                        statusIcon.className = 'fas fa-exchange-alt text-success me-1';
                     }
                 } else {
                     const lastUpdate = data.last_update ? new Date(data.last_update).toLocaleTimeString() : 'unknown';
                     serverConnectionText.textContent = `Disconnected (${lastUpdate})`;
                     serverConnectionText.className = 'text-danger ms-1';
 
-                    // Update icon color
-                    const statusIcon = document.querySelector('#server-connection-status .fas.fa-wifi');
+                    // Update icon color to exchange icon for OKX API  
+                    const statusIcon = document.querySelector('#server-connection-status .fas.fa-exchange-alt');
                     if (statusIcon) {
-                        statusIcon.className = 'fas fa-wifi text-danger me-1';
+                        statusIcon.className = 'fas fa-exchange-alt text-danger me-1';
                     }
                 }
             }
@@ -314,9 +314,9 @@ class TradingApp {
                 serverConnectionText.textContent = 'Error';
                 serverConnectionText.className = 'text-warning ms-1';
 
-                const statusIcon = document.querySelector('#server-connection-status .fas.fa-wifi');
+                const statusIcon = document.querySelector('#server-connection-status .fas.fa-exchange-alt');
                 if (statusIcon) {
-                    statusIcon.className = 'fas fa-wifi text-warning me-1';
+                    statusIcon.className = 'fas fa-exchange-alt text-warning me-1';
                 }
             }
         }
@@ -333,33 +333,35 @@ class TradingApp {
             const okxConnectionText = document.getElementById('okx-connection-text');
             if (okxConnectionText && data.status) {
                 const isConnected = data.status.connected === true;
-                const exchangeType = data.status.exchange_type || 'OKX Exchange';
+                const connectionType = data.status.connection_type || 'Live';
+                const tradingMode = data.status.trading_mode || 'Trading';
 
                 if (isConnected) {
-                    okxConnectionText.textContent = 'Connected';
+                    // Show connection type (Simulated or Live)
+                    okxConnectionText.textContent = connectionType;
                     okxConnectionText.className = 'text-success ms-1';
 
-                    // Update icon color
-                    const statusIcon = document.querySelector('#okx-connection-status .fas.fa-exchange-alt');
+                    // Update icon color to server icon for Trading Mode
+                    const statusIcon = document.querySelector('#okx-connection-status .fas.fa-server');
                     if (statusIcon) {
-                        statusIcon.className = 'fas fa-exchange-alt text-success me-1';
+                        statusIcon.className = 'fas fa-server text-success me-1';
                     }
                 } else {
                     const lastSync = data.status.last_sync ? new Date(data.status.last_sync).toLocaleTimeString() : 'never';
-                    okxConnectionText.textContent = `Disconnected (${lastSync})`;
+                    okxConnectionText.textContent = `Offline (${lastSync})`;
                     okxConnectionText.className = 'text-danger ms-1';
 
                     // Update icon color
-                    const statusIcon = document.querySelector('#okx-connection-status .fas.fa-exchange-alt');
+                    const statusIcon = document.querySelector('#okx-connection-status .fas.fa-server');
                     if (statusIcon) {
-                        statusIcon.className = 'fas fa-exchange-alt text-danger me-1';
+                        statusIcon.className = 'fas fa-server text-danger me-1';
                     }
                 }
 
-                // Add tooltip with detailed info
+                // Add tooltip with detailed exchange and trading mode info
                 const statusElement = document.getElementById('okx-connection-status');
                 if (statusElement) {
-                    statusElement.title = `${exchangeType} - ${data.status.initialized ? 'Initialized' : 'Not Initialized'}`;
+                    statusElement.title = `${data.status.exchange_name || 'OKX Exchange'} - ${tradingMode} - ${data.status.initialized ? 'Initialized' : 'Not Initialized'}`;
                 }
             }
 
@@ -372,9 +374,9 @@ class TradingApp {
                 okxConnectionText.textContent = 'Error';
                 okxConnectionText.className = 'text-warning ms-1';
 
-                const statusIcon = document.querySelector('#okx-connection-status .fas.fa-exchange-alt');
+                const statusIcon = document.querySelector('#okx-connection-status .fas.fa-server');
                 if (statusIcon) {
-                    statusIcon.className = 'fas fa-exchange-alt text-warning me-1';
+                    statusIcon.className = 'fas fa-server text-warning me-1';
                 }
             }
         }
