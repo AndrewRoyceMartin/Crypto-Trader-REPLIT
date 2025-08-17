@@ -489,3 +489,41 @@ class SimulatedOKX(BaseExchange):
                 position['uTime'] = str(int(datetime.now().timestamp() * 1000))
         
         self.logger.debug("Market simulation tick - positions updated")
+
+    def cancel_order(self, order_id: str, symbol: str) -> Dict:
+        """Cancel an order - required abstract method."""
+        if order_id in self.orders:
+            self.orders[order_id]['state'] = 'canceled'
+            return {
+                "code": "0",
+                "msg": "",
+                "data": [{
+                    "ordId": order_id,
+                    "clOrdId": self.orders[order_id].get('clOrdId', ''),
+                    "sCode": "0",
+                    "sMsg": ""
+                }]
+            }
+        return {
+            "code": "1",
+            "msg": "",
+            "data": [{
+                "ordId": order_id,
+                "clOrdId": "",
+                "sCode": "51000",
+                "sMsg": "Order not found"
+            }]
+        }
+
+    def get_open_orders(self, symbol: Optional[str] = None) -> List[Dict]:
+        """Get open orders - required abstract method."""
+        open_orders = [order for order in self.orders.values() 
+                      if order['state'] in ['live', 'partially_filled']]
+        if symbol:
+            target_inst = f'{symbol}-USDT-SWAP'
+            open_orders = [order for order in open_orders if order['instId'] == target_inst]
+        return {
+            "code": "0",
+            "msg": "",
+            "data": open_orders
+        }

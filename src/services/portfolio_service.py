@@ -8,7 +8,7 @@ import time
 from typing import Dict, List, Optional
 from datetime import datetime
 from src.exchanges.simulated_okx import SimulatedOKX
-from src.data.portfolio_assets import PORTFOLIO_ASSETS
+from src.data.portfolio_assets import MASTER_PORTFOLIO_ASSETS as PORTFOLIO_ASSETS
 
 
 class PortfolioService:
@@ -56,8 +56,7 @@ class PortfolioService:
             successful_positions = 0
             failed_positions = []
             
-            for asset in PORTFOLIO_ASSETS:
-                symbol = asset['symbol']
+            for symbol in PORTFOLIO_ASSETS:
                 try:
                     # Calculate quantity for $10 position
                     current_price = self.exchange._get_current_price(f"{symbol}/USDT")
@@ -113,8 +112,7 @@ class PortfolioService:
             top_assets = PORTFOLIO_ASSETS[:20]
             
             trades_generated = 0
-            for i, asset in enumerate(top_assets):
-                symbol = asset['symbol']
+            for i, symbol in enumerate(top_assets):
                 
                 # Generate 2-5 trades per asset over the past month
                 num_trades = random.randint(2, 5)
