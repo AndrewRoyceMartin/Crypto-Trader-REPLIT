@@ -2423,6 +2423,16 @@ window.debugTrades = {
 
 console.log('Debug functions loaded. Use window.debugTrades.checkServerData(), testNormalizer(), checkTableElement(), or testCaseSensitivity()');
 
+// Utility function for safe DOM element updates
+function updateElementSafely(elementId, value) {
+    const element = document.getElementById(elementId);
+    if (element) {
+        element.textContent = value;
+    } else {
+        console.warn(`Element ${elementId} not found for update`);
+    }
+}
+
 // Enhanced portfolio summary update function
 function updatePortfolioSummary(portfolioData) {
     console.log("Updating enhanced portfolio summary with KPIs");
