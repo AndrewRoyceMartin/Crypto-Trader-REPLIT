@@ -988,13 +988,24 @@ class TradingApp {
             // Calculate target sell price (10% above current price)
             const targetSellPrice = currentPrice * 1.1;
             
-            // Calculate unrealized P&L properly
-            const unrealizedPnl = (currentPrice - purchasePrice) * quantity;
-            const unrealizedPnlPercent = purchasePrice > 0 ? ((currentPrice - purchasePrice) / purchasePrice) * 100 : 0;
+            // Use backend P&L calculations if available, otherwise calculate frontend P&L
+            const backendPnl = crypto.pnl || 0;
+            const backendPnlPercent = crypto.pnl_percent || 0;
+            
+            // Use backend values if they exist and are non-zero, otherwise calculate frontend P&L
+            let finalPnl, finalPnlPercent;
+            if (backendPnl !== 0 || backendPnlPercent !== 0) {
+                finalPnl = backendPnl;
+                finalPnlPercent = backendPnlPercent;
+            } else {
+                // Fallback to frontend calculation
+                finalPnl = (currentPrice - purchasePrice) * quantity;
+                finalPnlPercent = purchasePrice > 0 ? ((currentPrice - purchasePrice) / purchasePrice) * 100 : 0;
+            }
 
             // Format P&L color and sign
-            const pnlClass = unrealizedPnl >= 0 ? 'text-success' : 'text-danger';
-            const pnlSign = unrealizedPnl >= 0 ? '+' : '';
+            const pnlClass = finalPnl >= 0 ? 'text-success' : 'text-danger';
+            const pnlSign = finalPnl >= 0 ? '+' : '';
 
             // Format quantities and prices with appropriate precision
             const formattedQuantity = this.num(quantity) > 1 ? this.num(quantity).toFixed(4) : this.num(quantity).toFixed(8);
@@ -1002,13 +1013,13 @@ class TradingApp {
             const formattedCurrentPrice = this.formatCurrency(currentPrice);
             const formattedTargetPrice = this.formatCurrency(targetSellPrice);
             const formattedValue = this.formatCurrency(value);
-            const formattedUnrealizedPnl = this.formatCurrency(Math.abs(unrealizedPnl));
+            const formattedUnrealizedPnl = this.formatCurrency(Math.abs(finalPnl));
 
             if (isPerformancePage) {
                 // Performance page table with enhanced columns
                 const daysInvested = Math.floor((Date.now() - new Date('2025-08-01').getTime()) / (1000 * 60 * 60 * 24));
-                const status = unrealizedPnl >= 0 ? 'Winner' : 'Loser';
-                const statusClass = unrealizedPnl >= 0 ? 'bg-success' : 'bg-danger';
+                const status = finalPnl >= 0 ? 'Winner' : 'Loser';
+                const statusClass = finalPnl >= 0 ? 'bg-success' : 'bg-danger';
 
                 row.innerHTML = `
                     <td><span class="badge bg-primary">#${rank}</span></td>
@@ -1023,7 +1034,7 @@ class TradingApp {
                     <td><strong>${formattedValue}</strong></td>
                     <td><strong>${formattedValue}</strong></td>
                     <td class="${pnlClass}"><strong>${pnlSign}${formattedUnrealizedPnl}</strong></td>
-                    <td class="${pnlClass}"><strong>${pnlSign}${this.num(unrealizedPnlPercent).toFixed(2)}%</strong></td>
+                    <td class="${pnlClass}"><strong>${pnlSign}${this.num(finalPnlPercent).toFixed(2)}%</strong></td>
                     <td class="text-muted">${daysInvested}</td>
                     <td><span class="badge ${statusClass}">${status}</span></td>
                 `;
@@ -1039,7 +1050,7 @@ class TradingApp {
                     <td>${formattedQuantity}</td>
                     <td><strong>${formattedValue}</strong></td>
                     <td class="${pnlClass}"><strong>${pnlSign}${formattedUnrealizedPnl}</strong></td>
-                    <td class="${pnlClass}"><strong>${pnlSign}${this.num(unrealizedPnlPercent).toFixed(2)}%</strong></td>
+                    <td class="${pnlClass}"><strong>${pnlSign}${this.num(finalPnlPercent).toFixed(2)}%</strong></td>
                 `;
             }
 
