@@ -479,21 +479,63 @@
 
         if (allocChart) { allocChart.destroy(); }
         allocChart = new Chart(ctx, {
-          type: 'doughnut',
+          type: 'bar',
           data: {
             labels,
             datasets: [{
+              label: 'Portfolio Value',
               data,
+              backgroundColor: [
+                '#4CAF50', '#2196F3', '#FF9800', '#9C27B0', '#F44336',
+                '#00BCD4', '#8BC34A', '#FFC107', '#E91E63', '#607D8B'
+              ],
+              borderColor: [
+                '#388E3C', '#1976D2', '#F57C00', '#7B1FA2', '#D32F2F',
+                '#0097A7', '#689F38', '#FFA000', '#C2185B', '#455A64'
+              ],
               borderWidth: 1
-              // background colors omitted to keep white background; Chart will pick defaults
             }]
           },
           options: {
             responsive: true,
             maintainAspectRatio: false,
+            indexAxis: 'y',
+            scales: {
+              x: {
+                beginAtZero: true,
+                ticks: {
+                  callback: function(value) {
+                    return '$' + value.toFixed(2);
+                  }
+                }
+              },
+              y: {
+                ticks: {
+                  font: {
+                    weight: 'bold'
+                  }
+                }
+              }
+            },
             plugins: {
-              legend: { position: 'bottom' },
-              title: { display: false }
+              legend: { 
+                display: false 
+              },
+              title: { 
+                display: true,
+                text: 'Top Holdings by Value',
+                font: {
+                  size: 16,
+                  weight: 'bold'
+                }
+              },
+              tooltip: {
+                callbacks: {
+                  label: function(context) {
+                    return context.dataset.label + ': $' + context.parsed.x.toFixed(2);
+                  }
+                }
+              }
             }
           }
         });
