@@ -344,6 +344,170 @@
         </div>
         <!-- === /Quick Overview === -->
 
+        <!-- === ENHANCED PORTFOLIO SUMMARY === -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-chart-pie me-2"></i>
+                            Portfolio Summary
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <!-- Summary KPIs Row -->
+                        <div class="row g-3 mb-4">
+                            <div class="col-lg-3 col-md-6">
+                                <div class="d-flex align-items-center p-3 bg-light rounded">
+                                    <div class="flex-grow-1">
+                                        <div class="small text-muted">Total Value</div>
+                                        <div id="summary-total-value" class="h5 mb-0">$0.00</div>
+                                    </div>
+                                    <i class="fas fa-wallet text-primary fa-2x"></i>
+                                </div>
+                            </div>
+                            <div class="col-lg-3 col-md-6">
+                                <div class="d-flex align-items-center p-3 bg-light rounded">
+                                    <div class="flex-grow-1">
+                                        <div class="small text-muted">Total Assets</div>
+                                        <div id="summary-total-assets" class="h5 mb-0">103</div>
+                                    </div>
+                                    <i class="fas fa-coins text-info fa-2x"></i>
+                                </div>
+                            </div>
+                            <div class="col-lg-3 col-md-6">
+                                <div class="d-flex align-items-center p-3 bg-light rounded">
+                                    <div class="flex-grow-1">
+                                        <div class="small text-muted">Cash Balance</div>
+                                        <div id="summary-cash-balance" class="h5 mb-0">$0.00</div>
+                                    </div>
+                                    <i class="fas fa-dollar-sign text-success fa-2x"></i>
+                                </div>
+                            </div>
+                            <div class="col-lg-3 col-md-6">
+                                <div class="d-flex align-items-center p-3 bg-light rounded">
+                                    <div class="flex-grow-1">
+                                        <div class="small text-muted">Win Rate</div>
+                                        <div id="summary-win-rate" class="h5 mb-0">0%</div>
+                                    </div>
+                                    <i class="fas fa-trophy text-warning fa-2x"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Position Status Row -->
+                        <div class="row g-3 mb-4">
+                            <div class="col-lg-3 col-md-6">
+                                <div class="d-flex align-items-center p-2 border rounded">
+                                    <div class="flex-grow-1">
+                                        <div class="small text-muted">Active Positions</div>
+                                        <div id="active-positions" class="fw-bold">0</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-lg-3 col-md-6">
+                                <div class="d-flex align-items-center p-2 border rounded">
+                                    <div class="flex-grow-1">
+                                        <div class="small text-muted">Zero Positions</div>
+                                        <div id="zero-positions" class="fw-bold">0</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-lg-3 col-md-6">
+                                <div class="d-flex align-items-center p-2 border rounded">
+                                    <div class="flex-grow-1">
+                                        <div class="small text-muted">Profitable Positions</div>
+                                        <div id="profitable-positions" class="fw-bold text-success">0</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-lg-3 col-md-6">
+                                <div class="d-flex align-items-center p-2 border rounded">
+                                    <div class="flex-grow-1">
+                                        <div class="small text-muted">Daily P&L</div>
+                                        <div id="daily-pnl" class="fw-bold">$0.00</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Charts Row -->
+                        <div class="row g-3">
+                            <div class="col-lg-4">
+                                <div class="card h-100">
+                                    <div class="card-header py-2">
+                                        <h6 class="mb-0">Allocation</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <canvas id="allocationDonut" height="200"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-lg-4">
+                                <div class="card h-100">
+                                    <div class="card-header py-2">
+                                        <h6 class="mb-0">Equity Trend</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <canvas id="equitySparkline" height="100"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-lg-4">
+                                <div class="card h-100">
+                                    <div class="card-header py-2">
+                                        <h6 class="mb-0">Top Movers</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div id="top-movers">Loading...</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Holdings Lists -->
+        <div class="row mb-4" style="display: none;">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="mb-0">Active Holdings</h6>
+                    </div>
+                    <div class="card-body">
+                        <div id="active-holdings-list">Loading...</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="mb-0">Zero Holdings</h6>
+                    </div>
+                    <div class="card-body">
+                        <div id="zero-holdings-list">Loading...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Performance Chart -->
+        <div class="row mb-4" style="display: none;">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="mb-0">Performance</h6>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="performanceChart" height="400"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- === /ENHANCED PORTFOLIO SUMMARY === -->
+
         <!-- === PORTFOLIO PAGE === -->
         <div class="row mb-4">
             <div class="col-12">
