@@ -178,6 +178,11 @@ class PortfolioService:
             total_value = 0
             total_initial_value = 0
             
+            # Get actual positions from the exchange
+            positions_response = self.exchange.get_positions()
+            actual_positions = {pos['instId'].replace('-USDT-SWAP', ''): pos 
+                             for pos in positions_response.get('data', [])}
+            
             for rank, symbol in enumerate(PORTFOLIO_ASSETS, 1):
                 try:
                     # Get current price from OKX simulation only
@@ -186,18 +191,28 @@ class PortfolioService:
                     if current_price and current_price > 0:
                         initial_investment = 10.0  # $10 per crypto
                         
-                        # Use a simulated historical purchase price (slightly different from current)
-                        # This creates realistic P&L by simulating price movement since purchase
-                        price_variation = (hash(symbol) % 20 - 10) / 100.0  # -10% to +10% variation
-                        historical_purchase_price = current_price * (1 - price_variation)
-                        
-                        # Calculate quantity based on historical purchase price
-                        quantity = initial_investment / historical_purchase_price
-                        current_value = quantity * current_price
-                        
-                        # Calculate P&L based on price movement from purchase to now
-                        pnl = current_value - initial_investment
-                        pnl_percent = (pnl / initial_investment) * 100
+                        # Check if we have an actual position from trades
+                        if symbol in actual_positions:
+                            actual_position = actual_positions[symbol]
+                            quantity = float(actual_position['pos'])
+                            avg_price = float(actual_position['avgPx'])
+                            current_value = quantity * current_price
+                            cost_basis = quantity * avg_price
+                            pnl = current_value - cost_basis
+                            pnl_percent = (pnl / cost_basis) * 100 if cost_basis > 0 else 0
+                            
+                        else:
+                            # Use simulated historical purchase price for assets without real positions
+                            price_variation = (hash(symbol) % 20 - 10) / 100.0  # -10% to +10% variation
+                            historical_purchase_price = current_price * (1 - price_variation)
+                            
+                            # Calculate quantity based on historical purchase price
+                            quantity = initial_investment / historical_purchase_price
+                            current_value = quantity * current_price
+                            
+                            # Calculate P&L based on price movement from purchase to now
+                            pnl = current_value - initial_investment
+                            pnl_percent = (pnl / initial_investment) * 100
                         
                         holdings.append({
                             "rank": rank,
@@ -209,7 +224,8 @@ class PortfolioService:
                             "current_value": current_value,
                             "pnl": pnl,
                             "pnl_percent": pnl_percent,
-                            "is_live": True  # All OKX prices are simulated "live"
+                            "is_live": True,  # All OKX prices are simulated "live"
+                            "has_position": symbol in actual_positions  # Track real vs simulated
                         })
                         
                         total_value += current_value

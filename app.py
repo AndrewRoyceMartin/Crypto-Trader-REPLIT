@@ -1351,8 +1351,29 @@ def execute_take_profit():
                         logger.info(f"Take profit executed for {symbol}: {quantity:.8f} at ${sell_price:.2f} "
                                   f"({pnl_percent:.2f}% profit, ${pnl_data['net_pnl']:.2f} PnL)")
                         
-                        # Update portfolio service to reflect the trade
-                        # In a real system, this would execute through the exchange
+                        # Execute the actual trade through the simulated exchange
+                        try:
+                            order_result = portfolio_service.exchange.place_order(
+                                symbol=f"{symbol}/USDT",
+                                side='sell',
+                                amount=quantity,
+                                order_type='market'
+                            )
+                            
+                            if order_result.get('code') == '0':
+                                logger.info(f"Successfully executed take profit trade for {symbol}")
+                                
+                                # Mark this trade as executed in our tracking
+                                executed_trade['exchange_executed'] = True
+                                executed_trade['order_id'] = order_result['data'][0].get('ordId')
+                            else:
+                                logger.warning(f"Failed to execute trade for {symbol}: {order_result}")
+                                executed_trade['exchange_executed'] = False
+                                
+                        except Exception as trade_error:
+                            logger.error(f"Error executing take profit trade for {symbol}: {trade_error}")
+                            executed_trade['exchange_executed'] = False
+                            # Continue with other trades even if one fails
                         
             except Exception as e:
                 logger.error(f"Error processing take profit for {symbol}: {e}")
