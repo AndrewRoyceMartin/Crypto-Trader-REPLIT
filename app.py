@@ -431,7 +431,7 @@ def start_trading():
 def api_trade_history():
     """Get all trade history records."""
     try:
-        global recent_initial_trades, portfolio_service
+        global recent_initial_trades
         
         # Get trades from multiple sources
         all_trades = []
@@ -441,9 +441,11 @@ def api_trade_history():
             all_trades.extend(recent_initial_trades)
         
         # Add trades from portfolio service exchange
-        if portfolio_service:
-            try:
-                exchange_trades = portfolio_service.get_trade_history(limit=1000)  # Get up to 1000 trades
+        try:
+            initialize_system()
+            service = get_portfolio_service()
+            if service and hasattr(service, 'get_trade_history'):
+                exchange_trades = service.get_trade_history(limit=1000)  # Get up to 1000 trades
                 # Convert exchange trades to display format
                 for trade in exchange_trades:
                     formatted_trade = {
@@ -458,8 +460,8 @@ def api_trade_history():
                         'source': 'exchange'
                     }
                     all_trades.append(formatted_trade)
-            except Exception as e:
-                logger.warning(f"Could not get exchange trades: {e}")
+        except Exception as e:
+            logger.warning(f"Could not get exchange trades: {e}")
         
         # Sort all trades by timestamp (newest first)
         all_trades.sort(key=lambda x: x.get('timestamp', ''), reverse=True)
