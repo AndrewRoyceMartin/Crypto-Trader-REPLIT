@@ -29,9 +29,9 @@ class PortfolioService:
         self.exchange = SimulatedOKX(config)
         self._initialize_exchange()
         
-        # Track initialization state
-        self.is_initialized = False
-        self._last_sync = None
+        # Track initialization state - always initialized for simulation
+        self.is_initialized = True
+        self._last_sync = datetime.now()
         
     def _initialize_exchange(self):
         """Initialize and connect to the simulated exchange."""

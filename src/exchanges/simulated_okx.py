@@ -304,15 +304,16 @@ class SimulatedOKX(BaseExchange):
         """Get current price from live data source."""
         try:
             # Import here to avoid circular imports
-            from ..data.price_api import PriceAPI
+            from ..data.price_api import CryptoPriceAPI
             
             # Extract base symbol from trading pair
             base_symbol = symbol.split('/')[0]
             
             # Get price from price API
-            price_api = PriceAPI()
-            prices = price_api.get_live_prices([base_symbol])
-            return prices.get(base_symbol)
+            price_api = CryptoPriceAPI()
+            prices = price_api.get_multiple_prices([base_symbol])
+            price_info = prices.get(base_symbol, {})
+            return price_info.get('price')
             
         except Exception as e:
             self.logger.error(f"Error getting price for {symbol}: {str(e)}")

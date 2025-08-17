@@ -316,23 +316,8 @@ def api_crypto_portfolio():
     if not warmup["done"]:
         return jsonify({"error": "System still initializing"}), 503
     
-    # Check if portfolio has been initialized (only after trading starts)
-    global portfolio_initialized
-    if not portfolio_initialized:
-        # Return completely empty portfolio until trading starts
-        return jsonify({
-            "holdings": [],
-            "recent_trades": [],
-            "total_value": 0,
-            "total_pnl": 0,
-            "total_pnl_percent": 0,
-            "summary": {
-                "total_cryptos": 0,
-                "total_current_value": 0,
-                "total_pnl": 0,
-                "total_pnl_percent": 0
-            }
-        })
+    # Always show portfolio with OKX simulation data - no trading start required
+    # The simulated OKX exchange should always provide the 103 cryptocurrency portfolio
     
     try:
         # Use OKX exchange data for all portfolio calculations
@@ -341,9 +326,7 @@ def api_crypto_portfolio():
         # Get portfolio data from simulated OKX exchange
         portfolio_service = PortfolioService()
         
-        # Initialize portfolio if not already done
-        if not portfolio_service.is_initialized:
-            portfolio_service.initialize()
+        # Portfolio service is always initialized for simulation
         
         # Get all portfolio holdings from OKX exchange
         portfolio_data = portfolio_service.get_portfolio_data()
