@@ -260,6 +260,9 @@ class TradingApp {
 
         // Update price source status only (portfolio updates separately to avoid loops)
         this.updatePriceSourceStatus();
+        
+        // Update OKX exchange status
+        this.updateOKXStatus();
     }
 
     debouncedUpdateDashboard() {
@@ -314,6 +317,64 @@ class TradingApp {
                 const statusIcon = document.querySelector('#server-connection-status .fas.fa-wifi');
                 if (statusIcon) {
                     statusIcon.className = 'fas fa-wifi text-warning me-1';
+                }
+            }
+        }
+    }
+
+    async updateOKXStatus() {
+        try {
+            const response = await fetch('/api/okx-status');
+            if (!response.ok) return;
+
+            const data = await response.json();
+            console.log('OKX exchange status response:', data);
+
+            const okxConnectionText = document.getElementById('okx-connection-text');
+            if (okxConnectionText && data.status) {
+                const isConnected = data.status.connected === true;
+                const exchangeType = data.status.exchange_type || 'OKX Exchange';
+
+                if (isConnected) {
+                    okxConnectionText.textContent = 'Connected';
+                    okxConnectionText.className = 'text-success ms-1';
+
+                    // Update icon color
+                    const statusIcon = document.querySelector('#okx-connection-status .fas.fa-exchange-alt');
+                    if (statusIcon) {
+                        statusIcon.className = 'fas fa-exchange-alt text-success me-1';
+                    }
+                } else {
+                    const lastSync = data.status.last_sync ? new Date(data.status.last_sync).toLocaleTimeString() : 'never';
+                    okxConnectionText.textContent = `Disconnected (${lastSync})`;
+                    okxConnectionText.className = 'text-danger ms-1';
+
+                    // Update icon color
+                    const statusIcon = document.querySelector('#okx-connection-status .fas.fa-exchange-alt');
+                    if (statusIcon) {
+                        statusIcon.className = 'fas fa-exchange-alt text-danger me-1';
+                    }
+                }
+
+                // Add tooltip with detailed info
+                const statusElement = document.getElementById('okx-connection-status');
+                if (statusElement) {
+                    statusElement.title = `${exchangeType} - ${data.status.initialized ? 'Initialized' : 'Not Initialized'}`;
+                }
+            }
+
+        } catch (error) {
+            console.error('OKX exchange status update failed:', error);
+
+            // Show error state
+            const okxConnectionText = document.getElementById('okx-connection-text');
+            if (okxConnectionText) {
+                okxConnectionText.textContent = 'Error';
+                okxConnectionText.className = 'text-warning ms-1';
+
+                const statusIcon = document.querySelector('#okx-connection-status .fas.fa-exchange-alt');
+                if (statusIcon) {
+                    statusIcon.className = 'fas fa-exchange-alt text-warning me-1';
                 }
             }
         }

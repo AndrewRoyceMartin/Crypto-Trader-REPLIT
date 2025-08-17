@@ -459,6 +459,30 @@ def get_crypto_portfolio():
         # Fallback to legacy system if OKX fails
         return jsonify({"error": str(e)}), 500
 
+@app.route("/api/okx-status")
+def get_okx_status():
+    """Get OKX exchange connection status."""
+    try:
+        initialize_system()
+        portfolio_service = get_portfolio_service()
+        exchange_status = portfolio_service.get_exchange_status()
+        
+        return jsonify({
+            'success': True,
+            'status': exchange_status
+        })
+    except Exception as e:
+        app.logger.error("Error getting OKX status: %s", e)
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'status': {
+                'connected': False,
+                'exchange_type': 'Simulated OKX',
+                'error': 'Failed to check exchange status'
+            }
+        }), 500
+
 @app.route("/api/price-source-status")
 def get_price_source_status():
     """Get live price data source connection status with connection uptime."""
