@@ -2537,6 +2537,145 @@ window.debugTrades = {
 
 console.log('Debug functions loaded. Use window.debugTrades.checkServerData(), testNormalizer(), checkTableElement(), or testCaseSensitivity()');
 
+// Portfolio-specific chart and display functions
+function updatePortfolioCharts(portfolioData) {
+    const holdings = portfolioData.holdings || [];
+    
+    // Render allocation chart
+    renderAllocationChart(holdings);
+    
+    // Update exposure metrics  
+    updateExposureMetrics(holdings);
+}
+
+function renderAllocationChart(holdings) {
+    const canvas = document.getElementById('allocationChart');
+    if (!canvas) return;
+    
+    // Clear any existing chart
+    if (window.allocationChart) {
+        window.allocationChart.destroy();
+    }
+    
+    // Get top 10 assets by allocation
+    const sortedHoldings = [...holdings]
+        .filter(h => h.has_position)
+        .sort((a, b) => (b.current_value || 0) - (a.current_value || 0))
+        .slice(0, 10);
+    
+    const labels = sortedHoldings.map(h => h.symbol);
+    const data = sortedHoldings.map(h => h.current_value || 0);
+    const colors = [
+        '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF',
+        '#FF9F40', '#FF6384', '#C9CBCF', '#4BC0C0', '#FF6384'
+    ];
+    
+    window.allocationChart = new Chart(canvas.getContext('2d'), {
+        type: 'doughnut',
+        data: {
+            labels: labels,
+            datasets: [{
+                data: data,
+                backgroundColor: colors,
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'right',
+                    labels: {
+                        boxWidth: 12,
+                        padding: 8,
+                        fontSize: 11
+                    }
+                }
+            }
+        }
+    });
+}
+
+function updateExposureMetrics(holdings) {
+    if (!holdings || holdings.length === 0) return;
+    
+    const totalValue = holdings.reduce((sum, h) => sum + (h.current_value || 0), 0);
+    const longPositions = holdings.filter(h => h.has_position && (h.current_value || 0) > 0);
+    const longValue = longPositions.reduce((sum, h) => sum + (h.current_value || 0), 0);
+    const longExposure = totalValue > 0 ? ((longValue / totalValue) * 100) : 0;
+    
+    // Find largest position
+    const largestPosition = holdings.reduce((max, h) => 
+        (h.current_value || 0) > (max.current_value || 0) ? h : max, holdings[0] || {});
+    const largestPercent = totalValue > 0 ? (((largestPosition.current_value || 0) / totalValue) * 100) : 0;
+    
+    // Update progress bars
+    const updateProgressBar = (id, percent) => {
+        const element = document.getElementById(id);
+        const textElement = document.getElementById(id + '-text');
+        if (element) element.style.width = Math.min(percent, 100) + '%';
+        if (textElement) textElement.textContent = percent.toFixed(1) + '%';
+    };
+    
+    updateProgressBar('exposure-long', longExposure);
+    updateProgressBar('exposure-stable', 0); // Stablecoin detection would need server-side logic
+    updateProgressBar('exposure-largest', largestPercent);
+}
+
+function updatePositionTable(holdings) {
+    const tableBody = document.getElementById('positions-table-body');
+    if (!tableBody) return;
+    
+    const filteredHoldings = holdings.filter(h => h.has_position);
+    
+    // Clear and populate table
+    tableBody.innerHTML = '';
+    
+    if (filteredHoldings.length === 0) {
+        const row = document.createElement('tr');
+        row.innerHTML = '<td colspan="11" class="text-center text-muted">No positions found</td>';
+        tableBody.appendChild(row);
+        return;
+    }
+    
+    filteredHoldings.forEach(holding => {
+        const row = document.createElement('tr');
+        const pnlClass = (holding.pnl_percent || 0) >= 0 ? 'text-success' : 'text-danger';
+        const pnlSign = (holding.pnl_percent || 0) >= 0 ? '+' : '';
+        
+        row.innerHTML = `
+            <td><strong class="text-primary">${holding.symbol}</strong></td>
+            <td class="small text-muted">${holding.name}</td>
+            <td>${formatNumber(holding.quantity, 8)}</td>
+            <td>${formatCurrency(holding.current_price)}</td>
+            <td>${formatCurrency(holding.current_value)}</td>
+            <td>${(holding.allocation_percent || 0).toFixed(2)}%</td>
+            <td class="${pnlClass}">${formatCurrency(holding.unrealized_pnl || 0)}</td>
+            <td class="${pnlClass}">${pnlSign}${(holding.pnl_percent || 0).toFixed(2)}%</td>
+            <td>-</td>
+            <td>-</td>
+            <td><span class="badge bg-success">Active</span></td>
+        `;
+        tableBody.appendChild(row);
+    });
+    
+    // Update summary metrics at bottom of table
+    const totalPositions = filteredHoldings.length;
+    const totalValue = filteredHoldings.reduce((sum, h) => sum + (h.current_value || 0), 0);
+    const totalPnL = filteredHoldings.reduce((sum, h) => sum + (h.unrealized_pnl || 0), 0);
+    const strongGains = filteredHoldings.filter(h => (h.pnl_percent || 0) >= 5).length;
+    
+    updateElementSafely('pos-total-count', totalPositions);
+    updateElementSafely('pos-total-value', formatCurrency(totalValue));
+    if (document.getElementById('pos-unrealized-pnl')) {
+        const element = document.getElementById('pos-unrealized-pnl');
+        element.textContent = formatCurrency(totalPnL);
+        element.className = totalPnL >= 0 ? 'text-success' : 'text-danger';
+    }
+    updateElementSafely('pos-strong-gains', strongGains);
+}
+
 // Utility function for safe DOM element updates
 function updateElementSafely(elementId, value) {
     const element = document.getElementById(elementId);
@@ -2700,6 +2839,13 @@ function updatePortfolioSummary(portfolioData) {
     }
     
     console.log("Enhanced portfolio summary updated successfully");
+    
+    // Update Portfolio-specific charts and displays
+    if (window.location.pathname === '/portfolio') {
+        updatePortfolioCharts(portfolioData);
+        updateExposureMetrics(holdings);
+        updatePositionTable(holdings);
+    }
 }
 
 // Update holdings summary with active vs sold out positions
