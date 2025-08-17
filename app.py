@@ -440,6 +440,38 @@ def api_trade_history():
         if recent_initial_trades:
             all_trades.extend(recent_initial_trades)
         
+        # Add trades from persistent database
+        try:
+            from src.utils.database import DatabaseManager
+            db = DatabaseManager()
+            
+            # Get trades from database (up to 1000 most recent)
+            db_trades = db.get_trades()
+            if not db_trades.empty:
+                # Convert database trades to display format
+                for _, trade in db_trades.iterrows():
+                    formatted_trade = {
+                        'id': trade['id'],
+                        'trade_number': trade['id'],  # Use database ID as trade number
+                        'symbol': trade['symbol'],
+                        'action': trade['action'],
+                        'side': trade['action'],  # Alias for compatibility
+                        'quantity': trade['size'],
+                        'price': trade['price'],
+                        'timestamp': trade['timestamp'].isoformat() if hasattr(trade['timestamp'], 'isoformat') else str(trade['timestamp']),
+                        'total_value': trade['size'] * trade['price'],
+                        'pnl': trade.get('pnl', 0),
+                        'strategy': trade.get('strategy', ''),
+                        'order_id': trade.get('order_id', ''),
+                        'source': 'database'
+                    }
+                    all_trades.append(formatted_trade)
+                
+                logger.info(f"Loaded {len(db_trades)} trades from database")
+                
+        except Exception as e:
+            logger.warning(f"Could not get database trades: {e}")
+            
         # Add trades from portfolio service exchange
         try:
             initialize_system()
@@ -1588,14 +1620,41 @@ def execute_take_profit():
         # Combine all trades for display
         all_trades = executed_trades + buy_trades
         
-        # Add executed trades to recent trades for display
+        # Add executed trades to recent trades for display AND save to database
         global recent_initial_trades
         if all_trades:
             if recent_initial_trades is None:
                 recent_initial_trades = []
             recent_initial_trades.extend(all_trades)
             
-            # Keep only the most recent 100 trades
+            # Save all trades to persistent database
+            try:
+                from src.utils.database import DatabaseManager
+                db = DatabaseManager()
+                
+                for trade in all_trades:
+                    # Convert to database format
+                    trade_data = {
+                        'timestamp': datetime.fromisoformat(trade['timestamp'].replace('Z', '+00:00')) if isinstance(trade.get('timestamp'), str) else datetime.utcnow(),
+                        'symbol': trade['symbol'],
+                        'action': trade['action'],
+                        'size': trade['quantity'],
+                        'price': trade['price'],
+                        'commission': trade.get('commission', 0),
+                        'order_id': trade.get('order_id'),
+                        'strategy': 'AutoTakeProfit',
+                        'confidence': trade.get('confidence', 1.0),
+                        'pnl': trade.get('net_pnl', 0),
+                        'mode': 'paper'
+                    }
+                    
+                    trade_id = db.save_trade(trade_data)
+                    logger.info(f"Saved trade to database with ID: {trade_id}")
+                    
+            except Exception as db_error:
+                logger.error(f"Failed to save trades to database: {db_error}")
+            
+            # Keep only the most recent 100 trades in memory
             recent_initial_trades = recent_initial_trades[-100:]
         
         total_profit = sum(trade.get('net_pnl', 0) for trade in executed_trades)
