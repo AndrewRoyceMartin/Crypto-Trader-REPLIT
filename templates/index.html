@@ -246,21 +246,25 @@
                         
                         <!-- Performance Metrics Row -->
                         <div class="row align-items-center">
-                            <div class="col-md-8">
+                            <div class="col-md-6">
                                 <div class="row">
-                                    <div class="col-md-3">
+                                    <div class="col-md-6">
+                                        <small class="text-light opacity-75">Active Holdings:</small>
+                                        <h6 id="active-positions" class="text-success mb-0">0 positions</h6>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <small class="text-light opacity-75">Sold Out:</small>
+                                        <h6 id="zero-positions" class="text-warning mb-0">0 positions</h6>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="row">
+                                    <div class="col-md-6">
                                         <small class="text-light opacity-75">Profitable:</small>
                                         <h6 id="profitable-positions" class="text-success mb-0">0 positions</h6>
                                     </div>
-                                    <div class="col-md-3">
-                                        <small class="text-light opacity-75">Losing:</small>
-                                        <h6 id="losing-positions" class="text-danger mb-0">0 positions</h6>
-                                    </div>
-                                    <div class="col-md-3">
-                                        <small class="text-light opacity-75">Concentration:</small>
-                                        <h6 id="concentration-risk" class="text-warning mb-0">0%</h6>
-                                    </div>
-                                    <div class="col-md-3">
+                                    <div class="col-md-6">
                                         <small class="text-light opacity-75">Today's P&L:</small>
                                         <h6 id="daily-pnl" class="text-info mb-0">$0.00</h6>
                                     </div>
@@ -311,6 +315,80 @@
             </div>
         </div>
 
+        <!-- Current Holdings Summary -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card border-info">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0">
+                            <i class="fas fa-wallet me-2"></i>
+                            Current Holdings Summary
+                            <i class="fas fa-info-circle text-white ms-2" 
+                               data-bs-toggle="tooltip" 
+                               data-bs-placement="top" 
+                               title="Overview of your actual cryptocurrency holdings, highlighting assets you still own vs those sold through trading"></i>
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row mb-3">
+                            <div class="col-md-3">
+                                <div class="text-center">
+                                    <h4 id="holdings-total-assets" class="text-primary mb-1">103</h4>
+                                    <small class="text-muted">Total Assets</small>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="text-center">
+                                    <h4 id="holdings-active-count" class="text-success mb-1">0</h4>
+                                    <small class="text-muted">Active Holdings</small>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="text-center">
+                                    <h4 id="holdings-zero-count" class="text-warning mb-1">0</h4>
+                                    <small class="text-muted">Sold Out</small>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="text-center">
+                                    <h4 id="holdings-total-value" class="text-info mb-1">$0.00</h4>
+                                    <small class="text-muted">Holdings Value</small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Holdings Status List -->
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="card bg-light">
+                                    <div class="card-header bg-success text-white py-2">
+                                        <h6 class="mb-0"><i class="fas fa-check-circle me-2"></i>Active Holdings (<span id="active-holdings-count">0</span>)</h6>
+                                    </div>
+                                    <div class="card-body p-2" style="max-height: 200px; overflow-y: auto;">
+                                        <div id="active-holdings-list" class="small">
+                                            <div class="text-muted text-center py-3">Loading active holdings...</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card bg-light">
+                                    <div class="card-header bg-warning text-dark py-2">
+                                        <h6 class="mb-0"><i class="fas fa-exclamation-triangle me-2"></i>Sold Out Holdings (<span id="zero-holdings-count">0</span>)</h6>
+                                    </div>
+                                    <div class="card-body p-2" style="max-height: 200px; overflow-y: auto;">
+                                        <div id="zero-holdings-list" class="small">
+                                            <div class="text-muted text-center py-3">Loading sold positions...</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Tracked Cryptocurrencies (Moved to Top) -->
         <div class="row mb-4">
             <div class="col-12">
@@ -318,11 +396,11 @@
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <h5 class="mb-0">
                             <i class="fas fa-coins me-2"></i>
-                            Tracked Cryptocurrencies (103 Assets - $10 Each)
+                            All Cryptocurrencies (103 Assets)
                             <i class="fas fa-info-circle text-info ms-2" 
                                data-bs-toggle="tooltip" 
                                data-bs-placement="top" 
-                               title="Complete cryptocurrency portfolio overview with 103 cryptocurrencies ($10 initial investment each = $1,030 total). Real-time prices, P&L tracking, trading signals, and profit/loss calculations with live CoinGecko API integration."></i>
+                               title="Complete cryptocurrency portfolio overview with 103 cryptocurrencies. Real-time prices, P&L tracking, trading signals, and profit/loss calculations."></i>
                         </h5>
                         <button class="btn btn-outline-primary btn-sm" onclick="refreshCryptoPortfolio()">
                             <i class="fas fa-sync-alt me-1"></i>Refresh

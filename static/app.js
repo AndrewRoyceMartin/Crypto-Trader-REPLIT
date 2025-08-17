@@ -2498,6 +2498,9 @@ function updatePortfolioSummary(portfolioData) {
     updateElementSafely("summary-cash-balance", formatCurrency(summary.cash_balance || portfolioData.cash_balance || 0));
     updateElementSafely("summary-win-rate", `${summary.win_rate || 0}%`);
     
+    // Update holdings summary
+    updateHoldingsSummary(holdings);
+    
     // Update best/worst performers with enhanced display
     const bestPerformer = summary.best_performer || {symbol: "N/A", pnl_percent: 0, name: "N/A"};
     const worstPerformer = summary.worst_performer || {symbol: "N/A", pnl_percent: 0, name: "N/A"};
@@ -2518,12 +2521,92 @@ function updatePortfolioSummary(portfolioData) {
     }
     
     // Update position counts with enhanced metrics
-    updateElementSafely("profitable-positions", `${summary.profitable_positions || 0} positions`);
-    updateElementSafely("losing-positions", `${summary.losing_positions || 0} positions`);
-    updateElementSafely("concentration-risk", `${summary.concentration_risk || 0}%`);
+    updateElementSafely("profitable-positions", `${summary.profitable_positions || 0}`);
     updateElementSafely("daily-pnl", `$${fmtFixed(summary.daily_pnl || 0, 2)}`);
     
     console.log("Enhanced portfolio summary updated successfully");
+}
+
+// Update holdings summary with active vs sold out positions
+function updateHoldingsSummary(holdings) {
+    console.log("Updating holdings summary...");
+    
+    if (!holdings || !Array.isArray(holdings)) {
+        console.warn("No holdings data provided for summary");
+        return;
+    }
+    
+    // Separate active holdings from sold-out positions
+    const activeHoldings = holdings.filter(h => h.has_position && (h.quantity > 0 || h.current_value > 0.01));
+    const soldOutHoldings = holdings.filter(h => !h.has_position || h.quantity <= 0 || h.current_value <= 0.01);
+    
+    // Update summary counts
+    updateElementSafely("holdings-total-assets", holdings.length);
+    updateElementSafely("holdings-active-count", activeHoldings.length);
+    updateElementSafely("holdings-zero-count", soldOutHoldings.length);
+    
+    // Calculate total holdings value (only active positions)
+    const totalHoldingsValue = activeHoldings.reduce((sum, h) => sum + (h.current_value || 0), 0);
+    updateElementSafely("holdings-total-value", formatCurrency(totalHoldingsValue));
+    
+    // Update performance metrics in summary
+    updateElementSafely("active-positions", activeHoldings.length);
+    updateElementSafely("zero-positions", soldOutHoldings.length);
+    updateElementSafely("active-holdings-count", activeHoldings.length);
+    updateElementSafely("zero-holdings-count", soldOutHoldings.length);
+    
+    // Update active holdings list
+    const activeListEl = document.getElementById('active-holdings-list');
+    if (activeListEl) {
+        if (activeHoldings.length > 0) {
+            // Sort by current value descending
+            const sortedActive = activeHoldings.sort((a, b) => (b.current_value || 0) - (a.current_value || 0));
+            activeListEl.innerHTML = sortedActive.map(h => {
+                const pnlClass = (h.pnl_percent || 0) >= 0 ? 'text-success' : 'text-danger';
+                const pnlIcon = (h.pnl_percent || 0) >= 0 ? '↗' : '↘';
+                return `
+                    <div class="d-flex justify-content-between align-items-center py-1 border-bottom">
+                        <div>
+                            <strong class="text-primary">${h.symbol}</strong>
+                            <small class="text-muted ms-2">${formatCurrency(h.current_value || 0)}</small>
+                        </div>
+                        <div class="${pnlClass}">
+                            <small>${pnlIcon} ${fmtFixed(h.pnl_percent || 0, 2)}%</small>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        } else {
+            activeListEl.innerHTML = '<div class="text-muted text-center py-3">No active holdings</div>';
+        }
+    }
+    
+    // Update sold out holdings list
+    const soldListEl = document.getElementById('zero-holdings-list');
+    if (soldListEl) {
+        if (soldOutHoldings.length > 0) {
+            // Sort alphabetically for sold out positions
+            const sortedSold = soldOutHoldings.sort((a, b) => a.symbol.localeCompare(b.symbol));
+            soldListEl.innerHTML = sortedSold.map(h => {
+                const lastPrice = formatCurrency(h.current_price || 0);
+                return `
+                    <div class="d-flex justify-content-between align-items-center py-1 border-bottom">
+                        <div>
+                            <strong class="text-warning">${h.symbol}</strong>
+                            <small class="text-muted ms-2">Sold out</small>
+                        </div>
+                        <div class="text-muted">
+                            <small>Last: ${lastPrice}</small>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        } else {
+            soldListEl.innerHTML = '<div class="text-muted text-center py-3">No sold positions</div>';
+        }
+    }
+    
+    console.log(`Holdings summary updated: ${activeHoldings.length} active, ${soldOutHoldings.length} sold out`);
 }
 
 // Refresh portfolio summary
