@@ -279,6 +279,34 @@ def index():
         # Show loading skeleton while warming up
         return render_loading_skeleton()
 
+@app.route('/portfolio')
+def portfolio():
+    """Dedicated portfolio page with comprehensive KPIs, allocation charts, and position management"""
+    start_warmup()
+    
+    if warmup["done"] and not warmup["error"]:
+        # System ready - serve portfolio page
+        return render_portfolio_page()
+    elif warmup["done"] and warmup["error"]:
+        # System failed to initialize properly
+        return render_loading_skeleton(f"System Error: {warmup['error']}", error=True)
+    else:
+        # Show loading skeleton while warming up
+        return render_loading_skeleton()
+
+def render_portfolio_page():
+    """Render the dedicated portfolio page."""
+    try:
+        from flask import render_template
+        from version import get_version
+        import time
+        
+        cache_version = int(time.time())
+        return render_template("portfolio.html", cache_version=cache_version, version=get_version())
+    except Exception as e:
+        logger.error(f"Error rendering portfolio page: {e}")
+        return render_loading_skeleton(f"Portfolio Error: {e}", error=True)
+
 def render_full_dashboard():
     """Render the original trading dashboard using templates."""
     try:

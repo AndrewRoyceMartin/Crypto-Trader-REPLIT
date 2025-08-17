@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Portfolio • Algorithmic Trading System</title>
+
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <!-- Chart.js (deferred) -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
+
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v={{ cache_version|default(0) }}">
+
+  <script>
+    // Ensure cache-busting for inline fetchers that use window.cacheVersion
+    window.cacheVersion = {{ cache_version|default(0) }};
+  </script>
+</head>
+<body>
+  <!-- NAVBAR -->
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="{{ url_for('index') }}">
+        <i class="fas fa-chart-line me-2"></i> Algorithmic Trading System
+      </a>
+
+      <div class="navbar-nav me-auto">
+        <a class="btn btn-outline-light btn-sm me-2" href="{{ url_for('index') }}">
+          <i class="fas fa-home me-1"></i> Dashboard
+        </a>
+        <a class="btn btn-light btn-sm me-2" href="#">
+          <i class="fas fa-wallet me-1"></i> Portfolio
+        </a>
+        <a class="btn btn-outline-light btn-sm me-2" href="{{ url_for('performance') if false else '#' }}" onclick="if(window.showPerformanceDashboard){showPerformanceDashboard();} return false;">
+          <i class="fas fa-chart-bar me-1"></i> Performance
+        </a>
+        <a class="btn btn-outline-light btn-sm me-2" href="{{ url_for('holdings') if false else '#' }}" onclick="if(window.showCurrentPositions){showCurrentPositions();} return false;">
+          <i class="fas fa-coins me-1"></i> Holdings
+        </a>
+        <a class="btn btn-outline-light btn-sm me-2" href="{{ url_for('trades') if false else '#' }}" onclick="if(window.showRecentTrades){showRecentTrades();} return false;">
+          <i class="fas fa-exchange-alt me-1"></i> Trade Dashboard
+        </a>
+        <button class="btn btn-outline-success btn-sm me-2" onclick="exportATOTax()">
+          <i class="fas fa-file-invoice-dollar me-1"></i> ATO Export
+        </button>
+      </div>
+
+      <div class="navbar-nav ms-auto">
+        <div class="nav-item d-flex align-items-center">
+          <button class="btn btn-sm btn-outline-danger me-3" onclick="resetEntireProgram()">
+            <i class="fas fa-power-off me-1"></i>Reset
+          </button>
+          <div class="me-3">
+            <select class="form-select form-select-sm" id="currency-selector" onchange="changeCurrency()" style="min-width:80px;font-size:0.8rem;">
+              <option value="USD" selected>USD</option>
+              <option value="AUD">AUD</option>
+              <option value="EUR">EUR</option>
+              <option value="GBP">GBP</option>
+            </select>
+          </div>
+          <span class="navbar-text me-3">
+            <i class="fas fa-server text-info me-1"></i>
+            <span class="text-light">Server Uptime:</span>
+            <span id="system-uptime" class="text-info ms-1">0s</span>
+          </span>
+          <span class="navbar-text me-3" id="server-connection-status">
+            <i class="fas fa-wifi text-success me-1"></i>
+            <span class="text-light">OKX API:</span>
+            <span id="server-connection-text" class="text-success ms-1">Connected</span>
+          </span>
+          <span class="navbar-text" id="okx-connection-status">
+            <i class="fas fa-server text-success me-1"></i>
+            <span class="text-light">Trading Mode:</span>
+            <span id="okx-connection-text" class="text-success ms-1">Simulated</span>
+          </span>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- PAGE -->
+  <div id="portfolio-page" class="container-fluid py-4">
+    <!-- Summary KPIs -->
+    <div class="row mb-4">
+      <div class="col-12">
+        <div class="card bg-primary bg-gradient text-white shadow-lg">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <h4 class="mb-0">
+              <i class="fas fa-wallet me-2"></i> Portfolio Summary
+            </h4>
+            <div class="d-flex gap-2">
+              <button class="btn btn-light btn-sm" onclick="if(window.tradingApp){tradingApp.updateCryptoPortfolio();}">
+                <i class="fas fa-sync-alt me-1"></i> Refresh
+              </button>
+              <button class="btn btn-success btn-sm" onclick="exportATOTax()">
+                <i class="fas fa-file-export me-1"></i> ATO Export
+              </button>
+            </div>
+          </div>
+          <div class="card-body">
+            <!-- KPI row (IDs match updatePortfolioSummary) -->
+            <div class="row text-center mb-3">
+              <div class="col-md-2">
+                <div class="summary-metric">
+                  <h3 id="summary-total-value" class="mb-1">$0.00</h3>
+                  <small class="text-light opacity-75">Total Portfolio Value</small>
+                </div>
+              </div>
+              <div class="col-md-2">
+                <div class="summary-metric">
+                  <h3 id="summary-total-change" class="badge bg-secondary mb-1">$0.00 (0.00%)</h3>
+                  <small class="text-light opacity-75">Total Change</small>
+                </div>
+              </div>
+              <div class="col-md-1">
+                <div class="summary-metric">
+                  <h3 id="summary-total-assets" class="mb-1">0</h3>
+                  <small class="text-light opacity-75">Assets</small>
+                </div>
+              </div>
+              <div class="col-md-2">
+                <div class="summary-metric">
+                  <h3 class="mb-1 text-success">
+                    <i class="fas fa-arrow-up me-1"></i>
+                    <span id="summary-best-performer">N/A</span>
+                    <small id="summary-best-performance" class="ms-2">+0.00%</small>
+                  </h3>
+                  <small class="text-light opacity-75">Best Performer</small>
+                </div>
+              </div>
+              <div class="col-md-2">
+                <div class="summary-metric">
+                  <h3 id="summary-worst-performer" class="mb-1 text-danger">
+                    <i class="fas fa-arrow-down me-1"></i><span>N/A</span>
+                  </h3>
+                  <small class="text-light opacity-75">Worst Performer</small>
+                </div>
+              </div>
+              <div class="col-md-2">
+                <div class="summary-metric">
+                  <h3 id="summary-cash-balance" class="mb-1">$0.00</h3>
+                  <small class="text-light opacity-75">Cash Balance</small>
+                </div>
+              </div>
+              <div class="col-md-1">
+                <div class="summary-metric">
+                  <h3 id="summary-win-rate" class="mb-1">0%</h3>
+                  <small class="text-light opacity-75">Win Rate</small>
+                </div>
+              </div>
+            </div>
+
+            <!-- Secondary row (optional extra binding) -->
+            <div class="row text-center mb-2">
+              <div class="col-md-3 offset-md-3">
+                <small class="text-light opacity-75">24h Change</small>
+                <div id="summary-24h-change" class="mb-0 fw-bold text-light">+0.00%</div>
+              </div>
+              <div class="col-md-3">
+                <small class="text-light opacity-75">Portfolio Value (alias)</small>
+                <div id="summary-portfolio-value" class="mb-0 fw-bold">$0.00</div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Allocation / Exposure -->
+    <div class="row mb-4">
+      <div class="col-lg-6 mb-3 mb-lg-0">
+        <div class="card">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="fas fa-chart-pie me-2"></i> Allocation by Asset</h5>
+            <small class="text-muted">Top 10 + Others</small>
+          </div>
+          <div class="card-body">
+            <div class="chart-container p-2 rounded" style="height:320px;background:#fff;">
+              <canvas id="allocationChart"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-6">
+        <div class="card">
+          <div class="card-header">
+            <h5 class="mb-0"><i class="fas fa-sliders-h me-2"></i> Exposure & Risk</h5>
+          </div>
+          <div class="card-body">
+            <div class="mb-3">
+              <div class="d-flex justify-content-between">
+                <small class="text-muted">Long Exposure</small>
+                <small id="exposure-long-text" class="text-muted">0%</small>
+              </div>
+              <div class="progress" style="height:10px;">
+                <div id="exposure-long" class="progress-bar" role="progressbar" style="width:0%"></div>
+              </div>
+            </div>
+            <div class="mb-3">
+              <div class="d-flex justify-content-between">
+                <small class="text-muted">Stablecoin Allocation</small>
+                <small id="exposure-stable-text" class="text-muted">0%</small>
+              </div>
+              <div class="progress" style="height:10px;">
+                <div id="exposure-stable" class="progress-bar bg-info" role="progressbar" style="width:0%"></div>
+              </div>
+            </div>
+            <div>
+              <div class="d-flex justify-content-between">
+                <small class="text-muted">Largest Position</small>
+                <small id="exposure-largest-text" class="text-muted">0%</small>
+              </div>
+              <div class="progress" style="height:10px;">
+                <div id="exposure-largest" class="progress-bar bg-warning" role="progressbar" style="width:0%"></div>
+              </div>
+            </div>
+            <small class="text-muted d-block mt-2">* Basic exposure metrics; refine when you track stables/leverage server-side.</small>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Positions table -->
+    <div class="row mb-4">
+      <div class="col-12">
+        <div class="card border-info">
+          <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="fas fa-coins me-2"></i> Current Positions</h5>
+            <div class="d-flex gap-2">
+              <button class="btn btn-light btn-sm" onclick="if(window.tradingApp){tradingApp.updateCryptoPortfolio();}">
+                <i class="fas fa-sync-alt me-1"></i> Refresh
+              </button>
+            </div>
+          </div>
+          <div class="card-body">
+            <!-- Filters -->
+            <div class="row mb-3">
+              <div class="col-md-4">
+                <input id="positions-filter" type="text" class="form-control form-control-sm" placeholder="Filter by symbol or name..." oninput="if(window.tradingApp){tradingApp.updateHoldingsTable(tradingApp.currentCryptoData||[]);}">
+              </div>
+              <div class="col-md-2">
+                <select id="positions-pnl-filter" class="form-select form-select-sm" onchange="if(window.tradingApp){tradingApp.updateHoldingsTable(tradingApp.currentCryptoData||[]);}">
+                  <option value="">All P&L</option>
+                  <option value="positive">Profitable</option>
+                  <option value="negative">Loss</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="table-responsive">
+              <table class="table table-striped table-hover">
+                <thead class="table-dark sticky-top">
+                  <tr>
+                    <th onclick="sortPositionsTable(0)" style="cursor:pointer;" class="sortable">Symbol</th>
+                    <th onclick="sortPositionsTable(1)" style="cursor:pointer;" class="sortable">Name</th>
+                    <th onclick="sortPositionsTable(2)" style="cursor:pointer;" class="sortable">Quantity</th>
+                    <th onclick="sortPositionsTable(3)" style="cursor:pointer;" class="sortable">Current Price</th>
+                    <th onclick="sortPositionsTable(4)" style="cursor:pointer;" class="sortable">Current Value</th>
+                    <th onclick="sortPositionsTable(5)" style="cursor:pointer;" class="sortable">Position %</th>
+                    <th onclick="sortPositionsTable(6)" style="cursor:pointer;" class="sortable">Unrealized P&L</th>
+                    <th onclick="sortPositionsTable(7)" style="cursor:pointer;" class="sortable">P&L %</th>
+                    <th onclick="sortPositionsTable(8)" style="cursor:pointer;" class="sortable">Target Sell</th>
+                    <th onclick="sortPositionsTable(9)" style="cursor:pointer;" class="sortable">Potential Profit</th>
+                    <th onclick="sortPositionsTable(10)" style="cursor:pointer;" class="sortable">Status</th>
+                  </tr>
+                </thead>
+                <tbody id="positions-table-body">
+                  <tr><td colspan="11" class="text-center">Loading current positions...</td></tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Totals row -->
+            <div class="row mt-3">
+              <div class="col-md-3">
+                <div class="position-metric">
+                  <h6>Total Positions</h6>
+                  <h4 id="pos-total-count" class="text-info">0</h4>
+                </div>
+              </div>
+              <div class="col-md-3">
+                <div class="position-metric">
+                  <h6>Total Position Value</h6>
+                  <h4 id="pos-total-value" class="text-primary">$0.00</h4>
+                </div>
+              </div>
+              <div class="col-md-3">
+                <div class="position-metric">
+                  <h6>Unrealized P&L</h6>
+                  <h4 id="pos-unrealized-pnl" class="text-success">$0.00</h4>
+                </div>
+              </div>
+              <div class="col-md-3">
+                <div class="position-metric">
+                  <h6>Strong Gains</h6>
+                  <h4 id="pos-strong-gains" class="text-success">0</h4>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Orders and Trades -->
+    <div class="row mb-4">
+      <div class="col-lg-6 mb-3 mb-lg-0">
+        <div class="card">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="fas fa-list-check me-2"></i> Open Orders</h5>
+            <button class="btn btn-primary btn-sm" onclick="loadOpenOrders()">
+              <i class="fas fa-sync-alt me-1"></i> Refresh
+            </button>
+          </div>
+          <div class="card-body">
+            <div class="table-responsive" style="max-height:300px;overflow-y:auto;">
+              <table class="table table-sm">
+                <thead class="table-light">
+                  <tr>
+                    <th>Time</th>
+                    <th>Symbol</th>
+                    <th>Side</th>
+                    <th>Qty</th>
+                    <th>Price</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="open-orders-body">
+                  <tr><td colspan="6" class="text-center text-muted">No open orders</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <small class="text-muted">Pulled from <code>/api/crypto-portfolio.open_orders</code> when available.</small>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-6">
+        <div class="card">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="fas fa-exchange-alt me-2"></i> Recent Trades</h5>
+            <div class="d-flex gap-2">
+              <button class="btn btn-outline-secondary btn-sm" onclick="clearTradesFilters()">
+                <i class="fas fa-times me-1"></i> Clear
+              </button>
+              <button class="btn btn-primary btn-sm" onclick="if(window.tradingApp){tradingApp.updateRecentTrades();}">
+                <i class="fas fa-sync-alt me-1"></i> Refresh
+              </button>
+            </div>
+          </div>
+          <div class="card-body">
+            <!-- Simple filters -->
+            <div class="row mb-3">
+              <div class="col-md-5">
+                <input type="text" id="trades-filter" class="form-control form-control-sm" placeholder="Filter by symbol..." oninput="filterTradesTable()">
+              </div>
+              <div class="col-md-3">
+                <select id="trades-action-filter" class="form-select form-select-sm" onchange="filterTradesTable()">
+                  <option value="">All Actions</option>
+                  <option value="BUY">Buy Only</option>
+                  <option value="SELL">Sell Only</option>
+                </select>
+              </div>
+              <div class="col-md-2">
+                <select id="trades-pnl-filter" class="form-select form-select-sm" onchange="filterTradesTable()">
+                  <option value="">All P&L</option>
+                  <option value="positive">Profitable</option>
+                  <option value="negative">Loss</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="table-responsive" style="max-height:300px;overflow-y:auto;">
+              <table class="table table-sm">
+                <thead class="table-dark sticky-top">
+                  <tr>
+                    <th>Trade #</th>
+                    <th>Time</th>
+                    <th>Symbol</th>
+                    <th>Action</th>
+                    <th>Size</th>
+                    <th>Price</th>
+                    <th>P&L</th>
+                  </tr>
+                </thead>
+                <tbody id="trades-table">
+                  <tr>
+                    <td colspan="7" class="text-center">
+                      <div class="d-flex align-items-center justify-content-center">
+                        <div class="spinner-border spinner-border-sm text-primary me-2" role="status">
+                          <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <span class="text-muted">Loading trades...</span>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- FOOTER -->
+  <footer class="bg-dark text-light py-4 mt-5">
+    <div class="container-fluid">
+      <div class="row">
+        <div class="col-md-6">
+          <p class="mb-1"><strong>ARM Digital Enterprises</strong></p>
+          <p class="mb-2 text-white">ABN: 92 384 831 384</p>
+          <p class="mb-0 text-white"><small>Algorithmic Trading System</small></p>
+          <p class="mb-1 text-white"><small>Professional Cryptocurrency Portfolio Management</small></p>
+          <p class="mb-0 text-info"><small><strong>Version: {{ version|default('dev') }}</strong></small></p>
+        </div>
+        <div class="col-md-6 text-md-end">
+          <div class="mb-2">
+            <p class="mb-1"><small><strong>Copyright Notice & Disclaimers</strong></small></p>
+            <p class="mb-1 text-white" style="font-size:0.75rem;">
+              © 2025 ARM Digital Enterprises. All rights reserved. This software and its contents are protected by Australian and international copyright laws.
+            </p>
+          </div>
+          <div class="mb-0">
+            <p class="mb-1 text-white" style="font-size:0.75rem;">
+              <strong>Investment Disclaimer:</strong> This system is for informational purposes only. Cryptocurrency trading involves substantial risk of loss. Past performance does not guarantee future results. Consult qualified financial advisors before making investment decisions.
+            </p>
+            <p class="mb-0 text-white" style="font-size:0.75rem;">
+              <strong>Compliance:</strong> This system complies with Australian Tax Office (ATO) requirements for capital gains reporting. Users are responsible for their own tax obligations and compliance with applicable laws and regulations.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+  <!-- Enable tooltips -->
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+        .map(el => new bootstrap.Tooltip(el));
+    });
+  </script>
+
+  <!-- Your app.js -->
+  <script src="{{ url_for('static', filename='app.js') }}?v={{ cache_version|default(0) }}"></script>
+
+  <!-- Page wiring: build allocation chart & exposure once holdings are loaded -->
+  <script>
+    (function () {
+      let allocChart = null;
+
+      function buildAllocationFromHoldings(holdings) {
+        if (!window.Chart || !Array.isArray(holdings) || holdings.length === 0) return;
+
+        // Sort by current_value desc and take top 10
+        const sorted = [...holdings].sort((a,b) => (b.current_value||0) - (a.current_value||0));
+        const top = sorted.slice(0, 10);
+        const othersVal = sorted.slice(10).reduce((s, c) => s + (c.current_value || 0), 0);
+        const labels = top.map(h => h.symbol);
+        const data = top.map(h => h.current_value || 0);
+        if (othersVal > 0) { labels.push('Others'); data.push(othersVal); }
+
+        const ctx = document.getElementById('allocationChart');
+        if (!ctx) return;
+
+        if (allocChart) { allocChart.destroy(); }
+        allocChart = new Chart(ctx, {
+          type: 'doughnut',
+          data: {
+            labels,
+            datasets: [{
+              data,
+              borderWidth: 1
+              // background colors omitted to keep white background; Chart will pick defaults
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { position: 'bottom' },
+              title: { display: false }
+            }
+          }
+        });
+      }
+
+      function updateExposureBars(holdings) {
+        const total = holdings.reduce((s, h) => s + (h.current_value || 0), 0);
+        if (total <= 0) return;
+
+        // crude stable detection
+        const stableTickers = ['USDT','USDC','DAI','BUSD','TUSD','FDUSD','USDP','EURS'];
+        const stableVal = holdings
+          .filter(h => stableTickers.includes((h.symbol||'').toUpperCase()))
+          .reduce((s,h) => s + (h.current_value || 0), 0);
+
+        const largest = holdings.reduce((best, h) => ((h.current_value||0) > (best.current_value||0) ? h : best), {current_value:0});
+
+        const longPct = Math.max(0, Math.min(100, Math.round(((total - stableVal) / total) * 100)));
+        const stablePct = Math.max(0, Math.min(100, Math.round((stableVal / total) * 100)));
+        const largestPct = total > 0 ? Math.round(((largest.current_value||0) / total) * 100) : 0;
+
+        const setBar = (idBar, idTxt, pct) => {
+          const bar = document.getElementById(idBar);
+          const txt = document.getElementById(idTxt);
+          if (bar) bar.style.width = pct + '%';
+          if (txt) txt.textContent = pct + '%';
+        };
+
+        setBar('exposure-long', 'exposure-long-text', longPct);
+        setBar('exposure-stable', 'exposure-stable-text', stablePct);
+        setBar('exposure-largest', 'exposure-largest-text', largestPct);
+      }
+
+      // Wait until tradingApp exists and portfolio has loaded, then build charts
+      function waitAndWire() {
+        if (window.tradingApp && Array.isArray(tradingApp.currentCryptoData) && tradingApp.currentCryptoData.length > 0) {
+          const holdings = tradingApp.currentCryptoData;
+          buildAllocationFromHoldings(holdings);
+          updateExposureBars(holdings);
+          return;
+        }
+        // Trigger a portfolio refresh the first time
+        if (window.tradingApp && !tradingApp.isUpdatingPortfolio) {
+          tradingApp.updateCryptoPortfolio();
+        }
+        setTimeout(waitAndWire, 500);
+      }
+      document.addEventListener('DOMContentLoaded', waitAndWire);
+
+      // Optional: open orders loader using /api/crypto-portfolio.open_orders
+      window.loadOpenOrders = async function () {
+        try {
+          const res = await fetch('/api/crypto-portfolio?_=' + Date.now(), { cache: 'no-cache' });
+          if (!res.ok) return;
+          const data = await res.json();
+          const orders = data.open_orders || [];
+          const body = document.getElementById('open-orders-body');
+          if (!body) return;
+          body.innerHTML = '';
+          if (!orders.length) {
+            body.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No open orders</td></tr>';
+            return;
+          }
+          orders.sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
+          orders.forEach(o => {
+            const tr = document.createElement('tr');
+            const t = new Date(o.timestamp || Date.now()).toLocaleString();
+            const sideBadge = `<span class="badge ${String(o.side).toUpperCase()==='SELL'?'bg-danger':'bg-success'}">${(o.side||'').toUpperCase()}</span>`;
+            tr.innerHTML = `
+              <td><small>${t}</small></td>
+              <td><strong>${o.symbol || '-'}</strong></td>
+              <td>${sideBadge}</td>
+              <td>${Number(o.qty||o.quantity||0).toFixed(6)}</td>
+              <td>${Number(o.price||0).toLocaleString()}</td>
+              <td><span class="badge bg-secondary">${o.status || 'open'}</span></td>
+            `;
+            body.appendChild(tr);
+          });
+        } catch (e) {
+          console.error('open orders load error', e);
+        }
+      };
+    })();
+  </script>
+</body>
+</html>

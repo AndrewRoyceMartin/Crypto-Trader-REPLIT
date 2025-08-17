@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+  />
+  <title>Performance — Algorithmic Trading System</title>
+
+  <!-- Bootstrap CSS -->
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+    rel="stylesheet"
+  />
+
+  <!-- Font Awesome -->
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+  />
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
+
+  <!-- Custom CSS -->
+  <link
+    rel="stylesheet"
+    href="{{ url_for('static', filename='style.css') }}?v={{ cache_version|default(0) }}"
+  />
+
+  <style>
+    /* Make chart containers white and crisp */
+    .chart-card {
+      background: #fff;
+      border: 1px solid rgba(0,0,0,.08);
+      border-radius: .5rem;
+      padding: 1rem;
+      height: 360px;
+    }
+    .chart-card canvas {
+      background: #fff; /* ensure canvas is white if parent changes */
+    }
+
+    .kpi .value {
+      font-weight: 700;
+      font-size: 1.25rem;
+    }
+    .kpi small {
+      color: #6c757d;
+    }
+
+    .sticky-actions {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      background: #fff;
+      border-bottom: 1px solid rgba(0,0,0,.05);
+      padding: .5rem 0;
+      margin: -0.5rem 0 1rem;
+    }
+
+    .table thead th {
+      white-space: nowrap;
+    }
+    .text-mono {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    }
+  </style>
+
+  <script>
+    // Force cache refresh for JS if you want to reference window.cacheVersion elsewhere
+    window.cacheVersion = {{ cache_version|default(0) }};
+  </script>
+</head>
+<body class="bg-light">
+  <!-- NAV -->
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <div class="container-fluid">
+      <a class="navbar-brand d-flex align-items-center" href="{{ url_for('index') }}">
+        <i class="fas fa-chart-line me-2"></i>
+        Algorithmic Trading System
+      </a>
+
+      <button
+        class="navbar-toggler"
+        type="button"
+        data-bs-toggle="collapse"
+        data-bs-target="#navbarsMain"
+      >
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="collapse navbar-collapse" id="navbarsMain">
+        <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+          <li class="nav-item me-2">
+            <a class="btn btn-outline-light btn-sm" href="{{ url_for('index') }}">
+              <i class="fas fa-home me-1"></i> Dashboard
+            </a>
+          </li>
+          <li class="nav-item me-2">
+            <a class="btn btn-light btn-sm" href="#">
+              <i class="fas fa-chart-bar me-1"></i> Performance
+            </a>
+          </li>
+        </ul>
+        <div class="navbar-text text-end text-white-50 small">
+          <i class="fas fa-code-branch me-1"></i> v{{ version|default('dev') }}
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- CONTENT -->
+  <div class="container-fluid py-4">
+
+    <!-- Filters & Actions -->
+    <div class="sticky-actions">
+      <div class="row g-2 align-items-end">
+        <div class="col-md-2">
+          <label class="form-label mb-1">Start</label>
+          <input type="date" class="form-control form-control-sm" id="perf-date-start" />
+        </div>
+        <div class="col-md-2">
+          <label class="form-label mb-1">End</label>
+          <input type="date" class="form-control form-control-sm" id="perf-date-end" />
+        </div>
+        <div class="col-md-2">
+          <label class="form-label mb-1">Symbol</label>
+          <select class="form-select form-select-sm" id="perf-symbol-filter">
+            <option value="ALL" selected>ALL</option>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label mb-1">Strategy</label>
+          <select class="form-select form-select-sm" id="perf-strategy-filter">
+            <option value="ALL" selected>ALL</option>
+          </select>
+        </div>
+        <div class="col-md-4 d-flex align-items-end gap-2 flex-wrap">
+          <div class="btn-group btn-group-sm me-2" role="group" aria-label="Ranges">
+            <button class="btn btn-outline-secondary" data-range="1M">1M</button>
+            <button class="btn btn-outline-secondary" data-range="3M">3M</button>
+            <button class="btn btn-outline-secondary" data-range="6M">6M</button>
+            <button class="btn btn-outline-secondary" data-range="YTD">YTD</button>
+            <button class="btn btn-outline-secondary" data-range="1Y">1Y</button>
+            <button class="btn btn-outline-secondary" data-range="MAX">MAX</button>
+          </div>
+          <button id="perf-refresh" class="btn btn-primary btn-sm">
+            <i class="fas fa-sync-alt me-1"></i> Refresh
+          </button>
+          <div class="dropdown">
+            <button class="btn btn-outline-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown">
+              <i class="fas fa-file-export me-1"></i> Export
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end">
+              <li><a class="dropdown-item" href="#" id="perf-export-summary">Summary (JSON)</a></li>
+              <li><a class="dropdown-item" href="#" id="perf-export-trades">Trades (CSV)</a></li>
+              <li><a class="dropdown-item" href="#" id="perf-export-returns">Returns (CSV)</a></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- KPIs -->
+    <div class="row g-3 mb-4">
+      <div class="col-6 col-md-3 col-xl-2">
+        <div class="card kpi p-3">
+          <div class="small text-muted">Total Invested</div>
+          <div class="value text-mono" id="perf-total-invested">$0.00</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3 col-xl-2">
+        <div class="card kpi p-3">
+          <div class="small text-muted">Current Value</div>
+          <div class="value text-mono" id="perf-current-value">$0.00</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3 col-xl-2">
+        <div class="card kpi p-3">
+          <div class="small text-muted">Total P&L</div>
+          <div class="value text-mono" id="perf-total-pnl">$0.00</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3 col-xl-2">
+        <div class="card kpi p-3">
+          <div class="small text-muted">Overall Return</div>
+          <div class="value text-mono" id="perf-overall-return">0.00%</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3 col-xl-2">
+        <div class="card kpi p-3">
+          <div class="small text-muted">Sharpe (ann.)</div>
+          <div class="value text-mono" id="perf-sharpe">0.00</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3 col-xl-2">
+        <div class="card kpi p-3">
+          <div class="small text-muted">Sortino (ann.)</div>
+          <div class="value text-mono" id="perf-sortino">0.00</div>
+        </div>
+      </div>
+
+      <div class="col-6 col-md-3 col-xl-2">
+        <div class="card kpi p-3">
+          <div class="small text-muted">Volatility (ann.)</div>
+          <div class="value text-mono" id="perf-vol">0.00%</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3 col-xl-2">
+        <div class="card kpi p-3">
+          <div class="small text-muted">Max Drawdown</div>
+          <div class="value text-mono" id="perf-maxdd">0.00%</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3 col-xl-2">
+        <div class="card kpi p-3">
+          <div class="small text-muted">CAGR</div>
+          <div class="value text-mono" id="perf-cagr">0.00%</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3 col-xl-2">
+        <div class="card kpi p-3">
+          <div class="small text-muted">Profit Factor</div>
+          <div class="value text-mono" id="perf-profit-factor">0.00</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3 col-xl-2">
+        <div class="card kpi p-3">
+          <div class="small text-muted">Win Rate</div>
+          <div class="value text-mono" id="perf-win-rate">0.00%</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3 col-xl-2">
+        <div class="card kpi p-3">
+          <div class="small text-muted">Trades</div>
+          <div class="value text-mono" id="perf-trade-count">0</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CHARTS: Equity & Drawdown -->
+    <div class="row g-3 mb-4">
+      <div class="col-lg-8">
+        <div class="chart-card">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <h6 class="mb-0">
+              <i class="fas fa-chart-line me-2"></i> Equity Curve (vs Benchmark)
+            </h6>
+            <small class="text-muted">Value over time</small>
+          </div>
+          <canvas id="equityCurveChart"></canvas>
+        </div>
+      </div>
+      <div class="col-lg-4">
+        <div class="chart-card">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <h6 class="mb-0">
+              <i class="fas fa-water me-2"></i> Drawdown
+            </h6>
+            <small class="text-muted">Underwater curve</small>
+          </div>
+          <canvas id="drawdownChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- CHARTS: Distributions & Attribution -->
+    <div class="row g-3 mb-4">
+      <div class="col-lg-4">
+        <div class="chart-card">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <h6 class="mb-0">
+              <i class="fas fa-percent me-2"></i> Daily Returns Histogram
+            </h6>
+            <small class="text-muted">Distribution</small>
+          </div>
+          <canvas id="returnsHistChart"></canvas>
+        </div>
+      </div>
+      <div class="col-lg-4">
+        <div class="chart-card">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <h6 class="mb-0">
+              <i class="fas fa-coins me-2"></i> Trade P&L Histogram
+            </h6>
+            <small class="text-muted">Per-trade distribution</small>
+          </div>
+          <canvas id="tradePLHistChart"></canvas>
+        </div>
+      </div>
+      <div class="col-lg-4">
+        <div class="chart-card">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <h6 class="mb-0">
+              <i class="fas fa-chart-bar me-2"></i> Attribution by Symbol
+            </h6>
+            <small class="text-muted">P&L contribution</small>
+          </div>
+          <canvas id="contribBarChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Attribution Table -->
+    <div class="card mb-4">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h6 class="mb-0"><i class="fas fa-table me-2"></i>Attribution</h6>
+        <small class="text-muted">Symbol / Trades / P&L / P&L %</small>
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-sm table-hover mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>Symbol</th>
+                <th class="text-end">Trades</th>
+                <th class="text-end">P&L</th>
+                <th class="text-end">P&L %</th>
+              </tr>
+            </thead>
+            <tbody id="attribution-table">
+              <tr><td colspan="4" class="text-center text-muted py-3">No data</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Monthly Returns -->
+    <div class="card mb-4">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h6 class="mb-0"><i class="fas fa-calendar-alt me-2"></i>Monthly Returns</h6>
+        <small class="text-muted">Heatmap (%, by month)</small>
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-sm table-bordered mb-0 text-center align-middle">
+            <thead class="table-light">
+              <tr>
+                <th class="text-start">Year</th>
+                <th>Jan</th><th>Feb</th><th>Mar</th><th>Apr</th><th>May</th><th>Jun</th>
+                <th>Jul</th><th>Aug</th><th>Sep</th><th>Oct</th><th>Nov</th><th>Dec</th>
+                <th>Total</th>
+              </tr>
+            </thead>
+            <tbody id="monthly-returns-table">
+              <tr><td colspan="14" class="text-center text-muted py-3">No data</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Top Drawdowns -->
+    <div class="card mb-4">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h6 class="mb-0"><i class="fas fa-arrow-down-wide-short me-2"></i>Top Drawdowns</h6>
+        <small class="text-muted">Peak → Trough → Recovery</small>
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-sm table-hover mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>From</th>
+                <th>To</th>
+                <th class="text-end">Depth</th>
+                <th class="text-end">Length (days)</th>
+                <th class="text-end">Recovery (days)</th>
+              </tr>
+            </thead>
+            <tbody id="drawdowns-table">
+              <tr><td colspan="5" class="text-center text-muted py-3">No data</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Trades Table -->
+    <div class="card mb-5">
+      <div class="card-header d-flex flex-wrap justify-content-between align-items-center">
+        <div>
+          <h6 class="mb-0"><i class="fas fa-list me-2"></i>Trades</h6>
+          <small class="text-muted">Completed trades in range</small>
+        </div>
+        <div class="d-flex gap-2">
+          <input type="text" class="form-control form-control-sm" id="trades-text-filter" placeholder="Filter symbol..." />
+          <select class="form-select form-select-sm" id="trades-side-filter">
+            <option value="">All</option>
+            <option value="BUY">BUY</option>
+            <option value="SELL">SELL</option>
+          </select>
+        </div>
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-sm table-striped table-hover mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>Time</th>
+                <th>Symbol</th>
+                <th>Side</th>
+                <th class="text-end">Qty</th>
+                <th class="text-end">Entry</th>
+                <th class="text-end">Exit</th>
+                <th class="text-end">Fees</th>
+                <th class="text-end">P&L</th>
+                <th class="text-end">P&L %</th>
+                <th class="text-end">Hold (h)</th>
+              </tr>
+            </thead>
+            <tbody id="performance-trades-body">
+              <tr><td colspan="10" class="text-center text-muted py-3">No trades</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Footer -->
+  <footer class="bg-dark text-light py-4 mt-auto">
+    <div class="container-fluid">
+      <div class="d-flex justify-content-between align-items-center">
+        <div class="small">
+          <strong>ARM Digital Enterprises</strong> — Version: {{ version|default('dev') }}
+        </div>
+        <div class="small text-white-50">
+          © 2025 — For informational purposes only. Not financial advice.
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+  <!-- Page Script -->
+  <script>
+    // Utilities
+    const fmtCurrency = (n, currency="USD") =>
+      new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(Number(n||0));
+
+    const fmtPct = (x, digits=2) => `${(Number(x||0) * 100).toFixed(digits)}%`;
+
+    const by = (sel) => document.getElementById(sel);
+
+    // Charts
+    let equityChart, ddChart, histRetChart, histTradeChart, contribChart;
+
+    function destroyChart(ch) { if (ch) { ch.destroy(); } }
+
+    function lineChart(ctx, labels, datasets) {
+      return new Chart(ctx, {
+        type: 'line',
+        data: { labels, datasets },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          plugins: { legend: { display: true } },
+          scales: {
+            x: { ticks: { maxTicksLimit: 8 } },
+            y: { beginAtZero: false }
+          }
+        }
+      });
+    }
+
+    function areaChart(ctx, labels, data) {
+      return new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [{
+            label: 'Drawdown',
+            data,
+            fill: true,
+            borderWidth: 1,
+            pointRadius: 0,
+            tension: 0.2
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            y: {
+              ticks: {
+                callback: (v)=> fmtPct(v/100, 0) // if values are like -12 for -12%, adjust below in loader
+              }
+            }
+          }
+        }
+      });
+    }
+
+    function barChart(ctx, labels, data, label) {
+      return new Chart(ctx, {
+        type: 'bar',
+        data: { labels, datasets: [{ label, data }] },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: { y: { beginAtZero: true } }
+        }
+      });
+    }
+
+    // Date helpers
+    function setRange(range) {
+      const end = new Date();
+      let start = new Date();
+
+      switch (range) {
+        case '1M': start.setMonth(end.getMonth() - 1); break;
+        case '3M': start.setMonth(end.getMonth() - 3); break;
+        case '6M': start.setMonth(end.getMonth() - 6); break;
+        case 'YTD': start = new Date(end.getFullYear(), 0, 1); break;
+        case '1Y': start.setFullYear(end.getFullYear() - 1); break;
+        case 'MAX': start = new Date(2015, 0, 1); break;
+        default: start.setMonth(end.getMonth() - 3);
+      }
+
+      by('perf-date-start').value = start.toISOString().slice(0,10);
+      by('perf-date-end').value = end.toISOString().slice(0,10);
+    }
+
+    // Fetch & Render
+    async function loadPerformance() {
+      try {
+        const start = by('perf-date-start').value;
+        const end = by('perf-date-end').value;
+        const symbol = by('perf-symbol-filter').value || 'ALL';
+        const strategy = by('perf-strategy-filter').value || 'ALL';
+
+        const q = new URLSearchParams({ start, end, symbol, strategy });
+        const res = await fetch(`/api/performance?${q.toString()}`, { cache: 'no-cache' });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+        const data = await res.json();
+
+        // KPIs
+        const s = data.summary || {};
+        by('perf-total-invested').textContent = fmtCurrency(s.total_invested || 0);
+        by('perf-current-value').textContent = fmtCurrency(s.current_value || 0);
+        by('perf-total-pnl').textContent = fmtCurrency(s.total_pnl || 0);
+        by('perf-overall-return').textContent =
+          typeof s.total_return_pct === 'number' ? fmtPct(s.total_return_pct) : '0.00%';
+        by('perf-sharpe').textContent = (s.sharpe ?? 0).toFixed(2);
+        by('perf-sortino').textContent = (s.sortino ?? 0).toFixed(2);
+        by('perf-vol').textContent =
+          typeof s.vol_annualized === 'number' ? fmtPct(s.vol_annualized) : '0.00%';
+        by('perf-maxdd').textContent =
+          typeof s.max

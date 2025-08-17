@@ -36,11 +36,11 @@
                     <i class="fas fa-home me-1"></i>
                     Dashboard
                 </button>
-                <!-- Portfolio shows the main dashboard summary (no separate portfolio-page section exists) -->
-                <button class="btn btn-outline-light btn-sm me-2" onclick="showMainDashboard()">
+                <!-- Portfolio - navigate to dedicated portfolio page -->
+                <a class="btn btn-outline-light btn-sm me-2" href="{{ url_for('portfolio') }}">
                     <i class="fas fa-wallet me-1"></i>
                     Portfolio
-                </button>
+                </a>
                 <button class="btn btn-outline-light btn-sm me-2" onclick="showPerformanceDashboard()">
                     <i class="fas fa-chart-bar me-1"></i>
                     Performance
@@ -344,137 +344,431 @@
         </div>
         <!-- === /Quick Overview === -->
 
-        <!-- Enhanced Portfolio Overview Panel with KPIs -->
+        <!-- === PORTFOLIO PAGE === -->
         <div class="row mb-4">
             <div class="col-12">
-                <div class="card bg-primary bg-gradient text-white shadow-lg">
+                <div class="card">
                     <div class="card-header">
-                        <h4 class="mb-0"><i class="fas fa-chart-line me-2"></i>Portfolio Summary</h4>
+                        <h4 class="mb-0">
+                            <i class="fas fa-briefcase me-2"></i>Portfolio
+                            <small class="text-muted ms-3">Complete view of your crypto investments</small>
+                        </h4>
                     </div>
                     <div class="card-body">
-                        <!-- Top Summary KPIs Row -->
-                        <div class="row text-center mb-4">
-                            <div class="col-md-2">
-                                <div class="summary-metric">
-                                    <h3 id="summary-total-value" class="mb-1">$0.00</h3>
-                                    <small class="text-light opacity-75">Total Portfolio Value</small>
+                        
+                        <!-- === KPI HEADER CARDS === -->
+                        <div class="row mb-4 g-3">
+                            <!-- Total Equity -->
+                            <div class="col-lg-3 col-md-6">
+                                <div class="card bg-primary text-white h-100">
+                                    <div class="card-body">
+                                        <div class="d-flex align-items-center">
+                                            <div class="flex-grow-1">
+                                                <div class="small opacity-75">Total Equity</div>
+                                                <h4 id="portfolio-total-equity" class="mb-1">$0.00</h4>
+                                                <div id="portfolio-24h-change" class="small">
+                                                    <span class="badge bg-light text-dark">$0.00 (0.00%)</span>
+                                                </div>
+                                            </div>
+                                            <i class="fas fa-wallet fa-2x opacity-50"></i>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
-                            <div class="col-md-2">
-                                <div class="summary-metric">
-                                    <h3 id="summary-24h-change" class="mb-1">
-                                        <span class="badge bg-secondary">$0.00</span>
-                                    </h3>
-                                    <small class="text-light opacity-75">24h Change</small>
+                            
+                            <!-- Cash Balance -->
+                            <div class="col-lg-3 col-md-6">
+                                <div class="card bg-success text-white h-100">
+                                    <div class="card-body">
+                                        <div class="d-flex align-items-center">
+                                            <div class="flex-grow-1">
+                                                <div class="small opacity-75">Cash Balance</div>
+                                                <h4 id="portfolio-cash-balance" class="mb-1">$0.00</h4>
+                                                <div class="small opacity-75">Available for trading</div>
+                                            </div>
+                                            <i class="fas fa-dollar-sign fa-2x opacity-50"></i>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
-                            <div class="col-md-1">
-                                <div class="summary-metric">
-                                    <h3 id="summary-total-assets" class="mb-1">0</h3>
-                                    <small class="text-light opacity-75">Assets</small>
+                            
+                            <!-- Unrealized P&L -->
+                            <div class="col-lg-3 col-md-6">
+                                <div class="card bg-info text-white h-100">
+                                    <div class="card-body">
+                                        <div class="d-flex align-items-center">
+                                            <div class="flex-grow-1">
+                                                <div class="small opacity-75">Unrealized P&L</div>
+                                                <h4 id="portfolio-unrealized-pnl" class="mb-1">$0.00</h4>
+                                                <div id="portfolio-unrealized-pnl-percent" class="small">0.00%</div>
+                                            </div>
+                                            <i class="fas fa-chart-line fa-2x opacity-50"></i>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
-                            <div class="col-md-2">
-                                <div class="summary-metric">
-                                    <h3 class="mb-1 text-success">
-                                        <i class="fas fa-arrow-up me-1"></i>
-                                        <span id="summary-best-performer">N/A</span>
-                                        <small id="summary-best-performance" class="ms-2">+0.00%</small>
-                                    </h3>
-                                    <small class="text-light opacity-75">Best Performer</small>
-                                </div>
-                            </div>
-                            <div class="col-md-2">
-                                <div class="summary-metric">
-                                    <h3 id="summary-worst-performer" class="mb-1 text-danger">
-                                        <i class="fas fa-arrow-down me-1"></i><span>N/A</span>
-                                    </h3>
-                                    <small class="text-light opacity-75">Worst Performer</small>
-                                </div>
-                            </div>
-                            <div class="col-md-2">
-                                <div class="summary-metric">
-                                    <h3 id="summary-cash-balance" class="mb-1">$0</h3>
-                                    <small class="text-light opacity-75">Cash Balance</small>
-                                </div>
-                            </div>
-                            <div class="col-md-1">
-                                <div class="summary-metric">
-                                    <h3 id="summary-win-rate" class="mb-1">0%</h3>
-                                    <small class="text-light opacity-75">Win Rate</small>
+                            
+                            <!-- Performance Metrics -->
+                            <div class="col-lg-3 col-md-6">
+                                <div class="card bg-warning text-white h-100">
+                                    <div class="card-body">
+                                        <div class="d-flex align-items-center">
+                                            <div class="flex-grow-1">
+                                                <div class="small opacity-75">Win Rate (30d)</div>
+                                                <h4 id="portfolio-win-rate" class="mb-1">0%</h4>
+                                                <div class="small">
+                                                    <span id="portfolio-winning-positions">0</span> of 
+                                                    <span id="portfolio-total-positions">0</span> profitable
+                                                </div>
+                                            </div>
+                                            <i class="fas fa-trophy fa-2x opacity-50"></i>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                         
-                        <!-- Performance Metrics Row -->
-                        <div class="row align-items-center">
-                            <div class="col-md-6">
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <small class="text-light opacity-75">Active Holdings:</small>
-                                        <h6 id="active-positions" class="text-success mb-0">0 positions</h6>
+                        <!-- === ALLOCATIONS & EXPOSURE ROW === -->
+                        <div class="row mb-4">
+                            <!-- Allocation Donut -->
+                            <div class="col-lg-4 col-md-6">
+                                <div class="card h-100">
+                                    <div class="card-header d-flex justify-content-between align-items-center">
+                                        <h6 class="mb-0">Portfolio Allocation</h6>
+                                        <select id="allocation-view" class="form-select form-select-sm" style="width: auto;">
+                                            <option value="asset">By Asset</option>
+                                            <option value="category">By Category</option>
+                                        </select>
                                     </div>
-                                    <div class="col-md-6">
-                                        <small class="text-light opacity-75">Sold Out:</small>
-                                        <h6 id="zero-positions" class="text-warning mb-0">0 positions</h6>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <small class="text-light opacity-75">Profitable:</small>
-                                        <h6 id="profitable-positions" class="text-success mb-0">0 positions</h6>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <small class="text-light opacity-75">Today's P&L:</small>
-                                        <h6 id="daily-pnl" class="text-info mb-0">$0.00</h6>
+                                    <div class="card-body text-center">
+                                        <canvas id="portfolio-allocation-chart" height="200"></canvas>
+                                        <div id="portfolio-allocation-legend" class="mt-3 small"></div>
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-md-4 text-end">
-                                <div class="d-flex justify-content-end gap-2">
-                                    <button class="btn btn-light btn-sm" onclick="refreshCryptoPortfolio()" title="Refresh Summary">
-                                        <i class="fas fa-sync-alt me-1"></i>Refresh
-                                    </button>
-                                    <button class="btn btn-outline-light btn-sm" onclick="
-                                        (function(){
-                                            const s=document.getElementById('portfolio-charts-section');
-                                            s.style.display=(s.style.display==='none' || s.style.display==='') ? 'block':'none';
-                                        })()
-                                    " title="Toggle Charts">
-                                        <i class="fas fa-chart-pie me-1"></i>Charts
-                                    </button>
-                                    <button class="btn btn-success btn-sm" onclick="exportATOTax()" title="Export for Tax">
-                                        <i class="fas fa-file-export me-1"></i>ATO Export
-                                    </button>
+                            
+                            <!-- Exposure Bars -->
+                            <div class="col-lg-4 col-md-6">
+                                <div class="card h-100">
+                                    <div class="card-header">
+                                        <h6 class="mb-0">Exposure Analysis</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="mb-3">
+                                            <div class="d-flex justify-content-between mb-1">
+                                                <small>Long Exposure</small>
+                                                <small><span id="long-exposure-percent">0</span>% of equity</small>
+                                            </div>
+                                            <div class="progress" style="height: 8px;">
+                                                <div id="long-exposure-bar" class="progress-bar bg-success" style="width: 0%"></div>
+                                            </div>
+                                        </div>
+                                        <div class="mb-3">
+                                            <div class="d-flex justify-content-between mb-1">
+                                                <small>Largest Position</small>
+                                                <small><span id="max-concentration-symbol">—</span> (<span id="max-concentration-percent">0</span>%)</small>
+                                            </div>
+                                            <div class="progress" style="height: 8px;">
+                                                <div id="concentration-bar" class="progress-bar bg-warning" style="width: 0%"></div>
+                                            </div>
+                                        </div>
+                                        <div class="mb-3">
+                                            <div class="d-flex justify-content-between mb-1">
+                                                <small>Stablecoin Allocation</small>
+                                                <small><span id="stable-allocation-percent">0</span>%</small>
+                                            </div>
+                                            <div class="progress" style="height: 8px;">
+                                                <div id="stable-allocation-bar" class="progress-bar bg-primary" style="width: 0%"></div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
+                            
+                            <!-- Best/Worst Performers -->
+                            <div class="col-lg-4">
+                                <div class="card h-100">
+                                    <div class="card-header">
+                                        <h6 class="mb-0">Top Performers</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="mb-3">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <div>
+                                                    <i class="fas fa-arrow-up text-success me-1"></i>
+                                                    <strong>Best:</strong>
+                                                    <span id="portfolio-best-symbol" class="text-primary">—</span>
+                                                </div>
+                                                <span id="portfolio-best-performance" class="badge bg-success">+0.00%</span>
+                                            </div>
+                                        </div>
+                                        <div class="mb-3">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <div>
+                                                    <i class="fas fa-arrow-down text-danger me-1"></i>
+                                                    <strong>Worst:</strong>
+                                                    <span id="portfolio-worst-symbol" class="text-primary">—</span>
+                                                </div>
+                                                <span id="portfolio-worst-performance" class="badge bg-danger">-0.00%</span>
+                                            </div>
+                                        </div>
+                                        <!-- Daily Loss Cap -->
+                                        <div class="mt-3 pt-3 border-top">
+                                            <div class="small text-muted d-flex justify-content-between mb-1">
+                                                <span>Daily Loss Cap</span>
+                                                <span id="portfolio-loss-cap-text">$0 / $50</span>
+                                            </div>
+                                            <div class="progress" style="height: 8px;">
+                                                <div id="portfolio-loss-cap-bar" class="progress-bar bg-danger" style="width: 0%"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         
-                        <!-- Portfolio Charts Section (Hidden by default) -->
-                        <div id="portfolio-charts-section" class="row mt-4" style="display: none;">
+                        <!-- === POSITIONS TABLE & TABS === -->
+                        <div class="row">
                             <div class="col-12">
-                                <hr class="text-light">
-                                <h5 class="text-light mb-3"><i class="fas fa-chart-bar me-2"></i>Portfolio Analytics</h5>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="chart-container bg-light rounded p-3" style="height: 250px; background-color: #f8f9fa !important;">
-                                    <canvas id="portfolioChart"></canvas>
+                                <!-- Portfolio Action Bar -->
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <div>
+                                        <h5 class="mb-0">Holdings & Positions</h5>
+                                        <small class="text-muted">Detailed view of your current investments</small>
+                                    </div>
+                                    <div class="d-flex gap-2">
+                                        <button class="btn btn-outline-primary btn-sm" onclick="refreshCryptoPortfolio()">
+                                            <i class="fas fa-sync-alt me-1"></i>Refresh
+                                        </button>
+                                        <button class="btn btn-success btn-sm" onclick="exportATOTax()">
+                                            <i class="fas fa-file-export me-1"></i>ATO Export
+                                        </button>
+                                    </div>
                                 </div>
-                                <h6 class="text-center text-light mt-2">Portfolio Value Trend</h6>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="chart-container bg-light rounded p-3" style="height: 250px; background-color: #f8f9fa !important;">
-                                    <canvas id="pnlChart"></canvas>
+                                
+                                <!-- Positions Filter Bar -->
+                                <div class="row mb-3">
+                                    <div class="col-md-4">
+                                        <div class="input-group">
+                                            <span class="input-group-text"><i class="fas fa-search"></i></span>
+                                            <input type="text" class="form-control" id="portfolio-search" placeholder="Search symbols...">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <select class="form-select" id="portfolio-pnl-filter">
+                                            <option value="">All P&L</option>
+                                            <option value="positive">Profitable</option>
+                                            <option value="negative">Losing</option>
+                                            <option value="breakeven">Breakeven</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <select class="form-select" id="portfolio-value-filter">
+                                            <option value="">All Values</option>
+                                            <option value="large">&gt; $50</option>
+                                            <option value="medium">$10 - $50</option>
+                                            <option value="small">&lt; $10</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <select class="form-select" id="portfolio-status-filter">
+                                            <option value="">All Status</option>
+                                            <option value="active">Active</option>
+                                            <option value="sold">Sold Out</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <button class="btn btn-outline-secondary btn-sm w-100" onclick="clearPortfolioFilters()">
+                                            <i class="fas fa-times me-1"></i>Clear
+                                        </button>
+                                    </div>
                                 </div>
-                                <h6 class="text-center text-light mt-2">P&L Distribution</h6>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="chart-container bg-light rounded p-3" style="height: 250px; background-color: #f8f9fa !important;">
-                                    <canvas id="performersChart"></canvas>
+                                
+                                <!-- Tab Navigation -->
+                                <ul class="nav nav-tabs" id="portfolio-tabs" role="tablist">
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link active" id="positions-tab" data-bs-toggle="tab" data-bs-target="#positions-panel" type="button">
+                                            <i class="fas fa-coins me-1"></i>Positions <span class="badge bg-primary ms-2" id="positions-count">103</span>
+                                        </button>
+                                    </li>
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link" id="trades-tab" data-bs-toggle="tab" data-bs-target="#trades-panel" type="button">
+                                            <i class="fas fa-exchange-alt me-1"></i>Recent Trades
+                                        </button>
+                                    </li>
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link" id="realized-tab" data-bs-toggle="tab" data-bs-target="#realized-panel" type="button">
+                                            <i class="fas fa-receipt me-1"></i>Realized P&L
+                                        </button>
+                                    </li>
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link" id="performance-tab" data-bs-toggle="tab" data-bs-target="#performance-panel" type="button">
+                                            <i class="fas fa-chart-line me-1"></i>Performance
+                                        </button>
+                                    </li>
+                                </ul>
+                                
+                                <!-- Tab Content -->
+                                <div class="tab-content" id="portfolio-tab-content">
+                                    
+                                    <!-- Positions Tab -->
+                                    <div class="tab-pane fade show active" id="positions-panel" role="tabpanel">
+                                        <div class="table-responsive">
+                                            <table class="table table-hover" id="portfolio-positions-table">
+                                                <thead class="table-light sticky-top">
+                                                    <tr>
+                                                        <th>Symbol</th>
+                                                        <th>Name</th>
+                                                        <th>Quantity</th>
+                                                        <th>Avg Cost</th>
+                                                        <th>Current Price</th>
+                                                        <th>Current Value</th>
+                                                        <th>Unrealized P&L</th>
+                                                        <th>P&L %</th>
+                                                        <th>24h P&L</th>
+                                                        <th>Portfolio %</th>
+                                                        <th>Target/Stop</th>
+                                                        <th>Signal</th>
+                                                        <th>Actions</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="portfolio-positions-body">
+                                                    <tr>
+                                                        <td colspan="13" class="text-center py-4">
+                                                            <div class="spinner-border text-primary" role="status">
+                                                                <span class="visually-hidden">Loading...</span>
+                                                            </div>
+                                                            <div class="mt-2">Loading positions...</div>
+                                                        </td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                        
+                                        <!-- Positions Summary Footer -->
+                                        <div class="row mt-3 p-3 bg-light rounded">
+                                            <div class="col-md-3">
+                                                <strong>Total Positions:</strong> <span id="positions-summary-total">0</span>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <strong>Total Value:</strong> <span id="positions-summary-value" class="text-primary">$0.00</span>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <strong>Total P&L:</strong> <span id="positions-summary-pnl" class="text-muted">$0.00</span>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <strong>Avg Return:</strong> <span id="positions-summary-avg-return" class="text-muted">0.00%</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Recent Trades Tab -->
+                                    <div class="tab-pane fade" id="trades-panel" role="tabpanel">
+                                        <div class="table-responsive">
+                                            <table class="table table-sm">
+                                                <thead class="table-light">
+                                                    <tr>
+                                                        <th>Trade #</th>
+                                                        <th>Time</th>
+                                                        <th>Symbol</th>
+                                                        <th>Side</th>
+                                                        <th>Size</th>
+                                                        <th>Price</th>
+                                                        <th>Value</th>
+                                                        <th>P&L</th>
+                                                        <th>Status</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="portfolio-trades-body">
+                                                    <tr>
+                                                        <td colspan="9" class="text-center text-muted py-4">No recent trades</td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Realized P&L Tab -->
+                                    <div class="tab-pane fade" id="realized-panel" role="tabpanel">
+                                        <div class="row mb-3">
+                                            <div class="col-md-4">
+                                                <div class="card text-center">
+                                                    <div class="card-body">
+                                                        <h6 class="card-title">YTD Realized P&L</h6>
+                                                        <h4 class="text-success">$0.00</h4>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <div class="card text-center">
+                                                    <div class="card-body">
+                                                        <h6 class="card-title">MTD Realized P&L</h6>
+                                                        <h4 class="text-info">$0.00</h4>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <div class="card text-center">
+                                                    <div class="card-body">
+                                                        <h6 class="card-title">Total Fees Paid</h6>
+                                                        <h4 class="text-warning">$0.00</h4>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="text-center py-4">
+                                            <i class="fas fa-chart-bar fa-3x text-muted mb-3"></i>
+                                            <p class="text-muted">Tax lots and realized P&L tracking coming soon</p>
+                                            <button class="btn btn-primary" onclick="exportATOTax()">Export ATO Report</button>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Performance Tab -->
+                                    <div class="tab-pane fade" id="performance-panel" role="tabpanel">
+                                        <div class="row">
+                                            <div class="col-md-8">
+                                                <div class="card">
+                                                    <div class="card-header">
+                                                        <h6 class="mb-0">Portfolio Equity Curve</h6>
+                                                    </div>
+                                                    <div class="card-body">
+                                                        <canvas id="portfolio-equity-chart" height="300"></canvas>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <div class="card">
+                                                    <div class="card-header">
+                                                        <h6 class="mb-0">Performance Metrics</h6>
+                                                    </div>
+                                                    <div class="card-body">
+                                                        <div class="mb-3">
+                                                            <small class="text-muted">7-day Return</small>
+                                                            <div class="h5">+0.00%</div>
+                                                        </div>
+                                                        <div class="mb-3">
+                                                            <small class="text-muted">30-day Return</small>
+                                                            <div class="h5">+0.00%</div>
+                                                        </div>
+                                                        <div class="mb-3">
+                                                            <small class="text-muted">Max Drawdown</small>
+                                                            <div class="h5 text-danger">-0.00%</div>
+                                                        </div>
+                                                        <div class="mb-3">
+                                                            <small class="text-muted">Sharpe Ratio</small>
+                                                            <div class="h5">0.00</div>
+                                                        </div>
+                                                        <div class="mb-3">
+                                                            <small class="text-muted">Volatility (30d)</small>
+                                                            <div class="h5">0.00%</div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
                                 </div>
-                                <h6 class="text-center text-light mt-2">Top/Bottom Performers</h6>
                             </div>
                         </div>
                     </div>

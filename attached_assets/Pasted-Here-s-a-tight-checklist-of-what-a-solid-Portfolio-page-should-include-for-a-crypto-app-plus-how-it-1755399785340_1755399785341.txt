@@ -1,0 +1,135 @@
+Here’s a tight checklist of what a solid Portfolio page should include for a crypto app, plus how it maps to the data you already expose (/api/crypto-portfolio, /api/status) and how to lay it out.
+
+Must-haves (top section – KPIs)
+
+Total Equity (converted to selected currency)
+
+Cash Balance (free cash, stables, margin available)
+
+Invested Value (sum of positions)
+
+Unrealized P&L ($ and %)
+
+Realized P&L (YTD/All-time)
+
+24h Change ($ and %)
+
+Win Rate (positions or trades, 30d)
+
+Best/Worst Performer (symbol + %)
+
+Max Drawdown (portfolio) (optional but nice)
+
+Allocations & Exposure
+
+Allocation donut: by asset (top 10 + “Others”), and toggle to:
+
+By exchange/wallet (if multi-venue)
+
+By category (L1/L2, DeFi, stablecoins, memecoins)
+
+Exposure bars:
+
+Long exposure % of equity
+
+Stablecoin allocation %
+
+Single-asset concentration (largest weight)
+
+Optional leverage/margin used
+
+Positions table (core)
+
+Columns that matter:
+
+Symbol / Name / Rank
+
+Quantity
+
+Avg Cost (incl. fees if you track)
+
+Current Price
+
+Current Value
+
+Unrealized P&L ($ / %) (color coded)
+
+24h P&L (optional)
+
+Portfolio %
+
+Targets (target sell / stop if strategy uses them)
+
+Status / Signal (BUY/SELL/HOLD)
+
+Last Updated
+
+Actions: Buy / Sell / View
+
+Nice touches:
+
+Sticky header, column sorting, text filter, P&L filter (pos/neg), value bands, pagination
+
+Inline tooltips for avg cost vs fee-adjusted cost
+
+Lots & Realized P&L (optional tab)
+
+Tax Lots table (FIFO/Specific ID): qty remaining, lot cost, current value, unrealized P&L
+
+Realized P&L (YTD / MTD) with fees
+
+Export buttons (CSV/ATO)
+
+Orders & Trades (side panel or tab)
+
+Open Orders: side, size, limit, status, time
+
+Recent Fills (last 10): time, symbol, side, size, price, fee, realized P&L if closing
+
+Performance mini-section
+
+Mini equity line (24h/7d/30d) with hover
+
+Benchmark toggle (vs BTC, ETH, or Total Crypto Mkt)
+
+Rolling returns (7d/30d) and volatility (optional)
+
+Risk & Limits
+
+Daily Loss Cap progress bar (you already have this logic)
+
+Largest position % (concentration risk)
+
+VaR/Expected Shortfall (optional later)
+
+Compliance flags (e.g., halted assets, stale prices)
+
+Cash Flows (optional tab)
+
+Deposits, withdrawals, transfers
+
+Net flows vs P&L
+
+Watchlist & Notes (lightweight)
+
+Quick add to watchlist
+
+Per-position note (last updated)
+
+Suggested layout (wireframe)
+
+Header KPIs (grid of cards)
+
+Allocations/Exposure row (donut + bars)
+
+Positions table (full width, filters)
+
+Tabs under the table:
+
+Orders & Recent Trades
+
+Lots & Realized P&L
+
+Cash Flows
+
+Notes/Watchlist
