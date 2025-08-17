@@ -68,25 +68,23 @@ def cache_get(sym: str, tf: str):
     return item["df"]
 
 def create_initial_purchase_trades(mode, trade_type):
-    """Create trade records for initial $10 portfolio purchases."""
+    """Create trade records for initial $10 portfolio purchases from OKX simulation."""
     try:
-        from src.data.price_api import CryptoPriceAPI
-        price_api = CryptoPriceAPI()
-        
-        # Import master portfolio assets list
-        from src.data.portfolio_assets import get_portfolio_assets
-        
-        # Use the hardcoded master list of 103 cryptocurrency assets
-        symbols = get_portfolio_assets()
-        live_prices = price_api.get_multiple_prices(symbols)
+        # Use OKX simulation directly instead of CoinGecko
+        initialize_system()
+        portfolio_service = get_portfolio_service()
+        okx_portfolio = portfolio_service.get_portfolio_data()
         
         initial_trades = []
         trade_counter = 1
-        for symbol, price_info in live_prices.items():
-            if isinstance(price_info, dict) and 'price' in price_info:
-                current_price = price_info['price']
-                quantity = 10.0 / current_price  # $10 worth
-                
+        
+        # Create trades from OKX portfolio holdings
+        for holding in okx_portfolio.get('holdings', []):
+            symbol = holding['symbol']
+            current_price = holding['current_price']
+            quantity = holding['quantity']
+            
+            if current_price > 0:  # Only create trades for valid prices
                 # Create trade record with unique trade number
                 trade_record = {
                     "trade_id": trade_counter,
@@ -94,7 +92,7 @@ def create_initial_purchase_trades(mode, trade_type):
                     "side": "BUY",
                     "quantity": quantity,
                     "price": current_price,
-                    "total_value": 10.0,
+                    "total_value": 10.0,  # Each investment is $10
                     "type": "INITIAL_PURCHASE",
                     "mode": mode,
                     "timestamp": datetime.utcnow().isoformat(),
@@ -419,27 +417,43 @@ server_start_time = datetime.utcnow()
 
 @app.route("/api/live-prices")
 def api_live_prices():
-    """Get live cryptocurrency prices."""
+    """Get live cryptocurrency prices from OKX simulation."""
     if not warmup["done"]:
         return jsonify({"error": "System still initializing"}), 503
         
     try:
-        from src.data.price_api import CryptoPriceAPI
-        price_api = CryptoPriceAPI()
+        initialize_system()
+        portfolio_service = get_portfolio_service()
         
-        # Get prices for main cryptocurrencies
+        # Get prices for main cryptocurrencies from OKX simulation
         symbols = ["BTC", "ETH", "SOL", "XRP", "DOGE", "BNB", "ADA", "AVAX", "LINK", "UNI"]
-        prices = price_api.get_multiple_prices(symbols)
-        
-        # Format the response
         formatted_prices = {}
-        for symbol, price_info in prices.items():
-            if isinstance(price_info, dict) and 'price' in price_info:
+        
+        for symbol in symbols:
+            try:
+                price = portfolio_service.exchange._get_current_price(f"{symbol}/USDT")
+                if price and price > 0:
+                    formatted_prices[symbol] = {
+                        'price': price,
+                        'is_live': True,
+                        'timestamp': datetime.utcnow().isoformat(),
+                        'source': 'OKX_Simulation'
+                    }
+                else:
+                    # Fallback simulation
+                    formatted_prices[symbol] = {
+                        'price': 1.0,
+                        'is_live': False,
+                        'timestamp': datetime.utcnow().isoformat(),
+                        'source': 'OKX_Fallback'
+                    }
+            except Exception as sym_error:
+                logger.warning(f"Error getting {symbol} price: {sym_error}")
                 formatted_prices[symbol] = {
-                    'price': price_info['price'],
-                    'is_live': price_info.get('is_live', True),
-                    'timestamp': price_info.get('timestamp'),
-                    'source': price_info.get('source', 'CoinGecko')
+                    'price': 1.0,
+                    'is_live': False,
+                    'timestamp': datetime.utcnow().isoformat(),
+                    'source': 'OKX_Error_Fallback'
                 }
         
         return jsonify(formatted_prices)
@@ -560,29 +574,29 @@ def api_export_ato():
         return jsonify({"error": str(e)}), 500
 
 def create_sample_portfolio_for_export():
-    """Create sample portfolio data for ATO export when real data isn't accessible."""
-    from src.data.price_api import CryptoPriceAPI
-    
-    # Top cryptocurrencies that would be in the portfolio
-    crypto_symbols = [
-        'BTC', 'ETH', 'SOL', 'XRP', 'DOGE', 'BNB', 'ADA', 'AVAX', 'LINK', 'UNI',
-        'DOT', 'MATIC', 'ICP', 'LTC', 'BCH', 'NEAR', 'FTM', 'ALGO', 'VET', 'MANA',
-        'CRO', 'SAND', 'AXS', 'FIL', 'THETA', 'XTZ', 'AAVE', 'EOS', 'EGLD', 'KSM',
-        'GRT', 'CHZ', 'ENJ', 'BAT', 'ZIL', 'HOT', 'ONT', 'ICX', 'ZRX', 'REN',
-        'COMP', 'MKR', 'SNX', 'SUSHI', 'YFI', 'UMA', 'BAL', 'CRV', 'DASH', 'XMR'
-    ]
-    
-    cryptocurrencies = []
-    for i, symbol in enumerate(crypto_symbols[:50]):  # First 50 for ATO export
-        crypto = {
-            'symbol': symbol,
-            'name': f"{symbol} Token",
-            'initial_value': 10.0,  # $10 initial investment
-            'quantity': 10.0 / (1000 + i * 100),  # Varies by price simulation
-        }
-        cryptocurrencies.append(crypto)
-    
-    return cryptocurrencies
+    """Create sample portfolio data for ATO export using OKX simulation."""
+    try:
+        # Use OKX simulation data for accurate ATO export
+        initialize_system()
+        portfolio_service = get_portfolio_service()
+        okx_portfolio = portfolio_service.get_portfolio_data()
+        
+        cryptocurrencies = []
+        for holding in okx_portfolio.get('holdings', [])[:50]:  # First 50 for ATO export
+            crypto = {
+                'symbol': holding['symbol'],
+                'name': holding['name'],
+                'initial_value': 10.0,  # $10 initial investment
+                'quantity': holding['quantity'],
+                'current_price': holding['current_price'],
+                'current_value': holding['current_value']
+            }
+            cryptocurrencies.append(crypto)
+        
+        return cryptocurrencies
+    except Exception as e:
+        # Fallback to empty list if OKX simulation fails
+        return []
 
 # Add missing API routes that the original dashboard expects
 @app.route("/api/config")
@@ -641,10 +655,20 @@ def api_portfolio_summary():
         return jsonify({"error": "System still initializing"}), 503
     
     try:
-        from src.data.crypto_portfolio import CryptoPortfolioManager
-        portfolio = CryptoPortfolioManager(initial_value_per_crypto=10.0)
+        # Use OKX simulation instead of CryptoPortfolioManager
+        initialize_system()
+        portfolio_service = get_portfolio_service()
+        okx_portfolio = portfolio_service.get_portfolio_data()
         
-        summary = portfolio.get_portfolio_summary()
+        # Create summary from OKX portfolio data
+        summary = {
+            "total_value": okx_portfolio['total_current_value'],
+            "total_pnl": okx_portfolio['total_pnl'],
+            "total_pnl_percent": okx_portfolio['total_pnl_percent'],
+            "total_cryptos": len(okx_portfolio['holdings']),
+            "cash_balance": okx_portfolio.get('cash_balance', 0),
+            "last_update": okx_portfolio.get('last_update', datetime.utcnow().isoformat())
+        }
         return jsonify(summary)
     except Exception as e:
         logger.error(f"Portfolio summary error: {e}")
@@ -694,29 +718,25 @@ def api_current_holdings():
         return jsonify({"error": "System still initializing"}), 503
     
     try:
-        # Get live prices for top 10 cryptos only
-        from src.data.price_api import CryptoPriceAPI
-        price_api = CryptoPriceAPI()
-        top_symbols = ["BTC", "ETH", "SOL", "XRP", "DOGE", "ADA", "AVAX", "LINK", "UNI", "BNB"]
-        live_prices = price_api.get_multiple_prices(top_symbols)
+        # Get OKX portfolio data directly
+        initialize_system()
+        portfolio_service = get_portfolio_service()
+        okx_portfolio = portfolio_service.get_portfolio_data()
+        
+        # Return top 10 holdings by value
+        all_holdings = okx_portfolio.get('holdings', [])
+        top_holdings = sorted(all_holdings, key=lambda x: x.get('current_value', 0), reverse=True)[:10]
         
         holdings = []
-        for symbol, price_info in live_prices.items():
-            if 'price' in price_info:
-                # Calculate $10 worth of each crypto
-                initial_value = 10.0
-                current_price = price_info['price']
-                quantity = initial_value / current_price
-                current_value = current_price * quantity
-                
-                holdings.append({
-                    "symbol": symbol,
-                    "quantity": quantity,
-                    "current_price": current_price,
-                    "value": current_value,
-                    "allocation_percent": 10.0,  # 10% each for top 10
-                    "is_live": price_info.get('is_live', True)
-                })
+        for holding in top_holdings:
+            holdings.append({
+                "symbol": holding['symbol'],
+                "quantity": holding['quantity'],
+                "current_price": holding['current_price'],
+                "value": holding['current_value'],
+                "allocation_percent": (holding['current_value'] / okx_portfolio['total_current_value']) * 100 if okx_portfolio['total_current_value'] > 0 else 0,
+                "is_live": holding.get('is_live', True)
+            })
         
         # Sort by value (highest first) and limit to top 10
         holdings.sort(key=lambda x: x["value"], reverse=True)
@@ -765,11 +785,29 @@ def api_start_trading():
         logger.error(f"Start trading error: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
 
+def create_initial_portfolio_data():
+    """Create initial portfolio data using OKX simulation."""
     try:
-        from src.data.price_api import CryptoPriceAPI
+        # Get OKX simulation data for all cryptocurrencies
+        initialize_system()
+        portfolio_service = get_portfolio_service()
+        okx_portfolio = portfolio_service.get_portfolio_data()
         
-        # Define all 103 cryptocurrencies with fallback prices
-        all_cryptos = [
+        # Use OKX portfolio holdings as the source
+        all_cryptos = []
+        for holding in okx_portfolio.get('holdings', []):
+            all_cryptos.append({
+                "symbol": holding['symbol'], 
+                "name": holding['name'], 
+                "rank": holding.get('rank', 1),
+                "current_price": holding['current_price']
+            })
+        
+        return all_cryptos
+    except Exception as e:
+        logger.error(f"Error creating initial portfolio data: {e}")
+        # Return minimal fallback data
+        return [
             # Top Tier - Established market leaders
             {"symbol": "BTC", "name": "Bitcoin", "rank": 1, "fallback_price": 65000},
             {"symbol": "ETH", "name": "Ethereum", "rank": 2, "fallback_price": 3500},
@@ -961,13 +999,13 @@ def paper_trade_buy():
         if not symbol or amount <= 0:
             return jsonify({"success": False, "error": "Invalid symbol or amount"}), 400
         
-        # Get current price from live data
-        from src.data.price_api import CryptoPriceAPI
-        price_api = CryptoPriceAPI()
-        current_price = price_api.get_price(symbol)
+        # Get current price from OKX simulation
+        initialize_system()
+        portfolio_service = get_portfolio_service()
+        current_price = portfolio_service.exchange._get_current_price(f"{symbol}/USDT")
         
-        if not current_price:
-            return jsonify({"success": False, "error": f"Unable to get current price for {symbol}"}), 400
+        if not current_price or current_price <= 0:
+            return jsonify({"success": False, "error": f"Unable to get current price for {symbol} from OKX"}), 400
         
         quantity = amount / current_price
         
@@ -1004,13 +1042,13 @@ def paper_trade_sell():
         if not symbol or quantity <= 0:
             return jsonify({"success": False, "error": "Invalid symbol or quantity"}), 400
         
-        # Get current price from live data
-        from src.data.price_api import CryptoPriceAPI
-        price_api = CryptoPriceAPI()
-        current_price = price_api.get_price(symbol)
+        # Get current price from OKX simulation
+        initialize_system()
+        portfolio_service = get_portfolio_service()
+        current_price = portfolio_service.exchange._get_current_price(f"{symbol}/USDT")
         
-        if not current_price:
-            return jsonify({"success": False, "error": f"Unable to get current price for {symbol}"}), 400
+        if not current_price or current_price <= 0:
+            return jsonify({"success": False, "error": f"Unable to get current price for {symbol} from OKX"}), 400
         
         total_value = quantity * current_price
         
@@ -1078,15 +1116,15 @@ def api_reset_entire_program():
         portfolio_initialized = False
         recent_initial_trades = []  # Clear all trades
         
-        # Clear any cached price API data
+        # Clear OKX simulation cache instead of CoinGecko
         try:
-            from src.data.price_api import CryptoPriceAPI
-            price_api = CryptoPriceAPI()
-            if hasattr(price_api, 'clear_cache'):
-                price_api.clear_cache()
-                logger.info("Cleared price API cache")
+            initialize_system()
+            portfolio_service = get_portfolio_service()
+            if hasattr(portfolio_service.exchange, 'clear_cache'):
+                portfolio_service.exchange.clear_cache()
+                logger.info("Cleared OKX simulation cache")
         except Exception as e:
-            logger.warning(f"Could not clear price API cache: {e}")
+            logger.warning(f"Could not clear OKX simulation cache: {e}")
         
         logger.info("Complete system reset: portfolio, trades, caches, and state cleared")
         

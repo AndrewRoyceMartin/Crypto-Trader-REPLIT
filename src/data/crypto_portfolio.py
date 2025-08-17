@@ -10,7 +10,8 @@ from typing import Dict, List, Optional
 import logging
 import json
 import os
-from .price_api import CryptoPriceAPI
+# Legacy import deprecated - using OKX simulation instead
+# from .price_api import CryptoPriceAPI
 from ..utils.email_service import email_service
 
 class CryptoPortfolioManager:
@@ -26,17 +27,14 @@ class CryptoPortfolioManager:
         self.initial_value = initial_value_per_crypto
         self.logger = logging.getLogger(__name__)
         self.crypto_list = self._get_top_100_cryptos()
-        self.price_api = CryptoPriceAPI()
+        # Legacy price API deprecated - using OKX simulation instead
+        self.price_api = None
         self.portfolio_data = {}  # Initialize empty first
         self.price_history = {}
         
-        # Always do fresh initialization - don't load old state in constructor
-        self.portfolio_data = self._initialize_portfolio()
-        
-        # CRITICAL FIX: Force immediate price update to calculate P&L correctly
-        self.logger.info("Force-updating prices to calculate real-time P&L...")
-        update_result = self.update_prices()
-        self.logger.info(f"Price update completed: {update_result.get('live_prices', 0)} live prices")
+        # Skip initialization - this class is deprecated in favor of OKX simulation
+        self.portfolio_data = {}
+        self.logger.info("CryptoPortfolioManager deprecated - system uses OKX simulation instead")
         
         # Log first few cryptos to verify $10 initialization and P&L calculations
         if self.portfolio_data:
