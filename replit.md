@@ -19,7 +19,7 @@ A plugin-based system using `BaseStrategy` allows flexible strategy implementati
 A two-tier caching system utilizes SQLite for raw market data, managed by `DataManager` and `DataCache` to minimize API calls.
 
 **Exchange Integration:**
-An adapter pattern with `BaseExchange` provides a unified interface for various cryptocurrency exchanges (e.g., `OKXAdapter`, `KrakenAdapter`), handling authentication, rate limiting, and data normalization.
+An adapter pattern with `BaseExchange` provides a unified interface for various cryptocurrency exchanges. The `SimulatedOKX` exchange serves as the single source of truth, supporting all 103 cryptocurrencies with comprehensive trading pairs, realistic price simulation, and complete trade history management. This consolidation ensures data consistency and eliminates external API dependencies.
 
 **Risk Management:**
 The `RiskManager` enforces multiple safety layers, including portfolio-level limits, position sizing, daily loss limits, and emergency halts, performing checks before every trade. Position sizing, entry/exit prices (with slippage), stop loss, and take profit levels are calculated using integrated bot pricing formulas to ensure a consistent 1% equity risk per trade.
@@ -28,7 +28,7 @@ The `RiskManager` enforces multiple safety layers, including portfolio-level lim
 A Flask-based web interface provides real-time monitoring and portfolio visualization with Chart.js. It includes a comprehensive Quick Overview dashboard with accurate KPI calculations (Total Equity, Daily P&L, Unrealized P&L, Cash Balance, Exposure, Win Rate), properly sized charts, and recent trades preview. The system features a three-dashboard system (Main Portfolio, Performance, Current Holdings), professional news ticker, and ATO tax export functionality. Tables display complete data for 103 cryptocurrency assets with dynamic price displays and proper column alignment. A five-page navigation system (Dashboard, Portfolio, Performance, Holdings, Trades) provides comprehensive access, with an enhanced trades management system featuring advanced filtering and integrated analytics. Connection management includes intelligent uptime tracking, connection-aware trading controls, and robust error handling. Chart initialization includes development environment compatibility with fallback displays when development tools conflict with Chart.js rendering.
 
 **Master Portfolio Assets:**
-A hardcoded list of 103 cryptocurrencies is stored in `src/data/portfolio_assets.py`, categorized across 8 distinct areas, with each asset representing an initial $10 investment.
+A comprehensive list of 103 cryptocurrencies is stored in `src/data/portfolio_assets.py`, categorized across 8 distinct areas, with each asset representing an initial $10 investment. The system now supports all 103 cryptocurrencies through the expanded OKX simulation with complete price data and trading pair support.
 
 **Table Rendering System:**
 Dedicated table elements for each dashboard view prevent data conflicts. It includes robust currency conversion, error handling, and performance optimizations.

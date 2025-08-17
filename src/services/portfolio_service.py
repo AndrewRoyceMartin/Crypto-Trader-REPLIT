@@ -157,10 +157,8 @@ class PortfolioService:
                         'feeCcy': 'USDT'
                     }
                     
-                    # Add to exchange's trade history
-                    if not hasattr(self.exchange, 'trade_history'):
-                        self.exchange.trade_history = []
-                    self.exchange.trade_history.append(trade_data)
+                    # Add to exchange's trades list
+                    self.exchange.trades.append(trade_data)
                     
                     trades_generated += 1
             
@@ -412,8 +410,8 @@ class PortfolioService:
         
         try:
             # Get trades from exchange
-            if hasattr(self.exchange, 'trade_history') and self.exchange.trade_history:
-                trades = self.exchange.trade_history
+            if hasattr(self.exchange, 'trades') and self.exchange.trades:
+                trades = self.exchange.trades
                 
                 # Filter by symbol if provided
                 if symbol:
@@ -426,16 +424,20 @@ class PortfolioService:
                 # Convert to app format
                 formatted_trades = []
                 for trade in trades:
+                    # Handle both filled and order data
+                    quantity = float(trade.get('fillSz', trade.get('sz', '0')))
+                    price = float(trade.get('fillPx', trade.get('px', '0')))
+                    
                     formatted_trade = {
                         'id': trade['ordId'],
                         'symbol': trade['instId'].replace('-USDT-SWAP', ''),
                         'side': trade['side'].upper(),
-                        'quantity': float(trade['fillSz']),
-                        'price': float(trade['fillPx']),
+                        'quantity': quantity,
+                        'price': price,
                         'timestamp': datetime.fromtimestamp(int(trade['ts']) / 1000).isoformat(),
                         'fee': float(trade.get('fee', 0)),
                         'fee_currency': trade.get('feeCcy', 'USDT'),
-                        'total_value': float(trade['fillSz']) * float(trade['fillPx']),
+                        'total_value': quantity * price,
                         'exchange_data': trade
                     }
                     formatted_trades.append(formatted_trade)

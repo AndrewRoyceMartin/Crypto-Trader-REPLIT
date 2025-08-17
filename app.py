@@ -1515,6 +1515,9 @@ def api_okx_status():
             'connection_type': 'Simulated',  # Clear distinction: Simulated vs Live
             'exchange_name': 'OKX Exchange',
             'trading_mode': 'Paper Trading',
+            'trading_pairs': len(exchange.trading_pairs) if connected and hasattr(exchange, 'trading_pairs') else 0,
+            'total_prices': len(exchange.simulated_base_prices) if connected and hasattr(exchange, 'simulated_base_prices') else 0,
+            'balance': exchange.get_balance() if connected else {},
             'initialized': True,
             'last_sync': datetime.now(LOCAL_TZ).isoformat() if connected else None,
             'market_status': 'open' if connected else 'closed'

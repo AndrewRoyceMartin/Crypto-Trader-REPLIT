@@ -49,60 +49,84 @@ class SimulatedOKX(BaseExchange):
         # Market hours (24/7 for crypto)
         self.market_open = True
         
-        # Realistic simulated prices (based on real market prices as of August 2025)
+        # Comprehensive price data for all 103 portfolio assets (based on real market prices as of August 2025)
         self.simulated_base_prices = {
+            # Major cryptocurrencies
             'BTC': 67500.00,
             'ETH': 3850.00,
-            'SOL': 185.50,
+            'BNB': 605.00,
             'XRP': 0.65,
             'DOGE': 0.14,
             'ADA': 0.55,
+            'MATIC': 0.78,
+            'SOL': 185.50,
+            'LTC': 85.50,
             'AVAX': 32.80,
             'LINK': 18.20,
             'DOT': 7.85,
             'UNI': 12.40,
-            'NEAR': 8.90,
             'ATOM': 9.75,
-            'FTM': 0.85,
-            'ALGO': 0.28,
-            'VET': 0.038,
             'ICP': 12.60,
-            'AAVE': 165.00,
-            'MKR': 2850.00,
-            'COMP': 78.50,
-            'CRV': 0.42,
-            'UMA': 3.20,
-            'BAL': 4.80,
-            'YFI': 8900.00,
-            'SUSHI': 1.25,
-            'SNX': 3.40,
-            'LDO': 2.10,
+            'NEAR': 8.90,
             'APT': 11.80,
-            'SUI': 1.95,
-            'ARB': 0.88,
-            'OP': 2.85,
-            'MATIC': 0.78,
+            'STX': 2.45,
             'IMX': 1.65,
-            'LRC': 0.32,
+            'HBAR': 0.095,
+            'BCH': 485.00,
+            'FIL': 5.85,
+            'VET': 0.038,
+            'THETA': 1.85,
+            'ALGO': 0.28,
+            
+            # DeFi tokens
+            'AAVE': 165.00,
+            'SUSHI': 1.25,
+            'COMP': 78.50,
+            'YFI': 8900.00,
+            'SNX': 3.40,
+            'CRV': 0.42,
+            'BAL': 4.80,
+            'ALPHA': 0.18,
+            'CREAM': 28.50,
+            'BADGER': 4.80,
+            'MKR': 2850.00,
+            'LEND': 85.00,  # Legacy AAVE token
+            
+            # Gaming & NFT
+            'RUNE': 5.20,
+            'CAKE': 2.85,
+            'BAKE': 0.385,
+            'AXS': 8.90,
             'MANA': 0.52,
             'SAND': 0.58,
-            'AXS': 8.90,
             'ENJ': 0.45,
-            'GALA': 0.038,
             'CHZ': 0.095,
             'FLOW': 1.20,
-            'THETA': 1.85,
+            'WAX': 0.065,
+            'GALA': 0.038,
+            'ILV': 48.50,
+            'AUDIO': 0.285,
             'REVV': 0.028,
             'TLM': 0.024,
             'SLP': 0.0045,
-            'ALPHA': 0.18,
             'GHST': 2.80,
             'ALICE': 1.95,
-            'CREAM': 28.50,
+            
+            # Layer 2 & Scaling
+            'ARB': 0.88,
+            'OP': 2.85,
+            'EGLD': 38.50,
+            'FTM': 0.85,
+            'LUNA': 0.85,
+            'XTZ': 1.05,
+            'ZIL': 0.028,
+            'ONE': 0.018,
             'CELO': 0.95,
             'KAVA': 0.58,
             'SCRT': 0.85,
             'ROSE': 0.085,
+            
+            # Meme coins
             'SHIB': 0.000028,
             'PEPE': 0.000018,
             'FLOKI': 0.00025,
@@ -113,6 +137,8 @@ class SimulatedOKX(BaseExchange):
             'KISHU': 0.00000000085,
             'SAITAMA': 0.0000000065,
             'LEASH': 580.00,
+            
+            # Exchange tokens
             'FTT': 2.85,
             'KCS': 12.40,
             'HT': 6.80,
@@ -121,47 +147,30 @@ class SimulatedOKX(BaseExchange):
             'CRO': 0.125,
             'GT': 8.20,
             'BGB': 1.85,
+            
+            # Privacy coins
             'XMR': 185.00,
             'ZEC': 48.50,
-            'DASH': 38.20,
+            'DASH': 38.50,
             'ZCASH': 48.50,
             'BEAM': 0.085,
-            'GRIN': 0.048,
-            'FIRO': 2.40,
-            'ARRR': 0.58,
+            'GRIN': 0.065,
+            'FIRO': 2.80,
+            'ARRR': 0.48,
+            
+            # Enterprise & Business
             'XLM': 0.125,
-            'XDC': 0.048,
+            'XDC': 0.058,
             'IOTA': 0.285,
-            'NANO': 1.85,
-            'RVN': 0.028,
+            'NANO': 1.25,
+            'RVN': 0.038,
             'DGB': 0.018,
             'SYS': 0.185,
-            'VTC': 0.058,
-            'MONA': 0.185,
-            'QNT': 125.00,
-            'BNB': 685.00,
-            'RNDR': 8.90,
-            'FIL': 8.20,
-            'HBAR': 0.085,
-            'LTC': 95.50,
-            'BCH': 485.00,
-            'ETC': 28.50,
-            'XTZ': 1.20,
-            'EGLD': 48.50,
-            'NEO': 18.50,
-            'WAVES': 2.85,
-            'KSM': 38.50,
-            'ONE': 0.018,
-            'HOT': 0.0028,
-            'IOST': 0.012,
-            'ZIL': 0.028,
-            'ICX': 0.28,
-            'ONT': 0.38,
-            'REN': 0.085,
-            'ZRX': 0.58,
-            'STORJ': 0.85,
-            'GRT': 0.28
+            'VTC': 0.68,
+            'MONA': 1.85,
+            'QNT': 125.00
         }
+
         
         # Price volatility simulation
         self.price_last_update = {}
@@ -191,22 +200,36 @@ class SimulatedOKX(BaseExchange):
         return self._is_connected
     
     def _initialize_markets(self):
-        """Initialize available trading pairs and market data."""
-        # Common crypto pairs available on OKX
-        self.markets = {
-            'BTC/USDT': {'min_amount': 0.00001, 'precision': 8},
-            'ETH/USDT': {'min_amount': 0.0001, 'precision': 6},
-            'SOL/USDT': {'min_amount': 0.01, 'precision': 4},
-            'XRP/USDT': {'min_amount': 1.0, 'precision': 4},
-            'DOGE/USDT': {'min_amount': 10.0, 'precision': 6},
-            'ADA/USDT': {'min_amount': 1.0, 'precision': 6},
-            'AVAX/USDT': {'min_amount': 0.01, 'precision': 4},
-            'LINK/USDT': {'min_amount': 0.1, 'precision': 4},
-            'DOT/USDT': {'min_amount': 0.1, 'precision': 4},
-            'UNI/USDT': {'min_amount': 0.1, 'precision': 4},
-        }
+        """Initialize available trading pairs and market data for all cryptocurrencies."""
+        # Initialize trading pairs for all available cryptocurrencies
+        self.trading_pairs = [f"{symbol}/USDT" for symbol in self.simulated_base_prices.keys()]
         
-        self.logger.info(f"Initialized {len(self.markets)} trading pairs")
+        # Set up market info for all pairs with reasonable defaults
+        self.markets = {}
+        for symbol in self.simulated_base_prices.keys():
+            pair = f"{symbol}/USDT"
+            price = self.simulated_base_prices[symbol]
+            
+            # Set reasonable minimums based on price
+            if price > 1000:  # High-value coins like BTC, ETH
+                min_amount = 0.00001
+                precision = 8
+            elif price > 10:  # Mid-value coins
+                min_amount = 0.001
+                precision = 6
+            elif price > 0.1:  # Low-value coins
+                min_amount = 0.1
+                precision = 4
+            else:  # Very low-value coins (meme coins, etc.)
+                min_amount = 100.0
+                precision = 2
+                
+            self.markets[pair] = {
+                'min_amount': min_amount,
+                'precision': precision
+            }
+        
+        self.logger.info(f"Initialized {len(self.trading_pairs)} trading pairs")
     
     def get_balance(self) -> Dict:
         """Get account balance in OKX API v5 format."""
