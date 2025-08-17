@@ -125,7 +125,7 @@ class PortfolioService:
                     trade_time = base_time + timedelta(days=days_ago, hours=hours_ago)
                     
                     # Random trade details
-                    side = 'buy' if random.random() > 0.6 else 'sell'  # More buys than sells
+                    side = 'BUY' if random.random() > 0.6 else 'SELL'  # More buys than sells
                     base_price = self.exchange._get_current_price(f"{symbol}/USDT") or 1.0
                     # Vary price by ±20% from current
                     price_variation = random.uniform(0.8, 1.2)
@@ -153,7 +153,7 @@ class PortfolioService:
                         'fillPx': str(trade_price),
                         'ts': str(int(trade_time.timestamp() * 1000)),
                         'state': 'filled',
-                        'fee': str(quantity * trade_price * 0.001),  # 0.1% fee
+                        'fee': str(round(quantity * trade_price * 0.001, 6)),  # 0.1% fee
                         'feeCcy': 'USDT'
                     }
                     
@@ -221,8 +221,23 @@ class PortfolioService:
                                 
                             else:
                                 # Use simulated historical purchase price for assets without real positions
-                                price_variation = (hash(symbol) % 20 - 10) / 100.0  # -10% to +10% variation
-                                historical_purchase_price = current_price * (1 - price_variation)
+                                # Create more realistic variation based on symbol characteristics
+                                import random
+                                random.seed(hash(symbol))  # Consistent but varied results per symbol
+                                
+                                variation_type = random.randint(1, 100)
+                                if variation_type <= 15:  # 15% chance of significant gains
+                                    price_variation = random.uniform(0.15, 0.45)  # +15% to +45%
+                                elif variation_type <= 30:  # 15% chance of losses
+                                    price_variation = random.uniform(-0.35, -0.10)  # -10% to -35%
+                                elif variation_type <= 50:  # 20% chance of moderate gains
+                                    price_variation = random.uniform(0.03, 0.15)  # +3% to +15%
+                                elif variation_type <= 70:  # 20% chance of moderate losses
+                                    price_variation = random.uniform(-0.15, -0.03)  # -3% to -15%
+                                else:  # 30% chance of minimal movement
+                                    price_variation = random.uniform(-0.05, 0.05)  # -5% to +5%
+                                    
+                                historical_purchase_price = current_price / (1 + price_variation)
                                 
                                 # Calculate quantity based on historical purchase price
                                 quantity = initial_investment / historical_purchase_price
@@ -294,7 +309,8 @@ class PortfolioService:
                     total_value += 10.0
                     total_initial_value += 10.0
             
-            total_pnl = total_value - total_initial_value
+            # Calculate total P&L from individual holdings for accuracy
+            total_pnl = sum(h.get('pnl', 0) for h in holdings)
             total_pnl_percent = (total_pnl / total_initial_value) * 100 if total_initial_value > 0 else 0
             
             # Calculate realistic cash balance based on actual portfolio size
@@ -430,12 +446,12 @@ class PortfolioService:
                     
                     formatted_trade = {
                         'id': trade['ordId'],
-                        'symbol': trade['instId'].replace('-USDT-SWAP', ''),
-                        'side': trade['side'].upper(),
+                        'symbol': trade['instId'].replace('-USDT-SWAP', '').replace('-USDT', ''),
+                        'side': trade.get('side', 'BUY').upper(),
                         'quantity': quantity,
                         'price': price,
                         'timestamp': datetime.fromtimestamp(int(trade['ts']) / 1000).isoformat(),
-                        'fee': float(trade.get('fee', 0)),
+                        'fee': float(trade.get('fee', quantity * price * 0.001)),
                         'fee_currency': trade.get('feeCcy', 'USDT'),
                         'total_value': quantity * price,
                         'exchange_data': trade
