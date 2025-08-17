@@ -600,16 +600,39 @@ def api_config():
 
 @app.route("/api/price-source-status")
 def api_price_source_status():
-    """Get price source status."""
+    """Get OKX API status instead of CoinGecko."""
     if not warmup["done"]:
         return jsonify({"status": "initializing"}), 503
     
-    return jsonify({
-        "status": "connected",
-        "api_provider": "CoinGecko_API",
-        "last_update": datetime.utcnow().isoformat(),
-        "symbols_loaded": warmup.get("loaded", [])
-    })
+    try:
+        from src.exchanges.simulated_okx import SimulatedOKX
+        
+        # Create a test connection to check OKX status
+        config = {
+            'sandbox': True,
+            'apiKey': 'simulated_key',
+            'secret': 'simulated_secret',
+            'password': 'simulated_passphrase'
+        }
+        
+        exchange = SimulatedOKX(config)
+        is_connected = exchange.connect()
+        
+        return jsonify({
+            "status": "connected" if is_connected else "disconnected",
+            "api_provider": "OKX_Simulated_Exchange",
+            "exchange_type": "Simulated",
+            "last_update": datetime.utcnow().isoformat(),
+            "symbols_loaded": warmup.get("loaded", [])
+        })
+        
+    except Exception as e:
+        logger.error(f"OKX status check error: {e}")
+        return jsonify({
+            "status": "error",
+            "api_provider": "OKX_Simulated_Exchange", 
+            "error": str(e)
+        }), 500
 
 @app.route("/api/portfolio-summary")
 def api_portfolio_summary():
@@ -1173,20 +1196,26 @@ def render_loading_skeleton(message="Loading live cryptocurrency data...", error
 # OKX Exchange Status Endpoint  
 @app.route("/api/okx-status")
 def api_okx_status():
-    """Get OKX exchange connection status."""
+    """Get OKX exchange connection status with clear simulation/live distinction."""
     try:
-        # Use portfolio service to get exchange status
-        from src.services.portfolio_service import PortfolioService
         from src.exchanges.simulated_okx import SimulatedOKX
         
         # Initialize OKX exchange for status check
-        config = {"demo": True}
+        config = {
+            'sandbox': True,
+            'apiKey': 'simulated_key',
+            'secret': 'simulated_secret',
+            'password': 'simulated_passphrase'
+        }
+        
         exchange = SimulatedOKX(config)
         connected = exchange.connect()
         
         status = {
             'connected': connected,
-            'exchange_type': 'Simulated OKX',
+            'connection_type': 'Simulated',  # Clear distinction: Simulated vs Live
+            'exchange_name': 'OKX Exchange',
+            'trading_mode': 'Paper Trading',
             'initialized': True,
             'last_sync': datetime.utcnow().isoformat() if connected else None,
             'market_status': 'open' if connected else 'closed'
@@ -1203,7 +1232,9 @@ def api_okx_status():
             'error': str(e),
             'status': {
                 'connected': False,
-                'exchange_type': 'Simulated OKX',
+                'connection_type': 'Simulated',
+                'exchange_name': 'OKX Exchange',
+                'trading_mode': 'Paper Trading',
                 'error': 'Failed to check exchange status'
             }
         }), 500

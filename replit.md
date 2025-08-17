@@ -76,6 +76,15 @@ A Flask-based web interface provides real-time monitoring, portfolio visualizati
 - **Real-time Updates**: Instant filtering and sorting with persistent filter states
 - **Reset Compatibility**: Complete reset functionality that properly clears all trade history
 
+### OKX Exchange Integration (Updated: 2025-08-17)
+- **Primary Data Source**: Portfolio calculations now use simulated OKX exchange as the foundation for all operations
+- **Pre-loaded Portfolio**: All 103 cryptocurrencies populate automatically without requiring trading initialization
+- **Status Integration**: Replaced CoinGecko API status with OKX API status in interface
+- **Clear Simulation Indicators**: Status displays show "Simulated" vs "Live" connection type for trading mode clarity
+- **Exchange Status**: Connection type clearly states "OKX Exchange - Paper Trading" with simulation mode indication
+- **Portfolio Service**: PortfolioService class manages all cryptocurrency data through simulated OKX exchange interface
+- **Instant Portfolio Loading**: System displays complete portfolio immediately on dashboard load
+
 #### Connection Management & Monitoring (Updated: 2025-08-14)
 - **Intelligent Uptime Tracking**: System uptime counter tracks only connected time, automatically resetting on connection loss and restarting fresh on reconnection
 - **Connection-Aware Trading Controls**: Trading countdown stops during connection outages, automatically resumes when reconnected, and trading buttons validate connection status before execution
