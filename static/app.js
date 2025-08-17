@@ -1335,7 +1335,11 @@ class TradingApp {
                         labels: ['Profitable', 'Break-even', 'Losing'],
                         datasets: [{
                             data: [0, 0, 0],
-                            backgroundColor: ['#28a745', '#ffc107', '#dc3545'],
+                            backgroundColor: [
+                                'rgba(54, 162, 235, 0.8)',   // Blue for profitable
+                                'rgba(255, 206, 86, 0.8)',   // Yellow for break-even  
+                                'rgba(255, 99, 132, 0.8)'    // Red for losing
+                            ],
                             borderWidth: 0
                         }]
                     },
@@ -1366,7 +1370,7 @@ class TradingApp {
                             data: [],
                             backgroundColor: function(context) {
                                 const value = context.parsed.y;
-                                return value >= 0 ? '#28a745' : '#dc3545';
+                                return value >= 0 ? 'rgba(75, 192, 192, 0.8)' : 'rgba(255, 99, 132, 0.8)';
                             },
                             borderWidth: 0
                         }]

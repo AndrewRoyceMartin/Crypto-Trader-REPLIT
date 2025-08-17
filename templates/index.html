@@ -11,11 +11,11 @@
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Chart.js (deferred) -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
     
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v={{ cache_version|default(0) }}">
     
     <!-- Force JavaScript refresh -->
     <script>
@@ -36,7 +36,8 @@
                     <i class="fas fa-home me-1"></i>
                     Dashboard
                 </button>
-                <button class="btn btn-outline-light btn-sm me-2" onclick="showPortfolioPage()">
+                <!-- Portfolio shows the main dashboard summary (no separate portfolio-page section exists) -->
+                <button class="btn btn-outline-light btn-sm me-2" onclick="showMainDashboard()">
                     <i class="fas fa-wallet me-1"></i>
                     Portfolio
                 </button>
@@ -56,7 +57,8 @@
                     <i class="fas fa-file-invoice-dollar me-1"></i>
                     ATO Export
                 </button>
-                <button class="btn btn-outline-warning btn-sm" onclick="executeTakeProfit()" id="take-profit-btn">
+                <!-- Hide Take Profit until implemented -->
+                <button class="btn btn-outline-warning btn-sm" id="take-profit-btn" style="display: none">
                     <i class="fas fa-money-bill-wave me-1"></i>
                     Take Profit
                 </button>
@@ -81,7 +83,7 @@
                         <span id="system-uptime" class="text-info ms-1">0s</span>
                     </span>
                     <span class="navbar-text me-3" id="server-connection-status">
-                        <i class="fas fa-exchange-alt text-success me-1"></i>
+                        <i class="fas fa-wifi text-success me-1"></i>
                         <span class="text-light">OKX API:</span>
                         <span id="server-connection-text" class="text-success ms-1">Connected</span>
                     </span>
@@ -187,7 +189,7 @@
         <!-- Enhanced Portfolio Overview Panel with KPIs -->
         <div class="row mb-4">
             <div class="col-12">
-                <div class="card bg-gradient-primary text-white shadow-lg">
+                <div class="card bg-primary bg-gradient text-white shadow-lg">
                     <div class="card-header">
                         <h4 class="mb-0"><i class="fas fa-chart-line me-2"></i>Portfolio Summary</h4>
                     </div>
@@ -210,14 +212,16 @@
                             </div>
                             <div class="col-md-1">
                                 <div class="summary-metric">
-                                    <h3 id="summary-total-assets" class="mb-1">103</h3>
+                                    <h3 id="summary-total-assets" class="mb-1">0</h3>
                                     <small class="text-light opacity-75">Assets</small>
                                 </div>
                             </div>
                             <div class="col-md-2">
                                 <div class="summary-metric">
-                                    <h3 id="summary-best-performer" class="mb-1 text-success">
-                                        <i class="fas fa-arrow-up me-1"></i><span>N/A</span>
+                                    <h3 class="mb-1 text-success">
+                                        <i class="fas fa-arrow-up me-1"></i>
+                                        <span id="summary-best-performer">N/A</span>
+                                        <small id="summary-best-performance" class="ms-2">+0.00%</small>
                                     </h3>
                                     <small class="text-light opacity-75">Best Performer</small>
                                 </div>
@@ -272,13 +276,18 @@
                             </div>
                             <div class="col-md-4 text-end">
                                 <div class="d-flex justify-content-end gap-2">
-                                    <button class="btn btn-light btn-sm" onclick="refreshPortfolioSummary()" title="Refresh Summary">
+                                    <button class="btn btn-light btn-sm" onclick="refreshCryptoPortfolio()" title="Refresh Summary">
                                         <i class="fas fa-sync-alt me-1"></i>Refresh
                                     </button>
-                                    <button class="btn btn-outline-light btn-sm" onclick="togglePortfolioCharts()" title="Toggle Charts">
+                                    <button class="btn btn-outline-light btn-sm" onclick="
+                                        (function(){
+                                            const s=document.getElementById('portfolio-charts-section');
+                                            s.style.display=(s.style.display==='none' || s.style.display==='') ? 'block':'none';
+                                        })()
+                                    " title="Toggle Charts">
                                         <i class="fas fa-chart-pie me-1"></i>Charts
                                     </button>
-                                    <button class="btn btn-success btn-sm" onclick="exportATO()" title="Export for Tax">
+                                    <button class="btn btn-success btn-sm" onclick="exportATOTax()" title="Export for Tax">
                                         <i class="fas fa-file-export me-1"></i>ATO Export
                                     </button>
                                 </div>
@@ -305,7 +314,7 @@
                             </div>
                             <div class="col-md-4">
                                 <div class="chart-container bg-light rounded p-3" style="height: 250px; background-color: #f8f9fa !important;">
-                                    <canvas id="performanceChart"></canvas>
+                                    <canvas id="performersChart"></canvas>
                                 </div>
                                 <h6 class="text-center text-light mt-2">Top/Bottom Performers</h6>
                             </div>
@@ -333,7 +342,7 @@
                         <div class="row mb-3">
                             <div class="col-md-3">
                                 <div class="text-center">
-                                    <h4 id="holdings-total-assets" class="text-primary mb-1">103</h4>
+                                    <h4 id="holdings-total-assets" class="text-primary mb-1">0</h4>
                                     <small class="text-muted">Total Assets</small>
                                 </div>
                             </div>
@@ -396,11 +405,11 @@
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <h5 class="mb-0">
                             <i class="fas fa-coins me-2"></i>
-                            All Cryptocurrencies (103 Assets)
+                            All Cryptocurrencies (<span id="summary-total-assets">0</span> Assets)
                             <i class="fas fa-info-circle text-info ms-2" 
                                data-bs-toggle="tooltip" 
                                data-bs-placement="top" 
-                               title="Complete cryptocurrency portfolio overview with 103 cryptocurrencies. Real-time prices, P&L tracking, trading signals, and profit/loss calculations."></i>
+                               title="Complete cryptocurrency portfolio overview. Real-time prices, P&L tracking, trading signals, and profit/loss calculations."></i>
                         </h5>
                         <button class="btn btn-outline-primary btn-sm" onclick="refreshCryptoPortfolio()">
                             <i class="fas fa-sync-alt me-1"></i>Refresh
@@ -408,21 +417,20 @@
                     </div>
                     <div class="card-body">
 
-                        
-                        <!-- Filter Controls for Portfolio -->
+                        <!-- Filter Controls for Portfolio (no on* calls to nonexistent functions) -->
                         <div class="row mb-3">
                             <div class="col-md-4">
-                                <input type="text" id="portfolio-filter" class="form-control form-control-sm" placeholder="Filter by symbol or name..." onkeyup="filterPortfolioTable()">
+                                <input type="text" id="portfolio-filter" class="form-control form-control-sm" placeholder="Filter by symbol or name...">
                             </div>
                             <div class="col-md-2">
-                                <select id="portfolio-pnl-filter" class="form-select form-select-sm" onchange="filterPortfolioTable()">
+                                <select id="portfolio-pnl-filter" class="form-select form-select-sm">
                                     <option value="">All P&L</option>
                                     <option value="positive">Profitable</option>
                                     <option value="negative">Loss</option>
                                 </select>
                             </div>
                             <div class="col-md-2">
-                                <select id="portfolio-value-filter" class="form-select form-select-sm" onchange="filterPortfolioTable()">
+                                <select id="portfolio-value-filter" class="form-select form-select-sm">
                                     <option value="">All Values</option>
                                     <option value="high">&gt;$15</option>
                                     <option value="medium">$5-$15</option>
@@ -503,14 +511,6 @@
                 </div>
             </div>
         </div>
-
-
-
-
-
-
-
-
 
     </div>
 
@@ -669,75 +669,8 @@
         </div>
     </div>
 
-    <!-- Loading Modal -->
-    <div class="modal fade" id="loadingModal" tabindex="-1" data-bs-backdrop="static">
-        <div class="modal-dialog modal-sm">
-            <div class="modal-content">
-                <div class="modal-body text-center">
-                    <div class="spinner-border text-primary mb-3" role="status">
-                        <span class="visually-hidden">Loading...</span>
-                    </div>
-                    <p id="loading-message">Processing...</p>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <!-- Portfolio Performance Dashboard -->
-    <!-- Performance Dashboard Section -->
     <div id="performance-dashboard" class="container-fluid py-4" style="display: none;">
-        <!-- Performance Charts Section -->
-        <div class="row mb-4">
-            <div class="col-12">
-                <div class="card">
-                    <div class="card-header">
-                        <h5 class="mb-0">
-                            <i class="fas fa-chart-line me-2"></i>
-                            Performance Charts
-                        </h5>
-                    </div>
-                    <div class="card-body">
-                        <!-- Portfolio Chart Tabs -->
-                        <ul class="nav nav-tabs" id="chartTabs" role="tablist">
-                            <li class="nav-item" role="presentation">
-                                <button class="nav-link active" id="portfolio-tab" data-bs-toggle="tab" data-bs-target="#portfolio-chart" type="button" role="tab">
-                                    <i class="fas fa-chart-line me-1"></i>Portfolio Value
-                                </button>
-                            </li>
-                            <li class="nav-item" role="presentation">
-                                <button class="nav-link" id="returns-tab" data-bs-toggle="tab" data-bs-target="#returns-chart" type="button" role="tab">
-                                    <i class="fas fa-percentage me-1"></i>Returns
-                                </button>
-                            </li>
-                            <li class="nav-item" role="presentation">
-                                <button class="nav-link" id="trades-tab" data-bs-toggle="tab" data-bs-target="#trades-chart" type="button" role="tab">
-                                    <i class="fas fa-exchange-alt me-1"></i>Trade P&L
-                                </button>
-                            </li>
-                        </ul>
-                        
-                        <div class="tab-content" id="chartTabContent">
-                            <div class="tab-pane fade show active" id="portfolio-chart" role="tabpanel">
-                                <div class="chart-container mt-3">
-                                    <canvas id="portfolioChart"></canvas>
-                                </div>
-                            </div>
-                            <div class="tab-pane fade" id="returns-chart" role="tabpanel">
-                                <div class="chart-container mt-3">
-                                    <canvas id="returnsChart"></canvas>
-                                </div>
-                            </div>
-                            <div class="tab-pane fade" id="trades-chart" role="tabpanel">
-                                <div class="chart-container mt-3">
-                                    <canvas id="tradesChart"></canvas>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
         <!-- Performance Table Section -->
         <div class="row mb-4">
             <div class="col-12">
@@ -747,7 +680,7 @@
                             <i class="fas fa-chart-bar me-2"></i>
                             Portfolio Performance - Accumulated P&L Since Investment
                             <i class="fas fa-info-circle ms-2 text-info" data-bs-toggle="tooltip" 
-                               title="Shows your overall investment performance over time. Tracks total P&L from your $10 initial investment in each of 103 cryptocurrencies. This view shows accumulated gains/losses since you started investing, not current market positions."></i>
+                               title="Shows your overall investment performance over time. Tracks total P&L from your $10 initial investment in each of the tracked cryptocurrencies. This view shows accumulated gains/losses since you started investing, not current market positions."></i>
                         </h5>
                         <div>
                             <button class="btn btn-primary btn-sm" onclick="updatePerformanceData()">
@@ -798,20 +731,20 @@
                             </div>
                         </div>
                         
-                        <!-- Filter Controls for Performance -->
+                        <!-- Filter Controls for Performance (no on* to missing functions) -->
                         <div class="row mb-3">
                             <div class="col-md-3">
-                                <input type="text" id="performance-filter" class="form-control form-control-sm" placeholder="Filter by symbol or name..." onkeyup="filterPerformanceTable()">
+                                <input type="text" id="performance-filter" class="form-control form-control-sm" placeholder="Filter by symbol or name...">
                             </div>
                             <div class="col-md-2">
-                                <select id="performance-pnl-filter" class="form-select form-select-sm" onchange="filterPerformanceTable()">
+                                <select id="performance-pnl-filter" class="form-select form-select-sm">
                                     <option value="">All P&L</option>
                                     <option value="positive">Profitable</option>
                                     <option value="negative">Loss</option>
                                 </select>
                             </div>
                             <div class="col-md-2">
-                                <select id="performance-return-filter" class="form-select form-select-sm" onchange="filterPerformanceTable()">
+                                <select id="performance-return-filter" class="form-select form-select-sm">
                                     <option value="">All Returns</option>
                                     <option value="high">&gt;50%</option>
                                     <option value="medium">0-50%</option>
@@ -819,7 +752,7 @@
                                 </select>
                             </div>
                             <div class="col-md-2">
-                                <select id="performance-status-filter" class="form-select form-select-sm" onchange="filterPerformanceTable()">
+                                <select id="performance-status-filter" class="form-select form-select-sm">
                                     <option value="">All Status</option>
                                     <option value="Winner">Winners</option>
                                     <option value="Loser">Losers</option>
@@ -993,7 +926,7 @@
                     <p class="mb-2 text-white">ABN: 92 384 831 384</p>
                     <p class="mb-0 text-white"><small>Algorithmic Trading System</small></p>
                     <p class="mb-1 text-white"><small>Professional Cryptocurrency Portfolio Management</small></p>
-                    <p class="mb-0 text-info"><small><strong>Version: {{ version }}</strong></small></p>
+                    <p class="mb-0 text-info"><small><strong>Version: {{ version|default('dev') }}</strong></small></p>
                 </div>
                 <div class="col-md-6 text-md-end">
                     <div class="mb-2">
@@ -1015,7 +948,7 @@
         </div>
     </footer>
 
-    <!-- Bootstrap JS -->
+    <!-- Bootstrap JS Bundle -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
     <!-- Initialize Bootstrap Tooltips -->
@@ -1028,10 +961,10 @@
     </script>
     
     <!-- Custom JS -->
-    <script src="{{ url_for('static', filename='app.js') }}?v={{ cache_version }}"></script>
+    <script src="{{ url_for('static', filename='app.js') }}?v={{ cache_version|default(0) }}"></script>
     <script>
         // Set cache version for future requests
-        window.cacheVersion = {{ cache_version }};
+        window.cacheVersion = {{ cache_version|default(0) }};
     </script>
 </body>
 </html>
