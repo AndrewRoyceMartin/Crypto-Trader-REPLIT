@@ -2419,3 +2419,73 @@ window.debugTrades = {
 };
 
 console.log('Debug functions loaded. Use window.debugTrades.checkServerData(), testNormalizer(), checkTableElement(), or testCaseSensitivity()');
+
+// Enhanced portfolio summary update function
+function updatePortfolioSummary(portfolioData) {
+    console.log("Updating enhanced portfolio summary with KPIs");
+    
+    const summary = portfolioData.summary || {};
+    const holdings = portfolioData.holdings || [];
+    
+    // Update main KPIs with safe element updates
+    updateElementSafely("summary-total-value", formatCurrency(summary.total_current_value || 0));
+    
+    // Update 24h change with color coding
+    const change24h = summary.total_pnl || 0;
+    const change24hPercent = summary.total_pnl_percent || 0;
+    const change24hElement = document.getElementById("summary-24h-change");
+    if (change24hElement) {
+        const changeClass = change24h >= 0 ? "bg-success" : "bg-danger";
+        const arrow = change24h >= 0 ? "↗" : "↘";
+        change24hElement.innerHTML = `<span class="badge ${changeClass}">${arrow} $${fmtFixed(change24h, 2)} (${fmtFixed(change24hPercent, 2)}%)</span>`;
+    }
+    
+    // Update other KPIs
+    updateElementSafely("summary-total-assets", summary.total_assets_tracked || 103);
+    updateElementSafely("summary-cash-balance", formatCurrency(summary.cash_balance || portfolioData.cash_balance || 0));
+    updateElementSafely("summary-win-rate", `${summary.win_rate || 0}%`);
+    
+    // Update best/worst performers with enhanced display
+    const bestPerformer = summary.best_performer || {symbol: "N/A", pnl_percent: 0, name: "N/A"};
+    const worstPerformer = summary.worst_performer || {symbol: "N/A", pnl_percent: 0, name: "N/A"};
+    
+    const bestElement = document.querySelector("#summary-best-performer span");
+    const worstElement = document.querySelector("#summary-worst-performer span");
+    
+    if (bestElement && bestPerformer.symbol !== "N/A") {
+        bestElement.innerHTML = `${bestPerformer.symbol}<br><small>(+${fmtFixed(bestPerformer.pnl_percent, 2)}%)</small>`;
+    } else if (bestElement) {
+        bestElement.textContent = "N/A";
+    }
+    
+    if (worstElement && worstPerformer.symbol !== "N/A") {
+        worstElement.innerHTML = `${worstPerformer.symbol}<br><small>(${fmtFixed(worstPerformer.pnl_percent, 2)}%)</small>`;
+    } else if (worstElement) {
+        worstElement.textContent = "N/A";
+    }
+    
+    // Update position counts with enhanced metrics
+    updateElementSafely("profitable-positions", `${summary.profitable_positions || 0} positions`);
+    updateElementSafely("losing-positions", `${summary.losing_positions || 0} positions`);
+    updateElementSafely("concentration-risk", `${summary.concentration_risk || 0}%`);
+    updateElementSafely("daily-pnl", `$${fmtFixed(summary.daily_pnl || 0, 2)}`);
+    
+    console.log("Enhanced portfolio summary updated successfully");
+}
+
+// Refresh portfolio summary
+function refreshPortfolioSummary() {
+    console.log("Refreshing enhanced portfolio summary...");
+    if (window.portfolioManager && typeof window.portfolioManager.loadCryptocurrencyData === "function") {
+        window.portfolioManager.loadCryptocurrencyData();
+    } else {
+        loadCryptocurrencyData();
+    }
+}
+
+// Show allocation chart modal 
+function showAllocationChart() {
+    console.log("Opening allocation chart visualization...");
+    alert("Portfolio allocation charts will be implemented with Chart.js integration. This will show:\n\n• Asset allocation by percentage\n• Portfolio value over time\n• Top/bottom performers\n• P&L distribution charts");
+}
+

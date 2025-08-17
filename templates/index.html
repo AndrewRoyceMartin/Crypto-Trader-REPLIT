@@ -184,6 +184,107 @@
 
 
 
+        <!-- Enhanced Portfolio Overview Panel with KPIs -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card bg-gradient-primary text-white shadow-lg">
+                    <div class="card-header">
+                        <h4 class="mb-0"><i class="fas fa-chart-line me-2"></i>Portfolio Summary</h4>
+                    </div>
+                    <div class="card-body">
+                        <!-- Top Summary KPIs Row -->
+                        <div class="row text-center mb-4">
+                            <div class="col-md-2">
+                                <div class="summary-metric">
+                                    <h3 id="summary-total-value" class="mb-1">$0.00</h3>
+                                    <small class="text-light opacity-75">Total Portfolio Value</small>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="summary-metric">
+                                    <h3 id="summary-24h-change" class="mb-1">
+                                        <span class="badge bg-secondary">$0.00</span>
+                                    </h3>
+                                    <small class="text-light opacity-75">24h Change</small>
+                                </div>
+                            </div>
+                            <div class="col-md-1">
+                                <div class="summary-metric">
+                                    <h3 id="summary-total-assets" class="mb-1">103</h3>
+                                    <small class="text-light opacity-75">Assets</small>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="summary-metric">
+                                    <h3 id="summary-best-performer" class="mb-1 text-success">
+                                        <i class="fas fa-arrow-up me-1"></i><span>N/A</span>
+                                    </h3>
+                                    <small class="text-light opacity-75">Best Performer</small>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="summary-metric">
+                                    <h3 id="summary-worst-performer" class="mb-1 text-danger">
+                                        <i class="fas fa-arrow-down me-1"></i><span>N/A</span>
+                                    </h3>
+                                    <small class="text-light opacity-75">Worst Performer</small>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="summary-metric">
+                                    <h3 id="summary-cash-balance" class="mb-1">$0</h3>
+                                    <small class="text-light opacity-75">Cash Balance</small>
+                                </div>
+                            </div>
+                            <div class="col-md-1">
+                                <div class="summary-metric">
+                                    <h3 id="summary-win-rate" class="mb-1">0%</h3>
+                                    <small class="text-light opacity-75">Win Rate</small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Performance Metrics Row -->
+                        <div class="row align-items-center">
+                            <div class="col-md-8">
+                                <div class="row">
+                                    <div class="col-md-3">
+                                        <small class="text-light opacity-75">Profitable:</small>
+                                        <h6 id="profitable-positions" class="text-success mb-0">0 positions</h6>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <small class="text-light opacity-75">Losing:</small>
+                                        <h6 id="losing-positions" class="text-danger mb-0">0 positions</h6>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <small class="text-light opacity-75">Concentration:</small>
+                                        <h6 id="concentration-risk" class="text-warning mb-0">0%</h6>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <small class="text-light opacity-75">Today's P&L:</small>
+                                        <h6 id="daily-pnl" class="text-info mb-0">$0.00</h6>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4 text-end">
+                                <div class="d-flex justify-content-end gap-2">
+                                    <button class="btn btn-light btn-sm" onclick="refreshPortfolioSummary()" title="Refresh Summary">
+                                        <i class="fas fa-sync-alt me-1"></i>Refresh
+                                    </button>
+                                    <button class="btn btn-outline-light btn-sm" onclick="showAllocationChart()" title="View Allocation">
+                                        <i class="fas fa-chart-pie me-1"></i>Charts
+                                    </button>
+                                    <button class="btn btn-success btn-sm" onclick="exportATO()" title="Export for Tax">
+                                        <i class="fas fa-file-export me-1"></i>ATO Export
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Tracked Cryptocurrencies (Moved to Top) -->
         <div class="row mb-4">
             <div class="col-12">

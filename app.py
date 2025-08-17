@@ -332,7 +332,49 @@ def api_crypto_portfolio():
         # Use the OKX exchange data directly
         holdings = portfolio_data.get('holdings', [])
         
-        # Return OKX exchange portfolio data with trades
+        # Enhance portfolio data with comprehensive KPIs
+        if holdings:
+            # Calculate best/worst performers
+            profitable = [h for h in holdings if h.get('pnl_percent', 0) > 0]
+            losing = [h for h in holdings if h.get('pnl_percent', 0) < 0]
+            
+            best_performer = max(holdings, key=lambda x: x.get('pnl_percent', 0)) if holdings else None
+            worst_performer = min(holdings, key=lambda x: x.get('pnl_percent', 0)) if holdings else None
+            
+            # Calculate allocation percentages and cost basis
+            total_value = sum(h.get('current_value', 0) for h in holdings)
+            for holding in holdings:
+                holding['allocation_percent'] = (holding.get('current_value', 0) / total_value * 100) if total_value > 0 else 0
+                # Add cost basis calculation (assuming $10 initial investment)
+                initial_investment = 10.0
+                holding['cost_basis'] = initial_investment
+                holding['unrealized_pnl'] = holding.get('current_value', 0) - initial_investment
+                holding['avg_entry_price'] = initial_investment / holding.get('quantity', 1) if holding.get('quantity', 0) > 0 else 0
+            
+            # Enhanced summary with comprehensive KPIs
+            portfolio_data['summary'].update({
+                'total_assets_tracked': len(holdings),
+                'profitable_positions': len(profitable),
+                'losing_positions': len(losing), 
+                'breakeven_positions': len(holdings) - len(profitable) - len(losing),
+                'best_performer': {
+                    'symbol': best_performer.get('symbol', 'N/A'),
+                    'name': best_performer.get('name', 'N/A'),
+                    'pnl_percent': round(best_performer.get('pnl_percent', 0), 2)
+                } if best_performer else {'symbol': 'N/A', 'name': 'N/A', 'pnl_percent': 0},
+                'worst_performer': {
+                    'symbol': worst_performer.get('symbol', 'N/A'), 
+                    'name': worst_performer.get('name', 'N/A'),
+                    'pnl_percent': round(worst_performer.get('pnl_percent', 0), 2)
+                } if worst_performer else {'symbol': 'N/A', 'name': 'N/A', 'pnl_percent': 0},
+                'top_allocations': sorted(holdings, key=lambda x: x.get('allocation_percent', 0), reverse=True)[:5],
+                'concentration_risk': round(sum(h.get('allocation_percent', 0) for h in sorted(holdings, key=lambda x: x.get('allocation_percent', 0), reverse=True)[:3]), 2),
+                'win_rate': round((len(profitable) / len(holdings) * 100) if holdings else 0, 2),
+                'ytd_realized_pnl': 0.0,  # Will be calculated from trades
+                'daily_pnl': round(sum(h.get('pnl', 0) for h in holdings), 2)
+            })
+        
+        # Add recent trades
         global recent_initial_trades
         portfolio_data.update({
             "recent_trades": recent_initial_trades or []

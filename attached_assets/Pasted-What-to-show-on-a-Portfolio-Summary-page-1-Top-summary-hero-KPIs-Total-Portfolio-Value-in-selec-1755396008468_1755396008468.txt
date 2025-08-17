@@ -1,0 +1,108 @@
+What to show on a Portfolio Summary page
+1) Top summary (hero KPIs)
+
+Total Portfolio Value (in selected currency) → summary.total_current_value
+
+24h Change (value + %) → summary.total_pnl and summary.total_pnl_percent
+
+Total Assets Tracked → count of holdings
+
+Best Performer (symbol + %)
+
+Worst Performer (symbol + %)
+
+Cash/Stable Balance (if you track)
+
+(Optional) Today’s P&L, YTD Realized P&L, Win Rate
+
+Your code already supports these IDs:
+
+summary-total-value
+
+summary-total-change (badge)
+
+summary-total-assets
+
+summary-portfolio-value
+
+summary-24h-change
+
+summary-best-performer
+
+summary-best-performance
+
+2) Allocation and performance charts
+
+Allocation (by value %) – pie/donut of holdings % of total
+
+Portfolio value over time – line chart
+
+Top/Bottom performers – bar chart by P&L %
+
+P&L distribution – donut (profitable/breakeven/losing)
+
+(You already initialize portfolioChart, performersChart, pnlChart.)
+
+3) Holdings table (core breakdown)
+
+Columns most apps show:
+
+Rank / Symbol / Name
+
+Allocation % = current_value / total_current_value * 100
+
+Qty
+
+Avg Buy (Cost Basis) (if you have avg_entry_price or initial_value/qty)
+
+Price (Live)
+
+Value = quantity * current_price
+
+Unrealized P&L ($ / %) = current_value - cost_basis_value & ... / cost * 100
+
+24h Change % (if provided)
+
+Last Updated
+
+Signal / Target (you already display)
+
+Quick Actions (Buy/Sell/View)
+
+You already render a good subset (price, value, P&L %, targets, updated). If you can return avg_entry_price (or initial_value) from the backend, add Cost Basis and Unrealized P&L ($) columns for clarity.
+
+4) Activity / Recent trades
+
+Table with: ID, Time, Symbol, Side, Qty, Price, P&L (if exit).
+
+Filters: symbol, side, time window, P&L sign (you already built filter hooks).
+
+“Export CSV” (you already have ATO export).
+
+Ensure the backend exposes recent_trades via /api/status or /api/crypto-portfolio.
+
+5) Orders & balances (nice to have)
+
+Open Orders: time, symbol, side, qty, price, status, cancel button.
+
+Balances: base currencies, free/used/total.
+
+Transfers/Deposits (if relevant to your flow).
+
+6) Risk & limits
+
+Daily loss cap status (hit/not hit, remaining room)
+
+Max position size rule
+
+Leverage / Margin usage (if derivatives)
+
+Concentration: top 3 assets % of portfolio.
+
+7) Tax & reporting
+
+Realized P&L YTD, Realized P&L Total
+
+Cost basis method (FIFO/LIFO/Avg)
+
+Export ATO CSV (you already have)
