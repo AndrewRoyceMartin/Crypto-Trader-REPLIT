@@ -49,6 +49,124 @@ class SimulatedOKX(BaseExchange):
         # Market hours (24/7 for crypto)
         self.market_open = True
         
+        # Realistic simulated prices (based on real market prices as of August 2025)
+        self.simulated_base_prices = {
+            'BTC': 67500.00,
+            'ETH': 3850.00,
+            'SOL': 185.50,
+            'XRP': 0.65,
+            'DOGE': 0.14,
+            'ADA': 0.55,
+            'AVAX': 32.80,
+            'LINK': 18.20,
+            'DOT': 7.85,
+            'UNI': 12.40,
+            'NEAR': 8.90,
+            'ATOM': 9.75,
+            'FTM': 0.85,
+            'ALGO': 0.28,
+            'VET': 0.038,
+            'ICP': 12.60,
+            'AAVE': 165.00,
+            'MKR': 2850.00,
+            'COMP': 78.50,
+            'CRV': 0.42,
+            'UMA': 3.20,
+            'BAL': 4.80,
+            'YFI': 8900.00,
+            'SUSHI': 1.25,
+            'SNX': 3.40,
+            'LDO': 2.10,
+            'APT': 11.80,
+            'SUI': 1.95,
+            'ARB': 0.88,
+            'OP': 2.85,
+            'MATIC': 0.78,
+            'IMX': 1.65,
+            'LRC': 0.32,
+            'MANA': 0.52,
+            'SAND': 0.58,
+            'AXS': 8.90,
+            'ENJ': 0.45,
+            'GALA': 0.038,
+            'CHZ': 0.095,
+            'FLOW': 1.20,
+            'THETA': 1.85,
+            'REVV': 0.028,
+            'TLM': 0.024,
+            'SLP': 0.0045,
+            'ALPHA': 0.18,
+            'GHST': 2.80,
+            'ALICE': 1.95,
+            'CREAM': 28.50,
+            'CELO': 0.95,
+            'KAVA': 0.58,
+            'SCRT': 0.85,
+            'ROSE': 0.085,
+            'SHIB': 0.000028,
+            'PEPE': 0.000018,
+            'FLOKI': 0.00025,
+            'BABYDOGE': 0.0000048,
+            'ELON': 0.00000058,
+            'DOGO': 0.000012,
+            'AKITA': 0.0000018,
+            'KISHU': 0.00000000085,
+            'SAITAMA': 0.0000000065,
+            'LEASH': 580.00,
+            'FTT': 2.85,
+            'KCS': 12.40,
+            'HT': 6.80,
+            'OKB': 58.50,
+            'LEO': 6.95,
+            'CRO': 0.125,
+            'GT': 8.20,
+            'BGB': 1.85,
+            'XMR': 185.00,
+            'ZEC': 48.50,
+            'DASH': 38.20,
+            'ZCASH': 48.50,
+            'BEAM': 0.085,
+            'GRIN': 0.048,
+            'FIRO': 2.40,
+            'ARRR': 0.58,
+            'XLM': 0.125,
+            'XDC': 0.048,
+            'IOTA': 0.285,
+            'NANO': 1.85,
+            'RVN': 0.028,
+            'DGB': 0.018,
+            'SYS': 0.185,
+            'VTC': 0.058,
+            'MONA': 0.185,
+            'QNT': 125.00,
+            'BNB': 685.00,
+            'RNDR': 8.90,
+            'FIL': 8.20,
+            'HBAR': 0.085,
+            'LTC': 95.50,
+            'BCH': 485.00,
+            'ETC': 28.50,
+            'XTZ': 1.20,
+            'EGLD': 48.50,
+            'NEO': 18.50,
+            'WAVES': 2.85,
+            'KSM': 38.50,
+            'ONE': 0.018,
+            'HOT': 0.0028,
+            'IOST': 0.012,
+            'ZIL': 0.028,
+            'ICX': 0.28,
+            'ONT': 0.38,
+            'REN': 0.085,
+            'ZRX': 0.58,
+            'STORJ': 0.85,
+            'GRT': 0.28
+        }
+        
+        # Price volatility simulation
+        self.price_last_update = {}
+        self.price_trends = {}  # Track price movement trends
+        
     def connect(self) -> bool:
         """Connect to simulated OKX exchange."""
         try:
@@ -301,22 +419,49 @@ class SimulatedOKX(BaseExchange):
         return df
     
     def _get_current_price(self, symbol: str) -> Optional[float]:
-        """Get current price from live data source."""
+        """Get current simulated price for trading pair."""
         try:
-            # Import here to avoid circular imports
-            from ..data.price_api import CryptoPriceAPI
-            
-            # Extract base symbol from trading pair
+            # Extract base symbol from trading pair (e.g., 'BTC/USDT' -> 'BTC')
             base_symbol = symbol.split('/')[0]
             
-            # Get price from price API
-            price_api = CryptoPriceAPI()
-            prices = price_api.get_multiple_prices([base_symbol])
-            price_info = prices.get(base_symbol, {})
-            return price_info.get('price')
+            # Check if we have a simulated price for this symbol
+            if base_symbol not in self.simulated_base_prices:
+                self.logger.warning(f"No simulated price data for {base_symbol}")
+                return None
+            
+            # Get base price
+            base_price = self.simulated_base_prices[base_symbol]
+            
+            # Apply realistic price simulation with small volatility
+            current_time = time.time()
+            last_update = self.price_last_update.get(base_symbol, current_time - 60)
+            
+            # Only update price if enough time has passed (simulate real market movement)
+            if current_time - last_update > 30:  # Update every 30 seconds
+                # Generate small random price movement (±2% max)
+                price_change_percent = random.uniform(-0.02, 0.02)
+                
+                # Apply trend continuity for more realistic movement
+                if base_symbol in self.price_trends:
+                    # 70% chance to continue existing trend
+                    if random.random() < 0.7:
+                        trend = self.price_trends[base_symbol]
+                        price_change_percent = abs(price_change_percent) * trend
+                
+                # Update base price with volatility
+                new_price = base_price * (1 + price_change_percent)
+                self.simulated_base_prices[base_symbol] = new_price
+                self.price_last_update[base_symbol] = current_time
+                
+                # Set trend for next update
+                self.price_trends[base_symbol] = 1 if price_change_percent > 0 else -1
+                
+                self.logger.debug(f"Updated {base_symbol} price: ${base_price:.6f} -> ${new_price:.6f} ({price_change_percent*100:.3f}%)")
+            
+            return self.simulated_base_prices[base_symbol]
             
         except Exception as e:
-            self.logger.error(f"Error getting price for {symbol}: {str(e)}")
+            self.logger.error(f"Error getting simulated price for {symbol}: {str(e)}")
             return None
     
     def _execute_order_internal(self, symbol: str, side: str, amount: float, execution_price: float):

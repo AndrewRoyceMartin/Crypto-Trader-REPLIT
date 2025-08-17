@@ -2162,9 +2162,9 @@ function showPortfolioPage() {
     // Hide all sections
     hideAllSections();
 
-    // Show portfolio page
-    const portfolioPage = document.getElementById('portfolio-page');
-    if (portfolioPage) portfolioPage.style.display = 'block';
+    // Show main dashboard which contains the portfolio table
+    const mainDashboard = document.getElementById('main-dashboard');
+    if (mainDashboard) mainDashboard.style.display = 'block';
 
     // Update the portfolio data and sync values
     if (window.tradingApp) {
@@ -2172,7 +2172,7 @@ function showPortfolioPage() {
         window.tradingApp.syncPortfolioValues();
     }
 
-    console.log('Switched to Portfolio Page');
+    console.log('Switched to Portfolio Page (Main Dashboard)');
 }
 
 function showRecentTrades() {
@@ -2195,7 +2195,6 @@ function hideAllSections() {
     // Hide all dashboard and page sections
     const sections = [
         'main-dashboard',
-        'portfolio-page', 
         'performance-dashboard',
         'positions-dashboard',
         'current-holdings',
