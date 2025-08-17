@@ -1137,7 +1137,14 @@ class TradingApp {
                             datasets: [{ 
                                 label: 'P&L %', 
                                 data: [], 
-                                backgroundColor: ctx => (ctx.parsed.y >= 0 ? 'rgba(75,192,192,0.8)' : 'rgba(255,99,132,0.8)'), 
+                                backgroundColor: ctx => {
+                                    // Safely check if data is parsed and y value exists
+                                    if (ctx?.parsed?.y !== undefined) {
+                                        return ctx.parsed.y >= 0 ? 'rgba(75,192,192,0.8)' : 'rgba(255,99,132,0.8)';
+                                    }
+                                    // Default color if data not parsed yet
+                                    return 'rgba(75,192,192,0.8)';
+                                }, 
                                 borderWidth: 0 
                             }] 
                         },
@@ -1150,12 +1157,21 @@ class TradingApp {
                                 legend: { display: false } 
                             },
                             scales: { 
-                                y: { ticks: { callback: v => v + '%' } } 
+                                y: { 
+                                    ticks: { 
+                                        callback: function(value, index, values) {
+                                            // Safely format y-axis values
+                                            return (value || 0) + '%';
+                                        }
+                                    } 
+                                } 
                             }
                         }
                     });
                 } catch (chartError) {
                     console.warn('Performers chart initialization failed:', chartError.message);
+                    // Ensure chart variable is properly reset on error
+                    this.performersChart = null;
                 }
             }
 
