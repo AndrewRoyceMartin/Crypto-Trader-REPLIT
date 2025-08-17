@@ -86,83 +86,108 @@
 
   <!-- PAGE -->
   <div id="portfolio-page" class="container-fluid py-4">
-    <!-- Summary KPIs -->
+    <!-- Modern Portfolio Summary Card -->
     <div class="row mb-4">
       <div class="col-12">
-        <div class="card bg-primary bg-gradient text-white shadow-lg">
-          <div class="card-header d-flex justify-content-between align-items-center">
-            <h4 class="mb-0">
-              <i class="fas fa-wallet me-2"></i> Portfolio Summary
-            </h4>
-            <div class="d-flex gap-2">
-              <button class="btn btn-light btn-sm" onclick="refreshCryptoPortfolio()">
-                <i class="fas fa-sync-alt me-1"></i> Refresh
-              </button>
-              <button class="btn btn-success btn-sm" onclick="exportATOTax()">
-                <i class="fas fa-file-export me-1"></i> ATO Export
-              </button>
+        <div class="card border-0 shadow-lg" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 20px;">
+          <div class="card-header border-0 pb-0" style="background: transparent;">
+            <div class="d-flex justify-content-between align-items-center">
+              <h4 class="mb-0 text-white fw-bold">
+                <i class="fas fa-chart-pie me-2" style="color: #ffd700;"></i> Portfolio Overview
+              </h4>
+              <div class="d-flex gap-2">
+                <button class="btn btn-outline-light btn-sm border-2 px-3" onclick="refreshCryptoPortfolio()" style="border-radius: 25px;">
+                  <i class="fas fa-sync-alt me-1"></i> Refresh
+                </button>
+                <button class="btn btn-warning btn-sm px-3" onclick="exportATOTax()" style="border-radius: 25px;">
+                  <i class="fas fa-file-export me-1"></i> Export
+                </button>
+              </div>
             </div>
           </div>
-          <div class="card-body">
-            <!-- KPI row (IDs match updatePortfolioSummary) -->
-            <div class="row text-center mb-3">
-              <div class="col-md-2">
-                <div class="summary-metric">
-                  <h3 id="summary-total-value" class="mb-1">$0.00</h3>
-                  <small class="text-light opacity-75">Total Portfolio Value</small>
+          <div class="card-body pt-3">
+            <!-- Primary KPI Row -->
+            <div class="row text-center mb-4">
+              <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+                <div class="kpi-card">
+                  <div class="kpi-icon">
+                    <i class="fas fa-wallet text-warning"></i>
+                  </div>
+                  <h3 id="summary-total-value" class="kpi-value text-white mb-1">$0.00</h3>
+                  <small class="kpi-label">Total Portfolio Value</small>
                 </div>
               </div>
-              <div class="col-md-2">
-                <div class="summary-metric">
-                  <h3 id="summary-total-change" class="badge bg-secondary mb-1">$0.00 (0.00%)</h3>
-                  <small class="text-light opacity-75">Total Change</small>
+              <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+                <div class="kpi-card">
+                  <div class="kpi-icon">
+                    <i class="fas fa-chart-line text-info"></i>
+                  </div>
+                  <h3 id="summary-total-change" class="kpi-value badge bg-secondary mb-1">$0.00 (0.00%)</h3>
+                  <small class="kpi-label">Total Change</small>
                 </div>
               </div>
-              <div class="col-md-1">
-                <div class="summary-metric">
-                  <h3 id="summary-total-assets" class="mb-1">0</h3>
-                  <small class="text-light opacity-75">Assets</small>
+              <div class="col-lg-1 col-md-2 col-sm-4 mb-3">
+                <div class="kpi-card">
+                  <div class="kpi-icon">
+                    <i class="fas fa-coins text-success"></i>
+                  </div>
+                  <h3 id="summary-total-assets" class="kpi-value text-white mb-1">0</h3>
+                  <small class="kpi-label">Assets</small>
                 </div>
               </div>
-              <div class="col-md-2">
-                <div class="summary-metric">
-                  <h3 class="mb-1 text-success">
+              <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+                <div class="kpi-card">
+                  <div class="kpi-icon">
+                    <i class="fas fa-trophy text-success"></i>
+                  </div>
+                  <h3 class="kpi-value text-success mb-1">
                     <i class="fas fa-arrow-up me-1"></i>
                     <span id="summary-best-performer">N/A</span>
                     <small id="summary-best-performance" class="ms-2">+0.00%</small>
                   </h3>
-                  <small class="text-light opacity-75">Best Performer</small>
+                  <small class="kpi-label">Best Performer</small>
                 </div>
               </div>
-              <div class="col-md-2">
-                <div class="summary-metric">
-                  <h3 id="summary-worst-performer" class="mb-1 text-danger">
+              <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+                <div class="kpi-card">
+                  <div class="kpi-icon">
+                    <i class="fas fa-arrow-trend-down text-danger"></i>
+                  </div>
+                  <h3 id="summary-worst-performer" class="kpi-value text-danger mb-1">
                     <i class="fas fa-arrow-down me-1"></i><span>N/A</span>
                   </h3>
-                  <small class="text-light opacity-75">Worst Performer</small>
+                  <small class="kpi-label">Worst Performer</small>
                 </div>
               </div>
-              <div class="col-md-2">
-                <div class="summary-metric">
-                  <h3 id="summary-cash-balance" class="mb-1">$0.00</h3>
-                  <small class="text-light opacity-75">Cash Balance</small>
+              <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+                <div class="kpi-card">
+                  <div class="kpi-icon">
+                    <i class="fas fa-dollar-sign text-warning"></i>
+                  </div>
+                  <h3 id="summary-cash-balance" class="kpi-value text-white mb-1">$0.00</h3>
+                  <small class="kpi-label">Cash Balance</small>
                 </div>
               </div>
-              <div class="col-md-1">
-                <div class="summary-metric">
-                  <h3 id="summary-win-rate" class="mb-1">0%</h3>
-                  <small class="text-light opacity-75">Win Rate</small>
+              <div class="col-lg-1 col-md-2 col-sm-4 mb-3">
+                <div class="kpi-card">
+                  <div class="kpi-icon">
+                    <i class="fas fa-percentage text-info"></i>
+                  </div>
+                  <h3 id="summary-win-rate" class="kpi-value text-white mb-1">0%</h3>
+                  <small class="kpi-label">Win Rate</small>
                 </div>
               </div>
             </div>
 
-            <!-- Secondary row (optional extra binding) -->
-            <div class="row text-center mb-2">
-              <div class="col-md-3 offset-md-3">
-                <small class="text-light opacity-75">24h Change</small>
-                <div id="summary-24h-change" class="mb-0 fw-bold text-light">+0.00%</div>
+            <!-- Secondary Metrics Row -->
+            <div class="row text-center">
+              <div class="col-md-4 offset-md-2">
+                <div class="secondary-metric">
+                  <small class="text-light opacity-75 text-uppercase fw-bold">24h Performance</small>
+                  <div id="summary-24h-change" class="h5 fw-bold text-warning mt-1">+0.00%</div>
+                </div>
               </div>
-              <div class="col-md-3">
+              <div class="col-md-4">
                 <small class="text-light opacity-75">Portfolio Value (alias)</small>
                 <div id="summary-portfolio-value" class="mb-0 fw-bold">$0.00</div>
               </div>
