@@ -254,8 +254,13 @@ class TradingApp {
 
         // Update recent trades using the same cached data
         const trades = data.recent_trades || data.trades || [];
-        if (trades && trades.length) {
-            this.displayRecentTrades(trades);
+        console.log('Updating recent trades from status:', trades.length, 'trades found');
+        
+        // If no trades from status, try trade history endpoint
+        if (trades.length === 0) {
+            this.updateRecentTrades();
+        } else {
+            this.displayDashboardRecentTrades(trades);
         }
 
         // Update price source status only (portfolio updates separately to avoid loops)
@@ -526,6 +531,35 @@ class TradingApp {
             style: 'currency',
             currency: targetCurrency
         }).format(convertedAmount);
+    }
+
+    formatTradeTime(timestamp) {
+        if (!timestamp) return 'N/A';
+        
+        try {
+            const date = new Date(timestamp);
+            if (isNaN(date.getTime())) return 'Invalid';
+            
+            const now = new Date();
+            const diffMs = now - date;
+            const diffHours = diffMs / (1000 * 60 * 60);
+            
+            if (diffHours < 24) {
+                // Show time only for today
+                return date.toLocaleTimeString('en-US', { 
+                    hour: '2-digit', 
+                    minute: '2-digit' 
+                });
+            } else {
+                // Show date for older trades
+                return date.toLocaleDateString('en-US', { 
+                    month: 'short', 
+                    day: 'numeric' 
+                });
+            }
+        } catch (e) {
+            return 'N/A';
+        }
     }
 
     async fetchExchangeRates() {
@@ -1668,17 +1702,59 @@ class TradingApp {
         } catch (e) {
             console.error('Failed to fetch trades from status:', e);
         }
+        
+        // If no trades found anywhere, show empty message
+        this.displayDashboardRecentTrades([]);
     }
 
     displayRecentTrades(trades) {
         const tableBody = document.getElementById('trades-table');
-        if (!tableBody) return;
+        if (!tableBody) {
+            // Try dashboard preview table
+            this.displayDashboardRecentTrades(trades);
+            return;
+        }
 
         // Normalize before storing
         this.allTrades = this.normalizeTrades(trades || []);
 
         // Apply current filters
         this.applyTradeFilters();
+    }
+
+    displayDashboardRecentTrades(trades) {
+        const tableBody = document.getElementById('recent-trades-preview-body');
+        if (!tableBody) return;
+
+        const normalizedTrades = this.normalizeTrades(trades || []);
+        
+        // Show only last 5 trades for dashboard preview
+        const recentTrades = normalizedTrades.slice(0, 5);
+        
+        if (recentTrades.length === 0) {
+            tableBody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-3">No trades yet</td></tr>';
+            return;
+        }
+
+        let html = '';
+        recentTrades.forEach((trade, index) => {
+            const sideClass = trade.side?.toLowerCase() === 'buy' ? 'trade-buy' : 'trade-sell';
+            const pnlClass = (trade.pnl || 0) >= 0 ? 'pnl-positive' : 'pnl-negative';
+            
+            html += `
+                <tr>
+                    <td>${index + 1}</td>
+                    <td class="text-start">${this.formatTradeTime(trade.timestamp)}</td>
+                    <td><strong>${trade.symbol || trade.Symbol || ''}</strong></td>
+                    <td><span class="${sideClass}">${(trade.side || trade.Side || '').toUpperCase()}</span></td>
+                    <td class="text-end">${this.formatCurrency(trade.quantity || trade.Quantity || trade.size || 0)}</td>
+                    <td class="text-end">${this.formatCurrency(trade.price || trade.Price || 0)}</td>
+                    <td class="text-end ${pnlClass}">${this.formatCurrency(trade.pnl || trade.PnL || 0)}</td>
+                </tr>
+            `;
+        });
+        
+        tableBody.innerHTML = html;
     }
 
     applyTradeFilters() {
