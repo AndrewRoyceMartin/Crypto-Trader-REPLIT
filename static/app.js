@@ -1302,7 +1302,8 @@ class TradingApp {
                     },
                     options: {
                         responsive: true,
-                        maintainAspectRatio: false,
+                        maintainAspectRatio: true,
+                        aspectRatio: 2,
                         plugins: {
                             title: {
                                 display: true,
@@ -1349,7 +1350,8 @@ class TradingApp {
                     },
                     options: {
                         responsive: true,
-                        maintainAspectRatio: false,
+                        maintainAspectRatio: true,
+                        aspectRatio: 1,
                         plugins: {
                             title: {
                                 display: true,
@@ -1381,7 +1383,8 @@ class TradingApp {
                     },
                     options: {
                         responsive: true,
-                        maintainAspectRatio: false,
+                        maintainAspectRatio: true,
+                        aspectRatio: 2,
                         plugins: {
                             title: {
                                 display: true,
@@ -2821,7 +2824,8 @@ function initializeQuickOverviewCharts() {
                 },
                 options: {
                     responsive: true,
-                    maintainAspectRatio: false,
+                    maintainAspectRatio: true,
+                    aspectRatio: 3,
                     plugins: {
                         legend: { display: false },
                         tooltip: { 
@@ -2867,7 +2871,8 @@ function initializeQuickOverviewCharts() {
                 },
                 options: {
                     responsive: true,
-                    maintainAspectRatio: false,
+                    maintainAspectRatio: true,
+                    aspectRatio: 1,
                     plugins: {
                         legend: { 
                             display: false
@@ -3011,7 +3016,8 @@ function initializePortfolioCharts() {
                 },
                 options: {
                     responsive: true,
-                    maintainAspectRatio: false,
+                    maintainAspectRatio: true,
+                    aspectRatio: 2,
                     plugins: {
                         title: {
                             display: true,
@@ -3074,7 +3080,8 @@ function initializePortfolioCharts() {
                 },
                 options: {
                     responsive: true,
-                    maintainAspectRatio: false,
+                    maintainAspectRatio: true,
+                    aspectRatio: 1,
                     plugins: {
                         title: {
                             display: true,
@@ -3123,7 +3130,8 @@ function initializePortfolioCharts() {
                 },
                 options: {
                     responsive: true,
-                    maintainAspectRatio: false,
+                    maintainAspectRatio: true,
+                    aspectRatio: 2,
                     plugins: {
                         title: {
                             display: true,

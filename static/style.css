@@ -109,8 +109,16 @@ body {
 .chart-container {
     position: relative;
     height: 350px;
+    max-height: 350px;
+    width: 100%;
     margin-top: 1rem;
     padding: 1rem 0;
+    overflow: hidden;
+}
+
+.chart-container canvas {
+    max-width: 100% !important;
+    max-height: 350px !important;
 }
 
 .nav-tabs {
@@ -549,12 +557,27 @@ body {
 .chart-container-responsive {
     position: relative;
     height: 350px;
+    max-height: 350px;
     width: 100%;
     margin: 1rem 0;
+    overflow: hidden;
 }
 
 .chart-container-responsive canvas {
     max-width: 100% !important;
+    max-height: 350px !important;
+}
+
+/* Additional chart size control */
+.card .chart-container,
+.card .chart-container-responsive {
+    max-height: 300px !important;
+    height: 300px !important;
+}
+
+.card .chart-container canvas,
+.card .chart-container-responsive canvas {
+    max-height: 300px !important;
     height: auto !important;
 }
 
