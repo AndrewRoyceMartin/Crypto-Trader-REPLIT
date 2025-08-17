@@ -54,7 +54,7 @@ class TradingApp {
 
     // Helper: get trades <tbody> robustly
     getTradesTbody() {
-        return document.getElementById('trades-table-body') || document.getElementById('trades-table');
+        return document.getElementById('trades-table');
     }
 
     // Add this method inside the TradingApp class
@@ -1749,7 +1749,7 @@ async function resetEntireProgram() {
                 }
 
                 // Clear recent trades display
-                const tradesTable = document.getElementById('trades-table-body') || document.getElementById('trades-table');
+                const tradesTable = document.getElementById('trades-table');
                 if (tradesTable) {
                     tradesTable.innerHTML = '';
                     const row = document.createElement('tr');
