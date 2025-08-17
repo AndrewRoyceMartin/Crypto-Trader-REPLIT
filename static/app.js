@@ -2167,3 +2167,92 @@ function updateNavbarButtons(activeView) {
         buttons[buttonMap[activeView]].classList.add('btn-light');
     }
 }
+
+// Debug functions for browser console testing
+window.debugTrades = {
+    // Test 1: Check what the server returns
+    async checkServerData() {
+        try {
+            const response = await fetch('/api/status');
+            const data = await response.json();
+            console.log('Server trades data:', data.recent_trades);
+            console.log('Data type:', typeof data.recent_trades);
+            if (data.recent_trades && data.recent_trades.length > 0) {
+                console.log('First trade keys:', Object.keys(data.recent_trades[0]));
+            }
+            return data.recent_trades;
+        } catch (e) {
+            console.error('Failed to fetch server data:', e);
+        }
+    },
+
+    // Test 2: Test normalization with mock data
+    testNormalizer() {
+        const rawTrades = [
+            { 
+                ts: new Date().toISOString(), 
+                symbol: 'BTC/USDT', 
+                side: 'buy', 
+                qty: '0.01', 
+                price: '65000', 
+                pnl: '12.34', 
+                order_id: 'abc123' 
+            },
+            { 
+                timestamp: Date.now(), 
+                pair: 'ETH/USDT', 
+                side: 'SELL', 
+                quantity: 0.5, 
+                fill_price: 4200.50, 
+                profit: -5.67, 
+                id: 'def456' 
+            }
+        ];
+        
+        console.log('Raw trades:', rawTrades);
+        if (window.tradingApp) {
+            const normalized = window.tradingApp.normalizeTrades(rawTrades);
+            console.log('Normalized trades:', normalized);
+            
+            // Display them
+            console.log('Displaying normalized trades...');
+            window.tradingApp.displayRecentTrades(rawTrades);
+            
+            return normalized;
+        } else {
+            console.error('tradingApp not available');
+        }
+    },
+
+    // Test 3: Check if table element exists
+    checkTableElement() {
+        const table = document.getElementById('trades-table');
+        console.log('Table element found:', !!table);
+        console.log('Table element:', table);
+        if (table) {
+            console.log('Table children count:', table.children.length);
+            console.log('Table innerHTML length:', table.innerHTML.length);
+        }
+        return table;
+    },
+
+    // Test 4: Check case sensitivity issues
+    testCaseSensitivity() {
+        const testTrades = [
+            { timestamp: Date.now(), symbol: 'BTC', side: 'buy', price: 65000, quantity: 0.01, pnl: 10 },
+            { timestamp: Date.now(), symbol: 'ETH', side: 'BUY', price: 4200, quantity: 0.5, pnl: -5 },
+            { timestamp: Date.now(), symbol: 'SOL', side: 'sell', price: 190, quantity: 2, pnl: 8 }
+        ];
+        
+        if (window.tradingApp) {
+            console.log('Testing case normalization...');
+            window.tradingApp.displayRecentTrades(testTrades);
+            
+            // Check if sides are normalized to uppercase
+            const normalized = window.tradingApp.normalizeTrades(testTrades);
+            console.log('Normalized sides:', normalized.map(t => t.side));
+        }
+    }
+};
+
+console.log('Debug functions loaded. Use window.debugTrades.checkServerData(), testNormalizer(), checkTableElement(), or testCaseSensitivity()');
