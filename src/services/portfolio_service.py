@@ -1,40 +1,79 @@
+# -*- coding: utf-8 -*-
 """
 Portfolio Service - Integrates app with Simulated OKX Exchange
 Provides a unified interface for portfolio data from the exchange.
 """
 
+from __future__ import annotations
+
 import logging
-import time
-from typing import Dict, List, Optional
-from datetime import datetime
+import random
+from typing import Dict, List, Optional, Any
+from datetime import datetime, timedelta, timezone
+
 from src.exchanges.simulated_okx import SimulatedOKX
-from src.data.portfolio_assets import MASTER_PORTFOLIO_ASSETS as PORTFOLIO_ASSETS
-from src.utils.bot_pricing import BotPricingCalculator, BotParams
+from src.data.portfolio_assets import MASTER_PORTFOLIO_ASSETS as RAW_ASSETS
+
+
+def _normalize_assets(raw: Any) -> List[Dict[str, Any]]:
+    """
+    Accepts MASTER_PORTFOLIO_ASSETS as either:
+      - list[str] of symbols, or
+      - list[dict] with keys like {'symbol','name','rank'}.
+    Returns a list of dicts: [{'symbol','name','rank'}].
+    """
+    assets: List[Dict[str, Any]] = []
+    if not raw:
+        return assets
+
+    if isinstance(raw, list):
+        if all(isinstance(x, str) for x in raw):
+            for idx, sym in enumerate(raw, start=1):
+                assets.append({"symbol": sym, "name": sym, "rank": idx})
+        elif all(isinstance(x, dict) for x in raw):
+            # ensure required keys with sensible defaults
+            for idx, item in enumerate(raw, start=1):
+                sym = item.get("symbol") or item.get("ticker") or item.get("code")
+                if not sym:
+                    continue
+                assets.append({
+                    "symbol": sym,
+                    "name": item.get("name", sym),
+                    "rank": item.get("rank", idx),
+                })
+    return assets
+
+
+ASSETS: List[Dict[str, Any]] = _normalize_assets(RAW_ASSETS)
 
 
 class PortfolioService:
     """Service that manages portfolio data through Simulated OKX exchange."""
-    
-    def __init__(self):
+
+    def __init__(self) -> None:
         """Initialize portfolio service with OKX exchange."""
         self.logger = logging.getLogger(__name__)
-        
+
         # Initialize simulated OKX exchange
         config = {
-            'sandbox': True,
-            'apiKey': 'simulated_key',
-            'secret': 'simulated_secret',
-            'password': 'simulated_passphrase'
+            "sandbox": True,
+            "apiKey": "simulated_key",
+            "secret": "simulated_secret",
+            "password": "simulated_passphrase",
         }
-        
+
         self.exchange = SimulatedOKX(config)
         self._initialize_exchange()
-        
-        # Track initialization state - always initialized for simulation
-        self.is_initialized = True
-        self._last_sync = datetime.now()
-        
-    def _initialize_exchange(self):
+
+        # Track initialization state
+        self.is_initialized: bool = True
+        self._last_sync: datetime = datetime.now(timezone.utc)
+
+        # Ensure trades store exists on the exchange (for history)
+        if not hasattr(self.exchange, "trades") or self.exchange.trades is None:
+            self.exchange.trades = []
+
+    def _initialize_exchange(self) -> None:
         """Initialize and connect to the simulated exchange."""
         try:
             success = self.exchange.connect()
@@ -42,478 +81,457 @@ class PortfolioService:
                 self.logger.info("Successfully connected to Simulated OKX Exchange")
                 self._populate_initial_portfolio()
             else:
-                raise Exception("Failed to connect to exchange")
-                
+                raise RuntimeError("Failed to connect to exchange")
         except Exception as e:
-            self.logger.error(f"Exchange initialization failed: {str(e)}")
+            self.logger.error(f"Exchange initialization failed: {e}")
             raise
-    
-    def _populate_initial_portfolio(self):
-        """Populate the exchange with initial $10 positions for each crypto."""
+
+    def _populate_initial_portfolio(self) -> None:
+        """Populate the exchange with initial $10 positions for each asset."""
         try:
             self.logger.info("Populating initial portfolio positions...")
-            
-            # Create initial positions for each asset ($10 each)
+
             successful_positions = 0
-            failed_positions = []
-            
-            for symbol in PORTFOLIO_ASSETS:
+            failed_positions: List[str] = []
+
+            for asset in ASSETS:
+                symbol = asset["symbol"]
                 try:
-                    # Calculate quantity for $10 position
-                    current_price = self.exchange._get_current_price(f"{symbol}/USDT")
-                    if current_price and current_price > 0:
+                    inst = f"{symbol}/USDT"
+                    current_price = self.exchange._get_current_price(inst)  # type: ignore[attr-defined]
+                    if current_price is not None and current_price > 0.0:
                         quantity = 10.0 / current_price
-                        
-                        # Place buy order to establish position
+
                         order_result = self.exchange.place_order(
-                            symbol=f"{symbol}/USDT",
-                            side='buy',
+                            symbol=inst,
+                            side="buy",
                             amount=quantity,
-                            order_type='market'
+                            order_type="market",
                         )
-                        
-                        if order_result.get('code') == '0':
+                        if str(order_result.get("code")) == "0":
                             successful_positions += 1
-                            self.logger.debug(f"Created position: {symbol} - {quantity:.8f} @ ${current_price:.6f}")
+                            self.logger.debug(
+                                "Created position: %s - %.8f @ $%.6f",
+                                symbol,
+                                quantity,
+                                current_price,
+                            )
                         else:
                             failed_positions.append(symbol)
-                            
                     else:
                         failed_positions.append(symbol)
-                        self.logger.warning(f"Could not get price for {symbol}")
-                        
+                        self.logger.warning("Could not get price for %s", symbol)
                 except Exception as e:
                     failed_positions.append(symbol)
-                    self.logger.warning(f"Failed to create position for {symbol}: {str(e)}")
-            
-            self.logger.info(f"Portfolio initialization complete: {successful_positions} positions created")
+                    self.logger.warning("Failed to create position for %s: %s", symbol, e)
+
+            self.logger.info(
+                "Portfolio initialization complete: %d positions created",
+                successful_positions,
+            )
             if failed_positions:
-                self.logger.warning(f"Failed to create positions for: {', '.join(failed_positions)}")
-            
+                self.logger.warning(
+                    "Failed to create positions for: %s", ", ".join(failed_positions)
+                )
+
             # Generate some initial trade history for demonstration
             self._generate_initial_trade_history()
-            
+
             self.is_initialized = True
-            self._last_sync = datetime.now()
-            
+            self._last_sync = datetime.now(timezone.utc)
+
         except Exception as e:
-            self.logger.error(f"Portfolio population failed: {str(e)}")
+            self.logger.error(f"Portfolio population failed: {e}")
             raise
-    
-    def _generate_initial_trade_history(self):
+
+    def _generate_initial_trade_history(self) -> None:
         """Generate some initial trade history for the portfolio."""
         try:
-            from datetime import timedelta
-            import random
-            
-            # Generate trades for last 30 days
-            base_time = datetime.now() - timedelta(days=30)
-            
-            # Get top 20 assets for generating trade history
-            top_assets = PORTFOLIO_ASSETS[:20]
-            
+            base_time = datetime.now(timezone.utc) - timedelta(days=30)
+
+            # pick top 20 by rank
+            top_assets = sorted(ASSETS, key=lambda a: a.get("rank", 999))[:20]
             trades_generated = 0
-            for i, symbol in enumerate(top_assets):
-                
+
+            for asset in top_assets:
+                symbol = asset["symbol"]
+
                 # Generate 2-5 trades per asset over the past month
                 num_trades = random.randint(2, 5)
-                
-                for j in range(num_trades):
+
+                for _ in range(num_trades):
                     # Random time in the past 30 days
                     days_ago = random.randint(1, 30)
                     hours_ago = random.randint(0, 23)
                     trade_time = base_time + timedelta(days=days_ago, hours=hours_ago)
-                    
-                    # Random trade details
-                    side = 'BUY' if random.random() > 0.6 else 'SELL'  # More buys than sells
-                    base_price = self.exchange._get_current_price(f"{symbol}/USDT") or 1.0
-                    # Vary price by ±20% from current
+
+                    inst_pair = f"{symbol}/USDT"
+                    base_price = self.exchange._get_current_price(inst_pair)  # type: ignore[attr-defined]
+                    if base_price is None or base_price <= 0:
+                        base_price = 1.0
+
                     price_variation = random.uniform(0.8, 1.2)
                     trade_price = base_price * price_variation
-                    
+
                     # Random quantity (smaller for expensive coins)
-                    if base_price > 1000:  # BTC, ETH
+                    if base_price > 1000:
                         quantity = random.uniform(0.001, 0.01)
-                    elif base_price > 100:  # SOL, etc
+                    elif base_price > 100:
                         quantity = random.uniform(0.1, 1.0)
-                    elif base_price > 1:  # Most altcoins
-                        quantity = random.uniform(1, 50)
-                    else:  # Cheap coins
-                        quantity = random.uniform(100, 10000)
-                    
-                    # Create simulated trade in exchange
-                    trade_data = {
-                        'ordId': f'simulated_{trades_generated + 1}',
-                        'clOrdId': f'client_{trades_generated + 1}',
-                        'instId': f'{symbol}-USDT-SWAP',
-                        'side': side,
-                        'sz': str(quantity),
-                        'px': str(trade_price),
-                        'fillSz': str(quantity),
-                        'fillPx': str(trade_price),
-                        'ts': str(int(trade_time.timestamp() * 1000)),
-                        'state': 'filled',
-                        'fee': str(round(quantity * trade_price * 0.001, 6)),  # 0.1% fee
-                        'feeCcy': 'USDT'
-                    }
-                    
-                    # Add to exchange's trades list
-                    self.exchange.trades.append(trade_data)
-                    
-                    trades_generated += 1
-            
-            self.logger.info(f"Generated {trades_generated} initial trades for portfolio demonstration")
-            
-        except Exception as e:
-            self.logger.error(f"Error generating initial trade history: {str(e)}")
-            # Don't raise - this is optional demonstration data
-    
-    def get_portfolio_data(self) -> Dict:
-        """Get complete portfolio data from OKX simulation for all 103 cryptocurrencies."""
-        try:
-            # Use ONLY OKX simulation - no external API calls
-            holdings = []
-            total_value = 0
-            total_initial_value = 0
-            
-            # Get actual positions from the exchange
-            positions_response = self.exchange.get_positions()
-            actual_positions = {pos['instId'].replace('-USDT-SWAP', ''): pos 
-                             for pos in positions_response.get('data', [])}
-            
-            for rank, symbol in enumerate(PORTFOLIO_ASSETS, 1):
-                try:
-                    # Get current price from OKX simulation only
-                    current_price = self.exchange._get_current_price(f"{symbol}/USDT")
-                    
-                    if current_price and current_price > 0:
-                        initial_investment = 10.0  # $10 per crypto
-                        
-                        # Check if we have an actual position from trades
-                        if symbol in actual_positions:
-                            actual_position = actual_positions[symbol]
-                            quantity = float(actual_position['pos'])
-                            avg_price = float(actual_position['avgPx'])
-                            current_value = quantity * current_price
-                            cost_basis = quantity * avg_price
-                            pnl = current_value - cost_basis
-                            pnl_percent = (pnl / cost_basis) * 100 if cost_basis > 0 else 0
-                            
-                            # Mark as live position
-                            has_position = True
-                            
-                        else:
-                            # Check if this position has been fully sold (has trading history but no current position)
-                            has_trading_history = any(
-                                trade.get('instId', '').replace('-USDT-SWAP', '') == symbol 
-                                for trade in self.exchange.trades
-                            )
-                            
-                            if has_trading_history:
-                                # Position was sold - show zero holdings
-                                quantity = 0.0
-                                current_value = 0.0
-                                pnl = -initial_investment  # Show full loss if position sold
-                                pnl_percent = -100.0
-                                has_position = False
-                                cost_basis = initial_investment
-                                avg_price = historical_purchase_price if 'historical_purchase_price' in locals() else current_price
-                                
-                            else:
-                                # Use simulated historical purchase price for assets without real positions
-                                # Create more realistic variation based on symbol characteristics
-                                import random
-                                random.seed(hash(symbol))  # Consistent but varied results per symbol
-                                
-                                variation_type = random.randint(1, 100)
-                                if variation_type <= 15:  # 15% chance of significant gains
-                                    price_variation = random.uniform(0.15, 0.45)  # +15% to +45%
-                                elif variation_type <= 30:  # 15% chance of losses
-                                    price_variation = random.uniform(-0.35, -0.10)  # -10% to -35%
-                                elif variation_type <= 50:  # 20% chance of moderate gains
-                                    price_variation = random.uniform(0.03, 0.15)  # +3% to +15%
-                                elif variation_type <= 70:  # 20% chance of moderate losses
-                                    price_variation = random.uniform(-0.15, -0.03)  # -3% to -15%
-                                else:  # 30% chance of minimal movement
-                                    price_variation = random.uniform(-0.05, 0.05)  # -5% to +5%
-                                    
-                                historical_purchase_price = current_price / (1 + price_variation)
-                                
-                                # Calculate quantity based on historical purchase price
-                                quantity = initial_investment / historical_purchase_price
-                                current_value = quantity * current_price
-                                
-                                # Calculate P&L based on price movement from purchase to now
-                                pnl = current_value - initial_investment
-                                pnl_percent = (pnl / initial_investment) * 100
-                                has_position = True
-                        
-                        holdings.append({
-                            "rank": rank,
-                            "symbol": symbol,
-                            "name": symbol,
-                            "quantity": round(quantity, 8),
-                            "current_price": current_price,
-                            "value": current_value,
-                            "current_value": current_value,
-                            "cost_basis": getattr(locals(), 'cost_basis', initial_investment),
-                            "avg_entry_price": getattr(locals(), 'avg_price', current_price),
-                            "pnl": pnl,
-                            "pnl_percent": pnl_percent,
-                            "unrealized_pnl": pnl,
-                            "allocation_percent": (current_value / total_value * 100) if total_value > 0 else 0,
-                            "is_live": True,  # All OKX prices are simulated "live"
-                            "has_position": has_position  # Track real vs simulated positions
-                        })
-                        
-                        total_value += current_value
-                        total_initial_value += initial_investment
+                    elif base_price > 1:
+                        quantity = random.uniform(1.0, 50.0)
                     else:
-                        # Fallback price if OKX simulation doesn't have this symbol
-                        current_price = 1.0
-                        initial_investment = 10.0
-                        quantity = initial_investment / current_price
-                        current_value = quantity * current_price
-                        
-                        holdings.append({
-                            "rank": rank,
-                            "symbol": symbol,
-                            "name": symbol,
-                            "quantity": round(quantity, 8),
-                            "current_price": current_price,
-                            "value": current_value,
-                            "current_value": current_value,
-                            "pnl": 0.0,
-                            "pnl_percent": 0.0,
-                            "is_live": False
-                        })
-                        
-                        total_value += current_value
-                        total_initial_value += initial_investment
-                        
-                except Exception as e:
-                    self.logger.warning(f"Failed to get price for {symbol} from OKX: {str(e)}")
-                    # Use fallback
-                    holdings.append({
-                        "rank": rank,
-                        "symbol": symbol,
-                        "name": symbol,
-                        "quantity": 10.0,
-                        "current_price": 1.0,
-                        "value": 10.0,
-                        "current_value": 10.0,
-                        "pnl": 0.0,
-                        "pnl_percent": 0.0,
-                        "is_live": False
-                    })
-                    total_value += 10.0
-                    total_initial_value += 10.0
-            
-            # Calculate total P&L from individual holdings for accuracy
-            total_pnl = sum(h.get('pnl', 0) for h in holdings)
-            total_pnl_percent = (total_pnl / total_initial_value) * 100 if total_initial_value > 0 else 0
-            
-            # Calculate realistic cash balance based on actual portfolio size
-            # For a $1,030 portfolio (103 * $10), keep reasonable cash reserves
-            target_portfolio_value = 1030.0  # 103 assets * $10 each
-            cash_reserve_percentage = 0.1  # Keep 10% in cash
-            cash_balance = target_portfolio_value * cash_reserve_percentage  # ~$103
-            
+                        quantity = random.uniform(100.0, 10000.0)
+
+                    side = "buy" if random.random() > 0.6 else "sell"
+
+                    trade_data = {
+                        "ordId": f"simulated_{trades_generated + 1}",
+                        "clOrdId": f"client_{trades_generated + 1}",
+                        "instId": f"{symbol}-USDT-SWAP",
+                        "side": side,
+                        "sz": f"{quantity}",
+                        "px": f"{trade_price}",
+                        "fillSz": f"{quantity}",
+                        "fillPx": f"{trade_price}",
+                        "ts": str(int(trade_time.timestamp() * 1000)),
+                        "state": "filled",
+                        "fee": f"{round(quantity * trade_price * 0.001, 6)}",  # 0.1%
+                        "feeCcy": "USDT",
+                    }
+
+                    self.exchange.trades.append(trade_data)  # type: ignore[attr-defined]
+                    trades_generated += 1
+
+            self.logger.info(
+                "Generated %d initial trades for portfolio demonstration", trades_generated
+            )
+
+        except Exception as e:
+            self.logger.error(f"Error generating initial trade history: {e}")
+            # non-fatal
+
+    def get_portfolio_data(self) -> Dict[str, Any]:
+        """
+        Get complete portfolio data from OKX simulation for all assets.
+        Returns a dict with keys: holdings, total_current_value, total_pnl, total_pnl_percent,
+        cash_balance, last_update
+        """
+        try:
+            holdings: List[Dict[str, Any]] = []
+            total_value = 0.0
+            total_initial_value = 0.0
+
+            # Real positions from the exchange
+            positions_response = self.exchange.get_positions()
+            okx_positions = {  # map 'BTC' -> position
+                pos.get("instId", "").replace("-USDT-SWAP", "").replace("-USDT", ""): pos
+                for pos in (positions_response.get("data") or [])
+            }
+
+            for asset in ASSETS:
+                rank = asset.get("rank", 999)
+                symbol = asset["symbol"]
+                name = asset.get("name", symbol)
+
+                inst_pair = f"{symbol}/USDT"
+                current_price = self.exchange._get_current_price(inst_pair)  # type: ignore[attr-defined]
+
+                # Fallback if no price
+                if current_price is None or current_price <= 0.0:
+                    current_price = 1.0
+
+                initial_investment = 10.0
+                quantity: float = 0.0
+                avg_entry_price: float = current_price
+                current_value: float = 0.0
+                cost_basis: float = initial_investment
+                pnl: float = 0.0
+                pnl_percent: float = 0.0
+                has_position: bool = False
+
+                if symbol in okx_positions:
+                    # Live position from simulated exchange
+                    p = okx_positions[symbol]
+                    try:
+                        quantity = float(p.get("pos", 0.0))
+                        avg_entry_price = float(p.get("avgPx", current_price))
+                        mark_price = float(p.get("markPx", current_price))
+                    except (TypeError, ValueError):
+                        quantity = 0.0
+                        avg_entry_price = current_price
+                        mark_price = current_price
+
+                    current_value = quantity * mark_price
+                    cost_basis = quantity * max(avg_entry_price, 0.0)
+                    pnl = current_value - cost_basis
+                    pnl_percent = (pnl / cost_basis * 100.0) if cost_basis > 0 else 0.0
+                    has_position = True
+                else:
+                    # No open position; simulate a historical entry for display
+                    # Make deterministic-ish variation based on symbol hash
+                    symbol_hash = abs(hash(symbol)) % 100
+                    if symbol_hash < 20:
+                        # +5%..+35%
+                        price_variation = (symbol_hash % 30 + 5) / 100.0
+                    elif symbol_hash < 40:
+                        # -5%..-30%
+                        price_variation = -((symbol_hash % 25 + 5) / 100.0)
+                    else:
+                        # -7%..+7%
+                        price_variation = ((symbol_hash % 15) - 7) / 100.0
+
+                    historical_purchase_price = current_price / (1.0 + price_variation)
+                    if historical_purchase_price <= 0:
+                        historical_purchase_price = current_price
+
+                    quantity = initial_investment / historical_purchase_price
+                    current_value = quantity * current_price
+                    cost_basis = initial_investment
+                    pnl = current_value - initial_investment
+                    pnl_percent = (pnl / initial_investment * 100.0) if initial_investment > 0 else 0.0
+                    has_position = True  # shows in holdings with simulated entry
+
+                holdings.append({
+                    "rank": rank,
+                    "symbol": symbol,
+                    "name": name,
+                    "quantity": round(quantity, 8),
+                    "current_price": float(current_price),
+                    "value": float(current_value),
+                    "current_value": float(current_value),
+                    "cost_basis": float(cost_basis),
+                    "avg_entry_price": float(avg_entry_price),
+                    "pnl": float(pnl),
+                    "pnl_percent": float(pnl_percent),
+                    "unrealized_pnl": float(pnl),
+                    "is_live": True,  # simulated live
+                    "has_position": bool(has_position),
+                })
+
+                total_value += current_value
+                total_initial_value += initial_investment
+
+            # Fill allocation_percent now that total_value is known
+            total_value_for_alloc = total_value if total_value > 0 else 1.0
+            for h in holdings:
+                h["allocation_percent"] = (h["current_value"] / total_value_for_alloc) * 100.0
+
+            total_pnl = sum(h.get("pnl", 0.0) for h in holdings)
+            total_pnl_percent = (total_pnl / total_initial_value * 100.0) if total_initial_value > 0 else 0.0
+
+            # Keep ~10% cash reserve vs a $1,030 seed
+            target_portfolio_value = len(ASSETS) * 10.0
+            cash_balance = target_portfolio_value * 0.10
+
             return {
                 "holdings": holdings,
-                "total_current_value": total_value,
-                "total_pnl": total_pnl,
-                "total_pnl_percent": total_pnl_percent,
-                "cash_balance": cash_balance,
-                "last_update": datetime.now().isoformat()
+                "total_current_value": float(total_value),
+                "total_pnl": float(total_pnl),
+                "total_pnl_percent": float(total_pnl_percent),
+                "cash_balance": float(cash_balance),
+                "last_update": datetime.now(timezone.utc).isoformat(),
             }
-            
+
         except Exception as e:
-            self.logger.error(f"OKX Portfolio data error: {str(e)}")
+            self.logger.error(f"OKX Portfolio data error: {e}")
+            # Safe fallback
+            seed_value = len(ASSETS) * 10.0 if ASSETS else 1030.0
             return {
                 "holdings": [],
-                "total_current_value": 1030.0,  # 103 * $10 fallback
-                "total_pnl": 0,
-                "total_pnl_percent": 0,
-                "cash_balance": 103.0,  # 10% cash reserve
-                "last_update": datetime.now().isoformat()
+                "total_current_value": float(seed_value),
+                "total_pnl": 0.0,
+                "total_pnl_percent": 0.0,
+                "cash_balance": float(seed_value * 0.10),
+                "last_update": datetime.now(timezone.utc).isoformat(),
             }
-    
-    def _convert_to_app_format(self, positions: List[Dict]) -> List[Dict]:
-        """Convert OKX position format to app format."""
-        holdings = []
-        
-        # Create holdings list from positions
+
+    def _convert_to_app_format(self, positions: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """Convert OKX position format to a simpler app format."""
+        holdings: List[Dict[str, Any]] = []
+
+        # quick map for rank/name
+        meta = {a["symbol"]: a for a in ASSETS}
+
         for position in positions:
             try:
-                symbol = position['instId'].replace('-USDT-SWAP', '')
-                quantity = float(position['pos'])
-                avg_price = float(position['avgPx'])
-                current_price = float(position['markPx'])
-                
-                # Calculate values
+                inst_id = position.get("instId", "")
+                symbol = inst_id.replace("-USDT-SWAP", "").replace("-USDT", "")
+                try:
+                    quantity = float(position.get("pos", 0.0))
+                except (TypeError, ValueError):
+                    quantity = 0.0
+                try:
+                    avg_price = float(position.get("avgPx", 0.0))
+                except (TypeError, ValueError):
+                    avg_price = 0.0
+                try:
+                    current_price = float(position.get("markPx", avg_price))
+                except (TypeError, ValueError):
+                    current_price = avg_price
+
                 current_value = quantity * current_price
                 cost_basis = quantity * avg_price
                 pnl = current_value - cost_basis
-                pnl_percent = (pnl / cost_basis) * 100 if cost_basis > 0 else 0
-                
-                # Find asset info
-                asset_info = next((a for a in PORTFOLIO_ASSETS if a['symbol'] == symbol), None)
-                asset_name = asset_info['name'] if asset_info else symbol
-                asset_rank = asset_info['rank'] if asset_info else 999
-                
+                pnl_percent = (pnl / cost_basis * 100.0) if cost_basis > 0 else 0.0
+
+                info = meta.get(symbol, {"name": symbol, "rank": 999})
+
                 holding = {
-                    'symbol': symbol,
-                    'name': asset_name,
-                    'rank': asset_rank,
-                    'quantity': quantity,
-                    'current_price': current_price,
-                    'avg_price': avg_price,
-                    'current_value': current_value,
-                    'value': cost_basis,  # Initial investment value
-                    'pnl': pnl,
-                    'pnl_percent': pnl_percent,
-                    'is_live': True,
-                    'exchange_position': position  # Include raw OKX data
+                    "symbol": symbol,
+                    "name": info.get("name", symbol),
+                    "rank": info.get("rank", 999),
+                    "quantity": quantity,
+                    "current_price": current_price,
+                    "avg_price": avg_price,
+                    "current_value": current_value,
+                    "value": cost_basis,
+                    "pnl": pnl,
+                    "pnl_percent": pnl_percent,
+                    "is_live": True,
+                    "exchange_position": position,
                 }
-                
                 holdings.append(holding)
-                
             except Exception as e:
-                self.logger.error(f"Error converting position {position}: {str(e)}")
+                self.logger.error(f"Error converting position {position}: {e}")
                 continue
-        
-        # Sort by rank
-        holdings.sort(key=lambda x: x['rank'])
-        
+
+        holdings.sort(key=lambda x: x.get("rank", 999))
         return holdings
-    
-    def _calculate_total_pnl_percent(self, holdings: List[Dict]) -> float:
+
+    def _calculate_total_pnl_percent(self, holdings: List[Dict[str, Any]]) -> float:
         """Calculate total P&L percentage across all holdings."""
-        total_cost = sum(h.get('value', 0) for h in holdings)
-        total_pnl = sum(h.get('pnl', 0) for h in holdings)
-        
-        return (total_pnl / total_cost) * 100 if total_cost > 0 else 0
-    
-    def place_trade(self, symbol: str, side: str, amount: float, order_type: str = 'market') -> Dict:
+        total_cost = sum(float(h.get("value", 0.0)) for h in holdings)
+        total_pnl = sum(float(h.get("pnl", 0.0)) for h in holdings)
+        return (total_pnl / total_cost * 100.0) if total_cost > 0 else 0.0
+
+    def place_trade(self, symbol: str, side: str, amount: float, order_type: str = "market") -> Dict[str, Any]:
         """Place a trade through the exchange."""
         if not self.exchange.is_connected():
-            raise Exception("Exchange not connected")
-        
+            raise RuntimeError("Exchange not connected")
+
         try:
-            # Format symbol for OKX
             trading_pair = f"{symbol}/USDT"
-            
-            # Place order
             result = self.exchange.place_order(
-                symbol=trading_pair,
-                side=side,
-                amount=amount,
-                order_type=order_type
+                symbol=trading_pair, side=side, amount=amount, order_type=order_type
             )
-            
-            self.logger.info(f"Trade executed: {side} {amount} {symbol}")
+            self.logger.info("Trade executed: %s %s %s", side, amount, symbol)
             return result
-            
         except Exception as e:
-            self.logger.error(f"Trade execution failed: {str(e)}")
+            self.logger.error(f"Trade execution failed: {e}")
             raise
-    
-    def get_trade_history(self, symbol: Optional[str] = None, limit: int = 100) -> List[Dict]:
+
+    def get_trade_history(self, symbol: Optional[str] = None, limit: int = 100) -> List[Dict[str, Any]]:
         """Get trade history from the exchange."""
         if not self.exchange.is_connected():
-            raise Exception("Exchange not connected")
-        
+            raise RuntimeError("Exchange not connected")
+
         try:
-            # Get trades from exchange
-            if hasattr(self.exchange, 'trades') and self.exchange.trades:
-                trades = self.exchange.trades
-                
-                # Filter by symbol if provided
-                if symbol:
-                    symbol_filter = f"{symbol}-USDT-SWAP"
-                    trades = [t for t in trades if t['instId'] == symbol_filter]
-                
-                # Sort by timestamp (newest first) and limit
-                trades = sorted(trades, key=lambda x: int(x['ts']), reverse=True)[:limit]
-                
-                # Convert to app format
-                formatted_trades = []
-                for trade in trades:
-                    # Handle both filled and order data
-                    quantity = float(trade.get('fillSz', trade.get('sz', '0')))
-                    price = float(trade.get('fillPx', trade.get('px', '0')))
-                    
-                    formatted_trade = {
-                        'id': trade['ordId'],
-                        'symbol': trade['instId'].replace('-USDT-SWAP', '').replace('-USDT', ''),
-                        'side': trade.get('side', 'BUY').upper(),
-                        'quantity': quantity,
-                        'price': price,
-                        'timestamp': datetime.fromtimestamp(int(trade['ts']) / 1000).isoformat(),
-                        'fee': float(trade.get('fee', quantity * price * 0.001)),
-                        'fee_currency': trade.get('feeCcy', 'USDT'),
-                        'total_value': quantity * price,
-                        'exchange_data': trade
-                    }
-                    formatted_trades.append(formatted_trade)
-                
-                return formatted_trades
-            else:
-                return []
-            
+            trades_raw = getattr(self.exchange, "trades", []) or []
+            if symbol:
+                symbol_filter = f"{symbol}-USDT-SWAP"
+                trades_raw = [t for t in trades_raw if t.get("instId") == symbol_filter]
+
+            # Newest first
+            def _ts(t: Dict[str, Any]) -> int:
+                try:
+                    return int(t.get("ts", "0"))
+                except Exception:
+                    return 0
+
+            trades_raw = sorted(trades_raw, key=_ts, reverse=True)[: max(0, limit)]
+
+            formatted: List[Dict[str, Any]] = []
+            for t in trades_raw:
+                try:
+                    quantity = float(t.get("fillSz", t.get("sz", "0")) or 0.0)
+                except (TypeError, ValueError):
+                    quantity = 0.0
+                try:
+                    price = float(t.get("fillPx", t.get("px", "0")) or 0.0)
+                except (TypeError, ValueError):
+                    price = 0.0
+
+                # ts in ms -> aware datetime
+                ts_ms = 0
+                try:
+                    ts_ms = int(t.get("ts", "0"))
+                except Exception:
+                    ts_ms = 0
+                as_dt = datetime.fromtimestamp(ts_ms / 1000.0, tz=timezone.utc)
+
+                formatted.append({
+                    "id": t.get("ordId", ""),
+                    "symbol": (t.get("instId", "") or "").replace("-USDT-SWAP", "").replace("-USDT", ""),
+                    "side": (t.get("side", "BUY") or "").upper(),
+                    "quantity": quantity,
+                    "price": price,
+                    "timestamp": as_dt.isoformat(),
+                    "fee": float(t.get("fee", quantity * price * 0.001) or 0.0),
+                    "fee_currency": t.get("feeCcy", "USDT"),
+                    "total_value": quantity * price,
+                    "exchange_data": t,
+                })
+            return formatted
         except Exception as e:
-            self.logger.error(f"Error getting trade history: {str(e)}")
+            self.logger.error(f"Error getting trade history: {e}")
             return []
-    
-    def get_exchange_status(self) -> Dict:
+
+    def get_exchange_status(self) -> Dict[str, Any]:
         """Get exchange connection and status information."""
         return {
-            'connected': self.exchange.is_connected(),
-            'initialized': self.is_initialized,
-            'last_sync': self._last_sync.isoformat() if self._last_sync else None,
-            'exchange_type': 'Simulated OKX',
-            'market_open': getattr(self.exchange, 'market_open', True),
-            'balance_summary': self._get_balance_summary()
+            "connected": self.exchange.is_connected(),
+            "initialized": self.is_initialized,
+            "last_sync": self._last_sync.isoformat() if self._last_sync else None,
+            "exchange_type": "Simulated OKX",
+            "market_open": getattr(self.exchange, "market_open", True),
+            "balance_summary": self._get_balance_summary(),
         }
-    
-    def _get_balance_summary(self) -> Dict:
+
+    def _get_balance_summary(self) -> Dict[str, Any]:
         """Get simplified balance summary."""
         try:
             if self.exchange.is_connected():
                 balance = self.exchange.get_balance()
                 portfolio = self.exchange.get_portfolio_summary()
-                
+
+                cash = 0.0
+                try:
+                    cash = float((balance.get("data") or [{}])[0].get("availBal", 0.0))
+                except Exception:
+                    cash = 0.0
+
+                total_eq = 0.0
+                try:
+                    total_eq = float((portfolio.get("data") or {}).get("totalEq", 0.0))
+                except Exception:
+                    total_eq = 0.0
+
                 return {
-                    'cash_balance': float(balance['data'][0]['availBal']),
-                    'total_equity': float(portfolio['data']['totalEq']),
-                    'currency': 'USDT'
+                    "cash_balance": cash,
+                    "total_equity": total_eq,
+                    "currency": "USDT",
                 }
-            else:
-                return {'error': 'Exchange not connected'}
-                
+            return {"error": "Exchange not connected"}
         except Exception as e:
-            return {'error': str(e)}
-    
+            return {"error": str(e)}
+
     def reset_portfolio(self) -> bool:
         """Reset portfolio to initial state (useful for testing)."""
         try:
             self.logger.info("Resetting portfolio to initial state...")
-            
-            # Reinitialize exchange
             self.exchange = SimulatedOKX(self.exchange.config)
             self._initialize_exchange()
-            
             self.logger.info("Portfolio reset successfully")
             return True
-            
         except Exception as e:
-            self.logger.error(f"Portfolio reset failed: {str(e)}")
+            self.logger.error(f"Portfolio reset failed: {e}")
             return False
 
 
 # Global portfolio service instance
-_portfolio_service = None
+_portfolio_service: Optional[PortfolioService] = None
+
 
 def get_portfolio_service() -> PortfolioService:
     """Get the global portfolio service instance."""
