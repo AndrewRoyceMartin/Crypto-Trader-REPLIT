@@ -271,13 +271,39 @@
                                     <button class="btn btn-light btn-sm" onclick="refreshPortfolioSummary()" title="Refresh Summary">
                                         <i class="fas fa-sync-alt me-1"></i>Refresh
                                     </button>
-                                    <button class="btn btn-outline-light btn-sm" onclick="showAllocationChart()" title="View Allocation">
+                                    <button class="btn btn-outline-light btn-sm" onclick="togglePortfolioCharts()" title="Toggle Charts">
                                         <i class="fas fa-chart-pie me-1"></i>Charts
                                     </button>
                                     <button class="btn btn-success btn-sm" onclick="exportATO()" title="Export for Tax">
                                         <i class="fas fa-file-export me-1"></i>ATO Export
                                     </button>
                                 </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Portfolio Charts Section (Hidden by default) -->
+                        <div id="portfolio-charts-section" class="row mt-4" style="display: none;">
+                            <div class="col-12">
+                                <hr class="text-light">
+                                <h5 class="text-light mb-3"><i class="fas fa-chart-bar me-2"></i>Portfolio Analytics</h5>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="chart-container bg-white rounded p-3" style="height: 250px;">
+                                    <canvas id="portfolioChart"></canvas>
+                                </div>
+                                <h6 class="text-center text-light mt-2">Portfolio Value Trend</h6>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="chart-container bg-white rounded p-3" style="height: 250px;">
+                                    <canvas id="pnlChart"></canvas>
+                                </div>
+                                <h6 class="text-center text-light mt-2">P&L Distribution</h6>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="chart-container bg-white rounded p-3" style="height: 250px;">
+                                    <canvas id="performanceChart"></canvas>
+                                </div>
+                                <h6 class="text-center text-light mt-2">Top/Bottom Performers</h6>
                             </div>
                         </div>
                     </div>

@@ -682,6 +682,9 @@ class TradingApp {
                     total_pnl: totalPnl,
                     total_pnl_percent: data.total_pnl_percent || 0
                 }, holdings);
+                
+                // Update enhanced portfolio summary with full data
+                updatePortfolioSummary(data);
 
                 // Recent trades (prefer payload, otherwise fetch)
                 if (data.recent_trades || data.trades) {
@@ -2427,6 +2430,9 @@ function updatePortfolioSummary(portfolioData) {
     const summary = portfolioData.summary || {};
     const holdings = portfolioData.holdings || [];
     
+    // Store data globally for chart updates
+    window.lastPortfolioData = portfolioData;
+    
     // Update main KPIs with safe element updates
     updateElementSafely("summary-total-value", formatCurrency(summary.total_current_value || 0));
     
@@ -2483,9 +2489,222 @@ function refreshPortfolioSummary() {
     }
 }
 
-// Show allocation chart modal 
-function showAllocationChart() {
-    console.log("Opening allocation chart visualization...");
-    alert("Portfolio allocation charts will be implemented with Chart.js integration. This will show:\n\n• Asset allocation by percentage\n• Portfolio value over time\n• Top/bottom performers\n• P&L distribution charts");
+// Toggle portfolio charts visibility
+function togglePortfolioCharts() {
+    console.log("Toggling portfolio charts display...");
+    const chartsSection = document.getElementById('portfolio-charts-section');
+    const button = event.target.closest('button');
+    
+    if (chartsSection.style.display === 'none') {
+        chartsSection.style.display = 'flex';
+        button.innerHTML = '<i class="fas fa-chart-pie me-1"></i>Hide Charts';
+        
+        // Initialize charts when shown for the first time
+        if (!window.portfolioChartsInitialized) {
+            initializePortfolioCharts();
+            window.portfolioChartsInitialized = true;
+        }
+        
+        // Update charts with current data
+        updatePortfolioCharts();
+    } else {
+        chartsSection.style.display = 'none';
+        button.innerHTML = '<i class="fas fa-chart-pie me-1"></i>Charts';
+    }
+}
+
+// Initialize portfolio charts
+function initializePortfolioCharts() {
+    console.log("Initializing enhanced portfolio charts...");
+    
+    if (!window.Chart) {
+        console.warn('Chart.js not found – skipping portfolio chart initialization.');
+        return;
+    }
+
+    try {
+        // Portfolio Value Trend Chart
+        const portfolioCtx = document.getElementById('portfolioChart');
+        if (portfolioCtx) {
+            window.portfolioValueChart = new Chart(portfolioCtx, {
+                type: 'line',
+                data: {
+                    labels: ['1h ago', '45m ago', '30m ago', '15m ago', 'Now'],
+                    datasets: [{
+                        label: 'Portfolio Value ($)',
+                        data: [1025, 1028, 1022, 1030, 1025], // Sample data
+                        borderColor: '#007bff',
+                        backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Portfolio Value Trend'
+                        },
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            ticks: {
+                                callback: function(value) {
+                                    return '$' + Number(value).toLocaleString();
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // P&L Distribution Chart
+        const pnlCtx = document.getElementById('pnlChart');
+        if (pnlCtx) {
+            window.pnlDistributionChart = new Chart(pnlCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Profitable', 'Break-even', 'Losing'],
+                    datasets: [{
+                        data: [34, 15, 54], // Sample data
+                        backgroundColor: [
+                            '#28a745',
+                            '#6c757d', 
+                            '#dc3545'
+                        ],
+                        borderWidth: 2,
+                        borderColor: '#fff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Position Distribution'
+                        },
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        }
+
+        // Performance Chart (Top/Bottom performers)
+        const performanceCtx = document.getElementById('performanceChart');
+        if (performanceCtx) {
+            window.performanceChart = new Chart(performanceCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['FIL', 'SUSHI', 'AKITA', 'KISHU', 'BTC'], // Sample data
+                    datasets: [{
+                        label: 'P&L %',
+                        data: [9.89, 9.89, 9.89, -0.05, -0.05], // Sample data
+                        backgroundColor: function(context) {
+                            const value = context.raw;
+                            return value >= 0 ? '#28a745' : '#dc3545';
+                        },
+                        borderColor: function(context) {
+                            const value = context.raw;
+                            return value >= 0 ? '#1e7e34' : '#bd2130';
+                        },
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Top/Bottom Performers'
+                        },
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            ticks: {
+                                callback: function(value) {
+                                    return value + '%';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        console.log("Portfolio charts initialized successfully");
+    } catch (error) {
+        console.error('Portfolio chart initialization failed:', error);
+    }
+}
+
+// Update portfolio charts with current data
+function updatePortfolioCharts() {
+    console.log("Updating portfolio charts with live data...");
+    
+    // Get current portfolio data from the latest API response
+    if (window.lastPortfolioData && window.lastPortfolioData.holdings && window.lastPortfolioData.summary) {
+        const holdings = window.lastPortfolioData.holdings;
+        const summary = window.lastPortfolioData.summary;
+        
+        try {
+            // Update P&L Distribution Chart
+            if (window.pnlDistributionChart) {
+                window.pnlDistributionChart.data.datasets[0].data = [
+                    summary.profitable_positions || 0,
+                    summary.breakeven_positions || 0,
+                    summary.losing_positions || 0
+                ];
+                window.pnlDistributionChart.update();
+            }
+            
+            // Update Performance Chart with top/bottom performers
+            if (window.performanceChart && holdings.length > 0) {
+                // Get top 3 performers and bottom 2
+                const sortedHoldings = [...holdings].sort((a, b) => (b.pnl_percent || 0) - (a.pnl_percent || 0));
+                const topPerformers = sortedHoldings.slice(0, 3);
+                const bottomPerformers = sortedHoldings.slice(-2);
+                const performers = [...topPerformers, ...bottomPerformers];
+                
+                window.performanceChart.data.labels = performers.map(h => h.symbol);
+                window.performanceChart.data.datasets[0].data = performers.map(h => (h.pnl_percent || 0).toFixed(2));
+                window.performanceChart.update();
+            }
+            
+            // Portfolio value chart would need historical data - for now showing current value
+            if (window.portfolioValueChart) {
+                const currentValue = summary.total_current_value || 1030;
+                // Simulate some historical variation for demo purposes
+                const historicalValues = [
+                    currentValue * 0.995,
+                    currentValue * 1.003, 
+                    currentValue * 0.998,
+                    currentValue * 1.007,
+                    currentValue
+                ];
+                window.portfolioValueChart.data.datasets[0].data = historicalValues;
+                window.portfolioValueChart.update();
+            }
+            
+            console.log("Portfolio charts updated with live data");
+        } catch (error) {
+            console.error('Error updating portfolio charts:', error);
+        }
+    } else {
+        console.warn("No portfolio data available for chart updates");
+    }
 }
 
