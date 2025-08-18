@@ -2,185 +2,301 @@
 Data manager for handling OHLCV data retrieval and caching.
 """
 
-import pandas as pd
+from __future__ import annotations
+
 import logging
-from datetime import datetime, timedelta
-from typing import Optional
+from datetime import datetime, timedelta, timezone
+from typing import Optional, Any, Hashable, cast, Dict, List
+
+import pandas as pd
+
 from .cache import DataCache
 from ..exchanges.base import BaseExchange
 
 
 class DataManager:
-    """Data manager class for OHLCV data."""
-    
-    def __init__(self, exchange: BaseExchange, cache_enabled: bool = True):
+    """Data manager class for OHLCV data with safe typing and caching."""
+
+    def __init__(self, exchange: BaseExchange, cache_enabled: bool = True) -> None:
         """
         Initialize data manager.
-        
+
         Args:
             exchange: Exchange adapter
             cache_enabled: Whether to enable caching
         """
-        self.exchange = exchange
-        self.cache = DataCache() if cache_enabled else None
+        self.exchange: BaseExchange = exchange
+        self.cache: Optional[DataCache] = DataCache() if cache_enabled else None
         self.logger = logging.getLogger(__name__)
-    
-    def get_ohlcv(self, symbol: str, timeframe: str, limit: int = 100, 
-                  start_time: Optional[datetime] = None, 
-                  end_time: Optional[datetime] = None) -> pd.DataFrame:
+
+    # ---------------------------
+    # Public API
+    # ---------------------------
+    def get_ohlcv(
+        self,
+        symbol: str,
+        timeframe: str,
+        limit: int = 100,
+        start_time: Optional[datetime] = None,
+        end_time: Optional[datetime] = None,
+    ) -> pd.DataFrame:
         """
-        Get OHLCV data with caching support.
-        
-        Args:
-            symbol: Trading symbol
-            timeframe: Timeframe
-            limit: Number of candles
-            start_time: Start time for historical data
-            end_time: End time for historical data
-            
+        Get OHLCV data with optional time filtering and cache.
+
         Returns:
-            DataFrame with OHLCV data
+            DataFrame indexed by UTC DatetimeIndex with columns:
+            ["open","high","low","close","volume"]
         """
-        cache_key = f"{symbol}_{timeframe}_{limit}"
-        
-        # Try to get from cache first
-        if self.cache:
-            cached_data = self.cache.get(cache_key)
-            if cached_data is not None:
-                self.logger.debug(f"Retrieved {symbol} data from cache")
-                return cached_data
-        
+        cache_key = self._cache_key(symbol, timeframe, limit, start_time, end_time)
+
+        # Try cache
+        if self.cache is not None:
+            cached_any: Any = self.cache.get(cache_key)
+            cached_df: pd.DataFrame = self._coerce_df(cached_any)
+            if not cached_df.empty:
+                cached_df = self._ensure_dt_index(cached_df)
+                return cached_df
+
+        # Fetch fresh
         try:
-            # Fetch fresh data from exchange
-            self.logger.debug(f"Fetching {symbol} data from exchange")
-            data = self.exchange.get_ohlcv(symbol, timeframe, limit)
-            
-            # Filter by time range if specified
-            if start_time:
-                data = data[data.index >= start_time]
-            if end_time:
-                data = data[data.index <= end_time]
-            
-            # Cache the data
-            if self.cache:
-                self.cache.set(cache_key, data)
-            
-            return data
-            
+            raw: Any = self.exchange.get_ohlcv(symbol, timeframe, limit)
+            df: pd.DataFrame = self._ensure_dt_index(self._coerce_df(raw))
+
+            # Time filters
+            if start_time is not None:
+                st = self._to_utc_ts(start_time)
+                df = df[df.index >= st]
+            if end_time is not None:
+                et = self._to_utc_ts(end_time)
+                df = df[df.index <= et]
+
+            # Cache
+            if self.cache is not None:
+                # Explicit cast to satisfy pyright/DataCache.set signature
+                self.cache.set(cache_key, cast(pd.DataFrame, df))
+
+            return df
         except Exception as e:
-            self.logger.error(f"Error fetching OHLCV data: {str(e)}")
-            raise
-    
-    def get_historical_data(self, symbol: str, timeframe: str, 
-                           start_date: datetime, end_date: datetime) -> pd.DataFrame:
+            self.logger.error(f"Error fetching OHLCV for {symbol} {timeframe}: {e}")
+            return self._empty_df()
+
+    def get_historical_data(
+        self,
+        symbol: str,
+        timeframe: str,
+        start_date: datetime,
+        end_date: datetime,
+    ) -> pd.DataFrame:
         """
         Get historical OHLCV data for a date range.
-        
-        Args:
-            symbol: Trading symbol
-            timeframe: Timeframe
-            start_date: Start date
-            end_date: End date
-            
+
         Returns:
-            DataFrame with historical OHLCV data
+            DataFrame with OHLCV data indexed by UTC DatetimeIndex.
         """
-        all_data = []
-        current_date = start_date
-        
-        # Calculate days per request based on timeframe
-        timeframe_minutes = self._timeframe_to_minutes(timeframe)
-        max_candles = 1000  # Most exchanges limit to 1000 candles per request
-        days_per_request = (max_candles * timeframe_minutes) // (24 * 60)
-        
-        while current_date < end_date:
-            try:
-                # Calculate end date for this batch
-                batch_end = min(current_date + timedelta(days=days_per_request), end_date)
-                
-                # Fetch data for this batch
-                data = self.get_ohlcv(
-                    symbol=symbol,
-                    timeframe=timeframe,
-                    limit=max_candles,
-                    start_time=current_date,
-                    end_time=batch_end
-                )
-                
-                if not data.empty:
-                    all_data.append(data)
-                
-                current_date = batch_end + timedelta(minutes=timeframe_minutes)
-                
-            except Exception as e:
-                self.logger.warning(f"Error fetching batch from {current_date}: {str(e)}")
-                current_date += timedelta(days=1)  # Skip to next day
-        
-        # Combine all data
-        if all_data:
-            combined_data = pd.concat(all_data)
-            combined_data = combined_data.sort_index().drop_duplicates()
-            return combined_data
-        else:
-            return pd.DataFrame()
-    
-    def _timeframe_to_minutes(self, timeframe: str) -> int:
-        """
-        Convert timeframe string to minutes.
-        
-        Args:
-            timeframe: Timeframe string (1m, 5m, 1h, 1d, etc.)
-            
-        Returns:
-            Number of minutes
-        """
-        timeframe_map = {
-            '1m': 1,
-            '5m': 5,
-            '15m': 15,
-            '30m': 30,
-            '1h': 60,
-            '4h': 240,
-            '1d': 1440,
-            '1w': 10080
-        }
-        
-        return timeframe_map.get(timeframe, 60)  # Default to 1 hour
-    
+        start_utc = self._to_utc_ts(start_date)
+        end_utc = self._to_utc_ts(end_date)
+        if start_utc >= end_utc:
+            return self._empty_df()
+
+        all_chunks: List[pd.DataFrame] = []
+        max_candles = 1000
+        minutes_per_bar = max(1, self._timeframe_to_minutes(timeframe))
+        days_per_request = max(1, (max_candles * minutes_per_bar) // (24 * 60))
+
+        cur = start_utc
+        while cur < end_utc:
+            batch_end = min(cur + timedelta(days=days_per_request), end_utc)
+            chunk: pd.DataFrame = self.get_ohlcv(
+                symbol=symbol,
+                timeframe=timeframe,
+                limit=max_candles,
+                start_time=cur,
+                end_time=batch_end,
+            )
+            if not chunk.empty:
+                all_chunks.append(chunk)
+            cur = batch_end + timedelta(minutes=minutes_per_bar)
+
+        if not all_chunks:
+            return self._empty_df()
+
+        combined: pd.DataFrame = pd.concat(all_chunks, axis=0)
+        combined = self._ensure_dt_index(self._coerce_df(combined))
+        if combined.empty:
+            return combined
+
+        combined = combined[~combined.index.duplicated(keep="last")]
+        return combined.sort_index()
+
     def update_data(self, symbol: str, timeframe: str) -> pd.DataFrame:
         """
-        Update data with latest candles.
-        
-        Args:
-            symbol: Trading symbol
-            timeframe: Timeframe
-            
+        Update cached data with the latest candle (if available).
+
         Returns:
-            Updated DataFrame
+            Updated DataFrame (or the single latest candle if no cache exists).
         """
         try:
-            # Get latest data
-            latest_data = self.exchange.get_ohlcv(symbol, timeframe, limit=1)
-            
-            # Update cache if enabled
-            if self.cache:
-                cache_key = f"{symbol}_{timeframe}"
-                cached_data = self.cache.get(cache_key)
-                
-                if cached_data is not None:
-                    # Append new data to cached data
-                    updated_data = pd.concat([cached_data, latest_data])
-                    updated_data = updated_data.sort_index().drop_duplicates()
-                    
-                    # Keep only recent data to prevent cache from growing too large
-                    cutoff_time = datetime.now() - timedelta(days=30)
-                    updated_data = updated_data[updated_data.index >= cutoff_time]
-                    
-                    self.cache.set(cache_key, updated_data)
-                    return updated_data
-            
-            return latest_data
-            
+            latest_raw: Any = self.exchange.get_ohlcv(symbol, timeframe, limit=1)
+            latest: pd.DataFrame = self._ensure_dt_index(self._coerce_df(latest_raw))
+
+            cache_key = self._cache_key(symbol, timeframe, limit=None, start=None, end=None)
+            cached_any: Any = self.cache.get(cache_key) if self.cache is not None else None
+            cached: pd.DataFrame = self._coerce_df(cached_any)
+
+            if not cached.empty:
+                updated: pd.DataFrame = pd.concat([cached, latest], axis=0)
+                updated = updated[~updated.index.duplicated(keep="last")].sort_index()
+
+                cutoff = datetime.now(timezone.utc) - timedelta(days=30)
+                updated = updated[updated.index >= cutoff]
+
+                if self.cache is not None:
+                    self.cache.set(cache_key, cast(pd.DataFrame, updated))
+                return updated
+
+            if self.cache is not None:
+                self.cache.set(cache_key, cast(pd.DataFrame, latest))
+            return latest
         except Exception as e:
-            self.logger.error(f"Error updating data: {str(e)}")
-            raise
+            self.logger.error(f"Error updating data for {symbol} {timeframe}: {e}")
+            return self._empty_df()
+
+    # ---------------------------
+    # Helpers (typed & robust)
+    # ---------------------------
+    def _coerce_df(self, obj: Any) -> pd.DataFrame:
+        """Coerce arbitrary input to a DataFrame; return standardized empty on failure."""
+        if isinstance(obj, pd.DataFrame):
+            return obj
+        try:
+            df = pd.DataFrame(obj)
+            if not isinstance(df, pd.DataFrame):
+                return self._empty_df()
+            return df
+        except Exception:
+            return self._empty_df()
+
+    def _ensure_dt_index(self, df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Ensure DataFrame has a UTC DatetimeIndex, sorted ascending,
+        and normalized OHLCV columns.
+        """
+        if not isinstance(df, pd.DataFrame) or df.empty:
+            return self._empty_df()
+
+        out: pd.DataFrame = df.copy()
+
+        # Already a DatetimeIndex
+        if isinstance(out.index, pd.DatetimeIndex):
+            if out.index.tz is None:
+                out.index = out.index.tz_localize("UTC")
+            else:
+                out.index = out.index.tz_convert("UTC")
+            out = out.sort_index()
+            return self._normalize_ohlcv_columns(out)
+
+        # Try to build index from a timestamp-like column
+        ts_col: Optional[str] = None
+        for cand in ("ts", "timestamp", "date", "time"):
+            if cand in out.columns:
+                ts_col = cand
+                break
+
+        if ts_col is not None:
+            s = out[ts_col]
+            try:
+                # Prefer ms epoch if it looks numeric-like
+                idx = pd.to_datetime(s, unit="ms", utc=True, errors="coerce")
+                if idx.isna().all():
+                    idx = pd.to_datetime(s, utc=True, errors="coerce")
+            except Exception:
+                idx = pd.to_datetime(s, utc=True, errors="coerce")
+
+            out.index = cast(pd.DatetimeIndex, idx)
+            out = out.drop(columns=[ts_col], errors="ignore")
+            out = out[~out.index.isna()]
+
+            if out.index.tz is None:
+                out.index = out.index.tz_localize("UTC")
+            else:
+                out.index = out.index.tz_convert("UTC")
+
+            out = out.sort_index()
+            return self._normalize_ohlcv_columns(out)
+
+        return self._empty_df()
+
+    def _normalize_ohlcv_columns(self, df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Ensure the frame has the standard OHLCV columns; if not, map sensible defaults.
+        """
+        if df.empty:
+            return self._empty_df()
+
+        # Work with a concrete list of columns to avoid Index[Unknown] issues
+        cols_list: List[str] = [str(c) for c in df.columns]
+        cols_lower: List[str] = [c.lower() for c in cols_list]
+        mapping: Dict[Hashable, str] = {}
+
+        def _map_to(target: str, candidates: List[str]) -> None:
+            for cand in candidates:
+                if cand in cols_lower:
+                    i = cols_lower.index(cand)
+                    # df.columns[i] is Hashable in practice; cast to appease pyright
+                    orig: Hashable = cast(Hashable, df.columns[i])
+                    mapping[orig] = target
+                    return
+
+        # map core columns
+        _map_to("open", ["open", "o"])
+        _map_to("high", ["high", "h"])
+        _map_to("low", ["low", "l"])
+        _map_to("close", ["close", "c"])
+        _map_to("volume", ["volume", "vol", "qty", "v"])
+
+        out: pd.DataFrame = df.rename(columns=mapping, errors="ignore").copy()
+
+        # Add any missing required columns with zeros to keep schema stable
+        for req in ("open", "high", "low", "close", "volume"):
+            if req not in out.columns:
+                out[req] = 0.0
+
+        # Keep only the standard set (in this order)
+        wanted = ["open", "high", "low", "close", "volume"]
+        out = out[wanted]
+        return out
+
+    def _empty_df(self) -> pd.DataFrame:
+        """Standardized empty OHLCV frame with UTC DatetimeIndex."""
+        empty = pd.DataFrame(columns=pd.Index(["open", "high", "low", "close", "volume"]))
+        empty.index = pd.DatetimeIndex([], tz="UTC")
+        return empty
+
+    def _timeframe_to_minutes(self, timeframe: str) -> int:
+        """Convert timeframe string to minutes."""
+        mapping = {
+            "1m": 1, "3m": 3, "5m": 5, "15m": 15, "30m": 30,
+            "1h": 60, "2h": 120, "4h": 240, "6h": 360, "12h": 720,
+            "1d": 1440, "1w": 10080,
+        }
+        return mapping.get(timeframe, 60)
+
+    def _to_utc_ts(self, dt: datetime) -> datetime:
+        """Ensure a timezone-aware UTC datetime."""
+        if dt.tzinfo is None:
+            return dt.replace(tzinfo=timezone.utc)
+        return dt.astimezone(timezone.utc)
+
+    def _cache_key(
+        self,
+        symbol: str,
+        timeframe: str,
+        limit: Optional[int],
+        start: Optional[datetime],
+        end: Optional[datetime],
+    ) -> str:
+        """Build a stable cache key for a price request."""
+        lim = str(limit) if limit is not None else "all"
+        st = self._to_utc_ts(start).isoformat() if start else "none"
+        et = self._to_utc_ts(end).isoformat() if end else "none"
+        return f"ohlcv::{symbol}::{timeframe}::limit={lim}::start={st}::end={et}"

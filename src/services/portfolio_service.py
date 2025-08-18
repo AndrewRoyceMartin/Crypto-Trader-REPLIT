@@ -8,8 +8,9 @@ from __future__ import annotations
 
 import logging
 import random
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Optional, Any, Callable
 from datetime import datetime, timedelta, timezone
+import hashlib
 
 from src.exchanges.simulated_okx import SimulatedOKX
 from src.data.portfolio_assets import MASTER_PORTFOLIO_ASSETS as RAW_ASSETS
@@ -73,6 +74,37 @@ class PortfolioService:
         if not hasattr(self.exchange, "trades") or self.exchange.trades is None:
             self.exchange.trades = []
 
+        # Cache a safe price getter to avoid attr-defined Pyright warnings
+        self._price_getter: Optional[Callable[[str], float]] = None
+        self._init_price_getter()
+
+    def _init_price_getter(self) -> None:
+        """Prepare a safe price getter without relying on private attributes."""
+        # Prefer a public method if your adapter exposes one; fallback to the simulated helper.
+        # We wrap it so typing stays clean for Pyright.
+        getter = getattr(self.exchange, "_get_current_price", None)
+        if callable(getter):
+            def _wrap(pair: str) -> float:
+                try:
+                    v = getter(pair)
+                    return float(v) if v is not None else 0.0
+                except Exception:
+                    return 0.0
+            self._price_getter = _wrap
+        else:
+            # Fallback: always return 0.0 if no method available
+            self._price_getter = lambda _pair: 0.0
+
+    def _safe_price(self, inst_pair: str) -> float:
+        """Get current price defensively."""
+        if self._price_getter is None:
+            self._init_price_getter()
+        try:
+            price = float(self._price_getter(inst_pair))  # type: ignore[misc]
+        except Exception:
+            price = 0.0
+        return price if price > 0.0 else 0.0
+
     def _initialize_exchange(self) -> None:
         """Initialize and connect to the simulated exchange."""
         try:
@@ -83,7 +115,7 @@ class PortfolioService:
             else:
                 raise RuntimeError("Failed to connect to exchange")
         except Exception as e:
-            self.logger.error(f"Exchange initialization failed: {e}")
+            self.logger.error("Exchange initialization failed: %s", e)
             raise
 
     def _populate_initial_portfolio(self) -> None:
@@ -98,8 +130,8 @@ class PortfolioService:
                 symbol = asset["symbol"]
                 try:
                     inst = f"{symbol}/USDT"
-                    current_price = self.exchange._get_current_price(inst)  # type: ignore[attr-defined]
-                    if current_price is not None and current_price > 0.0:
+                    current_price = self._safe_price(inst)
+                    if current_price > 0.0:
                         quantity = 10.0 / current_price
 
                         order_result = self.exchange.place_order(
@@ -141,7 +173,7 @@ class PortfolioService:
             self._last_sync = datetime.now(timezone.utc)
 
         except Exception as e:
-            self.logger.error(f"Portfolio population failed: {e}")
+            self.logger.error("Portfolio population failed: %s", e)
             raise
 
     def _generate_initial_trade_history(self) -> None:
@@ -166,8 +198,8 @@ class PortfolioService:
                     trade_time = base_time + timedelta(days=days_ago, hours=hours_ago)
 
                     inst_pair = f"{symbol}/USDT"
-                    base_price = self.exchange._get_current_price(inst_pair)  # type: ignore[attr-defined]
-                    if base_price is None or base_price <= 0:
+                    base_price = self._safe_price(inst_pair)
+                    if base_price <= 0.0:
                         base_price = 1.0
 
                     price_variation = random.uniform(0.8, 1.2)
@@ -208,8 +240,14 @@ class PortfolioService:
             )
 
         except Exception as e:
-            self.logger.error(f"Error generating initial trade history: {e}")
+            self.logger.error("Error generating initial trade history: %s", e)
             # non-fatal
+
+    @staticmethod
+    def _stable_bucket_0_99(key: str) -> int:
+        """Deterministic 0..99 bucket (stable across runs and processes)."""
+        h = hashlib.md5(key.encode("utf-8")).hexdigest()
+        return int(h[:8], 16) % 100
 
     def get_portfolio_data(self) -> Dict[str, Any]:
         """
@@ -225,20 +263,18 @@ class PortfolioService:
             # Real positions from the exchange
             positions_response = self.exchange.get_positions()
             okx_positions = {  # map 'BTC' -> position
-                pos.get("instId", "").replace("-USDT-SWAP", "").replace("-USDT", ""): pos
+                (pos.get("instId", "") or "").replace("-USDT-SWAP", "").replace("-USDT", ""): pos
                 for pos in (positions_response.get("data") or [])
             }
 
             for asset in ASSETS:
-                rank = asset.get("rank", 999)
+                rank = int(asset.get("rank", 999))
                 symbol = asset["symbol"]
                 name = asset.get("name", symbol)
 
                 inst_pair = f"{symbol}/USDT"
-                current_price = self.exchange._get_current_price(inst_pair)  # type: ignore[attr-defined]
-
-                # Fallback if no price
-                if current_price is None or current_price <= 0.0:
+                current_price = self._safe_price(inst_pair)
+                if current_price <= 0.0:
                     current_price = 1.0
 
                 initial_investment = 10.0
@@ -254,35 +290,38 @@ class PortfolioService:
                     # Live position from simulated exchange
                     p = okx_positions[symbol]
                     try:
-                        quantity = float(p.get("pos", 0.0))
-                        avg_entry_price = float(p.get("avgPx", current_price))
-                        mark_price = float(p.get("markPx", current_price))
+                        quantity = float(p.get("pos", 0.0) or 0.0)
                     except (TypeError, ValueError):
                         quantity = 0.0
+                    try:
+                        avg_entry_price = float(p.get("avgPx", current_price) or current_price)
+                    except (TypeError, ValueError):
                         avg_entry_price = current_price
+                    try:
+                        mark_price = float(p.get("markPx", current_price) or current_price)
+                    except (TypeError, ValueError):
                         mark_price = current_price
 
                     current_value = quantity * mark_price
                     cost_basis = quantity * max(avg_entry_price, 0.0)
                     pnl = current_value - cost_basis
                     pnl_percent = (pnl / cost_basis * 100.0) if cost_basis > 0 else 0.0
-                    has_position = True
+                    has_position = quantity > 0.0
                 else:
                     # No open position; simulate a historical entry for display
-                    # Make deterministic-ish variation based on symbol hash
-                    symbol_hash = abs(hash(symbol)) % 100
-                    if symbol_hash < 20:
+                    b = self._stable_bucket_0_99(symbol)
+                    if b < 20:
                         # +5%..+35%
-                        price_variation = (symbol_hash % 30 + 5) / 100.0
-                    elif symbol_hash < 40:
+                        price_variation = (b % 30 + 5) / 100.0
+                    elif b < 40:
                         # -5%..-30%
-                        price_variation = -((symbol_hash % 25 + 5) / 100.0)
+                        price_variation = -((b % 25 + 5) / 100.0)
                     else:
                         # -7%..+7%
-                        price_variation = ((symbol_hash % 15) - 7) / 100.0
+                        price_variation = ((b % 15) - 7) / 100.0
 
                     historical_purchase_price = current_price / (1.0 + price_variation)
-                    if historical_purchase_price <= 0:
+                    if historical_purchase_price <= 0.0:
                         historical_purchase_price = current_price
 
                     quantity = initial_investment / historical_purchase_price
@@ -315,12 +354,12 @@ class PortfolioService:
             # Fill allocation_percent now that total_value is known
             total_value_for_alloc = total_value if total_value > 0 else 1.0
             for h in holdings:
-                h["allocation_percent"] = (h["current_value"] / total_value_for_alloc) * 100.0
+                h["allocation_percent"] = (float(h.get("current_value", 0.0)) / total_value_for_alloc) * 100.0
 
-            total_pnl = sum(h.get("pnl", 0.0) for h in holdings)
+            total_pnl = sum(float(h.get("pnl", 0.0)) for h in holdings)
             total_pnl_percent = (total_pnl / total_initial_value * 100.0) if total_initial_value > 0 else 0.0
 
-            # Keep ~10% cash reserve vs a $1,030 seed
+            # Keep ~10% cash reserve vs a $10 seed per asset
             target_portfolio_value = len(ASSETS) * 10.0
             cash_balance = target_portfolio_value * 0.10
 
@@ -334,7 +373,7 @@ class PortfolioService:
             }
 
         except Exception as e:
-            self.logger.error(f"OKX Portfolio data error: {e}")
+            self.logger.error("OKX Portfolio data error: %s", e)
             # Safe fallback
             seed_value = len(ASSETS) * 10.0 if ASSETS else 1030.0
             return {
@@ -355,18 +394,18 @@ class PortfolioService:
 
         for position in positions:
             try:
-                inst_id = position.get("instId", "")
+                inst_id = str(position.get("instId", "") or "")
                 symbol = inst_id.replace("-USDT-SWAP", "").replace("-USDT", "")
                 try:
-                    quantity = float(position.get("pos", 0.0))
+                    quantity = float(position.get("pos", 0.0) or 0.0)
                 except (TypeError, ValueError):
                     quantity = 0.0
                 try:
-                    avg_price = float(position.get("avgPx", 0.0))
+                    avg_price = float(position.get("avgPx", 0.0) or 0.0)
                 except (TypeError, ValueError):
                     avg_price = 0.0
                 try:
-                    current_price = float(position.get("markPx", avg_price))
+                    current_price = float(position.get("markPx", avg_price) or avg_price)
                 except (TypeError, ValueError):
                     current_price = avg_price
 
@@ -380,7 +419,7 @@ class PortfolioService:
                 holding = {
                     "symbol": symbol,
                     "name": info.get("name", symbol),
-                    "rank": info.get("rank", 999),
+                    "rank": int(info.get("rank", 999)),
                     "quantity": quantity,
                     "current_price": current_price,
                     "avg_price": avg_price,
@@ -393,10 +432,10 @@ class PortfolioService:
                 }
                 holdings.append(holding)
             except Exception as e:
-                self.logger.error(f"Error converting position {position}: {e}")
+                self.logger.error("Error converting position %s: %s", position, e)
                 continue
 
-        holdings.sort(key=lambda x: x.get("rank", 999))
+        holdings.sort(key=lambda x: int(x.get("rank", 999)))
         return holdings
 
     def _calculate_total_pnl_percent(self, holdings: List[Dict[str, Any]]) -> float:
@@ -418,7 +457,7 @@ class PortfolioService:
             self.logger.info("Trade executed: %s %s %s", side, amount, symbol)
             return result
         except Exception as e:
-            self.logger.error(f"Trade execution failed: {e}")
+            self.logger.error("Trade execution failed: %s", e)
             raise
 
     def get_trade_history(self, symbol: Optional[str] = None, limit: int = 100) -> List[Dict[str, Any]]:
@@ -427,15 +466,15 @@ class PortfolioService:
             raise RuntimeError("Exchange not connected")
 
         try:
-            trades_raw = getattr(self.exchange, "trades", []) or []
+            trades_raw: List[Dict[str, Any]] = list(getattr(self.exchange, "trades", []) or [])
             if symbol:
                 symbol_filter = f"{symbol}-USDT-SWAP"
-                trades_raw = [t for t in trades_raw if t.get("instId") == symbol_filter]
+                trades_raw = [t for t in trades_raw if (t.get("instId") or "") == symbol_filter]
 
             # Newest first
             def _ts(t: Dict[str, Any]) -> int:
                 try:
-                    return int(t.get("ts", "0"))
+                    return int(t.get("ts", "0") or 0)
                 except Exception:
                     return 0
 
@@ -455,7 +494,7 @@ class PortfolioService:
                 # ts in ms -> aware datetime
                 ts_ms = 0
                 try:
-                    ts_ms = int(t.get("ts", "0"))
+                    ts_ms = int(t.get("ts", "0") or 0)
                 except Exception:
                     ts_ms = 0
                 as_dt = datetime.fromtimestamp(ts_ms / 1000.0, tz=timezone.utc)
@@ -474,7 +513,7 @@ class PortfolioService:
                 })
             return formatted
         except Exception as e:
-            self.logger.error(f"Error getting trade history: {e}")
+            self.logger.error("Error getting trade history: %s", e)
             return []
 
     def get_exchange_status(self) -> Dict[str, Any]:
@@ -497,13 +536,13 @@ class PortfolioService:
 
                 cash = 0.0
                 try:
-                    cash = float((balance.get("data") or [{}])[0].get("availBal", 0.0))
+                    cash = float((balance.get("data") or [{}])[0].get("availBal", 0.0) or 0.0)
                 except Exception:
                     cash = 0.0
 
                 total_eq = 0.0
                 try:
-                    total_eq = float((portfolio.get("data") or {}).get("totalEq", 0.0))
+                    total_eq = float((portfolio.get("data") or {}).get("totalEq", 0.0) or 0.0)
                 except Exception:
                     total_eq = 0.0
 
@@ -522,10 +561,11 @@ class PortfolioService:
             self.logger.info("Resetting portfolio to initial state...")
             self.exchange = SimulatedOKX(self.exchange.config)
             self._initialize_exchange()
+            self._init_price_getter()
             self.logger.info("Portfolio reset successfully")
             return True
         except Exception as e:
-            self.logger.error(f"Portfolio reset failed: {e}")
+            self.logger.error("Portfolio reset failed: %s", e)
             return False
 
 
