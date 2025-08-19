@@ -74,7 +74,7 @@ class DataManager:
             if self.cache is not None:
                 self.cache.set(cache_key, cast(pd.DataFrame, df))
 
-            return df
+            return cast(pd.DataFrame, df)
         except Exception as e:
             self.logger.error(f"Error fetching OHLCV for {symbol} {timeframe}: {e}")
             return self._empty_df()
@@ -125,7 +125,7 @@ class DataManager:
             return combined
 
         combined = combined[~combined.index.duplicated(keep="last")]
-        return combined.sort_index()
+        return cast(pd.DataFrame, combined.sort_index())
 
     def update_data(self, symbol: str, timeframe: str) -> pd.DataFrame:
         """
@@ -151,7 +151,7 @@ class DataManager:
 
                 if self.cache is not None:
                     self.cache.set(cache_key, cast(pd.DataFrame, updated))
-                return updated
+                return cast(pd.DataFrame, updated)
 
             if self.cache is not None:
                 self.cache.set(cache_key, cast(pd.DataFrame, latest))
@@ -228,7 +228,7 @@ class DataManager:
             out.index = idx2
 
             out = out.sort_index()
-            return self._normalize_ohlcv_columns(out)
+            return self._normalize_ohlcv_columns(cast(pd.DataFrame, out))
 
         return self._empty_df()
 

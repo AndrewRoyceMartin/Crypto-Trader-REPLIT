@@ -135,7 +135,7 @@ class RiskManager:
             self.logger.error(f"Error validating position size: {str(e)}")
             return False
     
-    def calculate_stop_loss(self, entry_price: float, side: str, atr: float = None) -> float:
+    def calculate_stop_loss(self, entry_price: float, side: str, atr: Optional[float] = None) -> float:
         """
         Calculate stop loss price.
         
