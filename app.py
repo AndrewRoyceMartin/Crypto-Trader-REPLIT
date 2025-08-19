@@ -137,11 +137,27 @@ def background_warmup():
     try:
         logger.info(f"Background warmup starting for {MAX_STARTUP_SYMBOLS} symbols")
 
-        # Use minimal CCXT setup - no heavy initialization
+        # Use minimal CCXT setup - check for real OKX credentials
         import ccxt
-        ex = ccxt.okx({'enableRateLimit': True})
-        if os.getenv("OKX_DEMO", "1") in ("1", "true", "True"):
+        okx_api_key = os.getenv("OKX_API_KEY", "")
+        okx_secret = os.getenv("OKX_SECRET_KEY", "")
+        okx_pass = os.getenv("OKX_PASSPHRASE", "")
+        
+        if okx_api_key and okx_secret and okx_pass:
+            # Use live OKX account
+            ex = ccxt.okx({
+                'apiKey': okx_api_key,
+                'secret': okx_secret,
+                'password': okx_pass,
+                'sandbox': False,
+                'enableRateLimit': True
+            })
+            logger.info("Using live OKX account for background warmup")
+        else:
+            # Fall back to sandbox mode
+            ex = ccxt.okx({'enableRateLimit': True})
             ex.set_sandbox_mode(True)
+            logger.info("Using OKX sandbox mode for background warmup")
 
         # Try to load markets, but don't fail if it doesn't work
         try:
@@ -190,8 +206,20 @@ def get_df(symbol: str, timeframe: str):
     try:
         import ccxt
         import pandas as pd
-        ex = ccxt.okx({'enableRateLimit': True})
-        if os.getenv("OKX_DEMO", "1") in ("1", "true", "True"):
+        okx_api_key = os.getenv("OKX_API_KEY", "")
+        okx_secret = os.getenv("OKX_SECRET_KEY", "")
+        okx_pass = os.getenv("OKX_PASSPHRASE", "")
+        
+        if okx_api_key and okx_secret and okx_pass:
+            ex = ccxt.okx({
+                'apiKey': okx_api_key,
+                'secret': okx_secret,
+                'password': okx_pass,
+                'sandbox': False,
+                'enableRateLimit': True
+            })
+        else:
+            ex = ccxt.okx({'enableRateLimit': True})
             ex.set_sandbox_mode(True)
         ex.load_markets()
 
@@ -260,8 +288,20 @@ def api_price():
         if df is None or len(df) < lim:
             import ccxt
             import pandas as pd
-            ex = ccxt.okx({'enableRateLimit': True})
-            if os.getenv("OKX_DEMO", "1") in ("1", "true", "True"):
+            okx_api_key = os.getenv("OKX_API_KEY", "")
+            okx_secret = os.getenv("OKX_SECRET_KEY", "")
+            okx_pass = os.getenv("OKX_PASSPHRASE", "")
+            
+            if okx_api_key and okx_secret and okx_pass:
+                ex = ccxt.okx({
+                    'apiKey': okx_api_key,
+                    'secret': okx_secret,
+                    'password': okx_pass,
+                    'sandbox': False,
+                    'enableRateLimit': True
+                })
+            else:
+                ex = ccxt.okx({'enableRateLimit': True})
                 ex.set_sandbox_mode(True)
             ex.load_markets()
             ohlcv = ex.fetch_ohlcv(sym, timeframe=tf, limit=lim)

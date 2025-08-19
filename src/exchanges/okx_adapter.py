@@ -65,7 +65,8 @@ class OKXAdapter(BaseExchange):
             
             ohlcv = self.exchange.fetch_ohlcv(symbol, timeframe, limit=limit)
             
-            df = pd.DataFrame(ohlcv, columns=['timestamp', 'open', 'high', 'low', 'close', 'volume'])
+            import pandas as pd
+            df = pd.DataFrame(ohlcv, columns=['timestamp', 'open', 'high', 'low', 'close', 'volume'])  # type: ignore[call-arg]
             df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
             df.set_index('timestamp', inplace=True)
             
@@ -121,7 +122,7 @@ class OKXAdapter(BaseExchange):
             )
             
             self.logger.info(f"Order placed: {order['id']} - {side} {amount} {symbol}")
-            return order
+            return dict(order)
             
         except Exception as e:
             self.logger.error(f"Error placing order: {str(e)}")
@@ -142,7 +143,7 @@ class OKXAdapter(BaseExchange):
                 raise Exception("Not connected to exchange")
             
             orders = self.exchange.fetch_open_orders(symbol)
-            return orders
+            return [dict(order) for order in orders]
             
         except Exception as e:
             self.logger.error(f"Error fetching open orders: {str(e)}")
@@ -165,7 +166,7 @@ class OKXAdapter(BaseExchange):
             
             result = self.exchange.cancel_order(order_id, symbol)
             self.logger.info(f"Order cancelled: {order_id}")
-            return result
+            return dict(result) if hasattr(result, '__dict__') or hasattr(result, 'keys') else {"status": "cancelled", "id": order_id}
             
         except Exception as e:
             self.logger.error(f"Error cancelling order: {str(e)}")
@@ -186,7 +187,7 @@ class OKXAdapter(BaseExchange):
                 raise Exception("Not connected to exchange")
             
             ticker = self.exchange.fetch_ticker(symbol)
-            return ticker
+            return dict(ticker)
             
         except Exception as e:
             self.logger.error(f"Error fetching ticker: {str(e)}")

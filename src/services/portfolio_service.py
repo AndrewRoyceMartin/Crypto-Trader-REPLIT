@@ -55,15 +55,33 @@ class PortfolioService:
         """Initialize portfolio service with OKX exchange."""
         self.logger = logging.getLogger(__name__)
 
-        # Initialize simulated OKX exchange
+        # Initialize OKX exchange with real credentials
+        import os
         config = {
-            "sandbox": True,
-            "apiKey": "simulated_key",
-            "secret": "simulated_secret",
-            "password": "simulated_passphrase",
+            "sandbox": False,  # Use live OKX account
+            "apiKey": os.getenv("OKX_API_KEY", ""),
+            "secret": os.getenv("OKX_SECRET_KEY", ""),
+            "password": os.getenv("OKX_PASSPHRASE", ""),
         }
 
-        self.exchange = SimulatedOKX(config)
+        # Check if all credentials are available
+        if not all([config["apiKey"], config["secret"], config["password"]]):
+            self.logger.warning("OKX credentials not fully configured, falling back to simulation")
+            config = {
+                "sandbox": True,
+                "apiKey": "simulated_key",
+                "secret": "simulated_secret",
+                "password": "simulated_passphrase",
+            }
+            self.exchange = SimulatedOKX(config)
+        else:
+            # Use real OKX exchange
+            from src.exchanges.okx_adapter import OKXAdapter
+            self.exchange = OKXAdapter(config)
+            if not self.exchange.connect():
+                self.logger.error("Failed to connect to live OKX, falling back to simulation")
+                config["sandbox"] = True
+                self.exchange = SimulatedOKX(config)
         self._initialize_exchange()
 
         # Track initialization state
