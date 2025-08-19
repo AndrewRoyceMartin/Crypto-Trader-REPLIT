@@ -52,7 +52,7 @@ class DataManager:
         # Try cache
         if self.cache is not None:
             cached_any: Any = self.cache.get(cache_key)
-            cached_df: pd.DataFrame = self._coerce_df(cached_any)
+            cached_df = cast(pd.DataFrame, self._coerce_df(cached_any))
             if not cached_df.empty:
                 cached_df = self._ensure_dt_index(cached_df)
                 return cached_df
@@ -60,7 +60,7 @@ class DataManager:
         # Fetch fresh
         try:
             raw: Any = self.exchange.get_ohlcv(symbol, timeframe, limit)
-            df: pd.DataFrame = self._ensure_dt_index(self._coerce_df(raw))
+            df = cast(pd.DataFrame, self._ensure_dt_index(self._coerce_df(raw)))
 
             # Time filters
             if start_time is not None:
@@ -72,7 +72,6 @@ class DataManager:
 
             # Cache
             if self.cache is not None:
-                # Explicit cast to satisfy pyright/DataCache.set signature
                 self.cache.set(cache_key, cast(pd.DataFrame, df))
 
             return df
@@ -106,7 +105,7 @@ class DataManager:
         cur = start_utc
         while cur < end_utc:
             batch_end = min(cur + timedelta(days=days_per_request), end_utc)
-            chunk: pd.DataFrame = self.get_ohlcv(
+            chunk = self.get_ohlcv(
                 symbol=symbol,
                 timeframe=timeframe,
                 limit=max_candles,
@@ -120,7 +119,7 @@ class DataManager:
         if not all_chunks:
             return self._empty_df()
 
-        combined: pd.DataFrame = pd.concat(all_chunks, axis=0)
+        combined = cast(pd.DataFrame, pd.concat(all_chunks, axis=0))
         combined = self._ensure_dt_index(self._coerce_df(combined))
         if combined.empty:
             return combined
@@ -137,14 +136,14 @@ class DataManager:
         """
         try:
             latest_raw: Any = self.exchange.get_ohlcv(symbol, timeframe, limit=1)
-            latest: pd.DataFrame = self._ensure_dt_index(self._coerce_df(latest_raw))
+            latest = cast(pd.DataFrame, self._ensure_dt_index(self._coerce_df(latest_raw)))
 
             cache_key = self._cache_key(symbol, timeframe, limit=None, start=None, end=None)
             cached_any: Any = self.cache.get(cache_key) if self.cache is not None else None
-            cached: pd.DataFrame = self._coerce_df(cached_any)
+            cached = cast(pd.DataFrame, self._coerce_df(cached_any))
 
             if not cached.empty:
-                updated: pd.DataFrame = pd.concat([cached, latest], axis=0)
+                updated = cast(pd.DataFrame, pd.concat([cached, latest], axis=0))
                 updated = updated[~updated.index.duplicated(keep="last")].sort_index()
 
                 cutoff = datetime.now(timezone.utc) - timedelta(days=30)
@@ -169,7 +168,8 @@ class DataManager:
         if isinstance(obj, pd.DataFrame):
             return obj
         try:
-            df = pd.DataFrame(obj)
+            df_any: Any = pd.DataFrame(obj)
+            df = cast(pd.DataFrame, df_any)
             if not isinstance(df, pd.DataFrame):
                 return self._empty_df()
             return df
@@ -184,14 +184,16 @@ class DataManager:
         if not isinstance(df, pd.DataFrame) or df.empty:
             return self._empty_df()
 
-        out: pd.DataFrame = df.copy()
+        out = df.copy()
 
         # Already a DatetimeIndex
         if isinstance(out.index, pd.DatetimeIndex):
-            if out.index.tz is None:
-                out.index = out.index.tz_localize("UTC")
+            idx = cast(pd.DatetimeIndex, out.index)
+            if idx.tz is None:
+                idx = idx.tz_localize("UTC")
             else:
-                out.index = out.index.tz_convert("UTC")
+                idx = idx.tz_convert("UTC")
+            out.index = idx
             out = out.sort_index()
             return self._normalize_ohlcv_columns(out)
 
@@ -205,21 +207,25 @@ class DataManager:
         if ts_col is not None:
             s = out[ts_col]
             try:
-                # Prefer ms epoch if it looks numeric-like
-                idx = pd.to_datetime(s, unit="ms", utc=True, errors="coerce")
+                idx_any: Any = pd.to_datetime(s, unit="ms", utc=True, errors="coerce")
+                idx = cast(pd.DatetimeIndex, idx_any)
                 if idx.isna().all():
-                    idx = pd.to_datetime(s, utc=True, errors="coerce")
+                    idx_any2: Any = pd.to_datetime(s, utc=True, errors="coerce")
+                    idx = cast(pd.DatetimeIndex, idx_any2)
             except Exception:
-                idx = pd.to_datetime(s, utc=True, errors="coerce")
+                idx_any3: Any = pd.to_datetime(s, utc=True, errors="coerce")
+                idx = cast(pd.DatetimeIndex, idx_any3)
 
-            out.index = cast(pd.DatetimeIndex, idx)
+            out.index = idx
             out = out.drop(columns=[ts_col], errors="ignore")
             out = out[~out.index.isna()]
 
-            if out.index.tz is None:
-                out.index = out.index.tz_localize("UTC")
+            idx2 = cast(pd.DatetimeIndex, out.index)
+            if idx2.tz is None:
+                idx2 = idx2.tz_localize("UTC")
             else:
-                out.index = out.index.tz_convert("UTC")
+                idx2 = idx2.tz_convert("UTC")
+            out.index = idx2
 
             out = out.sort_index()
             return self._normalize_ohlcv_columns(out)
@@ -233,8 +239,7 @@ class DataManager:
         if df.empty:
             return self._empty_df()
 
-        # Work with a concrete list of columns to avoid Index[Unknown] issues
-        cols_list: List[str] = [str(c) for c in df.columns]
+        cols_list: List[str] = [str(c) for c in list(df.columns)]
         cols_lower: List[str] = [c.lower() for c in cols_list]
         mapping: Dict[Hashable, str] = {}
 
@@ -242,28 +247,24 @@ class DataManager:
             for cand in candidates:
                 if cand in cols_lower:
                     i = cols_lower.index(cand)
-                    # df.columns[i] is Hashable in practice; cast to appease pyright
                     orig: Hashable = cast(Hashable, df.columns[i])
                     mapping[orig] = target
                     return
 
-        # map core columns
         _map_to("open", ["open", "o"])
         _map_to("high", ["high", "h"])
         _map_to("low", ["low", "l"])
         _map_to("close", ["close", "c"])
         _map_to("volume", ["volume", "vol", "qty", "v"])
 
-        out: pd.DataFrame = df.rename(columns=mapping, errors="ignore").copy()
+        out = df.rename(columns=mapping, errors="ignore").copy()
 
-        # Add any missing required columns with zeros to keep schema stable
         for req in ("open", "high", "low", "close", "volume"):
             if req not in out.columns:
                 out[req] = 0.0
 
-        # Keep only the standard set (in this order)
         wanted = ["open", "high", "low", "close", "volume"]
-        out = out[wanted]
+        out = cast(pd.DataFrame, out[wanted])
         return out
 
     def _empty_df(self) -> pd.DataFrame:
