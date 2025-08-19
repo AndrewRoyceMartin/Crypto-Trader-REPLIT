@@ -192,3 +192,62 @@ class OKXAdapter(BaseExchange):
         except Exception as e:
             self.logger.error(f"Error fetching ticker: {str(e)}")
             raise
+    
+    def get_balance(self) -> Dict:
+        """
+        Get account balance from OKX.
+        
+        Returns:
+            Account balance data
+        """
+        try:
+            if not self.is_connected():
+                raise Exception("Not connected to exchange")
+            
+            balance = self.exchange.fetch_balance()
+            return dict(balance)
+            
+        except Exception as e:
+            self.logger.error(f"Error fetching balance: {str(e)}")
+            raise
+    
+    def get_positions(self) -> List[Dict]:
+        """
+        Get open positions from OKX.
+        
+        Returns:
+            List of position data
+        """
+        try:
+            if not self.is_connected():
+                raise Exception("Not connected to exchange")
+            
+            positions = self.exchange.fetch_positions()
+            return [dict(pos) for pos in positions if pos['contracts'] > 0]
+            
+        except Exception as e:
+            self.logger.error(f"Error fetching positions: {str(e)}")
+            raise
+    
+    def get_trades(self, symbol: Optional[str] = None, since: Optional[int] = None, limit: int = 100) -> List[Dict]:
+        """
+        Get trade history from OKX.
+        
+        Args:
+            symbol: Optional symbol filter
+            since: Optional timestamp filter
+            limit: Number of trades to return
+            
+        Returns:
+            List of trade data
+        """
+        try:
+            if not self.is_connected():
+                raise Exception("Not connected to exchange")
+            
+            trades = self.exchange.fetch_my_trades(symbol, since, limit)
+            return [dict(trade) for trade in trades]
+            
+        except Exception as e:
+            self.logger.error(f"Error fetching trades: {str(e)}")
+            raise

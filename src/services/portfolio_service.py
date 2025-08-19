@@ -49,7 +49,7 @@ ASSETS: List[Dict[str, Any]] = _normalize_assets(RAW_ASSETS)
 
 
 class PortfolioService:
-    """Service that manages portfolio data through Simulated OKX exchange."""
+    """Service that manages portfolio data through live OKX exchange."""
 
     def __init__(self) -> None:
         """Initialize portfolio service with OKX exchange."""
@@ -64,33 +64,22 @@ class PortfolioService:
             "password": os.getenv("OKX_PASSPHRASE", ""),
         }
 
-        # Check if all credentials are available
+        # Require all credentials - no simulation fallback
         if not all([config["apiKey"], config["secret"], config["password"]]):
-            self.logger.warning("OKX credentials not fully configured, falling back to simulation")
-            config = {
-                "sandbox": True,
-                "apiKey": "simulated_key",
-                "secret": "simulated_secret",
-                "password": "simulated_passphrase",
-            }
-            self.exchange = SimulatedOKX(config)
-        else:
-            # Use real OKX exchange
-            from src.exchanges.okx_adapter import OKXAdapter
-            self.exchange = OKXAdapter(config)
-            if not self.exchange.connect():
-                self.logger.error("Failed to connect to live OKX, falling back to simulation")
-                config["sandbox"] = True
-                self.exchange = SimulatedOKX(config)
+            raise RuntimeError("OKX API credentials (OKX_API_KEY, OKX_SECRET_KEY, OKX_PASSPHRASE) are required. No simulation mode available.")
+        
+        # Use real OKX exchange only
+        from src.exchanges.okx_adapter import OKXAdapter
+        self.exchange = OKXAdapter(config)
+        if not self.exchange.connect():
+            raise RuntimeError("Failed to connect to live OKX account. Please check your API credentials and network connection.")
         self._initialize_exchange()
 
         # Track initialization state
         self.is_initialized: bool = True
         self._last_sync: datetime = datetime.now(timezone.utc)
 
-        # Ensure trades store exists on the exchange (for history)
-        if not hasattr(self.exchange, "trades") or self.exchange.trades is None:
-            self.exchange.trades = []
+        # Live exchange will provide real trade history - no simulation needed
 
         # Cache a safe price getter to avoid attr-defined Pyright warnings
         self._price_getter: Optional[Callable[[str], float]] = None
@@ -124,14 +113,13 @@ class PortfolioService:
         return price if price > 0.0 else 0.0
 
     def _initialize_exchange(self) -> None:
-        """Initialize and connect to the simulated exchange."""
+        """Initialize and connect to the live OKX exchange."""
         try:
-            success = self.exchange.connect()
-            if success:
-                self.logger.info("Successfully connected to Simulated OKX Exchange")
-                self._populate_initial_portfolio()
+            if self.exchange.is_connected():
+                self.logger.info("Successfully connected to live OKX Exchange")
+                # No need to populate initial portfolio - use real data
             else:
-                raise RuntimeError("Failed to connect to exchange")
+                raise RuntimeError("Failed to connect to live OKX exchange")
         except Exception as e:
             self.logger.error("Exchange initialization failed: %s", e)
             raise

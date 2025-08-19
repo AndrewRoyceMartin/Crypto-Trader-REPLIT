@@ -19,7 +19,7 @@ A plugin-based system using `BaseStrategy` allows flexible strategy implementati
 A two-tier caching system utilizes SQLite for raw market data, managed by `DataManager` and `DataCache` to minimize API calls.
 
 **Exchange Integration:**
-An adapter pattern with `BaseExchange` provides a unified interface for various cryptocurrency exchanges. The `SimulatedOKX` exchange serves as the single source of truth, supporting all 103 cryptocurrencies with comprehensive trading pairs, realistic price simulation, and complete trade history management. This consolidation ensures data consistency and eliminates external API dependencies.
+An adapter pattern with `BaseExchange` provides a unified interface for various cryptocurrency exchanges. The system now uses live OKX exchange only through `OKXAdapter`, connecting directly to the user's real OKX trading account. All simulation fallbacks have been removed - the system requires valid OKX API credentials and uses only real portfolio data, trade history, and market prices from the live exchange.
 
 **Risk Management:**
 The `RiskManager` enforces multiple safety layers, including portfolio-level limits, position sizing, daily loss limits, and emergency halts, performing checks before every trade. Position sizing, entry/exit prices (with slippage), stop loss, and take profit levels are calculated using integrated bot pricing formulas to ensure a consistent 1% equity risk per trade.

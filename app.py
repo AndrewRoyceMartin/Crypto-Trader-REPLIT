@@ -143,21 +143,18 @@ def background_warmup():
         okx_secret = os.getenv("OKX_SECRET_KEY", "")
         okx_pass = os.getenv("OKX_PASSPHRASE", "")
         
-        if okx_api_key and okx_secret and okx_pass:
-            # Use live OKX account
-            ex = ccxt.okx({
-                'apiKey': okx_api_key,
-                'secret': okx_secret,
-                'password': okx_pass,
-                'sandbox': False,
-                'enableRateLimit': True
-            })
-            logger.info("Using live OKX account for background warmup")
-        else:
-            # Fall back to sandbox mode
-            ex = ccxt.okx({'enableRateLimit': True})
-            ex.set_sandbox_mode(True)
-            logger.info("Using OKX sandbox mode for background warmup")
+        if not (okx_api_key and okx_secret and okx_pass):
+            raise RuntimeError("OKX API credentials required for background warmup. No simulation mode available.")
+            
+        # Use live OKX account only
+        ex = ccxt.okx({
+            'apiKey': okx_api_key,
+            'secret': okx_secret,
+            'password': okx_pass,
+            'sandbox': False,
+            'enableRateLimit': True
+        })
+        logger.info("Using live OKX account for background warmup")
 
         # Try to load markets, but don't fail if it doesn't work
         try:
@@ -210,17 +207,16 @@ def get_df(symbol: str, timeframe: str):
         okx_secret = os.getenv("OKX_SECRET_KEY", "")
         okx_pass = os.getenv("OKX_PASSPHRASE", "")
         
-        if okx_api_key and okx_secret and okx_pass:
-            ex = ccxt.okx({
-                'apiKey': okx_api_key,
-                'secret': okx_secret,
-                'password': okx_pass,
-                'sandbox': False,
-                'enableRateLimit': True
-            })
-        else:
-            ex = ccxt.okx({'enableRateLimit': True})
-            ex.set_sandbox_mode(True)
+        if not (okx_api_key and okx_secret and okx_pass):
+            raise RuntimeError("OKX API credentials required. No simulation mode available.")
+            
+        ex = ccxt.okx({
+            'apiKey': okx_api_key,
+            'secret': okx_secret,
+            'password': okx_pass,
+            'sandbox': False,
+            'enableRateLimit': True
+        })
         ex.load_markets()
 
         ohlcv = ex.fetch_ohlcv(symbol, timeframe=timeframe, limit=200)
@@ -292,17 +288,16 @@ def api_price():
             okx_secret = os.getenv("OKX_SECRET_KEY", "")
             okx_pass = os.getenv("OKX_PASSPHRASE", "")
             
-            if okx_api_key and okx_secret and okx_pass:
-                ex = ccxt.okx({
-                    'apiKey': okx_api_key,
-                    'secret': okx_secret,
-                    'password': okx_pass,
-                    'sandbox': False,
-                    'enableRateLimit': True
-                })
-            else:
-                ex = ccxt.okx({'enableRateLimit': True})
-                ex.set_sandbox_mode(True)
+            if not (okx_api_key and okx_secret and okx_pass):
+                raise RuntimeError("OKX API credentials required. No simulation mode available.")
+                
+            ex = ccxt.okx({
+                'apiKey': okx_api_key,
+                'secret': okx_secret,
+                'password': okx_pass,
+                'sandbox': False,
+                'enableRateLimit': True
+            })
             ex.load_markets()
             ohlcv = ex.fetch_ohlcv(sym, timeframe=tf, limit=lim)
             df = pd.DataFrame(ohlcv, columns=["ts","open","high","low","close","volume"])  # type: ignore[call-arg]
@@ -835,22 +830,35 @@ def api_price_source_status():
         return jsonify({"status": "initializing"}), 503
 
     try:
-        from src.exchanges.simulated_okx import SimulatedOKX
+        # Use real OKX exchange for status check
+        okx_api_key = os.getenv("OKX_API_KEY", "")
+        okx_secret = os.getenv("OKX_SECRET_KEY", "")
+        okx_pass = os.getenv("OKX_PASSPHRASE", "")
+        
+        if not (okx_api_key and okx_secret and okx_pass):
+            return jsonify({
+                "status": "error",
+                "api_provider": "OKX_Live_Exchange",
+                "exchange_type": "Live",
+                "error": "OKX API credentials not configured",
+                "last_update": datetime.now(LOCAL_TZ).isoformat()
+            }), 500
 
+        from src.exchanges.okx_adapter import OKXAdapter
         config = {
-            'sandbox': True,
-            'apiKey': 'simulated_key',
-            'secret': 'simulated_secret',
-            'password': 'simulated_passphrase'
+            "sandbox": False,
+            "apiKey": okx_api_key,
+            "secret": okx_secret,
+            "password": okx_pass,
         }
 
-        exchange = SimulatedOKX(config)
+        exchange = OKXAdapter(config)
         is_connected = exchange.connect()
 
         return jsonify({
             "status": "connected" if is_connected else "disconnected",
-            "api_provider": "OKX_Simulated_Exchange",
-            "exchange_type": "Simulated",
+            "api_provider": "OKX_Live_Exchange",
+            "exchange_type": "Live",
             "last_update": datetime.now(LOCAL_TZ).isoformat(),
             "symbols_loaded": warmup.get("loaded", [])
         })
@@ -859,7 +867,7 @@ def api_price_source_status():
         logger.error(f"OKX status check error: {e}")
         return jsonify({
             "status": "error",
-            "api_provider": "OKX_Simulated_Exchange",
+            "api_provider": "OKX_Live_Exchange",
             "error": str(e)
         }), 500
 
@@ -1131,7 +1139,7 @@ def api_reset_entire_program():
             clear_fn = getattr(portfolio_service.exchange, 'clear_cache', None)
             if callable(clear_fn):
                 clear_fn()
-                logger.info("Cleared OKX simulation cache")
+                logger.info("Cleared OKX cache")
         except Exception as e:
             logger.warning(f"Could not clear OKX simulation cache: {e}")
 
