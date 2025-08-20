@@ -10,3 +10,4 @@ sendgrid
 sendgrid
 gunicorn
 pytz
+ccxt>=4.0.0
