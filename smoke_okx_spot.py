@@ -1,40 +1,60 @@
 #!/usr/bin/env python3
-import os, sys, traceback
+"""
+Minimal OKX spot smoke test:
+- Verifies connection (demo/live)
+- Loads markets
+- Prints a couple of tickers
+- Shows a tiny spot account summary
+"""
 
-# Ensure project root on sys.path (useful on some hosts)
-ROOT = os.path.dirname(os.path.abspath(__file__))
-if ROOT not in sys.path:
-    sys.path.insert(0, ROOT)
+import os
+import sys
+import traceback
 
 from src.exchanges.okx_adapter_spot import make_okx_spot, spot_summary
 
-def main():
-    # Expect env vars:
-    #   OKX_API_KEY, OKX_API_SECRET, OKX_API_PASSPHRASE
-    #   OKX_SANDBOX=1 for demo / 0 for live
+
+def main() -> None:
     ex = make_okx_spot()
-    print("Connected to OKX (spot). Sandbox:", ex.sandbox)
-    print("Markets loaded:", len(ex.markets))
+
+    # ccxt uses set_sandbox_mode; attribute is 'sandboxMode' (not 'sandbox')
+    sandbox_mode = bool(getattr(ex, "sandboxMode", False))
+    print("Connected to OKX (spot). Sandbox mode:", sandbox_mode)
+
+    # Ensure markets are loaded and handle Optional typing cleanly
+    try:
+        ex.load_markets()
+    except Exception as e:
+        print("load_markets failed:", e)
+        raise
+
+    markets_count = len(ex.markets or {})
+    print("Markets loaded:", markets_count)
 
     # Check a couple of common markets
     for sym in ("BTC/USDT", "ETH/USDT"):
         try:
             t = ex.fetch_ticker(sym)
-            print(f"{sym} last:", t.get("last"))
+            last = t.get("last")
+            print(f"{sym} last:", last)
         except Exception as e:
             print(f"{sym} unavailable:", e)
 
     # Print simple summary (balances + open orders)
-    s = spot_summary(ex)
-    print("=== Spot Summary ===")
-    print("Base Currency:", s["base_currency"])
-    print("Balances:", s["balances"])
-    print("Open Orders:", s["open_orders"])
+    try:
+        s = spot_summary(ex)
+        print("=== Spot Summary ===")
+        print("Base Currency:", s.get("base_currency"))
+        print("Balances:", s.get("balances"))
+        print("Open Orders:", s.get("open_orders"))
+    except Exception as e:
+        print("spot_summary failed:", e)
+
 
 if __name__ == "__main__":
     try:
         main()
-    except Exception as e:
-        print("Smoke test failed:", e)
+    except Exception as exc:
+        print("Smoke test failed:", exc)
         print(traceback.format_exc())
         sys.exit(1)
