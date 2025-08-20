@@ -205,6 +205,7 @@ body {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    border-right: 1px solid #e9ecef;
 }
 
 .table td {
@@ -214,6 +215,13 @@ body {
     overflow: hidden;
     text-overflow: ellipsis;
     padding: 0.5rem 0.3rem;
+    border-right: 1px solid #e9ecef;
+}
+
+/* Remove border from last column to avoid double border at table edge */
+.table td:last-child,
+.table th:last-child {
+    border-right: none;
 }
 
 /* Recent Trades Dashboard Preview Styling */
@@ -232,6 +240,15 @@ body {
     vertical-align: middle;
     text-align: center;
     border: none;
+    border-right: 1px solid #e9ecef;
+}
+
+/* Remove border from last column in recent trades preview */
+#recent-trades-preview-body th:last-child,
+#recent-trades-preview-body td:last-child,
+.recent-trades-preview th:last-child,
+.recent-trades-preview td:last-child {
+    border-right: none;
 }
 
 /* Dashboard Recent Trades Column Widths */
