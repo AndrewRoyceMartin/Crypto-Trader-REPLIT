@@ -58,11 +58,11 @@ class PortfolioService:
         # Initialize OKX exchange with credentials
         import os
         
-        # Check if demo mode is enabled (default to demo for compatibility)
-        demo_mode = os.getenv('OKX_DEMO', '1').strip().lower() in ('1', 'true', 't', 'yes', 'y', 'on')
+        # Use live mode by default to fetch real OKX holdings
+        demo_mode = os.getenv('OKX_DEMO', '0').strip().lower() in ('1', 'true', 't', 'yes', 'y', 'on')
         
         config = {
-            "sandbox": demo_mode,  # Use demo mode by default for compatibility
+            "sandbox": demo_mode,  # Use live mode by default for real trading
             "apiKey": os.getenv("OKX_API_KEY", ""),
             "secret": os.getenv("OKX_SECRET_KEY", ""),
             "password": os.getenv("OKX_PASSPHRASE", ""),

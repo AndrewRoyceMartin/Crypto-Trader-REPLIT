@@ -40,14 +40,14 @@ class OKXAdapter(BaseExchange):
             if not all([api_key, secret_key, passphrase]):
                 raise Exception("Missing OKX API credentials in environment variables")
             
-            # Check if demo mode is enabled (default to demo for compatibility)
-            demo_mode = os.getenv('OKX_DEMO', '1').strip().lower() in ('1', 'true', 't', 'yes', 'y', 'on')
+            # Use live mode by default to fetch real OKX holdings
+            demo_mode = os.getenv('OKX_DEMO', '0').strip().lower() in ('1', 'true', 't', 'yes', 'y', 'on')
             
             self.exchange = ccxt.okx({
                 'apiKey': api_key,
                 'secret': secret_key,
                 'password': passphrase,
-                'sandbox': demo_mode,  # Use demo mode by default for compatibility
+                'sandbox': demo_mode,  # Use live mode by default for real trading
                 'enableRateLimit': True,
                 'timeout': 30000,
                 'options': {
@@ -59,6 +59,8 @@ class OKXAdapter(BaseExchange):
             if demo_mode:
                 self.exchange.headers = {**(self.exchange.headers or {}), 'x-simulated-trading': '1'}
                 self.logger.info("Using OKX Demo/Sandbox mode")
+            else:
+                self.logger.info("Using OKX Live Trading mode")
             
             # Test connection
             self.exchange.load_markets()
@@ -265,24 +267,12 @@ class OKXAdapter(BaseExchange):
             if not self.is_connected():
                 raise Exception("Not connected to exchange")
             
-            # Check if we're in demo mode
-            demo_mode = os.getenv('OKX_DEMO', '1').strip().lower() in ('1', 'true', 't', 'yes', 'y', 'on')
-            
-            if demo_mode:
-                # Return simulated positions for demo mode
-                return self._get_demo_positions()
-            else:
-                # Try to fetch real positions
-                positions = self.exchange.fetch_positions()
-                return [dict(pos) for pos in positions if pos['contracts'] > 0]
+            # Fetch real positions from OKX account
+            positions = self.exchange.fetch_positions()
+            return [dict(pos) for pos in positions if pos['contracts'] > 0]
             
         except Exception as e:
             self.logger.error(f"Error fetching positions: {str(e)}")
-            # If real API fails, fall back to demo positions in demo mode
-            demo_mode = os.getenv('OKX_DEMO', '1').strip().lower() in ('1', 'true', 't', 'yes', 'y', 'on')
-            if demo_mode:
-                self.logger.info("Falling back to demo positions due to API error")
-                return self._get_demo_positions()
             raise
     
     def get_trades(self, symbol: Optional[str] = None, since: Optional[int] = None, limit: int = 100) -> List[Dict]:
@@ -308,82 +298,4 @@ class OKXAdapter(BaseExchange):
             self.logger.error(f"Error fetching trades: {str(e)}")
             raise
     
-    def _get_demo_positions(self) -> List[Dict]:
-        """
-        Generate simulated positions for demo mode.
-        Creates $10 positions for each of the 103 assets.
-        
-        Returns:
-            List of simulated position data
-        """
-        import random
-        from datetime import datetime
-        from src.data.portfolio_assets import MASTER_PORTFOLIO_ASSETS
-        
-        positions = []
-        
-        for i, symbol in enumerate(MASTER_PORTFOLIO_ASSETS):
-            # Simulate realistic crypto prices
-            if symbol == "BTC":
-                price = 45000 + random.uniform(-2000, 2000)
-            elif symbol == "ETH":
-                price = 2800 + random.uniform(-200, 200)
-            elif symbol == "SOL":
-                price = 85 + random.uniform(-10, 10)
-            elif symbol in ["XRP", "ADA", "DOGE", "MATIC"]:
-                price = random.uniform(0.30, 1.50)
-            elif symbol in ["LINK", "UNI", "AVAX", "DOT"]:
-                price = random.uniform(8, 25)
-            elif symbol in ["SHIB", "PEPE", "FLOKI"]:
-                price = random.uniform(0.000001, 0.001)
-            else:
-                # General altcoin range
-                price = random.uniform(0.1, 100)
-            
-            # Calculate quantity for $10 position
-            quantity = 10.0 / price
-            
-            # Add some realistic P&L variation
-            current_price = price * random.uniform(0.95, 1.05)
-            unrealized_pnl = (current_price - price) * quantity
-            
-            position = {
-                'symbol': f"{symbol}/USDT",
-                'id': f"demo-{i+1}",
-                'timestamp': datetime.now().timestamp() * 1000,
-                'datetime': datetime.now().isoformat(),
-                'contracts': quantity,
-                'contractSize': 1,
-                'side': 'long',
-                'size': quantity,
-                'notional': current_price * quantity,
-                'percentage': (unrealized_pnl / 10.0) * 100,
-                'unrealizedPnl': unrealized_pnl,
-                'realizedPnl': 0,
-                'collateral': 10.0,
-                'markPrice': current_price,
-                'entryPrice': price,
-                'liquidationPrice': None,
-                'hedged': False,
-                'maintenanceMargin': 0,
-                'maintenanceMarginPercentage': 0,
-                'initialMargin': 0,
-                'initialMarginPercentage': 0,
-                'leverage': 1,
-                'info': {
-                    'instType': 'SPOT',
-                    'instId': f"{symbol}-USDT",
-                    'pos': str(quantity),
-                    'posCcy': symbol,
-                    'posId': f"demo-{i+1}",
-                    'avgPx': str(price),
-                    'markPx': str(current_price),
-                    'upl': str(unrealized_pnl),
-                    'uplRatio': str((unrealized_pnl / 10.0)),
-                    'cTime': str(int(datetime.now().timestamp() * 1000))
-                }
-            }
-            
-            positions.append(position)
-        
-        return positions
+
