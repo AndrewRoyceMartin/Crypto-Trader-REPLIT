@@ -55,24 +55,29 @@ class PortfolioService:
         """Initialize portfolio service with OKX exchange."""
         self.logger = logging.getLogger(__name__)
 
-        # Initialize OKX exchange with real credentials
+        # Initialize OKX exchange with credentials
         import os
+        
+        # Check if demo mode is enabled (default to demo for compatibility)
+        demo_mode = os.getenv('OKX_DEMO', '1').strip().lower() in ('1', 'true', 't', 'yes', 'y', 'on')
+        
         config = {
-            "sandbox": False,  # Use live OKX account
+            "sandbox": demo_mode,  # Use demo mode by default for compatibility
             "apiKey": os.getenv("OKX_API_KEY", ""),
             "secret": os.getenv("OKX_SECRET_KEY", ""),
             "password": os.getenv("OKX_PASSPHRASE", ""),
         }
 
-        # Require all credentials - no simulation fallback
+        # Require all credentials
         if not all([config["apiKey"], config["secret"], config["password"]]):
-            raise RuntimeError("OKX API credentials (OKX_API_KEY, OKX_SECRET_KEY, OKX_PASSPHRASE) are required. No simulation mode available.")
+            raise RuntimeError("OKX API credentials (OKX_API_KEY, OKX_SECRET_KEY, OKX_PASSPHRASE) are required.")
         
-        # Use real OKX exchange only
+        # Use OKX exchange (demo or live based on OKX_DEMO setting)
         from src.exchanges.okx_adapter import OKXAdapter
         self.exchange = OKXAdapter(config)
+        mode_text = "demo" if demo_mode else "live"
         if not self.exchange.connect():
-            raise RuntimeError("Failed to connect to live OKX account. Please check your API credentials and network connection.")
+            raise RuntimeError(f"Failed to connect to OKX {mode_text} account. Please check your API credentials and network connection.")
         self._initialize_exchange()
 
         # Track initialization state
