@@ -191,6 +191,8 @@ body {
 /* Tables */
 .table {
     margin-bottom: 0;
+    table-layout: fixed;
+    width: 100%;
 }
 
 .table th {
@@ -200,11 +202,18 @@ body {
     letter-spacing: 0.5px;
     border-top: none;
     color: #6c757d;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .table td {
     font-size: 0.875rem;
     vertical-align: middle;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding: 0.5rem 0.3rem;
 }
 
 /* Recent Trades Dashboard Preview Styling */
@@ -435,6 +444,403 @@ body {
 /* Table Row Hover Effect */
 .table-hover tbody tr:hover {
     background-color: rgba(0,0,0,0.05);
+}
+
+/* Portfolio Table Column Widths */
+#crypto-tracked-table th:nth-child(1),
+#crypto-tracked-table td:nth-child(1),
+.table tbody#crypto-tracked-table tr td:nth-child(1) {
+    width: 6%;
+    text-align: center;
+}
+
+#crypto-tracked-table th:nth-child(2),
+#crypto-tracked-table td:nth-child(2),
+.table tbody#crypto-tracked-table tr td:nth-child(2) {
+    width: 8%;
+    text-align: left;
+}
+
+#crypto-tracked-table th:nth-child(3),
+#crypto-tracked-table td:nth-child(3),
+.table tbody#crypto-tracked-table tr td:nth-child(3) {
+    width: 12%;
+    text-align: left;
+}
+
+#crypto-tracked-table th:nth-child(4),
+#crypto-tracked-table td:nth-child(4),
+.table tbody#crypto-tracked-table tr td:nth-child(4) {
+    width: 10%;
+    text-align: right;
+}
+
+#crypto-tracked-table th:nth-child(5),
+#crypto-tracked-table td:nth-child(5),
+.table tbody#crypto-tracked-table tr td:nth-child(5) {
+    width: 10%;
+    text-align: right;
+}
+
+#crypto-tracked-table th:nth-child(6),
+#crypto-tracked-table td:nth-child(6),
+.table tbody#crypto-tracked-table tr td:nth-child(6) {
+    width: 10%;
+    text-align: right;
+}
+
+#crypto-tracked-table th:nth-child(7),
+#crypto-tracked-table td:nth-child(7),
+.table tbody#crypto-tracked-table tr td:nth-child(7) {
+    width: 10%;
+    text-align: right;
+}
+
+#crypto-tracked-table th:nth-child(8),
+#crypto-tracked-table td:nth-child(8),
+.table tbody#crypto-tracked-table tr td:nth-child(8) {
+    width: 8%;
+    text-align: right;
+}
+
+#crypto-tracked-table th:nth-child(9),
+#crypto-tracked-table td:nth-child(9),
+.table tbody#crypto-tracked-table tr td:nth-child(9) {
+    width: 8%;
+    text-align: right;
+}
+
+#crypto-tracked-table th:nth-child(10),
+#crypto-tracked-table td:nth-child(10),
+.table tbody#crypto-tracked-table tr td:nth-child(10) {
+    width: 8%;
+    text-align: center;
+}
+
+#crypto-tracked-table th:nth-child(11),
+#crypto-tracked-table td:nth-child(11),
+.table tbody#crypto-tracked-table tr td:nth-child(11) {
+    width: 8%;
+    text-align: center;
+}
+
+#crypto-tracked-table th:nth-child(12),
+#crypto-tracked-table td:nth-child(12),
+.table tbody#crypto-tracked-table tr td:nth-child(12) {
+    width: 8%;
+    text-align: center;
+}
+
+#crypto-tracked-table th:nth-child(13),
+#crypto-tracked-table td:nth-child(13),
+.table tbody#crypto-tracked-table tr td:nth-child(13) {
+    width: 10%;
+    text-align: right;
+}
+
+/* Holdings/Positions Table Column Widths */
+#positions-table th:nth-child(1),
+#positions-table td:nth-child(1) {
+    width: 8%;
+    text-align: left;
+}
+
+#positions-table th:nth-child(2),
+#positions-table td:nth-child(2) {
+    width: 6%;
+    text-align: center;
+}
+
+#positions-table th:nth-child(3),
+#positions-table td:nth-child(3) {
+    width: 10%;
+    text-align: right;
+}
+
+#positions-table th:nth-child(4),
+#positions-table td:nth-child(4) {
+    width: 8%;
+    text-align: right;
+}
+
+#positions-table th:nth-child(5),
+#positions-table td:nth-child(5) {
+    width: 8%;
+    text-align: right;
+}
+
+#positions-table th:nth-child(6),
+#positions-table td:nth-child(6) {
+    width: 10%;
+    text-align: right;
+}
+
+#positions-table th:nth-child(7),
+#positions-table td:nth-child(7) {
+    width: 8%;
+    text-align: right;
+}
+
+#positions-table th:nth-child(8),
+#positions-table td:nth-child(8) {
+    width: 7%;
+    text-align: right;
+}
+
+#positions-table th:nth-child(9),
+#positions-table td:nth-child(9) {
+    width: 7%;
+    text-align: right;
+}
+
+#positions-table th:nth-child(10),
+#positions-table td:nth-child(10) {
+    width: 7%;
+    text-align: right;
+}
+
+#positions-table th:nth-child(11),
+#positions-table td:nth-child(11) {
+    width: 7%;
+    text-align: right;
+}
+
+#positions-table th:nth-child(12),
+#positions-table td:nth-child(12) {
+    width: 7%;
+    text-align: right;
+}
+
+#positions-table th:nth-child(13),
+#positions-table td:nth-child(13) {
+    width: 6%;
+    text-align: center;
+}
+
+#positions-table th:nth-child(14),
+#positions-table td:nth-child(14) {
+    width: 5%;
+    text-align: right;
+}
+
+#positions-table th:nth-child(15),
+#positions-table td:nth-child(15) {
+    width: 6%;
+    text-align: center;
+}
+
+/* Performance Table Column Widths */
+#performance-table-body th:nth-child(1),
+#performance-table-body td:nth-child(1) {
+    width: 5%;
+    text-align: center;
+}
+
+#performance-table-body th:nth-child(2),
+#performance-table-body td:nth-child(2) {
+    width: 8%;
+    text-align: left;
+}
+
+#performance-table-body th:nth-child(3),
+#performance-table-body td:nth-child(3) {
+    width: 15%;
+    text-align: left;
+}
+
+#performance-table-body th:nth-child(4),
+#performance-table-body td:nth-child(4) {
+    width: 12%;
+    text-align: right;
+}
+
+#performance-table-body th:nth-child(5),
+#performance-table-body td:nth-child(5) {
+    width: 12%;
+    text-align: right;
+}
+
+#performance-table-body th:nth-child(6),
+#performance-table-body td:nth-child(6) {
+    width: 12%;
+    text-align: right;
+}
+
+#performance-table-body th:nth-child(7),
+#performance-table-body td:nth-child(7) {
+    width: 10%;
+    text-align: right;
+}
+
+#performance-table-body th:nth-child(8),
+#performance-table-body td:nth-child(8) {
+    width: 10%;
+    text-align: right;
+}
+
+#performance-table-body th:nth-child(9),
+#performance-table-body td:nth-child(9) {
+    width: 8%;
+    text-align: right;
+}
+
+#performance-table-body th:nth-child(10),
+#performance-table-body td:nth-child(10) {
+    width: 8%;
+    text-align: center;
+}
+
+/* Trades Table Column Widths */
+#trades-table-body th:nth-child(1),
+#trades-table-body td:nth-child(1) {
+    width: 5%;
+    text-align: center;
+}
+
+#trades-table-body th:nth-child(2),
+#trades-table-body td:nth-child(2) {
+    width: 12%;
+    text-align: left;
+}
+
+#trades-table-body th:nth-child(3),
+#trades-table-body td:nth-child(3) {
+    width: 8%;
+    text-align: left;
+}
+
+#trades-table-body th:nth-child(4),
+#trades-table-body td:nth-child(4) {
+    width: 8%;
+    text-align: center;
+}
+
+#trades-table-body th:nth-child(5),
+#trades-table-body td:nth-child(5) {
+    width: 12%;
+    text-align: right;
+}
+
+#trades-table-body th:nth-child(6),
+#trades-table-body td:nth-child(6) {
+    width: 12%;
+    text-align: right;
+}
+
+#trades-table-body th:nth-child(7),
+#trades-table-body td:nth-child(7) {
+    width: 10%;
+    text-align: right;
+}
+
+#trades-table-body th:nth-child(8),
+#trades-table-body td:nth-child(8) {
+    width: 10%;
+    text-align: right;
+}
+
+#trades-table-body th:nth-child(9),
+#trades-table-body td:nth-child(9) {
+    width: 8%;
+    text-align: right;
+}
+
+#trades-table-body th:nth-child(10),
+#trades-table-body td:nth-child(10) {
+    width: 8%;
+    text-align: right;
+}
+
+#trades-table-body th:nth-child(11),
+#trades-table-body td:nth-child(11) {
+    width: 7%;
+    text-align: center;
+}
+
+/* Open Orders Table Column Widths */
+#open-orders-body th:nth-child(1),
+#open-orders-body td:nth-child(1) {
+    width: 15%;
+    text-align: left;
+}
+
+#open-orders-body th:nth-child(2),
+#open-orders-body td:nth-child(2) {
+    width: 15%;
+    text-align: left;
+}
+
+#open-orders-body th:nth-child(3),
+#open-orders-body td:nth-child(3) {
+    width: 10%;
+    text-align: center;
+}
+
+#open-orders-body th:nth-child(4),
+#open-orders-body td:nth-child(4) {
+    width: 15%;
+    text-align: right;
+}
+
+#open-orders-body th:nth-child(5),
+#open-orders-body td:nth-child(5) {
+    width: 15%;
+    text-align: right;
+}
+
+#open-orders-body th:nth-child(6),
+#open-orders-body td:nth-child(6) {
+    width: 15%;
+    text-align: left;
+}
+
+#open-orders-body th:nth-child(7),
+#open-orders-body td:nth-child(7) {
+    width: 15%;
+    text-align: center;
+}
+
+/* Recent Fills Table Column Widths */
+#recent-fills-body th:nth-child(1),
+#recent-fills-body td:nth-child(1) {
+    width: 15%;
+    text-align: left;
+}
+
+#recent-fills-body th:nth-child(2),
+#recent-fills-body td:nth-child(2) {
+    width: 15%;
+    text-align: left;
+}
+
+#recent-fills-body th:nth-child(3),
+#recent-fills-body td:nth-child(3) {
+    width: 10%;
+    text-align: center;
+}
+
+#recent-fills-body th:nth-child(4),
+#recent-fills-body td:nth-child(4) {
+    width: 15%;
+    text-align: right;
+}
+
+#recent-fills-body th:nth-child(5),
+#recent-fills-body td:nth-child(5) {
+    width: 15%;
+    text-align: right;
+}
+
+#recent-fills-body th:nth-child(6),
+#recent-fills-body td:nth-child(6) {
+    width: 15%;
+    text-align: right;
+}
+
+#recent-fills-body th:nth-child(7),
+#recent-fills-body td:nth-child(7) {
+    width: 15%;
+    text-align: left;
 }
 
 /* P&L Styling */

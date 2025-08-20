@@ -740,19 +740,23 @@ class TradingApp {
             const pnlPercent = this.num(crypto.pnl_percent);
 
             const rankCell = document.createElement('td');
+            rankCell.className = 'text-center';
             rankCell.textContent = crypto.rank || '-';
 
             const symbolCell = document.createElement('td');
+            symbolCell.className = 'text-start';
             const symbolSpan = document.createElement('span');
             symbolSpan.className = 'fw-bold text-primary';
             symbolSpan.textContent = crypto.symbol || '-';
             symbolCell.appendChild(symbolSpan);
 
             const nameCell = document.createElement('td');
+            nameCell.className = 'text-start';
             nameCell.textContent = crypto.name || '-';
 
             // Quantity (sold-out highlight)
             const quantityCell = document.createElement('td');
+            quantityCell.className = 'text-end';
             const isSoldOut = value <= 0.01 || crypto.has_position === false || quantity <= 0;
             quantityCell.textContent = this.num(isSoldOut ? 0 : quantity).toFixed(6);
             if (isSoldOut) {
@@ -763,28 +767,33 @@ class TradingApp {
             }
 
             const priceCell = document.createElement('td');
+            priceCell.className = 'text-end';
             priceCell.textContent = this.formatCurrency(price, this.selectedCurrency);
 
             const valueCell = document.createElement('td');
+            valueCell.className = 'text-end';
             valueCell.textContent = this.formatCurrency(value, this.selectedCurrency);
 
             const targetSellCell = document.createElement('td');
+            targetSellCell.className = 'text-end';
             const targetSellPrice = price * 1.05;
             targetSellCell.textContent = this.formatCurrency(targetSellPrice);
 
             const pnlAbsoluteCell = document.createElement('td');
             const originalInvestment = 10; // per-asset seed
             const absolutePnl = value - originalInvestment;
-            pnlAbsoluteCell.className = absolutePnl >= 0 ? 'text-success' : 'text-danger';
+            pnlAbsoluteCell.className = `text-end ${absolutePnl >= 0 ? 'text-success' : 'text-danger'}`;
             pnlAbsoluteCell.textContent = this.formatCurrency(absolutePnl);
 
             const pnlCell = document.createElement('td');
+            pnlCell.className = 'text-end';
             const pnlSpan = document.createElement('span');
             pnlSpan.className = `${pnlPercent >= 0 ? 'text-success' : 'text-danger'} fw-bold`;
             pnlSpan.textContent = `${pnlPercent.toFixed(2)}%`;
             pnlCell.appendChild(pnlSpan);
 
             const updatedCell = document.createElement('td');
+            updatedCell.className = 'text-center';
             const updatedSmall = document.createElement('small');
             updatedSmall.className = 'text-muted';
             updatedSmall.textContent = crypto.last_updated ? new Date(crypto.last_updated).toLocaleTimeString() : '-';
@@ -792,6 +801,7 @@ class TradingApp {
 
             // Signal
             const signalCell = document.createElement('td');
+            signalCell.className = 'text-center';
             const targetBuyPrice = price * 0.95;
             let signal = 'HOLD', signalClass = 'bg-secondary';
             if (price <= targetBuyPrice)            { signal = 'BUY';  signalClass = 'bg-success'; }
@@ -800,9 +810,11 @@ class TradingApp {
             signalCell.innerHTML = `<span class="badge ${signalClass}">${signal}</span>`;
 
             const actionsCell = document.createElement('td');
+            actionsCell.className = 'text-center';
             actionsCell.innerHTML = '<button class="btn btn-sm btn-outline-primary">View</button>';
 
             const targetBuyCell = document.createElement('td');
+            targetBuyCell.className = 'text-end';
             targetBuyCell.textContent = this.formatCurrency(targetBuyPrice);
 
             row.appendChild(rankCell);
@@ -993,17 +1005,17 @@ class TradingApp {
             const positionPercent = (100 / cryptos.length).toFixed(1);
 
             row.innerHTML = `
-                <td><strong>${crypto.symbol || ''}</strong></td>
-                <td>${crypto.name || ''}</td>
-                <td>${qty.toFixed(4)}</td>
-                <td>${this.formatCurrency(cp)}</td>
-                <td>${this.formatCurrency(cv, this.selectedCurrency)}</td>
-                <td>${positionPercent}%</td>
-                <td class="${pnlClass}">${this.formatCurrency(pnlNum)}</td>
-                <td class="${pnlClass}">${pnlIcon} ${pp.toFixed(2)}%</td>
-                <td>${this.formatCurrency(crypto.target_sell_price || cp * 1.1)}</td>
-                <td class="${pnlClass}">${this.formatCurrency(Math.max(0, pnlNum))}</td>
-                <td><span class="${signalClass}">${signal}</span></td>
+                <td class="text-start"><strong>${crypto.symbol || ''}</strong></td>
+                <td class="text-start">${crypto.name || ''}</td>
+                <td class="text-end">${qty.toFixed(4)}</td>
+                <td class="text-end">${this.formatCurrency(cp)}</td>
+                <td class="text-end">${this.formatCurrency(cv, this.selectedCurrency)}</td>
+                <td class="text-end">${positionPercent}%</td>
+                <td class="text-end ${pnlClass}">${this.formatCurrency(pnlNum)}</td>
+                <td class="text-end ${pnlClass}">${pnlIcon} ${pp.toFixed(2)}%</td>
+                <td class="text-end">${this.formatCurrency(crypto.target_sell_price || cp * 1.1)}</td>
+                <td class="text-end ${pnlClass}">${this.formatCurrency(Math.max(0, pnlNum))}</td>
+                <td class="text-center"><span class="${signalClass}">${signal}</span></td>
             `;
             tableBody.appendChild(row);
         });
