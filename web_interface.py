@@ -547,29 +547,73 @@ def get_price_source_status():
 
 @app.route("/api/exchange-rates")
 def get_exchange_rates():
-    """Get current exchange rates from USD to other currencies."""
+    """Get current exchange rates from OKX fiat trading pairs."""
     try:
-        # Use realistic exchange rates based on current market values
-        exchange_rates = {
-            "USD": 1.0,
-            "EUR": 0.92,  # USD to EUR
-            "GBP": 0.79,  # USD to GBP  
-            "AUD": 1.52   # USD to AUD
-        }
+        # Initialize system if needed
+        initialize_system()
         
-        # In production, integrate with a real exchange rate API like:
-        # - Exchange Rates API (exchangerate-api.com)
-        # - Fixer.io, CurrencyLayer, Alpha Vantage
+        # Use OKX exchange rates for authentic currency conversion
+        if crypto_portfolio and hasattr(crypto_portfolio.exchange, 'get_currency_conversion_rates'):
+            try:
+                exchange_rates = crypto_portfolio.exchange.get_currency_conversion_rates()
+                source = "OKX"
+                app.logger.info(f"Successfully fetched OKX currency rates: {exchange_rates}")
+            except Exception as e:
+                app.logger.warning(f"Failed to get OKX rates, using fallback: {e}")
+                exchange_rates = {"USD": 1.0, "EUR": 0.92, "GBP": 0.79, "AUD": 1.52}
+                source = "fallback"
+        else:
+            # Fallback rates if OKX service unavailable
+            app.logger.warning("OKX exchange service unavailable, using fallback rates")
+            exchange_rates = {
+                "USD": 1.0,
+                "EUR": 0.92,  # USD to EUR
+                "GBP": 0.79,  # USD to GBP  
+                "AUD": 1.52   # USD to AUD
+            }
+            source = "fallback"
         
         return jsonify({
             "rates": exchange_rates,
             "base": "USD",
+            "source": source,
             "timestamp": datetime.now().isoformat()
         })
         
     except Exception as e:
-        app.logger.error("Error getting exchange rates: %s", e)
-        return jsonify({"error": str(e)}), 500
+        app.logger.error("Error getting OKX exchange rates: %s", e)
+        # Return fallback rates on error
+        return jsonify({
+            "rates": {"USD": 1.0, "EUR": 0.92, "GBP": 0.79, "AUD": 1.52},
+            "base": "USD", 
+            "source": "fallback",
+            "error": str(e),
+            "timestamp": datetime.now().isoformat()
+        }), 200
+
+@app.route("/api/debug-currency")
+def debug_currency():
+    """Debug endpoint to test OKX currency conversion."""
+    try:
+        portfolio_service = get_portfolio_service()
+        debug_info = {
+            "portfolio_service_exists": portfolio_service is not None,
+            "exchange_exists": hasattr(portfolio_service, 'exchange') if portfolio_service else False,
+            "method_exists": hasattr(portfolio_service.exchange, 'get_currency_conversion_rates') if portfolio_service and hasattr(portfolio_service, 'exchange') else False
+        }
+        
+        if portfolio_service and hasattr(portfolio_service.exchange, 'get_currency_conversion_rates'):
+            try:
+                rates = portfolio_service.exchange.get_currency_conversion_rates()
+                debug_info["okx_rates"] = rates
+                debug_info["okx_call_successful"] = True
+            except Exception as e:
+                debug_info["okx_error"] = str(e)
+                debug_info["okx_call_successful"] = False
+        
+        return jsonify(debug_info)
+    except Exception as e:
+        return jsonify({"error": str(e)})
 
 @app.route("/api/update-live-prices", methods=["POST"])
 def update_live_prices():

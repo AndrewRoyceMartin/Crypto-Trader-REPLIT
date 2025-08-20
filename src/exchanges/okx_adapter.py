@@ -207,6 +207,47 @@ class OKXAdapter(BaseExchange):
         except Exception as e:
             self.logger.error(f"Error canceling order: {str(e)}")
             raise
+    
+    def get_currency_conversion_rates(self) -> dict:
+        """Get currency conversion rates from OKX using fiat trading pairs."""
+        try:
+            if not self.is_connected():
+                self.logger.warning("Exchange not connected, cannot get currency rates")
+                return {"USD": 1.0}
+            
+            # Get USDT prices against major fiat currencies from OKX
+            rates = {"USD": 1.0}  # Base currency
+            
+            # OKX fiat pairs - getting fiat price in USDT
+            currency_pairs = {
+                "EUR": "EUR/USDT",
+                "GBP": "GBP/USDT", 
+                "AUD": "AUD/USDT"
+            }
+            
+            for currency, pair in currency_pairs.items():
+                try:
+                    ticker = self.exchange.fetch_ticker(pair)
+                    if ticker and ticker.get('last'):
+                        # FIAT/USDT price tells us how many USDT one unit of fiat is worth
+                        fiat_usdt_price = float(ticker['last'])
+                        if fiat_usdt_price > 0:
+                            # USD to FIAT rate = FIAT per USD (since USDT ≈ USD)
+                            rates[currency] = fiat_usdt_price
+                            self.logger.debug(f"OKX rate USD to {currency}: {fiat_usdt_price}")
+                except Exception as e:
+                    self.logger.warning(f"Could not get OKX rate for {currency}: {e}")
+                    # Fallback rates if OKX doesn't have the pair
+                    fallback_rates = {"EUR": 0.92, "GBP": 0.79, "AUD": 1.52}
+                    rates[currency] = fallback_rates.get(currency, 1.0)
+            
+            self.logger.info(f"OKX currency conversion rates: {rates}")
+            return rates
+            
+        except Exception as e:
+            self.logger.error(f"Error getting OKX currency rates: {e}")
+            # Return fallback rates
+            return {"USD": 1.0, "EUR": 0.92, "GBP": 0.79, "AUD": 1.52}
 
 
 def make_okx_spot() -> ccxt.okx:
