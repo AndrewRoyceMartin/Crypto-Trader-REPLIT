@@ -1089,12 +1089,12 @@ class TradingApp {
         set('pos-unrealized-pnl', `${pnl >= 0 ? '+' : ''}${this.formatCurrency(pnl)}`);
         set('pos-unrealized-pnl-pct', `(${pnlPercent >= 0 ? '+' : ''}${pnlPercent.toFixed(1)}%)`);
         
-        // Update P&L card colors
+        // Update P&L card colors with improved styling
         const pnlElement2 = document.getElementById('pos-unrealized-pnl');
         if (pnlElement2) {
             const pnlCard = pnlElement2.closest('.card');
             if (pnlCard) {
-                pnlCard.className = pnl >= 0 ? 'card p-3 kpi-card bg-success text-white' : 'card p-3 kpi-card bg-danger text-white';
+                pnlCard.className = pnl >= 0 ? 'card p-3 kpi-card bg-success text-white shadow-sm' : 'card p-3 kpi-card bg-danger text-white shadow-sm';
             }
         }
         
@@ -1132,12 +1132,12 @@ class TradingApp {
         const pnlText = `${pnl >= 0 ? '+' : ''}${this.formatCurrency(pnl)} (${pnlPercent >= 0 ? '+' : ''}${pnlPercent.toFixed(1)}%)`;
         set('okx-unrealized-pnl', pnlText);
         
-        // Update card color based on P&L
+        // Update card color based on P&L with improved styling
         const pnlElement = document.getElementById('okx-unrealized-pnl');
         if (pnlElement) {
             const pnlCard = pnlElement.closest('.card');
             if (pnlCard) {
-                pnlCard.className = pnl >= 0 ? 'card bg-success text-white p-2' : 'card bg-danger text-white p-2';
+                pnlCard.className = pnl >= 0 ? 'card bg-success text-white p-2 shadow-sm' : 'card bg-danger text-white p-2 shadow-sm';
             }
         }
 

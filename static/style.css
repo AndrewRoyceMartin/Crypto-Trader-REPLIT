@@ -33,6 +33,27 @@ body {
     margin-bottom: 1rem;
 }
 
+/* KPI Cards */
+.kpi-card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.kpi-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+.kpi-card .label {
+    font-size: 0.875rem;
+    opacity: 0.9;
+    margin-bottom: 0.5rem;
+}
+
+.kpi-card .value {
+    font-size: 1.5rem;
+    line-height: 1.2;
+}
+
 .card-header {
     background-color: white;
     border-bottom: 1px solid #e9ecef;
