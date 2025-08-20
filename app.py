@@ -1570,7 +1570,16 @@ def api_performance():
         total_pnl = portfolio_data['total_pnl']
 
         end_dt = datetime.now(timezone.utc)
-        start_dt = end_dt - timedelta(days=365) if not start_date else datetime.fromisoformat(start_date)
+        if start_date:
+            try:
+                start_dt = datetime.fromisoformat(start_date)
+                # Make timezone-aware if it's naive
+                if start_dt.tzinfo is None:
+                    start_dt = start_dt.replace(tzinfo=timezone.utc)
+            except ValueError:
+                start_dt = end_dt - timedelta(days=365)
+        else:
+            start_dt = end_dt - timedelta(days=365)
 
         equity_curve = []
         current_date = start_dt
