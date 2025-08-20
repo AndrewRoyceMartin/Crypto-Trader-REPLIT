@@ -35,15 +35,15 @@ class OKXAdapter(BaseExchange):
             if not all([api_key, secret_key, passphrase]):
                 raise Exception("Missing OKX API credentials in environment variables")
             
-            # Always use live mode - no demo mode support
-            demo_mode = False
+            # Check demo mode setting
+            demo_mode = os.getenv("OKX_DEMO", "false").lower() in ('true', '1', 'yes', 'on')
             
             self.exchange = ccxt.okx({
                 'apiKey': api_key,
                 'secret': secret_key,
                 'password': passphrase,
                 'hostname': hostname,  # Regional endpoint support
-                'sandbox': False,  # Always use live trading
+                'sandbox': demo_mode,  # Use demo mode if enabled
                 'enableRateLimit': True,
                 'timeout': 30000,
                 'options': {
@@ -51,8 +51,9 @@ class OKXAdapter(BaseExchange):
                 }
             })
             
-            # Always use live trading mode
-            self.logger.info("Using OKX Live Trading mode")
+            # Log trading mode
+            mode_str = "Demo/Sandbox" if demo_mode else "Live Trading"
+            self.logger.info(f"Using OKX {mode_str} mode")
             
             # Test connection
             self.exchange.load_markets()
