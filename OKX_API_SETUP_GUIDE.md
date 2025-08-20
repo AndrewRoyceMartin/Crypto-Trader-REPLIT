@@ -103,10 +103,17 @@ If error 50119 persists with correct "API Trading" key, check your OKX account f
 
 ### IP Whitelist Configuration
 **Important:** OKX doesn't accept CIDR notation (0.0.0.0/0). Instead:
-- **Option 1**: Leave IP whitelist completely empty (recommended)
-- **Option 2**: Add Replit's server IPs (not your personal IP)
 
-**Note:** Your personal IP address is irrelevant because the trading system runs on Replit's servers, which use different IP addresses. Adding your home/office IP won't help.
+**For Replit deployment, add this specific IP:**
+```
+35.229.97.108
+```
+
+**Alternative options:**
+- **Option 1**: Add the Replit IP above (most secure)
+- **Option 2**: Leave IP whitelist completely empty (less secure but works)
+
+**Note:** Your personal IP address is irrelevant because the trading system runs on Replit's servers.
 
 The incorrect format 0.0.0.0/0 will cause API key creation to fail.
 
