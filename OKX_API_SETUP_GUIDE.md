@@ -92,6 +92,15 @@ Since March 2024, Australian users must complete additional verification:
 
 If you see any "Pending" Australian verification, this will cause error 50119 even with correct API credentials.
 
+### Additional Australia Steps
+For some Australian users, after creating the API key you may need to:
+1. **Accept Terms**: Complete Australian entity transition if prompted
+2. **Wait for Review**: ASIC compliance review can take 15-30 minutes  
+3. **Check Email**: OKX may send verification emails for Australian users
+4. **Account Transition**: Some accounts need to transition to OKX Australia entities
+
+If error 50119 persists with correct "API Trading" key, check your OKX account for any pending Australian-specific prompts or notifications.
+
 ### IP Whitelist Configuration
 **Important:** OKX doesn't accept CIDR notation (0.0.0.0/0). Instead:
 - **Option 1**: Leave IP whitelist completely empty (recommended)
