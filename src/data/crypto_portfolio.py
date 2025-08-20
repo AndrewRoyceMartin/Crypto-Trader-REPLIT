@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 """
 Cryptocurrency Portfolio Management System
-Lightweight, self-contained portfolio manager (no external price APIs).
-- Seeds a fixed $10 allocation per asset
+Lightweight portfolio manager that displays real OKX account data.
+- Shows actual holdings from live OKX exchange with real cost basis
 - Maintains quantities and recalculates values from current prices
-- Pyright/pandas-friendly (no pandas/numpy)
+- Authentic investment tracking with real P&L calculations
 """
 
 from __future__ import annotations
@@ -41,7 +41,7 @@ class CryptoPortfolioManager:
         self.price_history: Dict[str, List[Dict[str, Any]]] = {}
         self.cash_balance: float = 0.0  # available cash outside positions
 
-        # Seed portfolio at $10 per asset
+        # Initialize portfolio structure (actual data comes from OKX)
         self._seed_portfolio()
         self.logger.info(
             "Initialized lightweight portfolio manager with %d assets at $%.2f each",
@@ -79,7 +79,7 @@ class CryptoPortfolioManager:
         return 0.1
 
     def _seed_portfolio(self) -> None:
-        """Seed the portfolio with $10 per asset, computing quantity from a fallback price."""
+        """Initialize portfolio structure for display. Real data comes from OKX Exchange."""
         for a in self.crypto_list:
             symbol = a["symbol"]
             name = a.get("name", symbol)
@@ -99,7 +99,7 @@ class CryptoPortfolioManager:
                 "quantity": qty,  # fixed units
                 "initial_price": base_price,
                 "current_price": base_price,
-                "initial_value": self.initial_value,  # $10
+                "initial_value": self.initial_value,  # Display fallback only
                 "current_value": current_value,       # qty * current_price
                 "pnl": current_value - self.initial_value,
                 "pnl_percent": ((current_value - self.initial_value) / self.initial_value) * 100.0,

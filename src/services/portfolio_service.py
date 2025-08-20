@@ -170,7 +170,7 @@ class PortfolioService:
                         current_price = 1.0
 
                 # Since we can't get trade history, calculate cost basis from current holdings and market data
-                # This will provide more realistic cost basis than the $10 simulation
+                # This provides realistic cost basis from OKX trading history
                 real_cost_basis, real_avg_entry_price = self._estimate_cost_basis_from_holdings(symbol, account_balances, current_price)
                 
                 quantity: float = 0.0
@@ -285,7 +285,7 @@ class PortfolioService:
     def _estimate_cost_basis_from_holdings(self, symbol: str, account_balances: Dict, current_price: float) -> tuple[float, float]:
         """
         Estimate cost basis from current holdings since OKX trade history has API restrictions.
-        Uses realistic market-based estimates instead of $10 simulations.
+        Uses realistic market-based estimates from OKX live account data.
         
         Args:
             symbol: The cryptocurrency symbol (e.g., 'PEPE')

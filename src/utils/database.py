@@ -75,7 +75,7 @@ class DatabaseManager:
                     )
                 ''')
                 
-                # Portfolio snapshots table
+                # Portfolio snapshots table with real OKX data fields
                 cursor.execute('''
                     CREATE TABLE IF NOT EXISTS portfolio_snapshots (
                         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -85,7 +85,10 @@ class DatabaseManager:
                         positions_value REAL NOT NULL,
                         daily_pnl REAL DEFAULT 0,
                         total_return REAL DEFAULT 0,
-                        mode TEXT DEFAULT 'paper',
+                        cost_basis REAL DEFAULT 0,  -- Real cost basis from OKX
+                        okx_symbol TEXT,  -- OKX symbol for tracking
+                        okx_quantity REAL DEFAULT 0,  -- Real quantity from OKX
+                        mode TEXT DEFAULT 'live',  -- Default to live mode with real OKX data
                         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                     )
                 ''')

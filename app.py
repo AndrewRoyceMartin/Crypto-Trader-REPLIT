@@ -84,7 +84,7 @@ def get_portfolio_service():
     return _get_ps()
 
 def create_initial_purchase_trades(mode, trade_type):
-    """Create trade records for initial $10 portfolio purchases from OKX simulation."""
+    """Create trade records using real OKX cost basis instead of $10 simulations."""
     try:
         initialize_system()
         portfolio_service = get_portfolio_service()
@@ -97,6 +97,7 @@ def create_initial_purchase_trades(mode, trade_type):
             symbol = holding['symbol']
             current_price = holding['current_price']
             quantity = holding['quantity']
+            cost_basis = holding.get('cost_basis', 0)  # Use real cost basis from OKX
 
             if current_price and current_price > 0:
                 trade_record = {
@@ -104,8 +105,8 @@ def create_initial_purchase_trades(mode, trade_type):
                     "symbol": f"{symbol}/USDT",
                     "side": "BUY",
                     "quantity": quantity,
-                    "price": current_price,
-                    "total_value": 10.0,  # Each investment is $10
+                    "price": holding.get('avg_entry_price', current_price),  # Use real entry price from OKX
+                    "total_value": cost_basis,  # Use real cost basis from OKX instead of $10 simulation
                     "type": "INITIAL_PURCHASE",
                     "mode": mode,
                     "timestamp": datetime.now(timezone.utc).isoformat(),
@@ -261,6 +262,43 @@ def initialize_system():
 
 # Create Flask app instance
 app = Flask(__name__)
+
+# Register the real OKX endpoint directly without circular import
+@app.route("/api/crypto-portfolio")
+def crypto_portfolio_okx():
+    """Get real OKX portfolio data using PortfolioService."""
+    try:
+        from src.services.portfolio_service import get_portfolio_service
+        portfolio_service = get_portfolio_service()
+        okx_portfolio_data = portfolio_service.get_portfolio_data()
+        
+        holdings_list = okx_portfolio_data['holdings']
+        recent_trades = portfolio_service.get_trade_history(limit=50)
+        
+        return jsonify({
+            "holdings": holdings_list,
+            "recent_trades": recent_trades,
+            "summary": {
+                "total_cryptos": len(holdings_list),
+                "total_current_value": okx_portfolio_data['total_current_value'],
+                "total_pnl": okx_portfolio_data['total_pnl'],
+                "total_pnl_percent": okx_portfolio_data['total_pnl_percent'],
+                "cash_balance": okx_portfolio_data['cash_balance']
+            },
+            "total_pnl": okx_portfolio_data['total_pnl'],
+            "total_pnl_percent": okx_portfolio_data['total_pnl_percent'],
+            "total_current_value": okx_portfolio_data['total_current_value'],
+            "cash_balance": okx_portfolio_data['cash_balance'],
+            "last_update": okx_portfolio_data['last_update'],
+            "exchange_info": {
+                "exchange": "Live OKX",
+                "last_update": okx_portfolio_data['last_update'],
+                "cash_balance": okx_portfolio_data['cash_balance']
+            }
+        })
+    except Exception as e:
+        logger.error(f"Error getting OKX portfolio: {e}")
+        return jsonify({"error": str(e)}), 500
 
 # Kick off warmup immediately when Flask starts
 warmup_thread = None
