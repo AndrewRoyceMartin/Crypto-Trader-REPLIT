@@ -6,38 +6,63 @@ Your trading system is now configured to use only live OKX data (no simulation).
 ✅ System completely removed all simulation data and fallbacks
 ✅ Portfolio service configured for live OKX only
 ✅ All endpoints updated to use real OKX data
-❌ OKX API credentials need proper configuration
+✅ Your API credentials are properly formatted and stored
+❌ OKX API returning "API key doesn't exist" error (code 50119)
 
-## Error Encountered
-`"API key doesn't exist","code":"50119"`
+## Diagnosis Results
+- ✅ Credentials present: API key (36 chars), Secret (32 chars), Passphrase (8 chars)
+- ✅ OKX API is reachable from this environment
+- ✅ CCXT library working correctly
+- ❌ OKX rejecting your API key with error 50119
 
-This error means your OKX API credentials are not properly configured.
+## Error Meaning
+Code 50119 "API key doesn't exist" means OKX doesn't recognize your API key. This happens when:
 
-## How to Fix
+## Most Likely Causes & Solutions
 
-1. **Go to your OKX account:**
-   - Log into your main OKX account (not demo)
-   - Navigate to Profile → API Management
+### 1. Wrong Environment (Most Common)
+**Problem**: API key created for demo/testnet, but system connects to live trading
+**Solution**: 
+- Log into your **main** OKX account (not demo)
+- Go to Profile → API Management
+- Create a **new** API key for **live trading**
 
-2. **Create/Check API Key:**
-   - Ensure you're creating the API key on the **LIVE** trading account (not testnet/demo)
-   - Required permissions:
-     - ✅ Read
-     - ✅ Trade
-     - ✅ Funding (optional, for balance info)
+### 2. Insufficient Permissions
+**Problem**: API key lacks required trading permissions
+**Solution**:
+- Edit your API key settings
+- Enable permissions: ✅ Read ✅ Trade ✅ Funding
 
-3. **IP Whitelist:**
-   - Either allow all IPs (0.0.0.0/0) for development
-   - Or whitelist the specific IP this Replit is running from
+### 3. IP Restrictions
+**Problem**: Your current IP is not whitelisted
+**Solution**:
+- In API settings, set IP whitelist to "0.0.0.0/0" (allow all IPs)
+- Or add this specific Replit IP to the whitelist
 
-4. **Copy the exact values:**
-   - API Key (36 characters)
-   - Secret Key (32 characters) 
-   - Passphrase (your custom passphrase)
+### 4. API Key Status
+**Problem**: Key disabled, expired, or incorrectly copied
+**Solution**:
+- Verify key is "Active" in OKX
+- Double-check all three values were copied correctly
+- Try creating a fresh API key
 
-5. **Update in Replit:**
-   - Go to Secrets tab in Replit
-   - Update: OKX_API_KEY, OKX_SECRET_KEY, OKX_PASSPHRASE
+## Step-by-Step Fix
+
+1. **Go to OKX.com → Profile → API Management**
+2. **Delete old API key** (if any)
+3. **Create new API key:**
+   - Environment: **Live Trading** (not demo)
+   - Permissions: Read + Trade + Funding
+   - IP Whitelist: 0.0.0.0/0 (or leave empty)
+   - Passphrase: Create a memorable passphrase
+4. **Copy ALL THREE values exactly:**
+   - API Key (36 chars)
+   - Secret Key (32 chars) 
+   - Passphrase (your custom phrase)
+5. **Update in Replit Secrets:**
+   - OKX_API_KEY
+   - OKX_SECRET_KEY  
+   - OKX_PASSPHRASE
 
 ## System Changes Made
 

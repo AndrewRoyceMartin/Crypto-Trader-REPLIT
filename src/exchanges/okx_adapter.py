@@ -30,12 +30,26 @@ class OKXAdapter(BaseExchange):
             True if connection successful, False otherwise
         """
         try:
+            import os
+            
+            # Get credentials directly from environment variables
+            api_key = os.getenv('OKX_API_KEY', '')
+            secret_key = os.getenv('OKX_SECRET_KEY', '')
+            passphrase = os.getenv('OKX_PASSPHRASE', '')
+            
+            if not all([api_key, secret_key, passphrase]):
+                raise Exception("Missing OKX API credentials in environment variables")
+            
             self.exchange = ccxt.okx({
-                'apiKey': self.config.get('apiKey', ''),
-                'secret': self.config.get('secret', ''),
-                'password': self.config.get('password', ''),
-                'sandbox': self.config.get('sandbox', True),
+                'apiKey': api_key,
+                'secret': secret_key,
+                'password': passphrase,
+                'sandbox': False,  # Always use live trading, never sandbox
                 'enableRateLimit': True,
+                'timeout': 30000,
+                'options': {
+                    'defaultType': 'spot'  # Use spot trading by default
+                }
             })
             
             # Test connection
@@ -44,7 +58,26 @@ class OKXAdapter(BaseExchange):
             return True
             
         except Exception as e:
-            self.logger.error(f"Failed to connect to OKX: {str(e)}")
+            error_msg = str(e)
+            self.logger.error(f"Failed to connect to OKX: {error_msg}")
+            
+            # Provide specific guidance for common errors
+            if "50119" in error_msg:
+                self.logger.error("OKX Error 50119: API key doesn't exist. This usually means:")
+                self.logger.error("1. API key was created for demo/testnet but connecting to live trading")
+                self.logger.error("2. API key lacks required permissions (need Read + Trade)")
+                self.logger.error("3. IP address not whitelisted")
+                self.logger.error("4. API key was disabled or incorrectly copied")
+                self.logger.error("See OKX_API_SETUP_GUIDE.md for detailed fix instructions")
+            elif "50103" in error_msg:
+                self.logger.error("OKX Error 50103: Invalid signature. Check secret key and passphrase")
+            elif "50104" in error_msg:
+                self.logger.error("OKX Error 50104: Invalid passphrase")
+            elif "50105" in error_msg:
+                self.logger.error("OKX Error 50105: Timestamp request expired")
+            elif "50111" in error_msg:
+                self.logger.error("OKX Error 50111: Invalid IP address (not whitelisted)")
+            
             return False
     
     def get_ohlcv(self, symbol: str, timeframe: str, limit: int = 100) -> pd.DataFrame:
