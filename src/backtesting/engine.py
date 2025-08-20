@@ -55,7 +55,7 @@ class BacktestEngine:
         try:
             # Initialize data manager and get historical data
             from ..exchanges.okx_adapter import OKXAdapter
-            exchange_config = self.config.get_exchange_config('okx_demo')
+            exchange_config = self.config.get_exchange_config('okx')
             exchange = OKXAdapter(exchange_config)
             
             if not exchange.connect():

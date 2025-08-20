@@ -1,5 +1,5 @@
 """
-OKX exchange adapter for demo trading.
+OKX exchange adapter for live trading.
 """
 
 import ccxt
@@ -254,7 +254,7 @@ class OKXAdapter(BaseExchange):
     def get_positions(self) -> List[Dict]:
         """
         Get open positions from OKX.
-        In demo mode, returns simulated portfolio positions.
+        Returns live portfolio positions from OKX account.
         
         Returns:
             List of position data

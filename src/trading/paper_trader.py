@@ -34,7 +34,7 @@ class PaperTrader:
         self.logger = logging.getLogger(__name__)
 
         # Initialize exchange and data manager
-        exchange_config = config.get_exchange_config("okx_demo")
+        exchange_config = config.get_exchange_config("okx")
         self.exchange = OKXAdapter(exchange_config)
         self.data_manager = DataManager(self.exchange, cache_enabled=True)
 
