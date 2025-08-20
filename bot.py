@@ -599,16 +599,29 @@ def live_paper_loop_okx(symbol: str, P: Params):
                         "pnl": "", "equity_after": f"{state.equity:.2f}", "notes": "cap_flatten"
                     })
 
-            # EXIT (stop/take/band)
+            # EXIT (stop/take/band) - Use real OKX purchase price for accurate calculations
             if state.position_qty > 0.0:
-                stop = state.entry_price * (1 - P.sl)
-                take = state.entry_price * (1 + P.tp)
+                # For PEPE, use your real OKX purchase price $0.00000800 for stop/take calculations
+                real_okx_entry = 0.00000800 if symbol == "PEPE/USDT" else state.entry_price
+                stop = real_okx_entry * (1 - P.sl)
+                take = real_okx_entry * (1 + P.tp)
                 hit_stop = lw <= stop
                 hit_take = (hi >= take) or (hi >= bb_up)
                 if hit_stop or hit_take:
                     filled, vwap, orders = ioc_with_retries(ex, symbol, 'sell', state.position_qty, px)
                     if filled > 0:
-                        pnl = realize_pnl_on_sell(state, filled, vwap, P)
+                        # Calculate P&L using real OKX entry price for accuracy
+                        original_realize_pnl = realize_pnl_on_sell  # Store original function
+                        def calculate_real_pnl(state_obj, filled_qty, sell_price, params):
+                            # Use real OKX entry price for P&L calculation
+                            real_entry = real_okx_entry if symbol == "PEPE/USDT" else state_obj.entry_price
+                            gross_pnl = filled_qty * (sell_price - real_entry)
+                            fees = params.fee * (sell_price + real_entry) * filled_qty
+                            net_pnl = gross_pnl - fees
+                            state_obj.equity += net_pnl
+                            return net_pnl
+                        
+                        pnl = calculate_real_pnl(state, filled, vwap, P)
                         append_trade_csv({
                             "ts": ts, "symbol": symbol, "side": "sell", "qty": f"{filled:.8f}",
                             "price": f"{vwap:.2f}", "order_id": orders[-1]["id"] if orders else "",
