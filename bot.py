@@ -55,6 +55,47 @@ MAX_SCALE_INS     = env_int("MAX_SCALE_INS", 2)          # max additional entrie
 SCALE_IN_GAP_PCT  = env_float("SCALE_IN_GAP_PCT", 0.007) # require price to be this much below last add
 
 # ==============================
+# Enhanced OKX Exchange Factory
+# ==============================
+def _getenv(*names, default=None):
+    """Get environment variable supporting multiple naming conventions."""
+    for n in names:
+        v = os.getenv(n)
+        if v:
+            return v
+    return default
+
+def make_exchange(name: str) -> ccxt.Exchange:
+    """Create exchange instance with enhanced credential handling."""
+    name = name.lower()
+    if name == "okx":
+        ex = ccxt.okx({'enableRateLimit': True})
+
+        # toggle sandbox from env
+        demo = str(os.getenv("OKX_DEMO", "1")).strip().lower() in ("1", "true", "t", "yes", "y", "on")
+        ex.set_sandbox_mode(demo)
+        if demo:
+            # add simulated trading header for OKX demo
+            ex.headers = {**(ex.headers or {}), "x-simulated-trading": "1"}
+
+        # ✅ accept both naming conventions
+        api_key = _getenv("OKX_API_KEY")
+        api_secret = _getenv("OKX_API_SECRET", "OKX_SECRET_KEY")            # both supported
+        passphrase = _getenv("OKX_API_PASSPHRASE", "OKX_PASSPHRASE")        # both supported
+
+        if api_key and api_secret and passphrase:
+            ex.apiKey = api_key
+            ex.secret = api_secret
+            ex.password = passphrase
+
+        return ex
+
+    elif name == "kraken":
+        return ccxt.kraken({'enableRateLimit': True})
+    else:
+        raise ValueError("Supported exchanges: okx | kraken")
+
+# ==============================
 # Parameters / defaults
 # ==============================
 @dataclass
