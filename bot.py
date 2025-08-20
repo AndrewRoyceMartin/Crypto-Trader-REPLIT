@@ -69,17 +69,26 @@ def make_exchange(name: str) -> ccxt.Exchange:
     """Create exchange instance with enhanced credential handling."""
     name = name.lower()
     if name == "okx":
-        ex = ccxt.okx({'enableRateLimit': True})
+        # ✅ accept both naming conventions
+        api_key = _getenv("OKX_API_KEY")
+        api_secret = _getenv("OKX_API_SECRET", "OKX_SECRET_KEY")            # both supported
+        passphrase = _getenv("OKX_API_PASSPHRASE", "OKX_PASSPHRASE")        # both supported
+        
+        # 🌍 Regional endpoint support (2024 OKX update)
+        hostname = _getenv("OKX_HOSTNAME", "OKX_REGION")  # Allow override
+        if not hostname:
+            # Auto-detect based on environment or use default
+            hostname = "www.okx.com"  # Default global endpoint
+        
+        ex = ccxt.okx({
+            'enableRateLimit': True,
+            'hostname': hostname,  # Regional endpoint support
+        })
 
         # Always use live trading mode - no sandbox/demo support
         ex.set_sandbox_mode(False)
         if ex.headers:
             ex.headers.pop('x-simulated-trading', None)
-
-        # ✅ accept both naming conventions
-        api_key = _getenv("OKX_API_KEY")
-        api_secret = _getenv("OKX_API_SECRET", "OKX_SECRET_KEY")            # both supported
-        passphrase = _getenv("OKX_API_PASSPHRASE", "OKX_PASSPHRASE")        # both supported
 
         if api_key and api_secret and passphrase:
             ex.apiKey = api_key

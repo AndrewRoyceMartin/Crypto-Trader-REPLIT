@@ -26,8 +26,11 @@ class OKXAdapter(BaseExchange):
         try:
             # Get credentials from environment or config
             api_key = os.getenv("OKX_API_KEY") or self.config.get("apiKey", "")
-            secret_key = os.getenv("OKX_SECRET_KEY") or self.config.get("secret", "")
-            passphrase = os.getenv("OKX_PASSPHRASE") or self.config.get("password", "")
+            secret_key = os.getenv("OKX_SECRET_KEY") or os.getenv("OKX_API_SECRET") or self.config.get("secret", "")
+            passphrase = os.getenv("OKX_PASSPHRASE") or os.getenv("OKX_API_PASSPHRASE") or self.config.get("password", "")
+            
+            # 🌍 Regional endpoint support (2024 OKX update)
+            hostname = os.getenv("OKX_HOSTNAME") or os.getenv("OKX_REGION") or "www.okx.com"
             
             if not all([api_key, secret_key, passphrase]):
                 raise Exception("Missing OKX API credentials in environment variables")
@@ -39,6 +42,7 @@ class OKXAdapter(BaseExchange):
                 'apiKey': api_key,
                 'secret': secret_key,
                 'password': passphrase,
+                'hostname': hostname,  # Regional endpoint support
                 'sandbox': False,  # Always use live trading
                 'enableRateLimit': True,
                 'timeout': 30000,

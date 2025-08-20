@@ -39,12 +39,15 @@ Code 50119 "API key doesn't exist" means OKX doesn't recognize your API key. Thi
 - Edit your API key settings
 - Enable permissions: ✅ Read ✅ Trade ✅ Funding
 
-### 3. IP Restrictions (Critical for Replit)
+### 3. IP Restrictions (Critical for Replit) 🔧
 **Problem**: Your current IP is not whitelisted
+**Current Replit IP**: `34.148.21.249`
 **Solution**:
 - **Recommended**: Leave IP whitelist EMPTY (allows all IPs)
-- **Alternative**: Add Replit's egress IP: `35.229.97.108`
+- **Alternative**: Add current Replit IP: `34.148.21.249` 
 - **Note**: Replit's IP can change, so empty whitelist is safer
+
+**⚠️ IMPORTANT**: If you get error 50110 instead of 50119, this confirms your API key works but IP is blocked!
 
 ### 4. Subaccount vs Main Account
 **Problem**: API key created on subaccount but using wrong credentials

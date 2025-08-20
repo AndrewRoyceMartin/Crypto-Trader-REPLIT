@@ -47,8 +47,13 @@ def make_okx_spot(demo: t.Optional[bool] = None) -> ccxt.okx:
         demo = _env_bool("OKX_DEMO", False)  # Default to live trading
 
     creds = _get_okx_creds()
+    
+    # 🌍 Regional endpoint support (2024 OKX update)
+    hostname = os.getenv("OKX_HOSTNAME") or os.getenv("OKX_REGION") or "www.okx.com"
+    
     ex = ccxt.okx({
         "enableRateLimit": True,
+        "hostname": hostname,  # Regional endpoint support
         **creds,
         "options": {
             "defaultType": "spot",   # ensure SPOT (not swap/futures)
