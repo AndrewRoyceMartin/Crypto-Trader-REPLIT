@@ -977,34 +977,48 @@ def api_portfolio_performance():
 
 @app.route("/api/current-positions")
 def api_current_positions():
-    """API endpoint to get current market positions."""
+    """API endpoint to get current market positions from real OKX data."""
     try:
-        initialize_system()
-        if crypto_portfolio is None:
-            return jsonify({"error": "Crypto portfolio not initialized"}), 500
+        # Get real OKX portfolio data
+        portfolio_service = get_portfolio_service()
+        portfolio_data = portfolio_service.get_portfolio_data()
         
-        positions_data = crypto_portfolio.get_current_positions()
+        # Transform holdings into positions format for the table
+        positions = []
+        for holding in portfolio_data.get('holdings', []):
+            if holding.get('has_position', False):
+                position = {
+                    "symbol": holding.get('symbol', ''),
+                    "side": "LONG",  # All OKX holdings are long positions
+                    "quantity": holding.get('quantity', 0),
+                    "avg_cost": holding.get('avg_entry_price', 0),
+                    "current_price": holding.get('current_price', 0),
+                    "market_value": holding.get('current_value', 0),
+                    "unrealized_pnl": holding.get('pnl', 0),
+                    "pnl_percent": holding.get('pnl_percent', 0),
+                    "change_24h": 0,  # OKX API limitation - no 24h data available
+                    "weight_percent": holding.get('allocation_percent', 0),
+                    "target_percent": 100.0,  # Single asset
+                    "deviation": 0,
+                    "stop_loss": holding.get('avg_entry_price', 0) * 0.99 if holding.get('avg_entry_price') else 0,
+                    "take_profit": holding.get('avg_entry_price', 0) * 1.02 if holding.get('avg_entry_price') else 0,
+                    "days_held": 1,  # Placeholder - actual calculation would need trade history
+                    "status": "ACTIVE",
+                    "is_live": holding.get('is_live', True)
+                }
+                positions.append(position)
         
-        # Calculate summary for current positions
-        total_position_value = sum(p["current_value"] for p in positions_data)
-        total_unrealized_pnl = sum(p["unrealized_pnl"] for p in positions_data)
-        
-        # Group by position status
-        status_groups = {}
-        for position in positions_data:
-            status = position["status"]
-            if status not in status_groups:
-                status_groups[status] = {"count": 0, "total_value": 0}
-            status_groups[status]["count"] += 1
-            status_groups[status]["total_value"] += position["current_value"]
+        # Calculate summary
+        total_position_value = sum(p["market_value"] for p in positions)
+        total_unrealized_pnl = sum(p["unrealized_pnl"] for p in positions)
         
         return jsonify({
-            "positions": positions_data,
+            "positions": positions,
             "summary": {
-                "total_positions": len(positions_data),
+                "total_positions": len(positions),
                 "total_position_value": total_position_value,
                 "total_unrealized_pnl": total_unrealized_pnl,
-                "status_breakdown": status_groups
+                "status_breakdown": {"ACTIVE": {"count": len(positions), "total_value": total_position_value}}
             },
             "timestamp": datetime.now().isoformat()
         })

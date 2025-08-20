@@ -393,9 +393,13 @@
       // Start the main application loop
       window.tradingApp?.updateCryptoPortfolio();
       
+      // Load positions table on initial load
+      updatePositionsTable();
+      
       // Set up periodic updates for holdings data
       setInterval(() => {
         window.tradingApp?.updateCryptoPortfolio();
+        updatePositionsTable(); // Also update positions table
       }, 6000);
       
       // Initialize tooltips
@@ -453,9 +457,77 @@
       console.log(`Filtered positions: ${visibleCount} visible`);
     }
     
+    // Load positions table from crypto-portfolio endpoint  
+    function updatePositionsTable() {
+      fetch('/api/crypto-portfolio')
+        .then(response => response.json())
+        .then(data => {
+          const tbody = document.getElementById('positions-table-body');
+          if (!tbody) return;
+          
+          if (data.holdings && data.holdings.length > 0) {
+            tbody.innerHTML = '';
+            data.holdings.forEach(holding => {
+              const row = document.createElement('tr');
+              // Use real OKX data with proper formatting
+              const quantity = parseFloat(holding.quantity || 0);
+              const avgCost = parseFloat(holding.avg_entry_price || 0);
+              const currentPrice = parseFloat(holding.current_price || 0);
+              const marketValue = parseFloat(holding.current_value || 0);
+              const unrealizedPnl = parseFloat(holding.pnl || 0);
+              const pnlPercent = parseFloat(holding.pnl_percent || 0);
+              const stopLoss = avgCost * 0.99;
+              const takeProfit = avgCost * 1.02;
+              
+              row.innerHTML = `
+                <td><strong>${holding.symbol}</strong> ${holding.is_live ? '<span class="badge bg-success ms-1">Live</span>' : ''}</td>
+                <td><span class="badge bg-success">LONG</span></td>
+                <td class="text-end">${quantity.toLocaleString('en-US', {maximumFractionDigits: 2})}</td>
+                <td class="text-end">$${avgCost.toFixed(6)}</td>
+                <td class="text-end">$${currentPrice.toFixed(6)}</td>
+                <td class="text-end">$${marketValue.toFixed(2)}</td>
+                <td class="text-end ${unrealizedPnl >= 0 ? 'text-success' : 'text-danger'}">
+                  ${unrealizedPnl >= 0 ? '↗' : '↘'} $${Math.abs(unrealizedPnl).toFixed(2)}
+                </td>
+                <td class="text-end ${pnlPercent >= 0 ? 'text-success' : 'text-danger'}">
+                  ${pnlPercent >= 0 ? '+' : ''}${pnlPercent.toFixed(2)}%
+                </td>
+                <td class="text-end text-muted">-</td>
+                <td class="text-end">${holding.allocation_percent.toFixed(1)}%</td>
+                <td class="text-end">100.0%</td>
+                <td class="text-end text-muted">-</td>
+                <td class="text-center">
+                  <small class="text-muted">SL: $${stopLoss.toFixed(6)}<br>TP: $${takeProfit.toFixed(6)}</small>
+                </td>
+                <td class="text-end text-muted">1</td>
+                <td class="text-center">
+                  <span class="badge bg-success">ACTIVE</span>
+                </td>
+              `;
+              tbody.appendChild(row);
+            });
+            
+            // Update position summary with live OKX data count
+            const posCountEl = document.getElementById('pos-total-count');
+            if (posCountEl) posCountEl.textContent = data.holdings.length;
+            
+          } else {
+            tbody.innerHTML = '<tr><td colspan="15" class="text-center text-muted py-3">No open positions</td></tr>';
+          }
+        })
+        .catch(error => {
+          console.error('Error loading positions:', error);
+          const tbody = document.getElementById('positions-table-body');
+          if (tbody) {
+            tbody.innerHTML = '<tr><td colspan="15" class="text-center text-danger py-3">Error loading positions data</td></tr>';
+          }
+        });
+    }
+    
     // Refresh positions data
     function updatePositionsData() {
       console.log('Refreshing positions data...');
+      updatePositionsTable(); // Call positions table update
       window.tradingApp?.updateCryptoPortfolio();
     }
   </script>
