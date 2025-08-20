@@ -20,12 +20,18 @@ Code 50119 "API key doesn't exist" means OKX doesn't recognize your API key. Thi
 
 ## Most Likely Causes & Solutions
 
-### 1. Wrong Environment (Most Common)
-**Problem**: API key created for demo/testnet, but system connects to live trading
+### 1. Wrong API Purpose (Most Common)
+**Problem**: API key created for "Third-party app connection" instead of "API Trading"
 **Solution**: 
 - Log into your **main** OKX account (not demo)
 - Go to Profile → API Management
-- Create a **new** API key for **live trading**
+- Create a **new** API key
+- **Important**: Select **"API Trading"** as the purpose (NOT "Third-party app connection")
+
+### 2. Wrong Environment 
+**Problem**: API key created for demo/testnet, but system connects to live trading
+**Solution**: 
+- Ensure you're on the **live trading** environment when creating the key
 
 ### 2. Insufficient Permissions
 **Problem**: API key lacks required trading permissions
@@ -51,10 +57,14 @@ Code 50119 "API key doesn't exist" means OKX doesn't recognize your API key. Thi
 1. **Go to OKX.com → Profile → API Management**
 2. **Delete old API key** (if any)
 3. **Create new API key:**
-   - Environment: **Live Trading** (not demo)
-   - Permissions: Read + Trade + Funding
-   - IP Whitelist: 0.0.0.0/0 (or leave empty)
-   - Passphrase: Create a memorable passphrase
+   - **API Purpose**: Select **"API Trading"** (NOT "Third-party app connection")
+   - **Environment**: **Live Trading** (not demo/testnet)
+   - **Permissions**: 
+     - ✅ Read (required for balance/position data)
+     - ✅ Trade (required for order management)
+     - ✅ Funding (optional, for balance info)
+   - **IP Whitelist**: 0.0.0.0/0 (or leave empty for testing)
+   - **Passphrase**: Create a memorable passphrase
 4. **Copy ALL THREE values exactly:**
    - API Key (36 chars)
    - Secret Key (32 chars) 
