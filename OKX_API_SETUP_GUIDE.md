@@ -57,6 +57,7 @@ Code 50119 "API key doesn't exist" means OKX doesn't recognize your API key. Thi
 1. **Go to OKX.com → Profile → API Management**
 2. **Delete old API key** (if any)
 3. **Create new API key:**
+   - **API Key Name**: Any name (e.g., "Trading Bot", "Portfolio System")
    - **API Purpose**: Select **"API Trading"** (NOT "Third-party app connection")
    - **Environment**: **Live Trading** (not demo/testnet)
    - **Permissions**: 
