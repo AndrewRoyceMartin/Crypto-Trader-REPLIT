@@ -590,13 +590,15 @@ class TradingApp {
             const summary = data.summary || {};
 
             if (!holdings || holdings.length === 0) {
-                this.displayEmptyPortfolioMessage();
+                if (this.displayEmptyPortfolioMessage) {
+                    this.displayEmptyPortfolioMessage();
+                }
                 this.hideLoadingProgress();
                 this.isUpdatingPortfolio = false;
                 return;
             }
 
-            if (data.price_validation?.failed_symbols?.length) {
+            if (data.price_validation?.failed_symbols?.length && this.displayPriceDataWarning) {
                 this.displayPriceDataWarning(data.price_validation.failed_symbols);
             }
 
@@ -629,8 +631,12 @@ class TradingApp {
             this.updateCryptoTable(holdings);
 
             // Update holdings widgets/table (if present on page)
-            this.updateHoldingsTable(holdings);
-            this.updatePositionsSummary(holdings);
+            if (this.updateHoldingsTable) {
+                this.updateHoldingsTable(holdings);
+            }
+            if (this.updatePositionsSummary) {
+                this.updatePositionsSummary(holdings);
+            }
 
             // Small summary widget method (class-local)
             this.updatePortfolioSummary({
@@ -641,17 +647,25 @@ class TradingApp {
             }, holdings);
 
             // Big UI aggregation update (global function, renamed)
-            updatePortfolioSummaryUI(data);
+            if (typeof updatePortfolioSummaryUI === 'function') {
+                updatePortfolioSummaryUI(data);
+            }
 
             // Dashboard Overview (KPIs + quick charts + recent trades preview)
             const trades = data.recent_trades || data.trades || [];
-            renderDashboardOverview(data, trades);
+            if (typeof renderDashboardOverview === 'function') {
+                renderDashboardOverview(data, trades);
+            }
 
             // Recent trades full table preview/fetch
-            if (trades.length) {
+            if (trades.length && this.displayRecentTrades) {
                 this.displayRecentTrades(trades);
-            } else {
-                await this.updateRecentTrades().catch(e => console.error('Recent trades fetch failed (non-fatal):', e));
+            } else if (this.updateRecentTrades) {
+                try {
+                    await this.updateRecentTrades();
+                } catch (e) {
+                    console.log('Recent trades fetch failed (non-fatal):', e.message || e);
+                }
             }
 
             this.updateLoadingProgress(100, 'Complete!');
@@ -659,7 +673,13 @@ class TradingApp {
 
         } catch (error) {
             console.error('Error updating crypto portfolio:', error);
+            console.error('Full error details:', {
+                name: error.name,
+                message: error.message,
+                stack: error.stack
+            });
             this.updateLoadingProgress(0, 'Error loading data');
+            this.hideLoadingProgress();
         } finally {
             this.isUpdatingPortfolio = false;
         }
