@@ -11,7 +11,7 @@ def main():
     print()
     
     # Check environment variables
-    okx_demo = os.getenv("OKX_DEMO", "1")
+    okx_demo = os.getenv("OKX_DEMO", "0")  # Default to live trading
     api_key = os.getenv("OKX_API_KEY", "")
     secret = os.getenv("OKX_SECRET_KEY", "")
     passphrase = os.getenv("OKX_PASSPHRASE", "")

@@ -15,7 +15,7 @@ try:
     api_key = os.getenv("OKX_API_KEY", "")
     secret_key = os.getenv("OKX_SECRET_KEY", "")
     passphrase = os.getenv("OKX_PASSPHRASE", "")
-    demo_mode = os.getenv("OKX_DEMO", "1")
+    demo_mode = os.getenv("OKX_DEMO", "0")  # Default to live trading
     
     print(f"OKX_DEMO: {demo_mode}")
     print(f"Production mode: {'YES' if demo_mode.lower() in ('0', 'false', 'f', 'no', 'n', 'off') else 'NO'}")

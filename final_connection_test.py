@@ -12,7 +12,7 @@ def test_okx_connection():
     api_key = os.getenv("OKX_API_KEY", "")
     secret_key = os.getenv("OKX_SECRET_KEY", "")
     passphrase = os.getenv("OKX_PASSPHRASE", "")
-    demo_mode = os.getenv("OKX_DEMO", "1")
+    demo_mode = os.getenv("OKX_DEMO", "0")  # Default to live trading
     
     # Determine mode
     is_demo = demo_mode.lower() in ('1', 'true', 't', 'yes', 'y', 'on')

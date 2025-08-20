@@ -44,7 +44,7 @@ def make_okx_spot(demo: t.Optional[bool] = None) -> ccxt.okx:
     If demo is None, it reads OKX_DEMO env (default True).
     """
     if demo is None:
-        demo = _env_bool("OKX_DEMO", True)
+        demo = _env_bool("OKX_DEMO", False)  # Default to live trading
 
     creds = _get_okx_creds()
     ex = ccxt.okx({
