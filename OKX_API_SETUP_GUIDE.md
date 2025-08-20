@@ -64,7 +64,7 @@ Code 50119 "API key doesn't exist" means OKX doesn't recognize your API key. Thi
      - ✅ Read (required for balance/position data)
      - ✅ Trade (required for order management)
      - ✅ Funding (optional, for balance info)
-   - **IP Whitelist**: 0.0.0.0/0 (or leave empty for testing)
+   - **IP Whitelist**: Leave empty or use individual IPs (not 0.0.0.0/0)
    - **Passphrase**: Create a memorable passphrase
 4. **Copy ALL THREE values exactly:**
    - API Key (36 chars)
@@ -91,6 +91,13 @@ Since March 2024, Australian users must complete additional verification:
 - Ensure this shows "Completed" status
 
 If you see any "Pending" Australian verification, this will cause error 50119 even with correct API credentials.
+
+### IP Whitelist Configuration
+**Important:** OKX doesn't accept CIDR notation (0.0.0.0/0). Instead:
+- **Option 1**: Leave IP whitelist completely empty (recommended for testing)
+- **Option 2**: Add specific IP addresses one by one (for production)
+
+The incorrect format 0.0.0.0/0 will cause API key creation to fail.
 
 ## Additional OKX Account Requirements
 
