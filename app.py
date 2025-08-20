@@ -68,6 +68,25 @@ def cache_put(sym: str, tf: str, df: Any) -> None:
     with _cache_lock:
         _price_cache[(sym, tf)] = {"df": df, "ts": datetime.now(LOCAL_TZ)}
 
+def get_portfolio_summary() -> dict[str, Any]:
+    """Get portfolio summary for status endpoint."""
+    try:
+        portfolio_service = get_portfolio_service()
+        if not portfolio_service:
+            return {"total_value": 0.0, "daily_pnl": 0.0, "daily_pnl_percent": 0.0, "error": "Service not available"}
+        
+        portfolio_data = portfolio_service.get_portfolio_data()
+        return {
+            "total_value": portfolio_data.get('total_current_value', 0.0),
+            "daily_pnl": portfolio_data.get('total_pnl', 0.0),
+            "daily_pnl_percent": portfolio_data.get('total_pnl_percent', 0.0),
+            "cash_balance": portfolio_data.get('cash_balance', 0.0),
+            "status": "connected"
+        }
+    except Exception as e:
+        logger.warning(f"Could not get portfolio summary: {e}")
+        return {"total_value": 0.0, "daily_pnl": 0.0, "daily_pnl_percent": 0.0, "error": "Portfolio data unavailable"}
+
 def cache_get(sym: str, tf: str) -> Any:
     """Retrieve DataFrame from cache if not expired."""
     with _cache_lock:
@@ -750,12 +769,7 @@ def api_status():
             "trades_today": len(recent_initial_trades) if recent_initial_trades else 0,
             "last_trade": None
         },
-        "portfolio": {
-            "total_value": 0.0,
-            "daily_pnl": 0.0,
-            "daily_pnl_percent": 0.0,
-            "error": "OKX API credentials required"
-        },
+        "portfolio": get_portfolio_summary(),
         "recent_trades": recent_initial_trades or [],
         "server_uptime_seconds": (datetime.now(LOCAL_TZ) - server_start_time).total_seconds()
     })
