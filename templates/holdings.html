@@ -391,11 +391,11 @@
     // Initialize Holdings page when DOM loads
     document.addEventListener('DOMContentLoaded', function() {
       // Start the main application loop
-      updateCryptoPortfolio();
+      window.tradingApp?.updateCryptoPortfolio();
       
       // Set up periodic updates for holdings data
       setInterval(() => {
-        updateCryptoPortfolio();
+        window.tradingApp?.updateCryptoPortfolio();
       }, 6000);
       
       // Initialize tooltips
@@ -456,7 +456,7 @@
     // Refresh positions data
     function updatePositionsData() {
       console.log('Refreshing positions data...');
-      updateCryptoPortfolio();
+      window.tradingApp?.updateCryptoPortfolio();
     }
   </script>
 </body>
