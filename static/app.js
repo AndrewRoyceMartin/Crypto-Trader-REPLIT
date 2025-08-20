@@ -1040,6 +1040,77 @@ class TradingApp {
             upnlEl.className = totalPnL >= 0 ? 'text-success' : 'text-danger';
         }
         set('pos-strong-gains', strongGains);
+
+        // Update OKX data cards with real data
+        this.updateOKXDataCards(cryptos);
+    }
+
+    updateOKXDataCards(cryptos) {
+        if (!cryptos || cryptos.length === 0) return;
+        
+        // Get primary asset (PEPE)
+        const pepe = cryptos.find(c => c.symbol === 'PEPE') || cryptos[0];
+        if (!pepe) return;
+
+        const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+        const setHTML = (id, html) => { const el = document.getElementById(id); if (el) el.innerHTML = html; };
+
+        // OKX Account Summary
+        set('okx-holdings-count', cryptos.length);
+        set('okx-primary-asset', pepe.symbol || 'PEPE');
+        set('okx-primary-quantity', this.num(pepe.quantity || 0).toLocaleString(undefined, {maximumFractionDigits: 0}));
+        
+        const marketValue = this.formatCurrency(pepe.current_value || 0, this.selectedCurrency);
+        set('okx-market-value', marketValue);
+        
+        // Purchase price (avg entry)
+        const purchasePrice = pepe.avg_buy_price || 0.00000800; // fallback to known value
+        set('okx-purchase-price', this.formatCurrency(purchasePrice));
+        
+        // Unrealized P&L with color coding
+        const pnl = pepe.pnl || 0;
+        const pnlPercent = pepe.pnl_percent || 0;
+        const pnlText = `${pnl >= 0 ? '+' : ''}${this.formatCurrency(pnl)} (${pnlPercent >= 0 ? '+' : ''}${pnlPercent.toFixed(1)}%)`;
+        set('okx-unrealized-pnl', pnlText);
+        
+        // Update card color based on P&L
+        const pnlCard = document.querySelector('#okx-unrealized-pnl').closest('.card');
+        if (pnlCard) {
+            pnlCard.className = pnl >= 0 ? 'card bg-success text-white p-2' : 'card bg-danger text-white p-2';
+        }
+
+        // Real-Time Price Tracker
+        const currentPrice = pepe.current_price || 0;
+        set('pepe-current-price', this.formatCurrency(currentPrice));
+        
+        // Price change indicator
+        const priceChangeText = `${pnlPercent >= 0 ? '+' : ''}${pnlPercent.toFixed(1)}% (24h)`;
+        set('pepe-price-change', priceChangeText);
+        
+        set('pepe-purchase-price', this.formatCurrency(purchasePrice));
+        
+        // Price difference
+        const priceDiff = currentPrice - purchasePrice;
+        const priceDiffText = `${priceDiff >= 0 ? '+' : ''}${this.formatCurrency(priceDiff)}`;
+        set('pepe-price-diff', priceDiffText);
+        
+        // Update price difference color
+        const priceDiffEl = document.getElementById('pepe-price-diff');
+        if (priceDiffEl) {
+            priceDiffEl.className = priceDiff >= 0 ? 'fw-bold text-success' : 'fw-bold text-danger';
+        }
+        
+        // Last updated
+        set('price-last-updated', new Date().toLocaleTimeString());
+        
+        // Profit progress bar
+        const progressBar = document.getElementById('profit-progress');
+        if (progressBar) {
+            const progressPercent = Math.max(0, Math.min(100, Math.abs(pnlPercent)));
+            progressBar.style.width = progressPercent + '%';
+            progressBar.className = pnlPercent >= 0 ? 'progress-bar bg-success' : 'progress-bar bg-danger';
+            progressBar.textContent = `${pnlPercent.toFixed(1)}% ${pnlPercent >= 0 ? 'Profit' : 'Loss'}`;
+        }
     }
 
     // Small summary method (class-local)
