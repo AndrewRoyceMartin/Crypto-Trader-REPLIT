@@ -296,11 +296,36 @@ class TradingApp {
         if (data.portfolio) {
             const kpiEquityEl = document.getElementById('kpi-total-equity');
             const kpiDailyEl  = document.getElementById('kpi-daily-pnl');
-            if (kpiEquityEl) kpiEquityEl.textContent = this.formatCurrency(data.portfolio.total_value || 0);
+            
+            if (kpiEquityEl) {
+                const totalValue = data.portfolio.total_value || 0;
+                kpiEquityEl.textContent = this.formatCurrency(totalValue);
+                // Add error indicator if needed
+                if (data.portfolio.error && totalValue === 0) {
+                    const errorNote = document.getElementById('kpi-equity-error') || document.createElement('small');
+                    errorNote.id = 'kpi-equity-error';
+                    errorNote.className = 'text-warning d-block';
+                    errorNote.textContent = data.portfolio.error;
+                    if (!document.getElementById('kpi-equity-error')) {
+                        kpiEquityEl.parentNode.appendChild(errorNote);
+                    }
+                }
+            }
+            
             if (kpiDailyEl) {
                 const v = this.num(data.portfolio.daily_pnl);
                 kpiDailyEl.textContent = this.formatCurrency(v);
                 kpiDailyEl.className = v >= 0 ? 'h5 mb-0 text-success' : 'h5 mb-0 text-danger';
+                // Add error indicator if needed
+                if (data.portfolio.error && v === 0) {
+                    const errorNote = document.getElementById('kpi-daily-error') || document.createElement('small');
+                    errorNote.id = 'kpi-daily-error';
+                    errorNote.className = 'text-warning d-block';
+                    errorNote.textContent = data.portfolio.error;
+                    if (!document.getElementById('kpi-daily-error')) {
+                        kpiDailyEl.parentNode.appendChild(errorNote);
+                    }
+                }
             }
         }
 

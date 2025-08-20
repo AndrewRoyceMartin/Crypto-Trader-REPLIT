@@ -639,9 +639,10 @@ def api_status():
             "last_trade": None
         },
         "portfolio": {
-            "total_value": 12450.67,
-            "daily_pnl": 450.67,
-            "daily_pnl_percent": 3.76
+            "total_value": 0.0,
+            "daily_pnl": 0.0,
+            "daily_pnl_percent": 0.0,
+            "error": "OKX API credentials required"
         },
         "recent_trades": recent_initial_trades or [],
         "server_uptime_seconds": (datetime.now(LOCAL_TZ) - server_start_time).total_seconds()
@@ -910,26 +911,29 @@ def api_portfolio_performance():
         return jsonify({"error": "System still initializing"}), 503
 
     try:
+        # Get real portfolio data from OKX - no simulation data
+        initialize_system()
+        portfolio_service = get_portfolio_service()
+        okx_portfolio = portfolio_service.get_portfolio_data()
+        
         performance_data = {
-            "total_value_history": [
-                {"timestamp": "2025-08-13T00:00:00Z", "value": 11000},
-                {"timestamp": "2025-08-13T12:00:00Z", "value": 11500},
-                {"timestamp": "2025-08-14T00:00:00Z", "value": 12000},
-                {"timestamp": "2025-08-14T12:00:00Z", "value": 12450.67}
-            ],
+            "total_value_history": [],  # Real historical data would come from OKX here
             "performance_metrics": {
-                "total_return": 1450.67,
-                "total_return_percent": 13.19,
-                "daily_return": 450.67,
-                "daily_return_percent": 3.76,
-                "best_performer": "BTC",
-                "worst_performer": "DOGE"
+                "total_return": okx_portfolio.get('total_pnl', 0.0),
+                "total_return_percent": okx_portfolio.get('total_pnl_percent', 0.0),
+                "daily_return": okx_portfolio.get('daily_pnl', 0.0), 
+                "daily_return_percent": 0.0,  # Would calculate from daily data
+                "best_performer": "",  # Would analyze holdings
+                "worst_performer": ""  # Would analyze holdings
             }
         }
         return jsonify(performance_data)
     except Exception as e:
         logger.error(f"Portfolio performance error: {e}")
-        return jsonify({"error": str(e)}), 500
+        return jsonify({
+            "error": "OKX connection required",
+            "message": "Cannot display performance data without valid OKX API credentials"
+        }), 500
 
 @app.route("/api/current-holdings")
 def api_current_holdings():
