@@ -154,6 +154,10 @@ def background_warmup():
             'sandbox': False,
             'enableRateLimit': True
         })
+        # Force live trading mode
+        ex.set_sandbox_mode(False)
+        if ex.headers:
+            ex.headers.pop('x-simulated-trading', None)
         logger.info("Using live OKX account for background warmup")
 
         # Try to load markets, but don't fail if it doesn't work
@@ -217,6 +221,10 @@ def get_df(symbol: str, timeframe: str):
             'sandbox': False,
             'enableRateLimit': True
         })
+        # Force live trading mode
+        ex.set_sandbox_mode(False)
+        if ex.headers:
+            ex.headers.pop('x-simulated-trading', None)
         ex.load_markets()
 
         ohlcv = ex.fetch_ohlcv(symbol, timeframe=timeframe, limit=200)
@@ -298,6 +306,10 @@ def api_price():
                 'sandbox': False,
                 'enableRateLimit': True
             })
+            # Force live trading mode
+            ex.set_sandbox_mode(False)
+            if ex.headers:
+                ex.headers.pop('x-simulated-trading', None)
             ex.load_markets()
             ohlcv = ex.fetch_ohlcv(sym, timeframe=tf, limit=lim)
             df = pd.DataFrame(ohlcv, columns=["ts","open","high","low","close","volume"])  # type: ignore[call-arg]
@@ -1273,6 +1285,10 @@ def api_okx_status():
             'sandbox': False,
             'enableRateLimit': True
         })
+        # Force live trading mode
+        exchange.set_sandbox_mode(False)
+        if exchange.headers:
+            exchange.headers.pop('x-simulated-trading', None)
         try:
             exchange.load_markets()
             connected = True

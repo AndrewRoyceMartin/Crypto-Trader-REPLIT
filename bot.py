@@ -73,6 +73,8 @@ def make_exchange(name: str) -> ccxt.Exchange:
 
         # Always use live trading mode - no sandbox/demo support
         ex.set_sandbox_mode(False)
+        if ex.headers:
+            ex.headers.pop('x-simulated-trading', None)
 
         # ✅ accept both naming conventions
         api_key = _getenv("OKX_API_KEY")
@@ -320,6 +322,8 @@ def make_exchange(name: str) -> ccxt.Exchange:
         ex = ccxt.okx({'enableRateLimit': True})  # type: ignore[call-arg]
         # Always use live trading mode - no sandbox/demo support
         ex.set_sandbox_mode(False)
+        if ex.headers:
+            ex.headers.pop('x-simulated-trading', None)
         k = os.getenv("OKX_API_KEY")
         s = os.getenv("OKX_API_SECRET")
         p = os.getenv("OKX_API_PASSPHRASE")
