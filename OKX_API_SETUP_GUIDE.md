@@ -74,6 +74,23 @@ Code 50119 "API key doesn't exist" means OKX doesn't recognize your API key. Thi
    - OKX_SECRET_KEY  
    - OKX_PASSPHRASE
 
+## Australia-Specific Requirements (IMPORTANT)
+
+### For Australian Residents
+Since March 2024, Australian users must complete additional verification:
+
+1. **ASIC Compliance**: Complete Australian-specific identity verification
+2. **Enhanced KYC**: Pass ASIC-compliant verification process  
+3. **Service Limitations**: Only spot trading APIs available (derivatives restricted)
+4. **Account Transition**: May need to transition to OKX Australian entities
+
+**Check Your Australia Status:**
+- Go to **OKX.com → Profile → Verification**
+- Look for "Australian Verification" or "ASIC Compliance" section
+- Ensure this shows "Completed" status
+
+If you see any "Pending" Australian verification, this will cause error 50119 even with correct API credentials.
+
 ## Additional OKX Account Requirements
 
 ### Trading Authorization

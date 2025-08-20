@@ -68,6 +68,7 @@ class OKXAdapter(BaseExchange):
                 self.logger.error("2. API key lacks required permissions (need Read + Trade)")
                 self.logger.error("3. IP address not whitelisted")
                 self.logger.error("4. API key was disabled or incorrectly copied")
+                self.logger.error("5. FOR AUSTRALIA: ASIC-compliant verification not completed")
                 self.logger.error("See OKX_API_SETUP_GUIDE.md for detailed fix instructions")
             elif "50103" in error_msg:
                 self.logger.error("OKX Error 50103: Invalid signature. Check secret key and passphrase")
