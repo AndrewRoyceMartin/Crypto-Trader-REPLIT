@@ -1253,27 +1253,41 @@ def render_loading_skeleton(message="Loading live cryptocurrency data...", error
 def api_okx_status():
     """Get OKX exchange connection status with clear simulation/live distinction."""
     try:
-        from src.exchanges.simulated_okx import SimulatedOKX
-
-        config = {
-            'sandbox': True,
-            'apiKey': 'simulated_key',
-            'secret': 'simulated_secret',
-            'password': 'simulated_passphrase'
-        }
-
-        exchange = SimulatedOKX(config)
-        connected = exchange.connect()
+        # Use real OKX connection for status check
+        import ccxt
+        okx_api_key = os.getenv("OKX_API_KEY", "")
+        okx_secret = os.getenv("OKX_SECRET_KEY", "")
+        okx_pass = os.getenv("OKX_PASSPHRASE", "")
+        
+        if not (okx_api_key and okx_secret and okx_pass):
+            return jsonify({
+                'success': False,
+                'error': 'OKX API credentials required',
+                'status': {'connected': False}
+            })
+        
+        exchange = ccxt.okx({
+            'apiKey': okx_api_key,
+            'secret': okx_secret,
+            'password': okx_pass,
+            'sandbox': False,
+            'enableRateLimit': True
+        })
+        try:
+            exchange.load_markets()
+            connected = True
+        except Exception:
+            connected = False
 
         status = {
             'connected': connected,
-            'connection_type': 'Simulated',
+            'connection_type': 'Live Trading',
             'exchange_name': 'OKX Exchange',
-            'trading_mode': 'Paper Trading',
-            'trading_pairs': len(getattr(exchange, 'trading_pairs', [])) if connected else 0,
-            'total_prices': len(getattr(exchange, 'simulated_base_prices', {})) if connected else 0,
-            'balance': exchange.get_balance() if connected else {},
-            'initialized': True,
+            'trading_mode': 'Live Trading',
+            'trading_pairs': len(exchange.markets) if connected else 0,
+            'total_prices': 0,  # Remove simulation references
+            'balance': {},  # Don't expose balance in status
+            'initialized': connected,
             'last_sync': datetime.now(LOCAL_TZ).isoformat() if connected else None,
             'market_status': 'open' if connected else 'closed'
         }
@@ -1289,9 +1303,9 @@ def api_okx_status():
             'error': str(e),
             'status': {
                 'connected': False,
-                'connection_type': 'Simulated',
+                'connection_type': 'Live Trading',
                 'exchange_name': 'OKX Exchange',
-                'trading_mode': 'Paper Trading',
+                'trading_mode': 'Live Trading',
                 'error': 'Failed to check exchange status'
             }
         }), 500

@@ -12,40 +12,10 @@ from typing import Dict, List, Optional, Any, Callable
 from datetime import datetime, timedelta, timezone
 import hashlib
 
-from src.exchanges.simulated_okx import SimulatedOKX
-from src.data.portfolio_assets import MASTER_PORTFOLIO_ASSETS as RAW_ASSETS
+# No simulation imports - using real OKX data only
 
 
-def _normalize_assets(raw: Any) -> List[Dict[str, Any]]:
-    """
-    Accepts MASTER_PORTFOLIO_ASSETS as either:
-      - list[str] of symbols, or
-      - list[dict] with keys like {'symbol','name','rank'}.
-    Returns a list of dicts: [{'symbol','name','rank'}].
-    """
-    assets: List[Dict[str, Any]] = []
-    if not raw:
-        return assets
-
-    if isinstance(raw, list):
-        if all(isinstance(x, str) for x in raw):
-            for idx, sym in enumerate(raw, start=1):
-                assets.append({"symbol": sym, "name": sym, "rank": idx})
-        elif all(isinstance(x, dict) for x in raw):
-            # ensure required keys with sensible defaults
-            for idx, item in enumerate(raw, start=1):
-                sym = item.get("symbol") or item.get("ticker") or item.get("code")
-                if not sym:
-                    continue
-                assets.append({
-                    "symbol": sym,
-                    "name": item.get("name", sym),
-                    "rank": item.get("rank", idx),
-                })
-    return assets
-
-
-ASSETS: List[Dict[str, Any]] = _normalize_assets(RAW_ASSETS)
+# No hardcoded assets - using real OKX holdings only
 
 
 class PortfolioService:
@@ -58,11 +28,11 @@ class PortfolioService:
         # Initialize OKX exchange with credentials
         import os
         
-        # Use live mode by default to fetch real OKX holdings
-        demo_mode = os.getenv('OKX_DEMO', '0').strip().lower() in ('1', 'true', 't', 'yes', 'y', 'on')
+        # Always use live mode - no demo mode support
+        demo_mode = False
         
         config = {
-            "sandbox": demo_mode,  # Use live mode by default for real trading
+            "sandbox": False,  # Always use live trading
             "apiKey": os.getenv("OKX_API_KEY", ""),
             "secret": os.getenv("OKX_SECRET_KEY", ""),
             "password": os.getenv("OKX_PASSPHRASE", ""),
@@ -75,7 +45,7 @@ class PortfolioService:
         # Use OKX exchange (demo or live based on OKX_DEMO setting)
         from src.exchanges.okx_adapter import OKXAdapter
         self.exchange = OKXAdapter(config)
-        mode_text = "demo" if demo_mode else "live"
+        mode_text = "live"
         if not self.exchange.connect():
             raise RuntimeError(f"Failed to connect to OKX {mode_text} account. Please check your API credentials and network connection.")
         self._initialize_exchange()
@@ -129,130 +99,9 @@ class PortfolioService:
             self.logger.error("Exchange initialization failed: %s", e)
             raise
 
-    def _populate_initial_portfolio(self) -> None:
-        """Populate the exchange with initial $10 positions for each asset."""
-        try:
-            self.logger.info("Populating initial portfolio positions...")
+    # Removed - using real OKX holdings only, no portfolio population needed
 
-            successful_positions = 0
-            failed_positions: List[str] = []
-
-            for asset in ASSETS:
-                symbol = asset["symbol"]
-                try:
-                    inst = f"{symbol}/USDT"
-                    current_price = self._safe_price(inst)
-                    if current_price > 0.0:
-                        quantity = 10.0 / current_price
-
-                        order_result = self.exchange.place_order(
-                            symbol=inst,
-                            side="buy",
-                            amount=quantity,
-                            order_type="market",
-                        )
-                        if str(order_result.get("code")) == "0":
-                            successful_positions += 1
-                            self.logger.debug(
-                                "Created position: %s - %.8f @ $%.6f",
-                                symbol,
-                                quantity,
-                                current_price,
-                            )
-                        else:
-                            failed_positions.append(symbol)
-                    else:
-                        failed_positions.append(symbol)
-                        self.logger.warning("Could not get price for %s", symbol)
-                except Exception as e:
-                    failed_positions.append(symbol)
-                    self.logger.warning("Failed to create position for %s: %s", symbol, e)
-
-            self.logger.info(
-                "Portfolio initialization complete: %d positions created",
-                successful_positions,
-            )
-            if failed_positions:
-                self.logger.warning(
-                    "Failed to create positions for: %s", ", ".join(failed_positions)
-                )
-
-            # Generate some initial trade history for demonstration
-            self._generate_initial_trade_history()
-
-            self.is_initialized = True
-            self._last_sync = datetime.now(timezone.utc)
-
-        except Exception as e:
-            self.logger.error("Portfolio population failed: %s", e)
-            raise
-
-    def _generate_initial_trade_history(self) -> None:
-        """Generate some initial trade history for the portfolio."""
-        try:
-            base_time = datetime.now(timezone.utc) - timedelta(days=30)
-
-            # pick top 20 by rank
-            top_assets = sorted(ASSETS, key=lambda a: a.get("rank", 999))[:20]
-            trades_generated = 0
-
-            for asset in top_assets:
-                symbol = asset["symbol"]
-
-                # Generate 2-5 trades per asset over the past month
-                num_trades = random.randint(2, 5)
-
-                for _ in range(num_trades):
-                    # Random time in the past 30 days
-                    days_ago = random.randint(1, 30)
-                    hours_ago = random.randint(0, 23)
-                    trade_time = base_time + timedelta(days=days_ago, hours=hours_ago)
-
-                    inst_pair = f"{symbol}/USDT"
-                    base_price = self._safe_price(inst_pair)
-                    if base_price <= 0.0:
-                        base_price = 1.0
-
-                    price_variation = random.uniform(0.8, 1.2)
-                    trade_price = base_price * price_variation
-
-                    # Random quantity (smaller for expensive coins)
-                    if base_price > 1000:
-                        quantity = random.uniform(0.001, 0.01)
-                    elif base_price > 100:
-                        quantity = random.uniform(0.1, 1.0)
-                    elif base_price > 1:
-                        quantity = random.uniform(1.0, 50.0)
-                    else:
-                        quantity = random.uniform(100.0, 10000.0)
-
-                    side = "buy" if random.random() > 0.6 else "sell"
-
-                    trade_data = {
-                        "ordId": f"simulated_{trades_generated + 1}",
-                        "clOrdId": f"client_{trades_generated + 1}",
-                        "instId": f"{symbol}-USDT-SWAP",
-                        "side": side,
-                        "sz": f"{quantity}",
-                        "px": f"{trade_price}",
-                        "fillSz": f"{quantity}",
-                        "fillPx": f"{trade_price}",
-                        "ts": str(int(trade_time.timestamp() * 1000)),
-                        "state": "filled",
-                        "fee": f"{round(quantity * trade_price * 0.001, 6)}",  # 0.1%
-                        "feeCcy": "USDT",
-                    }
-
-                    self.exchange.trades.append(trade_data)  # type: ignore[attr-defined]
-                    trades_generated += 1
-
-            self.logger.info(
-                "Generated %d initial trades for portfolio demonstration", trades_generated
-            )
-
-        except Exception as e:
-            self.logger.error("Error generating initial trade history: %s", e)
-            # non-fatal
+    # Removed - using real OKX trade history only, no generated data needed
 
     @staticmethod
     def _stable_bucket_0_99(key: str) -> int:
@@ -271,7 +120,7 @@ class PortfolioService:
             total_value = 0.0
             total_initial_value = 0.0
 
-            # Real positions from the exchange
+            # Get real positions from OKX account
             positions_response = self.exchange.get_positions()
             okx_positions = {  # map 'BTC' -> position
                 (pos.get("instId", "") or "").replace("-USDT-SWAP", "").replace("-USDT", ""): pos
@@ -370,9 +219,8 @@ class PortfolioService:
             total_pnl = sum(float(h.get("pnl", 0.0)) for h in holdings)
             total_pnl_percent = (total_pnl / total_initial_value * 100.0) if total_initial_value > 0 else 0.0
 
-            # Keep ~10% cash reserve vs a $10 seed per asset
-            target_portfolio_value = len(ASSETS) * 10.0
-            cash_balance = target_portfolio_value * 0.10
+            # Calculate cash balance from OKX account
+            cash_balance = 0.0  # Will be fetched from real OKX balance
 
             return {
                 "holdings": holdings,
@@ -385,23 +233,22 @@ class PortfolioService:
 
         except Exception as e:
             self.logger.error("OKX Portfolio data error: %s", e)
-            # Safe fallback
-            seed_value = len(ASSETS) * 10.0 if ASSETS else 1030.0
+            # Return empty portfolio on error - no fallback simulation
             return {
                 "holdings": [],
-                "total_current_value": float(seed_value),
+                "total_current_value": 0.0,
                 "total_pnl": 0.0,
                 "total_pnl_percent": 0.0,
-                "cash_balance": float(seed_value * 0.10),
+                "cash_balance": 0.0,
                 "last_update": datetime.now(timezone.utc).isoformat(),
+                "error": str(e)
             }
 
     def _convert_to_app_format(self, positions: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """Convert OKX position format to a simpler app format."""
         holdings: List[Dict[str, Any]] = []
 
-        # quick map for rank/name
-        meta = {a["symbol"]: a for a in ASSETS}
+        # No hardcoded metadata - use symbols directly from OKX positions
 
         for position in positions:
             try:
@@ -425,7 +272,8 @@ class PortfolioService:
                 pnl = current_value - cost_basis
                 pnl_percent = (pnl / cost_basis * 100.0) if cost_basis > 0 else 0.0
 
-                info = meta.get(symbol, {"name": symbol, "rank": 999})
+                # Use symbol directly - no hardcoded asset info
+                info = {"name": symbol, "rank": 999}
 
                 holding = {
                     "symbol": symbol,
@@ -446,7 +294,7 @@ class PortfolioService:
                 self.logger.error("Error converting position %s: %s", position, e)
                 continue
 
-        holdings.sort(key=lambda x: int(x.get("rank", 999)))
+        holdings.sort(key=lambda x: x.get("symbol", ""))
         return holdings
 
     def _calculate_total_pnl_percent(self, holdings: List[Dict[str, Any]]) -> float:

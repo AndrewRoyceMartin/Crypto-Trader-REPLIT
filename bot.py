@@ -71,12 +71,8 @@ def make_exchange(name: str) -> ccxt.Exchange:
     if name == "okx":
         ex = ccxt.okx({'enableRateLimit': True})
 
-        # toggle sandbox from env
-        demo = str(os.getenv("OKX_DEMO", "1")).strip().lower() in ("1", "true", "t", "yes", "y", "on")
-        ex.set_sandbox_mode(demo)
-        if demo:
-            # add simulated trading header for OKX demo
-            ex.headers = {**(ex.headers or {}), "x-simulated-trading": "1"}
+        # Always use live trading mode - no demo mode support
+        ex.set_sandbox_mode(False)
 
         # ✅ accept both naming conventions
         api_key = _getenv("OKX_API_KEY")

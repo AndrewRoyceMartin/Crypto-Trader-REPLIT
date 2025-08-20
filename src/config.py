@@ -91,17 +91,17 @@ class Config:
         Get exchange configuration.
         
         Args:
-            exchange: Exchange name (okx_demo, kraken)
+            exchange: Exchange name (okx, kraken)
             
         Returns:
             Exchange configuration dictionary
         """
-        if exchange == 'okx_demo':
+        if exchange == 'okx':
             return {
-                'apiKey': os.getenv('OKX_DEMO_API_KEY', self.get('exchanges', 'okx_demo_api_key', '')),
-                'secret': os.getenv('OKX_DEMO_SECRET', self.get('exchanges', 'okx_demo_secret', '')),
-                'password': os.getenv('OKX_DEMO_PASSPHRASE', self.get('exchanges', 'okx_demo_passphrase', '')),
-                'sandbox': self.get_bool('exchanges', 'okx_demo_sandbox', True)
+                'apiKey': os.getenv('OKX_API_KEY', self.get('exchanges', 'okx_api_key', '')),
+                'secret': os.getenv('OKX_SECRET_KEY', self.get('exchanges', 'okx_secret_key', '')),
+                'password': os.getenv('OKX_PASSPHRASE', self.get('exchanges', 'okx_passphrase', '')),
+                'sandbox': False
             }
         elif exchange == 'kraken':
             return {
