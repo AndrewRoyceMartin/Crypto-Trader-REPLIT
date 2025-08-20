@@ -24,12 +24,11 @@ def try_okx(sandbox: bool):
         'secret': SECRET,
         'password': PASSPHRASE,
     })
-    ex.set_sandbox_mode(sandbox)
-    if sandbox:
-        ex.headers = {**(ex.headers or {}), 'x-simulated-trading': '1'}
-    else:
-        if ex.headers:
-            ex.headers.pop('x-simulated-trading', None)
+    # Always use live trading mode - no sandbox support
+    ex.set_sandbox_mode(False)
+    # Ensure no simulated headers
+    if ex.headers:
+        ex.headers.pop('x-simulated-trading', None)
 
     # Public – should always work
     try:
@@ -53,5 +52,4 @@ def try_okx(sandbox: bool):
 
 if __name__ == "__main__":
     show_env()
-    try_okx(True)   # DEMO
-    try_okx(False)  # PROD
+    try_okx(False)  # LIVE TRADING ONLY

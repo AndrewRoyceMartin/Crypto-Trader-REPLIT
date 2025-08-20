@@ -29,18 +29,14 @@ def test_okx_connection():
         print("❌ Missing credentials - cannot proceed")
         return False
     
-    # Test connection in both modes
-    modes = [
-        ("Live Trading", False),
-        ("Demo/Sandbox", True)
-    ]
+    # Test live trading connection only
+    mode_name = "Live Trading"
+    sandbox_mode = False
+    print(f"Testing {mode_name} Mode:")
+    print("-" * 30)
     
-    for mode_name, sandbox_mode in modes:
-        print(f"Testing {mode_name} Mode:")
-        print("-" * 30)
-        
-        try:
-            exchange = ccxt.okx({
+    try:
+        exchange = ccxt.okx({
                 'apiKey': api_key,
                 'secret': secret_key,
                 'password': passphrase,
@@ -49,9 +45,9 @@ def test_okx_connection():
                 'timeout': 15000
             })
             
-            # Set headers for demo mode
-            if sandbox_mode:
-                exchange.headers = {**(exchange.headers or {}), 'x-simulated-trading': '1'}
+            # Ensure no simulated trading headers
+            if exchange.headers:
+                exchange.headers.pop('x-simulated-trading', None)
             
             print(f"Exchange initialized: ✓")
             print(f"Sandbox mode: {sandbox_mode}")

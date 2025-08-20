@@ -56,15 +56,11 @@ def make_okx_spot(demo: t.Optional[bool] = None) -> ccxt.okx:
         },
     })
 
-    # Demo / sandbox
-    ex.set_sandbox_mode(bool(demo))
-    if demo:
-        # OKX sandbox requires this header
-        ex.headers = {**(ex.headers or {}), "x-simulated-trading": "1"}
-    else:
-        # Strip the header if present
-        if ex.headers:
-            ex.headers.pop("x-simulated-trading", None)
+    # Always use live trading mode - no sandbox/demo support
+    ex.set_sandbox_mode(False)
+    # Ensure no simulated headers
+    if ex.headers:
+        ex.headers.pop("x-simulated-trading", None)
 
     return ex
 
