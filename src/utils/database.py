@@ -629,74 +629,8 @@ class DatabaseManager:
             self.logger.error(f"Error getting database stats: {str(e)}")
             return {}
     
-    def reset_all_trades(self, mode: str = None):
-        """
-        Reset all trades from database.
-        
-        Args:
-            mode: Optional mode filter (paper, live, backtest). If None, clears all modes.
-        """
-        try:
-            with self.get_connection() as conn:
-                cursor = conn.cursor()
-                
-                if mode:
-                    cursor.execute('DELETE FROM trades WHERE mode = ?', (mode,))
-                    self.logger.info(f"Cleared all {mode} trades")
-                else:
-                    cursor.execute('DELETE FROM trades')
-                    self.logger.info("Cleared all trades from database")
-                
-                conn.commit()
-                
-        except Exception as e:
-            self.logger.error(f"Error resetting trades: {str(e)}")
-            raise
+
     
-    def reset_all_positions(self, mode: str = None):
-        """
-        Reset all positions from database.
-        
-        Args:
-            mode: Optional mode filter (paper, live, backtest). If None, clears all modes.
-        """
-        try:
-            with self.get_connection() as conn:
-                cursor = conn.cursor()
-                
-                if mode:
-                    cursor.execute('DELETE FROM positions WHERE mode = ?', (mode,))
-                    self.logger.info(f"Cleared all {mode} positions")
-                else:
-                    cursor.execute('DELETE FROM positions')
-                    self.logger.info("Cleared all positions from database")
-                
-                conn.commit()
-                
-        except Exception as e:
-            self.logger.error(f"Error resetting positions: {str(e)}")
-            raise
+
     
-    def reset_portfolio_snapshots(self, mode: str = None):
-        """
-        Reset portfolio snapshots from database.
-        
-        Args:
-            mode: Optional mode filter. If None, clears all modes.
-        """
-        try:
-            with self.get_connection() as conn:
-                cursor = conn.cursor()
-                
-                if mode:
-                    cursor.execute('DELETE FROM portfolio_snapshots WHERE mode = ?', (mode,))
-                    self.logger.info(f"Cleared all {mode} portfolio snapshots")
-                else:
-                    cursor.execute('DELETE FROM portfolio_snapshots')
-                    self.logger.info("Cleared all portfolio snapshots from database")
-                
-                conn.commit()
-                
-        except Exception as e:
-            self.logger.error(f"Error resetting portfolio snapshots: {str(e)}")
-            raise
+

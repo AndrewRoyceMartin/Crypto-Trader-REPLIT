@@ -1554,41 +1554,7 @@ function refreshCryptoPortfolio() {
         window.tradingApp.showToast('Portfolio refreshed', 'info');
     }
 }
-async function resetEntireProgram() {
-    if (!confirm('Reset the entire system? This resets all values to $10 and clears trading data.')) return;
-    try {
-        const response = await fetch('/api/reset-entire-program', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' }
-        });
-        const data = await response.json();
-        if (data.success) {
-            window.tradingApp.showToast('Portfolio reset successfully!', 'success');
-            const modeEl = document.getElementById('trading-mode');
-            const statusEl = document.getElementById('trading-status');
-            const startEl = document.getElementById('trading-start-time');
-            const symEl = document.getElementById('trading-symbol');
 
-            if (modeEl) { modeEl.textContent = 'Stopped'; modeEl.className = 'badge bg-secondary'; }
-            if (statusEl) { statusEl.textContent = 'Idle'; statusEl.className = 'badge bg-secondary'; }
-            if (startEl) startEl.textContent = '-';
-            if (symEl) symEl.textContent = '-';
-
-            const tradesTable = document.getElementById('trades-table');
-            if (tradesTable) {
-                tradesTable.innerHTML = '<tr><td colspan="7" class="text-center text-muted">No trades yet</td></tr>';
-            }
-
-            setTimeout(() => window.tradingApp.loadPortfolioData(), 1000);
-            setTimeout(() => location.reload(), 2500);
-        } else {
-            window.tradingApp.showToast('Failed to reset portfolio: ' + (data.error || 'Unknown error'), 'error');
-        }
-    } catch (error) {
-        console.error('Reset error:', error);
-        window.tradingApp.showToast('Error resetting portfolio: ' + error.message, 'error');
-    }
-}
 function changeCurrency() {
     const dd = document.getElementById('currency-selector');
     if (dd && window.tradingApp) {

@@ -560,19 +560,7 @@ class PortfolioService:
         except Exception as e:
             return {"error": str(e)}
 
-    def reset_portfolio(self) -> bool:
-        """Reset portfolio to initial state (useful for testing)."""
-        try:
-            self.logger.info("Resetting portfolio to initial state...")
-            # Reset not implemented for live OKX
-            pass
-            self._initialize_exchange()
-            self._init_price_getter()
-            self.logger.info("Portfolio reset successfully")
-            return True
-        except Exception as e:
-            self.logger.error("Portfolio reset failed: %s", e)
-            return False
+
 
 
 # Global portfolio service instance

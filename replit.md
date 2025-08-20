@@ -33,6 +33,9 @@ The system fetches actual holdings, positions, and portfolio data directly from 
 **Trading Price Calculations:**
 All buy and sell price calculations now use the user's real OKX purchase price ($0.000008 for PEPE) and current OKX market prices. Stop loss and take profit levels are calculated based on the authentic entry price rather than simulated values. The trading strategies (bot.py, enhanced_bollinger_strategy.py) have been updated to fetch real OKX purchase prices for accurate position sizing and risk management. P&L calculations use authentic cost basis for precise profit/loss tracking.
 
+**Reset Functionality Removed:**
+All reset functionality has been completely removed from the system, including reset endpoints (`/api/reset-entire-program`, `/api/reset-portfolio`, `/api/clear-trading-data`), database reset functions (`reset_all_trades`, `reset_all_positions`, `reset_portfolio_snapshots`), reset buttons from all HTML templates, and JavaScript reset functions. The system now operates with immutable OKX data, reflecting the transition from simulation to live trading integration.
+
 **Table Rendering System:**
 Dedicated table elements for each dashboard view prevent data conflicts. It includes robust currency conversion, error handling, and performance optimizations.
 
