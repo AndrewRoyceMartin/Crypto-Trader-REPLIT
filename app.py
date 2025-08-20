@@ -460,9 +460,10 @@ def render_full_dashboard():
         </html>
         """
 
-# Add essential routes from original web interface
-@app.route("/api/crypto-portfolio")
-def api_crypto_portfolio():
+# COMPLETELY REMOVED: Old simulation endpoint that was overriding real OKX cost basis
+# This function was calculating real OKX data but then overriding it with $10 simulation values
+# Now using only the real OKX endpoint from web_interface.py
+def DISABLED_api_crypto_portfolio():
     """Get portfolio data - respects reset state."""
     if not warmup["done"]:
         return jsonify({"error": "System still initializing"}), 503

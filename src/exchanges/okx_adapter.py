@@ -131,22 +131,32 @@ class OKXAdapter(BaseExchange):
             self.logger.error(f"Error placing order: {str(e)}")
             raise
     
-    def get_trades(self, symbol: Optional[str] = None, limit: int = 100) -> List[Dict[str, Any]]:
+    def get_trades(self, symbol: Optional[str] = None, limit: int = 50) -> List[Dict[str, Any]]:
         """Get trade history."""
         if not self.is_connected():
             raise Exception("Not connected to exchange")
         
         try:
+            # OKX has strict limits - try smaller limit and specific symbol first
             if symbol:
-                trades = self.exchange.fetch_my_trades(symbol, limit=limit)
+                trades = self.exchange.fetch_my_trades(symbol, limit=min(limit, 50))
             else:
-                # Get trades for all symbols (if supported)
-                trades = self.exchange.fetch_my_trades(limit=limit)
+                # For OKX, don't fetch all symbols at once, use smaller limit
+                trades = self.exchange.fetch_my_trades(limit=min(limit, 20))
             
             return [dict(trade) for trade in trades]
         except Exception as e:
             self.logger.error(f"Error fetching trades: {str(e)}")
-            raise
+            # Try even smaller limit if first attempt fails
+            try:
+                if symbol:
+                    trades = self.exchange.fetch_my_trades(symbol, limit=10)
+                else:
+                    trades = self.exchange.fetch_my_trades(limit=10)
+                return [dict(trade) for trade in trades]
+            except Exception as e2:
+                self.logger.error(f"Error with smaller limit: {str(e2)}")
+                raise e
     
     def get_ohlcv(self, symbol: str, timeframe: str, limit: int = 100) -> pd.DataFrame:
         """Get OHLCV data."""
