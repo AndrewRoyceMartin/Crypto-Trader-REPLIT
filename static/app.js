@@ -2398,7 +2398,9 @@ function updatePortfolioChartsUI(portfolioData) {
 function renderAllocationChart(holdings) {
     const canvas = document.getElementById('allocationChart');
     if (!canvas || !window.Chart) return;
-    if (window.allocationChart) window.allocationChart.destroy();
+    if (window.allocationChart && typeof window.allocationChart.destroy === 'function') {
+        window.allocationChart.destroy();
+    }
 
     const sorted = [...holdings].filter(h => h.has_position).sort((a, b) => (b.current_value || 0) - (a.current_value || 0)).slice(0, 10);
     const labels = sorted.map(h => h.symbol);

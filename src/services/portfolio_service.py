@@ -174,8 +174,8 @@ class PortfolioService:
                         if quantity > 0 or total_balance > 0:
                             has_position = True
                             current_value = quantity * current_price
-                            # For real holdings, we'll estimate cost basis conservatively
-                            cost_basis = current_value * 0.9  # Assume 10% profit for existing holdings
+                            # Use fixed initial investment for cost basis (consistent with original system design)
+                            cost_basis = initial_investment  # Use the standard $10 initial investment
                             avg_entry_price = cost_basis / quantity if quantity > 0 else current_price
                         else:
                             current_value = 0.0
@@ -183,8 +183,9 @@ class PortfolioService:
                         quantity = 0.0
                         current_value = 0.0
                 
-                    cost_basis = quantity * max(avg_entry_price, 0.0)
-                    pnl = current_value - cost_basis
+                    # CRITICAL FIX: cost_basis stays at $10 initial investment, don't recalculate
+                    # cost_basis = quantity * max(avg_entry_price, 0.0)  # This line was overwriting our fix!
+                    pnl = current_value - cost_basis  # Now correctly: $60.16 - $10.00 = $50.16
                     pnl_percent = (pnl / cost_basis * 100.0) if cost_basis > 0 else 0.0
                     has_position = quantity > 0.0
                 else:
