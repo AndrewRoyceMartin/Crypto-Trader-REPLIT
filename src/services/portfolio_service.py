@@ -128,8 +128,15 @@ class PortfolioService:
                 self.logger.warning(f"Could not get balance data: {e}")
                 account_balances = {}
 
-            # Use real account balances instead of hardcoded assets
-            crypto_symbols = ["BTC", "ETH", "SOL", "XRP", "DOGE", "BNB", "ADA", "AVAX", "LINK", "UNI", "DOT", "MATIC", "LTC", "BCH", "ATOM"]
+            # Only process actual cryptocurrency symbols from the balance data
+            crypto_symbols = []
+            if isinstance(account_balances, dict):
+                # Filter out system keys and only keep real cryptocurrency symbols
+                for key, value in account_balances.items():
+                    if (isinstance(value, dict) and 
+                        'free' in value and 
+                        key not in ['info', 'timestamp', 'datetime', 'free', 'used', 'total']):
+                        crypto_symbols.append(key)
             
             for symbol in crypto_symbols:
                 name = symbol  # Use symbol as name for simplicity
@@ -137,7 +144,11 @@ class PortfolioService:
                 inst_pair = f"{symbol}/USDT"
                 current_price = self._safe_price(inst_pair)
                 if current_price <= 0.0:
-                    current_price = 1.0
+                    # For PEPE, use a more realistic fallback price if API fails
+                    if symbol == 'PEPE':
+                        current_price = 0.00001  # Approximate PEPE price
+                    else:
+                        current_price = 1.0
 
                 initial_investment = 10.0
                 quantity: float = 0.0
@@ -148,13 +159,19 @@ class PortfolioService:
                 pnl_percent: float = 0.0
                 has_position: bool = False
 
-                # Check if we have real balance for this symbol
-                if symbol in account_balances and 'free' in account_balances[symbol]:
+                # Check if we have real balance for this symbol (skip USDT as it's cash)
+                if (symbol != 'USDT' and 
+                    symbol in account_balances and 
+                    isinstance(account_balances[symbol], dict) and 
+                    'free' in account_balances[symbol]):
                     # Real balance from OKX account
                     balance_info = account_balances[symbol]
                     try:
                         quantity = float(balance_info.get('free', 0.0) or 0.0)
-                        if quantity > 0:
+                        total_balance = float(balance_info.get('total', 0.0) or 0.0)
+                        
+                        # Only include holdings with actual balance
+                        if quantity > 0 or total_balance > 0:
                             has_position = True
                             current_value = quantity * current_price
                             # For real holdings, we'll estimate cost basis conservatively
@@ -171,28 +188,8 @@ class PortfolioService:
                     pnl_percent = (pnl / cost_basis * 100.0) if cost_basis > 0 else 0.0
                     has_position = quantity > 0.0
                 else:
-                    # No open position; simulate a historical entry for display
-                    b = self._stable_bucket_0_99(symbol)
-                    if b < 20:
-                        # +5%..+35%
-                        price_variation = (b % 30 + 5) / 100.0
-                    elif b < 40:
-                        # -5%..-30%
-                        price_variation = -((b % 25 + 5) / 100.0)
-                    else:
-                        # -7%..+7%
-                        price_variation = ((b % 15) - 7) / 100.0
-
-                    historical_purchase_price = current_price / (1.0 + price_variation)
-                    if historical_purchase_price <= 0.0:
-                        historical_purchase_price = current_price
-
-                    quantity = initial_investment / historical_purchase_price
-                    current_value = quantity * current_price
-                    cost_basis = initial_investment
-                    pnl = current_value - initial_investment
-                    pnl_percent = (pnl / initial_investment * 100.0) if initial_investment > 0 else 0.0
-                    has_position = True  # shows in holdings with simulated entry
+                    # No real position - skip this symbol completely
+                    continue
 
                 holdings.append({
                     "rank": 1,  # Default rank for real holdings
@@ -207,7 +204,7 @@ class PortfolioService:
                     "pnl": float(pnl),
                     "pnl_percent": float(pnl_percent),
                     "unrealized_pnl": float(pnl),
-                    "is_live": True,  # simulated live
+                    "is_live": True,  # real OKX holdings
                     "has_position": bool(has_position),
                 })
 
@@ -222,8 +219,15 @@ class PortfolioService:
             total_pnl = sum(float(h.get("pnl", 0.0)) for h in holdings)
             total_pnl_percent = (total_pnl / total_initial_value * 100.0) if total_initial_value > 0 else 0.0
 
-            # Calculate cash balance from OKX account
-            cash_balance = 0.0  # Will be fetched from real OKX balance
+            # Calculate cash balance from real OKX account  
+            cash_balance = 0.0
+            try:
+                if ('USDT' in account_balances and 
+                    isinstance(account_balances['USDT'], dict) and 
+                    'free' in account_balances['USDT']):
+                    cash_balance = float(account_balances['USDT'].get('free', 0.0) or 0.0)
+            except (TypeError, ValueError):
+                cash_balance = 0.0
 
             return {
                 "holdings": holdings,
