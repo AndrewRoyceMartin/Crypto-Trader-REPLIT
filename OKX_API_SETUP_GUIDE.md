@@ -74,6 +74,39 @@ Code 50119 "API key doesn't exist" means OKX doesn't recognize your API key. Thi
    - OKX_SECRET_KEY  
    - OKX_PASSPHRASE
 
+## Additional OKX Account Requirements
+
+### Trading Authorization
+Beyond the API key, your OKX account needs:
+
+1. **Account Verification**: 
+   - Complete KYC (Know Your Customer) verification
+   - Identity verification must be approved
+
+2. **Trading Permissions**:
+   - Enable "Spot Trading" in your account settings
+   - Enable "API Trading" authorization in account security settings
+
+3. **Funding Requirements**:
+   - Account must have sufficient balance for trading
+   - Some features require minimum balance thresholds
+
+4. **Security Settings**:
+   - Two-factor authentication (2FA) enabled
+   - Email verification enabled
+   - Phone verification enabled
+
+### Check Your Account Status
+Go to: **OKX.com → Profile → Verification** and ensure:
+- ✅ Identity Verification: Completed
+- ✅ Phone Verification: Completed  
+- ✅ Email Verification: Completed
+- ✅ Two-Factor Authentication: Enabled
+
+Then go to: **Profile → Security → API Trading** and verify:
+- ✅ API Trading: Enabled
+- ✅ Spot Trading: Enabled
+
 ## System Changes Made
 
 The system has been completely reconfigured to use only your real OKX portfolio data:
