@@ -39,7 +39,7 @@ def main():
             })
             
             if is_demo:
-                exchange.headers = {**(exchange.headers or {}), 'x-simulated-trading': '1'}
+                # No simulated trading headers for live mode
                 print("Mode: Demo/Sandbox")
             else:
                 print("Mode: Live Trading")

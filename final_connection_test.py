@@ -43,7 +43,7 @@ def test_okx_connection():
             })
             
             if test_mode:
-                exchange.headers = {**(exchange.headers or {}), 'x-simulated-trading': '1'}
+                # No simulated trading headers - live mode only
             
             # Test connection
             markets = exchange.load_markets()

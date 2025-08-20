@@ -143,6 +143,56 @@ class OKXAdapter(BaseExchange):
         except Exception as e:
             self.logger.error(f"Error fetching trades: {str(e)}")
             raise
+    
+    def get_ohlcv(self, symbol: str, timeframe: str, limit: int = 100) -> pd.DataFrame:
+        """Get OHLCV data."""
+        if not self.is_connected():
+            raise Exception("Not connected to exchange")
+        
+        try:
+            ohlcv = self.exchange.fetch_ohlcv(symbol, timeframe, limit=limit)
+            df = pd.DataFrame(ohlcv, columns=['timestamp', 'open', 'high', 'low', 'close', 'volume'])
+            df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
+            return df
+        except Exception as e:
+            self.logger.error(f"Error fetching OHLCV: {str(e)}")
+            raise
+    
+    def get_ticker(self, symbol: str) -> Dict[str, Any]:
+        """Get ticker data."""
+        if not self.is_connected():
+            raise Exception("Not connected to exchange")
+        
+        try:
+            ticker = self.exchange.fetch_ticker(symbol)
+            return dict(ticker)
+        except Exception as e:
+            self.logger.error(f"Error fetching ticker: {str(e)}")
+            raise
+    
+    def get_open_orders(self, symbol: Optional[str] = None) -> List[Dict[str, Any]]:
+        """Get open orders."""
+        if not self.is_connected():
+            raise Exception("Not connected to exchange")
+        
+        try:
+            orders = self.exchange.fetch_open_orders(symbol)
+            return [dict(order) for order in orders]
+        except Exception as e:
+            self.logger.error(f"Error fetching open orders: {str(e)}")
+            raise
+    
+    def cancel_order(self, order_id: str, symbol: str) -> Dict[str, Any]:
+        """Cancel an order."""
+        if not self.is_connected():
+            raise Exception("Not connected to exchange")
+        
+        try:
+            result = self.exchange.cancel_order(order_id, symbol)
+            return dict(result)
+        except Exception as e:
+            self.logger.error(f"Error canceling order: {str(e)}")
+            raise
 
 
 def make_okx_spot() -> ccxt.okx:
