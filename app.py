@@ -146,11 +146,15 @@ def background_warmup():
         if not (okx_api_key and okx_secret and okx_pass):
             raise RuntimeError("OKX API credentials required for background warmup. No simulation mode available.")
             
+        # 🌍 Regional endpoint support (2024 OKX update)
+        hostname = os.getenv("OKX_HOSTNAME") or os.getenv("OKX_REGION") or "www.okx.com"
+        
         # Use live OKX account only
         ex = ccxt.okx({
             'apiKey': okx_api_key,
             'secret': okx_secret,
             'password': okx_pass,
+            'hostname': hostname,  # Regional endpoint support
             'sandbox': False,
             'enableRateLimit': True
         })
@@ -299,10 +303,14 @@ def api_price():
             if not (okx_api_key and okx_secret and okx_pass):
                 raise RuntimeError("OKX API credentials required. No simulation mode available.")
                 
+            # 🌍 Regional endpoint support (2024 OKX update)
+            hostname = os.getenv("OKX_HOSTNAME") or os.getenv("OKX_REGION") or "www.okx.com"
+            
             ex = ccxt.okx({
                 'apiKey': okx_api_key,
                 'secret': okx_secret,
                 'password': okx_pass,
+                'hostname': hostname,  # Regional endpoint support
                 'sandbox': False,
                 'enableRateLimit': True
             })
@@ -1278,10 +1286,14 @@ def api_okx_status():
                 'status': {'connected': False}
             })
         
+        # 🌍 Regional endpoint support (2024 OKX update)
+        hostname = os.getenv("OKX_HOSTNAME") or os.getenv("OKX_REGION") or "www.okx.com"
+        
         exchange = ccxt.okx({
             'apiKey': okx_api_key,
             'secret': okx_secret,
             'password': okx_pass,
+            'hostname': hostname,  # Regional endpoint support
             'sandbox': False,
             'enableRateLimit': True
         })
