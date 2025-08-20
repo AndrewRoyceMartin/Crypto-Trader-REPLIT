@@ -39,18 +39,32 @@ Code 50119 "API key doesn't exist" means OKX doesn't recognize your API key. Thi
 - Edit your API key settings
 - Enable permissions: ✅ Read ✅ Trade ✅ Funding
 
-### 3. IP Restrictions
+### 3. IP Restrictions (Critical for Replit)
 **Problem**: Your current IP is not whitelisted
 **Solution**:
-- In API settings, set IP whitelist to "0.0.0.0/0" (allow all IPs)
-- Or add this specific Replit IP to the whitelist
+- **Recommended**: Leave IP whitelist EMPTY (allows all IPs)
+- **Alternative**: Add Replit's egress IP: `35.229.97.108`
+- **Note**: Replit's IP can change, so empty whitelist is safer
 
-### 4. API Key Status
+### 4. Subaccount vs Main Account
+**Problem**: API key created on subaccount but using wrong credentials
+**Solution**:
+- Ensure you're creating API keys on your **main account** (not subaccount)
+- Check which account you're logged into when creating keys
+
+### 5. Key Rotation/Expiry
+**Problem**: Key was rotated, deleted, or expired
+**Solution**:
+- Delete old API key completely
+- Create brand new API key with fresh passphrase
+- Update all three credentials in Replit Secrets
+
+### 6. API Key Status & Copying
 **Problem**: Key disabled, expired, or incorrectly copied
 **Solution**:
 - Verify key is "Active" in OKX
 - Double-check all three values were copied correctly
-- Try creating a fresh API key
+- Ensure no extra spaces or characters
 
 ## Step-by-Step Fix
 
@@ -72,7 +86,39 @@ Code 50119 "API key doesn't exist" means OKX doesn't recognize your API key. Thi
    - Passphrase (your custom phrase)
 5. **Update in Replit Secrets:**
    - OKX_API_KEY
-   - OKX_SECRET_KEY  
+   - OKX_SECRET_KEY (or OKX_API_SECRET)
+   - OKX_PASSPHRASE (or OKX_API_PASSPHRASE)
+
+## Advanced Troubleshooting
+
+### Still Getting 50119 After Following All Steps?
+
+1. **Test with Clean Smoke Script First**:
+   ```bash
+   python smoke_test_live_okx.py
+   ```
+   This eliminates any app-specific issues.
+
+2. **Common Hidden Issues**:
+   - **Stale Headers**: Ensure no `x-simulated-trading` headers anywhere
+   - **Wrong Account**: Verify you're on main account, not subaccount
+   - **Credential Mismatch**: Passphrase must match EXACTLY (case-sensitive)
+   - **IP Changes**: Replit's egress IP can change - use empty whitelist
+
+3. **Verification Checklist**:
+   - [ ] API key created for "API Trading" (not "Third-party app")
+   - [ ] Environment: Live Trading (not demo/testnet)
+   - [ ] Permissions: Read ✓ Trade ✓ 
+   - [ ] IP Whitelist: Empty or contains `35.229.97.108`
+   - [ ] Account: Main account (not subaccount)
+   - [ ] Status: Active
+   - [ ] All credentials copied exactly with no extra characters
+
+## Current Replit IP
+Your current egress IP for whitelist: `35.229.97.108`
+
+## Final Test
+Once API keys work with the smoke script, the main app will work identically since we've eliminated all sandbox fallbacks.
    - OKX_PASSPHRASE
 
 ## Australia-Specific Requirements (IMPORTANT)
