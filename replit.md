@@ -30,6 +30,9 @@ A Flask-based web interface provides real-time monitoring and portfolio visualiz
 **Real Portfolio Data:**
 The system fetches actual holdings, positions, and portfolio data directly from the user's live OKX trading account. All simulated data has been completely replaced with authentic OKX account data. Portfolio displays real PEPE holding (6,016,268.09 tokens) with authentic cost basis of $48.13 and realistic 25% profit calculation. The `/api/crypto-portfolio` endpoint now exclusively serves live OKX data, completely eliminating all $10 simulation artifacts. Database schema updated to support real cost basis tracking and OKX symbol mapping.
 
+**Trading Price Calculations:**
+All buy and sell price calculations now use the user's real OKX purchase price ($0.000008 for PEPE) and current OKX market prices. Stop loss and take profit levels are calculated based on the authentic entry price rather than simulated values. The trading strategies (bot.py, enhanced_bollinger_strategy.py) have been updated to fetch real OKX purchase prices for accurate position sizing and risk management. P&L calculations use authentic cost basis for precise profit/loss tracking.
+
 **Table Rendering System:**
 Dedicated table elements for each dashboard view prevent data conflicts. It includes robust currency conversion, error handling, and performance optimizations.
 

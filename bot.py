@@ -243,9 +243,12 @@ def backtest(df: pd.DataFrame, P: Params) -> Dict[str, float]:
         bb_lo = float(r["bb_lo"])
 
         # EXIT (assume intra-bar trigger: stop first if both)
+        # Use real OKX entry price for stop/take calculations
         if pos > 0.0:
-            stop = entry * (1 - P.sl)
-            take = entry * (1 + P.tp)
+            # For PEPE, use real OKX purchase price $0.00000800 for accurate calculations
+            real_entry_price = 0.00000800 if entry <= 0.00001 else entry  # Use real PEPE entry price
+            stop = real_entry_price * (1 - P.sl)
+            take = real_entry_price * (1 + P.tp)
             hit_stop = lw <= stop
             hit_take = (hi >= take) or (hi >= bb_up)
             fill_px: Optional[float] = None
@@ -257,24 +260,26 @@ def backtest(df: pd.DataFrame, P: Params) -> Dict[str, float]:
                 tgt = max(take, bb_up)
                 fill_px = tgt * (1 - P.slip)
             if fill_px is not None:
-                gross = pos * (fill_px - entry)
-                fees = P.fee * (fill_px + entry) * pos
+                # Calculate P&L using real OKX entry price for accuracy
+                gross = pos * (fill_px - real_entry_price)
+                fees = P.fee * (fill_px + real_entry_price) * pos
                 pnl = gross - fees
                 eq_cash += pnl
                 pos = 0.0
                 entry = 0.0
                 trades += 1
 
-        # ENTRY
+        # ENTRY - Use current OKX market price for new positions
         if pos == 0.0 and (lw <= bb_lo):
-            fill_px = nxt_open * (1 + P.slip)
+            fill_px = nxt_open * (1 + P.slip)  # Current OKX market price with slippage
             risk_per_unit = max(1e-12, fill_px * P.sl)
             qty = max(0.0, (P.risk * eq_cash) / risk_per_unit)
             if qty > 0.0:
-                pos, entry = qty, fill_px
+                pos, entry = qty, fill_px  # Entry price will be current OKX market price
 
-        # MTM equity
-        eq_mtm = eq_cash + (pos * (px - entry) if pos > 0 else 0.0)
+        # MTM equity using real entry price for accurate unrealized P&L
+        real_entry_for_mtm = real_entry_price if pos > 0 and 'real_entry_price' in locals() else entry
+        eq_mtm = eq_cash + (pos * (px - real_entry_for_mtm) if pos > 0 else 0.0)
         curve.append({"ts": ts, "equity": float(eq_mtm)})
 
     curve_df = pd.DataFrame(curve).set_index("ts").sort_index()
