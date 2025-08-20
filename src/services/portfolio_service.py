@@ -28,11 +28,11 @@ class PortfolioService:
         # Initialize OKX exchange with credentials
         import os
         
-        # Check demo mode setting
-        demo_mode = os.getenv("OKX_DEMO", "false").lower() in ('true', '1', 'yes', 'on')
+        # Always use live trading mode
+        demo_mode = False
         
         config = {
-            "sandbox": demo_mode,  # Use demo mode if enabled
+            "sandbox": False,  # Always use live trading
             "apiKey": os.getenv("OKX_API_KEY", ""),
             "secret": os.getenv("OKX_SECRET_KEY", ""),
             "password": os.getenv("OKX_PASSPHRASE", ""),
@@ -42,16 +42,11 @@ class PortfolioService:
         if not all([config["apiKey"], config["secret"], config["password"]]):
             raise RuntimeError("OKX API credentials (OKX_API_KEY, OKX_SECRET_KEY, OKX_PASSPHRASE) are required.")
         
-        # Use OKX exchange (demo or live based on OKX_DEMO setting)
+        # Use live OKX exchange only
         from src.exchanges.okx_adapter import OKXAdapter
         self.exchange = OKXAdapter(config)
-        mode_text = "demo" if demo_mode else "live"
         if not self.exchange.connect():
-            # If connection fails, provide fallback data to demonstrate system functionality
-            self.logger.warning(f"Failed to connect to OKX {mode_text} account - using cached data")
-            self._use_fallback_data = True
-        else:
-            self._use_fallback_data = False
+            raise RuntimeError("Failed to connect to OKX live account. Please check your API credentials and network connection.")
         self._initialize_exchange()
 
         # Track initialization state

@@ -4,9 +4,8 @@ Main entry point for the algorithmic trading system.
 
 Modes:
   - web       : Flask web UI
-  - paper     : Paper trading (OKX demo)
-  - live      : Alias to paper for now
-  - backtest  : Backtest using bot.py
+  - backtest  : Historical backtesting and optimization
+  - live      : Live trading with real OKX account
 """
 
 from __future__ import annotations
@@ -17,7 +16,7 @@ import sys
 from typing import Literal, Sequence
 
 
-Mode = Literal["web", "paper", "live", "backtest"]
+Mode = Literal["web", "live", "backtest"]
 
 
 def run_backtest() -> None:
@@ -27,16 +26,16 @@ def run_backtest() -> None:
     bot_backtest()
 
 
-def run_paper() -> None:
-    """Run paper trading mode using bot.py implementation."""
-    from bot import run_paper as bot_paper  # noqa: WPS433
-    bot_paper()
-
-
 def run_live() -> None:
-    """Run live trading mode (currently aliases paper)."""
-    from bot import run_paper as bot_paper  # noqa: WPS433
-    bot_paper()
+    """Run live trading backtesting and optimization."""
+    from bot import run_backtest, run_optimize
+    import sys
+    
+    arg = sys.argv[2].lower() if len(sys.argv) > 2 else ""
+    if arg == "opt":
+        run_optimize()
+    else:
+        run_backtest()
 
 
 def run_web() -> None:
@@ -63,7 +62,7 @@ def parse_args(argv: Sequence[str] | None = None) -> Mode:
     )
     parser.add_argument(
         "mode",
-        choices=["web", "paper", "live", "backtest"],
+        choices=["web", "live", "backtest"],
         help="Mode to run",
     )
     ns = parser.parse_args(argv)
@@ -75,8 +74,6 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     if mode == "web":
         run_web()
-    elif mode == "paper":
-        run_paper()
     elif mode == "live":
         run_live()
     else:  # backtest

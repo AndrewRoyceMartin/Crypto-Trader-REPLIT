@@ -7,13 +7,13 @@ This Python-based algorithmic trading system automates cryptocurrency trading st
 Preferred communication style: Simple, everyday language.
 
 ## System Architecture
-The system employs a modular architecture supporting both CLI and Flask-based web interfaces. It features `BacktestEngine`, `PaperTrader`, and `LiveTrader` classes for different trading modes.
+The system employs a modular architecture supporting both CLI and Flask-based web interfaces. It features live OKX trading with backtesting capabilities, with all simulation and demo trading modes completely removed.
 
 **Deployment Configuration:**
 The primary entry point is `app.py` for fast-boot Flask deployment, supported by `wsgi.py` for production. It uses environment variables for port configuration and system parameters. A fast-boot architecture prioritizes immediate Flask startup, followed by background trading system initialization with a circuit breaker pattern and persistent data caching. Enhanced health endpoints (`/`, `/health`, `/ready`) provide detailed status.
 
 **Strategy System:**
-A plugin-based system using `BaseStrategy` allows flexible strategy implementation, such as `BollingerBandsStrategy`, generating `Signal` objects with trade actions and risk parameters.
+A live trading system using Bollinger Bands mean reversion strategy with historical backtesting and optimization capabilities. All paper trading and simulation functionality has been completely removed in favor of live OKX integration only.
 
 **Data Management:**
 A two-tier caching system utilizes SQLite for raw market data, managed by `DataManager` and `DataCache` to minimize API calls.
