@@ -1,10 +1,3 @@
-"""
-Exchange connectivity module.
-Provides adapters for different cryptocurrency exchanges.
-"""
+from .okx_adapter_spot import make_okx_spot, spot_summary
 
-from .base import BaseExchange
-from .okx_adapter import OKXAdapter
-from .kraken_adapter import KrakenAdapter
-
-__all__ = ['BaseExchange', 'OKXAdapter', 'KrakenAdapter']
+__all__ = ["make_okx_spot", "spot_summary"]

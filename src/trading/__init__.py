@@ -1,9 +1,3 @@
-"""
-Trading module.
-Provides paper trading and live trading implementations.
-"""
-
-from .paper_trader import PaperTrader
-from .live_trader import LiveTrader
-
-__all__ = ['PaperTrader', 'LiveTrader']
+# src/__init__.py
+# Keep this empty/light so importing `src` doesn't pull submodules implicitly.
+__all__ = []

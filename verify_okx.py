@@ -1,27 +1,57 @@
-# verify_okx.py
 import os, ccxt
 
-def _getenv(*names, default=None):
-    for n in names:
-        v = os.getenv(n)
-        if v:
-            return v
-    return default
+def env(name: str) -> str | None:
+    return os.getenv(name)
 
-ex = ccxt.okx({
-    'enableRateLimit': True,
-    'apiKey': _getenv('OKX_API_KEY'),
-    'secret': _getenv('OKX_API_SECRET', 'OKX_SECRET_KEY'),
-    'password': _getenv('OKX_API_PASSPHRASE', 'OKX_PASSPHRASE'),
-})
+API_KEY     = env('OKX_API_KEY')
+SECRET      = env('OKX_SECRET_KEY') or env('OKX_API_SECRET')
+PASSPHRASE  = env('OKX_PASSPHRASE') or env('OKX_API_PASSPHRASE')
 
-demo = str(os.getenv("OKX_DEMO", "1")).strip().lower() in ("1","true","t","yes","y","on")
-ex.set_sandbox_mode(demo)
-if demo and ex.headers:
-    ex.headers["x-simulated-trading"] = "1"
+def show_env():
+    print("ENV:")
+    print("  OKX_API_KEY       :", "OK" if API_KEY else "MISSING", "len=", len(API_KEY or ""))
+    print("  OKX_SECRET_KEY    :", "OK" if os.getenv('OKX_SECRET_KEY') else "MISSING")
+    print("  OKX_API_SECRET    :", "OK" if os.getenv('OKX_API_SECRET') else "MISSING")
+    print("  OKX_PASSPHRASE    :", "OK" if os.getenv('OKX_PASSPHRASE') else "MISSING")
+    print("  OKX_API_PASSPHRASE:", "OK" if os.getenv('OKX_API_PASSPHRASE') else "MISSING")
 
-ex.load_markets()
-bal = ex.fetch_balance()
-print("Markets:", len(ex.markets))
-print("USDT free:", bal.get('USDT', {}).get('free'))
-print("BTC/USDT last:", ex.fetch_ticker('BTC/USDT')['last'])
+def try_okx(sandbox: bool):
+    label = "SANDBOX" if sandbox else "PROD"
+    print(f"\n== {label} ==")
+    ex = ccxt.okx({
+        'enableRateLimit': True,
+        'apiKey': API_KEY,
+        'secret': SECRET,
+        'password': PASSPHRASE,
+    })
+    ex.set_sandbox_mode(sandbox)
+    if sandbox:
+        ex.headers = {**(ex.headers or {}), 'x-simulated-trading': '1'}
+    else:
+        if ex.headers:
+            ex.headers.pop('x-simulated-trading', None)
+
+    # Public – should always work
+    try:
+        t = ex.fetch_ticker('BTC/USDT')
+        print("  Public OK. BTC/USDT last:", t.get('last'))
+    except Exception as e:
+        print("  Public FAIL:", type(e).__name__, str(e))
+
+    # Private – validates the keys
+    try:
+        bal = ex.fetch_balance()
+        usdt = (bal.get('USDT') or {})
+        print("  Private OK. USDT free:", usdt.get('free'), "total:", usdt.get('total'))
+    except Exception as e:
+        msg = str(e)
+        print("  Private FAIL:", type(e).__name__, msg)
+        if "50119" in msg:
+            print("   Hint: 50119 = key doesn’t exist in this environment (Demo vs Prod mismatch).")
+        if "50113" in msg:
+            print("   Hint: 50113 = IP not whitelisted (Prod). Either whitelist or use Sandbox.")
+
+if __name__ == "__main__":
+    show_env()
+    try_okx(True)   # DEMO
+    try_okx(False)  # PROD

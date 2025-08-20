@@ -4,7 +4,7 @@ expertMode = true
 
 [nix]
 channel = "stable-25_05"
-packages = ["glibcLocales", "jq", "prow"]
+packages = ["glibcLocales", "jq", "prow", "mailutils", "imagemagick_light"]
 
 [workflows]
 runButton = "Project"
