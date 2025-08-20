@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Currency Conversion Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; }
+        .currency-selector { margin: 10px 0; }
+        .results { margin: 10px 0; }
+        .value { font-weight: bold; color: #007bff; }
+        .error { color: #dc3545; }
+        .success { color: #28a745; }
+    </style>
+</head>
+<body>
+    <h1>Currency Conversion Test</h1>
+    
+    <div class="test-section">
+        <h3>Currency Selector</h3>
+        <select id="currency-selector" class="currency-selector">
+            <option value="USD">USD ($)</option>
+            <option value="EUR">EUR (€)</option>
+            <option value="GBP">GBP (£)</option>
+            <option value="AUD">AUD (A$)</option>
+        </select>
+        <button onclick="testCurrencyConversion()">Test Conversion</button>
+    </div>
+
+    <div class="test-section">
+        <h3>Exchange Rates</h3>
+        <div id="exchange-rates">Loading...</div>
+    </div>
+
+    <div class="test-section">
+        <h3>Portfolio Values</h3>
+        <div id="portfolio-values">Loading...</div>
+    </div>
+
+    <div class="test-section">
+        <h3>Conversion Test Results</h3>
+        <div id="test-results"></div>
+    </div>
+
+    <script>
+        let exchangeRates = {};
+        let portfolioData = {};
+
+        async function fetchExchangeRates() {
+            try {
+                const response = await fetch('/api/exchange-rates');
+                const data = await response.json();
+                exchangeRates = data.rates || {};
+                
+                document.getElementById('exchange-rates').innerHTML = `
+                    <strong>Source:</strong> ${data.source || 'Unknown'}<br>
+                    <strong>Base:</strong> ${data.base}<br>
+                    <strong>Rates:</strong><br>
+                    ${Object.entries(exchangeRates).map(([curr, rate]) => 
+                        `&nbsp;&nbsp;${curr}: ${rate}`
+                    ).join('<br>')}
+                `;
+                return data;
+            } catch (error) {
+                document.getElementById('exchange-rates').innerHTML = `<span class="error">Error: ${error.message}</span>`;
+                return null;
+            }
+        }
+
+        async function fetchPortfolioData() {
+            try {
+                const response = await fetch('/api/crypto-portfolio');
+                const data = await response.json();
+                portfolioData = data;
+                return data;
+            } catch (error) {
+                console.error('Error fetching portfolio:', error);
+                return null;
+            }
+        }
+
+        function formatCurrency(amount, currency = 'USD') {
+            const rate = exchangeRates[currency] || 1;
+            const convertedAmount = (Number(amount) || 0) * rate;
+
+            return new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: currency
+            }).format(convertedAmount);
+        }
+
+        async function testCurrencyConversion() {
+            const selectedCurrency = document.getElementById('currency-selector').value;
+            const testResults = document.getElementById('test-results');
+            
+            testResults.innerHTML = '<div>Running tests...</div>';
+            
+            // Fetch latest data
+            await fetchExchangeRates();
+            await fetchPortfolioData();
+            
+            // Test data
+            const testValues = [
+                { name: 'Total Portfolio Value', value: portfolioData.total_value || 0 },
+                { name: 'Daily P&L', value: portfolioData.daily_pnl || 0 },
+                { name: 'Sample $100 USD', value: 100 }
+            ];
+            
+            let results = `<h4>Testing conversion to ${selectedCurrency}</h4>`;
+            results += `<strong>Exchange Rate:</strong> 1 USD = ${exchangeRates[selectedCurrency] || 'N/A'} ${selectedCurrency}<br><br>`;
+            
+            testValues.forEach(test => {
+                const usdValue = test.value;
+                const convertedValue = formatCurrency(usdValue, selectedCurrency);
+                const rate = exchangeRates[selectedCurrency] || 1;
+                const expectedNumeric = usdValue * rate;
+                
+                results += `<div style="margin-bottom: 10px;">`;
+                results += `<strong>${test.name}:</strong><br>`;
+                results += `&nbsp;&nbsp;USD: ${formatCurrency(usdValue, 'USD')}<br>`;
+                results += `&nbsp;&nbsp;${selectedCurrency}: ${convertedValue}<br>`;
+                results += `&nbsp;&nbsp;Calculation: $${usdValue} × ${rate} = ${expectedNumeric.toFixed(2)}<br>`;
+                results += `</div>`;
+            });
+            
+            // Update portfolio display
+            document.getElementById('portfolio-values').innerHTML = `
+                <strong>Selected Currency:</strong> ${selectedCurrency}<br>
+                <strong>Total Value:</strong> <span class="value">${formatCurrency(portfolioData.total_value || 0, selectedCurrency)}</span><br>
+                <strong>Daily P&L:</strong> <span class="value">${formatCurrency(portfolioData.daily_pnl || 0, selectedCurrency)}</span><br>
+                <strong>Cash Balance:</strong> <span class="value">${formatCurrency(portfolioData.cash_balance || 0, selectedCurrency)}</span><br>
+            `;
+            
+            testResults.innerHTML = results;
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            fetchExchangeRates();
+            fetchPortfolioData();
+            
+            // Auto-test on currency change
+            document.getElementById('currency-selector').addEventListener('change', testCurrencyConversion);
+            
+            // Initial test
+            setTimeout(testCurrencyConversion, 1000);
+        });
+    </script>
+</body>
+</html>

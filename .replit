@@ -18,6 +18,10 @@ author = "agent"
 task = "workflow.run"
 args = "Trading System"
 
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Currency Test Server"
+
 [[workflows.workflow]]
 name = "Trading System"
 author = "agent"
@@ -29,6 +33,18 @@ outputType = "webview"
 task = "shell.exec"
 args = "python app.py"
 waitForPort = 5000
+
+[[workflows.workflow]]
+name = "Currency Test Server"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python3 -m http.server 8000"
+waitForPort = 8000
+
+[workflows.workflow.metadata]
+outputType = "webview"
 
 [[ports]]
 localPort = 80
