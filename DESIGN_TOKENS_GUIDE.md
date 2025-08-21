@@ -146,6 +146,34 @@ The system uses modern CSS custom properties for font stacks:
 }
 ```
 
+## Theme System
+
+### Dual Dark Mode Support
+The system supports both automatic system preference detection and manual app-level theme control:
+
+1. **System Preference (Automatic)**
+   - Uses `@media (prefers-color-scheme: dark)` for automatic detection
+   - Respects user's operating system theme setting
+
+2. **Manual Toggle (App-Level)**
+   - Uses `body.dark-theme` class for manual control
+   - Floating toggle button in top-right corner
+   - Persists preference in localStorage
+   - JavaScript API: `window.themeToggle.setTheme('dark'|'light'|'auto')`
+
+### Theme Toggle Features
+- **Persistent Storage** - Remembers user preference across sessions
+- **Smart Defaults** - Falls back to system preference if no manual setting
+- **Accessibility** - Proper ARIA labels and keyboard support
+- **Visual Feedback** - Icon changes (moon/sun) to reflect current state
+
+### Dark Theme Styling
+All components are fully styled for dark mode:
+- Forms, tables, cards, modals
+- Interactive elements (buttons, links, hover states)
+- Trading-specific components
+- Bootstrap component overrides
+
 ## Benefits
 1. **Consistency** - Standardized values across the application
 2. **Maintainability** - Single source of truth for design values
@@ -153,6 +181,7 @@ The system uses modern CSS custom properties for font stacks:
 4. **Developer Experience** - Faster styling with utility classes
 5. **Design System** - Foundation for scalable UI development
 6. **Cross-Platform Compatibility** - Modern system font stacks for optimal display
+7. **User Experience** - Dual dark mode support with persistent preferences
 
 ## Usage Examples
 

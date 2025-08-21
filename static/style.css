@@ -1451,6 +1451,40 @@ body {
 .font-mono { font-family: var(--font-family-mono); }
 .font-system { font-family: var(--font-family-system); }
 
+/* Theme Toggle Utilities */
+.theme-toggle {
+    position: fixed;
+    top: 1rem;
+    right: 1rem;
+    z-index: 1060;
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid #dee2e6;
+    border-radius: 50%;
+    width: 3rem;
+    height: 3rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 1.2rem;
+}
+
+.theme-toggle:hover {
+    background: rgba(255, 255, 255, 1);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+body.dark-theme .theme-toggle {
+    background: rgba(45, 45, 45, 0.9);
+    border-color: #495057;
+    color: #e9ecef;
+}
+
+body.dark-theme .theme-toggle:hover {
+    background: rgba(45, 45, 45, 1);
+}
+
 /* Status Utilities */
 .status-online { 
     color: var(--success-color);
@@ -1656,7 +1690,7 @@ body {
     }
 }
 
-/* Dark mode preferences */
+/* Dark mode preferences - System level */
 @media (prefers-color-scheme: dark) {
     body {
         background-color: #1a1a1a;
@@ -1692,6 +1726,105 @@ body {
     .table td {
         border-top-color: #495057;
     }
+}
+
+/* Manual dark theme - App level control */
+body.dark-theme {
+    background-color: #1a1a1a;
+    color: #e9ecef;
+}
+
+body.dark-theme .navbar-dark {
+    background-color: #2d2d2d;
+}
+
+body.dark-theme .card {
+    background-color: #2d2d2d;
+    color: #e9ecef;
+    border-color: #495057;
+}
+
+body.dark-theme .card-header {
+    background-color: #2d2d2d;
+    border-bottom-color: #495057;
+    color: #e9ecef;
+}
+
+body.dark-theme .portfolio-metric {
+    background-color: #343a40;
+    color: #e9ecef;
+}
+
+body.dark-theme .table {
+    color: #e9ecef;
+    --bs-table-bg: transparent;
+}
+
+body.dark-theme .table th {
+    border-bottom-color: #495057;
+    background-color: #2d2d2d;
+    color: #e9ecef;
+}
+
+body.dark-theme .table td {
+    border-top-color: #495057;
+    color: #e9ecef;
+}
+
+body.dark-theme .table-hover tbody tr:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+body.dark-theme .form-control,
+body.dark-theme .form-select {
+    background-color: #343a40;
+    border-color: #495057;
+    color: #e9ecef;
+}
+
+body.dark-theme .form-control:focus,
+body.dark-theme .form-select:focus {
+    background-color: #343a40;
+    border-color: var(--primary-color);
+    color: #e9ecef;
+    box-shadow: 0 0 0 0.2rem rgba(0,123,255,0.25);
+}
+
+body.dark-theme .btn {
+    border-color: #495057;
+}
+
+body.dark-theme .btn-outline-secondary {
+    color: #adb5bd;
+    border-color: #6c757d;
+}
+
+body.dark-theme .btn-outline-secondary:hover {
+    background-color: #6c757d;
+    border-color: #6c757d;
+    color: #fff;
+}
+
+body.dark-theme .modal-content {
+    background-color: #2d2d2d;
+    color: #e9ecef;
+    border-color: #495057;
+}
+
+body.dark-theme .modal-header {
+    border-bottom-color: #495057;
+}
+
+body.dark-theme .modal-footer {
+    border-top-color: #495057;
+}
+
+body.dark-theme .alert {
+    color: #e9ecef;
+}
+
+body.dark-theme .text-muted {
+    color: #adb5bd !important;
 }
 
 /* Print styles */

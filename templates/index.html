@@ -562,6 +562,9 @@
         tooltipTriggerList.forEach(el => new bootstrap.Tooltip(el));
     </script>
     
+    <!-- Theme Toggle Script -->
+    <script src="{{ url_for('static', filename='theme-toggle.js') }}?v={{ cache_version|default(0) }}"></script>
+    
     <!-- App JS -->
     <script src="{{ url_for('static', filename='app.js') }}?v={{ cache_version|default(0) }}"></script>
     <script>
