@@ -23,10 +23,13 @@
       background-color: #fff !important;
       border: 1px solid rgba(0,0,0,.1);
       border-radius: .5rem;
+      min-height: 200px;
     }
+    
     .chart-card canvas {
       background-color: #fff !important;
     }
+    
     .table thead th { 
       white-space: nowrap; 
     }
@@ -56,6 +59,19 @@
       color: rgba(255, 255, 255, 1) !important;
       text-rendering: optimizeLegibility;
       -webkit-font-smoothing: antialiased;
+    }
+    
+    /* Responsive chart heights */
+    @media (min-width: 768px) {
+      .chart-card {
+        min-height: 300px;
+      }
+    }
+    
+    @media (min-width: 992px) {
+      .chart-card {
+        min-height: 360px;
+      }
     }
   </style>
 </head>
@@ -204,7 +220,7 @@
     <!-- OKX Data Cards -->
     <div class="row g-3 mb-4">
       <div class="col-lg-6">
-        <div class="chart-card p-3" style="height: 360px;">
+        <div class="chart-card p-3">
           <div class="d-flex justify-content-between align-items-center">
             <h6 class="mb-0">OKX Account Summary</h6>
             <small class="text-muted">Live Data</small>
@@ -258,7 +274,7 @@
         </div>
       </div>
       <div class="col-lg-6">
-        <div class="chart-card p-3" style="height: 360px;">
+        <div class="chart-card p-3">
           <div class="d-flex justify-content-between align-items-center">
             <h6 class="mb-0">Real-Time Price Tracker</h6>
             <small class="text-muted">PEPE/USDT</small>
