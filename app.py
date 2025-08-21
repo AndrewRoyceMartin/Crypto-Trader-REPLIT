@@ -872,8 +872,8 @@ def api_live_prices():
 
         for symbol in symbols:
             try:
-                # Use public get_current_price method instead of private _get_current_price
-                price = portfolio_service.exchange.get_current_price(f"{symbol}/USDT")
+                # Use private _get_current_price method as it exists in OKXAdapter
+                price = portfolio_service.exchange._get_current_price(f"{symbol}/USDT")
                 if price and price > 0:
                     formatted_prices[symbol] = {
                         'price': price,
@@ -1244,7 +1244,7 @@ def paper_trade_buy():
 
         initialize_system()
         portfolio_service = get_portfolio_service()
-        current_price = portfolio_service.exchange.get_current_price(f"{symbol}/USDT")
+        current_price = portfolio_service.exchange._get_current_price(f"{symbol}/USDT")
 
         if not current_price or current_price <= 0:
             return jsonify({"success": False, "error": f"Unable to get current price for {symbol} from OKX"}), 400
@@ -1284,7 +1284,7 @@ def paper_trade_sell():
 
         initialize_system()
         portfolio_service = get_portfolio_service()
-        current_price = portfolio_service.exchange.get_current_price(f"{symbol}/USDT")
+        current_price = portfolio_service.exchange._get_current_price(f"{symbol}/USDT")
 
         if not current_price or current_price <= 0:
             return jsonify({"success": False, "error": f"Unable to get current price for {symbol} from OKX"}), 400

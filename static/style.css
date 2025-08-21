@@ -304,15 +304,7 @@ footer {
   --shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
 }
 
-/* Control bar styling */
-.control-bar {
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
-  position: sticky;
-  top: 56px; /* Height of navbar */
-  z-index: 1020;
-  box-shadow: var(--shadow);
-}
+/* Control bar styling (will be overridden by improved version below) */
 
 /* Mobile responsiveness for control bar */
 @media (max-width: 768px) {
@@ -330,4 +322,22 @@ footer {
   .control-bar .gap-2 {
     gap: var(--sp-2) !important;
   }
+}
+
+/* Navigation height variables */
+:root { --nav-h: 56px; }
+@media (min-width: 992px) { :root { --nav-h: 64px; } }
+
+/* Improved control bar positioning */
+.control-bar {
+  position: sticky; 
+  top: 0; 
+  z-index: 1020;
+  background: var(--surface);
+  border-color: var(--border) !important;
+}
+
+/* Section scroll margin to avoid anchor underlap */
+section[id] { 
+  scroll-margin-top: calc(var(--nav-h) + 56px); 
 }
