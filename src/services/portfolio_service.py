@@ -212,7 +212,14 @@ class PortfolioService:
                         # Only include holdings with actual balance
                         if quantity > 0 or total_balance > 0:
                             has_position = True
-                            current_value = quantity * current_price
+                            
+                            # FIXED: Try OKX calculated value first, then fallback to manual calculation
+                            okx_calculated_value = balance_info.get('usdValue') or balance_info.get('value_usd')
+                            if okx_calculated_value and float(okx_calculated_value) > 0:
+                                current_value = float(okx_calculated_value)
+                                self.logger.debug(f"Using OKX pre-calculated USD value for {symbol}: ${current_value:.2f}")
+                            else:
+                                current_value = quantity * current_price
                             
                             # Use real cost basis from market estimation (we already calculated this above)
                             # cost_basis is already set from _estimate_cost_basis_from_holdings

@@ -404,7 +404,14 @@ class OKXAdapter(BaseExchange):
             # Calculate values with proper error handling
             quantity = float(fill.get('fillSz', 0))
             price = float(fill.get('fillPx', 0))
-            total_value = quantity * price if quantity and price else 0
+            
+            # FIXED: Use OKX notional/USD value if available, otherwise calculate
+            okx_notional = fill.get('notionalUsd') or fill.get('notional')
+            if okx_notional and float(okx_notional) > 0:
+                total_value = float(okx_notional)
+                self.logger.debug(f"Using OKX notional value for fill: ${total_value:.2f}")
+            else:
+                total_value = quantity * price if quantity and price else 0
             
             return {
                 'id': fill.get('fillId', ''),
