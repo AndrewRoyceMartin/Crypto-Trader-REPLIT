@@ -11,10 +11,42 @@
     <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
     <link rel="dns-prefetch" href="https://cdnjs.cloudflare.com">
     
-    <!-- Font (fast + swap) -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- System fonts for reliability -->
+    <style>
+        :root {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+        
+        /* Simple icon system using Unicode symbols */
+        .icon {
+            display: inline-block;
+            font-style: normal;
+            font-variant: normal;
+            text-rendering: auto;
+            line-height: 1;
+        }
+        
+        .icon-dashboard::before { content: "⊞"; }
+        .icon-chart::before { content: "📊"; }
+        .icon-wallet::before { content: "💼"; }
+        .icon-coins::before { content: "🪙"; }
+        .icon-exchange::before { content: "🔄"; }
+        .icon-refresh::before { content: "↻"; }
+        .icon-up::before { content: "↑"; }
+        .icon-down::before { content: "↓"; }
+        .icon-robot::before { content: "🤖"; }
+        .icon-shield::before { content: "🛡"; }
+        .icon-wifi::before { content: "📶"; }
+        .icon-server::before { content: "🖥"; }
+        .icon-file::before { content: "📄"; }
+        .icon-dollar::before { content: "$"; }
+        .icon-percent::before { content: "%"; }
+        .icon-sort::before { content: "⇅"; }
+        .icon-close::before { content: "✕"; }
+        .icon-trophy::before { content: "🏆"; }
+        .icon-code::before { content: "⚞"; }
+        .icon-menu::before { content: "☰"; }
+    </style>
     
     <!-- Minimal CSS (preload for performance) -->
     <link rel="preload" href="{{ url_for('static', filename='style.css') }}?v={{ cache_version|default(0) }}" as="style">
@@ -22,9 +54,6 @@
     
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <!-- Color scheme and theme -->
     <meta name="color-scheme" content="light dark">
@@ -38,18 +67,18 @@
     <nav class="navbar navbar-expand-lg navbar-light sticky-top">
         <div class="container-fluid">
             <a class="navbar-brand" href="#overview">
-                <i class="fa-solid fa-chart-line me-2"></i>Crypto Trading Dashboard
+                <span class="icon icon-chart me-2"></span>Crypto Trading Dashboard
             </a>
 
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav"
                 aria-controls="mainNav" aria-expanded="false" aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
+                <span class="icon icon-menu"></span>
             </button>
 
             <div id="mainNav" class="collapse navbar-collapse">
                 <div class="navbar-nav me-auto nav-pills-container d-flex">
                     <a class="nav-link active" href="#overview">
-                        <i class="fa-solid fa-gauge me-1"></i>Overview
+                        <span class="icon icon-dashboard me-1"></span>Overview
                     </a>
                     <a class="nav-link" href="#portfolio">Portfolio</a>
                     <a class="nav-link" href="#performance">Performance</a>
@@ -80,19 +109,19 @@
 
             <div class="ms-auto d-flex flex-wrap gap-2">
                 <button class="btn btn-outline-secondary btn-sm" onclick="exportATOTax()" aria-label="Export ATO tax data">
-                    <i class="fa-solid fa-file-lines me-1" aria-hidden="true"></i>ATO Export
+                    <span class="icon icon-file me-1" aria-hidden="true"></span>ATO Export
                 </button>
                 <button class="btn btn-outline-warning btn-sm" onclick="executeTakeProfit()" aria-label="Execute take profit strategy">
-                    <i class="fa-solid fa-dollar-sign me-1" aria-hidden="true"></i>Take Profit
+                    <span class="icon icon-dollar me-1" aria-hidden="true"></span>Take Profit
                 </button>
                 <button class="btn btn-sm" onclick="showBuyDialog()" aria-label="Show buy order dialog">
-                    <i class="fa-solid fa-arrow-up me-1" aria-hidden="true"></i>Buy
+                    <span class="icon icon-up me-1" aria-hidden="true"></span>Buy
                 </button>
                 <button class="btn btn-sm" onclick="showSellDialog()" aria-label="Show sell order dialog">
-                    <i class="fa-solid fa-arrow-down me-1" aria-hidden="true"></i>Sell
+                    <span class="icon icon-down me-1" aria-hidden="true"></span>Sell
                 </button>
                 <button class="btn btn-sm" onclick="toggleBot()" aria-label="Toggle trading bot">
-                    <i class="fa-solid fa-robot me-1" aria-hidden="true"></i><span id="bot-status-top">Start Bot</span>
+                    <span class="icon icon-robot me-1" aria-hidden="true"></span><span id="bot-status-top">Start Bot</span>
                 </button>
             </div>
         </div>
@@ -104,10 +133,10 @@
         <!-- SECTION 1: OVERVIEW DASHBOARD -->
         <section id="overview" class="mb-5">
             <div class="d-flex justify-content-between align-items-center mb-3">
-                <h2><i class="fa-solid fa-gauge me-2"></i>Quick Overview</h2>
+                <h2><span class="icon icon-dashboard me-2"></span>Quick Overview</h2>
                 <div class="d-flex align-items-center">
                     <span class="badge bg-success me-2">
-                        <i class="fa-solid fa-wifi me-1"></i>
+                        <span class="icon icon-wifi me-1"></span>
                         <span id="overview-connection">Connected</span>
                     </span>
                     <small class="text-muted">
@@ -169,11 +198,11 @@
                 </div>
                 <div class="col-12 col-lg-6 text-end small">
                     <span class="me-3">
-                        <i class="fa-solid fa-server me-1"></i>
+                        <span class="icon icon-server me-1"></span>
                         Server Uptime: <span id="system-uptime">0s</span>
                     </span>
                     <span>
-                        <i class="fa-solid fa-right-left me-1"></i>
+                        <span class="icon icon-exchange me-1"></span>
                         OKX API: <span id="okx-connection-text" class="text-success">Connected</span>
                     </span>
                 </div>
@@ -219,24 +248,24 @@
                     <div class="card">
                         <div class="card-header">
                             <h6 class="card-title mb-0">
-                                <i class="fa-solid fa-right-left me-2"></i>Quick Trading
+                                <span class="icon icon-exchange me-2"></span>Quick Trading
                             </h6>
                         </div>
                         <div class="card-body d-flex flex-column justify-content-between chart-card-body">
                             <div class="d-grid gap-2">
                                 <button class="btn btn-success fw-bold" onclick="showBuyDialog()">
-                                    <i class="fa-solid fa-arrow-up me-2"></i> BUY
+                                    <span class="icon icon-up me-2"></span> BUY
                                 </button>
                                 <button class="btn btn-danger fw-bold" onclick="showSellDialog()">
-                                    <i class="fa-solid fa-arrow-down me-2"></i> SELL
+                                    <span class="icon icon-down me-2"></span> SELL
                                 </button>
                                 <button class="btn btn-warning fw-bold" onclick="toggleBot()">
-                                    <i class="fa-solid fa-robot me-2"></i> <span id="bot-status">START BOT</span>
+                                    <span class="icon icon-robot me-2"></span> <span id="bot-status">START BOT</span>
                                 </button>
                             </div>
                             <div class="mt-3 text-center">
                                 <small class="muted">
-                                    <i class="fa-solid fa-shield me-1"></i>Live OKX Trading
+                                    <span class="icon icon-shield me-1"></span>Live OKX Trading
                                 </small>
                             </div>
                         </div>
@@ -250,9 +279,9 @@
         <!-- SECTION 2: PORTFOLIO -->
         <section id="portfolio" class="mb-5">
             <div class="d-flex justify-content-between align-items-center mb-3">
-                <h2><i class="fa-solid fa-wallet me-2"></i>Portfolio Overview</h2>
+                <h2><span class="icon icon-wallet me-2"></span>Portfolio Overview</h2>
                 <button class="btn btn-outline-primary btn-sm" onclick="refreshPortfolioData()">
-                    <i class="fa-solid fa-rotate-right me-1"></i> Refresh
+                    <span class="icon icon-refresh me-1"></span> Refresh
                 </button>
             </div>
 
@@ -261,7 +290,7 @@
                 <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
                     <div class="kpi-card">
                         <div class="kpi-icon">
-                            <i class="fa-solid fa-wallet"></i>
+                            <span class="icon icon-wallet"></span>
                         </div>
                         <div class="value" id="summary-total-value">$0.00</div>
                         <div class="label">Total Portfolio Value</div>
@@ -270,7 +299,7 @@
                 <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
                     <div class="kpi-card">
                         <div class="kpi-icon">
-                            <i class="fa-solid fa-chart-line"></i>
+                            <span class="icon icon-chart"></span>
                         </div>
                         <div class="value" id="summary-total-change">$0.00 (0.00%)</div>
                         <div class="label">Total Change</div>
@@ -279,7 +308,7 @@
                 <div class="col-lg-1 col-md-2 col-sm-4 mb-3">
                     <div class="kpi-card">
                         <div class="kpi-icon">
-                            <i class="fa-solid fa-coins"></i>
+                            <span class="icon icon-coins"></span>
                         </div>
                         <div class="value" id="summary-total-assets">0</div>
                         <div class="label">Assets</div>
@@ -288,10 +317,10 @@
                 <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
                     <div class="kpi-card">
                         <div class="kpi-icon">
-                            <i class="fa-solid fa-trophy"></i>
+                            <span class="icon icon-trophy"></span>
                         </div>
                         <div class="value">
-                            <i class="fa-solid fa-arrow-up me-1"></i>
+                            <span class="icon icon-up me-1"></span>
                             <span id="summary-best-performer">N/A</span>
                             <small id="summary-best-performance" class="ms-2">+0.00%</small>
                         </div>
@@ -301,10 +330,10 @@
                 <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
                     <div class="kpi-card">
                         <div class="kpi-icon">
-                            <i class="fa-solid fa-arrow-down"></i>
+                            <span class="icon icon-down"></span>
                         </div>
                         <div class="value" id="summary-worst-performer">
-                            <i class="fa-solid fa-arrow-down me-1"></i><span>N/A</span>
+                            <span class="icon icon-down me-1"></span><span>N/A</span>
                         </div>
                         <div class="label">Worst Performer</div>
                     </div>
@@ -312,7 +341,7 @@
                 <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
                     <div class="kpi-card">
                         <div class="kpi-icon">
-                            <i class="fa-solid fa-dollar-sign"></i>
+                            <span class="icon icon-dollar"></span>
                         </div>
                         <div class="value" id="summary-cash-balance">$0.00</div>
                         <div class="label">Cash Balance</div>
@@ -321,7 +350,7 @@
                 <div class="col-lg-1 col-md-2 col-sm-4 mb-3">
                     <div class="kpi-card">
                         <div class="kpi-icon">
-                            <i class="fa-solid fa-percent"></i>
+                            <span class="icon icon-percent"></span>
                         </div>
                         <div class="value" id="summary-win-rate">0%</div>
                         <div class="label">Win Rate</div>
@@ -361,7 +390,7 @@
         <!-- SECTION 3: PERFORMANCE -->
         <section id="performance" class="mb-5">
             <div class="d-flex justify-content-between align-items-center mb-3">
-                <h2><i class="fa-solid fa-chart-bar me-2"></i>Performance Analytics</h2>
+                <h2><span class="icon icon-chart me-2"></span>Performance Analytics</h2>
                 <div class="d-flex gap-2">
                     <div class="btn-group btn-group-sm" role="group">
                         <button class="btn btn-outline-secondary" data-range="1M">1M</button>
@@ -371,7 +400,7 @@
                         <button class="btn btn-outline-secondary" data-range="1Y">1Y</button>
                     </div>
                     <button class="btn btn-primary btn-sm" onclick="refreshPerformanceData()">
-                        <i class="fa-solid fa-rotate-right me-1"></i> Refresh
+                        <span class="icon icon-refresh me-1"></span> Refresh
                     </button>
                 </div>
             </div>
@@ -448,9 +477,9 @@
         <!-- SECTION 4: CURRENT HOLDINGS -->
         <section id="holdings" class="mb-5">
             <div class="d-flex justify-content-between align-items-center mb-3">
-                <h2><i class="fa-solid fa-coins me-2"></i>Current Holdings</h2>
+                <h2><span class="icon icon-coins me-2"></span>Current Holdings</h2>
                 <button class="btn btn-outline-primary btn-sm" onclick="refreshHoldingsData()" aria-label="Refresh holdings data">
-                    <i class="fa-solid fa-rotate-right me-1"></i> Refresh
+                    <span class="icon icon-refresh me-1"></span> Refresh
                 </button>
             </div>
 
@@ -465,14 +494,14 @@
                         <table class="table table-sm table-hover align-middle mb-0" id="holdings-table">
                             <thead>
                                 <tr>
-                                    <th class="table-sortable" onclick="sortHoldingsTable(0)" aria-label="Sort by symbol">Symbol <i class="fa-solid fa-sort ms-1" aria-hidden="true"></i></th>
-                                    <th class="table-sortable" onclick="sortHoldingsTable(1)" aria-label="Sort by name">Name <i class="fa-solid fa-sort ms-1" aria-hidden="true"></i></th>
-                                    <th class="table-sortable" onclick="sortHoldingsTable(2)" aria-label="Sort by quantity">Quantity <i class="fa-solid fa-sort ms-1" aria-hidden="true"></i></th>
-                                    <th class="table-sortable" onclick="sortHoldingsTable(3)" aria-label="Sort by price">Price <i class="fa-solid fa-sort ms-1" aria-hidden="true"></i></th>
-                                    <th class="table-sortable" onclick="sortHoldingsTable(4)" aria-label="Sort by value">Value <i class="fa-solid fa-sort ms-1" aria-hidden="true"></i></th>
-                                    <th class="table-sortable" onclick="sortHoldingsTable(5)" aria-label="Sort by allocation percentage">Allocation % <i class="fa-solid fa-sort ms-1" aria-hidden="true"></i></th>
-                                    <th class="table-sortable" onclick="sortHoldingsTable(6)" aria-label="Sort by 24-hour change">24h Change <i class="fa-solid fa-sort ms-1" aria-hidden="true"></i></th>
-                                    <th class="table-sortable" onclick="sortHoldingsTable(7)" aria-label="Sort by profit and loss">P&L <i class="fa-solid fa-sort ms-1" aria-hidden="true"></i></th>
+                                    <th class="table-sortable" onclick="sortHoldingsTable(0)" aria-label="Sort by symbol">Symbol <span class="icon icon-sort ms-1" aria-hidden="true"></span></th>
+                                    <th class="table-sortable" onclick="sortHoldingsTable(1)" aria-label="Sort by name">Name <span class="icon icon-sort ms-1" aria-hidden="true"></span></th>
+                                    <th class="table-sortable" onclick="sortHoldingsTable(2)" aria-label="Sort by quantity">Quantity <span class="icon icon-sort ms-1" aria-hidden="true"></span></th>
+                                    <th class="table-sortable" onclick="sortHoldingsTable(3)" aria-label="Sort by price">Price <span class="icon icon-sort ms-1" aria-hidden="true"></span></th>
+                                    <th class="table-sortable" onclick="sortHoldingsTable(4)" aria-label="Sort by value">Value <span class="icon icon-sort ms-1" aria-hidden="true"></span></th>
+                                    <th class="table-sortable" onclick="sortHoldingsTable(5)" aria-label="Sort by allocation percentage">Allocation % <span class="icon icon-sort ms-1" aria-hidden="true"></span></th>
+                                    <th class="table-sortable" onclick="sortHoldingsTable(6)" aria-label="Sort by 24-hour change">24h Change <span class="icon icon-sort ms-1" aria-hidden="true"></span></th>
+                                    <th class="table-sortable" onclick="sortHoldingsTable(7)" aria-label="Sort by profit and loss">P&L <span class="icon icon-sort ms-1" aria-hidden="true"></span></th>
                                 </tr>
                             </thead>
                             <tbody id="holdings-table-body">
@@ -489,7 +518,7 @@
         <!-- SECTION 5: TRADES -->
         <section id="trades" class="mb-5">
             <div class="d-flex justify-content-between align-items-center mb-3">
-                <h2><i class="fa-solid fa-right-left me-2"></i>Recent Trades</h2>
+                <h2><span class="icon icon-exchange me-2"></span>Recent Trades</h2>
                 <div class="d-flex gap-2">
                     <select id="trades-timeframe" class="form-select form-select-sm" onchange="filterTradesByTimeframe()">
                         <option value="7d" selected>Last 7 days</option>
@@ -498,7 +527,7 @@
                         <option value="all">All trades</option>
                     </select>
                     <button class="btn btn-outline-primary btn-sm" onclick="refreshTradesData()">
-                        <i class="fa-solid fa-rotate-right me-1"></i> Refresh
+                        <span class="icon icon-refresh me-1"></span> Refresh
                     </button>
                 </div>
             </div>
@@ -524,7 +553,7 @@
                 </div>
                 <div class="col-md-3">
                     <button class="btn btn-outline-secondary btn-sm w-100" onclick="clearTradesFilters()">
-                        <i class="fa-solid fa-xmark me-1"></i> Clear Filters
+                        <span class="icon icon-close me-1"></span> Clear Filters
                     </button>
                 </div>
             </div>
@@ -540,13 +569,13 @@
                         <table class="table table-sm table-hover align-middle mb-0" id="trades-table-main">
                             <thead>
                                 <tr>
-                                    <th class="table-sortable" onclick="sortTradesTable(0)" aria-label="Sort by trade number">Trade # <i class="fa-solid fa-sort ms-1" aria-hidden="true"></i></th>
-                                    <th class="table-sortable" onclick="sortTradesTable(1)" aria-label="Sort by trade time">Time <i class="fa-solid fa-sort ms-1" aria-hidden="true"></i></th>
-                                    <th class="table-sortable" onclick="sortTradesTable(2)" aria-label="Sort by symbol">Symbol <i class="fa-solid fa-sort ms-1" aria-hidden="true"></i></th>
-                                    <th class="table-sortable" onclick="sortTradesTable(3)" aria-label="Sort by trade action">Action <i class="fa-solid fa-sort ms-1" aria-hidden="true"></i></th>
-                                    <th class="table-sortable" onclick="sortTradesTable(4)" aria-label="Sort by trade size">Size <i class="fa-solid fa-sort ms-1" aria-hidden="true"></i></th>
-                                    <th class="table-sortable" onclick="sortTradesTable(5)" aria-label="Sort by trade price">Price <i class="fa-solid fa-sort ms-1" aria-hidden="true"></i></th>
-                                    <th class="table-sortable" onclick="sortTradesTable(6)" aria-label="Sort by profit and loss">P&L <i class="fa-solid fa-sort ms-1" aria-hidden="true"></i></th>
+                                    <th class="table-sortable" onclick="sortTradesTable(0)" aria-label="Sort by trade number">Trade # <span class="icon icon-sort ms-1" aria-hidden="true"></span></th>
+                                    <th class="table-sortable" onclick="sortTradesTable(1)" aria-label="Sort by trade time">Time <span class="icon icon-sort ms-1" aria-hidden="true"></span></th>
+                                    <th class="table-sortable" onclick="sortTradesTable(2)" aria-label="Sort by symbol">Symbol <span class="icon icon-sort ms-1" aria-hidden="true"></span></th>
+                                    <th class="table-sortable" onclick="sortTradesTable(3)" aria-label="Sort by trade action">Action <span class="icon icon-sort ms-1" aria-hidden="true"></span></th>
+                                    <th class="table-sortable" onclick="sortTradesTable(4)" aria-label="Sort by trade size">Size <span class="icon icon-sort ms-1" aria-hidden="true"></span></th>
+                                    <th class="table-sortable" onclick="sortTradesTable(5)" aria-label="Sort by trade price">Price <span class="icon icon-sort ms-1" aria-hidden="true"></span></th>
+                                    <th class="table-sortable" onclick="sortTradesTable(6)" aria-label="Sort by profit and loss">P&L <span class="icon icon-sort ms-1" aria-hidden="true"></span></th>
                                 </tr>
                             </thead>
                             <tbody id="trades-table">
@@ -567,11 +596,11 @@
                 <div class="col-md-6">
                     <p class="mb-1"><small><strong>System Status & Info</strong></small></p>
                     <p class="mb-1 text-xs">
-                        <i class="fa-solid fa-server me-1"></i>
+                        <span class="icon icon-server me-1"></span>
                         Server Uptime: <span id="footer-system-uptime">0s</span> |
-                        <i class="fa-solid fa-right-left me-1"></i>
+                        <span class="icon icon-exchange me-1"></span>
                         OKX: <span id="footer-okx-status">Connected</span> |
-                        <i class="fa-solid fa-code me-1"></i>
+                        <span class="icon icon-code me-1"></span>
                         Version: {{ version|default('dev') }}
                     </p>
                 </div>
