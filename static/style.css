@@ -313,6 +313,34 @@ body {
         font-size: 0.6rem;
         padding: 0.2rem 0.4rem;
     }
+    
+    /* Extra small buttons for table actions */
+    .btn-xs {
+        font-size: 0.65rem;
+        padding: 0.15rem 0.3rem;
+    }
+}
+
+/* Table actions column fixes */
+.table td.text-nowrap,
+.table th.text-nowrap {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Compact action buttons */
+.btn-xs {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+    line-height: 1.2;
+}
+
+@media (max-width: 768px) {
+    .btn-xs {
+        font-size: 0.7rem;
+        padding: 0.2rem 0.4rem;
+    }
 }
 
 .card-header {
