@@ -76,11 +76,37 @@
                     </button>
                     
                     <!-- Take Profit Button -->
-                    <button class="btn btn-outline-warning btn-sm mb-1 mb-lg-0" id="take-profit-btn" onclick="executeTakeProfit()" title="Execute take profit trades for positions above 2% profit">
+                    <button class="btn btn-outline-warning btn-sm me-2 mb-1 mb-lg-0" id="take-profit-btn" onclick="executeTakeProfit()" title="Execute take profit trades for positions above 2% profit">
                         <i class="fas fa-money-bill-wave me-1"></i> 
                         <span class="d-none d-md-inline">Take Profit</span>
                         <span class="d-md-none">Profit</span>
                     </button>
+                    
+                    <!-- Trading Controls Dropdown -->
+                    <div class="btn-group">
+                        <button class="btn btn-primary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Manual trading controls">
+                            <i class="fas fa-exchange-alt me-1"></i>
+                            <span class="d-none d-md-inline">Trade</span>
+                            <span class="d-md-none">₿</span>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><h6 class="dropdown-header"><i class="fas fa-coins me-1"></i> Manual Trading</h6></li>
+                            <li><button class="dropdown-item" onclick="showBuyDialog()">
+                                <i class="fas fa-arrow-up text-success me-2"></i> Buy Position
+                            </button></li>
+                            <li><button class="dropdown-item" onclick="showSellDialog()">
+                                <i class="fas fa-arrow-down text-danger me-2"></i> Sell Position
+                            </button></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><h6 class="dropdown-header"><i class="fas fa-robot me-1"></i> Automated</h6></li>
+                            <li><button class="dropdown-item" onclick="toggleBot()">
+                                <i class="fas fa-play-circle text-info me-2"></i> <span id="bot-toggle-text">Start Bot</span>
+                            </button></li>
+                            <li><button class="dropdown-item" onclick="executeRebalance()">
+                                <i class="fas fa-balance-scale text-warning me-2"></i> Rebalance Portfolio
+                            </button></li>
+                        </ul>
+                    </div>
                 </div>
             </div>
         </div>
@@ -167,9 +193,9 @@
                 </div>
             </div>
 
-            <!-- Quick Charts Row -->
+            <!-- Quick Trading & Charts Row -->
             <div class="row g-3">
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <div class="chart-card">
                         <div class="chart-card-body">
                             <canvas id="portfolioChart" height="120"></canvas>
@@ -177,7 +203,7 @@
                         <div class="chart-card-footer">Portfolio Value Trend</div>
                     </div>
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <div class="chart-card">
                         <div class="chart-card-body">
                             <canvas id="pnlChart" height="120"></canvas>
@@ -185,12 +211,33 @@
                         <div class="chart-card-footer">Daily P&L</div>
                     </div>
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <div class="chart-card">
                         <div class="chart-card-body">
                             <canvas id="riskChart" height="120"></canvas>
                         </div>
                         <div class="chart-card-footer">Risk Metrics</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <!-- Quick Trading Controls Card -->
+                    <div class="card bg-dark text-white">
+                        <div class="card-body p-3">
+                            <h6 class="card-title mb-3">
+                                <i class="fas fa-rocket me-2 text-primary"></i>Quick Trade
+                            </h6>
+                            <div class="d-grid gap-2">
+                                <button class="btn btn-success btn-sm" onclick="showBuyDialog()">
+                                    <i class="fas fa-arrow-up me-1"></i> Quick Buy
+                                </button>
+                                <button class="btn btn-danger btn-sm" onclick="showSellDialog()">
+                                    <i class="fas fa-arrow-down me-1"></i> Quick Sell
+                                </button>
+                                <button class="btn btn-info btn-sm" onclick="toggleBot()">
+                                    <i class="fas fa-robot me-1"></i> <span id="bot-status">Start Bot</span>
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -564,6 +611,122 @@
             }
         });
     });
+
+    // Trading control functions
+    function showBuyDialog() {
+        const symbol = prompt("Enter symbol to buy (e.g., BTC-USDT):");
+        if (!symbol) return;
+        
+        const amount = prompt("Enter USD amount to invest:");
+        if (!amount || isNaN(amount)) return;
+        
+        if (confirm(`Buy $${amount} worth of ${symbol}?`)) {
+            executeBuyOrder(symbol, parseFloat(amount));
+        }
+    }
+
+    function showSellDialog() {
+        const symbol = prompt("Enter symbol to sell (e.g., BTC-USDT):");
+        if (!symbol) return;
+        
+        const percentage = prompt("Enter percentage to sell (1-100):");
+        if (!percentage || isNaN(percentage) || percentage < 1 || percentage > 100) return;
+        
+        if (confirm(`Sell ${percentage}% of your ${symbol} position?`)) {
+            executeSellOrder(symbol, parseFloat(percentage));
+        }
+    }
+
+    function executeBuyOrder(symbol, amount) {
+        fetch('/api/buy', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ symbol: symbol, amount: amount })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(`Buy order successful: ${data.message}`);
+                // Refresh data
+                if (typeof loadDashboardData === 'function') loadDashboardData();
+                if (typeof loadHoldingsData === 'function') loadHoldingsData();
+            } else {
+                alert(`Buy order failed: ${data.error}`);
+            }
+        })
+        .catch(error => {
+            console.error('Buy order error:', error);
+            alert('Buy order failed: Network error');
+        });
+    }
+
+    function executeSellOrder(symbol, percentage) {
+        fetch('/api/sell', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ symbol: symbol, percentage: percentage })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(`Sell order successful: ${data.message}`);
+                // Refresh data
+                if (typeof loadDashboardData === 'function') loadDashboardData();
+                if (typeof loadHoldingsData === 'function') loadHoldingsData();
+            } else {
+                alert(`Sell order failed: ${data.error}`);
+            }
+        })
+        .catch(error => {
+            console.error('Sell order error:', error);
+            alert('Sell order failed: Network error');
+        });
+    }
+
+    function toggleBot() {
+        fetch('/api/toggle-bot', {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const botStatus = document.getElementById('bot-status');
+                const botToggleText = document.getElementById('bot-toggle-text');
+                if (botStatus) botStatus.textContent = data.status;
+                if (botToggleText) botToggleText.textContent = data.status;
+                alert(`Bot ${data.status}`);
+            } else {
+                alert(`Bot toggle failed: ${data.error}`);
+            }
+        })
+        .catch(error => {
+            console.error('Bot toggle error:', error);
+            alert('Bot toggle failed: Network error');
+        });
+    }
+
+    function executeRebalance() {
+        if (confirm('Execute portfolio rebalance? This will adjust all positions.')) {
+            fetch('/api/rebalance', {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(`Rebalance successful: ${data.message}`);
+                    // Refresh all data
+                    if (typeof loadDashboardData === 'function') loadDashboardData();
+                    if (typeof loadHoldingsData === 'function') loadHoldingsData();
+                } else {
+                    alert(`Rebalance failed: ${data.error}`);
+                }
+            })
+            .catch(error => {
+                console.error('Rebalance error:', error);
+                alert('Rebalance failed: Network error');
+            });
+        }
+    }
 
     // Initialize all data loading when page loads
     document.addEventListener('DOMContentLoaded', function() {
