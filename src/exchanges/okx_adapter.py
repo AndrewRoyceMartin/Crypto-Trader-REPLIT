@@ -7,9 +7,9 @@ import pandas as pd
 import logging
 import os
 import time
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any, Optional, Union
 from datetime import datetime, timezone
-from ccxt.base.errors import NetworkError, ExchangeError, RateLimitExceeded
+from ccxt.base.errors import BaseError, NetworkError, ExchangeError, RateLimitExceeded
 from .base import BaseExchange
 
 
@@ -23,7 +23,7 @@ class OKXAdapter(BaseExchange):
         self.exchange: Optional[ccxt.okx] = None
         self._is_connected = False
     
-    def _retry(self, fn, *args, max_attempts=3, base_delay=0.5, **kwargs):
+    def _retry(self, fn, *args, max_attempts: int = 3, base_delay: float = 0.5, **kwargs) -> Any:
         """Retry helper with exponential backoff for network errors and rate limits."""
         for i in range(max_attempts):
             try:
@@ -32,9 +32,9 @@ class OKXAdapter(BaseExchange):
                 wait = base_delay * (2 ** i)
                 self.logger.warning(f"{fn.__name__} retry {i+1}/{max_attempts} after {e}, sleeping {wait:.2f}s")
                 time.sleep(wait)
-            except ExchangeError:
-                raise
-        # last attempt
+            except (ExchangeError, BaseError):
+                raise  # Don't retry on authentication/permission errors
+        # Final attempt without retry
         return fn(*args, **kwargs)
 
     def _build_client(self, default_type: str = 'spot') -> ccxt.okx:
@@ -95,7 +95,7 @@ class OKXAdapter(BaseExchange):
     def get_balance(self) -> Dict[str, Any]:
         """Get account balance with robust retry logic."""
         if not self.is_connected():
-            raise Exception("Not connected to exchange")
+            raise RuntimeError("Not connected to exchange")
         
         try:
             balance = self._retry(self.exchange.fetch_balance)
@@ -110,8 +110,11 @@ class OKXAdapter(BaseExchange):
             
             return balance
                     
-        except Exception as e:
-            self.logger.error(f"Failed to fetch balance: {str(e)}")
+        except (NetworkError, ExchangeError, BaseError) as e:
+            self.logger.error(f"Failed to fetch balance: {e}")
+            raise
+        except (ValueError, TypeError) as e:
+            self.logger.error(f"Balance validation error: {e}")
             raise
     
     def get_positions(self) -> List[Dict[str, Any]]:
@@ -159,7 +162,7 @@ class OKXAdapter(BaseExchange):
     def place_order(self, symbol: str, side: str, amount: float, order_type: str = "market", price: Optional[float] = None) -> Dict[str, Any]:
         """Place an order on the exchange with retry logic."""
         if not self.is_connected():
-            raise Exception("Not connected to exchange")
+            raise RuntimeError("Not connected to exchange")
         
         try:
             if order_type == "market":
@@ -169,9 +172,12 @@ class OKXAdapter(BaseExchange):
             else:
                 raise ValueError("Invalid order type or missing price for limit order")
             
-            return order
-        except Exception as e:
-            self.logger.error(f"Error placing order: {str(e)}")
+            return dict(order)
+        except (NetworkError, ExchangeError, BaseError) as e:
+            self.logger.error(f"Error placing order: {e}")
+            raise
+        except ValueError as e:
+            self.logger.error(f"Order validation error: {e}")
             raise
     
     def get_trades(self, symbol: Optional[str] = None, limit: int = 50) -> List[Dict[str, Any]]:
@@ -444,13 +450,13 @@ class OKXAdapter(BaseExchange):
     def get_ticker(self, symbol: str) -> Dict[str, Any]:
         """Get ticker information for a symbol with retry logic."""
         if not self.is_connected():
-            raise Exception("Not connected to exchange")
+            raise RuntimeError("Not connected to exchange")
         
         try:
             ticker = self._retry(self.exchange.fetch_ticker, symbol)
-            return ticker
-        except Exception as e:
-            self.logger.error(f"Error fetching ticker for {symbol}: {str(e)}")
+            return dict(ticker)
+        except (NetworkError, ExchangeError, BaseError) as e:
+            self.logger.error(f"Error fetching ticker for {symbol}: {e}")
             raise
     
     def get_currency_conversion_rates(self) -> dict:
@@ -728,13 +734,13 @@ class OKXAdapter(BaseExchange):
     def cancel_order(self, order_id: str, symbol: str) -> Dict[str, Any]:
         """Cancel an order with retry logic."""
         if not self.is_connected():
-            raise Exception("Not connected to exchange")
+            raise RuntimeError("Not connected to exchange")
         
         try:
             result = self._retry(self.exchange.cancel_order, order_id, symbol)
             return dict(result)
-        except Exception as e:
-            self.logger.error(f"Error canceling order: {str(e)}")
+        except (NetworkError, ExchangeError, BaseError) as e:
+            self.logger.error(f"Error canceling order: {e}")
             raise
     
     def get_order_history(self, symbol: Optional[str] = None, limit: int = 50) -> List[Dict[str, Any]]:
