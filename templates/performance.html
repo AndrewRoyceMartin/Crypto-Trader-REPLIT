@@ -30,32 +30,12 @@
   />
 
   <style>
-    /* Make chart containers white and crisp */
-    .chart-card {
-      background: #fff;
-      border: 1px solid rgba(0,0,0,.08);
-      border-radius: .5rem;
-      padding: 1rem;
-      height: 360px;
-    }
-    .chart-card canvas {
-      background: #fff; /* ensure canvas is white if parent changes */
-    }
-
-    .kpi .value {
-      font-weight: 700;
-      font-size: 1.25rem;
-    }
-    .kpi small {
-      color: #6c757d;
-    }
-
     .sticky-actions {
       position: sticky;
       top: 0;
       z-index: 2;
-      background: #fff;
-      border-bottom: 1px solid rgba(0,0,0,.05);
+      background: var(--card-bg);
+      border-bottom: 1px solid var(--card-border);
       padding: .5rem 0;
       margin: -0.5rem 0 1rem;
     }
@@ -64,7 +44,7 @@
       white-space: nowrap;
     }
     .text-mono {
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-family: var(--font-family-mono);
     }
   </style>
 

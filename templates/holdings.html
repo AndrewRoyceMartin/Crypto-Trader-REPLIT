@@ -19,62 +19,6 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v={{ cache_version|default(0) }}"/>
 
   <style>
-    /* Ensure charts render on white background */
-    .chart-card {
-      background-color: #fff !important;
-      border: 1px solid rgba(0,0,0,.1);
-      border-radius: .5rem;
-      min-height: 200px;
-    }
-    
-    .chart-card canvas {
-      background-color: #fff !important;
-    }
-    
-    .table thead th { 
-      white-space: nowrap; 
-    }
-    
-    /* Chrome compatibility fixes */
-    .card {
-      display: block;
-      -webkit-box-sizing: border-box;
-      box-sizing: border-box;
-    }
-    
-    .kpi-card {
-      min-height: 80px;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-    }
-    
-    /* Ensure proper white text on colored backgrounds */
-    .bg-primary .text-white,
-    .bg-success .text-white,
-    .bg-dark .text-white,
-    .bg-gradient .text-white {
-      color: rgba(255, 255, 255, 1) !important;
-      text-rendering: optimizeLegibility;
-      -webkit-font-smoothing: antialiased;
-    }
-    
-    .bg-primary .text-white-75,
-    .bg-success .text-white-75,
-    .bg-dark .text-white-75,
-    .bg-gradient .text-white-75 {
-      color: rgba(255, 255, 255, 0.85) !important;
-      text-rendering: optimizeLegibility;
-      -webkit-font-smoothing: antialiased;
-    }
-    
-    /* Fix for cards that JavaScript changes to light backgrounds */
-    .bg-light .text-white,
-    .border-success.bg-light .text-success,
-    .border-danger.bg-light .text-danger {
-      color: #212529 !important;
-    }
-    
     /* Responsive chart heights */
     @media (min-width: 768px) {
       .chart-card {

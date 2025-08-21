@@ -9,6 +9,21 @@
     --dark-color: #343a40;
     --light-color: #f8f9fa;
     
+    /* Extended color palette for consistent theming */
+    --success-bg: rgba(40, 167, 69, 0.1);
+    --danger-bg: rgba(220, 53, 69, 0.1);
+    --warning-bg: rgba(255, 193, 7, 0.1);
+    --info-bg: rgba(23, 162, 184, 0.1);
+    
+    /* Card and background colors */
+    --card-bg: #ffffff;
+    --card-border: rgba(0, 0, 0, 0.1);
+    --body-bg: #f5f5f5;
+    
+    /* Text colors */
+    --text-muted: #6c757d;
+    --text-primary: #212529;
+    
     /* System Font Stacks */
     --font-family-system: system-ui, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, 'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
     --font-family-mono: ui-monospace, 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Courier New', monospace;
@@ -28,8 +43,11 @@
 
 
 body {
-    background-color: #f5f5f5;
+    background-color: var(--body-bg);
     font-family: var(--font-family-system);
+    color: var(--text-primary);
+    margin: 0;
+    padding: 0;
 }
 
 /* Navigation */
@@ -41,11 +59,43 @@ body {
     font-size: 0.9rem;
 }
 
-/* Cards */
+/* Cards - Unified styling across all pages */
 .card {
-    border: none;
+    background-color: var(--card-bg);
+    border: 1px solid var(--card-border);
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     margin-bottom: 1rem;
+    border-radius: 0.5rem;
+}
+
+/* Chart Cards - Consistent white background for all charts */
+.chart-card {
+    background-color: var(--card-bg) !important;
+    border: 1px solid var(--card-border);
+    border-radius: 0.5rem;
+    padding: 1rem;
+    min-height: 200px;
+}
+
+.chart-card canvas {
+    background-color: var(--card-bg) !important;
+}
+
+/* KPI styling standardization */
+.kpi .value,
+.kpi-card .value {
+    font-weight: 700;
+    font-size: 1.25rem;
+}
+
+.kpi .label,
+.kpi-card .label {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+.kpi small {
+    color: var(--text-muted);
 }
 
 /* KPI Cards - Consolidated single definition */
@@ -748,7 +798,7 @@ body {
 .trade-buy {
     color: var(--success-color);
     font-weight: 600;
-    background-color: rgba(40, 167, 69, 0.1);
+    background-color: var(--success-bg);
     padding: 2px 6px;
     border-radius: 4px;
     font-size: 0.875rem;
@@ -757,7 +807,7 @@ body {
 .trade-sell {
     color: var(--danger-color);
     font-weight: 600;
-    background-color: rgba(220, 53, 69, 0.1);
+    background-color: var(--danger-bg);
     padding: 2px 6px;
     border-radius: 4px;
     font-size: 0.875rem;
@@ -1423,12 +1473,12 @@ body {
 
 /* Text Utilities */
 .text-muted-sm { 
-    color: #6c757d; 
+    color: var(--text-muted); 
     font-size: 0.875rem; 
 }
 
 .text-muted-xs { 
-    color: #6c757d; 
+    color: var(--text-muted); 
     font-size: 0.75rem; 
 }
 
@@ -1475,12 +1525,12 @@ body {
 }
 
 .trade-neutral { 
-    color: #6c757d; 
+    color: var(--text-muted); 
     font-weight: 500; 
 }
 
 .price-highlight {
-    background-color: rgba(40, 167, 69, 0.1);
+    background-color: var(--success-bg);
     padding: 0.15rem 0.4rem;
     border-radius: 0.25rem;
     font-family: var(--font-family-mono);
@@ -1551,6 +1601,32 @@ body.dark-theme .theme-toggle:hover {
     transform: translateY(-2px);
     box-shadow: 0 4px 8px rgba(0,0,0,0.15);
     transition: all 0.2s ease;
+}
+
+/* Table utilities for consistent formatting */
+.table thead th { 
+    white-space: nowrap; 
+    border-bottom-color: var(--card-border);
+}
+
+.table td {
+    border-top-color: var(--card-border);
+}
+
+/* Sticky action bars */
+.sticky-actions {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: var(--card-bg);
+    border-bottom: 1px solid var(--card-border);
+    padding: 0.5rem 0;
+    margin: -0.5rem 0 1rem;
+}
+
+/* Monospace text utility */
+.text-mono {
+    font-family: var(--font-family-mono);
 }
 
 .hover-scale:hover {
