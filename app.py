@@ -773,8 +773,232 @@ def filter_trades_by_timeframe(trades, timeframe):
 
 @app.route("/api/recent-trades")
 def api_recent_trades():
-    """Get recent trades (alias for compatibility)."""
-    return api_trade_history()
+    """Get recent trades using direct OKX native APIs only."""
+    try:
+        timeframe = request.args.get('timeframe', '7d')
+        limit = int(request.args.get('limit', 50))
+        
+        # Calculate date range
+        end_date = datetime.now(LOCAL_TZ)
+        if timeframe == '1d':
+            start_date = end_date - timedelta(days=1)
+        elif timeframe == '7d':
+            start_date = end_date - timedelta(days=7)
+        elif timeframe == '30d':
+            start_date = end_date - timedelta(days=30)
+        else:
+            start_date = end_date - timedelta(days=7)
+        
+        # Use OKX native API for trade data
+        import requests
+        import hmac
+        import hashlib
+        import base64
+        from datetime import timezone
+        
+        # OKX API credentials
+        api_key = os.getenv("OKX_API_KEY", "")
+        secret_key = os.getenv("OKX_SECRET_KEY", "")
+        passphrase = os.getenv("OKX_PASSPHRASE", "")
+        
+        def sign_request(timestamp, method, request_path, body=''):
+            message = timestamp + method + request_path + body
+            mac = hmac.new(bytes(secret_key, encoding='utf8'), bytes(message, encoding='utf-8'), digestmod='sha256')
+            d = mac.digest()
+            return base64.b64encode(d).decode('utf-8')
+        
+        base_url = 'https://www.okx.com'
+        trades = []
+        
+        if all([api_key, secret_key, passphrase]):
+            try:
+                # Get trade history using OKX native API
+                timestamp = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%S.%fZ')
+                method = 'GET'
+                
+                # Try multiple OKX endpoints for trade data
+                endpoints_to_try = [
+                    f'/api/v5/trade/fills?begin={int(start_date.timestamp() * 1000)}&end={int(end_date.timestamp() * 1000)}&limit={limit}',
+                    f'/api/v5/trade/fills-history?begin={int(start_date.timestamp() * 1000)}&end={int(end_date.timestamp() * 1000)}&limit={limit}',
+                    f'/api/v5/account/bills?begin={int(start_date.timestamp() * 1000)}&end={int(end_date.timestamp() * 1000)}&limit={limit}&type=1'
+                ]
+                
+                for request_path in endpoints_to_try:
+                    try:
+                        signature = sign_request(timestamp, method, request_path)
+                        
+                        headers = {
+                            'OK-ACCESS-KEY': api_key,
+                            'OK-ACCESS-SIGN': signature,
+                            'OK-ACCESS-TIMESTAMP': timestamp,
+                            'OK-ACCESS-PASSPHRASE': passphrase,
+                            'Content-Type': 'application/json'
+                        }
+                        
+                        response = requests.get(base_url + request_path, headers=headers, timeout=10)
+                        
+                        if response.status_code == 200:
+                            trade_data = response.json()
+                            
+                            if trade_data.get('code') == '0' and trade_data.get('data'):
+                                logger.info(f"Retrieved {len(trade_data['data'])} trade records from OKX endpoint: {request_path}")
+                                
+                                for trade_record in trade_data['data']:
+                                    try:
+                                        # Handle different response formats from different endpoints
+                                        if 'fills' in request_path:
+                                            # Trade fills endpoint format
+                                            trade_id = trade_record.get('tradeId', '')
+                                            order_id = trade_record.get('ordId', '')
+                                            symbol = trade_record.get('instId', '').replace('-USDT', '').replace('-USD', '')
+                                            side = trade_record.get('side', '').upper()  # buy/sell
+                                            quantity = float(trade_record.get('sz', 0))
+                                            price = float(trade_record.get('px', 0))
+                                            fee = float(trade_record.get('fee', 0))
+                                            fee_currency = trade_record.get('feeCcy', '')
+                                            timestamp_ms = int(trade_record.get('ts', 0))
+                                            
+                                        else:
+                                            # Bills endpoint format - extract trade-related bills
+                                            bill_type = trade_record.get('type', '')
+                                            if bill_type not in ['1', '2']:  # Only trade-related bills
+                                                continue
+                                                
+                                            trade_id = trade_record.get('billId', '')
+                                            order_id = trade_record.get('ordId', '')
+                                            symbol = trade_record.get('ccy', '')
+                                            side = 'BUY' if float(trade_record.get('balChg', 0)) > 0 else 'SELL'
+                                            quantity = abs(float(trade_record.get('balChg', 0)))
+                                            price = 0.0  # Bills don't contain price info
+                                            fee = 0.0
+                                            fee_currency = symbol
+                                            timestamp_ms = int(trade_record.get('ts', 0))
+                                        
+                                        if timestamp_ms == 0 or not symbol:
+                                            continue
+                                        
+                                        # Convert timestamp
+                                        trade_datetime = datetime.fromtimestamp(timestamp_ms / 1000, tz=LOCAL_TZ)
+                                        
+                                        # Calculate trade value
+                                        trade_value = quantity * price if price > 0 else 0
+                                        
+                                        # Get current price for value calculation if needed
+                                        if price == 0 and symbol:
+                                            try:
+                                                price_timestamp = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%S.%fZ')
+                                                price_path = f'/api/v5/market/ticker?instId={symbol}-USDT'
+                                                price_signature = sign_request(price_timestamp, method, price_path)
+                                                
+                                                price_headers = {
+                                                    'OK-ACCESS-KEY': api_key,
+                                                    'OK-ACCESS-SIGN': price_signature,
+                                                    'OK-ACCESS-TIMESTAMP': price_timestamp,
+                                                    'OK-ACCESS-PASSPHRASE': passphrase,
+                                                    'Content-Type': 'application/json'
+                                                }
+                                                
+                                                price_response = requests.get(base_url + price_path, headers=price_headers, timeout=5)
+                                                
+                                                if price_response.status_code == 200:
+                                                    price_data = price_response.json()
+                                                    
+                                                    if price_data.get('code') == '0' and price_data.get('data'):
+                                                        ticker_info = price_data['data'][0]
+                                                        price = float(ticker_info.get('last', 0))
+                                                        trade_value = quantity * price
+                                                        
+                                            except Exception as price_error:
+                                                logger.debug(f"Error getting price for {symbol}: {price_error}")
+                                        
+                                        trade_entry = {
+                                            'id': trade_id or f"okx_{timestamp_ms}",
+                                            'order_id': order_id,
+                                            'symbol': symbol,
+                                            'side': side,
+                                            'quantity': quantity,
+                                            'price': price,
+                                            'value': trade_value,
+                                            'fee': abs(fee),
+                                            'fee_currency': fee_currency,
+                                            'timestamp': trade_datetime.isoformat(),
+                                            'date': trade_datetime.strftime('%Y-%m-%d'),
+                                            'time': trade_datetime.strftime('%H:%M:%S'),
+                                            'source': 'okx_native_api',
+                                            'exchange': 'OKX'
+                                        }
+                                        
+                                        trades.append(trade_entry)
+                                        
+                                    except Exception as trade_error:
+                                        logger.debug(f"Error processing trade record: {trade_error}")
+                                        continue
+                                
+                                # If we got trades, break from trying other endpoints
+                                if trades:
+                                    break
+                                    
+                            else:
+                                logger.info(f"No data from OKX endpoint {request_path}: {trade_data}")
+                                
+                        else:
+                            logger.warning(f"OKX endpoint {request_path} failed with status {response.status_code}")
+                            
+                    except Exception as endpoint_error:
+                        logger.warning(f"OKX endpoint {request_path} failed: {endpoint_error}")
+                        continue
+                        
+            except Exception as api_error:
+                logger.error(f"OKX native API failed: {api_error}")
+        
+        # Sort trades by timestamp (newest first)
+        trades.sort(key=lambda x: x['timestamp'], reverse=True)
+        
+        # Limit results
+        trades = trades[:limit]
+        
+        # Calculate summary statistics
+        total_trades = len(trades)
+        total_buy_volume = sum(t['value'] for t in trades if t['side'] == 'BUY')
+        total_sell_volume = sum(t['value'] for t in trades if t['side'] == 'SELL')
+        total_fees = sum(t['fee'] for t in trades)
+        unique_symbols = len(set(t['symbol'] for t in trades))
+        
+        return jsonify({
+            "success": True,
+            "trades": trades,
+            "timeframe": timeframe,
+            "summary": {
+                "total_trades": total_trades,
+                "total_buy_volume": total_buy_volume,
+                "total_sell_volume": total_sell_volume,
+                "net_volume": total_buy_volume - total_sell_volume,
+                "total_fees": total_fees,
+                "unique_symbols": unique_symbols,
+                "avg_trade_size": (total_buy_volume + total_sell_volume) / total_trades if total_trades > 0 else 0
+            },
+            "data_source": "okx_native_api",
+            "last_update": datetime.now(LOCAL_TZ).isoformat()
+        })
+        
+    except Exception as e:
+        logger.error(f"Error getting recent trades: {e}")
+        return jsonify({
+            "success": False,
+            "error": str(e),
+            "trades": [],
+            "timeframe": timeframe,
+            "summary": {
+                "total_trades": 0,
+                "total_buy_volume": 0.0,
+                "total_sell_volume": 0.0,
+                "net_volume": 0.0,
+                "total_fees": 0.0,
+                "unique_symbols": 0,
+                "avg_trade_size": 0.0
+            },
+            "data_source": "error"
+        }), 500
 
 @app.route("/api/current-positions")
 def api_current_positions():

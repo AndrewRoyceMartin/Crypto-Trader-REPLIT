@@ -35,7 +35,8 @@ class TradingApp {
             worstPerformer: { data: null, timestamp: 0, ttl: 10000 },  // 10s
             equityCurve: { data: null, timestamp: 0, ttl: 30000 },    // 30s
             drawdownAnalysis: { data: null, timestamp: 0, ttl: 30000 }, // 30s
-            currentHoldings: { data: null, timestamp: 0, ttl: 15000 }   // 15s
+            currentHoldings: { data: null, timestamp: 0, ttl: 15000 },  // 15s
+            recentTrades: { data: null, timestamp: 0, ttl: 20000 }      // 20s
         };
 
         // Debug: force network fetches
@@ -397,6 +398,9 @@ class TradingApp {
         
         // Current holdings
         this.updateCurrentHoldings();
+        
+        // Recent trades
+        this.updateRecentTrades();
     }
 
     async updatePortfolioAnalytics() {
@@ -1309,6 +1313,131 @@ class TradingApp {
                 </tr>
             `;
         }
+    }
+    
+    async updateRecentTrades() {
+        try {
+            const timeframe = document.getElementById('trades-timeframe')?.value || '7d';
+            const response = await fetch(`/api/recent-trades?timeframe=${timeframe}&limit=20`, { cache: 'no-cache' });
+            if (!response.ok) return;
+            const data = await response.json();
+            
+            if (!data.success || !data.trades) return;
+            
+            // Update trades table
+            this.updateTradesTable(data.trades, data.summary);
+            
+        } catch (error) {
+            console.error('Recent trades update failed:', error);
+        }
+    }
+    
+    updateTradesTable(trades, summary) {
+        const tradesTableBody = document.getElementById('trades-table-body');
+        if (!tradesTableBody) return;
+        
+        try {
+            // Clear existing rows
+            tradesTableBody.innerHTML = '';
+            
+            if (!trades || trades.length === 0) {
+                // Show empty state
+                const emptyRow = document.createElement('tr');
+                emptyRow.innerHTML = `
+                    <td colspan="7" class="text-center text-muted py-4">
+                        <i class="fas fa-exchange-alt me-2"></i>No recent trades found
+                    </td>
+                `;
+                tradesTableBody.appendChild(emptyRow);
+                
+                // Update summary with zeros
+                this.updateTradesSummary({
+                    total_trades: 0,
+                    total_buy_volume: 0,
+                    total_sell_volume: 0,
+                    total_fees: 0,
+                    unique_symbols: 0
+                });
+                return;
+            }
+            
+            // Populate trades rows
+            trades.forEach(trade => {
+                const row = document.createElement('tr');
+                
+                // Side color class and icon
+                const sideClass = trade.side === 'BUY' ? 'text-success' : 'text-danger';
+                const sideIcon = trade.side === 'BUY' ? 'fa-arrow-up' : 'fa-arrow-down';
+                
+                // Format date and time
+                const tradeDate = new Date(trade.timestamp);
+                const dateStr = tradeDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                const timeStr = tradeDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+                
+                row.innerHTML = `
+                    <td>
+                        <span class="${sideClass}">
+                            <i class="fas ${sideIcon} me-1"></i>${trade.side}
+                        </span>
+                    </td>
+                    <td>
+                        <strong>${trade.symbol}</strong>
+                        <br><small class="text-muted">${trade.exchange}</small>
+                    </td>
+                    <td>${trade.quantity.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 8 })}</td>
+                    <td>${trade.price > 0 ? this.formatCurrency(trade.price) : 'N/A'}</td>
+                    <td>${this.formatCurrency(trade.value)}</td>
+                    <td>${trade.fee > 0 ? this.formatCurrency(trade.fee) : '-'}</td>
+                    <td>
+                        <div>${dateStr}</div>
+                        <small class="text-muted">${timeStr}</small>
+                    </td>
+                `;
+                
+                tradesTableBody.appendChild(row);
+            });
+            
+            // Update trades summary
+            this.updateTradesSummary(summary);
+            
+        } catch (error) {
+            console.error('Trades table update failed:', error);
+            
+            // Fallback display
+            tradesTableBody.innerHTML = `
+                <tr>
+                    <td colspan="7" class="text-center text-danger py-4">
+                        <i class="fas fa-exclamation-triangle me-2"></i>Error loading trades
+                    </td>
+                </tr>
+            `;
+        }
+    }
+    
+    updateTradesSummary(summary) {
+        // Update trades summary elements if they exist
+        const elements = {
+            'trades-total-count': summary.total_trades,
+            'trades-buy-volume': this.formatCurrency(summary.total_buy_volume),
+            'trades-sell-volume': this.formatCurrency(summary.total_sell_volume),
+            'trades-net-volume': this.formatCurrency(summary.net_volume || 0),
+            'trades-total-fees': this.formatCurrency(summary.total_fees),
+            'trades-unique-symbols': summary.unique_symbols,
+            'trades-avg-size': this.formatCurrency(summary.avg_trade_size || 0)
+        };
+        
+        Object.entries(elements).forEach(([id, value]) => {
+            const element = document.getElementById(id);
+            if (element) {
+                element.textContent = value;
+                
+                // Add color coding for net volume
+                if (id === 'trades-net-volume') {
+                    const numValue = summary.net_volume || 0;
+                    element.className = numValue >= 0 ? 'pnl-up' : 'pnl-down';
+                }
+            }
+        });
     }
 
     debouncedUpdateDashboard() {
