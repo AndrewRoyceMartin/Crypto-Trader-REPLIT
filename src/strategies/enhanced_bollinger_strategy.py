@@ -44,6 +44,7 @@ class EnhancedBollingerBandsStrategy(BaseStrategy):
         self.rebuy_dynamic = config.get_bool('strategy', 'rebuy_dynamic', True)
         self.rebuy_cooldown_min = config.get_int('strategy', 'rebuy_cooldown_min', 15)  # 15 minutes cooldown
         self.rebuy_mode = config.get_str('strategy', 'rebuy_mode', 'confirmation')  # 'confirmation' or 'knife'
+        self.rebuy_max_usd = config.get_float('strategy', 'rebuy_max_usd', 100.0)  # Maximum $100 per rebuy trade
         
         # Trading costs and slippage
         self.fee = config.get_float('trading', 'fee', 0.0025)  # 0.25% fee
@@ -315,7 +316,18 @@ class EnhancedBollingerBandsStrategy(BaseStrategy):
         
         # Risk-based position sizing using real OKX entry price
         risk_per_unit = max(1e-12, px * self.stop_loss_percent / 100)
-        dollars = self.position_size_percent / 100 * self.position_state['equity']
+        
+        # Apply rebuy limit for rebuy trades
+        if 'REBUY' in event_type:
+            dollars = min(self.rebuy_max_usd, self.position_size_percent / 100 * self.position_state['equity'])
+            self.logger.info(f"Rebuy trade limited to ${dollars:.2f} (max: ${self.rebuy_max_usd:.2f})")
+        else:
+            dollars = self.position_size_percent / 100 * self.position_state['equity']
+        
+        # Additional safety: Ensure we don't exceed maximum trade size
+        max_trade_usd = max(self.rebuy_max_usd, 1000.0)  # Either rebuy limit or $1000 max for normal trades
+        dollars = min(dollars, max_trade_usd)
+        
         qty = max(0.0, dollars / risk_per_unit)
         
         # Use real OKX market price with realistic spread
@@ -344,7 +356,9 @@ class EnhancedBollingerBandsStrategy(BaseStrategy):
         signal.metadata = {
             'event': event_type,
             'risk_per_unit': risk_per_unit,
-            'equity': self.position_state['equity']
+            'equity': self.position_state['equity'],
+            'trade_usd': dollars,
+            'rebuy_limited': 'REBUY' in event_type
         }
         
         self.logger.info(f"{event_type}: buy {qty:.6f} @ {fill_price:.2f}")
