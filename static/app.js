@@ -352,6 +352,8 @@ class TradingApp {
         // Recent trades
         const trades = data.recent_trades || data.trades || [];
         if (trades.length === 0) {
+            // Force display of no trades message for dashboard
+            this.displayDashboardRecentTrades([]);
             await this.updateRecentTrades();
         } else {
             this.displayDashboardRecentTrades(trades);
@@ -1541,7 +1543,7 @@ class TradingApp {
         const recent = normalized.slice(0, 5);
 
         if (recent.length === 0) {
-            tableBody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-3">No trades yet</td></tr>';
+            tableBody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-3"><i class="fas fa-info-circle me-2"></i>No trades executed yet - Start trading to see recent transactions</td></tr>';
             return;
         }
 

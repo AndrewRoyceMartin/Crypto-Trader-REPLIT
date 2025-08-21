@@ -1624,6 +1624,64 @@ body.dark-theme .theme-toggle:hover {
     margin: -0.5rem 0 1rem;
 }
 
+/* Dashboard KPI Cards - compact design */
+.kpi-card {
+    background: linear-gradient(135deg, var(--card-bg) 0%, rgba(248, 249, 250, 0.8) 100%);
+    border: 1px solid var(--card-border);
+    border-radius: 0.375rem;
+    transition: all 0.2s ease;
+    min-height: 60px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.kpi-card:hover {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    transform: translateY(-1px);
+}
+
+/* Chart Cards - compact design */
+.chart-card {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 0.375rem;
+    overflow: hidden;
+    transition: all 0.2s ease;
+}
+
+.chart-card:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    transform: translateY(-2px);
+}
+
+.chart-card-body {
+    background: #fff;
+    padding: 0.75rem;
+    min-height: 160px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.chart-card-footer {
+    background: var(--card-bg);
+    padding: 0.5rem;
+    text-align: center;
+    font-size: 0.875rem;
+    color: var(--text-muted);
+    border-top: 1px solid var(--card-border);
+}
+
+/* Dark theme adjustments */
+body.dark-theme .kpi-card {
+    background: linear-gradient(135deg, var(--card-bg) 0%, rgba(55, 55, 55, 0.8) 100%);
+}
+
+body.dark-theme .chart-card-body {
+    background: #2d3748;
+}
+
 /* Monospace text utility */
 .text-mono {
     font-family: var(--font-family-mono);
