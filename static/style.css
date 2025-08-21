@@ -495,3 +495,34 @@ section[id] {
   }
   .theme-min .card .table-responsive thead th { background: var(--surface); border-bottom-color: var(--border); }
 }
+
+/* Navbar text styling for better contrast */
+.navbar .navbar-brand {
+  color: #ffffff !important;
+  font-weight: 600;
+}
+
+.navbar .nav-link {
+  color: #ffffff !important;
+  font-weight: 500;
+}
+
+.navbar .navbar-brand:hover,
+.navbar .nav-link:hover {
+  color: #f8f9fa !important;
+  text-decoration: none;
+}
+
+.navbar .navbar-toggler {
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: transparent;
+}
+
+.navbar .navbar-toggler .icon {
+  color: #ffffff !important;
+  font-size: 1.25rem;
+}
+
+.navbar .navbar-toggler:focus {
+  box-shadow: 0 0 0 0.25rem rgba(255, 255, 255, 0.25);
+}
