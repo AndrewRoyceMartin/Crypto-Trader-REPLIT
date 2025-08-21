@@ -95,6 +95,14 @@ Added `@require_admin` decorator protection for all mutating endpoints using sha
 - If `ADMIN_TOKEN` is unset, endpoints remain accessible for development convenience
 - Old `/api/start_trading` endpoint redirects to new `/api/start-trading` with proper authentication
 
+**Exchange Instance Optimization:**
+Replaced all private `_get_current_price` method calls with public `get_public_price()` function:
+- Added `get_public_price(pair: str)` function that reuses the singleton exchange instance
+- Eliminates `load_markets()` churn by maintaining a single CCXT instance throughout the application
+- Replaced 7+ private method calls across price fetching endpoints with the public method
+- Improved performance by avoiding repeated exchange initialization and market loading
+- Enhanced error handling and logging for price retrieval operations
+
 **Table Rendering System:**
 Dedicated table elements per dashboard view ensure no data conflicts, with robust currency conversion, error handling, and performance optimizations.
 

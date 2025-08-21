@@ -72,6 +72,23 @@ class PortfolioService:
             raise
 
     # Removed - using real OKX holdings only, no portfolio population needed
+    
+    def get_public_price(self, pair: str) -> float:
+        """Get current price for a trading pair using the reused exchange instance.
+        
+        Args:
+            pair: Trading pair in format "SYMBOL/USDT" (e.g., "BTC/USDT")
+            
+        Returns:
+            Current price as float, 0.0 if error
+        """
+        try:
+            # Reuse the existing exchange instance to avoid load_markets() churn
+            ticker = self.exchange.exchange.fetch_ticker(pair)
+            return float(ticker.get('last', 0) or 0)
+        except Exception as e:
+            self.logger.warning(f"Failed to get price for {pair}: {e}")
+            return 0.0
 
     # Removed - using real OKX trade history only, no generated data needed
 

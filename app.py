@@ -171,6 +171,23 @@ def get_portfolio_service():
     """Get the global PortfolioService singleton from the service module."""
     return _get_ps()
 
+def get_public_price(pair: str) -> float:
+    """Get current price for a trading pair using the reused exchange instance.
+    
+    Args:
+        pair: Trading pair in format "SYMBOL/USDT" (e.g., "BTC/USDT")
+        
+    Returns:
+        Current price as float, 0.0 if error
+    """
+    service = get_portfolio_service()
+    try:
+        ticker = service.exchange.exchange.fetch_ticker(pair)
+        return float(ticker.get('last', 0) or 0)
+    except Exception as e:
+        logger.warning(f"Failed to get price for {pair}: {e}")
+        return 0.0
+
 def create_initial_purchase_trades(mode, trade_type):
     """Create trade records using real OKX cost basis instead of $10 simulations."""
     try:
@@ -1368,7 +1385,7 @@ def api_portfolio_history():
                                             elif balance > 0:
                                                 # Get current price for conversion
                                                 try:
-                                                    price = portfolio_service.exchange._get_current_price(f"{currency}/USDT")
+                                                    price = get_public_price(f"{currency}/USDT")
                                                     if price:
                                                         record_value = balance * price
                                                 except:
@@ -1383,7 +1400,7 @@ def api_portfolio_history():
                                                 record_value = balance_after
                                             elif balance_after > 0:
                                                 try:
-                                                    price = portfolio_service.exchange._get_current_price(f"{currency}/USDT")
+                                                    price = get_public_price(f"{currency}/USDT")
                                                     if price:
                                                         record_value = balance_after * price
                                                 except:
@@ -2090,7 +2107,7 @@ def api_equity_curve():
                                             elif balance > 0:
                                                 # Get current price for conversion
                                                 try:
-                                                    price = portfolio_service.exchange._get_current_price(f"{currency}/USDT")
+                                                    price = get_public_price(f"{currency}/USDT")
                                                     if price:
                                                         total_equity += balance * price
                                                 except:
@@ -2378,7 +2395,7 @@ def api_drawdown_analysis():
                                     total_equity += balance
                                 elif balance > 0:
                                     try:
-                                        price = portfolio_service.exchange._get_current_price(f"{currency}/USDT")
+                                        price = get_public_price(f"{currency}/USDT")
                                         if price:
                                             total_equity += balance * price
                                     except:
@@ -2890,8 +2907,8 @@ def api_live_prices():
 
         for symbol in symbols:
             try:
-                # Use private _get_current_price method as it exists in OKXAdapter
-                price = portfolio_service.exchange._get_current_price(f"{symbol}/USDT")
+                # Use public get_public_price method to reuse exchange instance
+                price = get_public_price(f"{symbol}/USDT")
                 if price and price > 0:
                     formatted_prices[symbol] = {
                         'price': price,
@@ -3406,7 +3423,7 @@ def paper_trade_buy():
 
         initialize_system()
         portfolio_service = get_portfolio_service()
-        current_price = portfolio_service.exchange._get_current_price(f"{symbol}/USDT")
+        current_price = get_public_price(f"{symbol}/USDT")
 
         if not current_price or current_price <= 0:
             return jsonify({"success": False, "error": f"Unable to get current price for {symbol} from OKX"}), 400
@@ -3447,7 +3464,7 @@ def paper_trade_sell():
 
         initialize_system()
         portfolio_service = get_portfolio_service()
-        current_price = portfolio_service.exchange._get_current_price(f"{symbol}/USDT")
+        current_price = get_public_price(f"{symbol}/USDT")
 
         if not current_price or current_price <= 0:
             return jsonify({"success": False, "error": f"Unable to get current price for {symbol} from OKX"}), 400
