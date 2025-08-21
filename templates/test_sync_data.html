@@ -153,6 +153,62 @@
     </style>
 </head>
 <body>
+    <!-- Navigation Bar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="{{ url_for('index') }}">
+                <i class="fas fa-chart-line me-2"></i>
+                Algorithmic Trading System
+            </a>
+            
+            <div class="navbar-nav me-auto">
+                <a class="btn btn-outline-light btn-sm me-2" href="{{ url_for('index') }}">
+                    <i class="fas fa-home me-1"></i>
+                    Dashboard
+                </a>
+                <a class="btn btn-outline-light btn-sm me-2" href="{{ url_for('portfolio') }}">
+                    <i class="fas fa-wallet me-1"></i>
+                    Portfolio
+                </a>
+                <a class="btn btn-outline-light btn-sm me-2" href="{{ url_for('performance') }}">
+                    <i class="fas fa-chart-bar me-1"></i>
+                    Performance
+                </a>
+                <a class="btn btn-outline-light btn-sm me-2" href="{{ url_for('holdings') }}">
+                    <i class="fas fa-coins me-1"></i>
+                    Holdings
+                </a>
+                <a class="btn btn-outline-light btn-sm me-2" href="{{ url_for('trades') }}">
+                    <i class="fas fa-exchange-alt me-1"></i>
+                    Trades
+                </a>
+                <a class="btn btn-light btn-sm me-2" href="{{ url_for('test_sync_data') }}">
+                    <i class="fas fa-sync-alt me-1"></i>
+                    Sync Test
+                </a>
+                <button class="btn btn-outline-success btn-sm me-2" onclick="window.location.href='{{ url_for('index') }}'">
+                    <i class="fas fa-file-invoice-dollar me-1"></i>
+                    ATO Export
+                </button>
+            </div>
+            
+            <div class="navbar-nav ms-auto">
+                <div class="nav-item d-flex align-items-center">
+                    <span class="navbar-text me-3">
+                        <i class="fas fa-server text-info me-1"></i>
+                        <span class="text-light">OKX Endpoint:</span>
+                        <span id="okx-endpoint" class="text-info ms-1">app.okx.com</span>
+                    </span>
+                    <span class="navbar-text">
+                        <i class="fas fa-check-circle text-success me-1"></i>
+                        <span class="text-light">Live Data:</span>
+                        <span id="live-data-status" class="text-success ms-1">Active</span>
+                    </span>
+                </div>
+            </div>
+        </div>
+    </nav>
+
     <div class="container-fluid px-4 py-3">
         <!-- Page Header -->
         <div class="page-header">
