@@ -53,23 +53,25 @@ class TradingApp {
         return n.toFixed(p);
     }
     formatCurrency(amount, currency = null) {
+        // FIXED: No local conversion - backend provides pre-converted amounts
+        // The backend already handles currency conversion via OKX rates
         const targetCurrency = currency || this.selectedCurrency || 'USD';
-        const rate = this.exchangeRates[targetCurrency] || 1;
-        const convertedAmount = (Number(amount) || 0) * rate;
+        const numericAmount = Number(amount) || 0;
 
         return new Intl.NumberFormat('en-US', {
             style: 'currency',
             currency: targetCurrency,
             minimumFractionDigits: 2,
             maximumFractionDigits: 2
-        }).format(convertedAmount);
+        }).format(numericAmount);
     }
 
     // Special formatter for crypto prices with consistent precision
     formatCryptoPrice(amount, currency = null) {
+        // FIXED: No local conversion - backend provides pre-converted amounts
+        // The backend already handles currency conversion via OKX rates
         const targetCurrency = currency || this.selectedCurrency || 'USD';
-        const rate = this.exchangeRates[targetCurrency] || 1;
-        const convertedAmount = (Number(amount) || 0) * rate;
+        const numericAmount = Number(amount) || 0;
 
         // Always use 8 decimal places for crypto to prevent bouncing
         return new Intl.NumberFormat('en-US', {
@@ -77,7 +79,7 @@ class TradingApp {
             currency: targetCurrency,
             minimumFractionDigits: 8,
             maximumFractionDigits: 8
-        }).format(convertedAmount);
+        }).format(numericAmount);
     }
     formatUptime(totalSeconds) {
         const hours = Math.floor(totalSeconds / 3600);

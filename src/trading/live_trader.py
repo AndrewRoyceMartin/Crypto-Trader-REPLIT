@@ -377,10 +377,19 @@ class LiveTrader:
             self.logger.error("Error managing positions: %s", str(e))
 
     def _get_portfolio_value(self) -> float:
-        """Get current portfolio value (USD)."""
+        """Get current portfolio value (USD) - FIXED: Use OKX total if available."""
         try:
             balance = self.exchange.get_balance()
+            
+            # FIXED: Check if OKX provides total portfolio value directly
+            if hasattr(balance, 'info') and balance.info:
+                # Look for OKX total portfolio value in response
+                total_equity = balance.info.get('totalEq') or balance.info.get('total_equity')
+                if total_equity and float(total_equity) > 0:
+                    self.logger.info(f"Using OKX total portfolio value: ${float(total_equity):.2f}")
+                    return float(total_equity)
 
+            # Fallback to manual calculation if OKX total not available
             total_value = 0.0
             free_balances: Dict[str, float] = balance.get('free', {}) or {}
             for currency, amount in free_balances.items():
@@ -388,7 +397,7 @@ class LiveTrader:
                 if currency.upper() == 'USD':
                     total_value += amt
                 else:
-                    # Convert to USD (best-effort)
+                    # Convert to USD (best-effort) - still local calculation but necessary
                     try:
                         ticker = self.exchange.get_ticker(f"{currency}/USD")
                         last = float(ticker.get('last', 0.0))

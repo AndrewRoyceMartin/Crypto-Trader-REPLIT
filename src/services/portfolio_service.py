@@ -227,13 +227,32 @@ class PortfolioService:
                             # Keep the estimated avg_entry_price from our market calculation
                         else:
                             current_value = 0.0
+                            
+                        # FIXED: Use OKX balance total value if available instead of manual calculation
+                        # Some exchanges provide pre-calculated USD value in balance data
+                        balance_usd_value = balance_info.get('usdValue') or balance_info.get('value_usd')
+                        if balance_usd_value and float(balance_usd_value) > 0:
+                            current_value = float(balance_usd_value)
+                            self.logger.info(f"Using OKX pre-calculated USD value for {symbol}: ${current_value:.2f}")
+                        else:
+                            # Fallback to manual calculation
+                            current_value = quantity * current_price
                     except (TypeError, ValueError):
                         quantity = 0.0
                         current_value = 0.0
                 
-                    # Calculate P&L using real cost basis from OKX
-                    pnl = current_value - cost_basis
-                    pnl_percent = (pnl / cost_basis * 100.0) if cost_basis > 0 else 0.0
+                    # FIXED: Use OKX position data for P&L if available, otherwise calculate
+                    # Try to get unrealized P&L from OKX position data first
+                    okx_position_pnl = self._get_okx_position_pnl(symbol, positions_data)
+                    if okx_position_pnl is not None:
+                        pnl = okx_position_pnl
+                        pnl_percent = (pnl / cost_basis * 100.0) if cost_basis > 0 else 0.0
+                        self.logger.info(f"Using OKX position P&L for {symbol}: ${pnl:.2f}")
+                    else:
+                        # Fallback to manual calculation if OKX P&L not available
+                        pnl = current_value - cost_basis
+                        pnl_percent = (pnl / cost_basis * 100.0) if cost_basis > 0 else 0.0
+                        self.logger.debug(f"Using calculated P&L for {symbol}: ${pnl:.2f}")
                     has_position = quantity > 0.0
                 else:
                     # No real position - skip this symbol completely
@@ -341,6 +360,46 @@ class PortfolioService:
         except Exception as e:
             self.logger.error(f"Error estimating cost basis for {symbol}: {e}")
             return 0.0, 0.0
+    
+    def _get_okx_position_pnl(self, symbol: str, positions_data: List[Dict]) -> Optional[float]:
+        """
+        Extract unrealized P&L directly from OKX position data if available.
+        
+        Args:
+            symbol: The cryptocurrency symbol (e.g., 'PEPE')
+            positions_data: List of position records from OKX
+            
+        Returns:
+            float: Unrealized P&L from OKX, or None if not found
+        """
+        try:
+            for position in positions_data:
+                pos_symbol = position.get('symbol', '')
+                # Handle both 'PEPE/USDT' and 'PEPE' formats
+                if (pos_symbol == f"{symbol}/USDT" or 
+                    pos_symbol == f"{symbol}-USDT" or 
+                    pos_symbol.startswith(symbol)):
+                    
+                    # OKX position data may contain unrealized P&L
+                    unrealized_pnl = position.get('unrealizedPnl') or position.get('upl') or position.get('pnl')
+                    if unrealized_pnl is not None:
+                        return float(unrealized_pnl)
+                    
+                    # Alternative: calculate from position data if mark price available
+                    mark_price = position.get('markPrice') or position.get('mark')
+                    avg_price = position.get('avgPrice') or position.get('average')
+                    size = position.get('size') or position.get('contracts') or position.get('amount')
+                    
+                    if all([mark_price, avg_price, size]):
+                        calculated_pnl = (float(mark_price) - float(avg_price)) * float(size)
+                        self.logger.info(f"Calculated P&L from OKX position data for {symbol}: ${calculated_pnl:.2f}")
+                        return calculated_pnl
+                        
+            return None
+            
+        except Exception as e:
+            self.logger.warning(f"Error getting OKX position P&L for {symbol}: {e}")
+            return None
 
     def _get_live_okx_price(self, symbol: str, currency: str = 'USD') -> float:
         """
