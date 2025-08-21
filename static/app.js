@@ -59,8 +59,35 @@ class TradingApp {
 
         return new Intl.NumberFormat('en-US', {
             style: 'currency',
-            currency: targetCurrency
+            currency: targetCurrency,
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
         }).format(convertedAmount);
+    }
+
+    // Special formatter for crypto prices that need more precision
+    formatCryptoPrice(amount, currency = null) {
+        const targetCurrency = currency || this.selectedCurrency || 'USD';
+        const rate = this.exchangeRates[targetCurrency] || 1;
+        const convertedAmount = (Number(amount) || 0) * rate;
+
+        // For very small amounts, use more decimal places
+        if (Math.abs(convertedAmount) < 0.01 && Math.abs(convertedAmount) > 0) {
+            // Find the number of leading zeros after decimal point
+            const str = convertedAmount.toExponential();
+            const exponent = parseInt(str.split('e-')[1]) || 0;
+            const decimals = Math.max(8, exponent + 2); // At least 8 decimals for crypto
+            
+            return new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: targetCurrency,
+                minimumFractionDigits: decimals,
+                maximumFractionDigits: decimals
+            }).format(convertedAmount);
+        }
+        
+        // For normal amounts, use standard formatting
+        return this.formatCurrency(convertedAmount, targetCurrency);
     }
     formatUptime(totalSeconds) {
         const hours = Math.floor(totalSeconds / 3600);
@@ -1010,16 +1037,16 @@ class TradingApp {
                 const target = weight;
                 const deviation = '0.0';
                 const change24h = pp > 0 ? `+${pp.toFixed(1)}%` : `${pp.toFixed(1)}%`;
-                const stopLoss = this.formatCurrency(purchasePrice * 0.9);
-                const takeProfit = this.formatCurrency(purchasePrice * 1.2);
+                const stopLoss = this.formatCryptoPrice(purchasePrice * 0.9);
+                const takeProfit = this.formatCryptoPrice(purchasePrice * 1.2);
                 const daysHeld = '30';
 
                 row.innerHTML = `
                     <td class="text-start"><strong>${crypto.symbol || 'PEPE'}</strong></td>
                     <td class="text-start">${side}</td>
                     <td class="text-end">${qty.toLocaleString(undefined, {maximumFractionDigits: 0})}</td>
-                    <td class="text-end">${this.formatCurrency(purchasePrice)}</td>
-                    <td class="text-end">${this.formatCurrency(cp)}</td>
+                    <td class="text-end">${this.formatCryptoPrice(purchasePrice)}</td>
+                    <td class="text-end">${this.formatCryptoPrice(cp)}</td>
                     <td class="text-end">${this.formatCurrency(cv, this.selectedCurrency)}</td>
                     <td class="text-end ${pnlClass}"><strong>${this.formatCurrency(pnlNum)}</strong></td>
                     <td class="text-end ${pnlClass}">${pnlIcon} <strong>${pp.toFixed(1)}%</strong></td>
@@ -1092,8 +1119,8 @@ class TradingApp {
         // Current and purchase prices
         const currentPrice = pepe.current_price || 0.00001000;
         const purchasePrice = pepe.avg_buy_price || 0.00000800;
-        set('pos-current-price', this.formatCurrency(currentPrice));
-        set('pos-purchase-price', this.formatCurrency(purchasePrice));
+        set('pos-current-price', this.formatCryptoPrice(currentPrice, this.selectedCurrency));
+        set('pos-purchase-price', this.formatCryptoPrice(purchasePrice, this.selectedCurrency));
         
         // Enhanced P&L display
         const pnl = pepe.pnl || 12.03;
@@ -1136,6 +1163,7 @@ class TradingApp {
         
         // Purchase price (avg entry)
         const purchasePrice = pepe.avg_buy_price || 0.00000800; // fallback to known value
+        set('okx-purchase-price', this.formatCryptoPrice(purchasePrice, this.selectedCurrency));
         set('okx-purchase-price', this.formatCurrency(purchasePrice));
         
         // Unrealized P&L with color coding
