@@ -21,42 +21,37 @@ class OKXAdapter(BaseExchange):
         self.exchange: Optional[ccxt.okx] = None
         self._is_connected = False
     
+    def _build_client(self, default_type: str = 'spot') -> ccxt.okx:
+        """Build OKX client with centralized configuration."""
+        api_key = os.getenv("OKX_API_KEY") or self.config.get("apiKey", "")
+        secret = os.getenv("OKX_API_SECRET") or os.getenv("OKX_SECRET_KEY") or self.config.get("secret", "")
+        passphrase = os.getenv("OKX_API_PASSPHRASE") or os.getenv("OKX_PASSPHRASE") or self.config.get("password", "")
+        hostname = os.getenv("OKX_HOSTNAME") or os.getenv("OKX_REGION") or "www.okx.com"
+        
+        if not all([api_key, secret, passphrase]):
+            raise RuntimeError("Missing OKX API credentials (OKX_API_KEY/OKX_API_SECRET/OKX_API_PASSPHRASE)")
+
+        ex = ccxt.okx({
+            'apiKey': api_key,
+            'secret': secret,
+            'password': passphrase,
+            'hostname': hostname,
+            'sandbox': False,  # Always use live trading
+            'enableRateLimit': True,
+            'timeout': 30000,
+            'options': {
+                'defaultType': default_type,
+                # 'fetchMyTradesMethod': 'privateGetTradeFillsHistory'  # optional
+            }
+        })
+        ex.load_markets()
+        return ex
+
     def connect(self) -> bool:
-        """Connect to OKX exchange."""
+        """Connect to OKX exchange using centralized client builder."""
         try:
-            # Get credentials from environment or config
-            api_key = os.getenv("OKX_API_KEY") or self.config.get("apiKey", "")
-            secret_key = os.getenv("OKX_SECRET_KEY") or os.getenv("OKX_API_SECRET") or self.config.get("secret", "")
-            passphrase = os.getenv("OKX_PASSPHRASE") or os.getenv("OKX_API_PASSPHRASE") or self.config.get("password", "")
-            
-            # 🌍 Regional endpoint support (2024 OKX update)
-            hostname = os.getenv("OKX_HOSTNAME") or os.getenv("OKX_REGION") or "www.okx.com"
-            
-            if not all([api_key, secret_key, passphrase]):
-                raise Exception("Missing OKX API credentials in environment variables")
-            
-            # Always use live trading mode
-            demo_mode = False
-            
-            self.exchange = ccxt.okx({
-                'apiKey': api_key,
-                'secret': secret_key,
-                'password': passphrase,
-                'hostname': hostname,  # Regional endpoint support
-                'sandbox': False,  # Always use live trading
-                'enableRateLimit': True,
-                'timeout': 30000,
-                'options': {
-                    'defaultType': 'spot'  # Use spot trading by default
-                }
-            })
-            
-            # Always use live trading mode
-            self.logger.info("Using OKX Live Trading mode")
-            
-            # Test connection
-            self.exchange.load_markets()
-            self.logger.info("Successfully connected to OKX")
+            self.exchange = self._build_client(default_type='spot')
+            self.logger.info("Connected to OKX (live spot)")
             self._is_connected = True
             return True
             
@@ -745,29 +740,8 @@ class OKXAdapter(BaseExchange):
 
 def make_okx_spot() -> ccxt.okx:
     """
-    Return a ccxt OKX client configured for SPOT trading in production mode.
+    Factory function for OKX spot client - delegates to centralized builder.
+    Returns authenticated OKX client ready for live spot trading.
     """
-    api_key = os.getenv("OKX_API_KEY", "")
-    api_secret = os.getenv("OKX_API_SECRET") or os.getenv("OKX_SECRET_KEY", "")
-    passphrase = os.getenv("OKX_API_PASSPHRASE") or os.getenv("OKX_PASSPHRASE", "")
-    
-    if not all([api_key, api_secret, passphrase]):
-        raise RuntimeError("OKX API credentials required. Check OKX_API_KEY, OKX_SECRET_KEY, OKX_PASSPHRASE")
-    
-    # Always use production mode
-    use_demo = False
-    
-    ex = ccxt.okx({
-        "enableRateLimit": True,
-        "apiKey": api_key,
-        "secret": api_secret,
-        "password": passphrase,
-        "sandbox": use_demo,  # Always False for production
-    })
-    
-    # Force SPOT trading
-    ex.options = {**getattr(ex, "options", {}), "defaultType": "spot"}
-    
-    # Load markets
-    ex.load_markets()
-    return ex
+    # Use centralized client builder
+    return OKXAdapter({'apiKey': '', 'secret': '', 'password': ''})._build_client('spot')

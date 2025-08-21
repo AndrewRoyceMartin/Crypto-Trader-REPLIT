@@ -153,4 +153,30 @@ def get_currency_conversion_rates(self) -> dict:
 
 **Result**: Currency switching now displays mathematically correct values in EUR, GBP, AUD.
 
-**Status**: ✅ **Complete & Fixed** - The OKX adapter now correctly handles spot/derivatives trading AND currency conversion mathematics.
+## Client Construction Unification (August 21, 2025)
+
+### **Eliminated Duplicate Client Construction**
+- **Issue**: Two separate methods (`connect()` and `make_okx_spot()`) building OKX clients
+- **Problem**: Duplicate code leads to maintenance drift and inconsistencies
+- **Solution**: Centralized client construction in `_build_client()` method
+
+### **Unified Builder Pattern**
+```python
+def _build_client(self, default_type: str = 'spot') -> ccxt.okx:
+    """Build OKX client with centralized configuration."""
+    # Single source of truth for credential handling
+    # Consistent error handling and client configuration
+    # Support for both spot and derivatives trading types
+
+def connect(self) -> bool:
+    """Uses centralized builder"""
+    self.exchange = self._build_client(default_type='spot')
+
+def make_okx_spot() -> ccxt.okx:
+    """Factory delegates to centralized builder"""
+    return OKXAdapter({})._build_client('spot')
+```
+
+**Benefits**: Single configuration source, consistent error handling, easier maintenance.
+
+**Status**: ✅ **Complete & Unified** - The OKX adapter now has centralized client construction, proper spot/derivatives handling, and correct currency conversion mathematics.
