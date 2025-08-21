@@ -1,0 +1,56 @@
+3) Targeted replacements in your file
+<!-- Brand -->
+<i class="fas fa-chart-line me-2"></i>
+→ <i class="fa-solid fa-chart-line me-2"></i>
+
+<!-- Overview -->
+<i class="fas fa-tachometer-alt me-2"></i>
+→ <i class="fa-solid fa-gauge me-2"></i>
+
+<!-- Control bar buttons -->
+<i class="fas fa-file-alt me-1"></i>   → <i class="fa-solid fa-file-lines me-1"></i>
+<i class="fas fa-dollar-sign me-1"></i>→ <i class="fa-solid fa-dollar-sign me-1"></i>
+<i class="fas fa-arrow-up me-1"></i>   → <i class="fa-solid fa-arrow-up me-1"></i>
+<i class="fas fa-arrow-down me-1"></i> → <i class="fa-solid fa-arrow-down me-1"></i>
+<i class="fas fa-robot me-1"></i>      → <i class="fa-solid fa-robot me-1"></i>
+
+<!-- Overview status -->
+<i class="fas fa-wifi me-1"></i>   → <i class="fa-solid fa-wifi me-1"></i>
+<i class="fas fa-server me-1"></i> → <i class="fa-solid fa-server me-1"></i>
+
+<!-- Quick Trading card header -->
+<i class="fas fa-exchange-alt me-2"></i>
+→ <i class="fa-solid fa-right-left me-2"></i>
+
+<!-- Quick Trading buttons -->
+<i class="fas fa-arrow-up me-2"></i>   → <i class="fa-solid fa-arrow-up me-2"></i>
+<i class="fas fa-arrow-down me-2"></i> → <i class="fa-solid fa-arrow-down me-2"></i>
+<i class="fas fa-robot me-2"></i>      → <i class="fa-solid fa-robot me-2"></i>
+<i class="fas fa-shield me-1"></i>     → <i class="fa-solid fa-shield me-1"></i>
+
+<!-- Portfolio KPIs -->
+<i class="fas fa-wallet"></i>      → <i class="fa-solid fa-wallet"></i>
+<i class="fas fa-chart-line"></i>  → <i class="fa-solid fa-chart-line"></i>
+<i class="fas fa-coins"></i>       → <i class="fa-solid fa-coins"></i>
+<i class="fas fa-trophy"></i>      → <i class="fa-solid fa-trophy"></i>
+<i class="fas fa-arrow-down"></i>  → <i class="fa-solid fa-arrow-down"></i>
+<i class="fas fa-dollar-sign"></i> → <i class="fa-solid fa-dollar-sign"></i>
+<i class="fas fa-percentage"></i>  → <i class="fa-solid fa-percent"></i>
+
+<!-- Section buttons -->
+<i class="fas fa-sync-alt me-1"></i> → <i class="fa-solid fa-rotate-right me-1"></i>
+
+<!-- Holdings/Trades headers -->
+<i class="fas fa-coins me-2"></i>      → <i class="fa-solid fa-coins me-2"></i>
+<i class="fas fa-exchange-alt me-2"></i>→ <i class="fa-solid fa-right-left me-2"></i>
+
+<!-- Sort icons -->
+<i class="fas fa-sort ms-1"></i> → <i class="fa-solid fa-sort ms-1"></i>
+
+<!-- Clear filters -->
+<i class="fas fa-times me-1"></i> → <i class="fa-solid fa-xmark me-1"></i>
+
+<!-- Footer -->
+<i class="fas fa-server me-1"></i>      → <i class="fa-solid fa-server me-1"></i>
+<i class="fas fa-exchange-alt me-1"></i>→ <i class="fa-solid fa-right-left me-1"></i>
+<i class="fas fa-code me-1"></i>        → <i class="fa-solid fa-code me-1"></i>
