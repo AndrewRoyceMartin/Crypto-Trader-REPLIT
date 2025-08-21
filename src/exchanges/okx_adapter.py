@@ -7,7 +7,7 @@ import pandas as pd
 import logging
 import os
 import time
-from typing import Dict, List, Any, Optional, Union
+from typing import Dict, List, Any, Optional
 from datetime import datetime, timezone
 from ccxt.base.errors import BaseError, NetworkError, ExchangeError, RateLimitExceeded
 from .base import BaseExchange
@@ -124,7 +124,7 @@ class OKXAdapter(BaseExchange):
     
     def get_balance(self) -> Dict[str, Any]:
         """Get account balance with robust retry logic."""
-        if not self.is_connected():
+        if not self.is_connected() or self.exchange is None:
             raise RuntimeError("Not connected to exchange")
         
         try:
@@ -152,8 +152,8 @@ class OKXAdapter(BaseExchange):
         Get open positions. For spot: derive from balances; for derivatives: use fetch_positions().
         Correctly handles spot trading by building positions from balance data.
         """
-        if not self.is_connected():
-            raise Exception("Not connected to exchange")
+        if not self.is_connected() or self.exchange is None:
+            raise RuntimeError("Not connected to exchange")
 
         try:
             default_type = (self.exchange.options or {}).get('defaultType', 'spot')
@@ -191,7 +191,7 @@ class OKXAdapter(BaseExchange):
     
     def place_order(self, symbol: str, side: str, amount: float, order_type: str = "market", price: Optional[float] = None) -> Dict[str, Any]:
         """Place an order on the exchange with retry logic."""
-        if not self.is_connected():
+        if not self.is_connected() or self.exchange is None:
             raise RuntimeError("Not connected to exchange")
         
         try:
@@ -215,7 +215,7 @@ class OKXAdapter(BaseExchange):
         Get trade history using comprehensive OKX API endpoints.
         Prioritizes OKX-specific endpoints for maximum accuracy and coverage.
         """
-        if not self.is_connected():
+        if not self.is_connected() or self.exchange is None:
             self.logger.warning("Not connected to OKX exchange")
             return []
         
@@ -467,19 +467,19 @@ class OKXAdapter(BaseExchange):
     
     def get_order_book(self, symbol: str, limit: int = 20) -> Dict[str, Any]:
         """Get order book for a symbol."""
-        if not self.is_connected():
-            raise Exception("Not connected to exchange")
+        if not self.is_connected() or self.exchange is None:
+            raise RuntimeError("Not connected to exchange")
         
         try:
             order_book = self.exchange.fetch_order_book(symbol, limit)
-            return order_book
+            return dict(order_book)
         except Exception as e:
             self.logger.error(f"Error fetching order book for {symbol}: {str(e)}")
             raise
     
     def get_ticker(self, symbol: str) -> Dict[str, Any]:
         """Get ticker information for a symbol with retry logic."""
-        if not self.is_connected():
+        if not self.is_connected() or self.exchange is None:
             raise RuntimeError("Not connected to exchange")
         
         try:
@@ -494,7 +494,7 @@ class OKXAdapter(BaseExchange):
         Return conversion FROM USD into {USD, EUR, GBP, AUD}.
         Since USDT ≈ USD, use fiat/USDT and invert to get USD->FIAT.
         """
-        if not self.is_connected():
+        if not self.is_connected() or self.exchange is None:
             self.logger.warning("Exchange not connected, cannot get currency rates")
             return {"USD": 1.0, "EUR": 0.92, "GBP": 0.79, "AUD": 1.52}
 
@@ -725,8 +725,8 @@ class OKXAdapter(BaseExchange):
     
     def get_ohlcv(self, symbol: str, timeframe: str, limit: int = 100) -> pd.DataFrame:
         """Get OHLCV data."""
-        if not self.is_connected():
-            raise Exception("Not connected to exchange")
+        if not self.is_connected() or self.exchange is None:
+            raise RuntimeError("Not connected to exchange")
         
         try:
             ohlcv = self.exchange.fetch_ohlcv(symbol, timeframe, limit=limit)
@@ -739,8 +739,8 @@ class OKXAdapter(BaseExchange):
     
     def get_ticker(self, symbol: str) -> Dict[str, Any]:
         """Get ticker data."""
-        if not self.is_connected():
-            raise Exception("Not connected to exchange")
+        if not self.is_connected() or self.exchange is None:
+            raise RuntimeError("Not connected to exchange")
         
         try:
             ticker = self.exchange.fetch_ticker(symbol)
@@ -751,8 +751,8 @@ class OKXAdapter(BaseExchange):
     
     def get_open_orders(self, symbol: Optional[str] = None) -> List[Dict[str, Any]]:
         """Get open orders."""
-        if not self.is_connected():
-            raise Exception("Not connected to exchange")
+        if not self.is_connected() or self.exchange is None:
+            raise RuntimeError("Not connected to exchange")
         
         try:
             orders = self.exchange.fetch_open_orders(symbol)
@@ -763,7 +763,7 @@ class OKXAdapter(BaseExchange):
     
     def cancel_order(self, order_id: str, symbol: str) -> Dict[str, Any]:
         """Cancel an order with retry logic."""
-        if not self.is_connected():
+        if not self.is_connected() or self.exchange is None:
             raise RuntimeError("Not connected to exchange")
         
         try:
@@ -788,6 +788,8 @@ class OKXAdapter(BaseExchange):
     
     def healthcheck(self) -> bool:
         """Quick connectivity and permissions verification."""
+        if self.exchange is None:
+            return False
         try:
             self._retry(self.exchange.load_markets)
             self._retry(self.exchange.fetch_balance)
