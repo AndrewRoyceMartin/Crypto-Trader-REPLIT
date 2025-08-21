@@ -650,22 +650,36 @@ def api_trade_history():
         else:
             logger.info("No trades found in database")
 
-        # Try to get live OKX trade data if available (use timeframe-aware method)
+        # Try to get live OKX trade data using the portfolio service (properly configured)
         try:
-            from src.exchanges.okx_adapter import OKXAdapter
-            adapter = OKXAdapter()
-            if adapter.connect():
-                if timeframe == 'all':
-                    okx_trades = adapter.get_trades(limit=1000)
-                else:
-                    okx_trades = adapter.get_trades_by_timeframe(timeframe, limit=1000)
+            service = get_portfolio_service()
+            if service and hasattr(service, 'exchange'):
+                # Use existing portfolio service which has proper OKX configuration
+                okx_trades = service.get_trade_history(limit=1000)
+                logger.info(f"Loaded {len(okx_trades)} trades from OKX via portfolio service for timeframe {timeframe}")
                 
-                logger.info(f"Loaded {len(okx_trades)} trades from OKX exchange for timeframe {timeframe}")
-                all_trades.extend(okx_trades)
+                # Format OKX trades to match expected structure
+                for trade in okx_trades:
+                    formatted_trade = {
+                        'id': trade.get('id', len(all_trades) + 1),
+                        'trade_number': len(all_trades) + 1,
+                        'symbol': trade.get('symbol', ''),
+                        'action': trade.get('side', ''),
+                        'side': trade.get('side', ''),
+                        'quantity': trade.get('quantity', 0),
+                        'price': trade.get('price', 0),
+                        'timestamp': trade.get('timestamp', ''),
+                        'total_value': trade.get('total_value', 0),
+                        'pnl': trade.get('pnl', 0),
+                        'strategy': trade.get('strategy', ''),
+                        'order_id': trade.get('order_id', ''),
+                        'source': 'okx_live'
+                    }
+                    all_trades.append(formatted_trade)
             else:
-                logger.warning("Could not connect to OKX exchange")
+                logger.warning("Portfolio service not available for trade data")
         except Exception as okx_error:
-            logger.warning(f"OKX error: {okx_error}")
+            logger.warning(f"OKX portfolio service error: {okx_error}")
 
         # Filter trades by timeframe if we have trades from database
         if timeframe != 'all' and all_trades:
