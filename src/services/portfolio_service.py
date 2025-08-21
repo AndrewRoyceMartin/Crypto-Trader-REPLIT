@@ -108,10 +108,28 @@ class PortfolioService:
                         if key not in ['info', 'timestamp', 'datetime', 'free', 'used', 'total'] and value:
                             self.logger.info(f"OKX {key}: {value}")
                 
-                # For now, skip trade history due to OKX API limits
-                # We'll calculate cost basis from current market data if needed
+                # Try to get trade history from OKX - with proper error handling
                 trade_history = []
-                self.logger.info("Skipping trade history due to OKX API restrictions")
+                try:
+                    # Get recent trades from OKX with conservative limits
+                    raw_trades = self.exchange.get_trades(limit=20)
+                    trade_history = []
+                    for trade in raw_trades:
+                        formatted_trade = {
+                            'symbol': trade.get('symbol', ''),
+                            'side': trade.get('side', ''),
+                            'quantity': float(trade.get('amount', 0)),
+                            'price': float(trade.get('price', 0)),
+                            'timestamp': trade.get('datetime', ''),
+                            'id': trade.get('id', ''),
+                            'total_value': float(trade.get('cost', 0)),
+                            'pnl': 0  # Calculate later if needed
+                        }
+                        trade_history.append(formatted_trade)
+                    self.logger.info(f"Successfully fetched {len(trade_history)} trades from OKX")
+                except Exception as e:
+                    self.logger.warning(f"Could not fetch OKX trade history: {e}")
+                    trade_history = []
                 
             except Exception as e:
                 self.logger.warning(f"Could not get OKX data: {e}")

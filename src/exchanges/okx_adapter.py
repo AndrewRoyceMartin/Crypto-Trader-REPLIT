@@ -208,6 +208,10 @@ class OKXAdapter(BaseExchange):
             self.logger.error(f"Error canceling order: {str(e)}")
             raise
     
+    def get_order_history(self, symbol: Optional[str] = None, limit: int = 50) -> List[Dict[str, Any]]:
+        """Get order history (alias for get_trades)."""
+        return self.get_trades(symbol, limit)
+
     def get_currency_conversion_rates(self) -> dict:
         """Get currency conversion rates from OKX using fiat trading pairs."""
         try:
