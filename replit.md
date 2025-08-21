@@ -7,7 +7,15 @@ This Python-based algorithmic trading system automates cryptocurrency trading st
 Preferred communication style: Simple, everyday language.
 
 ## System Architecture
-The system utilizes a modular architecture supporting both CLI and Flask-based web interfaces, primarily for live OKX trading. It prioritizes fast Flask deployment with background trading system initialization and persistent data caching.
+The system utilizes a modular architecture with a unified Flask-based web interface for live OKX trading. The architecture has been streamlined to use a single-page dashboard application with clean, minimal styling. All unused files have been archived to maintain a clean codebase structure.
+
+**Current Active Structure:**
+- **app.py** - Main Flask application entry point
+- **templates/unified_dashboard.html** - Single-page dashboard interface  
+- **static/style_clean.css** - Clean minimal styling system
+- **static/app_clean.js** - Dashboard functionality
+- **src/** - Modular source code architecture
+- **archive/** - Archived unused development files
 
 **Strategy System:**
 The system exclusively uses an Enhanced Bollinger Bands strategy across all modes, incorporating advanced crash protection, dynamic risk management, rebuy mechanisms, and peak tracking. All simulation and paper trading functionalities have been removed in favor of live OKX integration.
