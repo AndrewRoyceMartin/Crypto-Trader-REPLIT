@@ -722,7 +722,7 @@ def api_trade_history():
             "success": False,
             "error": str(e),
             "trades": [],
-            "timeframe": timeframe if 'timeframe' in locals() else '7d'
+            "timeframe": request.args.get('timeframe', '7d')
         }), 500
 
 
@@ -872,7 +872,8 @@ def api_live_prices():
 
         for symbol in symbols:
             try:
-                price = portfolio_service.exchange._get_current_price(f"{symbol}/USDT")
+                # Use public get_current_price method instead of private _get_current_price
+                price = portfolio_service.exchange.get_current_price(f"{symbol}/USDT")
                 if price and price > 0:
                     formatted_prices[symbol] = {
                         'price': price,
@@ -1243,7 +1244,7 @@ def paper_trade_buy():
 
         initialize_system()
         portfolio_service = get_portfolio_service()
-        current_price = portfolio_service.exchange._get_current_price(f"{symbol}/USDT")
+        current_price = portfolio_service.exchange.get_current_price(f"{symbol}/USDT")
 
         if not current_price or current_price <= 0:
             return jsonify({"success": False, "error": f"Unable to get current price for {symbol} from OKX"}), 400
@@ -1283,7 +1284,7 @@ def paper_trade_sell():
 
         initialize_system()
         portfolio_service = get_portfolio_service()
-        current_price = portfolio_service.exchange._get_current_price(f"{symbol}/USDT")
+        current_price = portfolio_service.exchange.get_current_price(f"{symbol}/USDT")
 
         if not current_price or current_price <= 0:
             return jsonify({"success": False, "error": f"Unable to get current price for {symbol} from OKX"}), 400
@@ -1485,7 +1486,7 @@ def api_okx_status():
         })
         # Force live trading mode
         exchange.set_sandbox_mode(False)
-        if exchange.headers:
+        if hasattr(exchange, 'headers') and exchange.headers:
             exchange.headers.pop('x-simulated-trading', None)
         try:
             exchange.load_markets()
@@ -1498,7 +1499,7 @@ def api_okx_status():
             'connection_type': 'Live Trading',
             'exchange_name': 'OKX Exchange',
             'trading_mode': 'Live Trading',
-            'trading_pairs': len(exchange.markets) if connected else 0,
+            'trading_pairs': len(exchange.markets) if connected and hasattr(exchange, 'markets') and exchange.markets else 0,
             'total_prices': 0,  # Remove simulation references
             'balance': {},  # Don't expose balance in status
             'initialized': connected,
@@ -1901,14 +1902,14 @@ def api_performance():
                         'drawdown': point['drawdown'],
                         'start_idx': i
                     }
-                elif in_drawdown and point['drawdown'] < current_drawdown['drawdown']:
+                elif in_drawdown and current_drawdown and point['drawdown'] < current_drawdown['drawdown']:
                     # Deeper drawdown
                     current_drawdown.update({
                         'valley_value': equity_curve[i]['value'] if i < len(equity_curve) else total_current_value,
                         'valley_date': point['date'],
                         'drawdown': point['drawdown']
                     })
-                elif in_drawdown and point['drawdown'] >= -0.5:  # Recovery
+                elif in_drawdown and current_drawdown and point['drawdown'] >= -0.5:  # Recovery
                     # End of drawdown
                     current_drawdown['duration_days'] = i - current_drawdown['start_idx']
                     top_drawdowns.append(current_drawdown)
