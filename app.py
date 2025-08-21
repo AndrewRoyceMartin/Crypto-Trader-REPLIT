@@ -95,12 +95,11 @@ def okx_ticker_pct_change_24h(inst_id: str, api_key: str = None, secret_key: str
         logger.error(f"Failed to get OKX ticker for {inst_id}: {e}")
         return {'last': 0.0, 'open24h': 0.0, 'vol24h': 0.0, 'pct_24h': 0.0}
 
-def _date_range(start_date, end_date):
-    """Generate date range from start to end (inclusive)."""
-    current = start_date
-    while current <= end_date:
-        yield current
-        current += timedelta(days=1)
+def _date_range(start: datetime, end: datetime):
+    d = start
+    while d.date() <= end.date():
+        yield d
+        d += timedelta(days=1)
 
 # Set up logging for deployment
 logging.basicConfig(
