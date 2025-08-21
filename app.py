@@ -17,6 +17,7 @@ import hashlib
 import base64
 from datetime import datetime, timedelta, timezone
 from typing import Any
+from functools import wraps
 from flask import Flask, jsonify, request, render_template
 
 # Top-level imports only (satisfies linter)
@@ -28,6 +29,19 @@ try:
     LOCAL_TZ = pytz.timezone('America/New_York')  # Default to EST/EDT, user can change
 except ImportError:
     LOCAL_TZ = timezone.utc  # Fallback to UTC if pytz not available
+
+# Admin authentication
+ADMIN_TOKEN = os.getenv("ADMIN_TOKEN", "")
+
+def require_admin(f):
+    @wraps(f)
+    def wrapper(*args, **kwargs):
+        if not ADMIN_TOKEN:
+            return f(*args, **kwargs)  # Allow in dev if unset
+        if request.headers.get("X-Admin-Token") != ADMIN_TOKEN:
+            return jsonify({"error": "unauthorized"}), 401
+        return f(*args, **kwargs)
+    return wrapper
 
 # === UTC DateTime Helpers ===
 def utcnow():
@@ -635,36 +649,10 @@ def DISABLED_api_crypto_portfolio():
         return jsonify({"error": str(e)}), 500
 
 @app.route("/api/start_trading", methods=["POST"])
+@require_admin
 def start_trading():
-    """Start trading with portfolio mode."""
-    try:
-        data = request.get_json(force=True) or {}
-        mode = data.get("mode", "paper").lower()
-        trading_mode = data.get("trading_mode", "portfolio")
-
-        if trading_state["active"]:
-            return jsonify({"error": "Trading is already running"}), 400
-
-        trading_state.update({
-            "mode": mode,
-            "active": True,
-            "strategy": "portfolio",
-            "start_time": iso_utc(),
-            "type": trading_mode
-        })
-
-        global portfolio_initialized, recent_initial_trades
-        portfolio_initialized = True
-        recent_initial_trades = create_initial_purchase_trades(mode, trading_mode)
-
-        return jsonify({
-            "success": True,
-            "message": f"{mode.title()} portfolio trading started for {len(recent_initial_trades)} assets"
-        })
-
-    except Exception as e:
-        logger.error(f"Error starting trading: {e}")
-        return jsonify({"error": str(e)}), 500
+    """Redirect to new start-trading endpoint."""
+    return jsonify({"error": "Use /api/start-trading endpoint instead"}), 301
 
 @app.route("/api/trade-history")
 def api_trade_history():
@@ -3348,6 +3336,7 @@ def api_current_holdings():
         }), 500
 
 @app.route("/api/start-trading", methods=["POST"])
+@require_admin
 def api_start_trading():
     """Start trading with specified mode and type."""
     try:
@@ -3401,6 +3390,7 @@ def create_initial_portfolio_data():
         return []
 
 @app.route("/api/paper-trade/buy", methods=["POST"])
+@require_admin
 def paper_trade_buy():
     """Execute a paper buy trade."""
     if not warmup["done"]:
@@ -3441,6 +3431,7 @@ def paper_trade_buy():
         return jsonify({"success": False, "error": str(e)}), 500
 
 @app.route("/api/paper-trade/sell", methods=["POST"])
+@require_admin
 def paper_trade_sell():
     """Execute a paper sell trade."""
     if not warmup["done"]:
@@ -3481,6 +3472,7 @@ def paper_trade_sell():
         return jsonify({"success": False, "error": str(e)}), 500
 
 @app.route("/api/reset-entire-program", methods=["POST"])
+@require_admin
 def api_reset_entire_program():
     """Reset the entire trading system to initial state."""
     if not warmup["done"]:
@@ -3698,6 +3690,7 @@ def api_okx_status():
         }), 500
 
 @app.route("/api/execute-take-profit", methods=["POST"])
+@require_admin
 def execute_take_profit():
     """Execute take profit trades and automatically reinvest in buy targets."""
     try:

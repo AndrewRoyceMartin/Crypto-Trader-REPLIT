@@ -87,6 +87,14 @@ All datetime operations throughout the system have been standardized to use UTC-
 - UI display times are converted to LOCAL_TZ only when needed for user presentation
 - Ensures consistent time handling across all system components and API interactions
 
+**Authentication Protection for Mutating Endpoints:**
+Added `@require_admin` decorator protection for all mutating endpoints using shared secret authentication:
+- `ADMIN_TOKEN` environment variable controls access to sensitive operations
+- Protected endpoints: `/api/start-trading`, `/api/paper-trade/buy`, `/api/paper-trade/sell`, `/api/reset-entire-program`, `/api/execute-take-profit`
+- Requires `X-Admin-Token` header matching `ADMIN_TOKEN` environment variable
+- If `ADMIN_TOKEN` is unset, endpoints remain accessible for development convenience
+- Old `/api/start_trading` endpoint redirects to new `/api/start-trading` with proper authentication
+
 **Table Rendering System:**
 Dedicated table elements per dashboard view ensure no data conflicts, with robust currency conversion, error handling, and performance optimizations.
 
