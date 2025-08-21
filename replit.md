@@ -36,7 +36,7 @@ A Flask-based web interface offers real-time monitoring and portfolio visualizat
 All buy and sell price calculations use the user's real OKX purchase price and current OKX market prices. Stop loss and take profit levels are calculated based on authentic entry prices. The system prioritizes OKX pre-calculated fields for trade values and P&L over local calculations, ensuring alignment with the OKX platform.
 
 **CSS Architecture Optimization:**
-The system employs a minimal trading UI design with modern design tokens and CSS variable-based spacing. It features a grayscale-first approach with color reserved exclusively for profit/loss indicators and warnings, automatic dark mode support, mobile-responsive navigation with Bootstrap collapse toggle, and a dedicated sticky control bar beneath the navbar containing primary trading controls.
+The system employs a minimal trading UI design with modern design tokens and CSS variable-based spacing. It features a grayscale-first approach with color reserved exclusively for profit/loss indicators and warnings, automatic dark mode support, mobile-responsive navigation with Bootstrap collapse toggle, and a dedicated sticky control bar beneath the navbar containing primary trading controls. The scoped `.theme-min` class system prevents Bootstrap color drift and ensures consistent minimal card aesthetics across all components.
 
 **OKX Currency Conversion:**
 The system uses OKX's native exchange rates for currency conversion, fetching real-time fiat conversion rates directly from OKX trading pairs.
