@@ -680,6 +680,9 @@ bot_state = {
     "trader_instance": None
 }
 
+# Global multi-currency trader instance (separate from JSON-serializable state)
+multi_currency_trader = None
+
 @app.route("/api/bot/status")
 def bot_status():
     """Get current bot trading status with multi-currency details."""
@@ -693,9 +696,10 @@ def bot_status():
     }
     
     # Add multi-currency details if available
-    if bot_state["trader_instance"] and hasattr(bot_state["trader_instance"], 'get_status'):
+    global multi_currency_trader
+    if multi_currency_trader and hasattr(multi_currency_trader, 'get_status'):
         try:
-            multi_status = bot_state["trader_instance"].get_status()
+            multi_status = multi_currency_trader.get_status()
             status.update({
                 "multi_currency": True,
                 "active_pairs": len([p for p, s in multi_status["pairs"].items() if s.get("running", False)]),
@@ -746,22 +750,34 @@ def bot_start():
         trading_thread = threading.Thread(target=start_background_trading, daemon=True)
         trading_thread.start()
         
-        # Update bot state
+        # Update bot state (store trader instance separately to avoid JSON serialization issues)
+        global multi_currency_trader
+        multi_currency_trader = trader_instance
+        
         bot_state.update({
             "running": True,
             "mode": mode,
             "symbol": "ALL_CURRENCIES",  # Indicates multi-currency trading
             "timeframe": timeframe,
             "started_at": iso_utc(),
-            "trader_instance": trader_instance
+            "trader_instance": None  # Don't store in JSON-serializable state
         })
         
         logger.info(f"Multi-currency bot started in {mode} mode with ${config.get_float('strategy', 'rebuy_max_usd', 100.0):.2f} rebuy limit")
         
+        # Create a safe copy of bot_state without any non-serializable objects
+        safe_status = {
+            "running": bot_state["running"],
+            "mode": bot_state["mode"],
+            "symbol": bot_state["symbol"],
+            "timeframe": bot_state["timeframe"],
+            "started_at": bot_state["started_at"]
+        }
+        
         return jsonify({
             "success": True,
             "message": f"Multi-currency bot started in {mode} mode with universal ${config.get_float('strategy', 'rebuy_max_usd', 100.0):.0f} rebuy limit",
-            "status": bot_state,
+            "status": safe_status,
             "rebuy_max_usd": config.get_float('strategy', 'rebuy_max_usd', 100.0),
             "supported_pairs": ["BTC/USDT", "PEPE/USDT", "ETH/USDT", "DOGE/USDT", "ADA/USDT", "SOL/USDT", "XRP/USDT", "AVAX/USDT"],
             "features": [
@@ -788,11 +804,15 @@ def bot_stop():
             return jsonify({"error": "Bot is not running"}), 400
             
         # Stop trader instance if exists
-        if bot_state["trader_instance"]:
+        global multi_currency_trader
+        if multi_currency_trader:
             try:
-                bot_state["trader_instance"].stop_trading()
+                multi_currency_trader.stop_trading()
             except Exception as e:
                 logger.warning(f"Error stopping trader instance: {e}")
+        
+        # Reset global trader
+        multi_currency_trader = None
                 
         # Reset bot state
         bot_state.update({
