@@ -1148,12 +1148,15 @@ class TradingApp {
         set('pos-unrealized-pnl', `${pnl >= 0 ? '+' : ''}${this.formatCurrency(pnl)}`);
         set('pos-unrealized-pnl-pct', `(${pnlPercent >= 0 ? '+' : ''}${pnlPercent.toFixed(1)}%)`);
         
-        // Update P&L card colors with improved styling
+        // Update P&L card colors with better contrast
         const pnlElement2 = document.getElementById('pos-unrealized-pnl');
         if (pnlElement2) {
             const pnlCard = pnlElement2.closest('.card');
             if (pnlCard) {
-                pnlCard.className = pnl >= 0 ? 'card p-3 kpi-card bg-success text-white shadow-sm' : 'card p-3 kpi-card bg-danger text-white shadow-sm';
+                // Use subtle background with dark text for better readability
+                pnlCard.className = pnl >= 0 ? 'card p-3 kpi-card border-success bg-light shadow-sm' : 'card p-3 kpi-card border-danger bg-light shadow-sm';
+                // Also color the text element
+                pnlElement2.className = pnl >= 0 ? 'text-success fw-bold' : 'text-danger fw-bold';
             }
         }
         
@@ -1191,12 +1194,15 @@ class TradingApp {
         const pnlText = `${pnl >= 0 ? '+' : ''}${this.formatCurrency(pnl)} (${pnlPercent >= 0 ? '+' : ''}${pnlPercent.toFixed(1)}%)`;
         set('okx-unrealized-pnl', pnlText);
         
-        // Update card color based on P&L with improved styling
+        // Update card color based on P&L with better readability
         const pnlElement = document.getElementById('okx-unrealized-pnl');
         if (pnlElement) {
             const pnlCard = pnlElement.closest('.card');
             if (pnlCard) {
-                pnlCard.className = pnl >= 0 ? 'card bg-success text-white p-2 shadow-sm' : 'card bg-danger text-white p-2 shadow-sm';
+                // Use subtle styling with colored borders and light backgrounds
+                pnlCard.className = pnl >= 0 ? 'card border-success bg-light p-2 shadow-sm' : 'card border-danger bg-light p-2 shadow-sm';
+                // Color the text for visibility
+                pnlElement.className = pnl >= 0 ? 'text-success fw-bold' : 'text-danger fw-bold';
             }
         }
 
