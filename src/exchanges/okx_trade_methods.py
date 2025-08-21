@@ -10,9 +10,10 @@ from datetime import datetime, timedelta, timezone
 class OKXTradeRetrieval:
     """OKX-specific trade retrieval methods with comprehensive API coverage."""
     
-    def __init__(self, exchange, logger=None):
+    def __init__(self, exchange, logger=None, portfolio_symbols=None):
         self.exchange = exchange
         self.logger = logger or logging.getLogger(__name__)
+        self.portfolio_symbols = portfolio_symbols or []
     
     def _normalize_symbol(self, s: Optional[str]) -> Optional[str]:
         """Convert standard format (BTC/USDT) to OKX instId format (BTC-USDT)."""
@@ -252,33 +253,61 @@ class OKXTradeRetrieval:
             return []
     
     def _get_ccxt_trades(self, symbol: Optional[str], limit: int, since: Optional[int] = None) -> List[Dict[str, Any]]:
-        """Get trades using standard CCXT methods with optional since timestamp."""
+        """Get trades using standard CCXT methods with optional since timestamp and portfolio fallback."""
         # Input normalization and API constraints
         limit = max(1, min(int(limit or 50), 100))  # CCXT API safety limit
         symbol = symbol.strip() if isinstance(symbol, str) else None
         
         trades = []
+        symbols_to_try = []
         
-        try:
-            # Try fetch_my_trades with optional since parameter
-            my_trades = self.exchange.fetch_my_trades(symbol=symbol, since=since, limit=limit)
-            for trade in my_trades:
-                formatted = self._format_ccxt_trade(trade)
-                if formatted:
-                    trades.append(formatted)
-        except Exception as e:
-            self.logger.warning(f"fetch_my_trades failed: {e}")
+        # Determine which symbols to query
+        if symbol:
+            symbols_to_try = [symbol]
+        elif self.portfolio_symbols:
+            # Use known portfolio symbols when no specific symbol provided
+            symbols_to_try = self.portfolio_symbols[:10]  # Limit to prevent excessive API calls
+            self.logger.debug(f"Using portfolio symbols for CCXT fallback: {symbols_to_try}")
+        else:
+            # Try without symbol (some exchanges support this)
+            symbols_to_try = [None]
         
-        try:
-            # Try fetch_closed_orders with optional since parameter
-            orders = self.exchange.fetch_closed_orders(symbol=symbol, since=since, limit=limit)
-            for order in orders:
-                if order.get('status') == 'closed' and order.get('filled', 0) > 0:
-                    trade = self._format_ccxt_order_as_trade(order)
-                    if trade:
-                        trades.append(trade)
-        except Exception as e:
-            self.logger.warning(f"fetch_closed_orders failed: {e}")
+        # Try fetch_my_trades with symbol strategy
+        for sym in symbols_to_try:
+            try:
+                my_trades = self.exchange.fetch_my_trades(symbol=sym, since=since, limit=limit)
+                for trade in my_trades:
+                    formatted = self._format_ccxt_trade(trade)
+                    if formatted:
+                        trades.append(formatted)
+                
+                # Break early if we have enough trades from first successful symbol
+                if trades and len(trades) >= limit // 2:
+                    break
+                    
+            except Exception as e:
+                # Log at debug level for portfolio symbols to avoid spam
+                log_level = self.logger.debug if not symbol else self.logger.warning
+                log_level(f"fetch_my_trades failed for {sym or 'all symbols'}: {e}")
+        
+        # Try fetch_closed_orders with symbol strategy
+        for sym in symbols_to_try:
+            try:
+                orders = self.exchange.fetch_closed_orders(symbol=sym, since=since, limit=limit)
+                for order in orders:
+                    if order.get('status') == 'closed' and order.get('filled', 0) > 0:
+                        trade = self._format_ccxt_order_as_trade(order)
+                        if trade:
+                            trades.append(trade)
+                
+                # Break early if we have enough trades from first successful symbol
+                if trades and len(trades) >= limit // 2:
+                    break
+                    
+            except Exception as e:
+                # Log at debug level for portfolio symbols to avoid spam
+                log_level = self.logger.debug if not symbol else self.logger.warning
+                log_level(f"fetch_closed_orders failed for {sym or 'all symbols'}: {e}")
         
         return trades
     
