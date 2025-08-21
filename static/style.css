@@ -102,27 +102,32 @@ body {
     color: var(--text-muted);
 }
 
-/* KPI Cards - Consolidated single definition with uniform sizing */
+/* KPI Cards - Auto-sizing with content-aware dimensions */
 .kpi-card {
-    /* Layout and structure */
+    /* Layout and structure - adaptive sizing */
     display: flex;
     flex-direction: column;
-    justify-content: center;
-    min-height: 90px;
+    justify-content: space-between;
+    min-height: 100px;
+    max-height: 140px;
     min-width: 0;
     max-width: 100%;
     text-align: center;
-    padding: 1rem;
-    margin-bottom: var(--sp-sm);
+    padding: 1.25rem 1rem;
+    margin-bottom: 1rem;
+    
+    /* Auto-fit content */
+    height: auto;
+    flex: 1;
     
     /* Performance optimizations for animations */
     contain: layout paint;
     will-change: transform;
     
-    /* Visual styling */
-    border-radius: 12px;
+    /* Visual styling - enhanced readability */
+    border-radius: 10px;
     border: 1px solid rgba(0, 0, 0, 0.1);
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    box-shadow: 0 3px 8px rgba(0,0,0,0.12);
     
     /* Text handling and overflow prevention */
     word-wrap: break-word;
@@ -148,45 +153,59 @@ body {
     box-shadow: 0 4px 8px rgba(0,0,0,0.15);
 }
 
-/* Unified KPI Card Typography System */
+/* Unified KPI Card Typography System - Enhanced Readability */
 .kpi-card .label {
-    font-size: 0.75rem;
-    margin-bottom: 0.5rem;
-    letter-spacing: 0.5px;
+    font-size: 0.8rem;
+    margin-bottom: 0.75rem;
+    letter-spacing: 0.3px;
     text-transform: uppercase;
     font-weight: 600;
-    line-height: 1.2;
-    opacity: 0.8;
+    line-height: 1.3;
+    opacity: 0.85;
+    flex-shrink: 0;
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
 }
 
 .kpi-card .value {
-    font-size: 1.25rem;
-    line-height: 1.2;
+    font-size: 1.4rem;
+    line-height: 1.25;
     font-weight: 700;
+    flex-grow: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
     word-break: break-word;
     overflow-wrap: break-word;
 }
 
-/* Handle mixed markup patterns uniformly */
+/* Handle mixed markup patterns uniformly - Enhanced Size System */
 .kpi-card h1, .kpi-card h2, .kpi-card h3, .kpi-card h4, .kpi-card h5, .kpi-card h6,
-.kpi-card .kpi-value {
-    font-size: 1.25rem !important;
+.kpi-card .kpi-value,
+.kpi-card .h1, .kpi-card .h2, .kpi-card .h3, .kpi-card .h4, .kpi-card .h5, .kpi-card .h6 {
+    font-size: 1.4rem !important;
     font-weight: 700 !important;
-    line-height: 1.2;
+    line-height: 1.25 !important;
     margin-bottom: 0 !important;
+    margin-top: 0 !important;
+    flex-grow: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
-.kpi-card small, .kpi-card .kpi-label {
-    font-size: 0.75rem !important;
+.kpi-card small, .kpi-card .kpi-label,
+.kpi-card .small {
+    font-size: 0.8rem !important;
     font-weight: 600 !important;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
-    opacity: 0.8;
-    margin-top: 0.5rem !important;
+    letter-spacing: 0.3px;
+    opacity: 0.85;
+    margin-bottom: 0.75rem !important;
+    margin-top: 0 !important;
+    flex-shrink: 0;
 }
 
 /* CONSOLIDATED RESPONSIVE STYLES - All breakpoints organized together */
@@ -348,6 +367,44 @@ h4, h5, h6 {
     font-weight: 600 !important;
     line-height: 1.3;
     margin-bottom: 0.5rem;
+}
+
+/* Universal content sizing enforcement for all cards */
+.kpi-card *,
+.chart-card *,
+.card .value,
+.card .label,
+.card small,
+.card .small {
+    box-sizing: border-box;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+/* Ensure consistent card content fitting */
+.kpi-card,
+.chart-card,
+.card {
+    position: relative;
+    overflow: hidden;
+}
+
+/* Universal responsive card grid - content-aware sizing */
+@media (max-width: 768px) {
+    .kpi-card {
+        min-height: 85px;
+        max-height: 120px;
+        padding: 1rem 0.75rem;
+    }
+    
+    .kpi-card .label {
+        font-size: 0.75rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .kpi-card .value {
+        font-size: 1.2rem;
+    }
 }
 
 /* Better mobile chart layout - MOVED TO CONSOLIDATED SECTION */
