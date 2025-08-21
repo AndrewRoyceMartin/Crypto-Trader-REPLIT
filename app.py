@@ -858,891 +858,121 @@ def filter_trades_by_timeframe(trades, timeframe):
 
 @app.route("/api/recent-trades")
 def api_recent_trades():
-    """Get recent trades using direct OKX native APIs only."""
     try:
         timeframe = request.args.get('timeframe', '7d')
         limit = int(request.args.get('limit', 50))
-        currency = request.args.get('currency', 'USD')
-        force_okx = request.args.get('force_okx', 'false').lower() == 'true'
-        
-        logger.info(f"Recent trades request with currency: {currency}, force_okx: {force_okx}")
-        
-        # Calculate date range
-        end_date = datetime.now(LOCAL_TZ)
-        if timeframe == '1d':
-            start_date = end_date - timedelta(days=1)
-        elif timeframe == '7d':
-            start_date = end_date - timedelta(days=7)
-        elif timeframe == '30d':
-            start_date = end_date - timedelta(days=30)
-        else:
-            start_date = end_date - timedelta(days=7)
-        
-        # Use OKX native API for trade data
-        import requests
-        import hmac
-        import hashlib
-        import base64
-        from datetime import timezone
-        
-        # OKX API credentials
-        api_key = os.getenv("OKX_API_KEY", "")
-        secret_key = os.getenv("OKX_SECRET_KEY", "")
-        passphrase = os.getenv("OKX_PASSPHRASE", "")
-        
-        def sign_request(timestamp, method, request_path, body=''):
-            message = timestamp + method + request_path + body
-            mac = hmac.new(bytes(secret_key, encoding='utf8'), bytes(message, encoding='utf-8'), digestmod='sha256')
-            d = mac.digest()
-            return base64.b64encode(d).decode('utf-8')
-        
-        base_url = 'https://www.okx.com'
+
+        # Try native OKX fills first, fallback to portfolio service data
         trades = []
         
-        if all([api_key, secret_key, passphrase]):
+        try:
+            end = utcnow()
+            starts = {"1d":1, "7d":7, "30d":30}.get(timeframe, 7)
+            start = end - timedelta(days=starts)
+            begin_ms = int(start.timestamp() * 1000)
+            end_ms = int(end.timestamp() * 1000)
+
+            from src.utils.okx_native import OKXNative
+            client = OKXNative.from_env()
+            fills = client.fills(begin_ms=begin_ms, end_ms=end_ms, limit=limit)
+            
+            for f in fills:
+                # OKX fills fields
+                trade_id = f.get("tradeId") or f.get("billId") or ""
+                ord_id = f.get("ordId") or ""
+                inst = f.get("instId", "")
+                side = (f.get("side", "") or "").upper()
+                sz = float(f.get("sz", 0) or 0)
+                px = float(f.get("px", 0) or 0)
+                ts = int(f.get("ts", 0) or 0)
+                if not inst or ts == 0:
+                    continue
+                dt = datetime.fromtimestamp(ts/1000, tz=timezone.utc).isoformat()
+                val = sz * px if px > 0 else 0.0
+                sym = inst.replace("-USDT","").replace("-USD","")
+
+                trades.append({
+                    "id": trade_id or f"okx_{ts}",
+                    "order_id": ord_id,
+                    "symbol": sym,
+                    "side": side,
+                    "quantity": sz,
+                    "price": px,
+                    "value": val,
+                    "fee": abs(float(f.get("fee", 0) or 0)),
+                    "fee_currency": f.get("feeCcy", ""),
+                    "timestamp": dt,
+                    "source": "okx_native_fills",
+                    "exchange": "OKX"
+                })
+            
+            logger.info(f"Retrieved {len(trades)} trades from OKX native fills API")
+            
+        except Exception as native_error:
+            logger.warning(f"OKX native fills API failed: {native_error}, falling back to portfolio service")
+            
+            # Fallback: Use existing portfolio service trade data
             try:
-                # Get trade history using OKX native API
-                timestamp = now_utc_iso()
-                method = 'GET'
+                service = get_portfolio_service()
+                portfolio_data = service.get_portfolio_data()
+                portfolio_trades = portfolio_data.get('trades', [])
                 
-                # Try multiple OKX endpoints for trade data
-                endpoints_to_try = [
-                    f'/api/v5/trade/fills?begin={int(start_date.timestamp() * 1000)}&end={int(end_date.timestamp() * 1000)}&limit={limit}',
-                    f'/api/v5/trade/fills-history?begin={int(start_date.timestamp() * 1000)}&end={int(end_date.timestamp() * 1000)}&limit={limit}',
-                    f'/api/v5/account/bills?begin={int(start_date.timestamp() * 1000)}&end={int(end_date.timestamp() * 1000)}&limit={limit}&type=1'
-                ]
+                # Filter trades by timeframe
+                end_time = datetime.now(timezone.utc)
+                start_time = end_time - timedelta(days={"1d":1, "7d":7, "30d":30}.get(timeframe, 7))
                 
-                for request_path in endpoints_to_try:
+                for trade in portfolio_trades:
                     try:
-                        signature = sign_request(timestamp, method, request_path)
-                        
-                        headers = {
-                            'OK-ACCESS-KEY': api_key,
-                            'OK-ACCESS-SIGN': signature,
-                            'OK-ACCESS-TIMESTAMP': timestamp,
-                            'OK-ACCESS-PASSPHRASE': passphrase,
-                            'Content-Type': 'application/json'
-                        }
-                        
-                        response = requests.get(base_url + request_path, headers=headers, timeout=10)
-                        
-                        if response.status_code == 200:
-                            trade_data = response.json()
-                            
-                            if trade_data.get('code') == '0' and trade_data.get('data'):
-                                logger.info(f"Retrieved {len(trade_data['data'])} trade records from OKX endpoint: {request_path}")
-                                
-                                for trade_record in trade_data['data']:
-                                    try:
-                                        # Handle different response formats from different endpoints
-                                        if 'fills' in request_path:
-                                            # Trade fills endpoint format
-                                            trade_id = trade_record.get('tradeId', '')
-                                            order_id = trade_record.get('ordId', '')
-                                            symbol = trade_record.get('instId', '').replace('-USDT', '').replace('-USD', '')
-                                            side = trade_record.get('side', '').upper()  # buy/sell
-                                            quantity = float(trade_record.get('sz', 0))
-                                            price = float(trade_record.get('px', 0))
-                                            fee = float(trade_record.get('fee', 0))
-                                            fee_currency = trade_record.get('feeCcy', '')
-                                            timestamp_ms = int(trade_record.get('ts', 0))
-                                            
-                                        else:
-                                            # Bills endpoint format - extract trade-related bills
-                                            bill_type = trade_record.get('type', '')
-                                            if bill_type not in ['1', '2']:  # Only trade-related bills
-                                                continue
-                                                
-                                            trade_id = trade_record.get('billId', '')
-                                            order_id = trade_record.get('ordId', '')
-                                            symbol = trade_record.get('ccy', '')
-                                            side = 'BUY' if float(trade_record.get('balChg', 0)) > 0 else 'SELL'
-                                            quantity = abs(float(trade_record.get('balChg', 0)))
-                                            price = 0.0  # Bills don't contain price info
-                                            fee = 0.0
-                                            fee_currency = symbol
-                                            timestamp_ms = int(trade_record.get('ts', 0))
-                                        
-                                        if timestamp_ms == 0 or not symbol:
-                                            continue
-                                        
-                                        # Convert timestamp
-                                        trade_datetime = datetime.fromtimestamp(timestamp_ms / 1000, tz=LOCAL_TZ)
-                                        
-                                        # Calculate trade value
-                                        trade_value = quantity * price if price > 0 else 0
-                                        
-                                        # Get current price for value calculation if needed
-                                        if price == 0 and symbol:
-                                            try:
-                                                price_timestamp = now_utc_iso()
-                                                price_path = f'/api/v5/market/ticker?instId={symbol}-USDT'
-                                                price_signature = sign_request(price_timestamp, method, price_path)
-                                                
-                                                price_headers = {
-                                                    'OK-ACCESS-KEY': api_key,
-                                                    'OK-ACCESS-SIGN': price_signature,
-                                                    'OK-ACCESS-TIMESTAMP': price_timestamp,
-                                                    'OK-ACCESS-PASSPHRASE': passphrase,
-                                                    'Content-Type': 'application/json'
-                                                }
-                                                
-                                                price_response = requests.get(base_url + price_path, headers=price_headers, timeout=5)
-                                                
-                                                if price_response.status_code == 200:
-                                                    price_data = price_response.json()
-                                                    
-                                                    if price_data.get('code') == '0' and price_data.get('data'):
-                                                        ticker_info = price_data['data'][0]
-                                                        price = float(ticker_info.get('last', 0))
-                                                        trade_value = quantity * price
-                                                        
-                                            except Exception as price_error:
-                                                logger.debug(f"Error getting price for {symbol}: {price_error}")
-                                        
-                                        trade_entry = {
-                                            'id': trade_id or f"okx_{timestamp_ms}",
-                                            'order_id': order_id,
-                                            'symbol': symbol,
-                                            'side': side,
-                                            'quantity': quantity,
-                                            'price': price,
-                                            'value': trade_value,
-                                            'fee': abs(fee),
-                                            'fee_currency': fee_currency,
-                                            'timestamp': trade_datetime.isoformat(),
-                                            'date': trade_datetime.strftime('%Y-%m-%d'),
-                                            'time': trade_datetime.strftime('%H:%M:%S'),
-                                            'source': 'okx_native_api',
-                                            'exchange': 'OKX'
-                                        }
-                                        
-                                        trades.append(trade_entry)
-                                        
-                                    except Exception as trade_error:
-                                        logger.debug(f"Error processing trade record: {trade_error}")
-                                        continue
-                                
-                                # If we got trades, break from trying other endpoints
-                                if trades:
-                                    break
-                                    
+                        timestamp_str = trade.get('timestamp', '')
+                        if timestamp_str:
+                            if isinstance(timestamp_str, str):
+                                trade_time = datetime.fromisoformat(timestamp_str.replace('Z', '+00:00'))
                             else:
-                                logger.info(f"No data from OKX endpoint {request_path}: {trade_data}")
+                                continue
                                 
-                        else:
-                            logger.warning(f"OKX endpoint {request_path} failed with status {response.status_code}")
+                            if trade_time < start_time:
+                                continue
                             
-                    except Exception as endpoint_error:
-                        logger.warning(f"OKX endpoint {request_path} failed: {endpoint_error}")
+                            trades.append({
+                                "id": trade.get('id', f"trade_{trade_time.timestamp()}"),
+                                "order_id": trade.get('order_id', ''),
+                                "symbol": trade.get('symbol', ''),
+                                "side": (trade.get('side', '') or '').upper(),
+                                "quantity": float(trade.get('quantity', 0)),
+                                "price": float(trade.get('price', 0)),
+                                "value": float(trade.get('value', 0)),
+                                "fee": abs(float(trade.get('fee', 0))),
+                                "fee_currency": trade.get('fee_currency', 'USDT'),
+                                "timestamp": timestamp_str,
+                                "source": "portfolio_service_fallback",
+                                "exchange": "OKX"
+                            })
+                    except Exception as trade_error:
+                        logger.debug(f"Error processing trade: {trade_error}")
                         continue
                         
-            except Exception as api_error:
-                logger.error(f"OKX native API failed: {api_error}")
-        
-        # Sort trades by timestamp (newest first)
-        trades.sort(key=lambda x: x['timestamp'], reverse=True)
-        
-        # Limit results
+                logger.info(f"Retrieved {len(trades)} trades from portfolio service fallback")
+                
+            except Exception as fallback_error:
+                logger.error(f"Both native and fallback trade retrieval failed: {fallback_error}")
+
+        trades.sort(key=lambda x: x["timestamp"], reverse=True)
         trades = trades[:limit]
-        
-        # Calculate summary statistics
-        total_trades = len(trades)
-        total_buy_volume = sum(t['value'] for t in trades if t['side'] == 'BUY')
-        total_sell_volume = sum(t['value'] for t in trades if t['side'] == 'SELL')
-        total_fees = sum(t['fee'] for t in trades)
-        unique_symbols = len(set(t['symbol'] for t in trades))
-        
-        return jsonify({
-            "success": True,
-            "trades": trades,
-            "timeframe": timeframe,
-            "summary": {
-                "total_trades": total_trades,
-                "total_buy_volume": total_buy_volume,
-                "total_sell_volume": total_sell_volume,
-                "net_volume": total_buy_volume - total_sell_volume,
-                "total_fees": total_fees,
-                "unique_symbols": unique_symbols,
-                "avg_trade_size": (total_buy_volume + total_sell_volume) / total_trades if total_trades > 0 else 0
-            },
-            "data_source": "okx_native_api",
-            "last_update": utcnow().astimezone(LOCAL_TZ).isoformat()
-        })
-        
+
+        summary = {
+            "total_trades": len(trades),
+            "total_buy_volume": sum(t["value"] for t in trades if t["side"] == "BUY"),
+            "total_sell_volume": sum(t["value"] for t in trades if t["side"] == "SELL"),
+            "net_volume": 0.0,
+            "total_fees": sum(t["fee"] for t in trades),
+            "unique_symbols": len(set(t["symbol"] for t in trades)),
+            "avg_trade_size": (sum(t["value"] for t in trades) / len(trades)) if trades else 0.0
+        }
+        summary["net_volume"] = summary["total_buy_volume"] - summary["total_sell_volume"]
+
+        return jsonify({"success": True, "trades": trades, "timeframe": timeframe, "summary": summary, "last_update": iso_utc()})
     except Exception as e:
         logger.error(f"Error getting recent trades: {e}")
-        return jsonify({
-            "success": False,
-            "error": str(e),
-            "trades": [],
-            "timeframe": timeframe,
-            "summary": {
-                "total_trades": 0,
-                "total_buy_volume": 0.0,
-                "total_sell_volume": 0.0,
-                "net_volume": 0.0,
-                "total_fees": 0.0,
-                "unique_symbols": 0,
-                "avg_trade_size": 0.0
-            },
-            "data_source": "error"
-        }), 500
-
-@app.route("/api/current-positions")
-def api_current_positions():
-    """API endpoint to get current market positions from real OKX data."""
-    try:
-        initialize_system()
-        portfolio_service = get_portfolio_service()
-        portfolio_data = portfolio_service.get_portfolio_data()
-        
-        # Transform holdings into positions format for the table
-        positions = []
-        for holding in portfolio_data.get('holdings', []):
-            # Include all holdings with positive quantity (not just has_position)
-            if holding.get('quantity', 0) > 0:
-                position = {
-                    "symbol": holding.get('symbol', ''),
-                    "side": "LONG",  # All OKX holdings are long positions
-                    "quantity": holding.get('quantity', 0),
-                    "avg_cost": holding.get('avg_entry_price', 0),
-                    "current_price": holding.get('current_price', 0),
-                    "market_value": holding.get('current_value', 0),
-                    "unrealized_pnl": holding.get('pnl', 0),
-                    "pnl_percent": holding.get('pnl_percent', 0),
-                    "change_24h": 0,  # OKX API limitation - no 24h data available
-                    "weight_percent": holding.get('allocation_percent', 0),
-                    "target_percent": 100.0,  # Single asset
-                    "deviation": 0,
-                    "stop_loss": holding.get('avg_entry_price', 0) * 0.99 if holding.get('avg_entry_price') else 0,
-                    "take_profit": holding.get('avg_entry_price', 0) * 1.02 if holding.get('avg_entry_price') else 0,
-                    "days_held": 1,  # Placeholder - actual calculation would need trade history
-                    "status": "ACTIVE",
-                    "is_live": holding.get('is_live', True)
-                }
-                positions.append(position)
-        
-        # Calculate summary
-        total_position_value = sum(p["market_value"] for p in positions)
-        total_unrealized_pnl = sum(p["unrealized_pnl"] for p in positions)
-        
-        return jsonify({
-            "positions": positions,
-            "summary": {
-                "total_positions": len(positions),
-                "total_position_value": total_position_value,
-                "total_unrealized_pnl": total_unrealized_pnl,
-                "status_breakdown": {"ACTIVE": {"count": len(positions), "total_value": total_position_value}}
-            },
-            "timestamp": iso_utc()
-        })
-    except Exception as e:
-        logger.error(f"Error getting current positions: {e}")
-        return jsonify({"error": "Failed to get current positions data"}), 500
-
-@app.route("/api/status")
-def api_status():
-    """Get system status - expected by dashboard."""
-    if not warmup["done"]:
-        return jsonify({"status": "initializing", "ready": False}), 503
-
-    return jsonify({
-        "status": "operational",
-        "ready": True,
-        "uptime": (datetime.now(LOCAL_TZ) - server_start_time).total_seconds(),
-        "symbols_loaded": warmup.get("loaded", []),
-        "last_update": utcnow().astimezone(LOCAL_TZ).isoformat(),
-        "trading_status": {
-            "mode": trading_state["mode"],
-            "active": trading_state["active"],
-            "strategy": trading_state["strategy"],
-            "type": trading_state["type"],
-            "start_time": trading_state["start_time"],  # ISO or None
-            "trades_today": len(recent_initial_trades) if recent_initial_trades else 0,
-            "last_trade": None
-        },
-        "portfolio": get_portfolio_summary(),
-        "recent_trades": recent_initial_trades or [],
-        "server_uptime_seconds": (datetime.now(LOCAL_TZ) - server_start_time).total_seconds()
-    })
-
-@app.route("/api/portfolio-analytics")
-def api_portfolio_analytics():
-    """Get comprehensive portfolio analytics using direct OKX APIs."""
-    try:
-        # Get real OKX portfolio data
-        from src.services.portfolio_service import get_portfolio_service
-        portfolio_service = get_portfolio_service()
-        portfolio_data = portfolio_service.get_portfolio_data()
-        
-        total_value = portfolio_data.get('total_current_value', 0.0)
-        total_pnl = portfolio_data.get('total_pnl', 0.0)
-        holdings = portfolio_data.get('holdings', [])
-        
-        # Calculate portfolio concentration and diversification
-        position_values = []
-        asset_allocations = []
-        volatility_data = []
-        
-        for holding in holdings:
-            position_value = float(holding.get('current_value', 0))
-            if position_value > 0:
-                position_values.append(position_value)
-                allocation_pct = (position_value / total_value * 100) if total_value > 0 else 0
-                asset_allocations.append({
-                    'symbol': holding.get('symbol', 'Unknown'),
-                    'allocation': allocation_pct,
-                    'value': position_value,
-                    'pnl': float(holding.get('pnl', 0)),
-                    'pnl_percent': float(holding.get('pnl_percent', 0))
-                })
-        
-        # Portfolio risk metrics from actual holdings
-        largest_position = max(position_values) if position_values else 0
-        largest_position_pct = (largest_position / total_value * 100) if total_value > 0 else 0
-        
-        # Calculate portfolio correlation (simplified - based on sector/market cap)
-        num_positions = len(holdings)
-        diversification_score = min(100, (num_positions * 20))  # Max 100% at 5+ positions
-        
-        # Risk assessment based on actual portfolio
-        concentration_risk = "High" if largest_position_pct > 50 else "Medium" if largest_position_pct > 25 else "Low"
-        
-        # Get recent trading activity
-        try:
-            recent_trades = portfolio_service.get_trade_history(limit=10)
-            trading_activity = len(recent_trades)
-        except:
-            trading_activity = 0
-        
-        return jsonify({
-            "success": True,
-            "analytics": {
-                "portfolio_value": total_value,
-                "total_pnl": total_pnl,
-                "total_pnl_percent": (total_pnl / (total_value - total_pnl) * 100) if (total_value - total_pnl) > 0 else 0,
-                "position_count": num_positions,
-                "largest_position_value": largest_position,
-                "largest_position_percent": largest_position_pct,
-                "concentration_risk": concentration_risk,
-                "diversification_score": diversification_score,
-                "trading_activity_7d": trading_activity,
-                "asset_allocations": asset_allocations[:10],  # Top 10 positions
-                "risk_assessment": {
-                    "concentration": concentration_risk,
-                    "diversification": "Good" if diversification_score > 60 else "Moderate" if diversification_score > 30 else "Poor",
-                    "liquidity": "High",  # OKX spot trading is highly liquid
-                    "market_exposure": "Crypto",
-                    "position_sizing": "Balanced" if largest_position_pct < 40 else "Concentrated"
-                },
-                "performance_metrics": {
-                    "unrealized_pnl": total_pnl,
-                    "best_performer": max(asset_allocations, key=lambda x: x['pnl_percent'])['symbol'] if asset_allocations else "N/A",
-                    "worst_performer": min(asset_allocations, key=lambda x: x['pnl_percent'])['symbol'] if asset_allocations else "N/A",
-                    "average_position_size": sum(position_values) / len(position_values) if position_values else 0
-                }
-            },
-            "last_update": utcnow().astimezone(LOCAL_TZ).isoformat()
-        })
-    except Exception as e:
-        logger.error(f"Error getting portfolio analytics: {e}")
-        return jsonify({
-            "success": False,
-            "error": str(e),
-            "analytics": {
-                "portfolio_value": 0.0,
-                "total_pnl": 0.0,
-                "total_pnl_percent": 0.0,
-                "position_count": 0,
-                "largest_position_value": 0.0,
-                "largest_position_percent": 0.0,
-                "concentration_risk": "Unknown",
-                "diversification_score": 0,
-                "trading_activity_7d": 0,
-                "asset_allocations": [],
-                "risk_assessment": {
-                    "concentration": "Unknown",
-                    "diversification": "Unknown",
-                    "liquidity": "Unknown",
-                    "market_exposure": "Unknown",
-                    "position_sizing": "Unknown"
-                },
-                "performance_metrics": {
-                    "unrealized_pnl": 0.0,
-                    "best_performer": "N/A",
-                    "worst_performer": "N/A",
-                    "average_position_size": 0.0
-                }
-            }
-        }), 500
-
-@app.route("/api/portfolio-history")
-def api_portfolio_history():
-    """Get portfolio value history using direct OKX APIs."""
-    try:
-        
-        
-        # Get timeframe parameter
-        timeframe = request.args.get('timeframe', '30d')
-        
-        # Calculate date range
-        
-        end_date = utcnow()
-        
-        if timeframe == '7d':
-            start_date = end_date - timedelta(days=7)
-        elif timeframe == '30d':
-            start_date = end_date - timedelta(days=30)
-        elif timeframe == '90d':
-            start_date = end_date - timedelta(days=90)
-        elif timeframe == '1y':
-            start_date = end_date - timedelta(days=365)
-        else:
-            start_date = end_date - timedelta(days=30)
-        
-        # Get current portfolio data as baseline
-        from src.services.portfolio_service import get_portfolio_service
-        portfolio_service = get_portfolio_service()
-        current_portfolio = portfolio_service.get_portfolio_data()
-        current_value = current_portfolio.get('total_current_value', 0.0)
-        
-        # Get OKX account history using direct API
-        import ccxt
-        okx_api_key = os.getenv("OKX_API_KEY", "")
-        okx_secret = os.getenv("OKX_SECRET_KEY", "")
-        okx_pass = os.getenv("OKX_PASSPHRASE", "")
-        
-        if not all([okx_api_key, okx_secret, okx_pass]):
-            raise RuntimeError("OKX API credentials required")
-        
-        # Initialize OKX exchange
-        hostname = os.getenv("OKX_HOSTNAME", "www.okx.com")
-        exchange = ccxt.okx({
-            'apiKey': okx_api_key,
-            'secret': okx_secret,
-            'password': okx_pass,
-            'hostname': hostname,
-            'sandbox': False,
-            'enableRateLimit': True
-        })
-        exchange.set_sandbox_mode(False)
-        
-        # Get account balance history from OKX
-        history_points = []
-        
-        try:
-            # Use OKX native REST API directly - no CCXT wrappers
-            import requests
-            import hmac
-            import hashlib
-            import base64
-            from datetime import timezone
-            
-            # OKX API credentials
-            api_key = os.getenv("OKX_API_KEY", "")
-            secret_key = os.getenv("OKX_SECRET_KEY", "")
-            passphrase = os.getenv("OKX_PASSPHRASE", "")
-            
-            if all([api_key, secret_key, passphrase]):
-                # Create OKX native API request
-                timestamp = now_utc_iso()
-                method = 'GET'
-                
-                # Try multiple OKX endpoints for historical data
-                endpoints = [
-                    '/api/v5/account/bills-archive',  # Account bill details
-                    '/api/v5/account/bills',          # Recent account bills
-                    '/api/v5/asset/balances'          # Asset balances history
-                ]
-                
-                def sign_request(timestamp, method, request_path, body=''):
-                    message = timestamp + method + request_path + body
-                    mac = hmac.new(bytes(secret_key, encoding='utf8'), bytes(message, encoding='utf-8'), digestmod='sha256')
-                    d = mac.digest()
-                    return base64.b64encode(d).decode('utf-8')
-                
-                base_url = 'https://www.okx.com'
-                
-                for endpoint in endpoints:
-                    try:
-                        # Add query parameters for date range
-                        query_params = f"?begin={int(start_date.timestamp() * 1000)}&end={int(end_date.timestamp() * 1000)}&limit=100"
-                        request_path = endpoint + query_params
-                        
-                        signature = sign_request(timestamp, method, request_path)
-                        
-                        headers = {
-                            'OK-ACCESS-KEY': api_key,
-                            'OK-ACCESS-SIGN': signature,
-                            'OK-ACCESS-TIMESTAMP': timestamp,
-                            'OK-ACCESS-PASSPHRASE': passphrase,
-                            'Content-Type': 'application/json'
-                        }
-                        
-                        response = requests.get(base_url + request_path, headers=headers, timeout=10)
-                        
-                        if response.status_code == 200:
-                            data = response.json()
-                            
-                            if data.get('code') == '0' and data.get('data'):
-                                logger.info(f"Successfully fetched data from {endpoint}: {len(data['data'])} records")
-                                
-                                # Process the response data
-                                for record in data['data']:
-                                    try:
-                                        # Extract timestamp and balance info
-                                        ts = record.get('ts', record.get('cTime', record.get('uTime')))
-                                        if not ts:
-                                            continue
-                                            
-                                        timestamp_ms = int(ts)
-                                        date_key = datetime.fromtimestamp(timestamp_ms / 1000).strftime('%Y-%m-%d')
-                                        
-                                        # Calculate value based on record type
-                                        record_value = 0
-                                        
-                                        if 'bal' in record:  # Balance record
-                                            currency = record.get('ccy', '')
-                                            balance = float(record.get('bal', 0))
-                                            
-                                            if currency in ['USDT', 'USD']:
-                                                record_value = balance
-                                            elif balance > 0:
-                                                # Get current price for conversion
-                                                try:
-                                                    price = get_public_price(f"{currency}/USDT")
-                                                    if price:
-                                                        record_value = balance * price
-                                                except:
-                                                    continue
-                                        
-                                        elif 'balChg' in record:  # Balance change record
-                                            currency = record.get('ccy', '')
-                                            balance_change = float(record.get('balChg', 0))
-                                            balance_after = float(record.get('balAfter', 0))
-                                            
-                                            if currency in ['USDT', 'USD']:
-                                                record_value = balance_after
-                                            elif balance_after > 0:
-                                                try:
-                                                    price = get_public_price(f"{currency}/USDT")
-                                                    if price:
-                                                        record_value = balance_after * price
-                                                except:
-                                                    continue
-                                        
-                                        if record_value > 0:
-                                            history_points.append({
-                                                'date': date_key,
-                                                'timestamp': datetime.fromtimestamp(timestamp_ms / 1000).isoformat(),
-                                                'value': record_value,
-                                                'source': endpoint
-                                            })
-                                            
-                                    except Exception as record_error:
-                                        logger.debug(f"Error processing record: {record_error}")
-                                        continue
-                                
-                                # If we got data, break from trying other endpoints
-                                if history_points:
-                                    break
-                                    
-                    except Exception as api_error:
-                        logger.warning(f"OKX native API call to {endpoint} failed: {api_error}")
-                        continue
-                    
-        except Exception as ledger_error:
-            logger.warning(f"Could not fetch detailed ledger: {ledger_error}")
-            
-            # Enhanced fallback: Generate realistic historical points using OKX native historical price API
-            if not history_points:
-                logger.info("Generating historical portfolio progression using OKX native price data")
-                
-                days_back = (end_date - start_date).days
-                holdings = current_portfolio.get('holdings', [])
-                
-                # Use OKX native API for historical prices
-                for i in range(days_back, -1, -1):
-                    point_date = end_date - timedelta(days=i)
-                    daily_value = 0
-                    
-                    for holding in holdings:
-                        try:
-                            symbol = holding.get('symbol', '')
-                            quantity = float(holding.get('quantity', 0))
-                            
-                            if quantity > 0 and symbol:
-                                # Use OKX native API for historical candle data
-                                try:
-                                    timestamp = now_utc_iso()
-                                    method = 'GET'
-                                    
-                                    # Historical candles endpoint
-                                    hist_timestamp = int(point_date.timestamp() * 1000)
-                                    request_path = f"/api/v5/market/candles?instId={symbol}-USDT&bar=1D&before={hist_timestamp}&limit=1"
-                                    
-                                    signature = sign_request(timestamp, method, request_path)
-                                    
-                                    headers = {
-                                        'OK-ACCESS-KEY': api_key,
-                                        'OK-ACCESS-SIGN': signature,
-                                        'OK-ACCESS-TIMESTAMP': timestamp,
-                                        'OK-ACCESS-PASSPHRASE': passphrase,
-                                        'Content-Type': 'application/json'
-                                    }
-                                    
-                                    response = requests.get(base_url + request_path, headers=headers, timeout=5)
-                                    
-                                    if response.status_code == 200:
-                                        candle_data = response.json()
-                                        
-                                        if candle_data.get('code') == '0' and candle_data.get('data'):
-                                            # Use closing price from candle data
-                                            historical_price = float(candle_data['data'][0][4])  # Close price
-                                            daily_value += quantity * historical_price
-                                        else:
-                                            # Fallback to current price
-                                            current_price = float(holding.get('current_price', 0))
-                                            if current_price > 0:
-                                                daily_value += quantity * current_price
-                                    else:
-                                        # Fallback to current price
-                                        current_price = float(holding.get('current_price', 0))
-                                        if current_price > 0:
-                                            daily_value += quantity * current_price
-                                            
-                                except Exception as price_error:
-                                    # Final fallback to current price
-                                    current_price = float(holding.get('current_price', 0))
-                                    if current_price > 0:
-                                        daily_value += quantity * current_price
-                        except:
-                            continue
-                    
-                    if daily_value > 0:
-                        history_points.append({
-                            'date': point_date.strftime('%Y-%m-%d'),
-                            'timestamp': point_date.isoformat(),
-                            'value': daily_value,
-                            'source': 'okx_native_historical'
-                        })
-        
-        # Ensure we have current value as the latest point
-        history_points.append({
-            'date': end_date.strftime('%Y-%m-%d'),
-            'timestamp': end_date.isoformat(),
-            'value': current_value
-        })
-        
-        # Sort by date and remove duplicates
-        history_points = sorted(history_points, key=lambda x: x['date'])
-        unique_points = []
-        seen_dates = set()
-        for point in history_points:
-            if point['date'] not in seen_dates:
-                unique_points.append(point)
-                seen_dates.add(point['date'])
-        
-        return jsonify({
-            "success": True,
-            "history": unique_points,
-            "timeframe": timeframe,
-            "current_value": current_value,
-            "start_date": start_date.isoformat(),
-            "end_date": end_date.isoformat(),
-            "data_points": len(unique_points)
-        })
-        
-    except Exception as e:
-        logger.error(f"Error getting portfolio history: {e}")
-        return jsonify({
-            "success": False,
-            "error": str(e),
-            "history": [],
-            "timeframe": timeframe,
-            "current_value": 0.0,
-            "data_points": 0
-        }), 500
-
-@app.route("/api/asset-allocation")
-def api_asset_allocation():
-    """Get detailed asset allocation data using direct OKX APIs."""
-    try:
-        # Get current portfolio data
-        from src.services.portfolio_service import get_portfolio_service
-        portfolio_service = get_portfolio_service()
-        portfolio_data = portfolio_service.get_portfolio_data()
-        
-        total_value = portfolio_data.get('total_current_value', 0.0)
-        holdings = portfolio_data.get('holdings', [])
-        
-        if total_value <= 0 or not holdings:
-            return jsonify({
-                "success": True,
-                "allocation": [],
-                "total_value": 0.0,
-                "allocation_count": 0,
-                "largest_allocation": 0.0,
-                "smallest_allocation": 0.0,
-                "concentration_analysis": {
-                    "top_3_percentage": 0.0,
-                    "diversification_score": 0,
-                    "risk_level": "Unknown"
-                }
-            })
-        
-        # Calculate detailed asset allocation with OKX market data
-        allocation_data = []
-        
-        for holding in holdings:
-            try:
-                symbol = holding.get('symbol', '')
-                quantity = float(holding.get('quantity', 0))
-                current_value = float(holding.get('current_value', 0))
-                current_price = float(holding.get('current_price', 0))
-                pnl = float(holding.get('pnl', 0))
-                pnl_percent = float(holding.get('pnl_percent', 0))
-                
-                if current_value > 0:
-                    allocation_percent = (current_value / total_value) * 100
-                    
-                    # Get additional market data from OKX
-                    try:
-                        ticker = portfolio_service.exchange.exchange.fetch_ticker(f"{symbol}/USDT")
-                        volume_24h = ticker.get('quoteVolume', 0)
-                        price_change_24h = ticker.get('percentage', 0)
-                        market_cap_rank = 'N/A'  # OKX doesn't provide market cap directly
-                    except:
-                        volume_24h = 0
-                        price_change_24h = 0
-                        market_cap_rank = 'N/A'
-                    
-                    allocation_data.append({
-                        'symbol': symbol,
-                        'name': symbol,  # Could be enhanced with full names
-                        'quantity': quantity,
-                        'current_price': current_price,
-                        'current_value': current_value,
-                        'allocation_percent': allocation_percent,
-                        'pnl': pnl,
-                        'pnl_percent': pnl_percent,
-                        'volume_24h': volume_24h,
-                        'price_change_24h': price_change_24h,
-                        'market_cap_rank': market_cap_rank,
-                        'weight_category': 'Large' if allocation_percent > 25 else 'Medium' if allocation_percent > 10 else 'Small'
-                    })
-            except Exception as holding_error:
-                logger.debug(f"Error processing holding {holding}: {holding_error}")
-                continue
-        
-        # Sort by allocation percentage (largest first)
-        allocation_data.sort(key=lambda x: x['allocation_percent'], reverse=True)
-        
-        # Calculate concentration analysis
-        top_3_total = sum(item['allocation_percent'] for item in allocation_data[:3])
-        diversification_score = min(100, len(allocation_data) * 15)  # Max 100% at 7+ assets
-        
-        if top_3_total > 75:
-            risk_level = "High Concentration"
-        elif top_3_total > 50:
-            risk_level = "Medium Concentration"
-        else:
-            risk_level = "Well Diversified"
-        
-        largest_allocation = allocation_data[0]['allocation_percent'] if allocation_data else 0
-        smallest_allocation = allocation_data[-1]['allocation_percent'] if allocation_data else 0
-        
-        return jsonify({
-            "success": True,
-            "allocation": allocation_data,
-            "total_value": total_value,
-            "allocation_count": len(allocation_data),
-            "largest_allocation": largest_allocation,
-            "smallest_allocation": smallest_allocation,
-            "concentration_analysis": {
-                "top_3_percentage": top_3_total,
-                "diversification_score": diversification_score,
-                "risk_level": risk_level
-            },
-            "last_update": utcnow().astimezone(LOCAL_TZ).isoformat()
-        })
-        
-    except Exception as e:
-        logger.error(f"Error getting asset allocation: {e}")
-        return jsonify({
-            "success": False,
-            "error": str(e),
-            "allocation": [],
-            "total_value": 0.0,
-            "allocation_count": 0,
-            "largest_allocation": 0.0,
-            "smallest_allocation": 0.0,
-            "concentration_analysis": {
-                "top_3_percentage": 0.0,
-                "diversification_score": 0,
-                "risk_level": "Unknown"
-            }
-        }), 500
-
-@app.route("/api/best-performer")
-def api_best_performer():
-    try:
-        service = get_portfolio_service()
-        pf = service.get_portfolio_data()
-        holdings = pf.get('holdings', [])
-        if not holdings:
-            return jsonify({"success": True, "best_performer": None, "performance_data": {}})
-
-        from src.utils.okx_native import OKXNative
-        client = OKXNative.from_env()
-        total_value = pf.get('total_current_value', 0.0)
-
-        best = None
-        best_score = float("-inf")
-
-        for h in holdings:
-            symbol = h.get('symbol', '')
-            cv = float(h.get('current_value', 0) or 0)
-            if not symbol or cv <= 0:
-                continue
-
-            inst = f"{symbol}-USDT"
-            tk = client.ticker(inst)
-            price_change_24h = tk['pct_24h']
-            volume_24h = tk['vol24h']
-            current_price = tk['last'] or float(h.get('current_price', 0) or 0)
-
-            c = client.candles(inst, bar="1D", limit=7)
-            price_change_7d = 0.0
-            if len(c) >= 2:
-                curr_close = float(c[0][4])
-                week_close = float(c[-1][4])
-                if week_close > 0:
-                    price_change_7d = (curr_close - week_close) / week_close * 100
-
-            pnl_percent = float(h.get('pnl_percent', 0) or 0)
-            alloc = (cv / total_value * 100) if total_value > 0 else 0
-
-            score = (price_change_24h * 0.4) + (price_change_7d * 0.3) + (pnl_percent * 0.3)
-            if score > best_score:
-                best_score = score
-                best = {
-                    "symbol": symbol,
-                    "name": symbol,
-                    "price_change_24h": price_change_24h,
-                    "price_change_7d": price_change_7d,
-                    "current_price": current_price,
-                    "volume_24h": volume_24h,
-                    "pnl_percent": pnl_percent,
-                    "allocation_percent": alloc,
-                    "current_value": cv,
-                    "performance_score": score
-                }
-
-        return jsonify({"success": True, "best_performer": best, "performance_data": best, "last_update": iso_utc()})
-    except Exception as e:
-        logger.error(f"Error getting best performer: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
 
 @app.route("/api/worst-performer")

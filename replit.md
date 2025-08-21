@@ -37,6 +37,8 @@ The system utilizes a modular Flask-based web interface for live OKX trading, st
 
 **Enhanced Current Holdings Endpoint:** Optimized `/api/current-holdings` with hybrid approach combining portfolio service reliability and native OKX price updates - leverages existing working portfolio data while enhancing with live OKX native ticker prices, provides comprehensive holding details including quantity, allocation percentages, P&L calculations, and proper error handling with graceful fallbacks for API limitations.
 
+**Robust Recent Trades Endpoint:** Implemented `/api/recent-trades` with dual-tier approach prioritizing native OKX fills API and graceful fallback to portfolio service data - supports flexible timeframe filtering (1d/7d/30d), comprehensive trade summaries with volume analysis, fee calculations, and symbol statistics, ensuring reliable trade history access regardless of API permission limitations.
+
 ## External Dependencies
 
 ### Market Data & Trading APIs
