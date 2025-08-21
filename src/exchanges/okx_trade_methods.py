@@ -38,6 +38,22 @@ class OKXTradeRetrieval:
             "option": "OPTION",
         }.get(default, "SPOT")
     
+    def _trade_uid(self, t: Dict[str, Any]) -> str:
+        """
+        Generate a stronger composite UID for trade deduplication.
+        Includes source, ID, order_id, symbol, timestamp, price, and quantity
+        to prevent collisions across different sources and API responses.
+        """
+        return "|".join([
+            t.get('source', ''),
+            t.get('id', '') or t.get('order_id', ''),
+            t.get('order_id', ''),
+            t.get('symbol', ''),
+            str(t.get('timestamp', '')),
+            f"{t.get('price', '')}",
+            f"{t.get('quantity', '')}",
+        ])
+    
     def get_trades_comprehensive(self, symbol: Optional[str] = None, limit: int = 50) -> List[Dict[str, Any]]:
         """
         Comprehensive trade retrieval using multiple OKX API endpoints.
@@ -61,10 +77,10 @@ class OKXTradeRetrieval:
         try:
             trades = self._get_okx_trade_fills(symbol, limit)
             for trade in trades:
-                trade_key = f"{trade.get('id', '')}{trade.get('timestamp', '')}{trade.get('symbol', '')}"
-                if trade_key not in dedup_set:
+                uid = self._trade_uid(trade)
+                if uid not in dedup_set:
                     all_trades.append(trade)
-                    dedup_set.add(trade_key)
+                    dedup_set.add(uid)
             self.logger.info(f"Retrieved {len(trades)} trades from fills API")
         except Exception as e:
             self.logger.warning(f"OKX fills API failed: {e}")
@@ -74,10 +90,10 @@ class OKXTradeRetrieval:
         try:
             trades = self._get_okx_orders_history(symbol, limit)
             for trade in trades:
-                trade_key = f"{trade.get('id', '')}{trade.get('timestamp', '')}{trade.get('symbol', '')}"
-                if trade_key not in dedup_set:
+                uid = self._trade_uid(trade)
+                if uid not in dedup_set:
                     all_trades.append(trade)
-                    dedup_set.add(trade_key)
+                    dedup_set.add(uid)
             self.logger.info(f"Retrieved {len(trades)} trades from orders history API")
         except Exception as e:
             self.logger.warning(f"OKX orders history API failed: {e}")
@@ -87,27 +103,19 @@ class OKXTradeRetrieval:
         try:
             trades = self._get_ccxt_trades(symbol, limit)
             for trade in trades:
-                trade_key = f"{trade.get('id', '')}{trade.get('timestamp', '')}{trade.get('symbol', '')}"
-                if trade_key not in dedup_set:
+                uid = self._trade_uid(trade)
+                if uid not in dedup_set:
                     all_trades.append(trade)
-                    dedup_set.add(trade_key)
+                    dedup_set.add(uid)
             self.logger.info(f"Retrieved {len(trades)} trades from CCXT methods")
         except Exception as e:
             self.logger.warning(f"CCXT methods failed: {e}")
         
-        # Remove duplicates and sort
-        unique_trades = []
-        seen_keys = set()
-        for trade in all_trades:
-            key = f"{trade.get('id', '')}{trade.get('symbol', '')}{trade.get('timestamp', '')}"
-            if key not in seen_keys:
-                unique_trades.append(trade)
-                seen_keys.add(key)
+        # Final sort by timestamp (most recent first)
+        all_trades.sort(key=lambda x: x.get('timestamp', 0), reverse=True)
         
-        unique_trades.sort(key=lambda x: x.get('timestamp', 0), reverse=True)
-        
-        self.logger.info(f"Final result: {len(unique_trades)} unique trades")
-        return unique_trades[:limit]
+        self.logger.info(f"Final result: {len(all_trades)} unique trades after enhanced deduplication")
+        return all_trades[:limit]
     
     def _get_okx_trade_fills(self, symbol: Optional[str], limit: int) -> List[Dict[str, Any]]:
         """Get trades using OKX's trade fills API with enhanced instType support."""
