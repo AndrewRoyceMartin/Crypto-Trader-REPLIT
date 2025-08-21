@@ -1,0 +1,92 @@
+2) /api/drawdown-analysis (shared equity calc, clean DD metrics)
+from src.utils.okx_native import OKXNative, STABLES
+import statistics
+
+@app.route("/api/drawdown-analysis")
+def api_drawdown_analysis():
+    """Drawdown analysis over equity curve computed from OKX (bills+candles or balances+candles)."""
+    try:
+        timeframe = request.args.get('timeframe', '30d')
+        end = utcnow()
+        days = {"7d": 7, "30d": 30, "90d": 90}.get(timeframe, 30)
+        start = end - timedelta(days=days)
+
+        # Reuse the equity logic by calling the equity endpoint internally (no HTTP)
+        with app.test_request_context(f"/api/equity-curve?timeframe={timeframe}"):
+            resp = api_equity_curve()  # direct call returns Flask Response or tuple
+        data = resp.get_json() if hasattr(resp, "get_json") else resp[0].get_json()
+        if not data.get("success"):
+            raise RuntimeError("equity calculation failed")
+        eq = data.get("equity_curve", [])
+        eq.sort(key=lambda x: x["date"])
+
+        drawdown_data = []
+        peak_equity = 0.0
+        max_drawdown = 0.0
+        max_dd_start = None
+        max_dd_end = None
+        current_dd = 0.0
+        current_dd_start = None
+        total_dd_periods = 0
+        recovery_periods = 0
+
+        for p in eq:
+            d = p["date"]
+            e = p["equity"]
+            if e > peak_equity:
+                peak_equity = e
+                if current_dd_start:
+                    recovery_periods += 1
+                    current_dd_start = None
+                current_dd = 0.0
+            else:
+                if peak_equity > 0:
+                    dd = (peak_equity - e) / peak_equity * 100.0
+                    if current_dd == 0 and dd > 0:
+                        current_dd_start = d
+                        total_dd_periods += 1
+                    current_dd = dd
+                    if dd > max_drawdown:
+                        max_drawdown = dd
+                        max_dd_end = d
+                        max_dd_start = current_dd_start
+            drawdown_data.append({
+                "date": d,
+                "equity": e,
+                "peak_equity": peak_equity,
+                "drawdown_percent": current_dd,
+                "drawdown_amount": (peak_equity - e) if peak_equity > 0 else 0.0
+            })
+
+        dd_duration_days = 0
+        if max_dd_start and max_dd_end:
+            s = datetime.strptime(max_dd_start, "%Y-%m-%d")
+            t = datetime.strptime(max_dd_end, "%Y-%m-%d")
+            dd_duration_days = (t - s).days
+
+        underwater_days = sum(1 for x in drawdown_data if x["drawdown_percent"] > 0)
+        underwater_pct = (underwater_days / len(drawdown_data) * 100.0) if drawdown_data else 0.0
+        avg_dd = statistics.mean([x["drawdown_percent"] for x in drawdown_data if x["drawdown_percent"] > 0]) if drawdown_data else 0.0
+
+        return jsonify({
+            "success": True,
+            "drawdown_data": drawdown_data,
+            "timeframe": timeframe,
+            "metrics": {
+                "max_drawdown_percent": max_drawdown,
+                "max_drawdown_start": max_dd_start,
+                "max_drawdown_end": max_dd_end,
+                "max_drawdown_duration_days": dd_duration_days,
+                "average_drawdown_percent": avg_dd,
+                "total_drawdown_periods": total_dd_periods,
+                "recovery_periods": recovery_periods,
+                "underwater_percentage": underwater_pct,
+                "current_drawdown_percent": current_dd,
+                "peak_equity": max(x["peak_equity"] for x in drawdown_data) if drawdown_data else 0.0,
+                "data_points": len(drawdown_data)
+            },
+            "last_update": iso_utc()
+        })
+    except Exception as e:
+        logger.error(f"Error calculating drawdown analysis: {e}")
+        return jsonify({"success": False, "error": str(e), "drawdown_data": [], "timeframe": request.args.get('timeframe','30d')}), 500

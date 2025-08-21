@@ -45,6 +45,8 @@ The system utilizes a modular Flask-based web interface for live OKX trading, st
 
 **Enhanced Security Headers:** Updated security headers for modern best practices - comprehensive Content Security Policy allowing necessary CDN resources with 'unsafe-inline' for dynamic styling, HSTS enforcement on secure connections, strict referrer policy, frame protection, and permissions policy restricting geolocation/microphone/camera access for enhanced application security.
 
+**Native OKX Equity Curve Endpoint:** Implemented `/api/equity-curve` using native OKX client with intelligent fallback strategy - attempts account bills + historical candles for detailed transaction history, gracefully falls back to portfolio service data + historical candles when bills API permissions unavailable, ensures accurate equity tracking with live portfolio valuation for current day, supports multiple timeframes (7d/30d/90d) with comprehensive metrics including total return, max drawdown, and volatility calculations.
+
 ## External Dependencies
 
 ### Market Data & Trading APIs

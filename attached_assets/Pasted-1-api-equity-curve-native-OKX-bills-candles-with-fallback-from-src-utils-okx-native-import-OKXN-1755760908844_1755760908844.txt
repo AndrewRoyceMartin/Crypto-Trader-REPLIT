@@ -1,0 +1,191 @@
+1) /api/equity-curve (native OKX; bills→candles with fallback)
+from src.utils.okx_native import OKXNative, STABLES
+import statistics
+
+@app.route("/api/equity-curve")
+def api_equity_curve():
+    """Equity curve from OKX: prefer account bills + historical candles; fallback to current balances + candles."""
+    try:
+        timeframe = request.args.get('timeframe', '30d')
+        end = utcnow()
+        days = {"7d": 7, "30d": 30, "90d": 90}.get(timeframe, 30)
+        start = end - timedelta(days=days)
+
+        client = OKXNative.from_env()
+        begin_ms, end_ms = int(start.timestamp() * 1000), int(end.timestamp() * 1000)
+
+        # 1) Try building balances per-day from account bills
+        bills = client.bills(begin_ms, end_ms, limit=200)
+        daily_balances: dict[str, dict[str, float]] = {}
+        for b in bills:
+            try:
+                ts = int(b.get("ts", 0) or 0)
+                ccy = b.get("ccy", "")
+                bal_after = float(b.get("bal", b.get("balAfter", 0)) or 0)
+                if ts == 0 or not ccy:
+                    continue
+                date_key = datetime.fromtimestamp(ts/1000, tz=timezone.utc).strftime("%Y-%m-%d")
+                daily_balances.setdefault(date_key, {})[ccy] = bal_after
+            except Exception:
+                continue
+
+        # build the symbol set we need historical prices for
+        currencies = set()
+        for _, ccys in daily_balances.items():
+            currencies.update(ccys.keys())
+        symbols = sorted([f"{c}-USDT" for c in currencies if c not in STABLES])
+
+        # fetch daily candles once per symbol
+        price_map: dict[str, dict[str, float]] = {}
+        if symbols:
+            limit_needed = days + 2
+            for inst in symbols:
+                candles = client.candles(inst, bar="1D", limit=limit_needed)
+                # OKX returns newest first
+                dmap = {}
+                for row in candles:
+                    # row = [ts, o, h, l, c, vol, volCcy, volCcyQuote, confirm]
+                    ts_ms = int(row[0])
+                    dkey = datetime.fromtimestamp(ts_ms/1000, tz=timezone.utc).strftime("%Y-%m-%d")
+                    dmap[dkey] = float(row[4])
+                price_map[inst] = dmap
+
+        def _price_for_day(ccy: str, dkey: str) -> float:
+            if ccy in STABLES:
+                return 1.0
+            inst = f"{ccy}-USDT"
+            return price_map.get(inst, {}).get(dkey, 0.0)
+
+        equity_points = []
+        if daily_balances:
+            for day_dt in _date_range(start, end):
+                dkey = day_dt.strftime("%Y-%m-%d")
+                ccys = daily_balances.get(dkey, {})
+                if not ccys:
+                    # carry forward previous day if missing
+                    # (simple forward-fill)
+                    # find closest previous day with data
+                    prev = None
+                    for j in range(1, 6):
+                        prev_key = (day_dt - timedelta(days=j)).strftime("%Y-%m-%d")
+                        if prev_key in daily_balances:
+                            prev = daily_balances[prev_key]
+                            break
+                    ccys = prev or {}
+                total = 0.0
+                for ccy, bal in ccys.items():
+                    px = _price_for_day(ccy, dkey)
+                    total += bal if ccy in STABLES else bal * (px if px > 0 else 0.0)
+                if total > 0:
+                    equity_points.append({
+                        "date": dkey,
+                        "timestamp": day_dt.isoformat(),
+                        "equity": total,
+                        "source": "okx_bills+candles"
+                    })
+
+        # 2) Fallback: current balances * historical candles (assumes constant units)
+        if not equity_points:
+            acc = client.balance()
+            details = acc.get("details", [])
+            positions = []
+            for d in details:
+                ccy = d.get("ccy", "")
+                bal = float(d.get("bal", 0) or 0)
+                if bal > 0 and ccy:
+                    positions.append((ccy, bal))
+
+            sym_set = [f"{ccy}-USDT" for ccy, _ in positions if ccy not in STABLES]
+            price_map = {}
+            if sym_set:
+                limit_needed = days + 2
+                for inst in sym_set:
+                    c = client.candles(inst, bar="1D", limit=limit_needed)
+                    dmap = {}
+                    for row in c:
+                        ts_ms = int(row[0])
+                        dkey = datetime.fromtimestamp(ts_ms/1000, tz=timezone.utc).strftime("%Y-%m-%d")
+                        dmap[dkey] = float(row[4])
+                    price_map[inst] = dmap
+
+            for day_dt in _date_range(start, end):
+                dkey = day_dt.strftime("%Y-%m-%d")
+                total = 0.0
+                for ccy, bal in positions:
+                    if ccy in STABLES:
+                        total += bal
+                    else:
+                        px = price_map.get(f"{ccy}-USDT", {}).get(dkey, 0.0)
+                        if px > 0:
+                            total += bal * px
+                if total > 0:
+                    equity_points.append({
+                        "date": dkey, "timestamp": day_dt.isoformat(), "equity": total, "source": "okx_balance+candles"
+                    })
+
+        # ensure one point for "today" using live valuation
+        try:
+            acc = client.balance()
+            total_now = 0.0
+            for d in acc.get("details", []):
+                ccy = d.get("ccy", "")
+                bal = float(d.get("bal", 0) or 0)
+                if bal <= 0 or not ccy:
+                    continue
+                if ccy in STABLES:
+                    total_now += bal
+                else:
+                    px = client.price(f"{ccy}-USDT")
+                    total_now += bal * (px if px > 0 else 0.0)
+            if total_now > 0:
+                today = end.strftime("%Y-%m-%d")
+                equity_points = [p for p in equity_points if p["date"] != today]
+                equity_points.append({
+                    "date": today, "timestamp": end.isoformat(), "equity": total_now, "source": "okx_live"
+                })
+        except Exception:
+            pass
+
+        equity_points.sort(key=lambda x: x["date"])
+
+        # metrics
+        total_return = 0.0
+        dd_max = 0.0
+        daily_returns = []
+        if len(equity_points) >= 2:
+            start_eq = equity_points[0]["equity"]
+            end_eq = equity_points[-1]["equity"]
+            if start_eq > 0:
+                total_return = (end_eq - start_eq) / start_eq * 100.0
+            peak = 0.0
+            prev = None
+            for p in equity_points:
+                eq = p["equity"]
+                if prev:
+                    if prev > 0:
+                        daily_returns.append(((eq - prev) / prev) * 100.0)
+                prev = eq
+                if eq > peak:
+                    peak = eq
+                if peak > 0:
+                    dd = (peak - eq) / peak * 100.0
+                    dd_max = max(dd_max, dd)
+        vol = statistics.stdev(daily_returns) if len(daily_returns) > 1 else 0.0
+
+        return jsonify({
+            "success": True,
+            "equity_curve": equity_points,
+            "timeframe": timeframe,
+            "metrics": {
+                "total_return_percent": total_return,
+                "max_drawdown_percent": dd_max,
+                "volatility_percent": vol,
+                "data_points": len(equity_points),
+                "start_equity": equity_points[0]["equity"] if equity_points else 0.0,
+                "end_equity": equity_points[-1]["equity"] if equity_points else 0.0
+            },
+            "last_update": iso_utc()
+        })
+    except Exception as e:
+        logger.error(f"Error getting equity curve: {e}")
+        return jsonify({"success": False, "error": str(e), "equity_curve": [], "timeframe": request.args.get('timeframe','30d')}), 500
