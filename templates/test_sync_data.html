@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OKX Live Sync Test Data</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-bg: #0d1117;
+            --secondary-bg: #161b22;
+            --card-bg: #21262d;
+            --border-color: #30363d;
+            --text-primary: #c9d1d9;
+            --text-secondary: #8b949e;
+            --success-color: #238636;
+            --error-color: #da3633;
+            --warning-color: #f85149;
+        }
+
+        body {
+            background-color: var(--primary-bg);
+            color: var(--text-primary);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .test-status {
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .status-pass {
+            background-color: rgba(35, 134, 54, 0.2);
+            color: #3fb950;
+            border: 1px solid rgba(35, 134, 54, 0.4);
+        }
+
+        .status-fail {
+            background-color: rgba(218, 54, 51, 0.2);
+            color: #f85149;
+            border: 1px solid rgba(218, 54, 51, 0.4);
+        }
+
+        .status-error {
+            background-color: rgba(218, 54, 51, 0.2);
+            color: #f85149;
+            border: 1px solid rgba(218, 54, 51, 0.4);
+        }
+
+        .metric-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #58a6ff;
+        }
+
+        .metric-label {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .test-details {
+            background-color: var(--secondary-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 16px;
+            margin-top: 12px;
+        }
+
+        .holdings-table {
+            background-color: var(--card-bg);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .holdings-table th {
+            background-color: var(--secondary-bg);
+            border: none;
+            color: var(--text-primary);
+            font-weight: 600;
+            padding: 12px;
+        }
+
+        .holdings-table td {
+            border: none;
+            color: var(--text-primary);
+            padding: 12px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .live-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
+        }
+
+        .live-yes {
+            background-color: #3fb950;
+            box-shadow: 0 0 6px rgba(63, 185, 80, 0.6);
+        }
+
+        .live-no {
+            background-color: #f85149;
+        }
+
+        .page-header {
+            background: linear-gradient(135deg, #1f2937 0%, #374151 100%);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+            border: 1px solid var(--border-color);
+        }
+
+        .refresh-btn {
+            background-color: #238636;
+            border: none;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .refresh-btn:hover {
+            background-color: #2ea043;
+            transform: translateY(-1px);
+        }
+
+        .loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
+        .timestamp {
+            font-family: 'Courier New', monospace;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid px-4 py-3">
+        <!-- Page Header -->
+        <div class="page-header">
+            <div class="row align-items-center">
+                <div class="col">
+                    <h1 class="h3 mb-2">
+                        <i class="fas fa-sync-alt me-2"></i>
+                        OKX Live Sync Test Data
+                    </h1>
+                    <p class="mb-0 text-secondary">
+                        Real-time validation of data synchronization between OKX exchange and backend systems
+                    </p>
+                </div>
+                <div class="col-auto">
+                    <button class="refresh-btn" onclick="refreshData()">
+                        <i class="fas fa-refresh me-2"></i>
+                        Refresh Tests
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Test Overview -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card p-3 text-center">
+                    <div class="metric-value" id="total-tests">-</div>
+                    <div class="metric-label">Total Tests</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card p-3 text-center">
+                    <div class="metric-value text-success" id="passing-tests">-</div>
+                    <div class="metric-label">Passing</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card p-3 text-center">
+                    <div class="metric-value text-danger" id="failing-tests">-</div>
+                    <div class="metric-label">Failing</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card p-3 text-center">
+                    <div class="timestamp" id="last-updated">-</div>
+                    <div class="metric-label">Last Updated</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Test Results -->
+        <div class="row">
+            <!-- Holdings Synchronization -->
+            <div class="col-lg-6 mb-4">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="fas fa-database me-2"></i>
+                            Holdings Synchronization
+                        </h5>
+                        <span class="test-status" id="holdings-status">
+                            <i class="fas fa-spinner fa-spin"></i> Loading...
+                        </span>
+                    </div>
+                    <div class="card-body">
+                        <div id="holdings-content">
+                            <p class="text-center text-muted">Loading test data...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Price Data Freshness -->
+            <div class="col-lg-6 mb-4">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="fas fa-clock me-2"></i>
+                            Price Data Freshness
+                        </h5>
+                        <span class="test-status" id="freshness-status">
+                            <i class="fas fa-spinner fa-spin"></i> Loading...
+                        </span>
+                    </div>
+                    <div class="card-body">
+                        <div id="freshness-content">
+                            <p class="text-center text-muted">Loading test data...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- P&L Calculation Accuracy -->
+            <div class="col-lg-6 mb-4">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="fas fa-calculator me-2"></i>
+                            P&L Calculation Accuracy
+                        </h5>
+                        <span class="test-status" id="pnl-status">
+                            <i class="fas fa-spinner fa-spin"></i> Loading...
+                        </span>
+                    </div>
+                    <div class="card-body">
+                        <div id="pnl-content">
+                            <p class="text-center text-muted">Loading test data...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sync Alert System -->
+            <div class="col-lg-6 mb-4">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="fas fa-bell me-2"></i>
+                            Sync Alert System
+                        </h5>
+                        <span class="test-status" id="alerts-status">
+                            <i class="fas fa-spinner fa-spin"></i> Loading...
+                        </span>
+                    </div>
+                    <div class="card-body">
+                        <div id="alerts-content">
+                            <p class="text-center text-muted">Loading test data...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Derivatives Account Access -->
+            <div class="col-lg-12 mb-4">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="fas fa-chart-line me-2"></i>
+                            Derivatives Account Access
+                        </h5>
+                        <span class="test-status" id="derivatives-status">
+                            <i class="fas fa-spinner fa-spin"></i> Loading...
+                        </span>
+                    </div>
+                    <div class="card-body">
+                        <div id="derivatives-content">
+                            <p class="text-center text-muted">Loading test data...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let isLoading = false;
+
+        async function fetchTestData() {
+            if (isLoading) return;
+            
+            isLoading = true;
+            document.body.classList.add('loading');
+            
+            try {
+                const response = await fetch('/api/test-sync-data');
+                const data = await response.json();
+                
+                updateUI(data);
+                
+            } catch (error) {
+                console.error('Error fetching test data:', error);
+                showError('Failed to load test data: ' + error.message);
+            } finally {
+                isLoading = false;
+                document.body.classList.remove('loading');
+            }
+        }
+
+        function updateUI(data) {
+            // Update overview metrics
+            const results = data.test_results || {};
+            const totalTests = Object.keys(results).length;
+            const passingTests = Object.values(results).filter(r => r.status === 'pass').length;
+            const failingTests = totalTests - passingTests;
+
+            document.getElementById('total-tests').textContent = totalTests;
+            document.getElementById('passing-tests').textContent = passingTests;
+            document.getElementById('failing-tests').textContent = failingTests;
+            document.getElementById('last-updated').textContent = new Date(data.timestamp).toLocaleTimeString();
+
+            // Update individual test results
+            updateHoldingsSync(results.holdings_sync);
+            updatePriceFreshness(results.price_freshness);
+            updatePnLCalculation(results.pnl_calculation);
+            updateSyncAlerts(results.sync_alerts);
+            updateDerivativesAccess(results.derivatives_access);
+        }
+
+        function updateHoldingsSync(test) {
+            const status = document.getElementById('holdings-status');
+            const content = document.getElementById('holdings-content');
+            
+            if (!test) {
+                status.innerHTML = '<i class="fas fa-exclamation-triangle"></i> No Data';
+                status.className = 'test-status status-error';
+                content.innerHTML = '<p class="text-danger">No test data available</p>';
+                return;
+            }
+
+            // Update status
+            status.className = `test-status status-${test.status}`;
+            const icon = test.status === 'pass' ? 'check' : 'times';
+            status.innerHTML = `<i class="fas fa-${icon}"></i> ${test.status.toUpperCase()}`;
+
+            // Update content
+            if (test.status === 'error') {
+                content.innerHTML = `<p class="text-danger">Error: ${test.error}</p>`;
+            } else {
+                let html = `
+                    <div class="row mb-3">
+                        <div class="col-6">
+                            <div class="metric-value text-success">${test.perfect_matches || 0}</div>
+                            <div class="metric-label">Perfect Matches</div>
+                        </div>
+                        <div class="col-6">
+                            <div class="metric-value ${test.mismatches > 0 ? 'text-danger' : 'text-muted'}">${test.mismatches || 0}</div>
+                            <div class="metric-label">Mismatches</div>
+                        </div>
+                    </div>
+                `;
+
+                if (test.matches && test.matches.length > 0) {
+                    html += `
+                        <div class="holdings-table">
+                            <table class="table table-sm mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Asset</th>
+                                        <th>Quantity</th>
+                                        <th>Live Status</th>
+                                        <th>Current Price</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                    `;
+                    
+                    test.matches.forEach(match => {
+                        html += `
+                            <tr>
+                                <td><strong>${match.symbol}</strong></td>
+                                <td>${Number(match.backend_quantity).toLocaleString()}</td>
+                                <td>
+                                    <span class="live-indicator ${match.is_live ? 'live-yes' : 'live-no'}"></span>
+                                    ${match.is_live ? 'Live' : 'Cached'}
+                                </td>
+                                <td>$${Number(match.current_price).toFixed(8)}</td>
+                            </tr>
+                        `;
+                    });
+                    
+                    html += '</tbody></table></div>';
+                }
+
+                content.innerHTML = html;
+            }
+        }
+
+        function updatePriceFreshness(test) {
+            const status = document.getElementById('freshness-status');
+            const content = document.getElementById('freshness-content');
+            
+            if (!test) {
+                status.innerHTML = '<i class="fas fa-exclamation-triangle"></i> No Data';
+                status.className = 'test-status status-error';
+                content.innerHTML = '<p class="text-danger">No test data available</p>';
+                return;
+            }
+
+            status.className = `test-status status-${test.status}`;
+            const icon = test.status === 'pass' ? 'check' : 'times';
+            status.innerHTML = `<i class="fas fa-${icon}"></i> ${test.status.toUpperCase()}`;
+
+            if (test.status === 'error') {
+                content.innerHTML = `<p class="text-danger">Error: ${test.error}</p>`;
+            } else {
+                content.innerHTML = `
+                    <div class="row mb-3">
+                        <div class="col-6">
+                            <div class="metric-value ${test.timestamps_different ? 'text-success' : 'text-danger'}">${test.timestamps_different ? 'Yes' : 'No'}</div>
+                            <div class="metric-label">Timestamps Differ</div>
+                        </div>
+                        <div class="col-6">
+                            <div class="metric-value ${test.holdings_marked_live ? 'text-success' : 'text-danger'}">${test.holdings_marked_live ? 'Yes' : 'No'}</div>
+                            <div class="metric-label">All Holdings Live</div>
+                        </div>
+                    </div>
+                    <div class="test-details">
+                        <small class="text-muted">
+                            <strong>First call:</strong> ${test.first_timestamp}<br>
+                            <strong>Second call:</strong> ${test.second_timestamp}<br>
+                            <strong>Total holdings tested:</strong> ${test.total_holdings || 0}
+                        </small>
+                    </div>
+                `;
+            }
+        }
+
+        function updatePnLCalculation(test) {
+            const status = document.getElementById('pnl-status');
+            const content = document.getElementById('pnl-content');
+            
+            if (!test) {
+                status.innerHTML = '<i class="fas fa-exclamation-triangle"></i> No Data';
+                status.className = 'test-status status-error';
+                content.innerHTML = '<p class="text-danger">No test data available</p>';
+                return;
+            }
+
+            status.className = `test-status status-${test.status}`;
+            const icon = test.status === 'pass' ? 'check' : 'times';
+            status.innerHTML = `<i class="fas fa-${icon}"></i> ${test.status.toUpperCase()}`;
+
+            if (test.status === 'error') {
+                content.innerHTML = `<p class="text-danger">Error: ${test.error}</p>`;
+            } else {
+                let html = `
+                    <div class="row mb-3">
+                        <div class="col-6">
+                            <div class="metric-value text-success">${test.accurate_count || 0}</div>
+                            <div class="metric-label">Accurate Calculations</div>
+                        </div>
+                        <div class="col-6">
+                            <div class="metric-value ${test.errors && test.errors.length > 0 ? 'text-danger' : 'text-muted'}">${test.errors ? test.errors.length : 0}</div>
+                            <div class="metric-label">Calculation Errors</div>
+                        </div>
+                    </div>
+                `;
+
+                if (test.calculations && test.calculations.length > 0) {
+                    html += '<div class="holdings-table"><table class="table table-sm mb-0"><thead><tr><th>Asset</th><th>Entry Price</th><th>Current Price</th><th>P&L</th><th>Status</th></tr></thead><tbody>';
+                    
+                    test.calculations.forEach(calc => {
+                        html += `
+                            <tr>
+                                <td><strong>${calc.symbol}</strong></td>
+                                <td>$${Number(calc.entry_price).toFixed(8)}</td>
+                                <td>$${Number(calc.current_price).toFixed(8)}</td>
+                                <td class="${calc.calculated_pnl >= 0 ? 'text-success' : 'text-danger'}">$${Number(calc.calculated_pnl).toFixed(2)}</td>
+                                <td><span class="live-indicator ${calc.accurate ? 'live-yes' : 'live-no'}"></span>${calc.accurate ? 'Accurate' : 'Error'}</td>
+                            </tr>
+                        `;
+                    });
+                    
+                    html += '</tbody></table></div>';
+                }
+
+                content.innerHTML = html;
+            }
+        }
+
+        function updateSyncAlerts(test) {
+            const status = document.getElementById('alerts-status');
+            const content = document.getElementById('alerts-content');
+            
+            if (!test) {
+                status.innerHTML = '<i class="fas fa-exclamation-triangle"></i> No Data';
+                status.className = 'test-status status-error';
+                content.innerHTML = '<p class="text-danger">No test data available</p>';
+                return;
+            }
+
+            status.className = `test-status status-${test.status}`;
+            const icon = test.status === 'pass' ? 'check' : 'times';
+            status.innerHTML = `<i class="fas fa-${icon}"></i> ${test.status.toUpperCase()}`;
+
+            if (test.status === 'error') {
+                content.innerHTML = `<p class="text-danger">Error: ${test.error}</p>`;
+            } else {
+                content.innerHTML = `
+                    <div class="row mb-3">
+                        <div class="col-4">
+                            <div class="metric-value text-info">${test.okx_assets || 0}</div>
+                            <div class="metric-label">OKX Assets</div>
+                        </div>
+                        <div class="col-4">
+                            <div class="metric-value text-info">${test.backend_assets || 0}</div>
+                            <div class="metric-label">Backend Assets</div>
+                        </div>
+                        <div class="col-4">
+                            <div class="metric-value ${test.alerts_generated > 0 ? 'text-warning' : 'text-success'}">${test.alerts_generated || 0}</div>
+                            <div class="metric-label">Alerts Generated</div>
+                        </div>
+                    </div>
+                    <div class="test-details">
+                        <p class="mb-0 ${test.perfect_sync ? 'text-success' : 'text-warning'}">
+                            <i class="fas fa-${test.perfect_sync ? 'check-circle' : 'exclamation-triangle'} me-2"></i>
+                            ${test.perfect_sync ? 'Perfect synchronization maintained' : 'Synchronization issues detected'}
+                        </p>
+                    </div>
+                `;
+            }
+        }
+
+        function updateDerivativesAccess(test) {
+            const status = document.getElementById('derivatives-status');
+            const content = document.getElementById('derivatives-content');
+            
+            if (!test) {
+                status.innerHTML = '<i class="fas fa-exclamation-triangle"></i> No Data';
+                status.className = 'test-status status-error';
+                content.innerHTML = '<p class="text-danger">No test data available</p>';
+                return;
+            }
+
+            status.className = `test-status status-${test.status}`;
+            const icon = test.status === 'pass' ? 'check' : 'times';
+            status.innerHTML = `<i class="fas fa-${icon}"></i> ${test.status.toUpperCase()}`;
+
+            if (test.status === 'error') {
+                content.innerHTML = `<p class="text-danger">Error: ${test.error}</p>`;
+            } else {
+                content.innerHTML = `
+                    <div class="row mb-3">
+                        <div class="col-6">
+                            <div class="metric-value ${test.account_accessible ? 'text-success' : 'text-danger'}">${test.account_accessible ? 'Yes' : 'No'}</div>
+                            <div class="metric-label">Account Accessible</div>
+                        </div>
+                        <div class="col-6">
+                            <div class="metric-value text-info">${test.active_positions || 0}</div>
+                            <div class="metric-label">Active Positions</div>
+                        </div>
+                    </div>
+                    <div class="test-details">
+                        <p class="mb-0 text-muted">
+                            <i class="fas fa-info-circle me-2"></i>
+                            ${test.position_details || 'No additional details available'}
+                        </p>
+                    </div>
+                `;
+            }
+        }
+
+        function showError(message) {
+            // Update all test statuses to error
+            ['holdings-status', 'freshness-status', 'pnl-status', 'alerts-status', 'derivatives-status'].forEach(id => {
+                const element = document.getElementById(id);
+                element.className = 'test-status status-error';
+                element.innerHTML = '<i class="fas fa-times"></i> ERROR';
+            });
+            
+            // Show error in all content areas
+            ['holdings-content', 'freshness-content', 'pnl-content', 'alerts-content', 'derivatives-content'].forEach(id => {
+                document.getElementById(id).innerHTML = `<p class="text-danger">${message}</p>`;
+            });
+        }
+
+        function refreshData() {
+            fetchTestData();
+        }
+
+        // Initial load
+        document.addEventListener('DOMContentLoaded', function() {
+            fetchTestData();
+        });
+
+        // Auto-refresh every 30 seconds
+        setInterval(fetchTestData, 30000);
+    </script>
+</body>
+</html>

@@ -1,0 +1,88 @@
+🧪 New Test Plan
+🔍 Test Class: TestStrategyPNLCalculation
+
+We'll:
+
+Instantiate your strategy (e.g., EnhancedBollingerStrategy)
+
+Simulate a market scenario (e.g., price crosses below lower band = buy, then up = sell)
+
+Assert:
+
+The trade_type is correct
+
+PnL is calculated accurately
+
+✅ Test Template Example
+
+Here’s how the test could look (customize depending on your strategy structure):
+
+import unittest
+from bollinger_strategy import BollingerStrategy
+from enhanced_bollinger_strategy import EnhancedBollingerStrategy
+
+class TestStrategyPNLCalculation(unittest.TestCase):
+
+    def test_bollinger_strategy_trade_logic(self):
+        print("🔎 Testing Bollinger Strategy buy/sell logic & PnL...")
+
+        strategy = BollingerStrategy(symbol="BTC-USDT", interval="1h")
+
+        # Simulated price data: [price drops below lower band => BUY, then rises above upper => SELL]
+        historical_prices = [30000, 29500, 29000, 28500, 28000, 30500, 31000]
+        strategy.load_historical_data(historical_prices)
+
+        strategy.run_strategy()
+
+        trades = strategy.get_trades()  # You must have a way to retrieve past simulated trades
+        self.assertGreaterEqual(len(trades), 1, "No trades generated.")
+
+        for trade in trades:
+            entry = trade["entry_price"]
+            exit = trade["exit_price"]
+            qty = trade["quantity"]
+            direction = trade["type"].lower()
+            pnl = trade["pnl"]
+
+            if direction == "buy":
+                expected_pnl = (exit - entry) * qty
+            elif direction == "sell":
+                expected_pnl = (entry - exit) * qty
+            else:
+                self.fail(f"Unknown trade type: {direction}")
+
+            print(f"✅ {direction.upper()} | Entry: {entry}, Exit: {exit}, Qty: {qty}")
+            print(f"    → Calculated PnL: {pnl:.2f}, Expected: {expected_pnl:.2f}")
+
+            self.assertAlmostEqual(pnl, expected_pnl, places=2)
+
+
+🔧 Requirements for This Test to Work
+
+Your strategy classes (BollingerStrategy, EnhancedBollingerStrategy) should:
+
+Accept historical price data or mock data
+
+Simulate or record trades
+
+Provide a method like get_trades() or expose trade history for test access
+
+Return trade info in format:
+
+{
+    "entry_price": 28000.0,
+    "exit_price": 31000.0,
+    "quantity": 0.01,
+    "type": "buy",
+    "pnl": 300.0
+}
+
+🛠 Next Steps for You
+
+Please confirm:
+
+✅ Do your strategy classes have a trade history mechanism (self.trades, get_trades(), etc.)?
+
+✅ Can you load or simulate data through a method like load_historical_data() or similar?
+
+If not, I can help you patch those in without affecting production logic — just for testing.
