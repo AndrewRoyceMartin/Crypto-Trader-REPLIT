@@ -262,7 +262,8 @@ body {
     }
     
     /* Mobile scroll indicator */
-    .table-responsive::after {
+    /* Conditional scroll hint - only show when scrolling is needed */
+    .table-responsive.scroll-hint::after {
         content: "← Scroll horizontally →";
         position: absolute;
         bottom: 5px;
@@ -273,6 +274,12 @@ body {
         padding: 2px 6px;
         border-radius: 3px;
         pointer-events: none;
+        animation: fadeInPulse 2s ease-in-out;
+    }
+
+    @keyframes fadeInPulse {
+        0%, 100% { opacity: 0.6; }
+        50% { opacity: 0.9; }
     }
 }
 

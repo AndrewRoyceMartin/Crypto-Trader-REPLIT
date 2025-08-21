@@ -1723,7 +1723,44 @@ class TradingApp {
 // ---------- Boot ----------
 document.addEventListener('DOMContentLoaded', function () {
     window.tradingApp = new TradingApp();
+    
+    // Initialize scroll hints
+    initializeScrollHints();
 });
+
+// Conditional scroll hint functionality
+function initializeScrollHints() {
+    const checkScrollHints = () => {
+        const responsiveTables = document.querySelectorAll('.table-responsive');
+        responsiveTables.forEach(table => {
+            const needsScroll = table.scrollWidth > table.clientWidth;
+            if (needsScroll) {
+                table.classList.add('scroll-hint');
+            } else {
+                table.classList.remove('scroll-hint');
+            }
+        });
+    };
+    
+    // Check initially with delay to ensure content is loaded
+    setTimeout(checkScrollHints, 100);
+    
+    // Check on window resize
+    window.addEventListener('resize', checkScrollHints);
+    
+    // Check when content changes (after data loads)
+    const observer = new MutationObserver(() => {
+        setTimeout(checkScrollHints, 50); // Small delay after DOM changes
+    });
+    
+    // Observe table changes
+    document.querySelectorAll('.table-responsive').forEach(table => {
+        observer.observe(table, { childList: true, subtree: true });
+    });
+    
+    // Also observe for dynamically added tables
+    observer.observe(document.body, { childList: true, subtree: true });
+}
 
 // ---------- Global helpers wired to UI ----------
 async function exportATOTax() {

@@ -211,6 +211,28 @@ All components are fully styled for dark mode:
 - Trading-specific components
 - Bootstrap component overrides
 
+## Smart Scroll Hints
+
+### Conditional Display System
+The mobile scroll hint system only appears when horizontal scrolling is actually needed:
+
+**CSS Implementation:**
+- `.table-responsive.scroll-hint::after` - Shows hint only when class is present
+- Animated fade-in with pulse effect for better visibility
+- Positioned absolutely within table container
+
+**JavaScript Detection:**
+- `checkScrollHints()` - Compares `scrollWidth` vs `clientWidth`
+- Adds/removes `.scroll-hint` class based on overflow detection
+- Runs on: page load, window resize, table content changes
+- Uses MutationObserver for dynamic table updates
+
+### Benefits
+- **Performance** - No unnecessary DOM elements when scroll not needed
+- **Clean UX** - Hints only appear when genuinely helpful
+- **Responsive** - Adapts automatically to screen size and content changes
+- **Smart Detection** - Works with dynamically loaded table data
+
 ## Benefits
 1. **Consistency** - Standardized values across the application
 2. **Maintainability** - Single source of truth for design values
@@ -219,6 +241,7 @@ All components are fully styled for dark mode:
 5. **Design System** - Foundation for scalable UI development
 6. **Cross-Platform Compatibility** - Modern system font stacks for optimal display
 7. **User Experience** - Dual dark mode support with persistent preferences
+8. **Smart UX** - Conditional scroll hints only appear when horizontal scrolling is needed
 
 ## Usage Examples
 
