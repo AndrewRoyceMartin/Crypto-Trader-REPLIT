@@ -125,6 +125,14 @@ Updated deployment configuration for production readiness:
 - Added threaded=True to development server to prevent self-call deadlocks
 - Enhanced WSGI configuration with proper worker threading and connection handling
 
+**OKX Native Client Integration:**
+Implemented dedicated production-safe OKX native client for improved performance and reliability:
+- Added `src/utils/okx_native.py` with comprehensive OKX API v5 client using proper HMAC-SHA256 signing
+- Replaced duplicated signing logic with centralized `OKXNative` class supporting regional endpoints
+- Updated `get_public_price()` and `okx_ticker_pct_change_24h()` to use native client with CCXT fallback
+- Enhanced 24h/7d percentage calculation accuracy using OKX's native `open24h` field
+- Reduced API call overhead by eliminating redundant CCXT market loading and signing operations
+
 **Table Rendering System:**
 Dedicated table elements per dashboard view ensure no data conflicts, with robust currency conversion, error handling, and performance optimizations.
 

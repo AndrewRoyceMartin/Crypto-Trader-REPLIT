@@ -82,22 +82,21 @@ def okx_request(path: str, api_key: str, secret_key: str, passphrase: str, metho
     resp.raise_for_status()
     return resp.json()
 
-def okx_ticker_pct_change_24h(inst_id: str, api_key: str, secret_key: str, passphrase: str) -> dict:
-    """Get accurate 24h percentage change from OKX ticker data."""
-    # OKX v5: /market/ticker gives 'last' and 'open24h'
-    data = okx_request(f"/api/v5/market/ticker?instId={inst_id}", api_key, secret_key, passphrase)
-    if data.get('code') == '0' and data.get('data'):
-        t = data['data'][0]
-        last = float(t.get('last', 0) or 0)
-        open24h = float(t.get('open24h', 0) or 0)
-        pct_24h = ((last - open24h) / open24h * 100) if open24h > 0 else 0.0
-        return {
-            'last': last,
-            'open24h': open24h,
-            'vol24h': float(t.get('vol24h', 0) or 0),
-            'pct_24h': pct_24h
-        }
-    return {'last': 0.0, 'open24h': 0.0, 'vol24h': 0.0, 'pct_24h': 0.0}
+def get_okx_native_client():
+    """Get cached OKX native client instance."""
+    if not hasattr(get_okx_native_client, '_client'):
+        from src.utils.okx_native import OKXNative
+        get_okx_native_client._client = OKXNative.from_env()
+    return get_okx_native_client._client
+
+def okx_ticker_pct_change_24h(inst_id: str, api_key: str = None, secret_key: str = None, passphrase: str = None) -> dict:
+    """Get accurate 24h percentage change from OKX ticker data using native client."""
+    try:
+        client = get_okx_native_client()
+        return client.ticker(inst_id)
+    except Exception as e:
+        logger.error(f"Failed to get OKX ticker for {inst_id}: {e}")
+        return {'last': 0.0, 'open24h': 0.0, 'vol24h': 0.0, 'pct_24h': 0.0}
 
 # Set up logging for deployment
 logging.basicConfig(
@@ -190,7 +189,7 @@ def validate_symbol(pair: str) -> bool:
         return False
 
 def get_public_price(pair: str) -> float:
-    """Get current price for a trading pair using the reused exchange instance.
+    """Get current price for a trading pair using the native OKX client.
     
     Args:
         pair: Trading pair in format "SYMBOL/USDT" (e.g., "BTC/USDT")
@@ -203,20 +202,23 @@ def get_public_price(pair: str) -> float:
         logger.warning(f"Invalid symbol {pair} not in WATCHLIST or exchange markets")
         return 0.0
         
-    service = get_portfolio_service()
     try:
-        # Set timeout to avoid long hangs
-        service.exchange.exchange.timeout = 10000  # 10 seconds
-        ticker = service.exchange.exchange.fetch_ticker(pair)
-        return float(ticker.get('last', 0) or 0)
+        # Use native OKX client for better performance
+        client = get_okx_native_client()
+        # Convert SYMBOL/USDT to SYMBOL-USDT for OKX API
+        okx_symbol = pair.replace('/', '-')
+        return client.price(okx_symbol)
     except Exception as e:
-        # Handle NetworkError separately
-        import ccxt
-        if isinstance(e, ccxt.NetworkError):
-            logger.error(f"Network error fetching price for {pair}: {e}")
-        else:
-            logger.warning(f"Failed to get price for {pair}: {e}")
-        return 0.0
+        logger.warning(f"Failed to get price for {pair}: {e}")
+        # Fallback to CCXT if native client fails
+        try:
+            service = get_portfolio_service()
+            service.exchange.exchange.timeout = 10000  # 10 seconds
+            ticker = service.exchange.exchange.fetch_ticker(pair)
+            return float(ticker.get('last', 0) or 0)
+        except Exception as fallback_error:
+            logger.error(f"Both native and CCXT price fetch failed for {pair}: {fallback_error}")
+            return 0.0
 
 def create_initial_purchase_trades(mode, trade_type):
     """Create trade records using real OKX cost basis instead of $10 simulations."""
@@ -1743,7 +1745,7 @@ def api_best_performer():
                 # Get 24h ticker data using centralized OKX function
                 if all([api_key, secret_key, passphrase]):
                     try:
-                        ticker = okx_ticker_pct_change_24h(f"{symbol}-USDT", api_key, secret_key, passphrase)
+                        ticker = okx_ticker_pct_change_24h(f"{symbol}-USDT")
                         price_change_24h = ticker['pct_24h']
                         volume_24h = ticker['vol24h']
                         current_price = ticker['last'] or current_price
@@ -1907,7 +1909,7 @@ def api_worst_performer():
                 # Get 24h ticker data using centralized OKX function
                 if all([api_key, secret_key, passphrase]):
                     try:
-                        ticker = okx_ticker_pct_change_24h(f"{symbol}-USDT", api_key, secret_key, passphrase)
+                        ticker = okx_ticker_pct_change_24h(f"{symbol}-USDT")
                         price_change_24h = ticker['pct_24h']
                         volume_24h = ticker['vol24h']
                         current_price = ticker['last'] or current_price

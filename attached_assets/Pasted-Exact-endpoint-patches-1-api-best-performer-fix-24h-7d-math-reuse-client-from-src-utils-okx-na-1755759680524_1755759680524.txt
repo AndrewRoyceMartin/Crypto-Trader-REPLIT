@@ -1,0 +1,65 @@
+Exact endpoint patches
+1) /api/best-performer (fix 24h/7d math + reuse client)
+from src.utils.okx_native import OKXNative
+
+@app.route("/api/best-performer")
+def api_best_performer():
+    try:
+        service = get_portfolio_service()
+        pf = service.get_portfolio_data()
+        holdings = pf.get('holdings', [])
+        if not holdings:
+            return jsonify({"success": True, "best_performer": None, "performance_data": {}})
+
+        client = OKXNative.from_env()
+        total_value = pf.get('total_current_value', 0.0)
+
+        best = None
+        best_score = float("-inf")
+
+        for h in holdings:
+            symbol = h.get('symbol', '')
+            cv = float(h.get('current_value', 0) or 0)
+            if not symbol or cv <= 0:
+                continue
+
+            inst = f"{symbol}-USDT"
+            tk = client.ticker(inst)
+            price_change_24h = tk['pct_24h']
+            volume_24h = tk['vol24h']
+            current_price = tk['last'] or float(h.get('current_price', 0) or 0)
+
+            c = client.candles(inst, bar="1D", limit=7)
+            price_change_7d = 0.0
+            if len(c) >= 2:
+                curr_close = float(c[0][4])
+                week_close = float(c[-1][4])
+                if week_close > 0:
+                    price_change_7d = (curr_close - week_close) / week_close * 100
+
+            pnl_percent = float(h.get('pnl_percent', 0) or 0)
+            alloc = (cv / total_value * 100) if total_value > 0 else 0
+
+            score = (price_change_24h * 0.4) + (price_change_7d * 0.3) + (pnl_percent * 0.3)
+            if score > best_score:
+                best_score = score
+                best = {
+                    "symbol": symbol,
+                    "name": symbol,
+                    "price_change_24h": price_change_24h,
+                    "price_change_7d": price_change_7d,
+                    "current_price": current_price,
+                    "volume_24h": volume_24h,
+                    "pnl_percent": pnl_percent,
+                    "allocation_percent": alloc,
+                    "current_value": cv,
+                    "performance_score": score
+                }
+
+        return jsonify({"success": True, "best_performer": best, "performance_data": best, "last_update": iso_utc()})
+    except Exception as e:
+        logger.error(f"Error getting best performer: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+Do the same tweak for /api/worst-performer (same logic, choose min score).
