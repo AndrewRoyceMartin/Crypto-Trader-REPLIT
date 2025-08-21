@@ -3924,3 +3924,167 @@ function updatePositionTable(holdings) {
     }
     updateElementSafely('pos-strong-gains', strongGains);
 }
+
+
+// Open positions table function
+function updateOpenPositionsTable(positions, totalValue = 0) {
+    try {
+        const positionsTableBody = document.getElementById("open-positions-table-body");
+        if (!positionsTableBody) return;
+        
+        if (!positions || positions.length === 0) {
+            positionsTableBody.innerHTML = `
+                <tr>
+                    <td colspan="12" class="text-center py-4">
+                        <i class="fas fa-info-circle me-2"></i>No open positions
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        positionsTableBody.innerHTML = positions.map(position => {
+            const symbol = position.symbol || position.name || "Unknown";
+            const quantity = parseFloat(position.quantity || position.balance || 0);
+            const purchasePrice = parseFloat(position.avg_entry_price || position.entry_price || position.purchase_price || 0);
+            const currentPrice = parseFloat(position.current_price || position.price || 0);
+            const marketValue = parseFloat(position.current_value || position.value || quantity * currentPrice);
+            
+            // Current P&L calculations
+            const costBasis = quantity * purchasePrice;
+            const currentPnlDollar = marketValue - costBasis;
+            const currentPnlPercent = costBasis > 0 ? (currentPnlDollar / costBasis) * 100 : 0;
+            
+            // Target price calculations (20% profit target as default)
+            const targetPrice = purchasePrice * 1.20;
+            const targetValue = quantity * targetPrice;
+            const targetPnlDollar = targetValue - costBasis;
+            const targetPnlPercent = costBasis > 0 ? (targetPnlDollar / costBasis) * 100 : 0;
+            
+            // Days held calculation (default to 30 days for demo)
+            let daysHeld = 30;
+            if (position.entry_date) {
+                const entry = new Date(position.entry_date);
+                const now = new Date();
+                daysHeld = Math.floor((now - entry) / (1000 * 60 * 60 * 24));
+            }
+            
+            const currentPnlClass = currentPnlDollar >= 0 ? "pnl-up" : "pnl-down";
+            const targetPnlClass = targetPnlDollar >= 0 ? "pnl-up" : "pnl-down";
+            
+            // Format numbers
+            const formatCurrency = (value) => new Intl.NumberFormat("en-US", { 
+                style: "currency", 
+                currency: "USD" 
+            }).format(value);
+            
+            const formatNumber = (value) => {
+                if (value > 1000000) return (value / 1000000).toFixed(2) + "M";
+                if (value > 1000) return (value / 1000).toFixed(2) + "K";
+                return value.toFixed(8);
+            };
+            
+            return `
+                <tr>
+                    <td class="fw-bold">${symbol}</td>
+                    <td>${formatNumber(quantity)}</td>
+                    <td>${formatCurrency(purchasePrice)}</td>
+                    <td>${formatCurrency(currentPrice)}</td>
+                    <td>${formatCurrency(marketValue)}</td>
+                    <td class="${currentPnlClass}">${formatCurrency(currentPnlDollar)}</td>
+                    <td class="${currentPnlClass}">${currentPnlPercent >= 0 ? "+" : ""}${currentPnlPercent.toFixed(2)}%</td>
+                    <td>${formatCurrency(targetPrice)}</td>
+                    <td class="${targetPnlClass}">${formatCurrency(targetPnlDollar)}</td>
+                    <td class="${targetPnlClass}">+${targetPnlPercent.toFixed(2)}%</td>
+                    <td>${daysHeld} days</td>
+                    <td>
+                        <div class="btn-group btn-group-sm" role="group">
+                            <button class="btn btn-outline-success btn-xs" onclick="sellPosition('${symbol}', 25)" title="Sell 25%">25%</button>
+                            <button class="btn btn-outline-success btn-xs" onclick="sellPosition('${symbol}', 50)" title="Sell 50%">50%</button>
+                            <button class="btn btn-outline-success btn-xs" onclick="sellPosition('${symbol}', 100)" title="Sell All">All</button>
+                            <button class="btn btn-outline-primary btn-xs" onclick="buyMorePosition('${symbol}')" title="Buy More">+</button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }).join("");
+        
+    } catch (error) {
+        console.error("Open positions table update failed:", error);
+    }
+}
+
+// Trading action functions
+function sellPosition(symbol, percentage) {
+    if (confirm(`Sell ${percentage}% of your ${symbol} position?`)) {
+        executeSellOrder(symbol, percentage);
+    }
+}
+
+function buyMorePosition(symbol) {
+    const amount = prompt(`Enter USD amount to buy more ${symbol}:`);
+    if (amount && !isNaN(amount) && parseFloat(amount) > 0) {
+        if (confirm(`Buy $${amount} worth of ${symbol}?`)) {
+            executeBuyOrder(symbol, parseFloat(amount));
+        }
+    }
+}
+
+async function executeSellOrder(symbol, percentage) {
+    try {
+        const response = await fetch("/api/sell", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ symbol: symbol, percentage: percentage }),
+            cache: "no-store"
+        });
+        const data = await response.json();
+        
+        if (data.success) {
+            alert(`Sell order successful: ${data.message}`);
+            if (window.dashboardManager) {
+                window.dashboardManager.updateCryptoPortfolio();
+                window.dashboardManager.updateCurrentHoldings();
+            }
+        } else {
+            alert(`Sell order failed: ${data.error}`);
+        }
+    } catch (error) {
+        console.error("Sell order error:", error);
+        alert("Sell order failed: Network error");
+    }
+}
+
+async function executeBuyOrder(symbol, amount) {
+    try {
+        const response = await fetch("/api/buy", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ symbol: symbol, amount: amount }),
+            cache: "no-store"
+        });
+        const data = await response.json();
+        
+        if (data.success) {
+            alert(`Buy order successful: ${data.message}`);
+            if (window.dashboardManager) {
+                window.dashboardManager.updateCryptoPortfolio();
+                window.dashboardManager.updateCurrentHoldings();
+            }
+        } else {
+            alert(`Buy order failed: ${data.error}`);
+        }
+    } catch (error) {
+        console.error("Buy order error:", error);
+        alert("Buy order failed: Network error");
+    }
+}
+
+// Override holdings table to display positions on page load
+window.addEventListener("load", function() {
+    if (window.dashboardManager && window.dashboardManager.updateHoldingsTable) {
+        window.dashboardManager.updateHoldingsTable = function(holdings) {
+            updateOpenPositionsTable(holdings);
+        };
+    }
+});

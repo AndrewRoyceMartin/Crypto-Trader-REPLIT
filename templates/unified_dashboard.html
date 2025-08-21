@@ -474,38 +474,42 @@
 
         <hr class="section-divider my-5">
 
-        <!-- SECTION 4: CURRENT HOLDINGS -->
+        <!-- SECTION 4: OPEN POSITIONS -->
         <section id="holdings" class="mb-5">
             <div class="d-flex justify-content-between align-items-center mb-3">
-                <h2><span class="icon icon-coins me-2"></span>Current Holdings</h2>
-                <button class="btn btn-outline-primary btn-sm" onclick="refreshHoldingsData()" aria-label="Refresh holdings data">
+                <h2><span class="icon icon-coins me-2"></span>Open Positions</h2>
+                <button class="btn btn-outline-primary btn-sm" onclick="refreshHoldingsData()" aria-label="Refresh positions data">
                     <span class="icon icon-refresh me-1"></span> Refresh
                 </button>
             </div>
 
-            <!-- Holdings Table -->
+            <!-- Open Positions Table -->
             <div class="card card--hover">
                 <div class="card-header">
-                    <h6 class="mb-0">Current Holdings</h6>
-                    <span class="meta">Live OKX Data</span>
+                    <h6 class="mb-0">Open Positions</h6>
+                    <span class="meta">Live OKX Portfolio Data</span>
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
-                        <table class="table table-sm table-hover align-middle mb-0" id="holdings-table">
+                        <table class="table table-sm table-hover align-middle mb-0" id="open-positions-table">
                             <thead>
                                 <tr>
-                                    <th class="table-sortable" onclick="sortHoldingsTable(0)" aria-label="Sort by symbol">Symbol <span class="icon icon-sort ms-1" aria-hidden="true"></span></th>
-                                    <th class="table-sortable" onclick="sortHoldingsTable(1)" aria-label="Sort by name">Name <span class="icon icon-sort ms-1" aria-hidden="true"></span></th>
-                                    <th class="table-sortable" onclick="sortHoldingsTable(2)" aria-label="Sort by quantity">Quantity <span class="icon icon-sort ms-1" aria-hidden="true"></span></th>
-                                    <th class="table-sortable" onclick="sortHoldingsTable(3)" aria-label="Sort by price">Price <span class="icon icon-sort ms-1" aria-hidden="true"></span></th>
-                                    <th class="table-sortable" onclick="sortHoldingsTable(4)" aria-label="Sort by value">Value <span class="icon icon-sort ms-1" aria-hidden="true"></span></th>
-                                    <th class="table-sortable" onclick="sortHoldingsTable(5)" aria-label="Sort by allocation percentage">Allocation % <span class="icon icon-sort ms-1" aria-hidden="true"></span></th>
-                                    <th class="table-sortable" onclick="sortHoldingsTable(6)" aria-label="Sort by 24-hour change">24h Change <span class="icon icon-sort ms-1" aria-hidden="true"></span></th>
-                                    <th class="table-sortable" onclick="sortHoldingsTable(7)" aria-label="Sort by profit and loss">P&L <span class="icon icon-sort ms-1" aria-hidden="true"></span></th>
+                                    <th class="table-sortable" onclick="sortPositionsTable(0)" aria-label="Sort by symbol">Symbol <span class="icon icon-sort ms-1" aria-hidden="true"></span></th>
+                                    <th class="table-sortable" onclick="sortPositionsTable(1)" aria-label="Sort by quantity">Quantity <span class="icon icon-sort ms-1" aria-hidden="true"></span></th>
+                                    <th class="table-sortable" onclick="sortPositionsTable(2)" aria-label="Sort by purchase price">Purchase Price <span class="icon icon-sort ms-1" aria-hidden="true"></span></th>
+                                    <th class="table-sortable" onclick="sortPositionsTable(3)" aria-label="Sort by current price">Current Price <span class="icon icon-sort ms-1" aria-hidden="true"></span></th>
+                                    <th class="table-sortable" onclick="sortPositionsTable(4)" aria-label="Sort by market value">Market Value <span class="icon icon-sort ms-1" aria-hidden="true"></span></th>
+                                    <th class="table-sortable" onclick="sortPositionsTable(5)" aria-label="Sort by current P&L dollars">Current P&L $ <span class="icon icon-sort ms-1" aria-hidden="true"></span></th>
+                                    <th class="table-sortable" onclick="sortPositionsTable(6)" aria-label="Sort by current P&L percentage">Current P&L % <span class="icon icon-sort ms-1" aria-hidden="true"></span></th>
+                                    <th class="table-sortable" onclick="sortPositionsTable(7)" aria-label="Sort by target sell price">Target Price <span class="icon icon-sort ms-1" aria-hidden="true"></span></th>
+                                    <th class="table-sortable" onclick="sortPositionsTable(8)" aria-label="Sort by target P&L dollars">Target P&L $ <span class="icon icon-sort ms-1" aria-hidden="true"></span></th>
+                                    <th class="table-sortable" onclick="sortPositionsTable(9)" aria-label="Sort by target P&L percentage">Target P&L % <span class="icon icon-sort ms-1" aria-hidden="true"></span></th>
+                                    <th class="table-sortable" onclick="sortPositionsTable(10)" aria-label="Sort by days held">Days <span class="icon icon-sort ms-1" aria-hidden="true"></span></th>
+                                    <th>Actions</th>
                                 </tr>
                             </thead>
-                            <tbody id="holdings-table-body">
-                                <tr><td colspan="8" class="text-center">Loading current holdings...</td></tr>
+                            <tbody id="open-positions-table-body">
+                                <tr><td colspan="12" class="text-center">Loading open positions...</td></tr>
                             </tbody>
                         </table>
                     </div>
