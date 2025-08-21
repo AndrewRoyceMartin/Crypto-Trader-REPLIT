@@ -19,12 +19,12 @@
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
     
-    <!-- Modern Custom CSS -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='style_modern.css') }}?v={{ cache_version|default(0) }}">
+    <!-- Clean Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='style_clean.css') }}?v={{ cache_version|default(0) }}">
 </head>
 <body>
     <!-- Navigation Bar -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top">
+    <nav class="navbar navbar-expand-lg sticky-top">
         <div class="container-fluid">
             <a class="navbar-brand" href="{{ url_for('index') }}">
                 <i class="fas fa-chart-line me-2"></i>
@@ -226,26 +226,26 @@
                 </div>
                 <div class="col-md-3">
                     <!-- Quick Trading Controls Card -->
-                    <div class="card bg-primary text-white shadow-sm border-0" style="min-height: 200px;">
-                        <div class="card-header bg-primary border-0">
+                    <div class="trading-card">
+                        <div class="card-header">
                             <h6 class="card-title mb-0">
-                                <i class="fas fa-rocket me-2"></i>Quick Trading
+                                <i class="fas fa-exchange-alt me-2"></i>Quick Trading
                             </h6>
                         </div>
-                        <div class="card-body p-3 d-flex flex-column justify-content-between">
+                        <div class="card-body d-flex flex-column justify-content-between">
                             <div class="d-grid gap-2">
-                                <button class="btn btn-success btn-sm fw-bold" onclick="showBuyDialog()">
-                                    <i class="fas fa-arrow-up me-2"></i> BUY CRYPTO
+                                <button class="btn btn-success fw-bold" onclick="showBuyDialog()">
+                                    <i class="fas fa-arrow-up me-2"></i> BUY
                                 </button>
-                                <button class="btn btn-danger btn-sm fw-bold" onclick="showSellDialog()">
-                                    <i class="fas fa-arrow-down me-2"></i> SELL CRYPTO
+                                <button class="btn btn-danger fw-bold" onclick="showSellDialog()">
+                                    <i class="fas fa-arrow-down me-2"></i> SELL
                                 </button>
-                                <button class="btn btn-warning btn-sm fw-bold text-dark" onclick="toggleBot()">
+                                <button class="btn btn-warning fw-bold" onclick="toggleBot()">
                                     <i class="fas fa-robot me-2"></i> <span id="bot-status">START BOT</span>
                                 </button>
                             </div>
-                            <div class="mt-2 text-center">
-                                <small class="text-white-50">
+                            <div class="mt-3 text-center">
+                                <small style="opacity: 0.7;">
                                     <i class="fas fa-shield-alt me-1"></i>Live OKX Trading
                                 </small>
                             </div>

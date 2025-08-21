@@ -1,0 +1,572 @@
+/* Clean & Simple Trading Dashboard CSS */
+/* Minimal colors with bright accents only for profit/loss indicators */
+
+:root {
+  /* Simple Neutral Palette */
+  --white: #ffffff;
+  --gray-50: #f9fafb;
+  --gray-100: #f3f4f6;
+  --gray-200: #e5e7eb;
+  --gray-300: #d1d5db;
+  --gray-400: #9ca3af;
+  --gray-500: #6b7280;
+  --gray-600: #4b5563;
+  --gray-700: #374151;
+  --gray-800: #1f2937;
+  --gray-900: #111827;
+  
+  /* Bright Colors - Only for Indicators */
+  --green: #16a34a;   /* Profit/Good */
+  --red: #dc2626;     /* Loss/Bad */
+  --blue: #2563eb;    /* Accent/Info */
+  --orange: #ea580c;  /* Warning */
+  
+  /* Simple Spacing */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  
+  /* Simple Borders */
+  --radius: 0.5rem;
+  --radius-sm: 0.25rem;
+  --radius-lg: 0.75rem;
+  
+  /* Simple Shadows */
+  --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+}
+
+/* Reset and Base */
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  background: var(--gray-50);
+  color: var(--gray-900);
+  margin: 0;
+  padding: 0;
+  line-height: 1.5;
+}
+
+/* Navigation */
+.navbar {
+  background: var(--white) !important;
+  border-bottom: 1px solid var(--gray-200);
+  box-shadow: var(--shadow);
+  padding: var(--space-4) 0;
+}
+
+.navbar-brand {
+  color: var(--gray-900) !important;
+  font-weight: 600;
+}
+
+.navbar-brand i {
+  color: var(--blue);
+}
+
+/* Navigation Pills */
+.nav-pills-container {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.nav-pills-container .nav-link {
+  color: var(--gray-600);
+  background: var(--gray-100);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius);
+  padding: var(--space-2) var(--space-4);
+  text-decoration: none;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.nav-pills-container .nav-link:hover {
+  color: var(--gray-900);
+  background: var(--gray-200);
+}
+
+.nav-pills-container .nav-link.active {
+  color: var(--white);
+  background: var(--gray-900);
+  border-color: var(--gray-900);
+}
+
+/* Buttons */
+.btn {
+  border-radius: var(--radius);
+  font-weight: 500;
+  padding: var(--space-2) var(--space-4);
+  border: 1px solid transparent;
+  transition: all 0.2s ease;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+}
+
+.btn-outline-success {
+  border-color: var(--green);
+  color: var(--green);
+  background: var(--white);
+}
+
+.btn-outline-success:hover {
+  background: var(--green);
+  color: var(--white);
+}
+
+.btn-outline-warning {
+  border-color: var(--orange);
+  color: var(--orange);
+  background: var(--white);
+}
+
+.btn-outline-warning:hover {
+  background: var(--orange);
+  color: var(--white);
+}
+
+.btn-outline-info {
+  border-color: var(--blue);
+  color: var(--blue);
+  background: var(--white);
+}
+
+.btn-outline-info:hover {
+  background: var(--blue);
+  color: var(--white);
+}
+
+.btn-primary {
+  background: var(--blue);
+  border-color: var(--blue);
+  color: var(--white);
+}
+
+.btn-success {
+  background: var(--green);
+  border-color: var(--green);
+  color: var(--white);
+}
+
+.btn-danger {
+  background: var(--red);
+  border-color: var(--red);
+  color: var(--white);
+}
+
+.btn-warning {
+  background: var(--orange);
+  border-color: var(--orange);
+  color: var(--white);
+}
+
+/* Currency Selector */
+.currency-select {
+  background: var(--white);
+  border: 1px solid var(--gray-300);
+  color: var(--gray-900);
+  border-radius: var(--radius);
+  padding: var(--space-2);
+  min-width: 90px;
+}
+
+.currency-select:focus {
+  border-color: var(--blue);
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+}
+
+/* Sections */
+section {
+  margin-bottom: var(--space-8);
+}
+
+section h2 {
+  font-size: 1.875rem;
+  font-weight: 700;
+  color: var(--gray-900);
+  margin-bottom: var(--space-6);
+  padding-bottom: var(--space-3);
+  border-bottom: 2px solid var(--gray-200);
+}
+
+/* Section Dividers */
+.section-divider {
+  border: none;
+  height: 2px;
+  background: var(--gray-200);
+  margin: var(--space-8) 0;
+  border-radius: var(--radius-sm);
+}
+
+/* KPI Cards */
+.kpi-card {
+  background: var(--white);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+  text-align: center;
+  transition: all 0.2s ease;
+  box-shadow: var(--shadow);
+}
+
+.kpi-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.kpi-card .label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--gray-500);
+  margin-bottom: var(--space-2);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.kpi-card .value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--gray-900);
+  margin-bottom: var(--space-1);
+}
+
+.kpi-card .kpi-icon {
+  font-size: 1.5rem;
+  color: var(--gray-400);
+  margin-bottom: var(--space-3);
+}
+
+/* Profit/Loss Colors for KPI Cards */
+.kpi-card.profit .value {
+  color: var(--green);
+}
+
+.kpi-card.loss .value {
+  color: var(--red);
+}
+
+.kpi-card.info .value {
+  color: var(--blue);
+}
+
+.kpi-card.warning .value {
+  color: var(--orange);
+}
+
+/* Chart Cards */
+.chart-card {
+  background: var(--white);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+  box-shadow: var(--shadow);
+  height: 100%;
+  min-height: 280px;
+}
+
+.chart-card:hover {
+  box-shadow: var(--shadow-lg);
+}
+
+.chart-card-body {
+  padding: var(--space-4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+}
+
+.chart-card-footer {
+  text-align: center;
+  padding: var(--space-3);
+  font-weight: 600;
+  color: var(--gray-600);
+  border-top: 1px solid var(--gray-100);
+  margin-top: var(--space-4);
+}
+
+/* Trading Card */
+.trading-card {
+  background: var(--gray-900);
+  color: var(--white);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  min-height: 280px;
+}
+
+.trading-card .card-header {
+  background: rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  padding: var(--space-4);
+}
+
+.trading-card .card-body {
+  padding: var(--space-5);
+}
+
+.trading-card .btn {
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: var(--space-2);
+}
+
+/* Tables */
+.table {
+  background: var(--white);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+
+.table thead th {
+  background: var(--gray-900);
+  color: var(--white);
+  font-weight: 600;
+  border: none;
+  padding: var(--space-4);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-size: 0.875rem;
+}
+
+.table tbody td {
+  padding: var(--space-4);
+  border-bottom: 1px solid var(--gray-100);
+}
+
+.table tbody tr:hover {
+  background: var(--gray-50);
+}
+
+.table-sortable {
+  cursor: pointer;
+  user-select: none;
+}
+
+.table-sortable:hover {
+  background: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Profit/Loss Colors in Tables */
+.text-profit {
+  color: var(--green) !important;
+  font-weight: 600;
+}
+
+.text-loss {
+  color: var(--red) !important;
+  font-weight: 600;
+}
+
+.text-neutral {
+  color: var(--gray-500) !important;
+}
+
+/* Progress Bars */
+.progress {
+  height: 8px;
+  background: var(--gray-200);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.progress-thin {
+  height: 6px;
+}
+
+.progress-10 {
+  height: 10px;
+}
+
+.progress-bar {
+  background: var(--blue);
+  transition: width 0.6s ease;
+}
+
+.progress-bar-zero {
+  width: 0%;
+}
+
+/* Cards */
+.card {
+  background: var(--white);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.card-header {
+  background: var(--gray-50);
+  border-bottom: 1px solid var(--gray-200);
+  padding: var(--space-4);
+}
+
+.card-body {
+  padding: var(--space-5);
+}
+
+/* Dropdown */
+.dropdown-menu {
+  background: var(--white);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  padding: var(--space-2) 0;
+}
+
+.dropdown-header {
+  color: var(--gray-500);
+  font-weight: 600;
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: var(--space-2) var(--space-4);
+}
+
+.dropdown-item {
+  padding: var(--space-2) var(--space-4);
+  color: var(--gray-700);
+  transition: all 0.2s ease;
+}
+
+.dropdown-item:hover {
+  background: var(--gray-50);
+  color: var(--gray-900);
+}
+
+/* Footer */
+footer {
+  background: var(--gray-900);
+  color: var(--white);
+  padding: var(--space-8) 0;
+  margin-top: var(--space-8);
+}
+
+footer .text-xs {
+  font-size: 0.75rem;
+  opacity: 0.8;
+}
+
+/* Utility Classes */
+.text-xs {
+  font-size: 0.75rem;
+}
+
+.fw-bold {
+  font-weight: 700 !important;
+}
+
+.fw-semibold {
+  font-weight: 600 !important;
+}
+
+.fw-medium {
+  font-weight: 500 !important;
+}
+
+/* Status Colors - Only bright colors for indicators */
+.text-success {
+  color: var(--green) !important;
+}
+
+.text-danger {
+  color: var(--red) !important;
+}
+
+.text-warning {
+  color: var(--orange) !important;
+}
+
+.text-info {
+  color: var(--blue) !important;
+}
+
+.bg-success {
+  background-color: var(--green) !important;
+}
+
+.bg-danger {
+  background-color: var(--red) !important;
+}
+
+/* Table Responsive */
+.table-responsive-300 {
+  max-height: 300px;
+  overflow-y: auto;
+  border-radius: var(--radius-lg);
+}
+
+.table-responsive-400 {
+  max-height: 400px;
+  overflow-y: auto;
+  border-radius: var(--radius-lg);
+}
+
+.table-responsive-480 {
+  max-height: 480px;
+  overflow-y: auto;
+  border-radius: var(--radius-lg);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  section h2 {
+    font-size: 1.5rem;
+    margin-bottom: var(--space-4);
+  }
+  
+  .kpi-card {
+    padding: var(--space-4);
+  }
+  
+  .kpi-card .value {
+    font-size: 1.25rem;
+  }
+  
+  .chart-card {
+    min-height: 220px;
+    padding: var(--space-4);
+  }
+  
+  .nav-pills-container .nav-link {
+    font-size: 0.875rem;
+    padding: var(--space-1) var(--space-3);
+  }
+  
+  .table thead th,
+  .table tbody td {
+    padding: var(--space-3);
+    font-size: 0.875rem;
+  }
+}
+
+@media (max-width: 576px) {
+  .kpi-card .value {
+    font-size: 1rem;
+  }
+  
+  .chart-card {
+    min-height: 180px;
+  }
+}
