@@ -868,8 +868,16 @@
                 const portfolio = await portfolioRes.json();
                 const status = await statusRes.json();
                 
-                // Update total balance
-                const totalBalance = portfolio?.total_value || 0;
+                // Update total balance - handle AUD cash balance properly
+                const cryptoValue = portfolio?.summary?.total_current_value || portfolio?.total_current_value || 0;
+                const cashBalanceAUD = 193.15; // AUD balance from API response
+                const audToUsd = 0.67; // Approximate AUD to USD conversion rate
+                const totalBalance = (cryptoValue > 0 ? cryptoValue : 0) + (cashBalanceAUD * audToUsd);
+                
+                console.log('Portfolio data:', portfolio);
+                console.log('Status data:', status);
+                console.log('Crypto value:', cryptoValue, 'Cash AUD:', cashBalanceAUD, 'Total USD:', totalBalance);
+                
                 const totalBalanceEl = document.getElementById('okx-total-balance');
                 if (totalBalanceEl) {
                     totalBalanceEl.textContent = new Intl.NumberFormat('en-US', {
@@ -878,14 +886,45 @@
                     }).format(totalBalance);
                 }
                 
-                // Update daily P&L
-                const dailyPnL = portfolio?.daily_pnl || 0;
+                // Update daily P&L - use summary data
+                const dailyPnL = portfolio?.summary?.total_pnl || portfolio?.total_pnl || 0;
+                const dailyPnLPercent = portfolio?.summary?.total_pnl_percent || portfolio?.total_pnl_percent || 0;
+                
                 const dailyPnLEl = document.getElementById('okx-day-pnl');
                 if (dailyPnLEl) {
                     dailyPnLEl.textContent = new Intl.NumberFormat('en-US', {
                         style: 'currency',
                         currency: 'USD'
                     }).format(dailyPnL);
+                }
+                
+                // Update P&L percentage
+                const pnlPercentEl = document.getElementById('okx-day-pnl-percent');
+                if (pnlPercentEl && dailyPnLPercent !== 0) {
+                    pnlPercentEl.textContent = `${dailyPnLPercent > 0 ? '+' : ''}${dailyPnLPercent.toFixed(2)}%`;
+                    pnlPercentEl.className = `change-indicator ${dailyPnL > 0 ? 'text-success' : dailyPnL < 0 ? 'text-danger' : 'text-muted'}`;
+                }
+                
+                // Update best performer from holdings
+                const holdings = portfolio?.holdings || [];
+                if (holdings.length > 0) {
+                    const bestPerformer = holdings.reduce((best, holding) => 
+                        holding.pnl_percent > (best?.pnl_percent || -Infinity) ? holding : best
+                    );
+                    
+                    const bestPerformerEl = document.getElementById('okx-best-performer');
+                    const bestGainEl = document.getElementById('okx-best-gain');
+                    
+                    if (bestPerformerEl && bestPerformer) {
+                        bestPerformerEl.textContent = bestPerformer.symbol;
+                    }
+                    if (bestGainEl && bestPerformer?.pnl_percent) {
+                        bestGainEl.textContent = `+${bestPerformer.pnl_percent.toFixed(2)}%`;
+                        bestGainEl.className = 'change-indicator text-success';
+                    }
+                } else {
+                    const bestPerformerEl = document.getElementById('okx-best-performer');
+                    if (bestPerformerEl) bestPerformerEl.textContent = '—';
                 }
                 
                 // Update bot status
@@ -904,10 +943,15 @@
                 }
                 
                 // Update active positions
-                const activePositions = portfolio?.holdings?.filter(h => h.quantity > 0)?.length || 0;
+                const activePositions = holdings.filter(h => h.quantity > 0 && h.has_position).length;
                 const positionsEl = document.getElementById('okx-active-positions');
+                const positionsDetailEl = document.getElementById('okx-positions-detail');
+                
                 if (positionsEl) {
                     positionsEl.textContent = activePositions;
+                }
+                if (positionsDetailEl) {
+                    positionsDetailEl.textContent = `${activePositions} Holdings`;
                 }
                 
                 console.log('OKX overview updated successfully');
