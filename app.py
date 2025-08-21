@@ -79,14 +79,18 @@ def okx_request(path: str, api_key: str, secret_key: str, passphrase: str, metho
     resp.raise_for_status()
     return resp.json()
 
+# Global client cache
+_okx_client_cache = None
+
 def get_okx_native_client():
     """Get cached OKX native client instance."""
-    if not hasattr(get_okx_native_client, '_client'):
+    global _okx_client_cache
+    if _okx_client_cache is None:
         from src.utils.okx_native import OKXNative
-        get_okx_native_client._client = OKXNative.from_env()
-    return get_okx_native_client._client
+        _okx_client_cache = OKXNative.from_env()
+    return _okx_client_cache
 
-def okx_ticker_pct_change_24h(inst_id: str, api_key: str = None, secret_key: str = None, passphrase: str = None) -> dict:
+def okx_ticker_pct_change_24h(inst_id: str, api_key: str = "", secret_key: str = "", passphrase: str = "") -> dict:
     """Get accurate 24h percentage change from OKX ticker data using native client."""
     try:
         client = get_okx_native_client()
@@ -182,9 +186,11 @@ def validate_symbol(pair: str) -> bool:
         
         # Check against exchange markets
         service = get_portfolio_service()
-        if hasattr(service.exchange, 'exchange') and hasattr(service.exchange.exchange, 'markets'):
-            markets = service.exchange.exchange.markets
-            return pair in markets
+        if (hasattr(service, 'exchange') and hasattr(service.exchange, 'exchange') and 
+            hasattr(service.exchange.exchange, 'markets')):
+            markets = getattr(service.exchange.exchange, 'markets', None)
+            if markets is not None:
+                return pair in markets
         
         return False
     except Exception as e:
@@ -216,9 +222,12 @@ def get_public_price(pair: str) -> float:
         # Fallback to CCXT if native client fails
         try:
             service = get_portfolio_service()
-            service.exchange.exchange.timeout = 10000  # 10 seconds
-            ticker = service.exchange.exchange.fetch_ticker(pair)
-            return float(ticker.get('last', 0) or 0)
+            if (hasattr(service, 'exchange') and hasattr(service.exchange, 'exchange') and 
+                service.exchange.exchange is not None):
+                service.exchange.exchange.timeout = 10000  # 10 seconds
+                ticker = service.exchange.exchange.fetch_ticker(pair)
+                return float(ticker.get('last', 0) or 0)
+            return 0.0
         except Exception as fallback_error:
             logger.error(f"Both native and CCXT price fetch failed for {pair}: {fallback_error}")
             return 0.0
@@ -284,10 +293,6 @@ def background_warmup():
             warmup.get("connectivity", "unknown"), 
             ', '.join(warmup['loaded'])
         )
-
-    except Exception as e:
-        warmup.update({"error": str(e), "done": True})
-        logger.error(f"Warmup error: {e} - continuing anyway")
 
 def get_df(symbol: str, timeframe: str):
     """Get OHLCV data with on-demand fetch."""
@@ -1486,7 +1491,7 @@ def api_drawdown_analysis():
             "success": False,
             "error": str(e),
             "drawdown_data": [],
-            "timeframe": timeframe,
+            "timeframe": request.args.get('timeframe','30d'),
             "metrics": {
                 "max_drawdown_percent": 0.0,
                 "max_drawdown_start": None,
@@ -1553,6 +1558,7 @@ def api_performance_analytics():
         sharpe_ratio = 0.0
         volatility = 0.0
         max_drawdown = 0.0
+        current_value = 0.0
         
         if all([api_key, secret_key, passphrase]):
             try:
@@ -1777,7 +1783,7 @@ def api_performance_analytics():
         return jsonify({
             "success": False,
             "error": str(e),
-            "timeframe": timeframe,
+            "timeframe": request.args.get('timeframe','30d'),
             "metrics": {
                 "total_return": 0.0,
                 "total_return_percent": 0.0,
