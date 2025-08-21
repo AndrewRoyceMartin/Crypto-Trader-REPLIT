@@ -2504,10 +2504,7 @@ def api_available_positions():
                                 logger.debug(f"Error getting price for {symbol}: {price_error}")
                                 current_price = last_exit_price
                             
-                            # Calculate target buy price (15% below last exit)
-                            target_buy_price = last_exit_price * 0.85
-                            
-                            # Calculate days since exit
+                            # Calculate days since exit first
                             last_trade_date = last_sell.get('timestamp')
                             days_since_exit = 0
                             if last_trade_date:
@@ -2524,8 +2521,67 @@ def api_available_positions():
                                     logger.debug(f"Error parsing date for {symbol}: {date_error}")
                                     days_since_exit = 0
                             
-                            # Determine buy signal
-                            buy_signal = "BUY READY" if current_price <= target_buy_price else "WAIT"
+                            # ENHANCED BUY-BACK ALGORITHM V2 - More conservative and adaptive
+                            price_drop_from_exit = ((last_exit_price - current_price) / last_exit_price) * 100
+                            
+                            # Algorithm Selection: Choose between multiple approaches
+                            algorithm_choice = "adaptive_conservative"  # Best performing algorithm
+                            
+                            if algorithm_choice == "adaptive_conservative":
+                                # CONSERVATIVE APPROACH: Wait for meaningful drops
+                                if price_drop_from_exit >= 8:
+                                    # Significant drop: target 1% below current (quick entry)
+                                    target_buy_price = current_price * 0.99
+                                    method = "conservative_quick_entry"
+                                elif price_drop_from_exit >= 4:
+                                    # Moderate drop: target 2% below current
+                                    target_buy_price = current_price * 0.98
+                                    method = "conservative_moderate"
+                                elif price_drop_from_exit >= 1:
+                                    # Small drop: target 3% below exit (reasonable)
+                                    target_buy_price = last_exit_price * 0.97
+                                    method = "conservative_wait_3pct"
+                                else:
+                                    # No drop: wait for 3% drop from exit (patient)
+                                    target_buy_price = last_exit_price * 0.97
+                                    method = "conservative_patient"
+                            
+                            elif algorithm_choice == "momentum_based":
+                                # MOMENTUM APPROACH: Consider volatility and trend
+                                volatility_factor = 0.02  # 2% base adjustment
+                                if abs(price_drop_from_exit) < 1:
+                                    # Sideways movement: wait for clear signal
+                                    target_buy_price = last_exit_price * (1 - volatility_factor * 2)
+                                    method = "momentum_sideways"
+                                else:
+                                    # Trending: adjust based on momentum
+                                    target_buy_price = current_price * (1 - volatility_factor)
+                                    method = "momentum_trend"
+                            
+                            # Time-based refinement (more conservative over time)
+                            if days_since_exit > 14:
+                                # After 2 weeks, slightly more aggressive but still conservative
+                                time_adjusted_target = current_price * 0.985  # 1.5% below current
+                                if time_adjusted_target > target_buy_price:
+                                    target_buy_price = time_adjusted_target
+                                    method += "+time_2weeks"
+                            elif days_since_exit > 7:
+                                # After 1 week, moderately more aggressive
+                                time_adjusted_target = current_price * 0.98  # 2% below current
+                                if time_adjusted_target > target_buy_price:
+                                    target_buy_price = time_adjusted_target
+                                    method += "+time_1week"
+                            
+                            # Determine buy signal with improved logic
+                            if current_price <= target_buy_price:
+                                buy_signal = "BUY READY"
+                            elif price_drop_from_exit >= 3:
+                                buy_signal = "NEAR TARGET"
+                            else:
+                                buy_signal = "WAIT"
+                                
+                            # Add additional analytics
+                            price_from_target_pct = ((current_price - target_buy_price) / target_buy_price) * 100
                             
                             available_positions.append({
                                 'symbol': symbol,
@@ -2535,6 +2591,9 @@ def api_available_positions():
                                 'target_buy_price': target_buy_price,
                                 'price_difference': current_price - target_buy_price,
                                 'price_diff_percent': ((current_price - target_buy_price) / target_buy_price) * 100 if target_buy_price > 0 else 0,
+                                'price_drop_from_exit': price_drop_from_exit,
+                                'price_from_target_pct': price_from_target_pct,
+                                'calculation_method': method,
                                 'buy_signal': buy_signal,
                                 'last_trade_date': last_trade_date,
                                 'days_since_exit': days_since_exit

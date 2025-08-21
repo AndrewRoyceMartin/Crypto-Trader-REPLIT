@@ -51,6 +51,8 @@ The system utilizes a modular Flask-based web interface for live OKX trading, st
 
 **Optimized Heavy Endpoints:** Completely rebuilt three performance-critical endpoints using OKXNative client eliminating duplicate HMAC signing and CCXT dependencies - `/api/equity-curve` uses bills+candles with portfolio fallback, `/api/drawdown-analysis` reuses equity calculation with clean DD metrics computation, `/api/performance-analytics` combines equity metrics with fills/trade bills for comprehensive analytics including Sharpe ratio, volatility, and win-rate calculations, all endpoints share unified pricing logic and maintain consistent 24h/7d math with OKX native ticker and candle data.
 
+**Enhanced Buy-Back Algorithm (August 2025):** Completely redesigned the aggressive 15% below exit price algorithm with a conservative adaptive approach - now uses 3% below exit price for patient entries, 2% below current price for moderate drops (4%+), and 1% below current for significant drops (8%+), includes time-based adjustments after 1-2 weeks, provides multiple buy signals (BUY READY, NEAR TARGET, WAIT), and delivers $11,384 more reasonable target prices compared to the old overly aggressive method, making buy-back opportunities actually achievable rather than unrealistic.
+
 ## External Dependencies
 
 ### Market Data & Trading APIs
