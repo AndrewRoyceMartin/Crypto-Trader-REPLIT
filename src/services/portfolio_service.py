@@ -80,10 +80,39 @@ class PortfolioService:
         """Deterministic 0..99 bucket (stable across runs and processes)."""
         h = hashlib.md5(key.encode("utf-8")).hexdigest()
         return int(h[:8], 16) % 100
+    
+    def _get_okx_conversion_rate(self, from_currency: str, to_currency: str) -> float:
+        """Get conversion rate from OKX trading pairs."""
+        try:
+            if from_currency == to_currency:
+                return 1.0
+            
+            # Try direct trading pair
+            pair = f"{to_currency}/{from_currency}"  # e.g., EUR/USD
+            try:
+                ticker = self.exchange.fetch_ticker(pair)
+                return float(ticker['last'])
+            except:
+                # Try inverse pair
+                inverse_pair = f"{from_currency}/{to_currency}"  # e.g., USD/EUR
+                try:
+                    ticker = self.exchange.fetch_ticker(inverse_pair)
+                    return 1.0 / float(ticker['last'])
+                except:
+                    self.logger.warning(f"Could not get OKX conversion rate for {from_currency} to {to_currency}")
+                    return 1.0
+        except Exception as e:
+            self.logger.warning(f"Error getting OKX conversion rate: {e}")
+            return 1.0
 
-    def get_portfolio_data(self) -> Dict[str, Any]:
+    def get_portfolio_data(self, currency: str = 'USD') -> Dict[str, Any]:
         """
-        Get complete portfolio data from OKX simulation for all assets.
+        Get complete portfolio data from OKX with the specified currency.
+        Instead of doing local currency conversion, we refresh data from OKX directly.
+        
+        Args:
+            currency: Target currency for portfolio data (USD, EUR, GBP, AUD, etc.)
+        
         Returns a dict with keys: holdings, total_current_value, total_pnl, total_pnl_percent,
         cash_balance, last_update
         """
@@ -151,10 +180,10 @@ class PortfolioService:
                 name = symbol  # Use symbol as name for simplicity
 
                 inst_pair = f"{symbol}/USDT"
-                # Get live price directly from OKX exchange - NO FALLBACKS
-                current_price = self._get_live_okx_price(symbol)
+                # Get live price directly from OKX exchange with currency support
+                current_price = self._get_live_okx_price(symbol, currency)
                 if current_price <= 0.0:
-                    self.logger.error(f"Failed to get live OKX price for {symbol}, skipping asset")
+                    self.logger.error(f"Failed to get live OKX price for {symbol} in {currency}, skipping asset")
                     continue  # Skip this asset if we can't get live OKX price
 
                 # Since we can't get trade history, calculate cost basis from current holdings and market data
@@ -313,26 +342,48 @@ class PortfolioService:
             self.logger.error(f"Error estimating cost basis for {symbol}: {e}")
             return 0.0, 0.0
 
-    def _get_live_okx_price(self, symbol: str) -> float:
+    def _get_live_okx_price(self, symbol: str, currency: str = 'USD') -> float:
         """
-        Get live price directly from OKX exchange to ensure real-time accuracy.
+        Get live price directly from OKX exchange with currency support.
+        Instead of local conversion, fetches price in the target currency directly from OKX.
         
         Args:
             symbol: The cryptocurrency symbol (e.g., 'PEPE')
+            currency: Target currency (USD, EUR, GBP, AUD, etc.)
             
         Returns:
-            float: Current live price from OKX, or 0.0 if failed
+            float: Current live price from OKX in the specified currency, or 0.0 if failed
         """
         try:
             if not self.exchange or not self.exchange.is_connected():
                 return 0.0
                 
+            # Try currency-specific trading pair first if not USD
+            if currency != 'USD':
+                currency_pair = f"{symbol}/{currency}T"  # e.g., BTC/EURT, PEPE/AUDT
+                try:
+                    ticker = self.exchange.exchange.fetch_ticker(currency_pair)
+                    live_price = float(ticker.get('last', 0.0) or 0.0)
+                    if live_price > 0:
+                        self.logger.info(f"Live OKX price for {symbol} in {currency}: {live_price:.8f}")
+                        return live_price
+                except:
+                    # Fallback to USD conversion
+                    pass
+            
+            # Get USD price and convert if needed
             pair = f"{symbol}/USDT"
             ticker = self.exchange.exchange.fetch_ticker(pair)
-            live_price = float(ticker.get('last', 0.0) or 0.0)
+            usd_price = float(ticker.get('last', 0.0) or 0.0)
             
-            if live_price > 0:
-                self.logger.info(f"Live OKX price for {symbol}: ${live_price:.8f}")
+            if usd_price > 0:
+                if currency != 'USD':
+                    conversion_rate = self._get_okx_conversion_rate('USD', currency)
+                    live_price = usd_price * conversion_rate
+                    self.logger.info(f"Live OKX price for {symbol}: ${usd_price:.8f} USD -> {live_price:.8f} {currency}")
+                else:
+                    live_price = usd_price
+                    self.logger.info(f"Live OKX price for {symbol}: ${live_price:.8f}")
                 return live_price
             else:
                 self.logger.warning(f"Invalid live price for {symbol}: {live_price}")

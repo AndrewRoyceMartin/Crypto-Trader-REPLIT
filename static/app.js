@@ -208,8 +208,8 @@ class TradingApp {
         const currencyDropdown = document.getElementById('currency-selector');
         if (currencyDropdown) {
             this.selectedCurrency = currencyDropdown.value || 'USD';
-            currencyDropdown.addEventListener('change', (e) => {
-                this.setSelectedCurrency(e.target.value);
+            currencyDropdown.addEventListener('change', async (e) => {
+                await this.setSelectedCurrency(e.target.value);
             });
         }
 
@@ -520,13 +520,31 @@ class TradingApp {
     }
 
     async setSelectedCurrency(currency) {
+        console.log(`Currency changed to: ${currency}. Refreshing data from OKX...`);
         this.selectedCurrency = currency;
+        
+        // Clear cache to force fresh data from OKX
+        this.apiCache.portfolio.timestamp = 0;
+        this.apiCache.status.timestamp = 0;
+        
+        // Fetch fresh exchange rates from OKX
         await this.fetchExchangeRates();
         if (!this.exchangeRates[currency]) {
             this.showToast(`No exchange rate for ${currency}. Using USD.`, 'warning');
             this.selectedCurrency = 'USD';
+            return;
         }
-        this.updateCryptoPortfolio();
+        
+        // Force complete data refresh from OKX instead of local calculations
+        this.showToast(`Refreshing portfolio data with ${currency} from OKX...`, 'info');
+        
+        // Refresh all data from OKX with new currency
+        await Promise.all([
+            this.updateCryptoPortfolio(),
+            this.updateDashboard()
+        ]);
+        
+        console.log(`Portfolio data refreshed from OKX with ${currency} currency`);
     }
 
     // ---------- Portfolio / Tables ----------
@@ -590,7 +608,7 @@ class TradingApp {
         try {
             this.updateLoadingProgress(20, 'Fetching cryptocurrency data...');
             const ts = Date.now();
-            const response = await fetch(`/api/crypto-portfolio?_bypass_cache=${ts}&debug=1`, {
+            const response = await fetch(`/api/crypto-portfolio?_bypass_cache=${ts}&debug=1&currency=${this.selectedCurrency}`, {
                 cache: 'no-cache',
                 headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
             });

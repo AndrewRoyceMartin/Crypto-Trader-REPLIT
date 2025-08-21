@@ -283,9 +283,13 @@ app = Flask(__name__)
 def crypto_portfolio_okx():
     """Get real OKX portfolio data using PortfolioService."""
     try:
+        # Get selected currency from request (default to USD)
+        selected_currency = request.args.get('currency', 'USD')
+        logger.info(f"Fetching OKX portfolio data with currency: {selected_currency}")
+        
         from src.services.portfolio_service import get_portfolio_service
         portfolio_service = get_portfolio_service()
-        okx_portfolio_data = portfolio_service.get_portfolio_data()
+        okx_portfolio_data = portfolio_service.get_portfolio_data(currency=selected_currency)
         
         holdings_list = okx_portfolio_data['holdings']
         recent_trades = portfolio_service.get_trade_history(limit=50)
