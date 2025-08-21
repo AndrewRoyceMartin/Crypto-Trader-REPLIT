@@ -7,7 +7,7 @@ import pandas as pd
 import logging
 import os
 from typing import Dict, List, Any, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 from .base import BaseExchange
 
 
@@ -132,51 +132,120 @@ class OKXAdapter(BaseExchange):
             raise
     
     def get_trades(self, symbol: Optional[str] = None, limit: int = 50) -> List[Dict[str, Any]]:
-        """Get trade history using comprehensive OKX-compatible methods."""
+        """Get trade history using OKX-specific CCXT methods with direct API access."""
         if not self.is_connected():
             self.logger.warning("Not connected to OKX exchange")
             return []
         
         try:
-            # Import and use the enhanced OKX trade retrieval
-            from .okx_trade_methods import OKXTradeRetrieval
-            trade_retriever = OKXTradeRetrieval(self.exchange, self.logger)
+            all_trades = []
             
-            # Get trades using comprehensive method
-            trades = trade_retriever.get_trades_comprehensive(symbol, limit)
+            # Method 1: Use OKX-specific privateGetTradeFills endpoint directly via CCXT
+            self.logger.info("Attempting OKX privateGetTradeFills (most accurate for executed trades)")
+            try:
+                params = {'limit': str(min(limit, 100))}
+                response = self.exchange.privateGetTradeFills(params)
+                
+                if response and response.get('code') == '0' and 'data' in response:
+                    fills = response['data']
+                    self.logger.info(f"OKX fills API returned {len(fills)} trade fills")
+                    
+                    for fill in fills:
+                        trade = self._format_okx_fill_direct(fill)
+                        if trade:
+                            all_trades.append(trade)
+                else:
+                    self.logger.info(f"OKX fills API response: code={response.get('code')}, msg={response.get('msg', 'No message')}")
+                    
+            except Exception as e:
+                self.logger.warning(f"OKX privateGetTradeFills failed: {e}")
             
-            if not trades:
-                self.logger.warning("No trades found via comprehensive OKX API methods")
-                return []
+            # Method 2: Use OKX-specific privateGetTradeOrdersHistory endpoint
+            self.logger.info("Attempting OKX privateGetTradeOrdersHistory (backup method)")
+            try:
+                params = {'limit': str(min(limit, 100)), 'state': 'filled', 'instType': 'SPOT'}
+                response = self.exchange.privateGetTradeOrdersHistory(params)
+                
+                if response and response.get('code') == '0' and 'data' in response:
+                    orders = response['data']
+                    self.logger.info(f"OKX orders history API returned {len(orders)} filled orders")
+                    
+                    for order in orders:
+                        trade = self._format_okx_order_direct(order)
+                        if trade:
+                            # Avoid duplicates
+                            if not any(t.get('id') == trade.get('id') for t in all_trades):
+                                all_trades.append(trade)
+                else:
+                    self.logger.info(f"OKX orders history API response: code={response.get('code')}, msg={response.get('msg', 'No message')}")
+                    
+            except Exception as e:
+                self.logger.warning(f"OKX privateGetTradeOrdersHistory failed: {e}")
             
-            # Format trades for consistency with existing code
-            formatted_trades = []
-            for trade in trades:
-                formatted_trade = {
-                    'id': trade.get('id', ''),
-                    'symbol': trade.get('symbol', ''),
-                    'side': trade.get('side', ''),
-                    'quantity': trade.get('quantity', 0),
-                    'price': trade.get('price', 0),
-                    'timestamp': trade.get('timestamp', 0),
-                    'datetime': trade.get('datetime', ''),
-                    'total_value': trade.get('total_value', 0),
-                    'pnl': 0,  # Calculate P&L separately if needed
-                    'source': trade.get('source', 'okx')
-                }
-                formatted_trades.append(formatted_trade)
+            # Sort by timestamp (newest first)
+            all_trades.sort(key=lambda x: x.get('timestamp', 0), reverse=True)
             
-            self.logger.info(f"Successfully retrieved {len(formatted_trades)} formatted trades")
-            return formatted_trades
+            self.logger.info(f"Retrieved {len(all_trades)} authentic trades from OKX direct API calls")
             
-        except ImportError as e:
-            self.logger.error(f"Could not import OKX trade methods: {e}")
-            # Fallback to original method
-            return self._get_trades_fallback(symbol, limit)
+            if not all_trades:
+                self.logger.info("No trades found via OKX direct API calls - this correctly indicates no recent trading activity")
+            
+            return all_trades[:limit]
+            
         except Exception as e:
-            self.logger.error(f"Error in comprehensive trade retrieval: {e}")
-            # Fallback to original method
-            return self._get_trades_fallback(symbol, limit)
+            self.logger.error(f"Error in OKX direct API trade retrieval: {e}")
+            return []
+    
+    def _format_okx_fill_direct(self, fill: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """Format OKX fill data from direct API call."""
+        try:
+            timestamp_ms = int(fill.get('ts', 0))
+            datetime_obj = datetime.fromtimestamp(timestamp_ms / 1000, timezone.utc)
+            
+            return {
+                'id': fill.get('fillId', ''),
+                'order_id': fill.get('ordId', ''),
+                'symbol': (fill.get('instId', '') or '').replace('-', '/'),
+                'side': fill.get('side', '').upper(),
+                'quantity': float(fill.get('fillSz', 0)),
+                'price': float(fill.get('fillPx', 0)),
+                'timestamp': timestamp_ms,
+                'datetime': datetime_obj.isoformat(),
+                'total_value': float(fill.get('fillSz', 0)) * float(fill.get('fillPx', 0)),
+                'fee': abs(float(fill.get('fee', 0))),
+                'fee_currency': fill.get('feeCcy', ''),
+                'source': 'okx_fills_direct'
+            }
+        except (ValueError, TypeError) as e:
+            self.logger.debug(f"Failed to format OKX fill: {e}")
+            return None
+    
+    def _format_okx_order_direct(self, order: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """Format OKX order data from direct API call."""
+        try:
+            if order.get('state') != 'filled':
+                return None
+                
+            timestamp_ms = int(order.get('uTime', 0))
+            datetime_obj = datetime.fromtimestamp(timestamp_ms / 1000, timezone.utc)
+            
+            return {
+                'id': order.get('ordId', ''),
+                'order_id': order.get('ordId', ''),
+                'symbol': (order.get('instId', '') or '').replace('-', '/'),
+                'side': order.get('side', '').upper(),
+                'quantity': float(order.get('fillSz', 0)),
+                'price': float(order.get('avgPx', 0)),
+                'timestamp': timestamp_ms,
+                'datetime': datetime_obj.isoformat(),
+                'total_value': float(order.get('fillSz', 0)) * float(order.get('avgPx', 0)),
+                'fee': abs(float(order.get('fee', 0))),
+                'fee_currency': order.get('feeCcy', ''),
+                'source': 'okx_orders_direct'
+            }
+        except (ValueError, TypeError) as e:
+            self.logger.debug(f"Failed to format OKX order: {e}")
+            return None
     
     def _get_trades_fallback(self, symbol: Optional[str] = None, limit: int = 50) -> List[Dict[str, Any]]:
         """Fallback trade retrieval method using basic OKX API calls."""

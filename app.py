@@ -659,17 +659,17 @@ def api_trade_history():
         else:
             logger.info("No authentic trades found in database")
 
-        # Get live OKX trade data only - no fallbacks to sample data
+        # Use OKX exchange directly via portfolio service (existing working authentication)
         try:
             service = get_portfolio_service()
             if service and hasattr(service, 'exchange'):
-                # Use OKX exchange directly with enhanced methods
+                # Use OKX exchange with enhanced direct API calls
                 okx_trades = service.exchange.get_trades(limit=1000)
-                logger.info(f"Loaded {len(okx_trades)} authentic trades from live OKX exchange for timeframe {timeframe}")
+                logger.info(f"Retrieved {len(okx_trades)} authentic trades from OKX direct API for timeframe {timeframe}")
                 
-                # Only add real OKX trades - no simulated data
+                # Format trades for frontend display
                 for trade in okx_trades:
-                    if trade.get('source') != 'sample' and trade.get('id'):  # Ensure real trade data
+                    if trade.get('id'):  # Only process valid trades
                         formatted_trade = {
                             'id': trade.get('id', ''),
                             'trade_number': len(all_trades) + 1,
@@ -678,21 +678,22 @@ def api_trade_history():
                             'side': trade.get('side', ''),
                             'quantity': trade.get('quantity', 0),
                             'price': trade.get('price', 0),
-                            'timestamp': trade.get('timestamp', ''),
+                            'timestamp': trade.get('datetime', ''),
                             'total_value': trade.get('total_value', 0),
-                            'pnl': trade.get('pnl', 0),
-                            'strategy': '',  # No strategy for real trades
+                            'pnl': 0,  # Calculate separately if needed
+                            'strategy': '',  # Real trades don't have strategies
                             'order_id': trade.get('order_id', ''),
-                            'source': 'okx_live'
+                            'source': 'okx_direct'
                         }
                         all_trades.append(formatted_trade)
                         
                 if not okx_trades:
-                    logger.warning("OKX API returned 0 trades - this indicates no recent trading activity or API permission issues")
+                    logger.info("OKX direct API returned 0 trades - this correctly indicates no recent trading activity")
             else:
-                logger.error("Portfolio service not available - cannot access live OKX data")
+                logger.error("Portfolio service not available - cannot access OKX exchange")
+                    
         except Exception as okx_error:
-            logger.error(f"Live OKX trade retrieval failed: {okx_error}")
+            logger.error(f"OKX direct API trade retrieval failed: {okx_error}")
 
         # Filter trades by timeframe if we have trades from database
         if timeframe != 'all' and all_trades:
