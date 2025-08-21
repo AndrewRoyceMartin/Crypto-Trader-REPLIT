@@ -103,6 +103,13 @@ Replaced all private `_get_current_price` method calls with public `get_public_p
 - Improved performance by avoiding repeated exchange initialization and market loading
 - Enhanced error handling and logging for price retrieval operations
 
+**Security Headers Optimization:**
+Updated security headers to follow modern best practices:
+- HSTS (Strict-Transport-Security) now only set on HTTPS connections using `request.is_secure` check
+- Removed obsolete `X-XSS-Protection` header which is deprecated in modern browsers
+- Maintained comprehensive Content Security Policy and other security headers
+- Prevents unnecessary security headers on development HTTP connections
+
 **Table Rendering System:**
 Dedicated table elements per dashboard view ensure no data conflicts, with robust currency conversion, error handling, and performance optimizations.
 

@@ -4371,9 +4371,15 @@ def add_security_headers(resp):
     resp.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
     resp.headers["X-Content-Type-Options"] = "nosniff"
     resp.headers["X-Frame-Options"] = "DENY"
-    resp.headers["X-XSS-Protection"] = "1; mode=block"
     resp.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
-    resp.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+    
+    # Only set HSTS on HTTPS connections
+    if request.is_secure:
+        resp.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+    
+    # Remove obsolete X-XSS-Protection header
+    resp.headers.pop("X-XSS-Protection", None)
+    
     return resp
 
 
