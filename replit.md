@@ -48,6 +48,9 @@ Colors are used strategically only where they provide essential financial inform
 - Trading action buttons (Buy/Sell/Bot) maintain appropriate color coding
 All other UI elements remain neutral grayscale to focus attention on meaningful data.
 
+**FontAwesome Integration:**
+The system uses FontAwesome 6.4.0 with modern `fa-solid` class syntax and updated icon names for optimal compatibility. All 50+ icons throughout the dashboard have been migrated from FA5 to FA6 naming conventions (e.g., `fa-tachometer-alt` → `fa-gauge`, `fa-exchange-alt` → `fa-right-left`). The navbar includes `navbar-light` class to ensure mobile hamburger menu visibility. Alternative backward compatibility can be achieved by adding the FA5 shim: `https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/v5-font-face.min.css`
+
 **OKX Currency Conversion:**
 The system uses OKX's native exchange rates for currency conversion, fetching real-time fiat conversion rates directly from OKX trading pairs.
 
