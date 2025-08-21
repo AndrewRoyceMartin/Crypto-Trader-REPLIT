@@ -110,6 +110,15 @@ Updated security headers to follow modern best practices:
 - Maintained comprehensive Content Security Policy and other security headers
 - Prevents unnecessary security headers on development HTTP connections
 
+**High-Value Security and Performance Optimizations:**
+Implemented comprehensive fixes for validation, error handling, timezone safety, and security:
+- Added symbol validation against WATCHLIST and exchange markets before OKX API calls
+- Added 10-second timeouts to CCXT to prevent long hangs and separate NetworkError handling
+- Fixed `filter_trades_by_timeframe` to use UTC-aware timestamps throughout
+- Added tax-safety warning to ATO export dummy `initial_value = 10.0` field
+- Removed `'unsafe-inline'` from script-src CSP directive for better security
+- Cleaned up redundant time/datetime/random imports throughout the codebase
+
 **Table Rendering System:**
 Dedicated table elements per dashboard view ensure no data conflicts, with robust currency conversion, error handling, and performance optimizations.
 

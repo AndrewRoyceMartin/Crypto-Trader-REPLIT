@@ -15,7 +15,7 @@ import requests
 import hmac
 import hashlib
 import base64
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone, timedelta
 from typing import Any
 from functools import wraps
 from flask import Flask, jsonify, request, render_template
@@ -171,6 +171,24 @@ def get_portfolio_service():
     """Get the global PortfolioService singleton from the service module."""
     return _get_ps()
 
+def validate_symbol(pair: str) -> bool:
+    """Validate symbol against WATCHLIST and available markets."""
+    try:
+        # Check against WATCHLIST first
+        if pair in WATCHLIST:
+            return True
+        
+        # Check against exchange markets
+        service = get_portfolio_service()
+        if hasattr(service.exchange, 'exchange') and hasattr(service.exchange.exchange, 'markets'):
+            markets = service.exchange.exchange.markets
+            return pair in markets
+        
+        return False
+    except Exception as e:
+        logger.warning(f"Symbol validation failed for {pair}: {e}")
+        return False
+
 def get_public_price(pair: str) -> float:
     """Get current price for a trading pair using the reused exchange instance.
     
@@ -180,12 +198,24 @@ def get_public_price(pair: str) -> float:
     Returns:
         Current price as float, 0.0 if error
     """
+    # Validate symbol before making API call
+    if not validate_symbol(pair):
+        logger.warning(f"Invalid symbol {pair} not in WATCHLIST or exchange markets")
+        return 0.0
+        
     service = get_portfolio_service()
     try:
+        # Set timeout to avoid long hangs
+        service.exchange.exchange.timeout = 10000  # 10 seconds
         ticker = service.exchange.exchange.fetch_ticker(pair)
         return float(ticker.get('last', 0) or 0)
     except Exception as e:
-        logger.warning(f"Failed to get price for {pair}: {e}")
+        # Handle NetworkError separately
+        import ccxt
+        if isinstance(e, ccxt.NetworkError):
+            logger.error(f"Network error fetching price for {pair}: {e}")
+        else:
+            logger.warning(f"Failed to get price for {pair}: {e}")
         return 0.0
 
 def create_initial_purchase_trades(mode, trade_type):
@@ -790,9 +820,6 @@ def filter_trades_by_timeframe(trades, timeframe):
     if not trades or timeframe == 'all':
         return trades
     
-    from datetime import datetime, timedelta
-    import time
-    
     now = utcnow()
     
     # Calculate cutoff time based on timeframe
@@ -1255,13 +1282,13 @@ def api_portfolio_analytics():
 def api_portfolio_history():
     """Get portfolio value history using direct OKX APIs."""
     try:
-        import random
+        
         
         # Get timeframe parameter
         timeframe = request.args.get('timeframe', '30d')
         
         # Calculate date range
-        from datetime import datetime, timedelta
+        
         end_date = utcnow()
         
         if timeframe == '7d':
@@ -3041,7 +3068,7 @@ def create_sample_portfolio_for_export():
             crypto = {
                 'symbol': holding['symbol'],
                 'name': holding['name'],
-                'initial_value': 10.0,
+                'initial_value': 10.0,  # WARNING: DUMMY VALUE - NOT TAX-SAFE! Use real cost basis for tax purposes
                 'quantity': holding['quantity'],
                 'current_price': holding['current_price'],
                 'current_value': holding['current_value']
@@ -3921,7 +3948,7 @@ def execute_take_profit():
 def api_performance():
     """API endpoint for performance analytics data supporting comprehensive dashboard."""
     try:
-        import random
+        
 
         start_date = request.args.get('start')
         _ = request.args.get('end')
@@ -4177,7 +4204,7 @@ def api_test_sync_data():
                 'note': 'Set ENABLE_INTERNAL_TESTS=1 to enable comprehensive testing'
             })
 
-        import time
+        
         
         # Collect test data
         from datetime import datetime as dt
@@ -4247,7 +4274,7 @@ def api_test_sync_data():
             last_update = portfolio_data.get('last_update', '')
             is_recent = True
             if last_update:
-                from datetime import datetime, timedelta
+                
                 try:
                     update_time = datetime.fromisoformat(last_update.replace('Z', '+00:00'))
                     is_recent = (datetime.now(update_time.tzinfo) - update_time) < timedelta(minutes=5)
@@ -4359,7 +4386,7 @@ def add_security_headers(resp):
     """Add security headers for performance and protection."""
     resp.headers["Content-Security-Policy"] = (
         "default-src 'self'; "
-        "script-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com 'unsafe-inline'; "
+        "script-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; "
         "style-src 'self' https://fonts.googleapis.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com 'unsafe-inline'; "
         "font-src 'self' https://fonts.gstatic.com; "
         "img-src 'self' data:; "
