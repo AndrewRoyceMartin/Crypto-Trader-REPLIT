@@ -4060,6 +4060,8 @@ function updateOpenPositionsTable(positions, totalValue = 0) {
         }
 
         positionsTableBody.innerHTML = positions.map(position => {
+            // Check if this is from the new all_positions format
+            const isNewFormat = position.status !== undefined;
             const symbol = position.symbol || position.name || "Unknown";
             const quantity = parseFloat(position.quantity || position.balance || 0);
             const purchasePrice = parseFloat(position.avg_entry_price || position.entry_price || position.purchase_price || 0);
@@ -4204,7 +4206,9 @@ async function refreshHoldingsData() {
         
         const data = await response.json();
         if (data.success && data.holdings) {
-            updateOpenPositionsTable(data.holdings, data.total_value);
+            // Use all_positions if available, otherwise fall back to holdings
+            const positions = data.all_positions || data.holdings || [];
+            updateOpenPositionsTable(positions, data.total_value);
             if (window.tradingApp) {
                 window.tradingApp.showToast('Holdings data refreshed', 'success');
             }

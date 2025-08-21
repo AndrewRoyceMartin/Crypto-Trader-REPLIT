@@ -2338,9 +2338,19 @@ def api_current_holdings():
         holdings.sort(key=lambda x: x["current_value"], reverse=True)
         holdings = holdings[:10]
 
+        # Get historical positions including sold ones
+        all_positions = get_all_positions_including_sold(service)
+        
         return jsonify({
             "success": True,
             "holdings": holdings,
+            "all_positions": all_positions.get('positions', []),
+            "position_summary": {
+                "total_positions": all_positions.get('total_positions', 0),
+                "active_positions": all_positions.get('active_positions', 0),
+                "sold_positions": all_positions.get('sold_positions', 0),
+                "reduced_positions": all_positions.get('reduced_positions', 0)
+            },
             "total_value": total_value,
             "total_holdings": len(holdings),
             "data_source": "okx_portfolio_service_with_native_prices",
@@ -2349,6 +2359,108 @@ def api_current_holdings():
     except Exception as e:
         logger.error(f"Error getting current holdings: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
+
+def get_all_positions_including_sold(portfolio_service):
+    """Get all positions including those that have been sold/reduced to zero"""
+    try:
+        # Get current holdings from portfolio service
+        current_holdings = portfolio_service.get_portfolio_data().get('holdings', [])
+        
+        # Get historical trades from database to find sold positions
+        from src.utils.database import DatabaseManager
+        db = DatabaseManager()
+        
+        # Get all unique symbols that have been traded in the last 30 days
+        trades_df = db.get_trades()
+        if trades_df.empty:
+            traded_symbols = []
+        else:
+            # Filter recent trades (last 30 days)
+            from datetime import datetime, timedelta
+            cutoff_date = datetime.utcnow() - timedelta(days=30)
+            recent_trades = trades_df[trades_df['timestamp'] >= cutoff_date.isoformat()]
+            traded_symbols = recent_trades['symbol'].unique().tolist() if not recent_trades.empty else []
+        
+        # Create a comprehensive positions map
+        all_positions = {}
+        
+        # First, add current holdings
+        for holding in current_holdings:
+            symbol = holding.get('symbol')
+            if symbol:
+                all_positions[symbol] = {
+                    'symbol': symbol,
+                    'quantity': holding.get('quantity', 0),
+                    'current_value': holding.get('current_value', 0),
+                    'current_price': holding.get('current_price', 0),
+                    'allocation_percent': holding.get('allocation_percent', 0),
+                    'pnl': holding.get('pnl', 0),
+                    'pnl_percent': holding.get('pnl_percent', 0),
+                    'status': 'active' if holding.get('quantity', 0) > 0 else 'empty',
+                    'last_trade_date': None,
+                    'total_bought': 0,
+                    'total_sold': 0,
+                    'net_quantity': holding.get('quantity', 0)
+                }
+        
+        # Then add historical positions that might be sold out
+        for symbol in traded_symbols:
+            if symbol not in all_positions:
+                # This symbol was traded but not in current holdings - likely sold out
+                all_positions[symbol] = {
+                    'symbol': symbol,
+                    'quantity': 0,
+                    'current_value': 0,
+                    'current_price': 0,
+                    'allocation_percent': 0,
+                    'pnl': 0,
+                    'pnl_percent': 0,
+                    'status': 'sold_out',
+                    'last_trade_date': None,
+                    'total_bought': 0,
+                    'total_sold': 0,
+                    'net_quantity': 0
+                }
+        
+        # Calculate trade statistics for each position
+        if not trades_df.empty:
+            for symbol in all_positions:
+                symbol_trades = trades_df[trades_df['symbol'] == symbol]
+                if not symbol_trades.empty:
+                    total_bought = symbol_trades[symbol_trades['action'] == 'BUY']['size'].sum() if 'BUY' in symbol_trades['action'].values else 0
+                    total_sold = symbol_trades[symbol_trades['action'] == 'SELL']['size'].sum() if 'SELL' in symbol_trades['action'].values else 0
+                    last_trade_date = symbol_trades['timestamp'].max() if not symbol_trades.empty else None
+                    
+                    all_positions[symbol]['total_bought'] = total_bought
+                    all_positions[symbol]['total_sold'] = total_sold
+                    all_positions[symbol]['net_quantity'] = total_bought - total_sold
+                    all_positions[symbol]['last_trade_date'] = last_trade_date
+                    
+                    # Update status based on trade history
+                    if total_sold > 0 and abs(all_positions[symbol]['quantity']) < 0.00001:
+                        all_positions[symbol]['status'] = 'sold_out'
+                    elif total_bought > 0 and all_positions[symbol]['quantity'] > 0:
+                        all_positions[symbol]['status'] = 'active'
+                    elif total_bought > 0:
+                        all_positions[symbol]['status'] = 'reduced'
+        
+        return {
+            'success': True,
+            'positions': list(all_positions.values()),
+            'total_positions': len(all_positions),
+            'active_positions': len([p for p in all_positions.values() if p['status'] == 'active']),
+            'sold_positions': len([p for p in all_positions.values() if p['status'] == 'sold_out']),
+            'reduced_positions': len([p for p in all_positions.values() if p['status'] == 'reduced']),
+            'last_update': utcnow().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Error getting all positions: {e}")
+        return {
+            'success': False,
+            'error': str(e),
+            'positions': []
+        }
 
 def create_initial_portfolio_data():
     """Create initial portfolio data using OKX simulation."""
