@@ -299,7 +299,7 @@ class TradingApp {
             };
             return data;
         } catch (error) {
-            console.error(`Error fetching ${endpoint}:`, error);
+            console.debug(`Error fetching ${endpoint}:`, error);
             return null;
         }
     }
@@ -424,7 +424,7 @@ class TradingApp {
             this.updateAnalyticsDisplay(analytics);
             
         } catch (error) {
-            console.error('Portfolio analytics update failed:', error);
+            console.debug('Portfolio analytics update failed:', error);
         }
     }
     
@@ -466,7 +466,7 @@ class TradingApp {
                 }
             });
         } catch (error) {
-            console.error('Risk chart creation failed:', error);
+            console.debug('Risk chart creation failed:', error);
             // Fallback display
             if (riskCanvas) {
                 riskCanvas.style.display = 'none';
@@ -520,7 +520,7 @@ class TradingApp {
             this.updatePortfolioValueChart(data.history);
             
         } catch (error) {
-            console.error('Portfolio history update failed:', error);
+            console.debug('Portfolio history update failed:', error);
         }
     }
     
@@ -601,7 +601,7 @@ class TradingApp {
                 }
             });
         } catch (error) {
-            console.error('Portfolio value chart creation failed:', error);
+            console.debug('Portfolio value chart creation failed:', error);
             // Fallback display
             if (portfolioCanvas) {
                 portfolioCanvas.style.display = 'none';
@@ -632,7 +632,7 @@ class TradingApp {
             this.updateAllocationDisplay(data);
             
         } catch (error) {
-            console.error('Asset allocation update failed:', error);
+            console.debug('Asset allocation update failed:', error);
         }
     }
     
@@ -714,7 +714,7 @@ class TradingApp {
                 }
             });
         } catch (error) {
-            console.error('Asset allocation chart creation failed:', error);
+            console.debug('Asset allocation chart creation failed:', error);
             // Fallback display
             if (allocationCanvas) {
                 allocationCanvas.style.display = 'none';
@@ -768,7 +768,7 @@ class TradingApp {
             this.updateBestPerformerDisplay(data.best_performer);
             
         } catch (error) {
-            console.error('Best performer update failed:', error);
+            console.debug('Best performer update failed:', error);
         }
     }
     
@@ -818,7 +818,7 @@ class TradingApp {
             this.updateWorstPerformerDisplay(data.worst_performer);
             
         } catch (error) {
-            console.error('Worst performer update failed:', error);
+            console.debug('Worst performer update failed:', error);
         }
     }
     
@@ -872,7 +872,7 @@ class TradingApp {
             this.updateEquityMetrics(data.metrics);
             
         } catch (error) {
-            console.error('Equity curve update failed:', error);
+            console.debug('Equity curve update failed:', error);
         }
     }
     
@@ -969,7 +969,7 @@ class TradingApp {
             });
             
         } catch (error) {
-            console.error('Equity curve chart creation failed:', error);
+            console.debug('Equity curve chart creation failed:', error);
             // Fallback display
             if (equityCanvas) {
                 equityCanvas.style.display = 'none';
@@ -1029,7 +1029,7 @@ class TradingApp {
             this.updateDrawdownMetrics(data.metrics);
             
         } catch (error) {
-            console.error('Drawdown analysis update failed:', error);
+            console.debug('Drawdown analysis update failed:', error);
         }
     }
     
@@ -1167,7 +1167,7 @@ class TradingApp {
             });
             
         } catch (error) {
-            console.error('Drawdown chart creation failed:', error);
+            console.debug('Drawdown chart creation failed:', error);
             // Fallback display
             if (drawdownCanvas) {
                 drawdownCanvas.style.display = 'none';
@@ -1230,7 +1230,7 @@ class TradingApp {
             this.updateHoldingsTable(data.holdings, data.total_value);
             
         } catch (error) {
-            console.error('Current holdings update failed:', error);
+            console.debug('Current holdings update failed:', error);
         }
     }
     
@@ -1306,7 +1306,7 @@ class TradingApp {
             }
             
         } catch (error) {
-            console.error('Holdings table update failed:', error);
+            console.debug('Holdings table update failed:', error);
             
             // Fallback display
             holdingsTableBody.innerHTML = `
@@ -1332,7 +1332,7 @@ class TradingApp {
             this.updateTradesTable(data.trades, data.summary);
             
         } catch (error) {
-            console.error('Recent trades update failed:', error);
+            console.debug('Recent trades update failed:', error);
         }
     }
     
@@ -1405,7 +1405,7 @@ class TradingApp {
             this.updateTradesSummary(summary);
             
         } catch (error) {
-            console.error('Trades table update failed:', error);
+            console.debug('Trades table update failed:', error);
             
             // Fallback display
             tradesTableBody.innerHTML = `
@@ -1457,7 +1457,7 @@ class TradingApp {
             this.updatePerformanceCards(data.metrics, timeframe);
             
         } catch (error) {
-            console.error('Performance analytics update failed:', error);
+            console.debug('Performance analytics update failed:', error);
         }
     }
     
@@ -1558,7 +1558,7 @@ class TradingApp {
             });
             
         } catch (error) {
-            console.error('Performance cards update failed:', error);
+            console.debug('Performance cards update failed:', error);
             
             // Show error state in performance cards
             const errorElements = [
@@ -1604,7 +1604,7 @@ class TradingApp {
                 }
             }
         } catch (error) {
-            console.error('Price source status update failed:', error);
+            console.debug('Price source status update failed:', error);
             const serverConnectionText = document.getElementById('server-connection-text');
             const statusIcon = document.querySelector('#server-connection-status i.fas');
             if (serverConnectionText) {
@@ -1646,7 +1646,7 @@ class TradingApp {
                 }
             }
         } catch (error) {
-            console.error('OKX exchange status update failed:', error);
+            console.debug('OKX exchange status update failed:', error);
             const okxConnectionText = document.getElementById('okx-connection-text');
             const statusIcon = document.querySelector('#okx-connection-status .fas.fa-server');
             if (okxConnectionText) {
@@ -1724,7 +1724,7 @@ class TradingApp {
             const data = await response.json();
             this.exchangeRates = data.rates || { USD: 1 };
         } catch (error) {
-            console.error('Failed to fetch exchange rates:', error);
+            console.debug('Failed to fetch exchange rates:', error);
             // Sensible fallbacks
             this.exchangeRates = { USD: 1, EUR: 0.92, GBP: 0.79, AUD: 1.52 };
         }
@@ -1827,9 +1827,9 @@ class TradingApp {
             });
 
             if (!response.ok) {
-                console.error('API request failed:', response.status, response.statusText);
+                console.debug('API request failed:', response.status, response.statusText);
                 const errorText = await response.text();
-                console.error('Error response body:', errorText);
+                console.debug('Error response body:', errorText);
                 this.hideLoadingProgress();
                 return;
             }
@@ -1925,8 +1925,8 @@ class TradingApp {
             setTimeout(() => this.hideLoadingProgress(), 1000);
 
         } catch (error) {
-            console.error('Error updating crypto portfolio:', error);
-            console.error('Full error details:', {
+            console.debug('Error updating crypto portfolio:', error);
+            console.debug('Full error details:', {
                 name: error.name,
                 message: error.message,
                 stack: error.stack
@@ -2506,7 +2506,7 @@ class TradingApp {
     initializeCharts() {
         // Enhanced chart initialization with development environment safety
         if (!window.Chart || typeof Chart === 'undefined') {
-            console.warn('Chart.js not found – skipping chart initialization.');
+            console.debug('Chart.js not found – skipping chart initialization.');
             this.showChartFallbacks();
             return;
         }
@@ -2525,7 +2525,7 @@ class TradingApp {
             this.initializeRealCharts();
             
         } catch (testError) {
-            console.warn('Chart.js compatibility test failed – using fallback displays. This is normal in development mode.', testError.message);
+            console.debug('Chart.js compatibility test failed – using fallback displays. This is normal in development mode.', testError.message);
             this.showChartFallbacks();
         }
     }
@@ -2567,7 +2567,7 @@ class TradingApp {
                         }
                     });
                 } catch (chartError) {
-                    console.warn('Portfolio chart initialization failed:', chartError.message);
+                    console.debug('Portfolio chart initialization failed:', chartError.message);
                 }
             }
 
@@ -2595,7 +2595,7 @@ class TradingApp {
                         }
                     });
                 } catch (chartError) {
-                    console.warn('P&L chart initialization failed:', chartError.message);
+                    console.debug('P&L chart initialization failed:', chartError.message);
                 }
             }
 
@@ -2641,7 +2641,7 @@ class TradingApp {
                         }
                     });
                 } catch (chartError) {
-                    console.warn('Performers chart initialization failed:', chartError.message);
+                    console.debug('Performers chart initialization failed:', chartError.message);
                     // Ensure chart variable is properly reset on error
                     this.performersChart = null;
                 }
@@ -2653,7 +2653,7 @@ class TradingApp {
             }, 100);
             
         } catch (e) {
-            console.warn('Chart initialization failed – using fallback displays.', e.message || e);
+            console.debug('Chart initialization failed – using fallback displays.', e.message || e);
             this.showChartFallbacks();
         }
     }
@@ -2726,7 +2726,7 @@ class TradingApp {
                 this.portfolioChart.update('none');
             }
         } catch (error) {
-            console.error('Error updating performance charts:', error);
+            console.debug('Error updating performance charts:', error);
         }
     }
 
@@ -2752,7 +2752,7 @@ class TradingApp {
                 return;
             }
         } catch (e) {
-            console.error('Failed to fetch trade history:', e);
+            console.debug('Failed to fetch trade history:', e);
         }
 
         try {
@@ -2762,7 +2762,7 @@ class TradingApp {
                 return;
             }
         } catch (e) {
-            console.error('Failed to fetch trades from status:', e);
+            console.debug('Failed to fetch trades from status:', e);
         }
 
         this.displayDashboardRecentTrades([]);
@@ -2924,7 +2924,7 @@ class TradingApp {
             window.URL.revokeObjectURL(url);
             this.showToast('ATO tax export downloaded successfully!', 'success');
         } catch (error) {
-            console.error('ATO export error:', error);
+            console.debug('ATO export error:', error);
             this.showToast(`Failed to export ATO data: ${error.message}`, 'error');
         }
     }
@@ -3063,7 +3063,7 @@ function sortPortfolio(column) {
     
     const table = document.querySelector('#positions-table-body');
     if (!table) {
-        console.warn('Portfolio table not found');
+        console.debug('Portfolio table not found');
         return;
     }
     
@@ -3076,7 +3076,7 @@ function sortPerformanceTable(columnIndex) {
     
     const table = document.querySelector('#attribution-table, #trades-table');
     if (!table) {
-        console.warn('Performance table not found');
+        console.debug('Performance table not found');
         return;
     }
     
@@ -3089,7 +3089,7 @@ function sortPositionsTable(columnIndex) {
     
     const table = document.querySelector('#positions-table-body');
     if (!table) {
-        console.warn('Positions table not found');
+        console.debug('Positions table not found');
         return;
     }
     
@@ -3102,7 +3102,7 @@ function sortTradesTable(columnIndex) {
     
     const table = document.querySelector('#trades-table');
     if (!table) {
-        console.warn('Trades table not found');
+        console.debug('Trades table not found');
         return;
     }
     
@@ -3240,7 +3240,7 @@ async function updatePerformanceData() {
         const cryptos = data.holdings || data.cryptocurrencies || [];
         if (cryptos.length > 0) window.tradingApp.updatePerformancePageTable(cryptos);
     } catch (error) {
-        console.error('Error updating performance data:', error);
+        console.debug('Error updating performance data:', error);
     }
 }
 async function updateHoldingsData() {
@@ -3250,7 +3250,7 @@ async function updateHoldingsData() {
         const cryptos = data.holdings || data.cryptocurrencies || [];
         if (cryptos.length > 0) window.tradingApp.updateHoldingsTable(cryptos);
     } catch (error) {
-        console.error('Error updating holdings data:', error);
+        console.debug('Error updating holdings data:', error);
     }
 }
 async function updatePositionsData() {
@@ -3263,7 +3263,7 @@ async function updatePositionsData() {
             window.tradingApp.updatePositionsSummary(cryptos);
         }
     } catch (error) {
-        console.error('Error updating positions data:', error);
+        console.debug('Error updating positions data:', error);
     }
 }
 function filterTradesTable() {
@@ -3356,7 +3356,7 @@ async function executeTakeProfit() {
             window.tradingApp.showToast(`Take profit failed: ${data.error}`, 'error');
         }
     } catch (error) {
-        console.error('Take profit error:', error);
+        console.debug('Take profit error:', error);
         window.tradingApp.showToast(`Take profit error: ${error.message}`, 'error');
     } finally {
         button.disabled = false;
@@ -3460,7 +3460,7 @@ window.debugTrades = {
             console.log('Server trades data:', data.recent_trades);
             if (data.recent_trades?.length) console.log('First trade keys:', Object.keys(data.recent_trades[0]));
             return data.recent_trades;
-        } catch (e) { console.error('Failed to fetch server data:', e); }
+        } catch (e) { console.debug('Failed to fetch server data:', e); }
     },
     testNormalizer() {
         const rawTrades = [
@@ -3509,7 +3509,7 @@ function updateElementSafely(elementId, value) {
         };
         const pageElements = expectedElements[currentPage] || [];
         if (pageElements.includes(elementId)) {
-            console.warn(`Element ${elementId} not found for update`);
+            console.debug(`Element ${elementId} not found for update`);
         }
     }
 }
@@ -3774,7 +3774,7 @@ function updateRecentTradesPreview(trades) {
 // Quick Overview charts
 function initializeQuickOverviewCharts() {
     if (!window.Chart) {
-        console.warn('Chart.js not available for Quick Overview charts');
+        console.debug('Chart.js not available for Quick Overview charts');
         return;
     }
     try {
@@ -3800,7 +3800,7 @@ function initializeQuickOverviewCharts() {
             });
         }
     } catch (error) {
-        console.error('Failed to initialize Quick Overview charts:', error);
+        console.debug('Failed to initialize Quick Overview charts:', error);
     }
 }
 function updateQuickOverviewCharts(portfolioData) {
@@ -3836,7 +3836,7 @@ function updateQuickOverviewCharts(portfolioData) {
             }
         }
     } catch (error) {
-        console.error('Failed to update Quick Overview charts:', error);
+        console.debug('Failed to update Quick Overview charts:', error);
     }
 }
 
@@ -4010,7 +4010,7 @@ function updateOpenPositionsTable(positions, totalValue = 0) {
         }).join("");
         
     } catch (error) {
-        console.error("Open positions table update failed:", error);
+        console.debug("Open positions table update failed:", error);
     }
 }
 
@@ -4050,7 +4050,7 @@ async function executeSellOrder(symbol, percentage) {
             alert(`Sell order failed: ${data.error}`);
         }
     } catch (error) {
-        console.error("Sell order error:", error);
+        console.debug("Sell order error:", error);
         alert("Sell order failed: Network error");
     }
 }
@@ -4075,7 +4075,7 @@ async function executeBuyOrder(symbol, amount) {
             alert(`Buy order failed: ${data.error}`);
         }
     } catch (error) {
-        console.error("Buy order error:", error);
+        console.debug("Buy order error:", error);
         alert("Buy order failed: Network error");
     }
 }

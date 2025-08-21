@@ -947,6 +947,82 @@ def api_recent_trades():
         logger.error(f"Error getting recent trades: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
 
+@app.route("/api/best-performer")
+def api_best_performer():
+    """Get best performing asset for the dashboard."""
+    try:
+        from src.utils.okx_native import OKXNative
+        client = OKXNative.from_env()
+        
+        # Get portfolio data
+        portfolio_service = get_portfolio_service()
+        portfolio_data = portfolio_service.get_portfolio_data()
+        holdings = portfolio_data.get('holdings', [])
+        
+        if not holdings:
+            return jsonify({
+                "success": True,
+                "best_performer": None,
+                "message": "No holdings found"
+            })
+        
+        best_performer = None
+        best_score = float('-inf')
+        
+        for holding in holdings:
+            try:
+                symbol = holding.get('symbol', '')
+                if not symbol:
+                    continue
+                    
+                # Get price data from OKX native
+                ticker = client.ticker(f"{symbol}-USDT")
+                price_24h = float(ticker.get("pct_24h", 0) or 0)
+                
+                # Get 7d price data
+                candles = client.candles(f"{symbol}-USDT", bar="1D", limit=7)
+                price_7d = 0
+                if len(candles) >= 7:
+                    current_price = float(candles[0][4])  # most recent close
+                    week_ago_price = float(candles[6][4])  # 7 days ago close
+                    if week_ago_price > 0:
+                        price_7d = ((current_price - week_ago_price) / week_ago_price) * 100
+                
+                # Calculate performance score
+                portfolio_pnl = float(holding.get('pnl_percent', 0))
+                volume = float(ticker.get("vol24h", 0) or 0)
+                performance_score = (price_24h * 0.3) + (price_7d * 0.4) + (portfolio_pnl * 0.3)
+                
+                if performance_score > best_score:
+                    best_score = performance_score
+                    best_performer = {
+                        "symbol": symbol,
+                        "name": symbol,
+                        "current_price": float(holding.get('current_price', 0)),
+                        "current_value": float(holding.get('current_value', 0)),
+                        "allocation_percent": float(holding.get('allocation_percent', 0)),
+                        "pnl_percent": portfolio_pnl,
+                        "price_change_24h": price_24h,
+                        "price_change_7d": price_7d,
+                        "volume_24h": volume,
+                        "performance_score": performance_score
+                    }
+                    
+            except Exception as e:
+                logger.debug(f"Error processing {symbol}: {e}")
+                continue
+                
+        return jsonify({
+            "success": True,
+            "best_performer": best_performer,
+            "performance_data": best_performer,
+            "last_update": utcnow().isoformat()
+        })
+        
+    except Exception as e:
+        logger.error(f"Best performer endpoint error: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
 @app.route("/api/worst-performer")
 def api_worst_performer():
     try:
