@@ -132,10 +132,54 @@ class OKXAdapter(BaseExchange):
             raise
     
     def get_trades(self, symbol: Optional[str] = None, limit: int = 50) -> List[Dict[str, Any]]:
-        """Get trade history using multiple methods to ensure we get recent trades."""
+        """Get trade history using comprehensive OKX-compatible methods."""
         if not self.is_connected():
-            raise Exception("Not connected to exchange")
+            self.logger.warning("Not connected to OKX exchange")
+            return []
         
+        try:
+            # Import and use the enhanced OKX trade retrieval
+            from .okx_trade_methods import OKXTradeRetrieval
+            trade_retriever = OKXTradeRetrieval(self.exchange, self.logger)
+            
+            # Get trades using comprehensive method
+            trades = trade_retriever.get_trades_comprehensive(symbol, limit)
+            
+            if not trades:
+                self.logger.warning("No trades found via comprehensive OKX API methods")
+                return []
+            
+            # Format trades for consistency with existing code
+            formatted_trades = []
+            for trade in trades:
+                formatted_trade = {
+                    'id': trade.get('id', ''),
+                    'symbol': trade.get('symbol', ''),
+                    'side': trade.get('side', ''),
+                    'quantity': trade.get('quantity', 0),
+                    'price': trade.get('price', 0),
+                    'timestamp': trade.get('timestamp', 0),
+                    'datetime': trade.get('datetime', ''),
+                    'total_value': trade.get('total_value', 0),
+                    'pnl': 0,  # Calculate P&L separately if needed
+                    'source': trade.get('source', 'okx')
+                }
+                formatted_trades.append(formatted_trade)
+            
+            self.logger.info(f"Successfully retrieved {len(formatted_trades)} formatted trades")
+            return formatted_trades
+            
+        except ImportError as e:
+            self.logger.error(f"Could not import OKX trade methods: {e}")
+            # Fallback to original method
+            return self._get_trades_fallback(symbol, limit)
+        except Exception as e:
+            self.logger.error(f"Error in comprehensive trade retrieval: {e}")
+            # Fallback to original method
+            return self._get_trades_fallback(symbol, limit)
+    
+    def _get_trades_fallback(self, symbol: Optional[str] = None, limit: int = 50) -> List[Dict[str, Any]]:
+        """Fallback trade retrieval method using basic OKX API calls."""
         all_trades = []
         
         # Method 1: Try fetch_my_trades (standard method)
@@ -182,11 +226,11 @@ class OKXAdapter(BaseExchange):
             self.logger.warning(f"fetch_closed_orders fallback failed: {str(e)}")
         
         # Method 3: Try fetch_closed_orders with specific symbols that we know exist in portfolio
-        for symbol in ['PEPE/USDT', 'BTC/USDT']:
+        for symbol_check in ['PEPE/USDT', 'BTC/USDT']:
             try:
-                self.logger.info(f"Attempting fetch_closed_orders for {symbol}")
-                symbol_orders = self.exchange.fetch_closed_orders(symbol, limit=20)
-                self.logger.info(f"fetch_closed_orders for {symbol} returned {len(symbol_orders)} orders")
+                self.logger.info(f"Attempting fetch_closed_orders for {symbol_check}")
+                symbol_orders = self.exchange.fetch_closed_orders(symbol_check, limit=20)
+                self.logger.info(f"fetch_closed_orders for {symbol_check} returned {len(symbol_orders)} orders")
                 
                 for order in symbol_orders:
                     if order.get('status') == 'closed' and order.get('filled', 0) > 0:
@@ -209,7 +253,7 @@ class OKXAdapter(BaseExchange):
                             all_trades.append(trade)
                             
             except Exception as e:
-                self.logger.warning(f"fetch_closed_orders for {symbol} failed: {str(e)}")
+                self.logger.warning(f"fetch_closed_orders for {symbol_check} failed: {str(e)}")
                 
         # Method 4: Try with time range for last 7 days (more focused)
         try:
