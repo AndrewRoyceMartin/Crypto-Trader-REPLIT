@@ -165,7 +165,7 @@ def get_portfolio_summary() -> dict[str, Any]:
             "status": "connected"
         }
     except Exception as e:
-        logger.warning(f"Could not get portfolio summary: {e}")
+        logger.info(f"Portfolio summary unavailable: {e}")
         return {"total_value": 0.0, "daily_pnl": 0.0, "daily_pnl_percent": 0.0, "error": "Portfolio data unavailable"}
 
 def cache_get(sym: str, tf: str) -> Any:
@@ -194,7 +194,7 @@ def validate_symbol(pair: str) -> bool:
         
         return False
     except Exception as e:
-        logger.warning(f"Symbol validation failed for {pair}: {e}")
+        logger.debug(f"Symbol validation failed for {pair}: {e}")
         return False
 
 def get_public_price(pair: str) -> float:
@@ -208,7 +208,7 @@ def get_public_price(pair: str) -> float:
     """
     # Validate symbol before making API call
     if not validate_symbol(pair):
-        logger.warning(f"Invalid symbol {pair} not in WATCHLIST or exchange markets")
+        logger.debug(f"Symbol {pair} not in WATCHLIST or exchange markets")
         return 0.0
         
     try:
@@ -218,7 +218,7 @@ def get_public_price(pair: str) -> float:
         okx_symbol = pair.replace('/', '-')
         return client.price(okx_symbol)
     except Exception as e:
-        logger.warning(f"Failed to get price for {pair}: {e}")
+        logger.debug(f"Native price fetch failed for {pair}: {e}")
         # Fallback to CCXT if native client fails
         try:
             service = get_portfolio_service()
@@ -881,7 +881,7 @@ def api_recent_trades():
             logger.info(f"Retrieved {len(trades)} trades from OKX native fills API")
             
         except Exception as native_error:
-            logger.warning(f"OKX native fills API failed: {native_error}, falling back to portfolio service")
+            logger.info(f"OKX native fills API unavailable (using portfolio fallback): {native_error}")
             
             # Fallback: Use existing portfolio service trade data
             try:
@@ -1038,7 +1038,7 @@ def api_equity_curve():
                 except Exception:
                     continue
         except Exception as bills_error:
-            logger.warning(f"Bills API not accessible (permissions): {bills_error}")
+            logger.info(f"Bills API not accessible (using portfolio fallback): {bills_error}")
             # Skip bills approach and proceed to fallback
 
         # build the symbol set we need historical prices for
@@ -1125,7 +1125,7 @@ def api_equity_curve():
                             dmap[dkey] = float(row[4])
                         price_map[inst] = dmap
                     except Exception as candle_error:
-                        logger.warning(f"Could not fetch candles for {inst}: {candle_error}")
+                        logger.debug(f"Candle data unavailable for {inst}: {candle_error}")
 
             for day_dt in _date_range(start, end):
                 dkey = day_dt.strftime("%Y-%m-%d")
@@ -1153,7 +1153,7 @@ def api_equity_curve():
                     "date": today, "timestamp": end.isoformat(), "equity": total_now, "source": "portfolio_service_live"
                 })
         except Exception as live_error:
-            logger.warning(f"Could not get live portfolio value: {live_error}")
+            logger.debug(f"Live portfolio value unavailable: {live_error}")
 
         equity_points.sort(key=lambda x: x["date"])
 
@@ -1318,7 +1318,7 @@ def api_drawdown_analysis():
                                 })
                         
             except Exception as api_error:
-                logger.warning(f"OKX bills API failed: {api_error}")
+                logger.info(f"OKX bills API unavailable (using fallback): {api_error}")
         
         # Enhanced fallback using OKX historical price data
         if not equity_data:
@@ -1834,7 +1834,7 @@ def api_live_prices():
                         'source': 'OKX_Fallback'
                     }
             except Exception as sym_error:
-                logger.warning(f"Error getting {symbol} price: {sym_error}")
+                logger.debug(f"Price unavailable for {symbol}: {sym_error}")
                 formatted_prices[symbol] = {
                     'price': 1.0,
                     'is_live': False,
@@ -2291,7 +2291,7 @@ def api_reset_entire_program():
                     os.remove(cache_file)
                     logger.info(f"Removed cache file: {cache_file}")
                 except Exception as e:
-                    logger.warning(f"Could not remove {cache_file}: {e}")
+                    logger.debug(f"Cache file removal failed for {cache_file}: {e}")
 
         global _price_cache
         with _cache_lock:
@@ -2321,7 +2321,7 @@ def api_reset_entire_program():
                 clear_fn()
                 logger.info("Cleared OKX cache")
         except Exception as e:
-            logger.warning(f"Could not clear OKX simulation cache: {e}")
+            logger.debug(f"Cache clearing unavailable: {e}")
 
         logger.info("Complete system reset: portfolio, trades, caches, and state cleared")
 
