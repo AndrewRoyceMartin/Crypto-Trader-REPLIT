@@ -630,14 +630,15 @@
         }
     }
 
-    function executeBuyOrder(symbol, amount) {
-        fetch('/api/buy', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ symbol: symbol, amount: amount })
-        })
-        .then(response => response.json())
-        .then(data => {
+    async function executeBuyOrder(symbol, amount) {
+        try {
+            const data = await fetch('/api/buy', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ symbol: symbol, amount: amount }),
+                cache: 'no-store',
+                signal: new AbortController().signal
+            }).then(res => res.json());
             if (data.success) {
                 alert(`Buy order successful: ${data.message}`);
                 // Refresh data
@@ -646,21 +647,21 @@
             } else {
                 alert(`Buy order failed: ${data.error}`);
             }
-        })
-        .catch(error => {
+        } catch (error) {
             console.error('Buy order error:', error);
             alert('Buy order failed: Network error');
-        });
+        }
     }
 
-    function executeSellOrder(symbol, percentage) {
-        fetch('/api/sell', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ symbol: symbol, percentage: percentage })
-        })
-        .then(response => response.json())
-        .then(data => {
+    async function executeSellOrder(symbol, percentage) {
+        try {
+            const data = await fetch('/api/sell', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ symbol: symbol, percentage: percentage }),
+                cache: 'no-store',
+                signal: new AbortController().signal
+            }).then(res => res.json());
             if (data.success) {
                 alert(`Sell order successful: ${data.message}`);
                 // Refresh data
@@ -669,19 +670,21 @@
             } else {
                 alert(`Sell order failed: ${data.error}`);
             }
-        })
-        .catch(error => {
+        } catch (error) {
             console.error('Sell order error:', error);
             alert('Sell order failed: Network error');
-        });
+        }
     }
 
-    function toggleBot() {
-        fetch('/api/toggle-bot', {
-            method: 'POST'
-        })
-        .then(response => response.json())
-        .then(data => {
+    async function toggleBot() {
+        try {
+            const ctl = new AbortController();
+            const data = await fetch('/api/toggle-bot', { 
+                method: 'POST',
+                cache: 'no-store',
+                signal: ctl.signal,
+                headers: { 'Cache-Control': 'no-store' }
+            }).then(res => res.json());
             if (data.success) {
                 const botStatus = document.getElementById('bot-status');
                 const botToggleText = document.getElementById('bot-toggle-text');
@@ -691,20 +694,22 @@
             } else {
                 alert(`Bot toggle failed: ${data.error}`);
             }
-        })
-        .catch(error => {
+        } catch (error) {
             console.error('Bot toggle error:', error);
             alert('Bot toggle failed: Network error');
-        });
+        }
     }
 
-    function executeRebalance() {
+    async function executeRebalance() {
         if (confirm('Execute portfolio rebalance? This will adjust all positions.')) {
-            fetch('/api/rebalance', {
-                method: 'POST'
-            })
-            .then(response => response.json())
-            .then(data => {
+            try {
+                const ctl = new AbortController();
+                const data = await fetch('/api/rebalance', { 
+                    method: 'POST',
+                    cache: 'no-store',
+                    signal: ctl.signal,
+                    headers: { 'Cache-Control': 'no-store' }
+                }).then(res => res.json());
                 if (data.success) {
                     alert(`Rebalance successful: ${data.message}`);
                     // Refresh all data
@@ -713,12 +718,23 @@
                 } else {
                     alert(`Rebalance failed: ${data.error}`);
                 }
-            })
-            .catch(error => {
+            } catch (error) {
                 console.error('Rebalance error:', error);
                 alert('Rebalance failed: Network error');
-            });
+            }
         }
+    }
+
+    // Simple fetch helper with abort + no-store
+    const controllers = new Map();
+
+    async function fetchJSON(url, key = url) {
+        if (controllers.has(key)) controllers.get(key).abort();
+        const ctl = new AbortController();
+        controllers.set(key, ctl);
+        const res = await fetch(url, { signal: ctl.signal, cache: 'no-store', headers: { 'Cache-Control': 'no-store' } });
+        if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+        return res.json();
     }
 
     // Smooth scroll function

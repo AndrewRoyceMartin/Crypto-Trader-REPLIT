@@ -1,0 +1,78 @@
+Perfect—let’s lock your cards to the new minimal/grayscale look and prevent any old Bootstrap colors from leaking in. Drop this CSS after your main style.css, and add class="theme-min" to <body>.
+
+1) Scope + Card System (neutral, consistent)
+/* ===== Minimal Card System (scoped) ===== */
+.theme-min .card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.theme-min .card-header,
+.theme-min .card-footer {
+  background: var(--surface);
+  border-color: var(--border);
+}
+
+.theme-min .card-header {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: .5rem; padding: .75rem 1rem; min-height: 3rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.theme-min .card-body { padding: 1rem; }
+.theme-min .card-footer { padding: .75rem 1rem; border-top: 1px solid var(--border); }
+
+/* Neutralize any legacy bg-* on cards */
+.theme-min .card[class*="bg-"] { background: var(--surface) !important; color: var(--text) !important; }
+.theme-min .card .text-white, 
+.theme-min .card .text-white-75 { color: var(--text) !important; }
+
+/* Hover variant (optional) */
+.theme-min .card--hover { transition: transform .12s ease, box-shadow .12s ease; }
+.theme-min .card--hover:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(0,0,0,.08); }
+
+/* Tables inside cards (no double borders, sticky header) */
+.theme-min .card .table-responsive { border: 0; border-radius: 0; max-height: 420px; overflow: auto; }
+.theme-min .card .table { margin-bottom: 0; table-layout: fixed; }
+.theme-min .card .table-responsive thead th {
+  position: sticky; top: 0; z-index: 1;
+  background: var(--surface); border-bottom: 1px solid var(--border);
+}
+
+/* KPI cards — minimal */
+.theme-min .kpi-card {
+  display: flex; flex-direction: column; justify-content: center; gap: .25rem;
+  padding: 1rem; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface);
+  text-align: center;
+}
+.theme-min .kpi-card .label { font-size: .75rem; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+.theme-min .kpi-card .value { font-weight: 700; font-size: 1.25rem; }
+
+/* Chart cards */
+.theme-min .chart-card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 1rem; min-height: 280px; display: flex; flex-direction: column;
+}
+.theme-min .chart-card .card-body { padding: 0; flex: 1; display: flex; }
+.theme-min .chart-card canvas { background: #fff; width: 100% !important; height: auto !important; }
+
+/* Neutral stat tiles to replace bg-light mini-cards */
+.theme-min .tile {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: .5rem .6rem;
+}
+.theme-min .tile .small { color: var(--muted); }
+.theme-min .meta { color: var(--muted); font-size: .8125rem; }
+
+/* Dark mode parity */
+@media (prefers-color-scheme: dark) {
+  .theme-min .card, .theme-min .kpi-card, .theme-min .chart-card, .theme-min .tile {
+    background: var(--surface); border-color: var(--border);
+  }
+  .theme-min .card .table-responsive thead th { background: var(--surface); border-bottom-color: var(--border); }
+}
