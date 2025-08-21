@@ -10,10 +10,9 @@ from datetime import datetime, timedelta, timezone
 class OKXTradeRetrieval:
     """OKX-specific trade retrieval methods with comprehensive API coverage."""
     
-    def __init__(self, exchange, logger=None, portfolio_symbols=None):
+    def __init__(self, exchange, logger=None):
         self.exchange = exchange
         self.logger = logger or logging.getLogger(__name__)
-        self.portfolio_symbols = portfolio_symbols or []
     
     def _normalize_symbol(self, s: Optional[str]) -> Optional[str]:
         """
@@ -319,10 +318,6 @@ class OKXTradeRetrieval:
         # Determine which symbols to query
         if symbol:
             symbols_to_try = [symbol]
-        elif self.portfolio_symbols:
-            # Use known portfolio symbols when no specific symbol provided
-            symbols_to_try = self.portfolio_symbols[:10]  # Limit to prevent excessive API calls
-            self.logger.debug(f"Using portfolio symbols for CCXT fallback: {symbols_to_try}")
         else:
             # Try without symbol (some exchanges support this)
             symbols_to_try = [None]
