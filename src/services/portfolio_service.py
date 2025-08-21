@@ -160,13 +160,17 @@ class PortfolioService:
                 name = symbol  # Use symbol as name for simplicity
 
                 inst_pair = f"{symbol}/USDT"
-                current_price = self._safe_price(inst_pair)
+                # Get live price directly from OKX exchange to ensure accuracy
+                current_price = self._get_live_okx_price(symbol)
                 if current_price <= 0.0:
-                    # For PEPE, use a more realistic fallback price if API fails
-                    if symbol == 'PEPE':
-                        current_price = 0.00001  # Approximate PEPE price
-                    else:
-                        current_price = 1.0
+                    # Fallback to safe price method if live fetch fails
+                    current_price = self._safe_price(inst_pair)
+                    if current_price <= 0.0:
+                        # For PEPE, use a more realistic fallback price if API fails
+                        if symbol == 'PEPE':
+                            current_price = 0.00001  # Approximate PEPE price
+                        else:
+                            current_price = 1.0
 
                 # Since we can't get trade history, calculate cost basis from current holdings and market data
                 # This provides realistic cost basis from OKX trading history
@@ -324,6 +328,35 @@ class PortfolioService:
         except Exception as e:
             self.logger.error(f"Error estimating cost basis for {symbol}: {e}")
             return 0.0, 0.0
+
+    def _get_live_okx_price(self, symbol: str) -> float:
+        """
+        Get live price directly from OKX exchange to ensure real-time accuracy.
+        
+        Args:
+            symbol: The cryptocurrency symbol (e.g., 'PEPE')
+            
+        Returns:
+            float: Current live price from OKX, or 0.0 if failed
+        """
+        try:
+            if not self.exchange or not self.exchange.is_connected():
+                return 0.0
+                
+            pair = f"{symbol}/USDT"
+            ticker = self.exchange.exchange.fetch_ticker(pair)
+            live_price = float(ticker.get('last', 0.0) or 0.0)
+            
+            if live_price > 0:
+                self.logger.info(f"Live OKX price for {symbol}: ${live_price:.8f}")
+                return live_price
+            else:
+                self.logger.warning(f"Invalid live price for {symbol}: {live_price}")
+                return 0.0
+                
+        except Exception as e:
+            self.logger.error(f"Error fetching live OKX price for {symbol}: {e}")
+            return 0.0
     
     def _calculate_real_cost_basis(self, symbol: str, trade_history: List[Dict]) -> tuple[float, float]:
         """
