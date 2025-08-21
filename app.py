@@ -610,10 +610,14 @@ def start_trading():
 
 @app.route("/api/trade-history")
 def api_trade_history():
-    """Get all trade history records from OKX exchange and database."""
+    """Get all trade history records from OKX exchange and database with timeframe filtering."""
     try:
         initialize_system()
         logger.info("Ultra-lightweight initialization")
+        
+        # Get timeframe parameter
+        timeframe = request.args.get('timeframe', '7d')
+        logger.info(f"Fetching trade history for timeframe: {timeframe}")
         
         from src.utils.database import DatabaseManager
         db = DatabaseManager()
@@ -646,46 +650,94 @@ def api_trade_history():
         else:
             logger.info("No trades found in database")
 
-        # Try to get live OKX trade data if available
-
+        # Try to get live OKX trade data if available (use timeframe-aware method)
         try:
-            service = get_portfolio_service()
-            if service and hasattr(service, 'exchange') and hasattr(service.exchange, 'get_order_history'):
-                exchange_trades = service.exchange.get_order_history(limit=1000)
-                for trade in exchange_trades:
-                    formatted_trade = {
-                        'id': trade.get('id', len(all_trades) + 1),
-                        'symbol': trade['symbol'],
-                        'action': trade['side'],
-                        'side': trade['side'],
-                        'quantity': trade['quantity'],
-                        'price': trade['price'],
-                        'timestamp': trade['timestamp'],
-                        'total_value': trade['total_value'],
-                        'pnl': trade.get('pnl', 0),
-                        'source': 'okx_exchange'
-                    }
-                    all_trades.append(formatted_trade)
-                    
-                logger.info(f"Loaded {len(exchange_trades)} trades from OKX exchange")
-        except Exception as e:
-            logger.warning(f"Could not get OKX exchange trades: {e}")
+            from src.exchanges.okx_adapter import OKXAdapter
+            adapter = OKXAdapter()
+            if adapter.connect():
+                if timeframe == 'all':
+                    okx_trades = adapter.get_trades(limit=1000)
+                else:
+                    okx_trades = adapter.get_trades_by_timeframe(timeframe, limit=1000)
+                
+                logger.info(f"Loaded {len(okx_trades)} trades from OKX exchange for timeframe {timeframe}")
+                all_trades.extend(okx_trades)
+            else:
+                logger.warning("Could not connect to OKX exchange")
+        except Exception as okx_error:
+            logger.warning(f"OKX error: {okx_error}")
+
+        # Filter trades by timeframe if we have trades from database
+        if timeframe != 'all' and all_trades:
+            all_trades = filter_trades_by_timeframe(all_trades, timeframe)
 
         all_trades.sort(key=lambda x: x.get('timestamp', ''), reverse=True)
 
         for i, trade in enumerate(all_trades):
             trade['trade_number'] = i + 1
 
-        logger.info(f"Returning {len(all_trades)} total trade records")
+        logger.info(f"Returning {len(all_trades)} total trade records for timeframe: {timeframe}")
         return jsonify({
             "success": True,
             "trades": all_trades,
-            "total_count": len(all_trades)
+            "total_count": len(all_trades),
+            "timeframe": timeframe
         })
 
     except Exception as e:
         logger.error(f"Trade history error: {e}")
-        return jsonify({"error": str(e)}), 500
+        return jsonify({
+            "success": False,
+            "error": str(e),
+            "trades": [],
+            "timeframe": timeframe if 'timeframe' in locals() else '7d'
+        }), 500
+
+
+def filter_trades_by_timeframe(trades, timeframe):
+    """Filter trades by timeframe."""
+    if not trades or timeframe == 'all':
+        return trades
+    
+    from datetime import datetime, timedelta
+    import time
+    
+    now = datetime.now()
+    
+    # Calculate cutoff time based on timeframe
+    if timeframe == '24h':
+        cutoff = now - timedelta(hours=24)
+    elif timeframe == '3d':
+        cutoff = now - timedelta(days=3)
+    elif timeframe == '7d':
+        cutoff = now - timedelta(days=7)
+    elif timeframe == '30d':
+        cutoff = now - timedelta(days=30)
+    elif timeframe == '90d':
+        cutoff = now - timedelta(days=90)
+    elif timeframe == '1y':
+        cutoff = now - timedelta(days=365)
+    else:
+        return trades  # Unknown timeframe, return all
+    
+    cutoff_timestamp = cutoff.timestamp() * 1000  # Convert to milliseconds
+    
+    # Filter trades
+    filtered_trades = []
+    for trade in trades:
+        trade_timestamp = trade.get('timestamp', 0)
+        if isinstance(trade_timestamp, str):
+            try:
+                # Try parsing ISO format
+                trade_time = datetime.fromisoformat(trade_timestamp.replace('Z', '+00:00'))
+                trade_timestamp = trade_time.timestamp() * 1000
+            except:
+                continue
+        
+        if trade_timestamp >= cutoff_timestamp:
+            filtered_trades.append(trade)
+    
+    return filtered_trades
 
 @app.route("/api/recent-trades")
 def api_recent_trades():

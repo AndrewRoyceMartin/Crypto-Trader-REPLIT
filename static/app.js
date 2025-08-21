@@ -214,6 +214,7 @@ class TradingApp {
         }
 
         this.startCountdown();
+        this.setupTradeTimeframeSelector();
 
         document.addEventListener('visibilitychange', () => {
             if (document.hidden) {
@@ -1501,11 +1502,22 @@ class TradingApp {
     // ---------- Trades ----------
     async updateRecentTrades() {
         try {
-            const r = await fetch('/api/trade-history', { cache: 'no-cache' });
+            // Get selected timeframe from dashboard
+            const timeframeSelector = document.getElementById('trades-timeframe');
+            const timeframe = timeframeSelector ? timeframeSelector.value : '7d';
+            
+            const url = `/api/trade-history?timeframe=${timeframe}`;
+            const r = await fetch(url, { cache: 'no-cache' });
             if (r.ok) {
                 const data = await r.json();
                 const trades = data.trades || data.recent_trades || data || [];
                 this.displayRecentTrades(trades);
+                
+                // Update count badge
+                const countBadge = document.getElementById('recent-trades-count');
+                if (countBadge) {
+                    countBadge.textContent = trades.length;
+                }
                 return;
             }
         } catch (e) {
@@ -1523,6 +1535,15 @@ class TradingApp {
         }
 
         this.displayDashboardRecentTrades([]);
+    }
+
+    setupTradeTimeframeSelector() {
+        const timeframeSelector = document.getElementById('trades-timeframe');
+        if (timeframeSelector) {
+            timeframeSelector.addEventListener('change', () => {
+                this.updateRecentTrades();
+            });
+        }
     }
 
     displayRecentTrades(trades) {

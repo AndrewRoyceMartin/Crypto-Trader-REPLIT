@@ -267,6 +267,82 @@ class OKXAdapter(BaseExchange):
         
         return unique_trades[:limit]  # Return only up to the requested limit
     
+    def get_trades_by_timeframe(self, timeframe: str, limit: int = 50) -> List[Dict[str, Any]]:
+        """Get trades filtered by timeframe."""
+        from datetime import datetime, timedelta
+        
+        # Calculate since timestamp based on timeframe
+        now = datetime.now()
+        if timeframe == '24h':
+            since = int((now - timedelta(hours=24)).timestamp() * 1000)
+        elif timeframe == '3d':
+            since = int((now - timedelta(days=3)).timestamp() * 1000)
+        elif timeframe == '7d':
+            since = int((now - timedelta(days=7)).timestamp() * 1000)
+        elif timeframe == '30d':
+            since = int((now - timedelta(days=30)).timestamp() * 1000)
+        elif timeframe == '90d':
+            since = int((now - timedelta(days=90)).timestamp() * 1000)
+        elif timeframe == '1y':
+            since = int((now - timedelta(days=365)).timestamp() * 1000)
+        else:
+            # For 'all' or unknown timeframes, use regular get_trades
+            return self.get_trades(limit=limit)
+        
+        if not self.is_connected():
+            raise Exception("Not connected to exchange")
+        
+        all_trades = []
+        
+        # Method 1: Try fetch_my_trades with since parameter
+        try:
+            self.logger.info(f"Attempting fetch_my_trades with timeframe={timeframe}, since={since}")
+            trades = self.exchange.fetch_my_trades(since=since, limit=min(limit, 100))
+            self.logger.info(f"fetch_my_trades returned {len(trades)} trades for timeframe {timeframe}")
+            all_trades.extend([dict(trade) for trade in trades])
+        except Exception as e:
+            self.logger.warning(f"fetch_my_trades with timeframe failed: {str(e)}")
+        
+        # Method 2: Try fetch_closed_orders with since parameter
+        try:
+            self.logger.info(f"Attempting fetch_closed_orders with timeframe={timeframe}")
+            closed_orders = self.exchange.fetch_closed_orders(since=since, limit=min(limit, 100))
+            self.logger.info(f"fetch_closed_orders returned {len(closed_orders)} orders for timeframe {timeframe}")
+            
+            for order in closed_orders:
+                if order.get('status') == 'closed' and order.get('filled', 0) > 0:
+                    trade = {
+                        'id': order.get('id'),
+                        'symbol': order.get('symbol'),
+                        'side': order.get('side'),
+                        'amount': order.get('filled', order.get('amount', 0)),
+                        'price': order.get('average', order.get('price', 0)),
+                        'cost': order.get('cost', 0),
+                        'datetime': order.get('datetime'),
+                        'timestamp': order.get('timestamp'),
+                        'fee': order.get('fee'),
+                        'type': order.get('type', 'market'),
+                        'status': 'closed'
+                    }
+                    all_trades.append(trade)
+        except Exception as e:
+            self.logger.warning(f"fetch_closed_orders with timeframe failed: {str(e)}")
+        
+        # Sort by timestamp (most recent first)
+        all_trades.sort(key=lambda x: x.get('timestamp', 0), reverse=True)
+        
+        # Remove duplicates
+        seen_ids = set()
+        unique_trades = []
+        for trade in all_trades:
+            trade_id = trade.get('id')
+            if trade_id and trade_id not in seen_ids:
+                seen_ids.add(trade_id)
+                unique_trades.append(trade)
+        
+        self.logger.info(f"Timeframe {timeframe} result: {len(unique_trades)} unique trades")
+        return unique_trades[:limit]
+    
     def get_ohlcv(self, symbol: str, timeframe: str, limit: int = 100) -> pd.DataFrame:
         """Get OHLCV data."""
         if not self.is_connected():
