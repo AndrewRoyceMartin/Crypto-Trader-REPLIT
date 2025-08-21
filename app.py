@@ -2196,6 +2196,27 @@ def api_test_sync_data():
             'timestamp': datetime.now().isoformat()
         }), 500
 
+@app.after_request
+def add_security_headers(resp):
+    """Add security headers for performance and protection."""
+    resp.headers["Content-Security-Policy"] = (
+        "default-src 'self'; "
+        "script-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com 'unsafe-inline'; "
+        "style-src 'self' https://fonts.googleapis.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com 'unsafe-inline'; "
+        "font-src 'self' https://fonts.gstatic.com; "
+        "img-src 'self' data:; "
+        "connect-src 'self'; "
+        "frame-ancestors 'none'; "
+        "base-uri 'self'; "
+        "form-action 'self'"
+    )
+    resp.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    resp.headers["X-Content-Type-Options"] = "nosniff"
+    resp.headers["X-Frame-Options"] = "DENY"
+    resp.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
+    return resp
+
+
 # Ensure this can be imported for WSGI as well
 application = app
 

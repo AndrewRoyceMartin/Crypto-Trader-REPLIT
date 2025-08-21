@@ -1,0 +1,51 @@
+2) Navbar: add a toggler + dedicated top “control bar”
+Navbar toggler (mobile)
+<nav class="navbar navbar-expand-lg sticky-top">
+  <div class="container-fluid">
+    <a class="navbar-brand" href="#overview"><i class="fas fa-chart-line me-2"></i>Crypto Trading Dashboard</a>
+
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav"
+      aria-controls="mainNav" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div id="mainNav" class="collapse navbar-collapse">
+      <div class="navbar-nav me-auto nav-pills-container d-flex">
+        <a class="nav-link active" href="#overview"><i class="fas fa-tachometer-alt me-1"></i>Overview</a>
+        <a class="nav-link" href="#portfolio">Portfolio</a>
+        <a class="nav-link" href="#performance">Performance</a>
+        <a class="nav-link" href="#holdings">Holdings</a>
+        <a class="nav-link" href="#trades">Trades</a>
+      </div>
+
+      <div class="navbar-nav ms-auto">
+        <!-- keep minimal here to avoid crowding; main controls go in control bar -->
+        <a class="btn btn-outline-secondary btn-sm me-2" href="/docs" rel="noopener">Docs</a>
+      </div>
+    </div>
+  </div>
+</nav>
+
+Control bar (sticky, right under navbar)
+<div class="control-bar border-bottom">
+  <div class="container-fluid d-flex flex-wrap align-items-center gap-2 py-2">
+    <div class="d-flex align-items-center gap-2">
+      <label class="small muted mb-0">Currency</label>
+      <select id="currency-selector" class="form-select form-select-sm" onchange="changeCurrency()">
+        <option value="USD" selected>USD</option>
+        <option value="AUD">AUD</option>
+        <option value="EUR">EUR</option>
+        <option value="GBP">GBP</option>
+      </select>
+    </div>
+
+    <div class="ms-auto d-flex flex-wrap gap-2">
+      <button class="btn btn-outline-secondary btn-sm" onclick="exportATOTax()">
+        <i class="fas fa-file-invoice-dollar me-1"></i>ATO Export
+      </button>
+      <button class="btn btn-sm" onclick="openTradeBuy()"><i class="fas fa-arrow-up-right-dots me-1"></i>Buy</button>
+      <button class="btn btn-sm" onclick="openTradeSell()"><i class="fas fa-arrow-down me-1"></i>Sell</button>
+      <button class="btn btn-sm" onclick="toggleBot()"><i class="fas fa-robot me-1"></i>Start Bot</button>
+    </div>
+  </div>
+</div>
