@@ -54,13 +54,14 @@ class OKXTradeRetrieval:
             f"{t.get('quantity', '')}",
         ])
     
-    def get_trades_comprehensive(self, symbol: Optional[str] = None, limit: int = 50) -> List[Dict[str, Any]]:
+    def get_trades_comprehensive(self, symbol: Optional[str] = None, limit: int = 50, since: Optional[int] = None) -> List[Dict[str, Any]]:
         """
         Comprehensive trade retrieval using multiple OKX API endpoints.
         
         Args:
             symbol: Trading pair symbol (e.g., 'PEPE/USDT')
             limit: Maximum number of trades to return
+            since: Optional timestamp in milliseconds to retrieve trades from
             
         Returns:
             List of formatted trade dictionaries
@@ -79,7 +80,7 @@ class OKXTradeRetrieval:
         # Method 1: OKX Private Trade Fills API (most accurate)
         self.logger.info("Attempting OKX private trade fills API")
         try:
-            trades = self._get_okx_trade_fills(symbol, limit)
+            trades = self._get_okx_trade_fills(symbol, limit, since)
             for trade in trades:
                 uid = self._trade_uid(trade)
                 if uid not in dedup_set:
@@ -92,7 +93,7 @@ class OKXTradeRetrieval:
         # Method 2: OKX Orders History API
         self.logger.info("Attempting OKX orders history API")
         try:
-            trades = self._get_okx_orders_history(symbol, limit)
+            trades = self._get_okx_orders_history(symbol, limit, since)
             for trade in trades:
                 uid = self._trade_uid(trade)
                 if uid not in dedup_set:
@@ -105,7 +106,7 @@ class OKXTradeRetrieval:
         # Method 3: Standard CCXT methods as fallback
         self.logger.info("Attempting standard CCXT methods")
         try:
-            trades = self._get_ccxt_trades(symbol, limit)
+            trades = self._get_ccxt_trades(symbol, limit, since)
             for trade in trades:
                 uid = self._trade_uid(trade)
                 if uid not in dedup_set:
@@ -121,8 +122,8 @@ class OKXTradeRetrieval:
         self.logger.info(f"Final result: {len(all_trades)} unique trades after enhanced deduplication")
         return all_trades[:limit]
     
-    def _get_okx_trade_fills(self, symbol: Optional[str], limit: int) -> List[Dict[str, Any]]:
-        """Get trades using OKX's trade fills API with enhanced instType support."""
+    def _get_okx_trade_fills(self, symbol: Optional[str], limit: int, since: Optional[int] = None) -> List[Dict[str, Any]]:
+        """Get trades using OKX's trade fills API with enhanced instType support and pagination."""
         try:
             # Input normalization and API constraints
             limit = max(1, min(int(limit or 50), 100))  # OKX API limit
@@ -135,29 +136,58 @@ class OKXTradeRetrieval:
             
             if symbol:
                 params['instId'] = self._normalize_symbol(symbol)
+            if since:
+                params['begin'] = str(since)  # OKX supports begin/end in ms
             
-            # Use OKX's private trade fills endpoint
+            all_trades = []
+            
+            # Initial request
             response = self.exchange.privateGetTradeFills(params)
             
-            if not response or 'data' not in response:
+            if not response or response.get('code') != '0' or 'data' not in response:
                 return []
             
             fills = response['data']
-            trades = []
             
             for fill in fills:
                 trade = self._format_okx_fill(fill)
                 if trade:
-                    trades.append(trade)
+                    all_trades.append(trade)
             
-            return trades
+            # Check if we have more data and need pagination
+            if len(fills) == limit and limit > 50:  # Only paginate for larger requests
+                # Try to get more data using pagination
+                try:
+                    last_fill = fills[-1] if fills else None
+                    if last_fill and last_fill.get('ts'):
+                        # Use the timestamp of the last fill as cursor for next request
+                        pagination_params = params.copy()
+                        pagination_params['after'] = last_fill.get('ts')
+                        pagination_params['limit'] = str(min(50, limit - len(all_trades)))
+                        
+                        paginated_response = self.exchange.privateGetTradeFills(pagination_params)
+                        
+                        if (paginated_response and 
+                            paginated_response.get('code') == '0' and 
+                            'data' in paginated_response):
+                            
+                            paginated_fills = paginated_response['data']
+                            for fill in paginated_fills:
+                                trade = self._format_okx_fill(fill)
+                                if trade:
+                                    all_trades.append(trade)
+                                    
+                except Exception as e:
+                    self.logger.debug(f"OKX fills pagination failed: {e}")
+            
+            return all_trades
             
         except Exception as e:
             self.logger.debug(f"OKX fills API error: {e}")
             return []
     
-    def _get_okx_orders_history(self, symbol: Optional[str], limit: int) -> List[Dict[str, Any]]:
-        """Get trades using OKX's orders history API with enhanced instType support."""
+    def _get_okx_orders_history(self, symbol: Optional[str], limit: int, since: Optional[int] = None) -> List[Dict[str, Any]]:
+        """Get trades using OKX's orders history API with enhanced instType support and pagination."""
         try:
             # Input normalization and API constraints
             limit = max(1, min(int(limit or 50), 100))  # OKX API limit
@@ -171,29 +201,58 @@ class OKXTradeRetrieval:
             
             if symbol:
                 params['instId'] = self._normalize_symbol(symbol)
+            if since:
+                params['begin'] = str(since)  # OKX supports begin/end in ms
             
-            # Use OKX's private orders history endpoint
+            all_trades = []
+            
+            # Initial request
             response = self.exchange.privateGetTradeOrdersHistory(params)
             
-            if not response or 'data' not in response:
+            if not response or response.get('code') != '0' or 'data' not in response:
                 return []
             
             orders = response['data']
-            trades = []
             
             for order in orders:
                 trade = self._format_okx_order(order)
                 if trade:
-                    trades.append(trade)
+                    all_trades.append(trade)
             
-            return trades
+            # Check if we have more data and need pagination
+            if len(orders) == limit and limit > 50:  # Only paginate for larger requests
+                # Try to get more data using pagination
+                try:
+                    last_order = orders[-1] if orders else None
+                    if last_order and last_order.get('cTime'):
+                        # Use the creation time of the last order as cursor for next request
+                        pagination_params = params.copy()
+                        pagination_params['after'] = last_order.get('cTime')
+                        pagination_params['limit'] = str(min(50, limit - len(all_trades)))
+                        
+                        paginated_response = self.exchange.privateGetTradeOrdersHistory(pagination_params)
+                        
+                        if (paginated_response and 
+                            paginated_response.get('code') == '0' and 
+                            'data' in paginated_response):
+                            
+                            paginated_orders = paginated_response['data']
+                            for order in paginated_orders:
+                                trade = self._format_okx_order(order)
+                                if trade:
+                                    all_trades.append(trade)
+                                    
+                except Exception as e:
+                    self.logger.debug(f"OKX orders pagination failed: {e}")
+            
+            return all_trades
             
         except Exception as e:
             self.logger.debug(f"OKX orders history API error: {e}")
             return []
     
-    def _get_ccxt_trades(self, symbol: Optional[str], limit: int) -> List[Dict[str, Any]]:
-        """Get trades using standard CCXT methods."""
+    def _get_ccxt_trades(self, symbol: Optional[str], limit: int, since: Optional[int] = None) -> List[Dict[str, Any]]:
+        """Get trades using standard CCXT methods with optional since timestamp."""
         # Input normalization and API constraints
         limit = max(1, min(int(limit or 50), 100))  # CCXT API safety limit
         symbol = symbol.strip() if isinstance(symbol, str) else None
@@ -201,8 +260,8 @@ class OKXTradeRetrieval:
         trades = []
         
         try:
-            # Try fetch_my_trades
-            my_trades = self.exchange.fetch_my_trades(symbol=symbol, limit=limit)
+            # Try fetch_my_trades with optional since parameter
+            my_trades = self.exchange.fetch_my_trades(symbol=symbol, since=since, limit=limit)
             for trade in my_trades:
                 formatted = self._format_ccxt_trade(trade)
                 if formatted:
@@ -211,8 +270,8 @@ class OKXTradeRetrieval:
             self.logger.debug(f"fetch_my_trades failed: {e}")
         
         try:
-            # Try fetch_closed_orders
-            orders = self.exchange.fetch_closed_orders(symbol=symbol, limit=limit)
+            # Try fetch_closed_orders with optional since parameter
+            orders = self.exchange.fetch_closed_orders(symbol=symbol, since=since, limit=limit)
             for order in orders:
                 if order.get('status') == 'closed' and order.get('filled', 0) > 0:
                     trade = self._format_ccxt_order_as_trade(order)
