@@ -602,7 +602,7 @@ class OKXAdapter(BaseExchange):
         try:
             from datetime import datetime, timedelta
             since = int((datetime.now() - timedelta(days=7)).timestamp() * 1000)
-            self.logger.info(f"Attempting fetch_closed_orders with time range (last 7 days)")
+            self.logger.info("Attempting fetch_closed_orders with time range (last 7 days)")
             
             recent_orders = self._retry(self.exchange.fetch_closed_orders, since=since, limit=min(limit, 200))
             self.logger.info(f"Time-range fetch_closed_orders returned {len(recent_orders)} orders")
