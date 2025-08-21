@@ -47,6 +47,8 @@ The system utilizes a modular Flask-based web interface for live OKX trading, st
 
 **Native OKX Equity Curve Endpoint:** Implemented `/api/equity-curve` using native OKX client with intelligent fallback strategy - attempts account bills + historical candles for detailed transaction history, gracefully falls back to portfolio service data + historical candles when bills API permissions unavailable, ensures accurate equity tracking with live portfolio valuation for current day, supports multiple timeframes (7d/30d/90d) with comprehensive metrics including total return, max drawdown, and volatility calculations.
 
+**Optimized Heavy Endpoints:** Completely rebuilt three performance-critical endpoints using OKXNative client eliminating duplicate HMAC signing and CCXT dependencies - `/api/equity-curve` uses bills+candles with portfolio fallback, `/api/drawdown-analysis` reuses equity calculation with clean DD metrics computation, `/api/performance-analytics` combines equity metrics with fills/trade bills for comprehensive analytics including Sharpe ratio, volatility, and win-rate calculations, all endpoints share unified pricing logic and maintain consistent 24h/7d math with OKX native ticker and candle data.
+
 ## External Dependencies
 
 ### Market Data & Trading APIs
