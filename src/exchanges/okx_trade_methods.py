@@ -16,17 +16,36 @@ class OKXTradeRetrieval:
         self.portfolio_symbols = portfolio_symbols or []
     
     def _normalize_symbol(self, s: Optional[str]) -> Optional[str]:
-        """Convert standard format (BTC/USDT) to OKX instId format (BTC-USDT)."""
+        """
+        Convert standard format (BTC/USDT) to OKX instId format (BTC-USDT).
+        
+        Args:
+            s: Symbol in standard format or None
+            
+        Returns:
+            Symbol in OKX instId format or None if input was None/invalid
+        """
         return s.replace('/', '-') if s and '/' in s else s
 
     def _denormalize_symbol(self, s: Optional[str]) -> Optional[str]:
-        """Convert OKX instId format (BTC-USDT) to standard format (BTC/USDT)."""
+        """
+        Convert OKX instId format (BTC-USDT) to standard format (BTC/USDT).
+        
+        Args:
+            s: Symbol in OKX instId format or None
+            
+        Returns:
+            Symbol in standard format or None if input was None/invalid
+        """
         return s.replace('-', '/') if s and '-' in s else s
 
     def _inst_type(self) -> str:
         """
         Infer instType from ccxt okx.options.defaultType.
         Maps ccxt types to OKX instType for better API compatibility.
+        
+        Returns:
+            OKX instrument type (SPOT, MARGIN, SWAP, FUTURES, OPTION)
         """
         # Get defaultType from exchange options, with safe attribute access
         default = (getattr(self.exchange, "options", {}) or {}).get("defaultType", "spot").lower()
@@ -44,6 +63,12 @@ class OKXTradeRetrieval:
         Generate a stronger composite UID for trade deduplication.
         Includes source, ID, order_id, symbol, timestamp, price, and quantity
         to prevent collisions across different sources and API responses.
+        
+        Args:
+            t: Trade dictionary containing trade data
+            
+        Returns:
+            Composite UID string for deduplication
         """
         return "|".join([
             t.get('source', ''),
@@ -124,7 +149,17 @@ class OKXTradeRetrieval:
         return all_trades[:limit]
     
     def _get_okx_trade_fills(self, symbol: Optional[str], limit: int, since: Optional[int] = None) -> List[Dict[str, Any]]:
-        """Get trades using OKX's trade fills API with enhanced instType support and pagination."""
+        """
+        Get trades using OKX's trade fills API with enhanced instType support and pagination.
+        
+        Args:
+            symbol: Trading pair symbol (e.g., 'PEPE/USDT') or None for all symbols
+            limit: Maximum number of trades to return (capped at 100)
+            since: Optional timestamp in milliseconds to retrieve trades from
+            
+        Returns:
+            List of formatted trade dictionaries from fills API
+        """
         try:
             # Input normalization and API constraints
             limit = max(1, min(int(limit or 50), 100))  # OKX API limit
@@ -188,7 +223,17 @@ class OKXTradeRetrieval:
             return []
     
     def _get_okx_orders_history(self, symbol: Optional[str], limit: int, since: Optional[int] = None) -> List[Dict[str, Any]]:
-        """Get trades using OKX's orders history API with enhanced instType support and pagination."""
+        """
+        Get trades using OKX's orders history API with enhanced instType support and pagination.
+        
+        Args:
+            symbol: Trading pair symbol (e.g., 'PEPE/USDT') or None for all symbols
+            limit: Maximum number of trades to return (capped at 100)
+            since: Optional timestamp in milliseconds to retrieve trades from
+            
+        Returns:
+            List of formatted trade dictionaries from orders history API
+        """
         try:
             # Input normalization and API constraints
             limit = max(1, min(int(limit or 50), 100))  # OKX API limit
@@ -253,7 +298,17 @@ class OKXTradeRetrieval:
             return []
     
     def _get_ccxt_trades(self, symbol: Optional[str], limit: int, since: Optional[int] = None) -> List[Dict[str, Any]]:
-        """Get trades using standard CCXT methods with optional since timestamp and portfolio fallback."""
+        """
+        Get trades using standard CCXT methods with optional since timestamp and portfolio fallback.
+        
+        Args:
+            symbol: Trading pair symbol (e.g., 'PEPE/USDT') or None for portfolio-wide retrieval
+            limit: Maximum number of trades to return (capped at 100)
+            since: Optional timestamp in milliseconds to retrieve trades from
+            
+        Returns:
+            List of formatted trade dictionaries from CCXT methods
+        """
         # Input normalization and API constraints
         limit = max(1, min(int(limit or 50), 100))  # CCXT API safety limit
         symbol = symbol.strip() if isinstance(symbol, str) else None
@@ -312,7 +367,15 @@ class OKXTradeRetrieval:
         return trades
     
     def _format_okx_fill(self, fill: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-        """Format OKX fill data into standard trade format with enhanced timezone and fee handling."""
+        """
+        Format OKX fill data into standard trade format with enhanced timezone and fee handling.
+        
+        Args:
+            fill: Raw fill data from OKX API
+            
+        Returns:
+            Formatted trade dictionary or None if formatting failed
+        """
         try:
             ts = int(fill.get('ts', 0)) or 0
             price = float(fill.get('fillPx', 0) or 0)
@@ -342,7 +405,15 @@ class OKXTradeRetrieval:
             return None
     
     def _format_okx_order(self, order: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-        """Format OKX order data into standard trade format with enhanced timezone and fee handling."""
+        """
+        Format OKX order data into standard trade format with enhanced timezone and fee handling.
+        
+        Args:
+            order: Raw order data from OKX API
+            
+        Returns:
+            Formatted trade dictionary or None if formatting failed or order not filled
+        """
         try:
             if (order.get('state') or '').lower() != 'filled':
                 return None
@@ -376,7 +447,15 @@ class OKXTradeRetrieval:
             return None
     
     def _format_ccxt_trade(self, trade: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-        """Format CCXT trade data into standard format."""
+        """
+        Format CCXT trade data into standard format.
+        
+        Args:
+            trade: Raw trade data from CCXT
+            
+        Returns:
+            Formatted trade dictionary or None if formatting failed
+        """
         try:
             return {
                 'id': trade.get('id', ''),
@@ -398,7 +477,15 @@ class OKXTradeRetrieval:
             return None
     
     def _format_ccxt_order_as_trade(self, order: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-        """Format CCXT order data as trade with enhanced timestamp and fee handling."""
+        """
+        Format CCXT order data as trade with enhanced timestamp and fee handling.
+        
+        Args:
+            order: Raw order data from CCXT
+            
+        Returns:
+            Formatted trade dictionary or None if formatting failed
+        """
         try:
             ts = int(order.get('lastTradeTimestamp') or order.get('timestamp') or 0)
             qty = float(order.get('filled') or order.get('amount') or 0)
