@@ -90,7 +90,7 @@ class OKXAdapter(BaseExchange):
             error_msg = str(e)
             self.logger.error(f"Failed to connect to OKX: {error_msg}")
             
-            # Provide specific guidance for common errors
+            # Provide specific guidance for common OKX errors
             if "50119" in error_msg:
                 self.logger.error("OKX Error 50119: API key doesn't exist. This usually means:")
                 self.logger.error("1. API key was created for demo/testnet but connecting to live trading")
@@ -99,6 +99,21 @@ class OKXAdapter(BaseExchange):
                 self.logger.error("4. API key was disabled or incorrectly copied")
                 self.logger.error("5. FOR AUSTRALIA: ASIC-compliant verification not completed")
                 self.logger.error("See OKX_API_SETUP_GUIDE.md for detailed fix instructions")
+            elif "50011" in error_msg:
+                self.logger.error("OKX Error 50011: Request timestamp expired. Fix:")
+                self.logger.error("1. Check system time is synchronized (NTP)")
+                self.logger.error("2. Verify timezone settings are correct")
+                self.logger.error("3. Network latency may be causing delays")
+            elif "50117" in error_msg or "50126" in error_msg:
+                self.logger.error(f"OKX Error {error_msg.split()[1] if len(error_msg.split()) > 1 else 'Permission'}: Insufficient permissions. Fix:")
+                self.logger.error("1. API key missing required permissions (need Read + Trade)")
+                self.logger.error("2. Check API key restrictions in OKX console")
+                self.logger.error("3. Verify trading permissions are enabled")
+            elif "50125" in error_msg:
+                self.logger.error("OKX Error 50125: IP address not whitelisted. Fix:")
+                self.logger.error("1. Add current IP to API key whitelist in OKX console")
+                self.logger.error("2. Check if using VPN - may need VPN IP whitelisted")
+                self.logger.error("3. Wait 5 minutes after IP whitelist changes")
             
             self._is_connected = False
             return False
@@ -119,7 +134,7 @@ class OKXAdapter(BaseExchange):
             if not isinstance(balance, dict):
                 raise ValueError("Invalid balance response format")
             
-            # Log balance summary for debugging
+            # Log balance summary for debugging (demoted from info to reduce noise)
             total_assets = len([k for k, v in balance.get('total', {}).items() if v > 0])
             self.logger.debug(f"Balance retrieved: {total_assets} assets with non-zero balance")
             
@@ -217,12 +232,12 @@ class OKXAdapter(BaseExchange):
                 if symbol:
                     fills_params['instId'] = symbol.replace('/', '-')
                 
-                self.logger.info(f"Fetching trade fills from OKX API with params: {fills_params}")
+                self.logger.debug(f"Fetching trade fills from OKX API with params: {fills_params}")
                 response = self._retry(self.exchange.privateGetTradeFills, fills_params)
                 
                 if self._is_okx_success_response(response):
                     fills = response['data']
-                    self.logger.info(f"OKX fills API returned {len(fills)} trade fills")
+                    self.logger.debug(f"OKX fills API returned {len(fills)} trade fills")
                     
                     for fill in fills:
                         trade = self._format_okx_fill_direct(fill)
@@ -245,12 +260,12 @@ class OKXAdapter(BaseExchange):
                 if symbol:
                     orders_params['instId'] = symbol.replace('/', '-')
                 
-                self.logger.info(f"Fetching order history from OKX API with params: {orders_params}")
+                self.logger.debug(f"Fetching order history from OKX API with params: {orders_params}")
                 response = self._retry(self.exchange.privateGetTradeOrdersHistory, orders_params)
                 
                 if self._is_okx_success_response(response):
                     orders = response['data']
-                    self.logger.info(f"OKX orders API returned {len(orders)} filled orders")
+                    self.logger.debug(f"OKX orders API returned {len(orders)} filled orders")
                     
                     for order in orders:
                         trade = self._format_okx_order_direct(order)
@@ -276,10 +291,10 @@ class OKXAdapter(BaseExchange):
             all_trades.sort(key=lambda x: x.get('timestamp', 0), reverse=True)
             result_trades = all_trades[:limit]
             
-            self.logger.info(f"Successfully retrieved {len(result_trades)} unique trades from OKX APIs")
+            self.logger.debug(f"Successfully retrieved {len(result_trades)} unique trades from OKX APIs")
             
             if not result_trades:
-                self.logger.info("No trades found - this indicates no recent trading activity on the account")
+                self.logger.debug("No trades found - this indicates no recent trading activity on the account")
             
             return result_trades
             
@@ -300,7 +315,7 @@ class OKXAdapter(BaseExchange):
         
         try:
             # CCXT Method 1: fetch_my_trades
-            self.logger.info("Attempting CCXT fetch_my_trades")
+            self.logger.debug("Attempting CCXT fetch_my_trades")
             ccxt_trades = self._retry(self.exchange.fetch_my_trades, symbol=symbol, limit=min(limit, 100))
             for trade in ccxt_trades:
                 formatted = self._format_ccxt_trade(trade)
@@ -312,7 +327,7 @@ class OKXAdapter(BaseExchange):
         
         try:
             # CCXT Method 2: fetch_closed_orders (converted to trades)
-            self.logger.info("Attempting CCXT fetch_closed_orders")
+            self.logger.debug("Attempting CCXT fetch_closed_orders")
             closed_orders = self._retry(self.exchange.fetch_closed_orders, symbol=symbol, limit=min(limit, 100))
             for order in closed_orders:
                 if order.get('status') == 'closed' and order.get('filled', 0) > 0:
