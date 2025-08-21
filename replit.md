@@ -43,6 +43,8 @@ The system utilizes a modular Flask-based web interface for live OKX trading, st
 
 **Optimized Warmup System:** Redesigned background warmup to be cheap and meaningful - replaces comprehensive market loading with simple OKX connectivity check using native OKX client ticker call for BTC-USDT, reduces startup complexity while ensuring essential API connectivity, maintains watchlist symbol validation but eliminates expensive market data fetching during boot process.
 
+**Enhanced Security Headers:** Updated security headers for modern best practices - comprehensive Content Security Policy allowing necessary CDN resources with 'unsafe-inline' for dynamic styling, HSTS enforcement on secure connections, strict referrer policy, frame protection, and permissions policy restricting geolocation/microphone/camera access for enhanced application security.
+
 ## External Dependencies
 
 ### Market Data & Trading APIs

@@ -3243,10 +3243,9 @@ def api_test_sync_data():
 
 @app.after_request
 def add_security_headers(resp):
-    """Add security headers for performance and protection."""
     resp.headers["Content-Security-Policy"] = (
         "default-src 'self'; "
-        "script-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; "
+        "script-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com 'unsafe-inline'; "
         "style-src 'self' https://fonts.googleapis.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com 'unsafe-inline'; "
         "font-src 'self' https://fonts.gstatic.com; "
         "img-src 'self' data:; "
@@ -3259,14 +3258,8 @@ def add_security_headers(resp):
     resp.headers["X-Content-Type-Options"] = "nosniff"
     resp.headers["X-Frame-Options"] = "DENY"
     resp.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
-    
-    # Only set HSTS on HTTPS connections
     if request.is_secure:
         resp.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
-    
-    # Remove obsolete X-XSS-Protection header
-    resp.headers.pop("X-XSS-Protection", None)
-    
     return resp
 
 
