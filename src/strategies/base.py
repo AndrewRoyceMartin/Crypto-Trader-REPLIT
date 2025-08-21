@@ -32,6 +32,7 @@ class Signal:
         self.stop_loss = stop_loss
         self.take_profit = take_profit
         self.timestamp = pd.Timestamp.now()
+        self.metadata: Dict = {}  # Add metadata support
 
 
 class BaseStrategy(ABC):

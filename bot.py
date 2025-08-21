@@ -131,7 +131,7 @@ def backtest(df: pd.DataFrame, P: Params) -> dict:
     if len(df) < P.band_window + 1:
         return {"error": "insufficient_data", "trades": 0}
     
-    close_series = pd.Series(df["close"].to_numpy(), index=df.index, name="close")
+    close_series = df["close"] if isinstance(df["close"], pd.Series) else pd.Series(df["close"].to_numpy(), index=df.index, name="close")
     ma, upper, lower = bollinger(close_series, P.band_window, P.k)
     
     equity = P.start_equity

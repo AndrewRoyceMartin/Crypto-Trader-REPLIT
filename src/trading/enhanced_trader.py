@@ -13,7 +13,6 @@ from typing import Any, Dict, List, Optional, Sequence, TypedDict, cast
 import pandas as pd
 
 from ..strategies.enhanced_bollinger_strategy import EnhancedBollingerBandsStrategy
-from ..strategies.bollinger_strategy import BollingerBandsStrategy
 from ..data.manager import DataManager
 from ..risk.manager import RiskManager
 from ..exchanges.base import BaseExchange
@@ -45,13 +44,9 @@ class EnhancedTrader:
         self.data_manager = DataManager(exchange, cache_enabled=True)
         self.risk_manager = RiskManager(config)
 
-        use_enhanced = config.get_bool('strategy', 'use_enhanced_strategy', True)
-        if use_enhanced:
-            self.strategy = EnhancedBollingerBandsStrategy(config)
-            self.logger.info("Using Enhanced Bollinger Bands Strategy with crash protection")
-        else:
-            self.strategy = BollingerBandsStrategy(config)
-            self.logger.info("Using Standard Bollinger Bands Strategy")
+        # Always use Enhanced Bollinger Bands Strategy
+        self.strategy = EnhancedBollingerBandsStrategy(config)
+        self.logger.info("Using Enhanced Bollinger Bands Strategy with crash protection")
 
         self.running: bool = False
         self.trade_history: List[TradeRecord] = []

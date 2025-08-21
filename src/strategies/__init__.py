@@ -4,6 +4,6 @@ Provides base strategy class and implementations.
 """
 
 from .base import BaseStrategy
-from .bollinger_strategy import BollingerBandsStrategy
+from .enhanced_bollinger_strategy import EnhancedBollingerBandsStrategy
 
-__all__ = ['BaseStrategy', 'BollingerBandsStrategy']
+__all__ = ['BaseStrategy', 'EnhancedBollingerBandsStrategy']

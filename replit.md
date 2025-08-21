@@ -13,7 +13,7 @@ The system employs a modular architecture supporting both CLI and Flask-based we
 The primary entry point is `app.py` for fast-boot Flask deployment, supported by `wsgi.py` for production. It uses environment variables for port configuration and system parameters. A fast-boot architecture prioritizes immediate Flask startup, followed by background trading system initialization with a circuit breaker pattern and persistent data caching. Enhanced health endpoints (`/`, `/health`, `/ready`) provide detailed status.
 
 **Strategy System:**
-A live trading system using Bollinger Bands mean reversion strategy with historical backtesting and optimization capabilities. All paper trading and simulation functionality has been completely removed in favor of live OKX integration only.
+A consolidated live trading system using the Enhanced Bollinger Bands strategy exclusively across all system modes. The Enhanced strategy includes advanced crash protection, dynamic risk management, rebuy mechanisms, and peak tracking. All legacy strategy files have been removed - only the sophisticated EnhancedBollingerBandsStrategy is used for web interface, backtesting, and live trading. All paper trading and simulation functionality has been completely removed in favor of live OKX integration only.
 
 **Data Management:**
 A two-tier caching system utilizes SQLite for raw market data, managed by `DataManager` and `DataCache` to minimize API calls.

@@ -79,12 +79,16 @@ class EnhancedBollingerBandsStrategy(BaseStrategy):
         
         try:
             # Calculate technical indicators
+            close_series = data['close'] if isinstance(data['close'], pd.Series) else data['close'].squeeze()
+            high_series = data['high'] if isinstance(data['high'], pd.Series) else data['high'].squeeze()
+            low_series = data['low'] if isinstance(data['low'], pd.Series) else data['low'].squeeze()
+            
             upper_band, middle_band, lower_band = self.indicators.bollinger_bands(
-                data['close'].squeeze(), self.bb_period, self.bb_std_dev
+                close_series, self.bb_period, self.bb_std_dev
             )
             
             atr = self.indicators.atr(
-                data['high'].squeeze(), data['low'].squeeze(), data['close'].squeeze(), self.atr_period
+                high_series, low_series, close_series, self.atr_period
             )
             
             # Get current values

@@ -18,7 +18,6 @@ from src.utils.database import DatabaseManager
 from src.backtesting.engine import BacktestEngine
 from src.trading.paper_trader import PaperTrader
 from src.trading.live_trader import LiveTrader
-from src.strategies.bollinger_strategy import BollingerBandsStrategy
 from src.strategies.enhanced_bollinger_strategy import EnhancedBollingerBandsStrategy
 from src.trading.enhanced_trader import EnhancedTrader
 from src.exchanges.okx_adapter import OKXAdapter  # (kept for future use)
@@ -125,7 +124,7 @@ def start_trader_thread(mode: str, symbol: str, timeframe: str):
     """Start trader in a separate background thread."""
     global current_trader, trading_thread
     initialize_system()
-    strategy = BollingerBandsStrategy(config)
+    strategy = EnhancedBollingerBandsStrategy(config)
 
     with state_lock:
         if mode == "paper":
@@ -172,7 +171,7 @@ def start_portfolio_trader_thread(mode: str, timeframe: str):
         else:
             symbols.append(symbol)
     
-    strategy = BollingerBandsStrategy(config)
+    strategy = EnhancedBollingerBandsStrategy(config)
 
     with state_lock:
         if mode == "paper":
@@ -1269,7 +1268,7 @@ def run_backtest():
         timeframe = data.get("timeframe", "1h")
         mode = data.get("mode", "single")  # "single" or "portfolio"
 
-        strategy = BollingerBandsStrategy(config)
+        strategy = EnhancedBollingerBandsStrategy(config)
         
         if mode == "portfolio":
             # Run portfolio-wide backtest
