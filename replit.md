@@ -79,6 +79,14 @@ The background warmup process has been optimized for efficiency and meaningfulne
 - Reports total available markets and validated symbols for monitoring
 - Eliminates cache warming overhead while maintaining fast startup readiness
 
+**UTC-Aware DateTime Standardization:**
+All datetime operations throughout the system have been standardized to use UTC-aware timestamps:
+- Added `utcnow()` and `iso_utc()` utility functions for consistent UTC datetime handling
+- Replaced all `datetime.now()` calls with UTC-aware alternatives
+- Server timestamps, API responses, and trade records now use proper UTC timezone handling
+- UI display times are converted to LOCAL_TZ only when needed for user presentation
+- Ensures consistent time handling across all system components and API interactions
+
 **Table Rendering System:**
 Dedicated table elements per dashboard view ensure no data conflicts, with robust currency conversion, error handling, and performance optimizations.
 

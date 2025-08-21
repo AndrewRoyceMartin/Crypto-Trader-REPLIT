@@ -29,10 +29,19 @@ try:
 except ImportError:
     LOCAL_TZ = timezone.utc  # Fallback to UTC if pytz not available
 
+# === UTC DateTime Helpers ===
+def utcnow():
+    """Get current UTC datetime"""
+    return datetime.now(timezone.utc)
+
+def iso_utc(dt=None):
+    """Convert datetime to ISO UTC string"""
+    return (dt or utcnow()).isoformat()
+
 # === OKX Native API Helpers ===
 def now_utc_iso():
     """Generate UTC ISO timestamp for OKX API requests."""
-    return datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%S.%fZ')
+    return utcnow().strftime('%Y-%m-%dT%H:%M:%S.%fZ')
 
 def okx_sign(secret_key: str, timestamp: str, method: str, path: str, body: str = '') -> str:
     """Generate OKX API signature using HMAC-SHA256."""
@@ -174,7 +183,7 @@ def create_initial_purchase_trades(mode, trade_type):
                     "total_value": cost_basis,  # Use real cost basis from OKX instead of $10 simulation
                     "type": "INITIAL_PURCHASE",
                     "mode": mode,
-                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "timestamp": iso_utc(),
                     "status": "completed"
                 }
                 initial_trades.append(trade_record)
@@ -196,7 +205,7 @@ def background_warmup():
         "done": False,
         "error": "",
         "loaded": [],
-        "start_time": datetime.now(timezone.utc).isoformat(),  # JSON safe
+        "start_time": iso_utc(),  # JSON safe
         "start_ts": time.time()  # seconds since epoch
     })
 
@@ -640,7 +649,7 @@ def start_trading():
             "mode": mode,
             "active": True,
             "strategy": "portfolio",
-            "start_time": datetime.now(timezone.utc).isoformat(),
+            "start_time": iso_utc(),
             "type": trading_mode
         })
 
@@ -779,7 +788,7 @@ def filter_trades_by_timeframe(trades, timeframe):
     from datetime import datetime, timedelta
     import time
     
-    now = datetime.now()
+    now = utcnow()
     
     # Calculate cutoff time based on timeframe
     if timeframe == '24h':
@@ -862,7 +871,7 @@ def api_recent_trades():
         if all([api_key, secret_key, passphrase]):
             try:
                 # Get trade history using OKX native API
-                timestamp = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%S.%fZ')
+                timestamp = now_utc_iso()
                 method = 'GET'
                 
                 # Try multiple OKX endpoints for trade data
@@ -935,7 +944,7 @@ def api_recent_trades():
                                         # Get current price for value calculation if needed
                                         if price == 0 and symbol:
                                             try:
-                                                price_timestamp = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%S.%fZ')
+                                                price_timestamp = now_utc_iso()
                                                 price_path = f'/api/v5/market/ticker?instId={symbol}-USDT'
                                                 price_signature = sign_request(price_timestamp, method, price_path)
                                                 
@@ -1027,7 +1036,7 @@ def api_recent_trades():
                 "avg_trade_size": (total_buy_volume + total_sell_volume) / total_trades if total_trades > 0 else 0
             },
             "data_source": "okx_native_api",
-            "last_update": datetime.now(LOCAL_TZ).isoformat()
+            "last_update": utcnow().astimezone(LOCAL_TZ).isoformat()
         })
         
     except Exception as e:
@@ -1095,7 +1104,7 @@ def api_current_positions():
                 "total_unrealized_pnl": total_unrealized_pnl,
                 "status_breakdown": {"ACTIVE": {"count": len(positions), "total_value": total_position_value}}
             },
-            "timestamp": datetime.now().isoformat()
+            "timestamp": iso_utc()
         })
     except Exception as e:
         logger.error(f"Error getting current positions: {e}")
@@ -1112,7 +1121,7 @@ def api_status():
         "ready": True,
         "uptime": (datetime.now(LOCAL_TZ) - server_start_time).total_seconds(),
         "symbols_loaded": warmup.get("loaded", []),
-        "last_update": datetime.now(LOCAL_TZ).isoformat(),
+        "last_update": utcnow().astimezone(LOCAL_TZ).isoformat(),
         "trading_status": {
             "mode": trading_state["mode"],
             "active": trading_state["active"],
@@ -1203,7 +1212,7 @@ def api_portfolio_analytics():
                     "average_position_size": sum(position_values) / len(position_values) if position_values else 0
                 }
             },
-            "last_update": datetime.now(LOCAL_TZ).isoformat()
+            "last_update": utcnow().astimezone(LOCAL_TZ).isoformat()
         })
     except Exception as e:
         logger.error(f"Error getting portfolio analytics: {e}")
@@ -1248,7 +1257,7 @@ def api_portfolio_history():
         
         # Calculate date range
         from datetime import datetime, timedelta
-        end_date = datetime.now()
+        end_date = utcnow()
         
         if timeframe == '7d':
             start_date = end_date - timedelta(days=7)
@@ -1306,7 +1315,7 @@ def api_portfolio_history():
             
             if all([api_key, secret_key, passphrase]):
                 # Create OKX native API request
-                timestamp = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%S.%fZ')
+                timestamp = now_utc_iso()
                 method = 'GET'
                 
                 # Try multiple OKX endpoints for historical data
@@ -1435,7 +1444,7 @@ def api_portfolio_history():
                             if quantity > 0 and symbol:
                                 # Use OKX native API for historical candle data
                                 try:
-                                    timestamp = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%S.%fZ')
+                                    timestamp = now_utc_iso()
                                     method = 'GET'
                                     
                                     # Historical candles endpoint
@@ -1625,7 +1634,7 @@ def api_asset_allocation():
                 "diversification_score": diversification_score,
                 "risk_level": risk_level
             },
-            "last_update": datetime.now(LOCAL_TZ).isoformat()
+            "last_update": utcnow().astimezone(LOCAL_TZ).isoformat()
         })
         
     except Exception as e:
@@ -1788,7 +1797,7 @@ def api_best_performer():
             "success": True,
             "best_performer": best_performer,
             "performance_data": best_performer,
-            "last_update": datetime.now(LOCAL_TZ).isoformat()
+            "last_update": utcnow().astimezone(LOCAL_TZ).isoformat()
         })
         
     except Exception as e:
@@ -1952,7 +1961,7 @@ def api_worst_performer():
             "success": True,
             "worst_performer": worst_performer,
             "performance_data": worst_performer,
-            "last_update": datetime.now(LOCAL_TZ).isoformat()
+            "last_update": utcnow().astimezone(LOCAL_TZ).isoformat()
         })
         
     except Exception as e:
@@ -2022,7 +2031,7 @@ def api_equity_curve():
         if all([api_key, secret_key, passphrase]):
             try:
                 # Get account balance changes from OKX bills API
-                timestamp = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%S.%fZ')
+                timestamp = now_utc_iso()
                 method = 'GET'
                 
                 # Multiple approaches for equity curve data
@@ -2140,7 +2149,7 @@ def api_equity_curve():
                         if quantity > 0 and symbol:
                             # Use OKX native API for historical prices
                             try:
-                                timestamp = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%S.%fZ')
+                                timestamp = now_utc_iso()
                                 method = 'GET'
                                 
                                 # Historical candles for this specific date
@@ -2256,7 +2265,7 @@ def api_equity_curve():
                 "start_equity": equity_points[0]['equity'] if equity_points else 0,
                 "end_equity": equity_points[-1]['equity'] if equity_points else 0,
             },
-            "last_update": datetime.now(LOCAL_TZ).isoformat()
+            "last_update": utcnow().astimezone(LOCAL_TZ).isoformat()
         })
         
     except Exception as e:
@@ -2326,7 +2335,7 @@ def api_drawdown_analysis():
         # First, try to get actual account balance history from OKX
         if all([api_key, secret_key, passphrase]):
             try:
-                timestamp = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%S.%fZ')
+                timestamp = now_utc_iso()
                 method = 'GET'
                 
                 # Get account balance changes for drawdown calculation
@@ -2415,7 +2424,7 @@ def api_drawdown_analysis():
                         if quantity > 0 and symbol:
                             # Get historical price from OKX
                             try:
-                                timestamp = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%S.%fZ')
+                                timestamp = now_utc_iso()
                                 method = 'GET'
                                 
                                 hist_timestamp = int(point_date.timestamp() * 1000)
@@ -2559,7 +2568,7 @@ def api_drawdown_analysis():
                 "peak_equity": peak_equity,
                 "data_points": len(drawdown_data)
             },
-            "last_update": datetime.now(LOCAL_TZ).isoformat()
+            "last_update": utcnow().astimezone(LOCAL_TZ).isoformat()
         })
         
     except Exception as e:
@@ -2639,7 +2648,7 @@ def api_performance_analytics():
         if all([api_key, secret_key, passphrase]):
             try:
                 # Get current account balance
-                timestamp = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%S.%fZ')
+                timestamp = now_utc_iso()
                 method = 'GET'
                 request_path = '/api/v5/account/balance'
                 
@@ -2677,7 +2686,7 @@ def api_performance_analytics():
                                 else:
                                     # Get current price
                                     try:
-                                        price_timestamp = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%S.%fZ')
+                                        price_timestamp = now_utc_iso()
                                         price_path = f'/api/v5/market/ticker?instId={symbol}-USDT'
                                         price_signature = sign_request(price_timestamp, method, price_path)
                                         
@@ -2851,7 +2860,7 @@ def api_performance_analytics():
                 "current_value": current_value
             },
             "data_source": "okx_native_api",
-            "last_update": datetime.now(LOCAL_TZ).isoformat()
+            "last_update": utcnow().astimezone(LOCAL_TZ).isoformat()
         })
         
     except Exception as e:
@@ -2899,14 +2908,14 @@ def api_live_prices():
                     formatted_prices[symbol] = {
                         'price': price,
                         'is_live': True,
-                        'timestamp': datetime.now(LOCAL_TZ).isoformat(),
+                        'timestamp': utcnow().astimezone(LOCAL_TZ).isoformat(),
                         'source': 'OKX_Simulation'
                     }
                 else:
                     formatted_prices[symbol] = {
                         'price': 1.0,
                         'is_live': False,
-                        'timestamp': datetime.now(LOCAL_TZ).isoformat(),
+                        'timestamp': utcnow().astimezone(LOCAL_TZ).isoformat(),
                         'source': 'OKX_Fallback'
                     }
             except Exception as sym_error:
@@ -2914,7 +2923,7 @@ def api_live_prices():
                 formatted_prices[symbol] = {
                     'price': 1.0,
                     'is_live': False,
-                    'timestamp': datetime.now(LOCAL_TZ).isoformat(),
+                    'timestamp': utcnow().astimezone(LOCAL_TZ).isoformat(),
                     'source': 'OKX_Error_Fallback'
                 }
 
@@ -2936,7 +2945,7 @@ def api_exchange_rates():
         return jsonify({
             "rates": exchange_rates,
             "base": "USD",
-            "timestamp": datetime.now(LOCAL_TZ).isoformat()
+            "timestamp": utcnow().astimezone(LOCAL_TZ).isoformat()
         })
     except Exception as e:
         logger.error(f"Exchange rates error: {e}")
@@ -3070,7 +3079,7 @@ def api_price_source_status():
                 "api_provider": "OKX_Live_Exchange",
                 "exchange_type": "Live",
                 "error": "OKX API credentials not configured",
-                "last_update": datetime.now(LOCAL_TZ).isoformat()
+                "last_update": utcnow().astimezone(LOCAL_TZ).isoformat()
             }), 500
 
         from src.exchanges.okx_adapter import OKXAdapter
@@ -3088,7 +3097,7 @@ def api_price_source_status():
             "status": "connected" if is_connected else "disconnected",
             "api_provider": "OKX_Live_Exchange",
             "exchange_type": "Live",
-            "last_update": datetime.now(LOCAL_TZ).isoformat(),
+            "last_update": utcnow().astimezone(LOCAL_TZ).isoformat(),
             "symbols_loaded": warmup.get("loaded", [])
         })
 
@@ -3117,7 +3126,7 @@ def api_portfolio_summary():
             "total_pnl_percent": okx_portfolio['total_pnl_percent'],
             "total_cryptos": len(okx_portfolio['holdings']),
             "cash_balance": okx_portfolio.get('cash_balance', 0),
-            "last_update": okx_portfolio.get('last_update', datetime.now(LOCAL_TZ).isoformat())
+            "last_update": okx_portfolio.get('last_update', utcnow().astimezone(LOCAL_TZ).isoformat())
         }
         return jsonify(summary)
     except Exception as e:
@@ -3195,7 +3204,7 @@ def api_current_holdings():
         if all([api_key, secret_key, passphrase]):
             try:
                 # Get account balance using OKX native API
-                timestamp = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%S.%fZ')
+                timestamp = now_utc_iso()
                 method = 'GET'
                 request_path = '/api/v5/account/balance'
                 
@@ -3237,7 +3246,7 @@ def api_current_holdings():
                                 if symbol not in ['USDT', 'USD', 'USDC']:
                                     try:
                                         # Get ticker price from OKX
-                                        price_timestamp = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%S.%fZ')
+                                        price_timestamp = now_utc_iso()
                                         price_path = f'/api/v5/market/ticker?instId={symbol}-USDT'
                                         price_signature = sign_request(price_timestamp, method, price_path)
                                         
@@ -3324,7 +3333,7 @@ def api_current_holdings():
             "total_value": total_value,
             "total_holdings": len(holdings),
             "data_source": "okx_native_api",
-            "last_update": datetime.now(LOCAL_TZ).isoformat()
+            "last_update": utcnow().astimezone(LOCAL_TZ).isoformat()
         })
         
     except Exception as e:
@@ -3353,7 +3362,7 @@ def api_start_trading():
             "active": True,
             "strategy": "Bollinger Bands",
             "type": trade_type,
-            "start_time": datetime.now(timezone.utc).isoformat()
+            "start_time": iso_utc()
         })
 
         global portfolio_initialized, recent_initial_trades
@@ -3666,7 +3675,7 @@ def api_okx_status():
             'total_prices': 0,  # Remove simulation references
             'balance': {},  # Don't expose balance in status
             'initialized': connected,
-            'last_sync': datetime.now(LOCAL_TZ).isoformat() if connected else None,
+            'last_sync': utcnow().astimezone(LOCAL_TZ).isoformat() if connected else None,
             'market_status': 'open' if connected else 'closed'
         }
 
@@ -3741,7 +3750,7 @@ def execute_take_profit():
                             'profit_pct': round(pnl_percent, 2),
                             'pnl': round(pnl_data['net_pnl'], 2),
                             'net_pnl': round(pnl_data['net_pnl'], 2),
-                            'timestamp': datetime.now(timezone.utc).isoformat()
+                            'timestamp': iso_utc()
                         }
 
                         try:
@@ -3818,7 +3827,7 @@ def execute_take_profit():
                         'price': buy_price,
                         'investment_amount': investment_amount,
                         'buy_reason': f'Oversold reinvestment ({candidate["pnl_percent"]:.1f}% down)',
-                        'timestamp': datetime.now(timezone.utc).isoformat(),
+                        'timestamp': iso_utc(),
                         'exchange_executed': False
                     }
 
@@ -4105,7 +4114,7 @@ def api_performance():
             'monthly_returns': monthly_returns,
             'top_drawdowns': top_drawdowns,
             'trades': trades_data,
-            'timestamp': datetime.now(timezone.utc).isoformat()
+            'timestamp': iso_utc()
         }
 
         logger.info(f"Generated performance data: {len(equity_curve)} equity points, {len(attribution)} assets, {len(trades_data)} trades")
@@ -4136,7 +4145,7 @@ def api_performance():
             'monthly_returns': {},
             'top_drawdowns': [],
             'trades': [],
-            'timestamp': datetime.now(timezone.utc).isoformat()
+            'timestamp': iso_utc()
         }), 500
 
 @app.route('/test-sync-data')
@@ -4154,7 +4163,7 @@ def api_test_sync_data():
             return jsonify({
                 'status': 'disabled', 
                 'reason': 'internal tests disabled in prod', 
-                'timestamp': dt.now(tz.utc).isoformat(),
+                'timestamp': iso_utc(),
                 'note': 'Set ENABLE_INTERNAL_TESTS=1 to enable comprehensive testing'
             })
 
@@ -4163,7 +4172,7 @@ def api_test_sync_data():
         # Collect test data
         from datetime import datetime as dt
         test_data = {
-            'timestamp': dt.now().isoformat(),
+            'timestamp': iso_utc(),
             'okx_endpoint': 'app.okx.com',
             'tests_available': 4,
             'test_results': {}
@@ -4331,7 +4340,7 @@ def api_test_sync_data():
         from datetime import datetime as dt
         return jsonify({
             'error': str(e),
-            'timestamp': dt.now().isoformat()
+            'timestamp': iso_utc()
         }), 500
     
 
