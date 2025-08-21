@@ -156,10 +156,10 @@ class OKXAdapter(BaseExchange):
             raise RuntimeError("Not connected to exchange")
 
         try:
-            default_type = (self.exchange.options or {}).get('defaultType', 'spot')
+            default_type = (getattr(self.exchange, 'options', {}) or {}).get('defaultType', 'spot')
             if default_type == 'spot':
                 # For spot trading, build positions from balance data
-                bal = self.exchange.fetch_balance()
+                bal = self._retry(self.exchange.fetch_balance)
                 details = bal.get('info', {}).get('data', [{}])[0].get('details', []) or []
                 positions = []
                 
@@ -180,7 +180,7 @@ class OKXAdapter(BaseExchange):
                 return positions
             else:
                 # For derivatives trading, use standard fetch_positions
-                pos = self.exchange.fetch_positions()
+                pos = self._retry(self.exchange.fetch_positions)
                 derivative_positions = [dict(p) for p in pos if float(p.get('contracts', 0) or 0) > 0]
                 self.logger.info(f"Retrieved {len(derivative_positions)} derivative positions from OKX")
                 return derivative_positions
@@ -475,7 +475,7 @@ class OKXAdapter(BaseExchange):
             raise RuntimeError("Not connected to exchange")
         
         try:
-            order_book = self.exchange.fetch_order_book(symbol, limit)
+            order_book = self._retry(self.exchange.fetch_order_book, symbol, limit)
             return dict(order_book)
         except Exception as e:
             self.logger.error(f"Error fetching order book for {symbol}: {str(e)}")
@@ -492,6 +492,10 @@ class OKXAdapter(BaseExchange):
         except (NetworkError, ExchangeError, BaseError) as e:
             self.logger.error(f"Error fetching ticker for {symbol}: {e}")
             raise
+    
+    def get_exchange_rates(self) -> dict:
+        """Alias for get_currency_conversion_rates for compatibility."""
+        return self.get_currency_conversion_rates()
     
     def get_currency_conversion_rates(self) -> dict:
         """
@@ -736,7 +740,7 @@ class OKXAdapter(BaseExchange):
             raise RuntimeError("Not connected to exchange")
         
         try:
-            ohlcv = self.exchange.fetch_ohlcv(symbol, timeframe, limit=limit)
+            ohlcv = self._retry(self.exchange.fetch_ohlcv, symbol, timeframe, limit=limit)
             df = pd.DataFrame(ohlcv, columns=['timestamp', 'open', 'high', 'low', 'close', 'volume'])
             df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
             return df
@@ -750,7 +754,7 @@ class OKXAdapter(BaseExchange):
             raise RuntimeError("Not connected to exchange")
         
         try:
-            ticker = self.exchange.fetch_ticker(symbol)
+            ticker = self._retry(self.exchange.fetch_ticker, symbol)
             return dict(ticker)
         except Exception as e:
             self.logger.error(f"Error fetching ticker: {str(e)}")
@@ -762,7 +766,7 @@ class OKXAdapter(BaseExchange):
             raise RuntimeError("Not connected to exchange")
         
         try:
-            orders = self.exchange.fetch_open_orders(symbol)
+            orders = self._retry(self.exchange.fetch_open_orders, symbol)
             return [dict(order) for order in orders]
         except Exception as e:
             self.logger.error(f"Error fetching open orders: {str(e)}")
