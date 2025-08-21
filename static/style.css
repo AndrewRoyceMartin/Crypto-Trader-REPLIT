@@ -1464,4 +1464,32 @@ body {
     }
 }
 
+/* Optimized Table Selectors - Replace nth-child with class-based approach */
+/* Apply these classes to HTML table elements to replace overly-specific nth-child selectors */
+
+/* Generic table column alignment classes */
+.table .col-left { text-align: left; }
+.table .col-right { text-align: right; }
+.table .col-center { text-align: center; }
+
+/* Column width classes */
+.table .w-5 { width: 5%; }
+.table .w-6 { width: 6%; }
+.table .w-7 { width: 7%; }
+.table .w-8 { width: 8%; }
+.table .w-10 { width: 10%; }
+.table .w-12 { width: 12%; }
+.table .w-15 { width: 15%; }
+
+/* Simplified table styling - works for all tables */
+.trading-table th:first-child,
+.trading-table td:first-child { text-align: left; }
+
+.trading-table .numeric,
+.trading-table .price,
+.trading-table .amount { text-align: right; }
+
+.trading-table .status,
+.trading-table .action { text-align: center; }
+
 /* End of file */
