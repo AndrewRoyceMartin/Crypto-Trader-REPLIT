@@ -57,6 +57,13 @@ The system uses OKX's native exchange rates for currency conversion, fetching re
 **Enhanced OKX Adapter:**
 The `okx_adapter.py` is enhanced with robust trade retrieval, improved error handling with retry logic, duplicate prevention, and comprehensive data validation. It includes optimized balance retrieval, order book and ticker methods, and detailed logging. Critical fixes ensure correct position retrieval for spot trading, proper currency conversion mathematics, centralized client construction, robust retry mechanisms, and enhanced raw endpoint safety with precise typing and exception handling. It supports secure demo mode handling and improved logging.
 
+**Centralized OKX API Functions:**
+Added centralized OKX signing and request helpers in `app.py` for improved native API handling:
+- `now_utc_iso()` - Generates proper UTC ISO timestamps for OKX API requests
+- `okx_sign()` - Creates HMAC-SHA256 signatures for OKX authentication
+- `okx_request()` - Makes authenticated requests to OKX API with proper signing
+- `okx_ticker_pct_change_24h()` - Gets accurate 24h percentage changes from OKX ticker data using native API calls. The `/api/best-performer` and `/api/worst-performer` endpoints now use these centralized functions for consistent OKX native API integration and accurate 24h/7d percentage calculations.
+
 **Table Rendering System:**
 Dedicated table elements per dashboard view ensure no data conflicts, with robust currency conversion, error handling, and performance optimizations.
 

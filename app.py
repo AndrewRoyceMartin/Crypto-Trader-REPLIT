@@ -1713,16 +1713,14 @@ def api_best_performer():
                         current_price = ticker['last'] or current_price
                         
                         # Get 7-day performance using historical data
-                        hist_request_path = f"/api/v5/market/candles?instId={symbol}-USDT&bar=1D&limit=7"
-                        hist_data = okx_request(hist_request_path, api_key, secret_key, passphrase)
+                        hist = okx_request(f"/api/v5/market/candles?instId={symbol}-USDT&bar=1D&limit=7", api_key, secret_key, passphrase)
                         price_change_7d = 0.0
-                        
-                        if hist_data.get('code') == '0' and len(hist_data.get('data', [])) >= 2:
-                            candles = hist_data['data']
-                            current_close = float(candles[0][4])  # Most recent close
-                            week_ago_close = float(candles[-1][4])  # 7 days ago close
+                        if hist.get('code') == '0' and len(hist.get('data', [])) >= 2:
+                            candles = hist['data']
+                            curr_close = float(candles[0][4])
+                            week_ago_close = float(candles[-1][4])
                             if week_ago_close > 0:
-                                price_change_7d = ((current_close - week_ago_close) / week_ago_close) * 100
+                                price_change_7d = (curr_close - week_ago_close) / week_ago_close * 100
                         
                         # Calculate comprehensive performance score
                         allocation_percent = (current_value / total_value) * 100 if total_value > 0 else 0
@@ -1879,16 +1877,14 @@ def api_worst_performer():
                         current_price = ticker['last'] or current_price
                         
                         # Get 7-day performance using historical data
-                        hist_request_path = f"/api/v5/market/candles?instId={symbol}-USDT&bar=1D&limit=7"
-                        hist_data = okx_request(hist_request_path, api_key, secret_key, passphrase)
+                        hist = okx_request(f"/api/v5/market/candles?instId={symbol}-USDT&bar=1D&limit=7", api_key, secret_key, passphrase)
                         price_change_7d = 0.0
-                        
-                        if hist_data.get('code') == '0' and len(hist_data.get('data', [])) >= 2:
-                            candles = hist_data['data']
-                            current_close = float(candles[0][4])  # Most recent close
-                            week_ago_close = float(candles[-1][4])  # 7 days ago close
+                        if hist.get('code') == '0' and len(hist.get('data', [])) >= 2:
+                            candles = hist['data']
+                            curr_close = float(candles[0][4])
+                            week_ago_close = float(candles[-1][4])
                             if week_ago_close > 0:
-                                price_change_7d = ((current_close - week_ago_close) / week_ago_close) * 100
+                                price_change_7d = (curr_close - week_ago_close) / week_ago_close * 100
                         
                         # Calculate comprehensive performance score
                         allocation_percent = (current_value / total_value) * 100 if total_value > 0 else 0
