@@ -31,7 +31,8 @@ class TradingApp {
             analytics: { data: null, timestamp: 0, ttl: 5000 },  // 5s
             portfolioHistory: { data: null, timestamp: 0, ttl: 30000 }, // 30s
             assetAllocation: { data: null, timestamp: 0, ttl: 15000 }, // 15s
-            bestPerformer: { data: null, timestamp: 0, ttl: 10000 }   // 10s
+            bestPerformer: { data: null, timestamp: 0, ttl: 10000 },  // 10s
+            worstPerformer: { data: null, timestamp: 0, ttl: 10000 }   // 10s
         };
 
         // Debug: force network fetches
@@ -381,6 +382,9 @@ class TradingApp {
         
         // Best performer data
         this.updateBestPerformer();
+        
+        // Worst performer data
+        this.updateWorstPerformer();
     }
 
     async updatePortfolioAnalytics() {
@@ -779,6 +783,56 @@ class TradingApp {
         const cardTitle = document.getElementById('best-performer-card-title');
         if (cardTitle) {
             cardTitle.textContent = `Best Performer: ${performer.symbol}`;
+        }
+    }
+    
+    async updateWorstPerformer() {
+        try {
+            const response = await fetch('/api/worst-performer', { cache: 'no-cache' });
+            if (!response.ok) return;
+            const data = await response.json();
+            
+            if (!data.success || !data.worst_performer) return;
+            
+            // Update worst performer display elements
+            this.updateWorstPerformerDisplay(data.worst_performer);
+            
+        } catch (error) {
+            console.error('Worst performer update failed:', error);
+        }
+    }
+    
+    updateWorstPerformerDisplay(performer) {
+        // Update worst performer elements if they exist
+        const elements = {
+            'worst-performer-symbol': performer.symbol,
+            'worst-performer-name': performer.name,
+            'worst-performer-price': this.formatCurrency(performer.current_price),
+            'worst-performer-24h': `${performer.price_change_24h >= 0 ? '+' : ''}${performer.price_change_24h.toFixed(2)}%`,
+            'worst-performer-7d': `${performer.price_change_7d >= 0 ? '+' : ''}${performer.price_change_7d.toFixed(2)}%`,
+            'worst-performer-pnl': `${performer.pnl_percent >= 0 ? '+' : ''}${performer.pnl_percent.toFixed(2)}%`,
+            'worst-performer-allocation': `${performer.allocation_percent.toFixed(1)}%`,
+            'worst-performer-value': this.formatCurrency(performer.current_value),
+            'worst-performer-volume': this.formatNumber(performer.volume_24h)
+        };
+        
+        Object.entries(elements).forEach(([id, value]) => {
+            const element = document.getElementById(id);
+            if (element) {
+                element.textContent = value;
+                
+                // Add color coding for performance indicators
+                if (id.includes('24h') || id.includes('7d') || id.includes('pnl')) {
+                    const numValue = parseFloat(value);
+                    element.className = numValue >= 0 ? 'pnl-up' : 'pnl-down';
+                }
+            }
+        });
+        
+        // Update worst performer card title if it exists
+        const cardTitle = document.getElementById('worst-performer-card-title');
+        if (cardTitle) {
+            cardTitle.textContent = `Worst Performer: ${performer.symbol}`;
         }
     }
 
