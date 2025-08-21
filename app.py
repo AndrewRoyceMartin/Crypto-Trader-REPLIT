@@ -1687,331 +1687,123 @@ def api_asset_allocation():
 
 @app.route("/api/best-performer")
 def api_best_performer():
-    """Get best performing asset using direct OKX native APIs."""
     try:
-        # Get current portfolio data
-        from src.services.portfolio_service import get_portfolio_service
-        portfolio_service = get_portfolio_service()
-        portfolio_data = portfolio_service.get_portfolio_data()
-        
-        holdings = portfolio_data.get('holdings', [])
-        
+        service = get_portfolio_service()
+        pf = service.get_portfolio_data()
+        holdings = pf.get('holdings', [])
         if not holdings:
-            return jsonify({
-                "success": True,
-                "best_performer": None,
-                "performance_data": {
-                    "symbol": "N/A",
-                    "name": "No Holdings",
-                    "price_change_24h": 0.0,
-                    "price_change_7d": 0.0,
-                    "current_price": 0.0,
-                    "volume_24h": 0.0,
-                    "pnl_percent": 0.0,
-                    "allocation_percent": 0.0
-                }
-            })
-        
-        # Use OKX native API to get 24h and 7d performance data
-        import requests
-        import hmac
-        import hashlib
-        import base64
-        from datetime import timezone
-        
-        best_performer = None
-        best_performance_score = float('-inf')
-        
-        # OKX API credentials
-        api_key = os.getenv("OKX_API_KEY", "")
-        secret_key = os.getenv("OKX_SECRET_KEY", "")
-        passphrase = os.getenv("OKX_PASSPHRASE", "")
-        
-        total_value = portfolio_data.get('total_current_value', 0.0)
-        
-        for holding in holdings:
-            try:
-                symbol = holding.get('symbol', '')
-                current_value = float(holding.get('current_value', 0))
-                current_price = float(holding.get('current_price', 0))
-                pnl_percent = float(holding.get('pnl_percent', 0))
-                
-                if not symbol or current_value <= 0:
-                    continue
-                
-                # Get 24h ticker data using centralized OKX function
-                if all([api_key, secret_key, passphrase]):
-                    try:
-                        ticker = okx_ticker_pct_change_24h(f"{symbol}-USDT")
-                        price_change_24h = ticker['pct_24h']
-                        volume_24h = ticker['vol24h']
-                        current_price = ticker['last'] or current_price
-                        
-                        # Get 7-day performance using historical data
-                        hist = okx_request(f"/api/v5/market/candles?instId={symbol}-USDT&bar=1D&limit=7", api_key, secret_key, passphrase)
-                        price_change_7d = 0.0
-                        if hist.get('code') == '0' and len(hist.get('data', [])) >= 2:
-                            candles = hist['data']
-                            curr_close = float(candles[0][4])
-                            week_ago_close = float(candles[-1][4])
-                            if week_ago_close > 0:
-                                price_change_7d = (curr_close - week_ago_close) / week_ago_close * 100
-                        
-                        # Calculate comprehensive performance score
-                        allocation_percent = (current_value / total_value) * 100 if total_value > 0 else 0
-                        
-                        # Weight the performance score based on multiple factors
-                        performance_score = (
-                            price_change_24h * 0.4 +  # 24h price change (40%)
-                            price_change_7d * 0.3 +   # 7d price change (30%) 
-                            pnl_percent * 0.3         # Portfolio P&L (30%)
-                        )
-                        
-                        if performance_score > best_performance_score:
-                            best_performance_score = performance_score
-                            best_performer = {
-                                        'symbol': symbol,
-                                        'name': symbol,  # Could be enhanced with full names
-                                        'price_change_24h': price_change_24h,
-                                        'price_change_7d': price_change_7d,
-                                        'current_price': current_price,
-                                        'volume_24h': volume_24h,
-                                        'pnl_percent': pnl_percent,
-                                        'allocation_percent': allocation_percent,
-                                        'current_value': current_value,
-                                        'performance_score': performance_score
-                                    }
-                                    
-                    except Exception as api_error:
-                        logger.warning(f"OKX native API call for {symbol} failed: {api_error}")
-                        
-                        # Fallback using existing portfolio data
-                        allocation_percent = (current_value / total_value) * 100 if total_value > 0 else 0
-                        performance_score = pnl_percent  # Simple fallback
-                        
-                        if performance_score > best_performance_score:
-                            best_performance_score = performance_score
-                            best_performer = {
-                                'symbol': symbol,
-                                'name': symbol,
-                                'price_change_24h': 0.0,
-                                'price_change_7d': 0.0,
-                                'current_price': current_price,
-                                'volume_24h': 0.0,
-                                'pnl_percent': pnl_percent,
-                                'allocation_percent': allocation_percent,
-                                'current_value': current_value,
-                                'performance_score': performance_score
-                            }
-                            
-            except Exception as holding_error:
-                logger.debug(f"Error processing holding {holding}: {holding_error}")
+            return jsonify({"success": True, "best_performer": None, "performance_data": {}})
+
+        from src.utils.okx_native import OKXNative
+        client = OKXNative.from_env()
+        total_value = pf.get('total_current_value', 0.0)
+
+        best = None
+        best_score = float("-inf")
+
+        for h in holdings:
+            symbol = h.get('symbol', '')
+            cv = float(h.get('current_value', 0) or 0)
+            if not symbol or cv <= 0:
                 continue
-        
-        # Default fallback if no best performer found
-        if not best_performer:
-            first_holding = holdings[0] if holdings else {}
-            best_performer = {
-                'symbol': first_holding.get('symbol', 'N/A'),
-                'name': first_holding.get('symbol', 'N/A'),
-                'price_change_24h': 0.0,
-                'price_change_7d': 0.0,
-                'current_price': float(first_holding.get('current_price', 0)),
-                'volume_24h': 0.0,
-                'pnl_percent': float(first_holding.get('pnl_percent', 0)),
-                'allocation_percent': 0.0,
-                'current_value': float(first_holding.get('current_value', 0)),
-                'performance_score': 0.0
-            }
-        
-        return jsonify({
-            "success": True,
-            "best_performer": best_performer,
-            "performance_data": best_performer,
-            "last_update": utcnow().astimezone(LOCAL_TZ).isoformat()
-        })
-        
+
+            inst = f"{symbol}-USDT"
+            tk = client.ticker(inst)
+            price_change_24h = tk['pct_24h']
+            volume_24h = tk['vol24h']
+            current_price = tk['last'] or float(h.get('current_price', 0) or 0)
+
+            c = client.candles(inst, bar="1D", limit=7)
+            price_change_7d = 0.0
+            if len(c) >= 2:
+                curr_close = float(c[0][4])
+                week_close = float(c[-1][4])
+                if week_close > 0:
+                    price_change_7d = (curr_close - week_close) / week_close * 100
+
+            pnl_percent = float(h.get('pnl_percent', 0) or 0)
+            alloc = (cv / total_value * 100) if total_value > 0 else 0
+
+            score = (price_change_24h * 0.4) + (price_change_7d * 0.3) + (pnl_percent * 0.3)
+            if score > best_score:
+                best_score = score
+                best = {
+                    "symbol": symbol,
+                    "name": symbol,
+                    "price_change_24h": price_change_24h,
+                    "price_change_7d": price_change_7d,
+                    "current_price": current_price,
+                    "volume_24h": volume_24h,
+                    "pnl_percent": pnl_percent,
+                    "allocation_percent": alloc,
+                    "current_value": cv,
+                    "performance_score": score
+                }
+
+        return jsonify({"success": True, "best_performer": best, "performance_data": best, "last_update": iso_utc()})
     except Exception as e:
         logger.error(f"Error getting best performer: {e}")
-        return jsonify({
-            "success": False,
-            "error": str(e),
-            "best_performer": None,
-            "performance_data": {
-                "symbol": "Error",
-                "name": "Error",
-                "price_change_24h": 0.0,
-                "price_change_7d": 0.0,
-                "current_price": 0.0,
-                "volume_24h": 0.0,
-                "pnl_percent": 0.0,
-                "allocation_percent": 0.0
-            }
-        }), 500
+        return jsonify({"success": False, "error": str(e)}), 500
 
 @app.route("/api/worst-performer")
 def api_worst_performer():
-    """Get worst performing asset using direct OKX native APIs."""
     try:
-        # Get current portfolio data
-        from src.services.portfolio_service import get_portfolio_service
-        portfolio_service = get_portfolio_service()
-        portfolio_data = portfolio_service.get_portfolio_data()
-        
-        holdings = portfolio_data.get('holdings', [])
-        
+        service = get_portfolio_service()
+        pf = service.get_portfolio_data()
+        holdings = pf.get('holdings', [])
         if not holdings:
-            return jsonify({
-                "success": True,
-                "worst_performer": None,
-                "performance_data": {
-                    "symbol": "N/A",
-                    "name": "No Holdings",
-                    "price_change_24h": 0.0,
-                    "price_change_7d": 0.0,
-                    "current_price": 0.0,
-                    "volume_24h": 0.0,
-                    "pnl_percent": 0.0,
-                    "allocation_percent": 0.0
-                }
-            })
-        
-        # Use OKX native API to get 24h and 7d performance data
-        import requests
-        import hmac
-        import hashlib
-        import base64
-        from datetime import timezone
-        
-        worst_performer = None
-        worst_performance_score = float('inf')
-        
-        # OKX API credentials
-        api_key = os.getenv("OKX_API_KEY", "")
-        secret_key = os.getenv("OKX_SECRET_KEY", "")
-        passphrase = os.getenv("OKX_PASSPHRASE", "")
-        
-        total_value = portfolio_data.get('total_current_value', 0.0)
-        
-        for holding in holdings:
-            try:
-                symbol = holding.get('symbol', '')
-                current_value = float(holding.get('current_value', 0))
-                current_price = float(holding.get('current_price', 0))
-                pnl_percent = float(holding.get('pnl_percent', 0))
-                
-                if not symbol or current_value <= 0:
-                    continue
-                
-                # Get 24h ticker data using centralized OKX function
-                if all([api_key, secret_key, passphrase]):
-                    try:
-                        ticker = okx_ticker_pct_change_24h(f"{symbol}-USDT")
-                        price_change_24h = ticker['pct_24h']
-                        volume_24h = ticker['vol24h']
-                        current_price = ticker['last'] or current_price
-                        
-                        # Get 7-day performance using historical data
-                        hist = okx_request(f"/api/v5/market/candles?instId={symbol}-USDT&bar=1D&limit=7", api_key, secret_key, passphrase)
-                        price_change_7d = 0.0
-                        if hist.get('code') == '0' and len(hist.get('data', [])) >= 2:
-                            candles = hist['data']
-                            curr_close = float(candles[0][4])
-                            week_ago_close = float(candles[-1][4])
-                            if week_ago_close > 0:
-                                price_change_7d = (curr_close - week_ago_close) / week_ago_close * 100
-                        
-                        # Calculate comprehensive performance score
-                        allocation_percent = (current_value / total_value) * 100 if total_value > 0 else 0
-                        
-                        # Weight the performance score based on multiple factors (lower is worse)
-                        performance_score = (
-                            price_change_24h * 0.4 +  # 24h price change (40%)
-                            price_change_7d * 0.3 +   # 7d price change (30%) 
-                            pnl_percent * 0.3         # Portfolio P&L (30%)
-                        )
-                        
-                        if performance_score < worst_performance_score:
-                            worst_performance_score = performance_score
-                            worst_performer = {
-                                        'symbol': symbol,
-                                        'name': symbol,  # Could be enhanced with full names
-                                        'price_change_24h': price_change_24h,
-                                        'price_change_7d': price_change_7d,
-                                        'current_price': current_price,
-                                        'volume_24h': volume_24h,
-                                        'pnl_percent': pnl_percent,
-                                        'allocation_percent': allocation_percent,
-                                        'current_value': current_value,
-                                        'performance_score': performance_score
-                                    }
-                                    
-                    except Exception as api_error:
-                        logger.warning(f"OKX native API call for {symbol} failed: {api_error}")
-                        
-                        # Fallback using existing portfolio data
-                        allocation_percent = (current_value / total_value) * 100 if total_value > 0 else 0
-                        performance_score = pnl_percent  # Simple fallback
-                        
-                        if performance_score < worst_performance_score:
-                            worst_performance_score = performance_score
-                            worst_performer = {
-                                'symbol': symbol,
-                                'name': symbol,
-                                'price_change_24h': 0.0,
-                                'price_change_7d': 0.0,
-                                'current_price': current_price,
-                                'volume_24h': 0.0,
-                                'pnl_percent': pnl_percent,
-                                'allocation_percent': allocation_percent,
-                                'current_value': current_value,
-                                'performance_score': performance_score
-                            }
-                            
-            except Exception as holding_error:
-                logger.debug(f"Error processing holding {holding}: {holding_error}")
+            return jsonify({"success": True, "worst_performer": None, "performance_data": {}})
+
+        from src.utils.okx_native import OKXNative
+        client = OKXNative.from_env()
+        total_value = pf.get('total_current_value', 0.0)
+
+        worst = None
+        worst_score = float("inf")
+
+        for h in holdings:
+            symbol = h.get('symbol', '')
+            cv = float(h.get('current_value', 0) or 0)
+            if not symbol or cv <= 0:
                 continue
-        
-        # Default fallback if no worst performer found
-        if not worst_performer:
-            first_holding = holdings[0] if holdings else {}
-            worst_performer = {
-                'symbol': first_holding.get('symbol', 'N/A'),
-                'name': first_holding.get('symbol', 'N/A'),
-                'price_change_24h': 0.0,
-                'price_change_7d': 0.0,
-                'current_price': float(first_holding.get('current_price', 0)),
-                'volume_24h': 0.0,
-                'pnl_percent': float(first_holding.get('pnl_percent', 0)),
-                'allocation_percent': 0.0,
-                'current_value': float(first_holding.get('current_value', 0)),
-                'performance_score': 0.0
-            }
-        
-        return jsonify({
-            "success": True,
-            "worst_performer": worst_performer,
-            "performance_data": worst_performer,
-            "last_update": utcnow().astimezone(LOCAL_TZ).isoformat()
-        })
-        
+
+            inst = f"{symbol}-USDT"
+            tk = client.ticker(inst)
+            price_change_24h = tk['pct_24h']
+            volume_24h = tk['vol24h']
+            current_price = tk['last'] or float(h.get('current_price', 0) or 0)
+
+            c = client.candles(inst, bar="1D", limit=7)
+            price_change_7d = 0.0
+            if len(c) >= 2:
+                curr_close = float(c[0][4])
+                week_close = float(c[-1][4])
+                if week_close > 0:
+                    price_change_7d = (curr_close - week_close) / week_close * 100
+
+            pnl_percent = float(h.get('pnl_percent', 0) or 0)
+            alloc = (cv / total_value * 100) if total_value > 0 else 0
+
+            score = (price_change_24h * 0.4) + (price_change_7d * 0.3) + (pnl_percent * 0.3)
+            if score < worst_score:
+                worst_score = score
+                worst = {
+                    "symbol": symbol,
+                    "name": symbol,
+                    "price_change_24h": price_change_24h,
+                    "price_change_7d": price_change_7d,
+                    "current_price": current_price,
+                    "volume_24h": volume_24h,
+                    "pnl_percent": pnl_percent,
+                    "allocation_percent": alloc,
+                    "current_value": cv,
+                    "performance_score": score
+                }
+
+        return jsonify({"success": True, "worst_performer": worst, "performance_data": worst, "last_update": iso_utc()})
     except Exception as e:
         logger.error(f"Error getting worst performer: {e}")
-        return jsonify({
-            "success": False,
-            "error": str(e),
-            "worst_performer": None,
-            "performance_data": {
-                "symbol": "Error",
-                "name": "Error",
-                "price_change_24h": 0.0,
-                "price_change_7d": 0.0,
-                "current_price": 0.0,
-                "volume_24h": 0.0,
-                "pnl_percent": 0.0,
-                "allocation_percent": 0.0
-            }
-        }), 500
+        return jsonify({"success": False, "error": str(e)}), 500
 
 @app.route("/api/equity-curve")
 def api_equity_curve():

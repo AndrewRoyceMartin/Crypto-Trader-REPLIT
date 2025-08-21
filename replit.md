@@ -1,189 +1,58 @@
 # Algorithmic Trading System
 
 ## Overview
-This Python-based algorithmic trading system automates cryptocurrency trading strategies, manages risk, and provides a web-based dashboard for real-time monitoring. It features backtesting and live trading capabilities, focusing on an Enhanced Bollinger Bands mean reversion strategy. The system integrates directly with the user's live OKX trading account for authentic portfolio data and trading operations, aiming to provide a robust and compliant trading solution.
+This Python-based algorithmic trading system automates cryptocurrency trading strategies, manages risk, and provides a web-based dashboard for real-time monitoring. It features live trading capabilities, focusing on an Enhanced Bollinger Bands mean reversion strategy. The system integrates directly with the user's live OKX trading account for authentic portfolio data and trading operations, aiming to provide a robust and compliant trading solution with a business vision to provide a secure and reliable automated trading solution for cryptocurrency enthusiasts.
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
 
 ## System Architecture
-The system utilizes a modular architecture with a unified Flask-based web interface for live OKX trading. The architecture has been streamlined to use a single-page dashboard application with clean, minimal styling. All unused files have been archived to maintain a clean codebase structure.
+The system utilizes a modular Flask-based web interface for live OKX trading, streamlined into a single-page dashboard application with minimal styling.
 
-**Current Active Structure:**
-- **app.py** - Main Flask application entry point
-- **templates/unified_dashboard.html** - Single-page dashboard interface  
-- **static/style.css** - Minimal trading UI styling system
-- **static/app_clean.js** - Dashboard functionality
-- **src/** - Modular source code architecture
-- **archive/** - Archived unused development files
-
-**Strategy System:**
-The system exclusively uses an Enhanced Bollinger Bands strategy across all modes, incorporating advanced crash protection, dynamic risk management, rebuy mechanisms, and peak tracking. All simulation and paper trading functionalities have been removed in favor of live OKX integration.
-
-**Data Management:**
-A two-tier caching system uses SQLite for raw market data, managed to minimize API calls.
-
-**Exchange Integration:**
-An adapter pattern, specifically `OKXAdapter`, provides a unified interface for live OKX exchange, connecting directly to the user's real OKX trading account via regional endpoints. It fetches actual portfolio holdings, positions, and trade history from the live OKX account, and all simulated data has been replaced with authentic OKX data.
-
-**Risk Management:**
-The `RiskManager` enforces multiple safety layers, including portfolio-level limits, position sizing, daily loss limits, and emergency halts, performing checks before every trade. Position sizing, entry/exit prices, stop loss, and take profit levels are calculated to ensure consistent equity risk per trade.
-
-**Web Interface:**
-A Flask-based web interface offers real-time monitoring and portfolio visualization with Chart.js. It features a unified single-page dashboard that consolidates all functionality (Overview, Portfolio, Performance, Holdings, and Trades) into one comprehensive view with smooth scrolling navigation. The interface includes accurate KPI calculations, dynamic price displays, ATO tax export functionality, and professional visual design with unified card styling. Connection management includes intelligent uptime tracking and robust error handling.
-
-**Trading Price Calculations:**
-All buy and sell price calculations use the user's real OKX purchase price and current OKX market prices. Stop loss and take profit levels are calculated based on authentic entry prices. The system prioritizes OKX pre-calculated fields for trade values and P&L over local calculations, ensuring alignment with the OKX platform.
-
-**CSS Architecture Optimization:**
-The system employs a minimal trading UI design with modern design tokens and CSS variable-based spacing. It features a grayscale-first approach with color reserved exclusively for profit/loss indicators and warnings, automatic dark mode support, mobile-responsive navigation with Bootstrap collapse toggle, and a dedicated sticky control bar beneath the navbar containing primary trading controls. The scoped `.theme-min` class system prevents Bootstrap color drift and ensures consistent minimal card aesthetics across all components.
-
-**Meaningful Color System:**
-Colors are used strategically only where they provide essential financial information:
-- `.pnl-up` - Green for positive profit/loss values
-- `.pnl-down` - Red for negative profit/loss values  
-- `.text-warn` - Orange for warnings and high deviation alerts
-- `.text-success` - Green for successful connections and positive states
-- `.text-danger` - Red for errors and negative states
-- Trading action buttons (Buy/Sell/Bot) maintain appropriate color coding
-All other UI elements remain neutral grayscale to focus attention on meaningful data.
-
-**FontAwesome Integration:**
-The system uses FontAwesome 6.4.0 with modern `fa-solid` class syntax and updated icon names for optimal compatibility. All 50+ icons throughout the dashboard have been migrated from FA5 to FA6 naming conventions (e.g., `fa-tachometer-alt` → `fa-gauge`, `fa-exchange-alt` → `fa-right-left`). The navbar includes `navbar-light` class to ensure mobile hamburger menu visibility. Alternative backward compatibility can be achieved by adding the FA5 shim: `https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/v5-font-face.min.css`
-
-**OKX Currency Conversion:**
-The system uses OKX's native exchange rates for currency conversion, fetching real-time fiat conversion rates directly from OKX trading pairs.
-
-**Enhanced OKX Adapter:**
-The `okx_adapter.py` is enhanced with robust trade retrieval, improved error handling with retry logic, duplicate prevention, and comprehensive data validation. It includes optimized balance retrieval, order book and ticker methods, and detailed logging. Critical fixes ensure correct position retrieval for spot trading, proper currency conversion mathematics, centralized client construction, robust retry mechanisms, and enhanced raw endpoint safety with precise typing and exception handling. It supports secure demo mode handling and improved logging.
-
-**Centralized OKX API Functions:**
-Added centralized OKX signing and request helpers in `app.py` for improved native API handling:
-- `now_utc_iso()` - Generates proper UTC ISO timestamps for OKX API requests
-- `okx_sign()` - Creates HMAC-SHA256 signatures for OKX authentication
-- `okx_request()` - Makes authenticated requests to OKX API with proper signing
-- `okx_ticker_pct_change_24h()` - Gets accurate 24h percentage changes from OKX ticker data using native API calls. The `/api/best-performer` and `/api/worst-performer` endpoints now use these centralized functions for consistent OKX native API integration and accurate 24h/7d percentage calculations.
-
-**Production-Safe Testing System:**
-The `/api/test-sync-data` endpoint has been secured with production guards:
-- Protected by `ENABLE_INTERNAL_TESTS` environment flag (disabled by default in production)
-- Eliminated self-HTTP requests in favor of direct service function calls
-- Uses `portfolio_service.get_portfolio_data()` directly instead of HTTP calls to avoid subprocess overhead
-- Returns disabled status with helpful message when tests are not explicitly enabled
-
-**Optimized Warmup System:**
-The background warmup process has been optimized for efficiency and meaningfulness:
-- Focuses on connectivity testing and market validation only (no expensive data fetching)
-- Validates watchlist symbols against available markets from OKX
-- Provides instant feedback on exchange connectivity status
-- Reports total available markets and validated symbols for monitoring
-- Eliminates cache warming overhead while maintaining fast startup readiness
-
-**UTC-Aware DateTime Standardization:**
-All datetime operations throughout the system have been standardized to use UTC-aware timestamps:
-- Added `utcnow()` and `iso_utc()` utility functions for consistent UTC datetime handling
-- Replaced all `datetime.now()` calls with UTC-aware alternatives
-- Server timestamps, API responses, and trade records now use proper UTC timezone handling
-- UI display times are converted to LOCAL_TZ only when needed for user presentation
-- Ensures consistent time handling across all system components and API interactions
-
-**Authentication Protection for Mutating Endpoints:**
-Added `@require_admin` decorator protection for all mutating endpoints using shared secret authentication:
-- `ADMIN_TOKEN` environment variable controls access to sensitive operations
-- Protected endpoints: `/api/start-trading`, `/api/paper-trade/buy`, `/api/paper-trade/sell`, `/api/reset-entire-program`, `/api/execute-take-profit`
-- Requires `X-Admin-Token` header matching `ADMIN_TOKEN` environment variable
-- If `ADMIN_TOKEN` is unset, endpoints remain accessible for development convenience
-- Old `/api/start_trading` endpoint redirects to new `/api/start-trading` with proper authentication
-
-**Exchange Instance Optimization:**
-Replaced all private `_get_current_price` method calls with public `get_public_price()` function:
-- Added `get_public_price(pair: str)` function that reuses the singleton exchange instance
-- Eliminates `load_markets()` churn by maintaining a single CCXT instance throughout the application
-- Replaced 7+ private method calls across price fetching endpoints with the public method
-- Improved performance by avoiding repeated exchange initialization and market loading
-- Enhanced error handling and logging for price retrieval operations
-
-**Security Headers Optimization:**
-Updated security headers to follow modern best practices:
-- HSTS (Strict-Transport-Security) now only set on HTTPS connections using `request.is_secure` check
-- Removed obsolete `X-XSS-Protection` header which is deprecated in modern browsers
-- Maintained comprehensive Content Security Policy and other security headers
-- Prevents unnecessary security headers on development HTTP connections
-
-**High-Value Security and Performance Optimizations:**
-Implemented comprehensive fixes for validation, error handling, timezone safety, and security:
-- Added symbol validation against WATCHLIST and exchange markets before OKX API calls
-- Added 10-second timeouts to CCXT to prevent long hangs and separate NetworkError handling
-- Fixed `filter_trades_by_timeframe` to use UTC-aware timestamps throughout
-- Added tax-safety warning to ATO export dummy `initial_value = 10.0` field
-- Removed `'unsafe-inline'` from script-src CSP directive for better security
-- Cleaned up redundant time/datetime/random imports throughout the codebase
-
-**Production-Ready Configuration:**
-Updated deployment configuration for production readiness:
-- Configured gunicorn with 4 workers, gthread worker class, and 60-second timeout
-- Added threaded=True to development server to prevent self-call deadlocks
-- Enhanced WSGI configuration with proper worker threading and connection handling
-
-**OKX Native Client Integration:**
-Implemented dedicated production-safe OKX native client for improved performance and reliability:
-- Added `src/utils/okx_native.py` with comprehensive OKX API v5 client using proper HMAC-SHA256 signing
-- Replaced duplicated signing logic with centralized `OKXNative` class supporting regional endpoints
-- Updated `get_public_price()` and `okx_ticker_pct_change_24h()` to use native client with CCXT fallback
-- Enhanced 24h/7d percentage calculation accuracy using OKX's native `open24h` field
-- Reduced API call overhead by eliminating redundant CCXT market loading and signing operations
-
-**Minimal UTC Helpers Optimization:**
-Streamlined datetime handling with minimal UTC helpers for improved consistency:
-- Updated `utcnow()` and `iso_utc()` functions with self-contained imports for better maintainability
-- Eliminated dependency on top-level datetime imports in helper functions
-- Improved code clarity and reduced import complexity throughout the system
-
-**Enhanced Admin Guard Protection:**
-Refined admin authentication system for production security:
-- Updated `require_admin` decorator with cleaner implementation pattern using `_w` wrapper function
-- Applied admin guards consistently across all mutating endpoints: start-trading, paper trades, reset, take-profit
-- Maintained backward compatibility with duplicate `/api/start_trading` endpoint redirecting to `/api/start-trading`
-- Simplified authorization logic while maintaining security - requires `X-Admin-Token` header when `ADMIN_TOKEN` is set
-
-**Table Rendering System:**
-Dedicated table elements per dashboard view ensure no data conflicts, with robust currency conversion, error handling, and performance optimizations.
-
-**Technical Indicators:**
-The `TechnicalIndicators` class provides vectorized calculations for indicators like Bollinger Bands and ATR.
-
-**Live Data Testing Framework:**
-A comprehensive test suite validates 100% live OKX data synchronization, including holdings, price data freshness, unrealized P&L accuracy, and futures/margin account access verification. It includes a synchronization alert system to monitor discrepancies.
-
-**Strategy P&L Testing Framework:**
-An advanced test suite validates the mathematical accuracy of trading strategy P&L calculations using real OKX price data, including position sizing, P&L calculation precision, strategy scenario simulation, live OKX price integration, and risk management constraint validation.
-
-**Database Layer:**
-`DatabaseManager` uses SQLite for persistent storage of trades, portfolio history, and system state.
-
-**Algorithmic Optimization:**
-The system incorporates advanced algorithmic optimization for buy/sell decisions, including multi-timeframe momentum analysis, adaptive position sizing, enhanced risk-reward enforcement, progressive trailing stops, market volatility regime detection, and statistical arbitrage techniques.
+**Core Components & Features:**
+-   **Main Application:** `app.py` serves as the Flask entry point.
+-   **Web Interface:** A single-page dashboard (`unified_dashboard.html`) with a minimal CSS styling system (`style.css`) and JavaScript functionality (`app_clean.js`).
+-   **Strategy:** Exclusively uses an Enhanced Bollinger Bands strategy with advanced crash protection, dynamic risk management, rebuy mechanisms, and peak tracking, tailored for live OKX integration.
+-   **Data Management:** A two-tier caching system uses SQLite for raw market data to minimize API calls.
+-   **Exchange Integration:** An `OKXAdapter` provides a unified interface for live OKX exchange, connecting directly to the user's real OKX trading account to fetch authentic portfolio holdings, positions, and trade history. Centralized OKX API functions ensure consistent native API integration.
+-   **Risk Management:** The `RiskManager` enforces multiple safety layers, including portfolio-level limits, position sizing, daily loss limits, and emergency halts, calculating position sizing, entry/exit, stop loss, and take profit based on consistent equity risk.
+-   **Web Interface Design:** A Flask-based web interface offers real-time monitoring and portfolio visualization with Chart.js, featuring a unified single-page dashboard consolidating all functionality (Overview, Portfolio, Performance, Holdings, Trades) into one comprehensive view. It includes accurate KPI calculations, dynamic price displays, ATO tax export functionality, and professional visual design with unified card styling.
+-   **Trading Price Calculations:** All buy and sell price calculations use the user's real OKX purchase price and current OKX market prices, prioritizing OKX pre-calculated fields for trade values and P&L.
+-   **CSS Architecture:** Minimal trading UI design with modern design tokens, CSS variable-based spacing, a grayscale-first approach, automatic dark mode support, and mobile-responsive navigation. A dedicated sticky control bar beneath the navbar contains primary trading controls.
+-   **Color System:** Colors are used strategically for financial information (green for profit, red for loss, orange for warnings).
+-   **FontAwesome Integration:** Uses FontAwesome 6.4.0 with `fa-solid` class syntax and updated icon names.
+-   **Currency Conversion:** Uses OKX's native exchange rates for real-time fiat conversion.
+-   **Enhanced OKX Adapter:** Robust trade retrieval, improved error handling with retry logic, duplicate prevention, comprehensive data validation, and optimized balance retrieval.
+-   **Production-Safe Testing:** The `/api/test-sync-data` endpoint is secured with production guards, using direct service function calls.
+-   **Optimized Warmup System:** Background warmup focuses on connectivity testing and market validation.
+-   **UTC-Aware DateTime Standardization:** All datetime operations use UTC-aware timestamps for consistency.
+-   **Authentication Protection:** Mutating endpoints are protected by an `@require_admin` decorator using a shared secret authentication (`ADMIN_TOKEN`).
+-   **Exchange Instance Optimization:** Uses a singleton exchange instance to prevent `load_markets()` churn, improving performance.
+-   **Security Headers:** Updated security headers for modern best practices, including HSTS and a comprehensive Content Security Policy.
+-   **OKX Native Client:** Dedicated production-safe OKX native client (`src/utils/okx_native.py`) for improved performance and reliability, replacing duplicated signing logic.
+-   **Database Layer:** `DatabaseManager` uses SQLite for persistent storage of trades, portfolio history, and system state.
+-   **Algorithmic Optimization:** Incorporates multi-timeframe momentum analysis, adaptive position sizing, enhanced risk-reward enforcement, progressive trailing stops, market volatility regime detection, and statistical arbitrage techniques.
+-   **Live Data & Strategy P&L Testing Frameworks:** Comprehensive test suites validate live OKX data synchronization and the mathematical accuracy of P&L calculations.
+**Optimized Performance Endpoints (Latest):** Completely rewrote `/api/best-performer` and `/api/worst-performer` endpoints using OKX native client - replaced complex legacy implementation with streamlined native OKX API calls for accurate 24h/7d calculations, fixed percentage math using OKX's native fields, eliminated redundant API calls, enhanced performance scoring algorithm, and reduced code complexity from ~160 lines to ~50 lines per endpoint.
 
 ## External Dependencies
 
 ### Market Data & Trading APIs
-- **CCXT Library**: Unified exchange interface.
-- **OKX Exchange**: Primary data source and live trading platform.
-- **Kraken Exchange**: Live trading platform.
-- **CoinGecko API**: Live cryptocurrency prices.
+-   **CCXT Library**: Unified exchange interface.
+-   **OKX Exchange**: Primary data source and live trading platform.
 
 ### Data Processing & Analysis
-- **Pandas**: Time series data manipulation.
-- **NumPy**: Numerical computations.
-- **SQLite**: Local database for caching and persistence.
+-   **Pandas**: Time series data manipulation.
+-   **NumPy**: Numerical computations.
+-   **SQLite**: Local database for caching and persistence.
 
 ### Web Interface & Visualization
-- **Flask**: Web framework.
-- **Chart.js**: Client-side charting.
-- **Bootstrap**: Frontend CSS framework.
-- **Font Awesome**: Icon library.
+-   **Flask**: Web framework.
+-   **Chart.js**: Client-side charting.
+-   **Bootstrap**: Frontend CSS framework.
+-   **Font Awesome**: Icon library.
 
 ### Configuration & Logging
-- **ConfigParser**: Configuration management.
-- **Python Logging**: System-wide logging.
-- **Environment Variables**: Secure credential management.
+-   **ConfigParser**: Configuration management.
+-   **Python Logging**: System-wide logging.
+-   **Environment Variables**: Secure credential management.
