@@ -274,98 +274,13 @@
             </div>
         </section>
 
-        <hr class="section-divider my-5">
 
-        <!-- SECTION 2: PORTFOLIO -->
-        <section id="portfolio" class="mb-5">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <h2><span class="icon icon-wallet me-2"></span>Portfolio Overview</h2>
-                <button class="btn btn-outline-primary btn-sm" onclick="refreshPortfolioData()">
-                    <span class="icon icon-refresh me-1"></span> Refresh
-                </button>
-            </div>
-
-            <!-- Portfolio Summary KPIs -->
-            <div class="row text-center mb-4">
-                <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
-                    <div class="kpi-card">
-                        <div class="kpi-icon">
-                            <span class="icon icon-wallet"></span>
-                        </div>
-                        <div class="value" id="summary-total-value">$0.00</div>
-                        <div class="label">Total Portfolio Value</div>
-                    </div>
-                </div>
-                <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
-                    <div class="kpi-card">
-                        <div class="kpi-icon">
-                            <span class="icon icon-chart"></span>
-                        </div>
-                        <div class="value" id="summary-total-change">$0.00 (0.00%)</div>
-                        <div class="label">Total Change</div>
-                    </div>
-                </div>
-                <div class="col-lg-1 col-md-2 col-sm-4 mb-3">
-                    <div class="kpi-card">
-                        <div class="kpi-icon">
-                            <span class="icon icon-coins"></span>
-                        </div>
-                        <div class="value" id="summary-total-assets">0</div>
-                        <div class="label">Assets</div>
-                    </div>
-                </div>
-                <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
-                    <div class="kpi-card">
-                        <div class="kpi-icon">
-                            <span class="icon icon-trophy"></span>
-                        </div>
-                        <div class="value">
-                            <span class="icon icon-up me-1"></span>
-                            <span id="summary-best-performer">N/A</span>
-                            <small id="summary-best-performance" class="ms-2">+0.00%</small>
-                        </div>
-                        <div class="label">Best Performer</div>
-                    </div>
-                </div>
-                <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
-                    <div class="kpi-card">
-                        <div class="kpi-icon">
-                            <span class="icon icon-down"></span>
-                        </div>
-                        <div class="value" id="summary-worst-performer">
-                            <span class="icon icon-down me-1"></span><span>N/A</span>
-                        </div>
-                        <div class="label">Worst Performer</div>
-                    </div>
-                </div>
-                <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
-                    <div class="kpi-card">
-                        <div class="kpi-icon">
-                            <span class="icon icon-dollar"></span>
-                        </div>
-                        <div class="value" id="summary-cash-balance">$0.00</div>
-                        <div class="label">Cash Balance</div>
-                    </div>
-                </div>
-                <div class="col-lg-1 col-md-2 col-sm-4 mb-3">
-                    <div class="kpi-card">
-                        <div class="kpi-icon">
-                            <span class="icon icon-percent"></span>
-                        </div>
-                        <div class="value" id="summary-win-rate">0%</div>
-                        <div class="label">Win Rate</div>
-                    </div>
-                </div>
-            </div>
-
-
-        </section>
 
 
 
         <hr class="section-divider my-5">
 
-        <!-- SECTION 3: OPEN POSITIONS -->
+        <!-- SECTION 2: OPEN POSITIONS -->
         <section id="holdings" class="mb-5">
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <h2><span class="icon icon-coins me-2"></span>Open Positions</h2>
@@ -410,7 +325,7 @@
 
         <hr class="section-divider my-5">
 
-        <!-- SECTION 4: TRADES -->
+        <!-- SECTION 3: TRADES -->
         <section id="trades" class="mb-5">
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <h2><span class="icon icon-exchange me-2"></span>Recent Trades</h2>
@@ -532,7 +447,7 @@
 
     // Auto-update active section based on scroll position
     window.addEventListener('scroll', function() {
-        const sections = ['overview', 'portfolio', 'holdings', 'trades'];
+        const sections = ['overview', 'holdings', 'trades'];
         const scrollPos = window.scrollY + 100;
         
         sections.forEach(section => {
