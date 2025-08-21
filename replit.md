@@ -139,6 +139,13 @@ Streamlined datetime handling with minimal UTC helpers for improved consistency:
 - Eliminated dependency on top-level datetime imports in helper functions
 - Improved code clarity and reduced import complexity throughout the system
 
+**Enhanced Admin Guard Protection:**
+Refined admin authentication system for production security:
+- Updated `require_admin` decorator with cleaner implementation pattern using `_w` wrapper function
+- Applied admin guards consistently across all mutating endpoints: start-trading, paper trades, reset, take-profit
+- Maintained backward compatibility with duplicate `/api/start_trading` endpoint redirecting to `/api/start-trading`
+- Simplified authorization logic while maintaining security - requires `X-Admin-Token` header when `ADMIN_TOKEN` is set
+
 **Table Rendering System:**
 Dedicated table elements per dashboard view ensure no data conflicts, with robust currency conversion, error handling, and performance optimizations.
 

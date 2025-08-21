@@ -35,13 +35,11 @@ ADMIN_TOKEN = os.getenv("ADMIN_TOKEN", "")
 
 def require_admin(f):
     @wraps(f)
-    def wrapper(*args, **kwargs):
-        if not ADMIN_TOKEN:
-            return f(*args, **kwargs)  # Allow in dev if unset
-        if request.headers.get("X-Admin-Token") != ADMIN_TOKEN:
+    def _w(*args, **kwargs):
+        if ADMIN_TOKEN and request.headers.get("X-Admin-Token") != ADMIN_TOKEN:
             return jsonify({"error": "unauthorized"}), 401
         return f(*args, **kwargs)
-    return wrapper
+    return _w
 
 # === UTC DateTime Helpers ===
 def utcnow():
