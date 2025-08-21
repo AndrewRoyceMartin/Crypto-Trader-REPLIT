@@ -38,6 +38,16 @@ All buy and sell price calculations use the user's real OKX purchase price and c
 **CSS Architecture Optimization:**
 The system employs a minimal trading UI design with modern design tokens and CSS variable-based spacing. It features a grayscale-first approach with color reserved exclusively for profit/loss indicators and warnings, automatic dark mode support, mobile-responsive navigation with Bootstrap collapse toggle, and a dedicated sticky control bar beneath the navbar containing primary trading controls. The scoped `.theme-min` class system prevents Bootstrap color drift and ensures consistent minimal card aesthetics across all components.
 
+**Meaningful Color System:**
+Colors are used strategically only where they provide essential financial information:
+- `.pnl-up` - Green for positive profit/loss values
+- `.pnl-down` - Red for negative profit/loss values  
+- `.text-warn` - Orange for warnings and high deviation alerts
+- `.text-success` - Green for successful connections and positive states
+- `.text-danger` - Red for errors and negative states
+- Trading action buttons (Buy/Sell/Bot) maintain appropriate color coding
+All other UI elements remain neutral grayscale to focus attention on meaningful data.
+
 **OKX Currency Conversion:**
 The system uses OKX's native exchange rates for currency conversion, fetching real-time fiat conversion rates directly from OKX trading pairs.
 

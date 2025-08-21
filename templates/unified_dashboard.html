@@ -104,7 +104,7 @@
         <!-- SECTION 1: OVERVIEW DASHBOARD -->
         <section id="overview" class="mb-5">
             <div class="d-flex justify-content-between align-items-center mb-3">
-                <h2><i class="fas fa-tachometer-alt me-2 text-primary"></i>Quick Overview</h2>
+                <h2><i class="fas fa-tachometer-alt me-2"></i>Quick Overview</h2>
                 <div class="d-flex align-items-center">
                     <span class="badge bg-success me-2">
                         <i class="fas fa-wifi me-1"></i>
@@ -169,11 +169,11 @@
                 </div>
                 <div class="col-12 col-lg-6 text-end small">
                     <span class="me-3">
-                        <i class="fas fa-server text-info me-1"></i>
-                        Server Uptime: <span id="system-uptime" class="text-info">0s</span>
+                        <i class="fas fa-server me-1"></i>
+                        Server Uptime: <span id="system-uptime">0s</span>
                     </span>
                     <span>
-                        <i class="fas fa-exchange-alt text-success me-1"></i>
+                        <i class="fas fa-exchange-alt me-1"></i>
                         OKX API: <span id="okx-connection-text" class="text-success">Connected</span>
                     </span>
                 </div>
@@ -250,7 +250,7 @@
         <!-- SECTION 2: PORTFOLIO -->
         <section id="portfolio" class="mb-5">
             <div class="d-flex justify-content-between align-items-center mb-3">
-                <h2><i class="fas fa-wallet me-2 text-info"></i>Portfolio Overview</h2>
+                <h2><i class="fas fa-wallet me-2"></i>Portfolio Overview</h2>
                 <button class="btn btn-outline-primary btn-sm" onclick="refreshPortfolioData()">
                     <i class="fas fa-sync-alt me-1"></i> Refresh
                 </button>
@@ -361,7 +361,7 @@
         <!-- SECTION 3: PERFORMANCE -->
         <section id="performance" class="mb-5">
             <div class="d-flex justify-content-between align-items-center mb-3">
-                <h2><i class="fas fa-chart-bar me-2 text-success"></i>Performance Analytics</h2>
+                <h2><i class="fas fa-chart-bar me-2"></i>Performance Analytics</h2>
                 <div class="d-flex gap-2">
                     <div class="btn-group btn-group-sm" role="group">
                         <button class="btn btn-outline-secondary" data-range="1M">1M</button>
@@ -448,7 +448,7 @@
         <!-- SECTION 4: CURRENT HOLDINGS -->
         <section id="holdings" class="mb-5">
             <div class="d-flex justify-content-between align-items-center mb-3">
-                <h2><i class="fas fa-coins me-2 text-warning"></i>Current Holdings</h2>
+                <h2><i class="fas fa-coins me-2"></i>Current Holdings</h2>
                 <button class="btn btn-outline-primary btn-sm" onclick="refreshHoldingsData()" aria-label="Refresh holdings data">
                     <i class="fas fa-sync-alt me-1"></i> Refresh
                 </button>
@@ -489,7 +489,7 @@
         <!-- SECTION 5: TRADES -->
         <section id="trades" class="mb-5">
             <div class="d-flex justify-content-between align-items-center mb-3">
-                <h2><i class="fas fa-exchange-alt me-2 text-danger"></i>Recent Trades</h2>
+                <h2><i class="fas fa-exchange-alt me-2"></i>Recent Trades</h2>
                 <div class="d-flex gap-2">
                     <select id="trades-timeframe" class="form-select form-select-sm" onchange="filterTradesByTimeframe()">
                         <option value="7d" selected>Last 7 days</option>
