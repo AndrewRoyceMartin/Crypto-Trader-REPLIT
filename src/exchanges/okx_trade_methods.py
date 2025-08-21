@@ -66,8 +66,12 @@ class OKXTradeRetrieval:
             List of formatted trade dictionaries
         """
         if not self.exchange:
-            self.logger.warning("Exchange not initialized")
+            (self.logger or logging.getLogger(__name__)).warning("Exchange not initialized")
             return []
+
+        # Input normalization and defensive constraints
+        limit = max(1, min(int(limit or 50), 200))  # hard cap for API safety
+        symbol = symbol.strip() if isinstance(symbol, str) else None
         
         all_trades = []
         dedup_set = set()
@@ -120,6 +124,10 @@ class OKXTradeRetrieval:
     def _get_okx_trade_fills(self, symbol: Optional[str], limit: int) -> List[Dict[str, Any]]:
         """Get trades using OKX's trade fills API with enhanced instType support."""
         try:
+            # Input normalization and API constraints
+            limit = max(1, min(int(limit or 50), 100))  # OKX API limit
+            symbol = symbol.strip() if isinstance(symbol, str) else None
+            
             params = {
                 'limit': str(limit),
                 'instType': self._inst_type()
@@ -151,6 +159,10 @@ class OKXTradeRetrieval:
     def _get_okx_orders_history(self, symbol: Optional[str], limit: int) -> List[Dict[str, Any]]:
         """Get trades using OKX's orders history API with enhanced instType support."""
         try:
+            # Input normalization and API constraints
+            limit = max(1, min(int(limit or 50), 100))  # OKX API limit
+            symbol = symbol.strip() if isinstance(symbol, str) else None
+            
             params = {
                 'limit': str(limit),
                 'state': 'filled',  # Only filled orders
@@ -182,6 +194,10 @@ class OKXTradeRetrieval:
     
     def _get_ccxt_trades(self, symbol: Optional[str], limit: int) -> List[Dict[str, Any]]:
         """Get trades using standard CCXT methods."""
+        # Input normalization and API constraints
+        limit = max(1, min(int(limit or 50), 100))  # CCXT API safety limit
+        symbol = symbol.strip() if isinstance(symbol, str) else None
+        
         trades = []
         
         try:
