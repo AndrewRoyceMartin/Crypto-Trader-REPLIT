@@ -34,7 +34,8 @@ class TradingApp {
             bestPerformer: { data: null, timestamp: 0, ttl: 10000 },  // 10s
             worstPerformer: { data: null, timestamp: 0, ttl: 10000 },  // 10s
             equityCurve: { data: null, timestamp: 0, ttl: 30000 },    // 30s
-            drawdownAnalysis: { data: null, timestamp: 0, ttl: 30000 } // 30s
+            drawdownAnalysis: { data: null, timestamp: 0, ttl: 30000 }, // 30s
+            currentHoldings: { data: null, timestamp: 0, ttl: 15000 }   // 15s
         };
 
         // Debug: force network fetches
@@ -393,6 +394,9 @@ class TradingApp {
         
         // Drawdown analysis
         this.updateDrawdownAnalysis();
+        
+        // Current holdings
+        this.updateCurrentHoldings();
     }
 
     async updatePortfolioAnalytics() {
@@ -1204,6 +1208,107 @@ class TradingApp {
                 }
             }
         });
+    }
+    
+    async updateCurrentHoldings() {
+        try {
+            const response = await fetch('/api/current-holdings', { cache: 'no-cache' });
+            if (!response.ok) return;
+            const data = await response.json();
+            
+            if (!data.success || !data.holdings) return;
+            
+            // Update holdings table
+            this.updateHoldingsTable(data.holdings, data.total_value);
+            
+        } catch (error) {
+            console.error('Current holdings update failed:', error);
+        }
+    }
+    
+    updateHoldingsTable(holdings, totalValue) {
+        const holdingsTableBody = document.getElementById('holdings-table-body');
+        if (!holdingsTableBody) return;
+        
+        try {
+            // Clear existing rows
+            holdingsTableBody.innerHTML = '';
+            
+            if (!holdings || holdings.length === 0) {
+                // Show empty state
+                const emptyRow = document.createElement('tr');
+                emptyRow.innerHTML = `
+                    <td colspan="7" class="text-center text-muted py-4">
+                        <i class="fas fa-coins me-2"></i>No holdings found
+                    </td>
+                `;
+                holdingsTableBody.appendChild(emptyRow);
+                return;
+            }
+            
+            // Populate holdings rows
+            holdings.forEach(holding => {
+                const row = document.createElement('tr');
+                
+                // PnL color class
+                const pnlClass = holding.pnl_percent >= 0 ? 'pnl-up' : 'pnl-down';
+                const pnlSign = holding.pnl_percent >= 0 ? '+' : '';
+                
+                row.innerHTML = `
+                    <td>
+                        <strong>${holding.symbol}</strong>
+                        <br><small class="text-muted">${holding.name}</small>
+                    </td>
+                    <td>${holding.quantity.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 8 })}</td>
+                    <td>${this.formatCurrency(holding.current_price)}</td>
+                    <td>${this.formatCurrency(holding.current_value)}</td>
+                    <td class="${pnlClass}">
+                        ${this.formatCurrency(holding.pnl_amount)}<br>
+                        <small>(${pnlSign}${holding.pnl_percent.toFixed(2)}%)</small>
+                    </td>
+                    <td>
+                        <div class="progress" style="height: 8px;">
+                            <div class="progress-bar bg-primary" 
+                                 style="width: ${Math.min(holding.allocation_percent, 100)}%"
+                                 title="${holding.allocation_percent.toFixed(1)}%">
+                            </div>
+                        </div>
+                        <small class="text-muted">${holding.allocation_percent.toFixed(1)}%</small>
+                    </td>
+                    <td>
+                        <span class="badge bg-light text-dark">
+                            <i class="fas fa-link me-1"></i>OKX
+                        </span>
+                    </td>
+                `;
+                
+                holdingsTableBody.appendChild(row);
+            });
+            
+            // Update total value display
+            const totalValueElement = document.getElementById('holdings-total-value');
+            if (totalValueElement) {
+                totalValueElement.textContent = this.formatCurrency(totalValue);
+            }
+            
+            // Update holdings count
+            const holdingsCountElement = document.getElementById('holdings-count');
+            if (holdingsCountElement) {
+                holdingsCountElement.textContent = holdings.length;
+            }
+            
+        } catch (error) {
+            console.error('Holdings table update failed:', error);
+            
+            // Fallback display
+            holdingsTableBody.innerHTML = `
+                <tr>
+                    <td colspan="7" class="text-center text-danger py-4">
+                        <i class="fas fa-exclamation-triangle me-2"></i>Error loading holdings
+                    </td>
+                </tr>
+            `;
+        }
     }
 
     debouncedUpdateDashboard() {
