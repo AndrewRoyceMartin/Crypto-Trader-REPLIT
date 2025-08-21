@@ -1122,34 +1122,47 @@ def api_portfolio_history():
         except Exception as ledger_error:
             logger.warning(f"Could not fetch detailed ledger: {ledger_error}")
             
-            # Enhanced fallback: Generate realistic historical points based on current portfolio
-            # and market movement patterns when no account history is available
+            # Enhanced fallback: Use OKX historical price data for realistic progression
             if not history_points:
                 days_back = (end_date - start_date).days
-                
-                # Get current holdings to simulate historical progression
                 holdings = current_portfolio.get('holdings', [])
                 
+                # Get historical data for each holding using OKX native APIs
                 for i in range(days_back, -1, -1):
                     point_date = end_date - timedelta(days=i)
                     daily_value = 0
                     
-                    # Calculate historical value based on actual holdings
                     for holding in holdings:
                         try:
                             symbol = holding.get('symbol', '')
                             quantity = float(holding.get('quantity', 0))
-                            current_price = float(holding.get('current_price', 0))
                             
-                            if quantity > 0 and current_price > 0:
-                                # Simulate price movement (more realistic than pure random walk)
-                                days_ago = i
-                                # Crypto markets tend to have higher volatility
-                                daily_volatility = 0.03  # 3% daily volatility
-                                price_change = 1 + (random.random() - 0.5) * daily_volatility * (days_ago / days_back)
-                                historical_price = current_price * price_change
-                                
-                                daily_value += quantity * historical_price
+                            if quantity > 0 and symbol:
+                                # Try to get historical price from OKX for this specific date
+                                try:
+                                    # Use OKX's historical kline data
+                                    historical_timestamp = int(point_date.timestamp() * 1000)
+                                    kline_data = exchange.fetch_ohlcv(
+                                        f"{symbol}/USDT", 
+                                        '1d', 
+                                        since=historical_timestamp, 
+                                        limit=1
+                                    )
+                                    
+                                    if kline_data and len(kline_data) > 0:
+                                        # Use actual closing price from OKX
+                                        historical_price = kline_data[0][4]  # Close price
+                                        daily_value += quantity * historical_price
+                                    else:
+                                        # Fallback to current price if no historical data
+                                        current_price = float(holding.get('current_price', 0))
+                                        if current_price > 0:
+                                            daily_value += quantity * current_price
+                                except Exception as price_error:
+                                    # If historical price fetch fails, use current price
+                                    current_price = float(holding.get('current_price', 0))
+                                    if current_price > 0:
+                                        daily_value += quantity * current_price
                         except:
                             continue
                     
@@ -1195,6 +1208,126 @@ def api_portfolio_history():
             "timeframe": timeframe,
             "current_value": 0.0,
             "data_points": 0
+        }), 500
+
+@app.route("/api/asset-allocation")
+def api_asset_allocation():
+    """Get detailed asset allocation data using direct OKX APIs."""
+    try:
+        # Get current portfolio data
+        from src.services.portfolio_service import get_portfolio_service
+        portfolio_service = get_portfolio_service()
+        portfolio_data = portfolio_service.get_portfolio_data()
+        
+        total_value = portfolio_data.get('total_current_value', 0.0)
+        holdings = portfolio_data.get('holdings', [])
+        
+        if total_value <= 0 or not holdings:
+            return jsonify({
+                "success": True,
+                "allocation": [],
+                "total_value": 0.0,
+                "allocation_count": 0,
+                "largest_allocation": 0.0,
+                "smallest_allocation": 0.0,
+                "concentration_analysis": {
+                    "top_3_percentage": 0.0,
+                    "diversification_score": 0,
+                    "risk_level": "Unknown"
+                }
+            })
+        
+        # Calculate detailed asset allocation with OKX market data
+        allocation_data = []
+        
+        for holding in holdings:
+            try:
+                symbol = holding.get('symbol', '')
+                quantity = float(holding.get('quantity', 0))
+                current_value = float(holding.get('current_value', 0))
+                current_price = float(holding.get('current_price', 0))
+                pnl = float(holding.get('pnl', 0))
+                pnl_percent = float(holding.get('pnl_percent', 0))
+                
+                if current_value > 0:
+                    allocation_percent = (current_value / total_value) * 100
+                    
+                    # Get additional market data from OKX
+                    try:
+                        ticker = portfolio_service.exchange.exchange.fetch_ticker(f"{symbol}/USDT")
+                        volume_24h = ticker.get('quoteVolume', 0)
+                        price_change_24h = ticker.get('percentage', 0)
+                        market_cap_rank = 'N/A'  # OKX doesn't provide market cap directly
+                    except:
+                        volume_24h = 0
+                        price_change_24h = 0
+                        market_cap_rank = 'N/A'
+                    
+                    allocation_data.append({
+                        'symbol': symbol,
+                        'name': symbol,  # Could be enhanced with full names
+                        'quantity': quantity,
+                        'current_price': current_price,
+                        'current_value': current_value,
+                        'allocation_percent': allocation_percent,
+                        'pnl': pnl,
+                        'pnl_percent': pnl_percent,
+                        'volume_24h': volume_24h,
+                        'price_change_24h': price_change_24h,
+                        'market_cap_rank': market_cap_rank,
+                        'weight_category': 'Large' if allocation_percent > 25 else 'Medium' if allocation_percent > 10 else 'Small'
+                    })
+            except Exception as holding_error:
+                logger.debug(f"Error processing holding {holding}: {holding_error}")
+                continue
+        
+        # Sort by allocation percentage (largest first)
+        allocation_data.sort(key=lambda x: x['allocation_percent'], reverse=True)
+        
+        # Calculate concentration analysis
+        top_3_total = sum(item['allocation_percent'] for item in allocation_data[:3])
+        diversification_score = min(100, len(allocation_data) * 15)  # Max 100% at 7+ assets
+        
+        if top_3_total > 75:
+            risk_level = "High Concentration"
+        elif top_3_total > 50:
+            risk_level = "Medium Concentration"
+        else:
+            risk_level = "Well Diversified"
+        
+        largest_allocation = allocation_data[0]['allocation_percent'] if allocation_data else 0
+        smallest_allocation = allocation_data[-1]['allocation_percent'] if allocation_data else 0
+        
+        return jsonify({
+            "success": True,
+            "allocation": allocation_data,
+            "total_value": total_value,
+            "allocation_count": len(allocation_data),
+            "largest_allocation": largest_allocation,
+            "smallest_allocation": smallest_allocation,
+            "concentration_analysis": {
+                "top_3_percentage": top_3_total,
+                "diversification_score": diversification_score,
+                "risk_level": risk_level
+            },
+            "last_update": datetime.now(LOCAL_TZ).isoformat()
+        })
+        
+    except Exception as e:
+        logger.error(f"Error getting asset allocation: {e}")
+        return jsonify({
+            "success": False,
+            "error": str(e),
+            "allocation": [],
+            "total_value": 0.0,
+            "allocation_count": 0,
+            "largest_allocation": 0.0,
+            "smallest_allocation": 0.0,
+            "concentration_analysis": {
+                "top_3_percentage": 0.0,
+                "diversification_score": 0,
+                "risk_level": "Unknown"
+            }
         }), 500
 
 # Global server start time for uptime calculation (use LOCAL_TZ for consistency)

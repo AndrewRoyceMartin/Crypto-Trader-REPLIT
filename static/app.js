@@ -29,7 +29,8 @@ class TradingApp {
             portfolio: { data: null, timestamp: 0, ttl: 1000 },  // 1s
             config:    { data: null, timestamp: 0, ttl: 30000 }, // 30s
             analytics: { data: null, timestamp: 0, ttl: 5000 },  // 5s
-            portfolioHistory: { data: null, timestamp: 0, ttl: 30000 } // 30s
+            portfolioHistory: { data: null, timestamp: 0, ttl: 30000 }, // 30s
+            assetAllocation: { data: null, timestamp: 0, ttl: 15000 }  // 15s
         };
 
         // Debug: force network fetches
@@ -373,6 +374,9 @@ class TradingApp {
         
         // Portfolio history chart
         this.updatePortfolioHistory();
+        
+        // Asset allocation chart
+        this.updateAssetAllocation();
     }
 
     async updatePortfolioAnalytics() {
@@ -583,6 +587,145 @@ class TradingApp {
                 portfolioCanvas.parentNode.replaceChild(fallback, portfolioCanvas);
             }
         }
+    }
+    
+    async updateAssetAllocation() {
+        try {
+            const response = await fetch('/api/asset-allocation', { cache: 'no-cache' });
+            if (!response.ok) return;
+            const data = await response.json();
+            
+            if (!data.success || !data.allocation) return;
+            
+            // Update asset allocation chart with real OKX data
+            this.updateAssetAllocationChart(data.allocation);
+            
+            // Update allocation display elements
+            this.updateAllocationDisplay(data);
+            
+        } catch (error) {
+            console.error('Asset allocation update failed:', error);
+        }
+    }
+    
+    updateAssetAllocationChart(allocationData) {
+        const allocationCanvas = document.getElementById('allocationChart');
+        if (!allocationCanvas || !window.Chart) return;
+        
+        try {
+            // Destroy existing chart
+            if (this.allocationChart) {
+                this.allocationChart.destroy();
+            }
+            
+            // Prepare data for Chart.js
+            const labels = allocationData.map(item => item.symbol);
+            const values = allocationData.map(item => item.allocation_percent);
+            const colors = [
+                '#007bff', '#28a745', '#ffc107', '#dc3545', '#6f42c1',
+                '#fd7e14', '#20c997', '#6c757d', '#e83e8c', '#17a2b8'
+            ];
+            
+            // Create asset allocation pie chart with real OKX data
+            this.allocationChart = new Chart(allocationCanvas, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: values,
+                        backgroundColor: colors.slice(0, values.length),
+                        borderWidth: 2,
+                        borderColor: '#ffffff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { 
+                            display: true,
+                            position: 'right',
+                            labels: {
+                                generateLabels: function(chart) {
+                                    const data = chart.data;
+                                    if (data.labels.length && data.datasets.length) {
+                                        return data.labels.map(function(label, i) {
+                                            const value = data.datasets[0].data[i];
+                                            return {
+                                                text: `${label}: ${value.toFixed(1)}%`,
+                                                fillStyle: data.datasets[0].backgroundColor[i],
+                                                strokeStyle: data.datasets[0].borderColor,
+                                                lineWidth: data.datasets[0].borderWidth,
+                                                hidden: false,
+                                                index: i
+                                            };
+                                        });
+                                    }
+                                    return [];
+                                }
+                            }
+                        },
+                        title: { 
+                            display: true, 
+                            text: `Asset Allocation (${allocationData.length} assets)`,
+                            font: { size: 12 }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const item = allocationData[context.dataIndex];
+                                    return [
+                                        `${item.symbol}: ${item.allocation_percent.toFixed(1)}%`,
+                                        `Value: ${window.tradingApp ? window.tradingApp.formatCurrency(item.current_value) : '$' + item.current_value.toFixed(2)}`,
+                                        `P&L: ${item.pnl_percent >= 0 ? '+' : ''}${item.pnl_percent.toFixed(2)}%`
+                                    ];
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        } catch (error) {
+            console.error('Asset allocation chart creation failed:', error);
+            // Fallback display
+            if (allocationCanvas) {
+                allocationCanvas.style.display = 'none';
+                const fallback = document.createElement('div');
+                fallback.className = 'text-center text-muted p-3';
+                fallback.innerHTML = `
+                    <strong>Asset Allocation</strong><br>
+                    ${allocationData.map(item => 
+                        `${item.symbol}: ${item.allocation_percent.toFixed(1)}%`
+                    ).join('<br>')}
+                `;
+                allocationCanvas.parentNode.replaceChild(fallback, allocationCanvas);
+            }
+        }
+    }
+    
+    updateAllocationDisplay(data) {
+        // Update allocation summary elements if they exist
+        const elements = {
+            'allocation-count': data.allocation_count,
+            'allocation-largest': `${data.largest_allocation.toFixed(1)}%`,
+            'allocation-smallest': `${data.smallest_allocation.toFixed(1)}%`,
+            'allocation-risk-level': data.concentration_analysis?.risk_level || 'Unknown',
+            'allocation-diversification': `${data.concentration_analysis?.diversification_score || 0}%`,
+            'allocation-top3': `${data.concentration_analysis?.top_3_percentage.toFixed(1)}%`
+        };
+        
+        Object.entries(elements).forEach(([id, value]) => {
+            const element = document.getElementById(id);
+            if (element) {
+                element.textContent = value;
+                
+                // Add color coding for risk levels
+                if (id === 'allocation-risk-level') {
+                    element.className = value.includes('High') ? 'text-danger' : 
+                                      value.includes('Medium') ? 'text-warning' : 'text-success';
+                }
+            }
+        });
     }
 
     debouncedUpdateDashboard() {
