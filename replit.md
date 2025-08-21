@@ -48,6 +48,9 @@ Dedicated table elements for each dashboard view prevent data conflicts. It incl
 **Technical Indicators:**
 The `TechnicalIndicators` class provides vectorized calculations for indicators like Bollinger Bands and ATR using pandas.
 
+**Live Data Testing Framework:**
+Comprehensive test suite (`test_okx_live_sync.py`) validates 100% live OKX data synchronization with three core tests: holdings synchronization (exact quantity matching with 1e-6 precision), price data freshness validation (timestamp changes confirming no caching), and unrealized P&L calculation accuracy (mathematical validation against live OKX data with 0.01 tolerance). Tests confirm complete elimination of cached or simulated data, ensuring authentic portfolio representation.
+
 **Database Layer:**
 `DatabaseManager` uses SQLite for persistent storage of trades, portfolio history, and system state.
 

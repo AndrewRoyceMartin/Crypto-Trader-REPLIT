@@ -203,6 +203,69 @@ class TestOKXLiveSync(unittest.TestCase):
         
         print(f"✅ All price data is fresh and live!")
 
+    def fetch_backend_holdings(self):
+        """Helper method to fetch and parse backend holdings"""
+        app_response = self.session.get(LOCAL_API_URL, timeout=30)
+        self.assertEqual(app_response.status_code, 200)
+        app_data = app_response.json()
+        self.assertIn("holdings", app_data)
+        
+        app_holdings = {}
+        for holding in app_data["holdings"]:
+            symbol = holding.get("symbol", "").upper()
+            if float(holding.get("quantity", 0)) > 0:
+                app_holdings[symbol] = holding
+        return app_holdings
+
+    def test_unrealized_pnl_calculation(self):
+        """Validate that unrealized PnL calculations are accurate"""
+        print(f"\n🧮 Validating PnL calculations...")
+        app = self.fetch_backend_holdings()
+
+        errors = []
+        perfect_calculations = []
+        
+        for sym, h in app.items():
+            try:
+                entry = float(h.get("avg_entry_price", 0))
+                current = float(h.get("current_price", 0))
+                qty = float(h.get("quantity", 0))
+                expected_pnl = (current - entry) * qty
+                app_pnl = float(h.get("pnl", 0))
+                
+                # Use tighter tolerance for PnL validation
+                if abs(expected_pnl - app_pnl) > 0.01:
+                    errors.append(
+                        f"⚠️ {sym} PnL mismatch: "
+                        f"expected {expected_pnl:.2f}, app shows {app_pnl:.2f} "
+                        f"(entry: {entry}, current: {current}, qty: {qty})"
+                    )
+                else:
+                    perfect_calculations.append(
+                        f"✅ {sym}: P&L ${app_pnl:.2f} "
+                        f"(${current:.6f} - ${entry:.6f}) × {qty:.2f}"
+                    )
+                    
+            except Exception as e:
+                errors.append(f"❌ Error processing {sym}: {str(e)}")
+
+        print(f"📊 PnL Calculation Results:")
+        print(f"   Perfect Calculations: {len(perfect_calculations)}")
+        print(f"   Calculation Errors: {len(errors)}")
+
+        if perfect_calculations:
+            print(f"\n✅ ACCURATE CALCULATIONS:")
+            for calc in perfect_calculations:
+                print(f"   {calc}")
+
+        if errors:
+            print(f"\n❌ CALCULATION ISSUES:")
+            for error in errors:
+                print(f"   {error}")
+            self.fail("PnL calculation mismatches found.")
+        else:
+            print(f"\n🎉 All unrealized PnL values are calculated correctly!")
+
 if __name__ == "__main__":
     print("🚀 OKX Live Sync Test Suite")
     print("=" * 50)

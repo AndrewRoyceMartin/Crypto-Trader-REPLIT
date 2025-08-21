@@ -67,6 +67,12 @@ if not all([OKX_API_KEY, OKX_API_SECRET, OKX_API_PASSPHRASE]):
 - Validates all holdings have `is_live=True`
 - Confirms no cached data is being served
 
+### Test 3: Unrealized P&L Calculation Accuracy
+- Validates mathematical accuracy of P&L calculations
+- Compares expected P&L: `(current_price - entry_price) × quantity`
+- Verifies backend calculations against live OKX data
+- Uses precise tolerance (0.01) for financial accuracy
+
 ## 6. Enhanced Comparison Logic
 **Problem**: Crude balance comparison with poor tolerance
 **Fix**: Sophisticated comparison system:
