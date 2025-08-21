@@ -77,17 +77,54 @@ This guide documents the reusable utility classes and design tokens created to e
 
 ## Table Utilities
 
-### Alignment
-- `.col-left` - Left align table columns
-- `.col-right` - Right align table columns
-- `.col-center` - Center align table columns
+### Alignment Classes
+- `.text-start` - Left align content
+- `.text-end` - Right align content  
+- `.text-center` - Center align content
+- `.col-left` - Legacy left align (use .text-start)
+- `.col-right` - Legacy right align (use .text-end)
+- `.col-center` - Legacy center align (use .text-center)
 
-### Width Classes
-- `.w-5` through `.w-15` - Percentage width classes
+### Column Width Classes
+- `.col-w-5` through `.col-w-30` - Percentage width classes
+- Available: 5%, 6%, 7%, 8%, 10%, 12%, 15%, 18%, 20%, 25%, 30%
+
+### Semantic Column Classes
+Combine width, alignment, and styling for common table patterns:
+
+- `.col-symbol` - 8% width, left-aligned, bold text
+- `.col-price` - 12% width, right-aligned, monospace font
+- `.col-amount` - 15% width, right-aligned, monospace font
+- `.col-percent` - 10% width, right-aligned
+- `.col-action` - 8% width, center-aligned
+- `.col-status` - 10% width, center-aligned
 
 ### Trading Table Classes
 - `.numeric`, `.price`, `.amount` - Right-aligned numeric columns
 - `.status`, `.action` - Center-aligned status columns
+
+### Usage Examples
+
+#### Before (Repetitive CSS)
+```html
+<th style="width: 10%; text-align: left;">Symbol</th>
+<th style="width: 12%; text-align: right;">Price</th>
+```
+
+#### After (DRY Utility Classes)
+```html
+<th class="col-w-10 text-start">Symbol</th>
+<th class="col-price">Price</th>
+```
+
+#### Semantic Classes (Best Practice)
+```html
+<th class="col-symbol">Symbol</th>
+<th class="col-price">Current Price</th>
+<th class="col-amount">Holdings</th>
+<th class="col-percent">Change</th>
+<th class="col-action">Actions</th>
+```
 
 ## Chart Utilities
 - `.chart-container-sm` - 200px height
