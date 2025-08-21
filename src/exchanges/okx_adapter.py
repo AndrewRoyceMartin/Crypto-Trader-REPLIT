@@ -741,24 +741,16 @@ class OKXAdapter(BaseExchange):
         
         try:
             ohlcv = self._retry(self.exchange.fetch_ohlcv, symbol, timeframe, limit=limit)
-            df = pd.DataFrame(ohlcv, columns=['timestamp', 'open', 'high', 'low', 'close', 'volume'])
+            df = pd.DataFrame(ohlcv)
+            if len(df.columns) >= 6:
+                df.columns = ['timestamp', 'open', 'high', 'low', 'close', 'volume']
             df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
             return df
         except Exception as e:
             self.logger.error(f"Error fetching OHLCV: {str(e)}")
             raise
     
-    def get_ticker(self, symbol: str) -> Dict[str, Any]:
-        """Get ticker data."""
-        if not self.is_connected() or self.exchange is None:
-            raise RuntimeError("Not connected to exchange")
-        
-        try:
-            ticker = self._retry(self.exchange.fetch_ticker, symbol)
-            return dict(ticker)
-        except Exception as e:
-            self.logger.error(f"Error fetching ticker: {str(e)}")
-            raise
+
     
     def get_open_orders(self, symbol: Optional[str] = None) -> List[Dict[str, Any]]:
         """Get open orders."""
