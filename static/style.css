@@ -107,7 +107,7 @@ body {
     
     .kpi-card {
         min-height: 70px;
-        padding: 0.75rem !important;
+        padding: 0.75rem;
     }
 }
 
@@ -122,19 +122,23 @@ body {
     
     .kpi-card {
         min-height: 60px;
-        padding: 0.5rem !important;
+        padding: 0.5rem;
     }
 }
 
 /* Text color utilities for better contrast - Chrome optimized */
-.text-white-75 {
-    color: rgba(255, 255, 255, 0.85) !important;
+.kpi-card .text-white-75,
+.card .text-white-75,
+.badge .text-white-75 {
+    color: rgba(255, 255, 255, 0.85);
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
 }
 
-.text-white {
-    color: rgba(255, 255, 255, 1) !important;
+.kpi-card .text-white,
+.card .text-white,
+.badge .text-white {
+    color: rgba(255, 255, 255, 1);
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
 }
@@ -668,22 +672,26 @@ body {
     padding: 0.375rem 0.75rem;
 }
 
-/* Trading Status Badges */
-.badge.bg-success {
-    background-color: var(--success-color) !important;
+/* Trading Status Badges - Higher specificity instead of !important */
+.trading-system .badge.bg-success,
+.container-fluid .badge.bg-success {
+    background-color: var(--success-color);
 }
 
-.badge.bg-warning {
-    background-color: var(--warning-color) !important;
+.trading-system .badge.bg-warning,
+.container-fluid .badge.bg-warning {
+    background-color: var(--warning-color);
     color: #000;
 }
 
-.badge.bg-danger {
-    background-color: var(--danger-color) !important;
+.trading-system .badge.bg-danger,
+.container-fluid .badge.bg-danger {
+    background-color: var(--danger-color);
 }
 
-.badge.bg-secondary {
-    background-color: #6c757d !important;
+.trading-system .badge.bg-secondary,
+.container-fluid .badge.bg-secondary {
+    background-color: #6c757d;
 }
 
 /* Buttons */
@@ -720,14 +728,14 @@ body {
     box-shadow: 0 0 0 0.2rem rgba(0,123,255,0.25);
 }
 
-/* Modal Customizations */
-.modal-header.bg-warning {
-    background-color: var(--warning-color) !important;
+/* Modal Customizations - Higher specificity instead of !important */
+.modal .modal-header.bg-warning {
+    background-color: var(--warning-color);
     color: #000;
 }
 
-.modal-header.bg-danger {
-    background-color: var(--danger-color) !important;
+.modal .modal-header.bg-danger {
+    background-color: var(--danger-color);
     color: white;
 }
 
@@ -780,26 +788,26 @@ body {
     font-size: 0.875rem;
 }
 
-/* Enhanced Sticky Header Styles */
-.sticky-top {
-    position: sticky !important;
-    top: 0 !important;
-    z-index: 10 !important;
+/* Enhanced Sticky Header Styles - Keep some !important for essential positioning */
+.table-responsive .sticky-top {
+    position: sticky;
+    top: 0;
+    z-index: 10;
 }
 
-.table-dark th {
-    background-color: #212529 !important;
-    color: white !important;
-    border-color: #32383e !important;
+.table-responsive .table-dark th {
+    background-color: #212529;
+    color: white;
+    border-color: #32383e;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
-.table-dark th i {
-    color: white !important;
+.table-responsive .table-dark th i {
+    color: white;
 }
 
-.table-dark th:hover {
-    background-color: #343a40 !important;
+.table-responsive .table-dark th:hover {
+    background-color: #343a40;
 }
 
 /* Filter Controls Styling */
@@ -808,8 +816,8 @@ body {
 }
 
 /* Sortable Column Styling */
-.sortable:hover {
-    background-color: rgba(255,255,255,0.1) !important;
+.table-dark .sortable:hover {
+    background-color: rgba(255,255,255,0.1);
     transition: background-color 0.2s ease;
 }
 
