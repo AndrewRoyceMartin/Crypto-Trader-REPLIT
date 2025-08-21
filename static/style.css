@@ -1624,53 +1624,65 @@ body.dark-theme .theme-toggle:hover {
     margin: -0.5rem 0 1rem;
 }
 
-/* Dashboard KPI Cards - compact design */
+/* Dashboard KPI Cards - compact design with higher specificity */
 .kpi-card {
-    background: linear-gradient(135deg, var(--card-bg) 0%, rgba(248, 249, 250, 0.8) 100%);
-    border: 1px solid var(--card-border);
-    border-radius: 0.375rem;
-    transition: all 0.2s ease;
-    min-height: 60px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
+    background: linear-gradient(135deg, var(--card-bg) 0%, rgba(248, 249, 250, 0.8) 100%) !important;
+    border: 1px solid var(--card-border) !important;
+    border-radius: 0.375rem !important;
+    transition: all 0.2s ease !important;
+    min-height: 50px !important;
+    max-height: 70px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
 }
 
 .kpi-card:hover {
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1) !important;
+    transform: translateY(-1px) !important;
 }
 
-/* Chart Cards - compact design */
+/* Ensure KPI text is smaller */
+.kpi-card .h6 {
+    font-size: 0.9rem !important;
+    margin-bottom: 0 !important;
+}
+
+.kpi-card .small {
+    font-size: 0.75rem !important;
+}
+
+/* Chart Cards - compact design with higher specificity */
 .chart-card {
-    background: var(--card-bg);
-    border: 1px solid var(--card-border);
-    border-radius: 0.375rem;
-    overflow: hidden;
-    transition: all 0.2s ease;
+    background: var(--card-bg) !important;
+    border: 1px solid var(--card-border) !important;
+    border-radius: 0.375rem !important;
+    overflow: hidden !important;
+    transition: all 0.2s ease !important;
 }
 
 .chart-card:hover {
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1) !important;
+    transform: translateY(-2px) !important;
 }
 
 .chart-card-body {
-    background: #fff;
-    padding: 0.75rem;
-    min-height: 160px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    background: #fff !important;
+    padding: 0.5rem !important;
+    min-height: 130px !important;
+    max-height: 150px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
 }
 
 .chart-card-footer {
-    background: var(--card-bg);
-    padding: 0.5rem;
-    text-align: center;
-    font-size: 0.875rem;
-    color: var(--text-muted);
-    border-top: 1px solid var(--card-border);
+    background: var(--card-bg) !important;
+    padding: 0.4rem !important;
+    text-align: center !important;
+    font-size: 0.75rem !important;
+    color: var(--text-muted) !important;
+    border-top: 1px solid var(--card-border) !important;
 }
 
 /* Dark theme adjustments */
