@@ -230,7 +230,7 @@ class OKXAdapter(BaseExchange):
                     'instType': 'SPOT'  # Focus on spot trading
                 }
                 if symbol:
-                    fills_params['instId'] = symbol.replace('/', '-')
+                    fills_params['instId'] = self.denormalize_symbol(symbol)
                 
                 self.logger.debug(f"Fetching trade fills from OKX API with params: {fills_params}")
                 response = self._retry(self.exchange.privateGetTradeFills, fills_params)
@@ -258,7 +258,7 @@ class OKXAdapter(BaseExchange):
                     'instType': 'SPOT'
                 }
                 if symbol:
-                    orders_params['instId'] = symbol.replace('/', '-')
+                    orders_params['instId'] = self.denormalize_symbol(symbol)
                 
                 self.logger.debug(f"Fetching order history from OKX API with params: {orders_params}")
                 response = self._retry(self.exchange.privateGetTradeOrdersHistory, orders_params)
@@ -776,6 +776,25 @@ class OKXAdapter(BaseExchange):
     def get_order_history(self, symbol: Optional[str] = None, limit: int = 50) -> List[Dict[str, Any]]:
         """Get order history (alias for get_trades)."""
         return self.get_trades(symbol, limit)
+    
+    # Symbol normalization helpers
+    def normalize_symbol(self, s: str) -> str:
+        """Convert OKX instId format (BTC-USDT) to standard format (BTC/USDT)."""
+        return (s or '').replace('-', '/')
+    
+    def denormalize_symbol(self, s: str) -> str:
+        """Convert standard format (BTC/USDT) to OKX instId format (BTC-USDT)."""
+        return (s or '').replace('/', '-')
+    
+    def healthcheck(self) -> bool:
+        """Quick connectivity and permissions verification."""
+        try:
+            self._retry(self.exchange.load_markets)
+            self._retry(self.exchange.fetch_balance)
+            return True
+        except Exception as e:
+            self.logger.error(f"Healthcheck failed: {e}")
+            return False
 
 
 
