@@ -38,21 +38,25 @@ class OKXAdapter(BaseExchange):
         return fn(*args, **kwargs)
 
     def _build_client(self, default_type: str = 'spot') -> ccxt.okx:
-        """Build OKX client with centralized configuration."""
+        """Build OKX client with centralized configuration and explicit demo mode control."""
         api_key = os.getenv("OKX_API_KEY") or self.config.get("apiKey", "")
         secret = os.getenv("OKX_API_SECRET") or os.getenv("OKX_SECRET_KEY") or self.config.get("secret", "")
         passphrase = os.getenv("OKX_API_PASSPHRASE") or os.getenv("OKX_PASSPHRASE") or self.config.get("password", "")
         hostname = os.getenv("OKX_HOSTNAME") or os.getenv("OKX_REGION") or "www.okx.com"
         
+        # Explicit demo mode control - production defaults to live trading
+        is_demo = os.getenv("OKX_SIMULATED", "0") == "1"
+        
         if not all([api_key, secret, passphrase]):
             raise RuntimeError("Missing OKX API credentials (OKX_API_KEY/OKX_API_SECRET/OKX_API_PASSPHRASE)")
 
+        # Build exchange instance - production defaults to live trading
         ex = ccxt.okx({
             'apiKey': api_key,
             'secret': secret,
             'password': passphrase,
             'hostname': hostname,
-            'sandbox': False,  # Always use live trading
+            'sandbox': False,  # Never use sandbox - production defaults to live trading
             'enableRateLimit': True,
             'timeout': 30000,
             'options': {
@@ -60,6 +64,17 @@ class OKXAdapter(BaseExchange):
                 # 'fetchMyTradesMethod': 'privateGetTradeFillsHistory'  # optional
             }
         })
+        
+        # Apply simulated trading header only if explicitly requested via environment
+        if is_demo:
+            self.logger.warning("OKX_SIMULATED=1 detected - enabling simulated trading mode")
+            ex.headers = {
+                **getattr(ex, "headers", {}), 
+                "x-simulated-trading": "1"
+            }
+        else:
+            self.logger.info("Using live OKX trading mode (production default)")
+        
         ex.load_markets()
         return ex
 
