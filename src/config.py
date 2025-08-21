@@ -86,6 +86,11 @@ class Config:
             return value
         return str(value).lower() in ('true', 'yes', '1', 'on')
     
+    def get_str(self, section: str, key: str, fallback: str = "") -> str:
+        """Get string configuration value."""
+        value = self.get(section, key, fallback)
+        return str(value)
+    
     def get_exchange_config(self, exchange: str) -> dict:
         """
         Get exchange configuration.

@@ -256,7 +256,7 @@ class EnhancedBollingerBandsStrategy(BaseStrategy):
         return None
     
     def _check_entry_opportunities(self, px: float, bb_up: float, bb_lo: float, atr: float, data: pd.DataFrame) -> Optional[Signal]:
-        """Check for entry opportunities including rebuy logic."""
+        """Check for entry opportunities including rebuy logic for ANY cryptocurrency."""
         if self.position_state['position_qty'] > 0.0:
             return None  # Already in position
         
@@ -264,14 +264,16 @@ class EnhancedBollingerBandsStrategy(BaseStrategy):
         if self.position_state['rebuy_armed'] and self.rebuy_dynamic:
             self.position_state['rebuy_price'] = self._compute_rebuy_price(data, px)
         
-        # Check rebuy conditions first
+        # Check rebuy conditions first (applies to ALL currencies)
         if self.position_state['rebuy_armed']:
             rebuy_signal = self._check_rebuy_conditions(px, atr)
             if rebuy_signal:
+                self.logger.info(f"Rebuy signal generated with ${self.rebuy_max_usd:.2f} limit for any cryptocurrency")
                 return rebuy_signal
         
-        # Check baseline mean-reversion entry
+        # Check baseline mean-reversion entry (applies to ALL currencies)
         if px <= bb_lo:
+            self.logger.info(f"New entry signal at lower Bollinger Band for any cryptocurrency")
             return self._create_entry_signal(px, atr, 'BASELINE_ENTRY')
         
         return None
@@ -376,8 +378,8 @@ class EnhancedBollingerBandsStrategy(BaseStrategy):
         ready_at = datetime.now() + timedelta(minutes=self.rebuy_cooldown_min)
         self.position_state['rebuy_ready_at'] = ready_at
         
-        self.logger.info(f"Rebuy armed: price={self.position_state['rebuy_price']:.2f}, "
-                        f"ready_at={ready_at.strftime('%H:%M:%S')}")
+        self.logger.info(f"Universal rebuy armed for ANY cryptocurrency: price={self.position_state['rebuy_price']:.2f}, "
+                        f"max_purchase=${self.rebuy_max_usd:.2f}, ready_at={ready_at.strftime('%H:%M:%S')}")
     
     def _get_real_okx_purchase_price(self) -> float:
         """Get the real OKX purchase price for accurate trading calculations."""

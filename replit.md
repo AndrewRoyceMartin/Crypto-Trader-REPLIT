@@ -6,6 +6,7 @@ This Python-based algorithmic trading system automates cryptocurrency trading st
 ## User Preferences
 Preferred communication style: Simple, everyday language.
 Trading preferences: Live trading enabled with comprehensive safety confirmations.
+Rebuy mechanism: Universal $100 maximum purchase limit for all cryptocurrencies after sell/crash exit.
 
 ## System Architecture
 The system utilizes a modular Flask-based web interface for live OKX trading, streamlined into a single-page dashboard application with minimal styling.

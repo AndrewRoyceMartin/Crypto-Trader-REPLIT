@@ -682,53 +682,102 @@ bot_state = {
 
 @app.route("/api/bot/status")
 def bot_status():
-    """Get current bot trading status."""
-    return jsonify({
+    """Get current bot trading status with multi-currency details."""
+    status = {
         "success": True,
         "running": bot_state["running"],
         "mode": bot_state["mode"],
         "symbol": bot_state["symbol"], 
         "timeframe": bot_state["timeframe"],
         "started_at": bot_state["started_at"]
-    })
+    }
+    
+    # Add multi-currency details if available
+    if bot_state["trader_instance"] and hasattr(bot_state["trader_instance"], 'get_status'):
+        try:
+            multi_status = bot_state["trader_instance"].get_status()
+            status.update({
+                "multi_currency": True,
+                "active_pairs": len([p for p, s in multi_status["pairs"].items() if s.get("running", False)]),
+                "rebuy_opportunities": multi_status["rebuy_armed_count"],
+                "active_positions": multi_status["active_positions"],
+                "supported_pairs": list(multi_status["pairs"].keys())
+            })
+        except Exception as e:
+            logger.error(f"Error getting multi-currency status: {e}")
+    
+    return jsonify(status)
 
 @app.route("/api/bot/start", methods=["POST"])
 @require_admin
 def bot_start():
-    """Start the trading bot."""
+    """Start the multi-currency trading bot with universal rebuy mechanism."""
     try:
         if bot_state["running"]:
             return jsonify({"error": "Bot is already running"}), 400
             
         data = request.get_json() or {}
-        mode = data.get("mode", "paper")  # paper or live
-        symbol = data.get("symbol", "BTC-USDT")
+        mode = data.get("mode", "live")  # Default to live trading
         timeframe = data.get("timeframe", "1h")
         
         # Validate mode
         if mode not in ["paper", "live"]:
             return jsonify({"error": "Mode must be 'paper' or 'live'"}), 400
-            
+        
+        # Import and initialize multi-currency trader
+        from src.trading.multi_currency_trader import MultiCurrencyTrader
+        from src.config import Config
+        from src.exchanges.okx_adapter import OKXAdapter
+        
+        config = Config()
+        exchange = OKXAdapter(config)
+        
+        # Create multi-currency trader instance
+        trader_instance = MultiCurrencyTrader(config, exchange)
+        
+        # Start trading in background thread
+        def start_background_trading():
+            try:
+                trader_instance.start_trading(timeframe)
+            except Exception as e:
+                logger.error(f"Multi-currency trading error: {e}")
+                bot_state["running"] = False
+        
+        trading_thread = threading.Thread(target=start_background_trading, daemon=True)
+        trading_thread.start()
+        
         # Update bot state
         bot_state.update({
             "running": True,
             "mode": mode,
-            "symbol": symbol,
+            "symbol": "ALL_CURRENCIES",  # Indicates multi-currency trading
             "timeframe": timeframe,
-            "started_at": iso_utc()
+            "started_at": iso_utc(),
+            "trader_instance": trader_instance
         })
         
-        logger.info(f"Bot started in {mode} mode for {symbol} on {timeframe}")
+        logger.info(f"Multi-currency bot started in {mode} mode with ${config.get_float('strategy', 'rebuy_max_usd', 100.0):.2f} rebuy limit")
         
         return jsonify({
             "success": True,
-            "message": f"Bot started in {mode} mode",
-            "status": bot_state
+            "message": f"Multi-currency bot started in {mode} mode with universal ${config.get_float('strategy', 'rebuy_max_usd', 100.0):.0f} rebuy limit",
+            "status": bot_state,
+            "rebuy_max_usd": config.get_float('strategy', 'rebuy_max_usd', 100.0),
+            "supported_pairs": ["BTC/USDT", "PEPE/USDT", "ETH/USDT", "DOGE/USDT", "ADA/USDT", "SOL/USDT", "XRP/USDT", "AVAX/USDT"],
+            "features": [
+                "Automatic buy signals at Bollinger Band lower boundary",
+                "Universal rebuy mechanism after crash exits",
+                "$100 maximum rebuy purchase limit",
+                "15-minute cooldown between rebuy opportunities",
+                "Multi-currency support for 8 major crypto pairs",
+                "Real-time position monitoring and risk management"
+            ]
         })
         
     except Exception as e:
-        logger.error(f"Failed to start bot: {e}")
-        return jsonify({"error": str(e)}), 500
+        logger.error(f"Failed to start multi-currency bot: {e}")
+        bot_state["running"] = False  # Reset state on failure
+        return jsonify({"error": f"Failed to start multi-currency trading: {str(e)}"}), 500
 
 @app.route("/api/bot/stop", methods=["POST"])
 @require_admin  
