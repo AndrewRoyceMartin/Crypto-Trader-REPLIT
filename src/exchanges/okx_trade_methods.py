@@ -319,8 +319,9 @@ class OKXTradeRetrieval:
         if symbol:
             symbols_to_try = [symbol]
         else:
-            # Try without symbol (some exchanges support this)
+            # Try without symbol (some exchanges support this, but OKX may return nothing)
             symbols_to_try = [None]
+            self.logger.warning("CCXT fallback called without symbol - OKX may return no data")
         
         # Try fetch_my_trades with symbol strategy
         for sym in symbols_to_try:
@@ -373,8 +374,8 @@ class OKXTradeRetrieval:
         """
         try:
             ts = int(fill.get('ts', 0)) or 0
-            price = float(fill.get('fillPx', 0) or 0)
-            qty = float(fill.get('fillSz', 0) or 0)
+            price = float(fill.get('fillPx') or 0)
+            qty = float(fill.get('fillSz') or 0)
             fee_raw = float(fill.get('fee', 0) or 0)
 
             return {
@@ -413,7 +414,7 @@ class OKXTradeRetrieval:
             if (order.get('state') or '').lower() != 'filled':
                 return None
 
-            # prefer accumulated filled size for filled orders
+            # prefer accumulated filled size and average price for filled orders
             qty = float(order.get('accFillSz') or order.get('fillSz') or order.get('sz') or 0)
             price = float(order.get('avgPx') or order.get('px') or 0)
             ts = int(order.get('uTime') or order.get('cTime') or 0)
@@ -452,18 +453,23 @@ class OKXTradeRetrieval:
             Formatted trade dictionary or None if formatting failed
         """
         try:
+            # Handle fee safely - could be dict, None, or missing
+            fee_info = trade.get('fee') or {}
+            fee_cost = fee_info.get('cost', 0) if isinstance(fee_info, dict) else 0
+            fee_currency = fee_info.get('currency', '') if isinstance(fee_info, dict) else ''
+            
             return {
                 'id': trade.get('id', ''),
                 'order_id': trade.get('order', ''),
                 'symbol': trade.get('symbol', ''),
                 'side': (trade.get('side', '') or '').upper(),
-                'quantity': float(trade.get('amount', 0)),
-                'price': float(trade.get('price', 0)),
+                'quantity': float(trade.get('amount') or 0),
+                'price': float(trade.get('price') or 0),
                 'timestamp': int(trade.get('timestamp', 0)),
                 'datetime': trade.get('datetime', ''),
-                'total_value': float(trade.get('cost', 0)),
-                'fee': trade.get('fee', {}).get('cost', 0),
-                'fee_currency': trade.get('fee', {}).get('currency', ''),
+                'total_value': float(trade.get('cost') or 0),
+                'fee': abs(float(fee_cost or 0)),
+                'fee_currency': fee_currency,
                 'trade_type': 'spot',
                 'source': 'ccxt_trades'
             }
