@@ -2429,6 +2429,132 @@ def api_current_holdings():
         logger.error(f"Error getting current holdings: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
 
+@app.route('/api/available-positions')
+def api_available_positions():
+    """Get cryptocurrencies with zero balance ready for buy-back"""
+    try:
+        currency = request.args.get('currency', 'USD')
+        logger.info(f"Fetching available positions with currency: {currency}")
+        
+        # Get all trade history to find sold-out positions
+        from src.utils.database import DatabaseManager
+        database_manager = DatabaseManager()
+        trades_df = database_manager.get_trades()
+        
+        if trades_df.empty:
+            return jsonify({
+                'success': True,
+                'available_positions': [],
+                'count': 0,
+                'message': 'No trade history found'
+            })
+        
+        # Convert DataFrame to list of dictionaries for easier processing
+        trades = trades_df.to_dict('records')
+        
+        # Group trades by symbol to find last exit trades
+        symbol_trades = {}
+        for trade in trades:
+            symbol = trade.get('symbol', '')
+            if symbol and symbol != 'SAMPLE':  # Skip sample data
+                if symbol not in symbol_trades:
+                    symbol_trades[symbol] = []
+                symbol_trades[symbol].append(trade)
+        
+        # Get current balances from portfolio service (working approach)
+        portfolio_service = get_portfolio_service()
+        portfolio_data = portfolio_service.get_portfolio_data()
+        
+        # Extract current holdings for balance check
+        current_holdings = portfolio_data.get('holdings', [])
+        current_balances = {}
+        for holding in current_holdings:
+            symbol = holding.get('symbol', '')
+            if symbol:
+                current_balances[symbol] = {'total': holding.get('quantity', 0)}
+        
+        # Get native OKX client for price data
+        from src.utils.okx_native import OKXNative
+        okx_client = OKXNative.from_env()
+        
+        available_positions = []
+        
+        for symbol, symbol_trade_list in symbol_trades.items():
+            try:
+                # Sort trades by timestamp to get the most recent
+                sorted_trades = sorted(symbol_trade_list, key=lambda x: x.get('timestamp', 0), reverse=True)
+                
+                # Check if current balance is zero or very small
+                current_balance = current_balances.get(symbol, {}).get('total', 0)
+                
+                if current_balance == 0 or current_balance < 0.000001:
+                    # This is a sold-out position - find last sell trade
+                    last_sell_trades = [t for t in sorted_trades if str(t.get('action', '')).upper() == 'SELL']
+                    
+                    if last_sell_trades:
+                        last_sell = last_sell_trades[0]
+                        last_exit_price = float(last_sell.get('price', 0))
+                        
+                        if last_exit_price > 0:
+                            # Get current market price using native OKX client
+                            try:
+                                ticker = okx_client.ticker(f"{symbol}-USDT")
+                                current_price = float(ticker.get('last', last_exit_price))
+                            except Exception as price_error:
+                                logger.debug(f"Error getting price for {symbol}: {price_error}")
+                                current_price = last_exit_price
+                            
+                            # Calculate target buy price (15% below last exit)
+                            target_buy_price = last_exit_price * 0.85
+                            
+                            # Calculate days since exit
+                            last_trade_date = last_sell.get('timestamp')
+                            days_since_exit = 0
+                            if last_trade_date:
+                                try:
+                                    from datetime import datetime
+                                    if isinstance(last_trade_date, str):
+                                        # Handle ISO format
+                                        last_date = datetime.fromisoformat(last_trade_date.replace('Z', '+00:00'))
+                                    else:
+                                        # Handle timestamp
+                                        last_date = datetime.fromtimestamp(last_trade_date / 1000 if last_trade_date > 1e10 else last_trade_date)
+                                    days_since_exit = (datetime.now() - last_date).days
+                                except Exception as date_error:
+                                    logger.debug(f"Error parsing date for {symbol}: {date_error}")
+                                    days_since_exit = 0
+                            
+                            # Determine buy signal
+                            buy_signal = "BUY READY" if current_price <= target_buy_price else "WAIT"
+                            
+                            available_positions.append({
+                                'symbol': symbol,
+                                'current_balance': current_balance,
+                                'last_exit_price': last_exit_price,
+                                'current_price': current_price,
+                                'target_buy_price': target_buy_price,
+                                'price_difference': current_price - target_buy_price,
+                                'price_diff_percent': ((current_price - target_buy_price) / target_buy_price) * 100 if target_buy_price > 0 else 0,
+                                'buy_signal': buy_signal,
+                                'last_trade_date': last_trade_date,
+                                'days_since_exit': days_since_exit
+                            })
+            except Exception as symbol_error:
+                logger.debug(f"Error processing symbol {symbol}: {symbol_error}")
+                continue
+        
+        logger.info(f"Found {len(available_positions)} available positions for buy-back")
+        
+        return jsonify({
+            'success': True,
+            'available_positions': available_positions,
+            'count': len(available_positions)
+        })
+        
+    except Exception as e:
+        logger.error(f"Error fetching available positions: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 def get_all_positions_including_sold(portfolio_service):
     """Get all positions including those that have been sold/reduced to zero"""
     try:
