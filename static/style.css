@@ -1686,17 +1686,17 @@ body.dark-theme .theme-toggle:hover {
     }
     
     .row.g-md-3 {
-        margin-bottom: 1rem;
+        margin-bottom: var(--sp-lg);
     }
     
     /* Chart layout */
     .chart-card {
         min-height: 250px;
-        margin-bottom: 1rem;
+        margin-bottom: var(--sp-lg);
     }
     
     .chart-card .row.g-3 {
-        margin-bottom: 0.5rem;
+        margin-bottom: var(--sp-sm);
     }
     
     .chart-container-responsive {
@@ -1706,7 +1706,7 @@ body.dark-theme .theme-toggle:hover {
     /* Modal improvements */
     .modal-xl {
         max-width: 95vw;
-        margin: 0.5rem;
+        margin: var(--sp-sm);
     }
     
     /* Dark mode improvements */
@@ -1747,12 +1747,12 @@ body.dark-theme .theme-toggle:hover {
     }
     
     .table th {
-        padding: 0.3rem 0.2rem;
+        padding: var(--sp-xs) 0.2rem;
         font-size: 0.6rem;
     }
     
     .table td {
-        padding: 0.3rem 0.2rem;
+        padding: var(--sp-xs) 0.2rem;
         font-size: 0.65rem;
     }
     
