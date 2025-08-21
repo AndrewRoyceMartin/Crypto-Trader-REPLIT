@@ -14,6 +14,30 @@ class OKXTradeRetrieval:
         self.exchange = exchange
         self.logger = logger
     
+    def _normalize_symbol(self, s: Optional[str]) -> Optional[str]:
+        """Convert standard format (BTC/USDT) to OKX instId format (BTC-USDT)."""
+        return s.replace('/', '-') if s and '/' in s else s
+
+    def _denormalize_symbol(self, s: Optional[str]) -> Optional[str]:
+        """Convert OKX instId format (BTC-USDT) to standard format (BTC/USDT)."""
+        return s.replace('-', '/') if s and '-' in s else s
+
+    def _inst_type(self) -> str:
+        """
+        Infer instType from ccxt okx.options.defaultType.
+        Maps ccxt types to OKX instType for better API compatibility.
+        """
+        # Get defaultType from exchange options, with safe attribute access
+        default = (getattr(self.exchange, "options", {}) or {}).get("defaultType", "spot").lower()
+        return {
+            "spot": "SPOT",
+            "margin": "MARGIN", 
+            "swap": "SWAP",
+            "future": "FUTURES",
+            "futures": "FUTURES",
+            "option": "OPTION",
+        }.get(default, "SPOT")
+    
     def get_trades_comprehensive(self, symbol: Optional[str] = None, limit: int = 50) -> List[Dict[str, Any]]:
         """
         Comprehensive trade retrieval using multiple OKX API endpoints.
@@ -86,16 +110,15 @@ class OKXTradeRetrieval:
         return unique_trades[:limit]
     
     def _get_okx_trade_fills(self, symbol: Optional[str], limit: int) -> List[Dict[str, Any]]:
-        """Get trades using OKX's trade fills API."""
+        """Get trades using OKX's trade fills API with enhanced instType support."""
         try:
             params = {
-                'limit': str(limit)
+                'limit': str(limit),
+                'instType': self._inst_type()
             }
             
             if symbol:
-                # Convert PEPE/USDT -> PEPE-USDT for OKX
-                okx_symbol = symbol.replace('/', '-') if '/' in symbol else symbol
-                params['instId'] = okx_symbol
+                params['instId'] = self._normalize_symbol(symbol)
             
             # Use OKX's private trade fills endpoint
             response = self.exchange.privateGetTradeFills(params)
@@ -118,16 +141,16 @@ class OKXTradeRetrieval:
             return []
     
     def _get_okx_orders_history(self, symbol: Optional[str], limit: int) -> List[Dict[str, Any]]:
-        """Get trades using OKX's orders history API."""
+        """Get trades using OKX's orders history API with enhanced instType support."""
         try:
             params = {
                 'limit': str(limit),
-                'state': 'filled'  # Only filled orders
+                'state': 'filled',  # Only filled orders
+                'instType': self._inst_type()
             }
             
             if symbol:
-                okx_symbol = symbol.replace('/', '-') if '/' in symbol else symbol
-                params['instId'] = okx_symbol
+                params['instId'] = self._normalize_symbol(symbol)
             
             # Use OKX's private orders history endpoint
             response = self.exchange.privateGetTradeOrdersHistory(params)
@@ -182,7 +205,7 @@ class OKXTradeRetrieval:
             return {
                 'id': fill.get('fillId', ''),
                 'order_id': fill.get('ordId', ''),
-                'symbol': (fill.get('instId', '') or '').replace('-', '/'),
+                'symbol': self._denormalize_symbol(fill.get('instId', '')),
                 'side': fill.get('side', '').upper(),
                 'quantity': float(fill.get('fillSz', 0)),
                 'price': float(fill.get('fillPx', 0)),
@@ -191,7 +214,7 @@ class OKXTradeRetrieval:
                 'total_value': float(fill.get('fillSz', 0)) * float(fill.get('fillPx', 0)),
                 'fee': float(fill.get('fee', 0)),
                 'fee_currency': fill.get('feeCcy', ''),
-                'trade_type': 'spot',
+                'trade_type': fill.get('instType', 'SPOT').lower(),
                 'source': 'okx_fills'
             }
         except (ValueError, TypeError) as e:
@@ -207,7 +230,7 @@ class OKXTradeRetrieval:
             return {
                 'id': order.get('ordId', ''),
                 'order_id': order.get('ordId', ''),
-                'symbol': (order.get('instId', '') or '').replace('-', '/'),
+                'symbol': self._denormalize_symbol(order.get('instId', '')),
                 'side': order.get('side', '').upper(),
                 'quantity': float(order.get('fillSz', 0)),
                 'price': float(order.get('avgPx', 0)),
@@ -216,7 +239,7 @@ class OKXTradeRetrieval:
                 'total_value': float(order.get('fillSz', 0)) * float(order.get('avgPx', 0)),
                 'fee': float(order.get('fee', 0)),
                 'fee_currency': order.get('feeCcy', ''),
-                'trade_type': 'spot',
+                'trade_type': order.get('instType', 'SPOT').lower(),
                 'source': 'okx_orders'
             }
         except (ValueError, TypeError) as e:
