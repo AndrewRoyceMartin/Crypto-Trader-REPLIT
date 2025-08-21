@@ -15,6 +15,10 @@ import requests
 import hmac
 import hashlib
 import base64
+import warnings
+
+# Suppress pkg_resources deprecation warning
+warnings.filterwarnings('ignore', message='pkg_resources is deprecated as an API.*')
 from datetime import datetime, timezone, timedelta
 from typing import Any
 from functools import wraps

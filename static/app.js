@@ -91,6 +91,23 @@ class TradingApp {
             maximumFractionDigits: 8
         }).format(numericAmount);
     }
+
+    formatNumber(amount) {
+        // Format large numbers with appropriate suffixes
+        const numericAmount = Number(amount) || 0;
+        
+        if (numericAmount >= 1e12) {
+            return (numericAmount / 1e12).toFixed(1) + 'T';
+        } else if (numericAmount >= 1e9) {
+            return (numericAmount / 1e9).toFixed(1) + 'B';
+        } else if (numericAmount >= 1e6) {
+            return (numericAmount / 1e6).toFixed(1) + 'M';
+        } else if (numericAmount >= 1e3) {
+            return (numericAmount / 1e3).toFixed(1) + 'K';
+        } else {
+            return numericAmount.toFixed(2);
+        }
+    }
     formatUptime(totalSeconds) {
         const hours = Math.floor(totalSeconds / 3600);
         const minutes = Math.floor((totalSeconds % 3600) / 60);
