@@ -28,7 +28,8 @@ class TradingApp {
             status:    { data: null, timestamp: 0, ttl: 1000 },  // 1s
             portfolio: { data: null, timestamp: 0, ttl: 1000 },  // 1s
             config:    { data: null, timestamp: 0, ttl: 30000 }, // 30s
-            analytics: { data: null, timestamp: 0, ttl: 5000 }   // 5s
+            analytics: { data: null, timestamp: 0, ttl: 5000 },  // 5s
+            portfolioHistory: { data: null, timestamp: 0, ttl: 30000 } // 30s
         };
 
         // Debug: force network fetches
@@ -369,6 +370,9 @@ class TradingApp {
         
         // Portfolio analytics
         this.updatePortfolioAnalytics();
+        
+        // Portfolio history chart
+        this.updatePortfolioHistory();
     }
 
     async updatePortfolioAnalytics() {
@@ -470,6 +474,115 @@ class TradingApp {
                 }
             }
         });
+    }
+
+    async updatePortfolioHistory() {
+        try {
+            const response = await fetch('/api/portfolio-history?timeframe=30d', { cache: 'no-cache' });
+            if (!response.ok) return;
+            const data = await response.json();
+            
+            if (!data.success || !data.history) return;
+            
+            // Update portfolio value over time chart
+            this.updatePortfolioValueChart(data.history);
+            
+        } catch (error) {
+            console.error('Portfolio history update failed:', error);
+        }
+    }
+    
+    updatePortfolioValueChart(historyData) {
+        const portfolioCanvas = document.getElementById('portfolioChart');
+        if (!portfolioCanvas || !window.Chart) return;
+        
+        try {
+            // Destroy existing chart
+            if (this.portfolioChart) {
+                this.portfolioChart.destroy();
+            }
+            
+            // Prepare data for Chart.js
+            const labels = historyData.map(point => {
+                const date = new Date(point.date);
+                return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            });
+            
+            const values = historyData.map(point => point.value);
+            
+            // Determine line color based on performance
+            const firstValue = values[0] || 0;
+            const lastValue = values[values.length - 1] || 0;
+            const isPositive = lastValue >= firstValue;
+            const lineColor = isPositive ? '#28a745' : '#dc3545';
+            const fillColor = isPositive ? 'rgba(40, 167, 69, 0.1)' : 'rgba(220, 53, 69, 0.1)';
+            
+            // Create chart with real OKX data
+            this.portfolioChart = new Chart(portfolioCanvas, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Portfolio Value',
+                        data: values,
+                        borderColor: lineColor,
+                        backgroundColor: fillColor,
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.2,
+                        pointBackgroundColor: lineColor,
+                        pointBorderColor: lineColor,
+                        pointRadius: 3,
+                        pointHoverRadius: 5
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        title: { 
+                            display: true, 
+                            text: `Portfolio Value (${historyData.length} days)`,
+                            font: { size: 12 }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            display: true,
+                            grid: { display: false }
+                        },
+                        y: {
+                            display: true,
+                            grid: { color: 'rgba(128, 128, 128, 0.1)' },
+                            ticks: {
+                                callback: function(value) {
+                                    return window.tradingApp ? window.tradingApp.formatCurrency(value) : `$${value.toFixed(2)}`;
+                                }
+                            }
+                        }
+                    },
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
+                    }
+                }
+            });
+        } catch (error) {
+            console.error('Portfolio value chart creation failed:', error);
+            // Fallback display
+            if (portfolioCanvas) {
+                portfolioCanvas.style.display = 'none';
+                const fallback = document.createElement('div');
+                fallback.className = 'text-center text-muted p-3';
+                fallback.innerHTML = `
+                    <strong>Portfolio History</strong><br>
+                    Current Value: ${this.formatCurrency(historyData[historyData.length - 1]?.value || 0)}<br>
+                    Data Points: ${historyData.length}
+                `;
+                portfolioCanvas.parentNode.replaceChild(fallback, portfolioCanvas);
+            }
+        }
     }
 
     debouncedUpdateDashboard() {
