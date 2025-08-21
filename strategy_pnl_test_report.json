@@ -1,0 +1,31 @@
+{
+  "timestamp": "2025-08-21T01:23:23.475759",
+  "total_tests": 5,
+  "passed": 5,
+  "failed": 0,
+  "errors": 0,
+  "success_rate": 100.0,
+  "okx_integration": true,
+  "test_details": [
+    {
+      "test": "test_bollinger_strategy_scenario",
+      "status": "PASS"
+    },
+    {
+      "test": "test_live_okx_price_integration",
+      "status": "PASS"
+    },
+    {
+      "test": "test_pnl_calculation_accuracy",
+      "status": "PASS"
+    },
+    {
+      "test": "test_position_sizing_accuracy",
+      "status": "PASS"
+    },
+    {
+      "test": "test_risk_management_constraints",
+      "status": "PASS"
+    }
+  ]
+}

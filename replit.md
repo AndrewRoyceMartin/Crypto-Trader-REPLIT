@@ -51,6 +51,9 @@ The `TechnicalIndicators` class provides vectorized calculations for indicators 
 **Live Data Testing Framework:**
 Comprehensive test suite (`test_okx_live_sync.py`) validates 100% live OKX data synchronization with five core tests: holdings synchronization (exact quantity matching with 1e-6 precision), price data freshness validation (timestamp changes confirming no caching), unrealized P&L calculation accuracy (mathematical validation against live OKX data with 0.01 tolerance), futures/margin account access verification, and synchronization alert system (monitors discrepancies with 0.05 tolerance and generates detailed alert logs). Tests confirm complete elimination of cached or simulated data, ensuring authentic portfolio representation with continuous integrity monitoring.
 
+**Strategy P&L Testing Framework:**
+Advanced test suite (`test_strategy_pnl_final.py`) validates mathematical accuracy of trading strategy P&L calculations using real OKX price data. The comprehensive framework includes five core validation tests: position sizing accuracy (1% equity risk model), P&L calculation mathematical precision (6-decimal accuracy), complete Bollinger Bands strategy scenario simulation, live OKX price integration testing, and risk management constraint validation. Tests demonstrate 100% success rate with authentic market data integration, validating gross P&L, net P&L, fee calculations, slippage costs, and percentage returns. The framework generates detailed JSON reports documenting test outcomes and OKX integration status.
+
 **Database Layer:**
 `DatabaseManager` uses SQLite for persistent storage of trades, portfolio history, and system state.
 
