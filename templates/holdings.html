@@ -148,7 +148,7 @@
       <div class="col-12 d-flex align-items-center justify-content-between">
         <h4 class="mb-0">
           <i class="fas fa-coins me-2"></i>Current Holdings
-          <i class="fas fa-info-circle text-muted ms-2" data-bs-toggle="tooltip" title="Live snapshot of assets you actually own: quantities, market values, unrealized P&L, and position weights."></i>
+          <i class="fas fa-info-circle text-muted ms-2" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Live snapshot of assets you actually own: quantities, market values, unrealized P&L, and position weights."></i>
         </h4>
         <div class="d-flex gap-2">
           <button class="btn btn-primary btn-sm" onclick="updatePositionsData()">
@@ -515,10 +515,18 @@
         updatePositionsTable(); // Also update positions table
       }, 6000);
       
-      // Initialize tooltips
+      // Initialize tooltips with responsive placement
       const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
       tooltipTriggerList.map(function (tooltipTriggerEl) {
-        return new bootstrap.Tooltip(tooltipTriggerEl);
+        // Use bottom placement on mobile for better visibility
+        const isMobile = window.innerWidth <= 768;
+        const placement = isMobile ? 'bottom' : (tooltipTriggerEl.getAttribute('data-bs-placement') || 'top');
+        
+        return new bootstrap.Tooltip(tooltipTriggerEl, {
+          placement: placement,
+          boundary: 'viewport',
+          fallbackPlacements: ['bottom', 'top', 'right', 'left']
+        });
       });
       
       // Add filter event listeners
