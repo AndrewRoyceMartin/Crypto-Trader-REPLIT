@@ -455,11 +455,15 @@
             </div>
 
             <!-- Holdings Table -->
-            <div class="card">
+            <div class="card card--hover">
+                <div class="card-header">
+                    <h6 class="mb-0">Current Holdings</h6>
+                    <span class="meta">Live OKX Data</span>
+                </div>
                 <div class="card-body">
-                    <div class="table-responsive table-responsive-400">
-                        <table class="table table-striped table-hover">
-                            <thead class="table-dark sticky-top">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover align-middle mb-0" id="holdings-table">
+                            <thead>
                                 <tr>
                                     <th class="table-sortable" onclick="sortHoldingsTable(0)" aria-label="Sort by symbol">Symbol <i class="fas fa-sort ms-1" aria-hidden="true"></i></th>
                                     <th class="table-sortable" onclick="sortHoldingsTable(1)" aria-label="Sort by name">Name <i class="fas fa-sort ms-1" aria-hidden="true"></i></th>
@@ -526,11 +530,15 @@
             </div>
 
             <!-- Trades Table -->
-            <div class="card">
+            <div class="card card--hover">
+                <div class="card-header">
+                    <h6 class="mb-0">Recent Trades</h6>
+                    <span class="meta">Authentic OKX History</span>
+                </div>
                 <div class="card-body">
-                    <div class="table-responsive table-responsive-480">
-                        <table class="table table-sm">
-                            <thead class="table-dark sticky-top">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover align-middle mb-0" id="trades-table-main">
+                            <thead>
                                 <tr>
                                     <th class="table-sortable" onclick="sortTradesTable(0)" aria-label="Sort by trade number">Trade # <i class="fas fa-sort ms-1" aria-hidden="true"></i></th>
                                     <th class="table-sortable" onclick="sortTradesTable(1)" aria-label="Sort by trade time">Time <i class="fas fa-sort ms-1" aria-hidden="true"></i></th>
