@@ -47,22 +47,39 @@
                 </div>
             </div>
             
-            <!-- Right side controls -->
+            <!-- Right side controls - Primary Actions -->
             <div class="navbar-nav ms-auto">
-                <div class="nav-item d-flex align-items-center">
-                    <div class="me-3">
+                <div class="nav-item d-flex align-items-center flex-wrap">
+                    <!-- Currency Selector -->
+                    <div class="me-3 mb-1 mb-lg-0">
+                        <label for="currency-selector" class="visually-hidden">Currency</label>
                         <select class="form-select form-select-sm currency-select" id="currency-selector" onchange="changeCurrency()">
-                            <option value="USD" selected>USD</option>
-                            <option value="AUD">AUD</option>
-                            <option value="EUR">EUR</option>
-                            <option value="GBP">GBP</option>
+                            <option value="USD" selected>USD ($)</option>
+                            <option value="AUD">AUD ($)</option>
+                            <option value="EUR">EUR (€)</option>
+                            <option value="GBP">GBP (£)</option>
                         </select>
                     </div>
-                    <button class="btn btn-outline-success btn-sm me-2" onclick="exportATOTax()">
-                        <i class="fas fa-file-invoice-dollar me-1"></i> ATO Export
+                    
+                    <!-- Sync Test Button -->
+                    <a class="btn btn-outline-info btn-sm me-2 mb-1 mb-lg-0" href="{{ url_for('test_sync_data') }}" target="_blank">
+                        <i class="fas fa-sync-alt me-1"></i> 
+                        <span class="d-none d-md-inline">Sync Test</span>
+                        <span class="d-md-none">Sync</span>
+                    </a>
+                    
+                    <!-- ATO Export Button -->
+                    <button class="btn btn-outline-success btn-sm me-2 mb-1 mb-lg-0" onclick="exportATOTax()" title="Export ATO-compliant tax records">
+                        <i class="fas fa-file-invoice-dollar me-1"></i> 
+                        <span class="d-none d-md-inline">ATO Export</span>
+                        <span class="d-md-none">ATO</span>
                     </button>
-                    <button class="btn btn-outline-warning btn-sm" id="take-profit-btn" onclick="executeTakeProfit()">
-                        <i class="fas fa-money-bill-wave me-1"></i> Take Profit
+                    
+                    <!-- Take Profit Button -->
+                    <button class="btn btn-outline-warning btn-sm mb-1 mb-lg-0" id="take-profit-btn" onclick="executeTakeProfit()" title="Execute take profit trades for positions above 2% profit">
+                        <i class="fas fa-money-bill-wave me-1"></i> 
+                        <span class="d-none d-md-inline">Take Profit</span>
+                        <span class="d-md-none">Profit</span>
                     </button>
                 </div>
             </div>
