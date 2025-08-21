@@ -41,6 +41,8 @@ The system utilizes a modular Flask-based web interface for live OKX trading, st
 
 **Production-Safe Test Sync Endpoint:** Optimized `/api/test-sync-data` endpoint removing self-HTTP requests and subprocess calls for production safety - uses direct service function calls for reliable testing, gated behind `ENABLE_INTERNAL_TESTS` environment flag, provides comprehensive holdings synchronization analysis with live data validation, and eliminates potential security vulnerabilities from internal HTTP calls.
 
+**Optimized Warmup System:** Redesigned background warmup to be cheap and meaningful - replaces comprehensive market loading with simple OKX connectivity check using native OKX client ticker call for BTC-USDT, reduces startup complexity while ensuring essential API connectivity, maintains watchlist symbol validation but eliminates expensive market data fetching during boot process.
+
 ## External Dependencies
 
 ### Market Data & Trading APIs

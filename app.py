@@ -256,70 +256,21 @@ def create_initial_purchase_trades(mode, trade_type):
         return []
 
 def background_warmup():
-    """Background warmup focused on connectivity test and market validation only."""
     global warmup
     if warmup["started"]:
         return
-    warmup.update({
-        "started": True,
-        "done": False,
-        "error": "",
-        "loaded": [],
-        "start_time": iso_utc(),  # JSON safe
-        "start_ts": time.time()  # seconds since epoch
-    })
-
+    warmup.update({"started": True, "done": False, "error": "", "loaded": [], "start_time": iso_utc(), "start_ts": time.time()})
     try:
-        logger.info(f"Background warmup starting: connectivity test and market validation")
-
-        # Use minimal CCXT setup - check for real OKX credentials
-        import ccxt
-        okx_api_key = os.getenv("OKX_API_KEY", "")
-        okx_secret = os.getenv("OKX_SECRET_KEY", "")
-        okx_pass = os.getenv("OKX_PASSPHRASE", "")
-        
-        if not (okx_api_key and okx_secret and okx_pass):
-            raise RuntimeError("OKX API credentials required for background warmup. No simulation mode available.")
-            
-        # 🌍 Regional endpoint support (2024 OKX update)
-        hostname = os.getenv("OKX_HOSTNAME") or os.getenv("OKX_REGION") or "www.okx.com"
-        
-        # Use live OKX account only
-        ex = ccxt.okx({
-            'apiKey': okx_api_key,
-            'secret': okx_secret,
-            'password': okx_pass,
-            'hostname': hostname,  # Regional endpoint support
-            'sandbox': False,
-            'enableRateLimit': True
-        })
-        # Force live trading mode
-        ex.set_sandbox_mode(False)
-        if ex.headers:
-            ex.headers.pop('x-simulated-trading', None)
-        logger.info("Using live OKX account for background warmup")
-
-        # Load markets for connectivity test and symbol validation
-        try:
-            ex.load_markets()
-            logger.info("Markets loaded successfully")
-            
-            # Get available markets and validate our watchlist symbols
-            available_symbols = list(ex.markets.keys())
-            valid_symbols = [sym for sym in WATCHLIST[:MAX_STARTUP_SYMBOLS] if sym in available_symbols]
-            
-            warmup["loaded"] = valid_symbols
-            warmup["total_markets"] = len(available_symbols)
-            warmup["connectivity"] = "success"
-            
-            logger.info(f"Connectivity test passed. {len(valid_symbols)} watchlist symbols validated from {len(available_symbols)} available markets")
-            
-        except Exception as market_error:
-            logger.warning(f"Market connectivity test failed: {market_error}")
-            warmup["connectivity"] = "failed"
-            warmup["error"] = str(market_error)
-            # Use fallback symbol list
-            warmup["loaded"] = WATCHLIST[:MAX_STARTUP_SYMBOLS]
+        # ping OKX quickly
+        from src.utils.okx_native import OKXNative
+        client = OKXNative.from_env()
+        _ = client.ticker("BTC-USDT")  # connectivity check
+        warmup["loaded"] = WATCHLIST[:MAX_STARTUP_SYMBOLS]
+        warmup["done"] = True
+        logger.info("Warmup complete (OKX reachable)")
+    except Exception as e:
+        warmup.update({"error": str(e), "done": True})
+        logger.error(f"Warmup error: {e}")
 
         warmup["done"] = True
         logger.info(
@@ -393,6 +344,16 @@ def initialize_system():
 app = Flask(__name__)
 
 # Register the real OKX endpoint directly without circular import
+
+@app.route("/api/status")
+def api_status():
+    """Simple status endpoint to check warmup and system health."""
+    return jsonify({
+        "status": "running",
+        "warmup": warmup,
+        "trading_state": trading_state,
+        "timestamp": iso_utc()
+    })
 @app.route("/api/crypto-portfolio")
 def crypto_portfolio_okx():
     """Get real OKX portfolio data using PortfolioService."""
