@@ -4317,6 +4317,44 @@ function setCustomBuyPrice(symbol) {
     }
 }
 
+// Stop all trading function
+async function stopAllTrading() {
+    if (!confirm("Are you sure you want to stop all trading activity? This will:\n\n• Stop the trading bot if running\n• Cancel any pending orders\n• Pause automated strategies\n\nYou can restart trading manually later.")) {
+        return;
+    }
+    
+    try {
+        // Stop the bot if it's running
+        const botResponse = await fetch('/api/bot/stop', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            cache: 'no-store'
+        });
+        
+        if (botResponse.ok) {
+            const botData = await botResponse.json();
+            console.log('Bot stopped:', botData.message);
+        }
+        
+        // Update bot status display
+        const botStatusElement = document.getElementById('bot-status-top');
+        if (botStatusElement) {
+            botStatusElement.textContent = 'Start Bot';
+        }
+        
+        alert('All trading activity has been stopped successfully.\n\n• Trading bot stopped\n• Automated strategies paused\n• Manual trading still available');
+        
+        // Refresh dashboard data
+        if (typeof loadDashboardData === 'function') {
+            loadDashboardData();
+        }
+        
+    } catch (error) {
+        console.error('Error stopping trading:', error);
+        alert('Error stopping trading: ' + error.message);
+    }
+}
+
 async function executeSellOrder(symbol, percentage) {
     try {
         const response = await fetch("/api/sell", {

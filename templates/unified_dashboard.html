@@ -52,6 +52,7 @@
         .icon-pnl::before { content: "▲"; }
         .icon-positions::before { content: "◩"; }
         .icon-tier::before { content: "◈"; }
+        .icon-stop::before { content: "⬛"; }
     </style>
     
     <!-- Minimal CSS (preload for performance) -->
@@ -126,6 +127,9 @@
                 </button>
                 <button class="btn btn-sm" onclick="toggleBot()" aria-label="Toggle trading bot">
                     <span class="icon icon-robot me-1" aria-hidden="true"></span><span id="bot-status-top">Start Bot</span>
+                </button>
+                <button class="btn btn-outline-danger btn-sm" onclick="stopAllTrading()" aria-label="Stop all trading activity">
+                    <span class="icon icon-stop me-1" aria-hidden="true"></span>Stop Trading
                 </button>
             </div>
         </div>
