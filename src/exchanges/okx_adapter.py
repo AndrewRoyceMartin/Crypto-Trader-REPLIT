@@ -452,6 +452,31 @@ class OKXAdapter(BaseExchange):
             self.logger.error(f"Error fetching ticker for {symbol}: {str(e)}")
             raise
     
+    def get_currency_conversion_rates(self) -> dict:
+        """
+        Return conversion FROM USD into {USD, EUR, GBP, AUD}.
+        Since USDT ≈ USD, use fiat/USDT and invert to get USD->FIAT.
+        """
+        if not self.is_connected():
+            self.logger.warning("Exchange not connected, cannot get currency rates")
+            return {"USD": 1.0, "EUR": 0.92, "GBP": 0.79, "AUD": 1.52}
+
+        pairs = {"EUR": "EUR/USDT", "GBP": "GBP/USDT", "AUD": "AUD/USDT"}
+        rates = {"USD": 1.0}
+        for cur, pair in pairs.items():
+            try:
+                t = self.exchange.fetch_ticker(pair)
+                last = float(t.get('last') or 0.0)  # USDT per 1 FIAT
+                # USD->FIAT ≈ 1 / (USDT per FIAT)
+                rates[cur] = (1.0 / last) if last > 0 else rates.get(cur, 1.0)
+            except Exception as e:
+                self.logger.warning(f"Rate fallback for {cur}: {e}")
+                # sensible fallback
+                fallback = {"EUR": 0.92, "GBP": 0.79, "AUD": 1.52}
+                rates[cur] = fallback[cur]
+        self.logger.info(f"USD->FIAT conversion rates: {rates}")
+        return rates
+    
     def _legacy_get_trades_fallback(self, symbol: Optional[str] = None, limit: int = 50) -> List[Dict[str, Any]]:
         """Fallback trade retrieval method using basic OKX API calls."""
         all_trades = []
@@ -715,46 +740,7 @@ class OKXAdapter(BaseExchange):
         """Get order history (alias for get_trades)."""
         return self.get_trades(symbol, limit)
 
-    def get_currency_conversion_rates(self) -> dict:
-        """Get currency conversion rates from OKX using fiat trading pairs."""
-        try:
-            if not self.is_connected():
-                self.logger.warning("Exchange not connected, cannot get currency rates")
-                return {"USD": 1.0}
-            
-            # Get USDT prices against major fiat currencies from OKX
-            rates = {"USD": 1.0}  # Base currency
-            
-            # OKX fiat pairs - getting fiat price in USDT
-            currency_pairs = {
-                "EUR": "EUR/USDT",
-                "GBP": "GBP/USDT", 
-                "AUD": "AUD/USDT"
-            }
-            
-            for currency, pair in currency_pairs.items():
-                try:
-                    ticker = self.exchange.fetch_ticker(pair)
-                    if ticker and ticker.get('last'):
-                        # FIAT/USDT price tells us how many USDT one unit of fiat is worth
-                        fiat_usdt_price = float(ticker['last'])
-                        if fiat_usdt_price > 0:
-                            # USD to FIAT rate = FIAT per USD (since USDT ≈ USD)
-                            rates[currency] = fiat_usdt_price
-                            self.logger.debug(f"OKX rate USD to {currency}: {fiat_usdt_price}")
-                except Exception as e:
-                    self.logger.warning(f"Could not get OKX rate for {currency}: {e}")
-                    # Fallback rates if OKX doesn't have the pair
-                    fallback_rates = {"EUR": 0.92, "GBP": 0.79, "AUD": 1.52}
-                    rates[currency] = fallback_rates.get(currency, 1.0)
-            
-            self.logger.info(f"OKX currency conversion rates: {rates}")
-            return rates
-            
-        except Exception as e:
-            self.logger.error(f"Error getting OKX currency rates: {e}")
-            # Return fallback rates
-            return {"USD": 1.0, "EUR": 0.92, "GBP": 0.79, "AUD": 1.52}
+
 
 
 def make_okx_spot() -> ccxt.okx:

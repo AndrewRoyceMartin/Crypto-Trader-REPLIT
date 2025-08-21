@@ -134,4 +134,23 @@ def get_positions(self) -> List[Dict[str, Any]]:
 
 **Result**: Spot positions now correctly display PEPE (6M+ tokens) and BTC (0.00054477) holdings instead of empty results.
 
-**Status**: ✅ **Complete & Fixed** - The OKX adapter now correctly handles both spot and derivatives trading with proper position detection.
+## Currency Conversion Math Fix (August 21, 2025)
+
+### **Inverted Mathematics Corrected**
+- **Issue**: Currency conversion used direct FIAT/USDT prices instead of inverting them
+- **Problem**: EUR/USDT "last" gives USDT per EUR, but system needs USD→EUR rate
+- **Mathematical Error**: Using 1.09 directly instead of 1/1.09 for proper conversion
+- **Solution**: Implemented proper inversion logic: `rates[cur] = (1.0 / last)`
+
+### **Enhanced Conversion Method**
+```python
+def get_currency_conversion_rates(self) -> dict:
+    # USDT per 1 FIAT from trading pairs
+    last = float(t.get('last') or 0.0)  
+    # USD->FIAT ≈ 1 / (USDT per FIAT) - proper inversion
+    rates[cur] = (1.0 / last) if last > 0 else fallback
+```
+
+**Result**: Currency switching now displays mathematically correct values in EUR, GBP, AUD.
+
+**Status**: ✅ **Complete & Fixed** - The OKX adapter now correctly handles spot/derivatives trading AND currency conversion mathematics.
