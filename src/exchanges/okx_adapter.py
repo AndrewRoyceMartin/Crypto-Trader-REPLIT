@@ -197,7 +197,7 @@ class OKXAdapter(BaseExchange):
                     fills_params['instId'] = symbol.replace('/', '-')
                 
                 self.logger.info(f"Fetching trade fills from OKX API with params: {fills_params}")
-                response = self.exchange.privateGetTradeFills(fills_params)
+                response = self._retry(self.exchange.privateGetTradeFills, fills_params)
                 
                 if self._is_okx_success_response(response):
                     fills = response['data']
@@ -225,7 +225,7 @@ class OKXAdapter(BaseExchange):
                     orders_params['instId'] = symbol.replace('/', '-')
                 
                 self.logger.info(f"Fetching order history from OKX API with params: {orders_params}")
-                response = self.exchange.privateGetTradeOrdersHistory(orders_params)
+                response = self._retry(self.exchange.privateGetTradeOrdersHistory, orders_params)
                 
                 if self._is_okx_success_response(response):
                     orders = response['data']
@@ -280,7 +280,7 @@ class OKXAdapter(BaseExchange):
         try:
             # CCXT Method 1: fetch_my_trades
             self.logger.info("Attempting CCXT fetch_my_trades")
-            ccxt_trades = self.exchange.fetch_my_trades(symbol=symbol, limit=min(limit, 100))
+            ccxt_trades = self._retry(self.exchange.fetch_my_trades, symbol=symbol, limit=min(limit, 100))
             for trade in ccxt_trades:
                 formatted = self._format_ccxt_trade(trade)
                 if formatted:
@@ -292,7 +292,7 @@ class OKXAdapter(BaseExchange):
         try:
             # CCXT Method 2: fetch_closed_orders (converted to trades)
             self.logger.info("Attempting CCXT fetch_closed_orders")
-            closed_orders = self.exchange.fetch_closed_orders(symbol=symbol, limit=min(limit, 100))
+            closed_orders = self._retry(self.exchange.fetch_closed_orders, symbol=symbol, limit=min(limit, 100))
             for order in closed_orders:
                 if order.get('status') == 'closed' and order.get('filled', 0) > 0:
                     formatted = self._format_ccxt_order_as_trade(order)
