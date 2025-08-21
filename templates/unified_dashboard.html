@@ -133,7 +133,7 @@
         <!-- SECTION 1: OVERVIEW DASHBOARD -->
         <section id="overview" class="mb-5">
             <div class="d-flex justify-content-between align-items-center mb-3">
-                <h2><span class="icon icon-dashboard me-2"></span>Quick Overview</h2>
+                <h2><span class="icon icon-wallet me-2"></span>OKX Portfolio Overview</h2>
                 <div class="d-flex align-items-center">
                     <span class="badge bg-success me-2">
                         <span class="icon icon-wifi me-1"></span>
@@ -149,38 +149,56 @@
             <div class="row text-center mb-4 g-2">
                 <div class="col-6 col-md-2">
                     <div class="kpi-card">
-                        <div class="label">Total Equity</div>
-                        <div id="kpi-total-equity" class="value">$0.00</div>
+                        <div class="label">
+                            <span class="icon icon-coins me-1"></span>Total Balance
+                        </div>
+                        <div id="okx-total-balance" class="value">$0.00</div>
+                        <div id="okx-balance-change" class="change-indicator"></div>
                     </div>
                 </div>
                 <div class="col-6 col-md-2">
                     <div class="kpi-card">
-                        <div class="label">Today P&L</div>
-                        <div id="kpi-daily-pnl" class="value">$0.00</div>
+                        <div class="label">
+                            <span class="icon icon-chart me-1"></span>24h P&L
+                        </div>
+                        <div id="okx-day-pnl" class="value">$0.00</div>
+                        <div id="okx-day-pnl-percent" class="change-indicator"></div>
                     </div>
                 </div>
                 <div class="col-6 col-md-2">
                     <div class="kpi-card">
-                        <div class="label">Unrealized P&L</div>
-                        <div id="kpi-unrealized-pnl" class="value">$0.00</div>
+                        <div class="label">
+                            <span class="icon icon-trophy me-1"></span>Best Performer
+                        </div>
+                        <div id="okx-best-performer" class="value">—</div>
+                        <div id="okx-best-gain" class="change-indicator text-success"></div>
                     </div>
                 </div>
                 <div class="col-6 col-md-2">
                     <div class="kpi-card">
-                        <div class="label">Cash</div>
-                        <div id="kpi-cash" class="value">$0.00</div>
+                        <div class="label">
+                            <span class="icon icon-shield me-1"></span>Active Positions
+                        </div>
+                        <div id="okx-active-positions" class="value">0</div>
+                        <div id="okx-positions-detail" class="change-indicator"></div>
                     </div>
                 </div>
                 <div class="col-6 col-md-2">
                     <div class="kpi-card">
-                        <div class="label">Exposure</div>
-                        <div id="kpi-exposure" class="value">—</div>
+                        <div class="label">
+                            <span class="icon icon-robot me-1"></span>Trading Bot
+                        </div>
+                        <div id="okx-bot-status" class="value">Inactive</div>
+                        <div id="okx-bot-details" class="change-indicator"></div>
                     </div>
                 </div>
                 <div class="col-6 col-md-2">
                     <div class="kpi-card">
-                        <div class="label">Win Rate (30d)</div>
-                        <div id="kpi-win-rate" class="value">—</div>
+                        <div class="label">
+                            <span class="icon icon-refresh me-1"></span>Rebuy Ready
+                        </div>
+                        <div id="okx-rebuy-count" class="value">0</div>
+                        <div class="change-indicator text-muted">$100 Limit</div>
                     </div>
                 </div>
             </div>
@@ -837,6 +855,71 @@
         }, { root: null, rootMargin: '-120px 0px -70% 0px', threshold: [0.1, 0.6] });
 
         document.querySelectorAll('section[id]').forEach(sec => obs.observe(sec));
+
+        // Update OKX overview function
+        async function updateOKXOverview() {
+            try {
+                // Fetch portfolio and bot status data
+                const [portfolioRes, statusRes] = await Promise.all([
+                    fetch('/api/crypto-portfolio'),
+                    fetch('/api/bot/status')
+                ]);
+                
+                const portfolio = await portfolioRes.json();
+                const status = await statusRes.json();
+                
+                // Update total balance
+                const totalBalance = portfolio?.total_value || 0;
+                const totalBalanceEl = document.getElementById('okx-total-balance');
+                if (totalBalanceEl) {
+                    totalBalanceEl.textContent = new Intl.NumberFormat('en-US', {
+                        style: 'currency',
+                        currency: 'USD'
+                    }).format(totalBalance);
+                }
+                
+                // Update daily P&L
+                const dailyPnL = portfolio?.daily_pnl || 0;
+                const dailyPnLEl = document.getElementById('okx-day-pnl');
+                if (dailyPnLEl) {
+                    dailyPnLEl.textContent = new Intl.NumberFormat('en-US', {
+                        style: 'currency',
+                        currency: 'USD'
+                    }).format(dailyPnL);
+                }
+                
+                // Update bot status
+                const botRunning = status?.running || false;
+                const isMultiCurrency = status?.multi_currency || false;
+                const botStatusEl = document.getElementById('okx-bot-status');
+                if (botStatusEl) {
+                    botStatusEl.textContent = botRunning ? (isMultiCurrency ? 'Multi-Currency' : 'Active') : 'Inactive';
+                }
+                
+                // Update rebuy count
+                const rebuyCount = status?.rebuy_opportunities || 0;
+                const rebuyEl = document.getElementById('okx-rebuy-count');
+                if (rebuyEl) {
+                    rebuyEl.textContent = rebuyCount;
+                }
+                
+                // Update active positions
+                const activePositions = portfolio?.holdings?.filter(h => h.quantity > 0)?.length || 0;
+                const positionsEl = document.getElementById('okx-active-positions');
+                if (positionsEl) {
+                    positionsEl.textContent = activePositions;
+                }
+                
+                console.log('OKX overview updated successfully');
+                
+            } catch (error) {
+                console.error('Error updating OKX overview:', error);
+            }
+        }
+
+        // Call OKX overview update on load and every 30 seconds
+        updateOKXOverview();
+        setInterval(updateOKXOverview, 30000);
     });
     </script>
 </body>
