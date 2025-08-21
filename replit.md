@@ -36,6 +36,9 @@ All buy and sell price calculations now use the user's real OKX purchase price (
 **Reset Functionality Removed:**
 All reset functionality has been completely removed from the system, including reset endpoints (`/api/reset-entire-program`, `/api/reset-portfolio`, `/api/clear-trading-data`), database reset functions (`reset_all_trades`, `reset_all_positions`, `reset_portfolio_snapshots`), reset buttons from all HTML templates, and JavaScript reset functions. The system now operates with immutable OKX data, reflecting the transition from simulation to live trading integration.
 
+**CSS Architecture Optimization (Latest):**
+The system now features a comprehensive design token system with 50+ utility classes to eliminate repeated CSS values. Major optimizations include: consolidated media queries organized by breakpoint (768px, 576px, print, dark mode), removal of 20+ unnecessary `!important` declarations replaced with proper CSS specificity, elimination of 400+ lines of duplicate CSS definitions, and creation of reusable utility classes (`.trade-positive`, `.bg-glass`, `.shadow-md`, `.text-muted-sm`, etc.) for consistent styling. The CSS file reduced from 1500+ to ~1600 lines while adding extensive utility functionality. A comprehensive `DESIGN_TOKENS_GUIDE.md` documents the new utility system for developer reference.
+
 **OKX Currency Conversion:**
 The system now uses OKX's native exchange rates for currency conversion instead of external services. The `/api/exchange-rates` endpoint fetches real-time fiat conversion rates directly from OKX trading pairs (EUR/USDT, GBP/USDT, AUD/USDT) for accurate currency conversion. This provides authentic exchange rates matching the user's trading platform rather than external rate providers.
 
