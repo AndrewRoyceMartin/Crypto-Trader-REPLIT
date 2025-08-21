@@ -303,3 +303,31 @@ footer {
   --muted: #9ca3af;
   --shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
 }
+
+/* Control bar styling */
+.control-bar {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 56px; /* Height of navbar */
+  z-index: 1020;
+  box-shadow: var(--shadow);
+}
+
+/* Mobile responsiveness for control bar */
+@media (max-width: 768px) {
+  .control-bar .d-flex {
+    flex-direction: column;
+    align-items: stretch !important;
+    gap: var(--sp-3);
+  }
+  
+  .control-bar .ms-auto {
+    margin-left: 0 !important;
+    justify-content: center;
+  }
+  
+  .control-bar .gap-2 {
+    gap: var(--sp-2) !important;
+  }
+}

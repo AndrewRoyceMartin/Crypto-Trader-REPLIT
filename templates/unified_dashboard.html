@@ -34,99 +34,69 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
 </head>
 <body>
-    <!-- Navigation Bar -->
+    <!-- Navigation Bar with Mobile Toggle -->
     <nav class="navbar navbar-expand-lg sticky-top">
         <div class="container-fluid">
-            <a class="navbar-brand" href="{{ url_for('index') }}">
-                <i class="fas fa-chart-line me-2"></i>
-                Crypto Trading Dashboard
+            <a class="navbar-brand" href="#overview">
+                <i class="fas fa-chart-line me-2"></i>Crypto Trading Dashboard
             </a>
-            
-            <!-- Quick Navigation Pills -->
-            <div class="navbar-nav me-auto">
-                <div class="nav-pills-container d-flex">
+
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav"
+                aria-controls="mainNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div id="mainNav" class="collapse navbar-collapse">
+                <div class="navbar-nav me-auto nav-pills-container d-flex">
                     <a class="nav-link active" href="#overview" onclick="scrollToSection('overview')">
-                        <i class="fas fa-tachometer-alt me-1"></i> Overview
+                        <i class="fas fa-tachometer-alt me-1"></i>Overview
                     </a>
-                    <a class="nav-link" href="#portfolio" onclick="scrollToSection('portfolio')">
-                        <i class="fas fa-wallet me-1"></i> Portfolio
-                    </a>
-                    <a class="nav-link" href="#performance" onclick="scrollToSection('performance')">
-                        <i class="fas fa-chart-bar me-1"></i> Performance
-                    </a>
-                    <a class="nav-link" href="#holdings" onclick="scrollToSection('holdings')">
-                        <i class="fas fa-coins me-1"></i> Holdings
-                    </a>
-                    <a class="nav-link" href="#trades" onclick="scrollToSection('trades')">
-                        <i class="fas fa-exchange-alt me-1"></i> Trades
-                    </a>
+                    <a class="nav-link" href="#portfolio" onclick="scrollToSection('portfolio')">Portfolio</a>
+                    <a class="nav-link" href="#performance" onclick="scrollToSection('performance')">Performance</a>
+                    <a class="nav-link" href="#holdings" onclick="scrollToSection('holdings')">Holdings</a>
+                    <a class="nav-link" href="#trades" onclick="scrollToSection('trades')">Trades</a>
                 </div>
-            </div>
-            
-            <!-- Right side controls - Primary Actions -->
-            <div class="navbar-nav ms-auto">
-                <div class="nav-item d-flex align-items-center flex-wrap">
-                    <!-- Currency Selector -->
-                    <div class="me-3 mb-1 mb-lg-0">
-                        <label for="currency-selector" class="visually-hidden">Currency</label>
-                        <select class="form-select form-select-sm currency-select" id="currency-selector" onchange="changeCurrency()">
-                            <option value="USD" selected>USD ($)</option>
-                            <option value="AUD">AUD ($)</option>
-                            <option value="EUR">EUR (€)</option>
-                            <option value="GBP">GBP (£)</option>
-                        </select>
-                    </div>
-                    
-                    <!-- Sync Test Button -->
-                    <a class="btn btn-outline-info btn-sm me-2 mb-1 mb-lg-0" href="{{ url_for('test_sync_data') }}" target="_blank">
-                        <i class="fas fa-sync-alt me-1"></i> 
-                        <span class="d-none d-md-inline">Sync Test</span>
-                        <span class="d-md-none">Sync</span>
-                    </a>
-                    
-                    <!-- ATO Export Button -->
-                    <button class="btn btn-outline-success btn-sm me-2 mb-1 mb-lg-0" onclick="exportATOTax()" title="Export ATO-compliant tax records">
-                        <i class="fas fa-file-invoice-dollar me-1"></i> 
-                        <span class="d-none d-md-inline">ATO Export</span>
-                        <span class="d-md-none">ATO</span>
-                    </button>
-                    
-                    <!-- Take Profit Button -->
-                    <button class="btn btn-outline-warning btn-sm me-2 mb-1 mb-lg-0" id="take-profit-btn" onclick="executeTakeProfit()" title="Execute take profit trades for positions above 2% profit">
-                        <i class="fas fa-money-bill-wave me-1"></i> 
-                        <span class="d-none d-md-inline">Take Profit</span>
-                        <span class="d-md-none">Profit</span>
-                    </button>
-                    
-                    <!-- Trading Controls Dropdown -->
-                    <div class="btn-group">
-                        <button class="btn btn-primary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Manual trading controls">
-                            <i class="fas fa-exchange-alt me-1"></i>
-                            <span class="d-none d-md-inline">Trade</span>
-                            <span class="d-md-none">₿</span>
-                        </button>
-                        <ul class="dropdown-menu dropdown-menu-end">
-                            <li><h6 class="dropdown-header"><i class="fas fa-coins me-1"></i> Manual Trading</h6></li>
-                            <li><button class="dropdown-item" onclick="showBuyDialog()">
-                                <i class="fas fa-arrow-up text-success me-2"></i> Buy Position
-                            </button></li>
-                            <li><button class="dropdown-item" onclick="showSellDialog()">
-                                <i class="fas fa-arrow-down text-danger me-2"></i> Sell Position
-                            </button></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><h6 class="dropdown-header"><i class="fas fa-robot me-1"></i> Automated</h6></li>
-                            <li><button class="dropdown-item" onclick="toggleBot()">
-                                <i class="fas fa-play-circle text-info me-2"></i> <span id="bot-toggle-text">Start Bot</span>
-                            </button></li>
-                            <li><button class="dropdown-item" onclick="executeRebalance()">
-                                <i class="fas fa-balance-scale text-warning me-2"></i> Rebalance Portfolio
-                            </button></li>
-                        </ul>
-                    </div>
+
+                <div class="navbar-nav ms-auto">
+                    <!-- keep minimal here to avoid crowding; main controls go in control bar -->
+                    <a class="btn btn-outline-secondary btn-sm me-2" href="{{ url_for('test_sync_data') }}" target="_blank" rel="noopener">Sync Test</a>
                 </div>
             </div>
         </div>
     </nav>
+
+    <!-- Control Bar (sticky, right under navbar) -->
+    <div class="control-bar border-bottom">
+        <div class="container-fluid d-flex flex-wrap align-items-center gap-2 py-2">
+            <div class="d-flex align-items-center gap-2">
+                <label class="small muted mb-0">Currency</label>
+                <select id="currency-selector" class="form-select form-select-sm" onchange="changeCurrency()">
+                    <option value="USD" selected>USD</option>
+                    <option value="AUD">AUD</option>
+                    <option value="EUR">EUR</option>
+                    <option value="GBP">GBP</option>
+                </select>
+            </div>
+
+            <div class="ms-auto d-flex flex-wrap gap-2">
+                <button class="btn btn-outline-secondary btn-sm" onclick="exportATOTax()">
+                    <i class="fas fa-file-invoice-dollar me-1"></i>ATO Export
+                </button>
+                <button class="btn btn-outline-warning btn-sm" onclick="executeTakeProfit()">
+                    <i class="fas fa-money-bill-wave me-1"></i>Take Profit
+                </button>
+                <button class="btn btn-sm" onclick="showBuyDialog()">
+                    <i class="fas fa-arrow-up-right-dots me-1"></i>Buy
+                </button>
+                <button class="btn btn-sm" onclick="showSellDialog()">
+                    <i class="fas fa-arrow-down me-1"></i>Sell
+                </button>
+                <button class="btn btn-sm" onclick="toggleBot()">
+                    <i class="fas fa-robot me-1"></i><span id="bot-status-top">Start Bot</span>
+                </button>
+            </div>
+        </div>
+    </div>
 
     <!-- Main Content -->
     <div class="container-fluid py-3">
