@@ -12,6 +12,17 @@
     /* System Font Stacks */
     --font-family-system: system-ui, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, 'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
     --font-family-mono: ui-monospace, 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Courier New', monospace;
+    
+    /* Spacing Scale - Consistent spacing system */
+    --sp-xs: 0.25rem;    /* 4px */
+    --sp-sm: 0.5rem;     /* 8px */
+    --sp-md: 0.75rem;    /* 12px */
+    --sp-lg: 1rem;       /* 16px */
+    --sp-xl: 1.25rem;    /* 20px */
+    --sp-2xl: 1.5rem;    /* 24px */
+    --sp-3xl: 2rem;      /* 32px */
+    --sp-4xl: 3rem;      /* 48px */
+    --sp-5xl: 4rem;      /* 64px */
 }
 
 
@@ -46,8 +57,8 @@ body {
     min-height: 80px;
     min-width: 0;
     text-align: center;
-    padding: 0.75rem;
-    margin-bottom: 0.5rem;
+    padding: var(--sp-md);
+    margin-bottom: var(--sp-sm);
     
     /* Performance optimizations for animations */
     contain: layout paint;
@@ -83,7 +94,7 @@ body {
 
 .kpi-card .label {
     font-size: 0.875rem;
-    margin-bottom: 0.5rem;
+    margin-bottom: var(--sp-sm);
     letter-spacing: 0.5px;
     text-transform: uppercase;
     font-weight: 600;
@@ -265,13 +276,13 @@ body {
     
     /* Compact table headers for mobile */
     .table th {
-        padding: 0.5rem 0.3rem;
+        padding: var(--sp-sm) var(--sp-xs);
         white-space: nowrap;
         font-size: 0.7rem;
     }
     
     .table td {
-        padding: 0.5rem 0.3rem;
+        padding: var(--sp-sm) var(--sp-xs);
         font-size: 0.75rem;
     }
     
@@ -1583,6 +1594,37 @@ body.dark-theme .theme-toggle:hover {
 .col-action { width: 8%; text-align: center; }
 .col-status { width: 10%; text-align: center; }
 
+/* Spacing Utility Classes - Consistent spacing system */
+.p-xs { padding: var(--sp-xs); }
+.p-sm { padding: var(--sp-sm); }
+.p-md { padding: var(--sp-md); }
+.p-lg { padding: var(--sp-lg); }
+.p-xl { padding: var(--sp-xl); }
+
+.m-xs { margin: var(--sp-xs); }
+.m-sm { margin: var(--sp-sm); }
+.m-md { margin: var(--sp-md); }
+.m-lg { margin: var(--sp-lg); }
+.m-xl { margin: var(--sp-xl); }
+
+.mb-xs { margin-bottom: var(--sp-xs); }
+.mb-sm { margin-bottom: var(--sp-sm); }
+.mb-md { margin-bottom: var(--sp-md); }
+.mb-lg { margin-bottom: var(--sp-lg); }
+.mb-xl { margin-bottom: var(--sp-xl); }
+
+.mt-xs { margin-top: var(--sp-xs); }
+.mt-sm { margin-top: var(--sp-sm); }
+.mt-md { margin-top: var(--sp-md); }
+.mt-lg { margin-top: var(--sp-lg); }
+.mt-xl { margin-top: var(--sp-xl); }
+
+.gap-xs { gap: var(--sp-xs); }
+.gap-sm { gap: var(--sp-sm); }
+.gap-md { gap: var(--sp-md); }
+.gap-lg { gap: var(--sp-lg); }
+.gap-xl { gap: var(--sp-xl); }
+
 .trading-table th:first-child,
 .trading-table td:first-child { text-align: left; }
 
@@ -1634,13 +1676,13 @@ body.dark-theme .theme-toggle:hover {
     
     .kpi-card {
         min-height: 70px;
-        padding: 0.75rem;
+        padding: var(--sp-md);
     }
     
     /* Grid improvements */
     .row.g-2 > * {
-        padding-left: 0.25rem;
-        padding-right: 0.25rem;
+        padding-left: var(--sp-xs);
+        padding-right: var(--sp-xs);
     }
     
     .row.g-md-3 {
@@ -1696,7 +1738,7 @@ body.dark-theme .theme-toggle:hover {
     
     .kpi-card {
         min-height: 60px;
-        padding: 0.5rem;
+        padding: var(--sp-sm);
     }
     
     /* Table improvements */

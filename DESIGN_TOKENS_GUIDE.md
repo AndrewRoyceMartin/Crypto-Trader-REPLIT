@@ -264,6 +264,72 @@ Modern performance optimizations ensure smooth animations on low-powered devices
 - **GPU Acceleration** - Hardware-accelerated transforms for better performance
 - **Battery Efficiency** - Optimized rendering reduces CPU usage
 
+## Spacing System
+
+### CSS Variables for Consistent Spacing
+A comprehensive spacing scale using CSS variables ensures design consistency:
+
+```css
+:root {
+    --sp-xs: 0.25rem;    /* 4px */
+    --sp-sm: 0.5rem;     /* 8px */
+    --sp-md: 0.75rem;    /* 12px */
+    --sp-lg: 1rem;       /* 16px */
+    --sp-xl: 1.25rem;    /* 20px */
+    --sp-2xl: 1.5rem;    /* 24px */
+    --sp-3xl: 2rem;      /* 32px */
+    --sp-4xl: 3rem;      /* 48px */
+    --sp-5xl: 4rem;      /* 64px */
+}
+```
+
+### Spacing Utility Classes
+Pre-built utility classes for common spacing patterns:
+
+**Padding:**
+- `.p-xs` through `.p-xl` - All-around padding
+- Custom: `padding: var(--sp-md);`
+
+**Margin:**
+- `.m-xs` through `.m-xl` - All-around margin
+- `.mb-xs` through `.mb-xl` - Bottom margin
+- `.mt-xs` through `.mt-xl` - Top margin
+- Custom: `margin-bottom: var(--sp-sm);`
+
+**Gap (Flexbox/Grid):**
+- `.gap-xs` through `.gap-xl` - Container gap
+- Custom: `gap: var(--sp-lg);`
+
+### Usage Examples
+
+#### Before (Hardcoded Values)
+```css
+.kpi-card {
+    padding: 0.75rem;
+    margin-bottom: 0.5rem;
+}
+```
+
+#### After (Consistent Variables)
+```css
+.kpi-card {
+    padding: var(--sp-md);
+    margin-bottom: var(--sp-sm);
+}
+```
+
+#### Utility Class Approach
+```html
+<div class="p-md mb-sm">Content</div>
+```
+
+### Benefits
+- **Global Consistency** - Single source of truth for all spacing values
+- **Easy Maintenance** - Change spacing scale from one location
+- **Responsive Design** - Can modify variables in media queries for responsive spacing
+- **Design System** - Enforces consistent visual rhythm across the application
+- **Developer Efficiency** - Faster development with pre-defined spacing utilities
+
 ## Benefits
 1. **Consistency** - Standardized values across the application
 2. **Maintainability** - Single source of truth for design values
@@ -274,6 +340,7 @@ Modern performance optimizations ensure smooth animations on low-powered devices
 7. **User Experience** - Dual dark mode support with persistent preferences
 8. **Smart UX** - Conditional scroll hints only appear when horizontal scrolling is needed
 9. **Performance** - CSS containment and will-change optimizations for smooth animations on low-powered devices
+10. **Consistent Spacing** - CSS variable-based spacing system for unified design language
 
 ## Usage Examples
 
