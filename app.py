@@ -187,7 +187,7 @@ def create_initial_purchase_trades(mode, trade_type):
         return []
 
 def background_warmup():
-    """Background warmup with minimal symbols and no heavy initialization."""
+    """Background warmup focused on connectivity test and market validation only."""
     global warmup
     if warmup["started"]:
         return
@@ -201,7 +201,7 @@ def background_warmup():
     })
 
     try:
-        logger.info(f"Background warmup starting for {MAX_STARTUP_SYMBOLS} symbols")
+        logger.info(f"Background warmup starting: connectivity test and market validation")
 
         # Use minimal CCXT setup - check for real OKX credentials
         import ccxt
@@ -230,39 +230,34 @@ def background_warmup():
             ex.headers.pop('x-simulated-trading', None)
         logger.info("Using live OKX account for background warmup")
 
-        # Try to load markets, but don't fail if it doesn't work
+        # Load markets for connectivity test and symbol validation
         try:
             ex.load_markets()
             logger.info("Markets loaded successfully")
+            
+            # Get available markets and validate our watchlist symbols
+            available_symbols = list(ex.markets.keys())
+            valid_symbols = [sym for sym in WATCHLIST[:MAX_STARTUP_SYMBOLS] if sym in available_symbols]
+            
+            warmup["loaded"] = valid_symbols
+            warmup["total_markets"] = len(available_symbols)
+            warmup["connectivity"] = "success"
+            
+            logger.info(f"Connectivity test passed. {len(valid_symbols)} watchlist symbols validated from {len(available_symbols)} available markets")
+            
         except Exception as market_error:
-            logger.warning(f"Could not load markets: {market_error}")
-            # Continue without market data
-
-        # Fetch minimal data for just a few symbols
-        successful_loads = 0
-        for sym in WATCHLIST[:MAX_STARTUP_SYMBOLS]:
-            try:
-                ohlcv = ex.fetch_ohlcv(sym, timeframe='1h', limit=STARTUP_OHLCV_LIMIT)
-                import pandas as pd
-                df = pd.DataFrame(ohlcv, columns=["ts","open","high","low","close","volume"])  # type: ignore[call-arg]
-                df["ts"] = pd.to_datetime(df["ts"], unit="ms", utc=True)
-                df.set_index("ts", inplace=True)
-                cache_put(sym, '1h', df)
-                warmup["loaded"].append(sym)
-                successful_loads += 1
-                logger.info(f"Warmed up {sym}")
-            except Exception as fe:
-                logger.warning(f"Warmup fetch failed for {sym}: {fe}")
-            time.sleep(WARMUP_SLEEP_SEC)
+            logger.warning(f"Market connectivity test failed: {market_error}")
+            warmup["connectivity"] = "failed"
+            warmup["error"] = str(market_error)
+            # Use fallback symbol list
+            warmup["loaded"] = WATCHLIST[:MAX_STARTUP_SYMBOLS]
 
         warmup["done"] = True
-        if successful_loads > 0:
-            logger.info(
-                "Warmup complete: %d/%d symbols loaded: %s",
-                successful_loads, MAX_STARTUP_SYMBOLS, ', '.join(warmup['loaded'])
-            )
-        else:
-            logger.warning("Warmup complete but no symbols loaded - continuing with empty cache")
+        logger.info(
+            "Warmup complete: connectivity=%s, symbols available: %s",
+            warmup.get("connectivity", "unknown"), 
+            ', '.join(warmup['loaded'])
+        )
 
     except Exception as e:
         warmup.update({"error": str(e), "done": True})

@@ -71,6 +71,14 @@ The `/api/test-sync-data` endpoint has been secured with production guards:
 - Uses `portfolio_service.get_portfolio_data()` directly instead of HTTP calls to avoid subprocess overhead
 - Returns disabled status with helpful message when tests are not explicitly enabled
 
+**Optimized Warmup System:**
+The background warmup process has been optimized for efficiency and meaningfulness:
+- Focuses on connectivity testing and market validation only (no expensive data fetching)
+- Validates watchlist symbols against available markets from OKX
+- Provides instant feedback on exchange connectivity status
+- Reports total available markets and validated symbols for monitoring
+- Eliminates cache warming overhead while maintaining fast startup readiness
+
 **Table Rendering System:**
 Dedicated table elements per dashboard view ensure no data conflicts, with robust currency conversion, error handling, and performance optimizations.
 
