@@ -46,6 +46,7 @@
         .icon-trophy::before { content: "🏆"; }
         .icon-code::before { content: "⚞"; }
         .icon-menu::before { content: "☰"; }
+        .icon-fire::before { content: "🔥"; }
     </style>
     
     <!-- Minimal CSS (preload for performance) -->
@@ -80,8 +81,6 @@
                     <a class="nav-link active" href="#overview">
                         <span class="icon icon-dashboard me-1"></span>Overview
                     </a>
-                    <a class="nav-link" href="#portfolio">Portfolio</a>
-                    <a class="nav-link" href="#performance">Performance</a>
                     <a class="nav-link" href="#holdings">Holdings</a>
                     <a class="nav-link" href="#trades">Trades</a>
                 </div>
@@ -196,87 +195,57 @@
                 <div class="col-6 col-md-2">
                     <div class="kpi-card">
                         <div class="label">
-                            <span class="icon icon-refresh me-1"></span>Rebuy Ready
+                            <span class="icon icon-wallet me-1"></span>Account Level
                         </div>
-                        <div id="okx-rebuy-count" class="value">0</div>
-                        <div class="change-indicator text-muted">$100 Limit</div>
+                        <div id="okx-account-tier" class="value">Standard</div>
+                        <div id="okx-account-features" class="change-indicator"></div>
                     </div>
                 </div>
             </div>
 
-            <!-- Risk & Status Strip -->
-            <div class="row align-items-center mb-3 g-3">
-                <div class="col-12 col-lg-6">
-                    <div class="small text-muted d-flex justify-content-between">
-                        <span>Daily Loss Cap</span>
-                        <span id="loss-cap-text">—</span>
-                    </div>
-                    <div class="progress progress-thin">
-                        <div id="loss-cap-bar" class="progress-bar progress-bar-zero" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
-                    </div>
+            <!-- Quick Trading Controls -->
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">
+                        <span class="icon icon-exchange me-2"></span>Quick Trading
+                    </h6>
                 </div>
-                <div class="col-12 col-lg-6 text-end small">
-                    <span class="me-3">
-                        <span class="icon icon-server me-1"></span>
-                        Server Uptime: <span id="system-uptime">0s</span>
-                    </span>
-                    <span>
-                        <span class="icon icon-exchange me-1"></span>
-                        OKX API: <span id="okx-connection-text" class="text-success">Connected</span>
-                    </span>
-                </div>
-            </div>
-
-            <!-- Quick Trading Controls Row -->
-            <div class="row g-3">
-                    <!-- Quick Trading Controls Card -->
-                    <div class="card">
-                        <div class="card-header">
-                            <h6 class="card-title mb-0">
-                                <span class="icon icon-exchange me-2"></span>Quick Trading
-                            </h6>
+                <div class="card-body">
+                    <div class="row g-2">
+                        <div class="col-6 col-md-3">
+                            <button class="btn btn-success fw-bold w-100" onclick="showBuyDialog()">
+                                <span class="icon icon-up me-2"></span> BUY
+                            </button>
                         </div>
-                        <div class="card-body">
-                            <div class="row g-2">
-                                <div class="col-6 col-md-3">
-                                    <button class="btn btn-success fw-bold w-100" onclick="showBuyDialog()">
-                                        <span class="icon icon-up me-2"></span> BUY
-                                    </button>
-                                </div>
-                                <div class="col-6 col-md-3">
-                                    <button class="btn btn-danger fw-bold w-100" onclick="showSellDialog()">
-                                        <span class="icon icon-down me-2"></span> SELL
-                                    </button>
-                                </div>
-                                <div class="col-6 col-md-3">
-                                    <button class="btn btn-warning fw-bold w-100" onclick="toggleBot()">
-                                        <span class="icon icon-robot me-2"></span> <span id="bot-status">START BOT</span>
-                                    </button>
-                                </div>
-                                <div class="col-6 col-md-3">
-                                    <button class="btn btn-danger fw-bold w-100" onclick="confirmLiveTrading()" title="Start live trading with real money">
-                                        <span class="icon icon-fire me-2"></span> LIVE TRADE
-                                    </button>
-                                </div>
-                            </div>
-                            <div class="mt-3 text-center">
-                                <small class="text-warning">
-                                    <span class="icon icon-fire me-1"></span><strong>Live Trading Enabled</strong>
-                                </small>
-                                <div class="mt-1">
-                                    <small class="text-muted">
-                                        <span class="icon icon-shield me-1"></span>OKX API Connected
-                                    </small>
-                                </div>
-                            </div>
+                        <div class="col-6 col-md-3">
+                            <button class="btn btn-danger fw-bold w-100" onclick="showSellDialog()">
+                                <span class="icon icon-down me-2"></span> SELL
+                            </button>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <button class="btn btn-warning fw-bold w-100" onclick="toggleBot()">
+                                <span class="icon icon-robot me-2"></span> <span id="bot-status">START BOT</span>
+                            </button>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <button class="btn btn-danger fw-bold w-100" onclick="confirmLiveTrading()" title="Start live trading with real money">
+                                <span class="icon icon-fire me-2"></span> LIVE TRADE
+                            </button>
                         </div>
                     </div>
+                    <div class="mt-3 text-center">
+                        <small class="text-warning">
+                            <span class="icon icon-fire me-1"></span><strong>Live Trading Enabled</strong>
+                        </small>
+                        <div class="mt-1">
+                            <small class="text-muted">
+                                <span class="icon icon-shield me-1"></span>OKX API Connected
+                            </small>
+                        </div>
+                    </div>
+                </div>
             </div>
         </section>
-
-
-
-
 
         <hr class="section-divider my-5">
 
@@ -568,7 +537,7 @@
                 }).then(res => res.json());
                 if (data.success) {
                     alert(`Rebalance successful: ${data.message}`);
-                    // Refresh all data
+                    // Refresh data
                     if (typeof loadDashboardData === 'function') loadDashboardData();
                     if (typeof loadHoldingsData === 'function') loadHoldingsData();
                 } else {
@@ -581,220 +550,77 @@
         }
     }
 
-    // Simple fetch helper with abort + no-store
-    const controllers = new Map();
-
-    async function fetchJSON(url, key = url) {
-        if (controllers.has(key)) controllers.get(key).abort();
-        const ctl = new AbortController();
-        controllers.set(key, ctl);
-        const res = await fetch(url, { signal: ctl.signal, cache: 'no-store', headers: { 'Cache-Control': 'no-store' } });
-        if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
-        return res.json();
-    }
-
-    // Smooth scroll function
-    function scrollToSection(id) {
-        const el = document.getElementById(id);
-        if (!el) return;
-        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-
-    // Initialize all data loading when page loads
-    document.addEventListener('DOMContentLoaded', function() {
-        // Load all sections data
-        if (typeof loadDashboardData === 'function') loadDashboardData();
-        if (typeof loadPortfolioData === 'function') loadPortfolioData();
-        if (typeof loadPerformanceData === 'function') loadPerformanceData();
-        if (typeof loadHoldingsData === 'function') loadHoldingsData();
-        if (typeof loadTradesData === 'function') loadTradesData();
-        
-        // Start auto-refresh intervals
-        setInterval(function() {
-            if (typeof loadDashboardData === 'function') loadDashboardData();
-        }, 30000); // Refresh overview every 30s
-        
-        setInterval(function() {
-            if (typeof loadHoldingsData === 'function') loadHoldingsData();
-        }, 60000); // Refresh holdings every 60s
-
-        // Highlight active nav based on section visibility
-        const links = [...document.querySelectorAll('.nav-pills-container .nav-link')];
-        const map = new Map(links.map(a => [a.getAttribute('href')?.replace('#','') || '', a]));
-
-        const obs = new IntersectionObserver((entries) => {
-            entries.forEach(e => {
-                if (e.isIntersecting) {
-                    const id = e.target.id;
-                    links.forEach(a => a.classList.toggle('active', a.getAttribute('href') === '#' + id));
-                    map.get(id)?.setAttribute('aria-current', 'page');
-                } else {
-                    map.get(e.target.id)?.removeAttribute('aria-current');
-                }
-            });
-        }, { root: null, rootMargin: '-120px 0px -70% 0px', threshold: [0.1, 0.6] });
-
-        document.querySelectorAll('section[id]').forEach(sec => obs.observe(sec));
-
-        // Update OKX overview function
-        async function updateOKXOverview() {
-            try {
-                // Fetch portfolio and bot status data
-                const [portfolioRes, statusRes] = await Promise.all([
-                    fetch('/api/crypto-portfolio'),
-                    fetch('/api/bot/status')
-                ]);
-                
-                const portfolio = await portfolioRes.json();
-                const status = await statusRes.json();
-                
-                // Update total balance - handle AUD cash balance properly
-                const cryptoValue = portfolio?.summary?.total_current_value || portfolio?.total_current_value || 0;
-                const cashBalanceAUD = 193.15; // AUD balance from API response
-                const audToUsd = 0.67; // Approximate AUD to USD conversion rate
-                const totalBalance = (cryptoValue > 0 ? cryptoValue : 0) + (cashBalanceAUD * audToUsd);
-                
-                console.log('Portfolio data:', portfolio);
-                console.log('Status data:', status);
-                console.log('Crypto value:', cryptoValue, 'Cash AUD:', cashBalanceAUD, 'Total USD:', totalBalance);
-                
-                const totalBalanceEl = document.getElementById('okx-total-balance');
-                if (totalBalanceEl) {
-                    totalBalanceEl.textContent = new Intl.NumberFormat('en-US', {
-                        style: 'currency',
-                        currency: 'USD'
-                    }).format(totalBalance);
-                }
-                
-                // Update daily P&L - use summary data
-                const dailyPnL = portfolio?.summary?.total_pnl || portfolio?.total_pnl || 0;
-                const dailyPnLPercent = portfolio?.summary?.total_pnl_percent || portfolio?.total_pnl_percent || 0;
-                
-                const dailyPnLEl = document.getElementById('okx-day-pnl');
-                if (dailyPnLEl) {
-                    dailyPnLEl.textContent = new Intl.NumberFormat('en-US', {
-                        style: 'currency',
-                        currency: 'USD'
-                    }).format(dailyPnL);
-                }
-                
-                // Update P&L percentage
-                const pnlPercentEl = document.getElementById('okx-day-pnl-percent');
-                if (pnlPercentEl && dailyPnLPercent !== 0) {
-                    pnlPercentEl.textContent = `${dailyPnLPercent > 0 ? '+' : ''}${dailyPnLPercent.toFixed(2)}%`;
-                    pnlPercentEl.className = `change-indicator ${dailyPnL > 0 ? 'text-success' : dailyPnL < 0 ? 'text-danger' : 'text-muted'}`;
-                }
-                
-                // Update best performer from holdings
-                const holdings = portfolio?.holdings || [];
-                if (holdings.length > 0) {
-                    const bestPerformer = holdings.reduce((best, holding) => 
-                        holding.pnl_percent > (best?.pnl_percent || -Infinity) ? holding : best
-                    );
-                    
-                    const bestPerformerEl = document.getElementById('okx-best-performer');
-                    const bestGainEl = document.getElementById('okx-best-gain');
-                    
-                    if (bestPerformerEl && bestPerformer) {
-                        bestPerformerEl.textContent = bestPerformer.symbol;
-                    }
-                    if (bestGainEl && bestPerformer?.pnl_percent) {
-                        bestGainEl.textContent = `+${bestPerformer.pnl_percent.toFixed(2)}%`;
-                        bestGainEl.className = 'change-indicator text-success';
-                    }
-                } else {
-                    const bestPerformerEl = document.getElementById('okx-best-performer');
-                    if (bestPerformerEl) bestPerformerEl.textContent = '—';
-                }
-                
-                // Update bot status
-                const botRunning = status?.running || false;
-                const isMultiCurrency = status?.multi_currency || false;
-                const botStatusEl = document.getElementById('okx-bot-status');
-                if (botStatusEl) {
-                    botStatusEl.textContent = botRunning ? (isMultiCurrency ? 'Multi-Currency' : 'Active') : 'Inactive';
-                }
-                
-                // Update rebuy count
-                const rebuyCount = status?.rebuy_opportunities || 0;
-                const rebuyEl = document.getElementById('okx-rebuy-count');
-                if (rebuyEl) {
-                    rebuyEl.textContent = rebuyCount;
-                }
-                
-                // Update active positions
-                const activePositions = holdings.filter(h => h.quantity > 0 && h.has_position).length;
-                const positionsEl = document.getElementById('okx-active-positions');
-                const positionsDetailEl = document.getElementById('okx-positions-detail');
-                
-                if (positionsEl) {
-                    positionsEl.textContent = activePositions;
-                }
-                if (positionsDetailEl) {
-                    positionsDetailEl.textContent = `${activePositions} Holdings`;
-                }
-                
-                console.log('OKX overview updated successfully');
-                
-                // Also try to fetch OKX native dashboard data for enhanced overview
+    async function confirmLiveTrading() {
+        if (confirm('WARNING: This will enable live trading with real money. Are you sure?')) {
+            if (confirm('FINAL CONFIRMATION: Start live trading mode?')) {
                 try {
-                    const nativeRes = await fetch('/api/okx-dashboard');
-                    if (nativeRes.ok) {
-                        const nativeData = await nativeRes.json();
-                        if (nativeData.success && nativeData.data) {
-                            console.log('OKX Native Dashboard Data:', nativeData.data);
-                            updateNativeOKXDisplay(nativeData.data);
-                        }
+                    const ctl = new AbortController();
+                    const data = await fetch('/api/enable-live-trading', { 
+                        method: 'POST',
+                        cache: 'no-store',
+                        signal: ctl.signal,
+                        headers: { 'Cache-Control': 'no-store' }
+                    }).then(res => res.json());
+                    if (data.success) {
+                        alert(`Live trading enabled: ${data.message}`);
+                        // Refresh data
+                        if (typeof loadDashboardData === 'function') loadDashboardData();
+                    } else {
+                        alert(`Live trading failed: ${data.error}`);
                     }
-                } catch (nativeError) {
-                    console.debug('OKX native dashboard unavailable:', nativeError.message);
+                } catch (error) {
+                    console.error('Live trading error:', error);
+                    alert('Live trading failed: Network error');
                 }
-                
-            } catch (error) {
-                console.error('Error updating OKX overview:', error);
             }
         }
+    }
 
-        // Function to update display with OKX native dashboard data
-        function updateNativeOKXDisplay(data) {
-            try {
-                // Update account level and additional native metrics
-                const accountEl = document.getElementById('okx-account-level');
-                if (accountEl && data.account_summary) {
-                    accountEl.textContent = data.account_summary.account_level || 'Standard';
+    // Initialize OKX native data display
+    async function updateNativeOKXDisplay() {
+        try {
+            const response = await fetch('/api/okx-dashboard');
+            if (!response.ok) {
+                console.warn('OKX Dashboard API not available');
+                return;
+            }
+            
+            const data = await response.json();
+            if (data.success) {
+                // Update account level
+                const accountLevel = document.getElementById('okx-account-level');
+                if (accountLevel && data.account_level) {
+                    accountLevel.textContent = data.account_level;
+                    accountLevel.className = `badge ${data.account_level === 'VIP' ? 'bg-warning' : 'bg-info'}`;
                 }
                 
-                // Update with more accurate total equity if available
-                const totalBalanceEl = document.getElementById('okx-total-balance');
-                if (totalBalanceEl && data.account_summary?.total_equity_usd > 0) {
-                    totalBalanceEl.textContent = formatCurrency(data.account_summary.total_equity_usd);
+                // Update other native OKX data
+                if (data.total_balance) {
+                    const totalBalance = document.getElementById('okx-total-balance');
+                    if (totalBalance) totalBalance.textContent = `$${data.total_balance.toFixed(2)}`;
                 }
                 
-                // Display position counts from native API
-                const positionsEl = document.getElementById('okx-active-positions');
-                if (positionsEl && data.quick_stats) {
-                    positionsEl.textContent = `${data.quick_stats.active_positions} Active`;
-                }
-                
-                // Show largest holding if available
-                if (data.quick_stats?.largest_holding) {
-                    const largestEl = document.getElementById('okx-best-performer');
-                    if (largestEl) {
-                        largestEl.textContent = `${data.quick_stats.largest_holding.symbol} ($${data.quick_stats.largest_holding.equity_usd.toFixed(2)})`;
+                if (data.day_pnl !== undefined) {
+                    const dayPnl = document.getElementById('okx-day-pnl');
+                    if (dayPnl) {
+                        dayPnl.textContent = `$${data.day_pnl.toFixed(2)}`;
+                        dayPnl.className = `value ${data.day_pnl >= 0 ? 'text-success' : 'text-danger'}`;
                     }
                 }
                 
-                console.log('Native OKX display updated with account level:', data.account_summary?.account_level);
-                
-            } catch (nativeDisplayError) {
-                console.debug('Error updating native OKX display:', nativeDisplayError);
+                console.log('OKX native display updated successfully');
             }
+        } catch (error) {
+            console.warn('Failed to update OKX native display:', error);
         }
+    }
 
-        // Call OKX overview update on load and every 30 seconds
-        updateOKXOverview();
-        setInterval(updateOKXOverview, 30000);
+    // Call updateNativeOKXDisplay on page load and periodically
+    document.addEventListener('DOMContentLoaded', function() {
+        updateNativeOKXDisplay();
+        setInterval(updateNativeOKXDisplay, 30000); // Update every 30 seconds
     });
     </script>
+    
 </body>
 </html>
