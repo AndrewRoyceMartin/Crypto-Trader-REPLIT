@@ -1032,7 +1032,7 @@ class TradingApp {
                     </td>
                     <td class="text-end">${daysHeld}</td>
                     <td class="text-center text-nowrap">
-                        <button class="btn btn-xs btn-outline-primary px-2 py-1" onclick="alert('PEPE position details')" style="font-size: 0.7rem;">View</button>
+                        <button class="btn btn-xs btn-outline-primary px-2 py-1 small" onclick="alert('PEPE position details')">View</button>
                     </td>
                 `;
                 tableBody.appendChild(row);

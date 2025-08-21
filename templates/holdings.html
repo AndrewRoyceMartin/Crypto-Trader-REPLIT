@@ -170,7 +170,7 @@
         </div>
       </div>
       <div class="col-6 col-md-3">
-        <div class="card p-3 kpi-card text-white shadow-sm" style="background: linear-gradient(135deg, #6f42c1 0%, #8e44ad 100%);">
+        <div class="card p-3 kpi-card text-white shadow-sm bg-gradient" style="background: linear-gradient(135deg, #6f42c1 0%, #8e44ad 100%);">
           <div class="label fw-semibold text-white-75">PEPE Holdings</div>
           <div id="pos-pepe-holdings" class="value fs-5 fw-bold text-white">6,016,268</div>
         </div>
@@ -182,7 +182,7 @@
         </div>
       </div>
       <div class="col-6 col-md-3">
-        <div class="card p-3 kpi-card text-white shadow-sm" style="background: linear-gradient(135deg, #fd7e14 0%, #e67e22 100%);">
+        <div class="card p-3 kpi-card text-white shadow-sm bg-gradient" style="background: linear-gradient(135deg, #fd7e14 0%, #e67e22 100%);">
           <div class="label fw-semibold text-white-75">Purchase Price</div>
           <div id="pos-purchase-price" class="value fs-5 fw-bold text-white">$0.00000800</div>
         </div>
@@ -204,15 +204,15 @@
         </div>
       </div>
       <div class="col-6 col-md-3">
-        <div class="card p-3 kpi-card text-white shadow-sm" style="background: linear-gradient(135deg, #6c757d 0%, #495057 100%);">
+        <div class="card p-3 kpi-card text-white shadow-sm bg-gradient" style="background: linear-gradient(135deg, #6c757d 0%, #495057 100%);">
           <div class="label fw-semibold text-white-75">Asset Count</div>
           <div id="pos-total-count" class="value fs-5 fw-bold text-white">1</div>
         </div>
       </div>
       <div class="col-6 col-md-3">
-        <div class="card p-3 kpi-card text-dark shadow-sm" style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); border: 1px solid #dee2e6;">
-          <div class="label fw-semibold" style="color: #6c757d;">Last Updated</div>
-          <div id="pos-last-updated" class="value fs-5 fw-bold" style="color: #212529;">Just now</div>
+        <div class="card p-3 kpi-card text-dark shadow-sm bg-gradient border" style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);">
+          <div class="label fw-semibold text-muted">Last Updated</div>
+          <div id="pos-last-updated" class="value fs-5 fw-bold text-dark">Just now</div>
         </div>
       </div>
     </div>
@@ -356,7 +356,7 @@
     </div>
 
     <!-- Positions Table -->
-    <div class="card" style="margin-bottom: 3rem;">
+    <div class="card mb-5">
       <div class="card-header d-flex justify-content-between align-items-center">
         <h6 class="mb-0">
           <i class="fas fa-list me-2"></i>Open Positions
@@ -365,7 +365,7 @@
           <span class="me-2">Largest Weight: <strong id="pos-largest-weight">100%</strong></span>
         </div>
       </div>
-      <div class="table-responsive" style="max-height: 400px; overflow-y: auto; overflow-x: auto; max-width: 100%; position: relative; -webkit-overflow-scrolling: touch;">
+      <div class="table-responsive overflow-auto position-relative w-100" style="max-height: 400px; -webkit-overflow-scrolling: touch;">
         <table class="table table-sm table-hover align-middle mb-0" id="positions-table">
           <thead class="table-dark sticky-top">
             <tr>
@@ -394,7 +394,7 @@
     </div>
 
     <!-- Orders & Fills -->
-    <div class="row g-3" style="margin-top: 2rem; clear: both;">
+    <div class="row g-3 mt-4 clearfix">
       <div class="col-xl-6">
         <div class="card">
           <div class="card-header"><strong>Open Orders</strong></div>
