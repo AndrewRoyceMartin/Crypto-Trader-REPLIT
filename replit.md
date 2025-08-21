@@ -119,6 +119,12 @@ Implemented comprehensive fixes for validation, error handling, timezone safety,
 - Removed `'unsafe-inline'` from script-src CSP directive for better security
 - Cleaned up redundant time/datetime/random imports throughout the codebase
 
+**Production-Ready Configuration:**
+Updated deployment configuration for production readiness:
+- Configured gunicorn with 4 workers, gthread worker class, and 60-second timeout
+- Added threaded=True to development server to prevent self-call deadlocks
+- Enhanced WSGI configuration with proper worker threading and connection handling
+
 **Table Rendering System:**
 Dedicated table elements per dashboard view ensure no data conflicts, with robust currency conversion, error handling, and performance optimizations.
 

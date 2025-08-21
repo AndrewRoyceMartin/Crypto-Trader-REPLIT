@@ -6,10 +6,11 @@ bind = f"0.0.0.0:{os.environ.get('PORT', '5000')}"
 backlog = 2048
 
 # Worker processes
-workers = 1
-worker_class = "sync"
+workers = 4
+worker_class = "gthread"
+threads = 2
 worker_connections = 1000
-timeout = 30
+timeout = 60
 keepalive = 5
 
 # Restart workers after this many requests
@@ -30,6 +31,7 @@ pidfile = "/tmp/gunicorn.pid"
 user = None
 group = None
 tmp_upload_dir = None
+preload_app = True
 
 # SSL
 keyfile = None

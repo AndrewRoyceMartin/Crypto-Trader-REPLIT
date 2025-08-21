@@ -4414,7 +4414,10 @@ def add_security_headers(resp):
 application = app
 
 if __name__ == "__main__":
+    # PRODUCTION NOTE: Use gunicorn instead of app.run() for production:
+    # gunicorn -w 4 -k gthread -t 60 app:application
     initialize_system()  # config/db only; no network calls here
     port = int(os.environ.get("PORT", "5000"))
     logger.info(f"Ultra-fast Flask server starting on 0.0.0.0:{port}")
-    app.run(host="0.0.0.0", port=port, debug=False, use_reloader=False)
+    # Development server with threading to avoid self-call deadlocks
+    app.run(host="0.0.0.0", port=port, debug=False, use_reloader=False, threaded=True)
