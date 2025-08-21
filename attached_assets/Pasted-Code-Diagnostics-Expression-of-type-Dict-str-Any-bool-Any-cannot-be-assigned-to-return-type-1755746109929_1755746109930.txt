@@ -1,0 +1,43 @@
+Code Diagnostics
+Expression of type "Dict[str, Any] | bool | Any" cannot be assigned to return type "bool"   Type "Dict[str, Any] | bool | Any" cannot be assigned to type "bool"     "Dict[str, Any]" is incompatible with "bool"
+(pyright-extended)
+Ln 307, Col 16
+"fetch_my_trades" is not a known member of "None"
+(pyright-extended)
+Ln 319, Col 53
+"fetch_closed_orders" is not a known member of "None"
+(pyright-extended)
+Ln 331, Col 55
+Method declaration "get_ticker" is obscured by a declaration of the same name
+(pyright-extended)
+Ln 480, Col 9
+"fetch_my_trades" is not a known member of "None"
+(pyright-extended)
+Ln 525, Col 52
+"fetch_my_trades" is not a known member of "None"
+(pyright-extended)
+Ln 527, Col 52
+f-string without any placeholders
+(pyright-extended)
+Ln 537, Col 30
+"fetch_closed_orders" is not a known member of "None"
+(pyright-extended)
+Ln 538, Col 55
+"fetch_closed_orders" is not a known member of "None"
+(pyright-extended)
+Ln 568, Col 59
+f-string without any placeholders
+(pyright-extended)
+Ln 598, Col 30
+"fetch_closed_orders" is not a known member of "None"
+(pyright-extended)
+Ln 600, Col 55
+"fetch_my_trades" is not a known member of "None"
+(pyright-extended)
+Ln 680, Col 48
+"fetch_closed_orders" is not a known member of "None"
+(pyright-extended)
+Ln 689, Col 55
+Argument of type "list[str]" cannot be assigned to parameter "columns" of type "Axes | None" in function "__init__"   Type "list[str]" cannot be assigned to type "Axes | None"     "list[str]" is incompatible with "ExtensionArray"     "list[str]" is incompatible with "ndarray[_AnyShape, dtype[Any]]"     "list[str]" is incompatible with "Index"     "list[str]" is incompatible with "Series"     "list[str]" is incompatible with protocol "SequenceNotStr[Unknown]"       "index" is an incompatible type         Type "(value: str, start: SupportsIndex = 0, stop: SupportsIndex = sys.maxsize, /) -> int" cannot be assigned to type "(value: Any, /, start: int = 0, stop: int = ...) -> int" ...
+(pyright-extended)
+Ln 733, Col 46

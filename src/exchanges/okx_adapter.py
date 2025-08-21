@@ -304,8 +304,9 @@ class OKXAdapter(BaseExchange):
     
     def _is_okx_success_response(self, response: Dict[str, Any]) -> bool:
         """Check if OKX API response indicates success."""
-        return (response and 
-                response.get('code') == '0' and 
+        if not response:
+            return False
+        return (response.get('code') == '0' and 
                 'data' in response and 
                 isinstance(response['data'], list))
     
@@ -313,6 +314,9 @@ class OKXAdapter(BaseExchange):
         """Enhanced CCXT fallback method with multiple approaches."""
         fallback_trades = []
         
+        if self.exchange is None:
+            return fallback_trades
+            
         try:
             # CCXT Method 1: fetch_my_trades
             self.logger.debug("Attempting CCXT fetch_my_trades")
@@ -516,6 +520,9 @@ class OKXAdapter(BaseExchange):
     
     def _legacy_get_trades_fallback(self, symbol: Optional[str] = None, limit: int = 50) -> List[Dict[str, Any]]:
         """Fallback trade retrieval method using basic OKX API calls."""
+        if self.exchange is None:
+            return []
+            
         all_trades = []
         
         # Method 1: Try fetch_my_trades (standard method)
@@ -534,7 +541,7 @@ class OKXAdapter(BaseExchange):
         
         # Method 2: Try fetch_closed_orders (OKX specific method)
         try:
-            self.logger.info(f"Attempting fetch_closed_orders (OKX-specific method)")
+            self.logger.info("Attempting fetch_closed_orders (OKX-specific method)")
             closed_orders = self._retry(self.exchange.fetch_closed_orders, limit=min(limit, 100))
             self.logger.info(f"fetch_closed_orders returned {len(closed_orders)} orders")
             
@@ -669,8 +676,8 @@ class OKXAdapter(BaseExchange):
             # For 'all' or unknown timeframes, use regular get_trades
             return self.get_trades(limit=limit)
         
-        if not self.is_connected():
-            raise Exception("Not connected to exchange")
+        if not self.is_connected() or self.exchange is None:
+            raise RuntimeError("Not connected to exchange")
         
         all_trades = []
         
