@@ -92,12 +92,14 @@ body {
 /* Table layout fixes */
 .table-responsive {
     border-radius: 0.375rem;
+    position: relative;
 }
 
 .sticky-top {
     position: sticky;
     top: 0;
-    z-index: 10;
+    z-index: 1020;
+    background-color: inherit;
 }
 
 /* Prevent table overflow issues */
@@ -119,6 +121,25 @@ body {
 .row > * {
     padding-left: 0.75rem;
     padding-right: 0.75rem;
+}
+
+/* Additional table fixes for better positioning */
+.table-responsive .table thead th {
+    border-bottom: 2px solid #dee2e6;
+    vertical-align: bottom;
+}
+
+.table-responsive .table thead.sticky-top th {
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* Prevent layout shifts */
+.card {
+    overflow: hidden;
+}
+
+.card .table-responsive {
+    margin-bottom: 0;
 }
 
 .card-header {
