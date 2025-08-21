@@ -33,7 +33,8 @@ class TradingApp {
             assetAllocation: { data: null, timestamp: 0, ttl: 15000 }, // 15s
             bestPerformer: { data: null, timestamp: 0, ttl: 10000 },  // 10s
             worstPerformer: { data: null, timestamp: 0, ttl: 10000 },  // 10s
-            equityCurve: { data: null, timestamp: 0, ttl: 30000 }     // 30s
+            equityCurve: { data: null, timestamp: 0, ttl: 30000 },    // 30s
+            drawdownAnalysis: { data: null, timestamp: 0, ttl: 30000 } // 30s
         };
 
         // Debug: force network fetches
@@ -389,6 +390,9 @@ class TradingApp {
         
         // Equity curve
         this.updateEquityCurve();
+        
+        // Drawdown analysis
+        this.updateDrawdownAnalysis();
     }
 
     async updatePortfolioAnalytics() {
@@ -992,6 +996,211 @@ class TradingApp {
                 }
                 if (id === 'equity-max-drawdown') {
                     element.className = 'text-warn';
+                }
+            }
+        });
+    }
+    
+    async updateDrawdownAnalysis() {
+        try {
+            const timeframe = document.getElementById('drawdown-timeframe')?.value || '30d';
+            const response = await fetch(`/api/drawdown-analysis?timeframe=${timeframe}`, { cache: 'no-cache' });
+            if (!response.ok) return;
+            const data = await response.json();
+            
+            if (!data.success || !data.drawdown_data) return;
+            
+            // Update drawdown chart
+            this.updateDrawdownChart(data.drawdown_data, data.metrics);
+            
+            // Update drawdown metrics display
+            this.updateDrawdownMetrics(data.metrics);
+            
+        } catch (error) {
+            console.error('Drawdown analysis update failed:', error);
+        }
+    }
+    
+    updateDrawdownChart(drawdownData, metrics) {
+        const drawdownCanvas = document.getElementById('drawdownChart');
+        if (!drawdownCanvas || !window.Chart) return;
+        
+        try {
+            // Destroy existing chart
+            if (this.drawdownChart) {
+                this.drawdownChart.destroy();
+            }
+            
+            // Prepare data for Chart.js
+            const labels = drawdownData.map(point => {
+                const date = new Date(point.date);
+                return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            });
+            
+            const equityValues = drawdownData.map(point => point.equity);
+            const peakValues = drawdownData.map(point => point.peak_equity);
+            const drawdownPercents = drawdownData.map(point => -point.drawdown_percent); // Negative for underwater display
+            
+            // Create dual-axis drawdown chart
+            this.drawdownChart = new Chart(drawdownCanvas, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Portfolio Equity',
+                            data: equityValues,
+                            borderColor: '#007bff',
+                            backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                            borderWidth: 2,
+                            fill: false,
+                            tension: 0.1,
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: 'Peak Equity',
+                            data: peakValues,
+                            borderColor: '#28a745',
+                            backgroundColor: 'transparent',
+                            borderWidth: 1,
+                            borderDash: [5, 5],
+                            fill: false,
+                            tension: 0.1,
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: 'Drawdown %',
+                            data: drawdownPercents,
+                            borderColor: '#dc3545',
+                            backgroundColor: 'rgba(220, 53, 69, 0.1)',
+                            borderWidth: 2,
+                            fill: 'origin',
+                            tension: 0.1,
+                            yAxisID: 'y1'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { 
+                            display: true,
+                            position: 'top'
+                        },
+                        title: { 
+                            display: true, 
+                            text: `Drawdown Analysis (${drawdownData.length} data points)`,
+                            font: { size: 12 }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const dataIndex = context.dataIndex;
+                                    const point = drawdownData[dataIndex];
+                                    
+                                    if (context.datasetIndex === 0) {
+                                        return `Equity: ${window.tradingApp ? window.tradingApp.formatCurrency(point.equity) : '$' + point.equity.toFixed(2)}`;
+                                    } else if (context.datasetIndex === 1) {
+                                        return `Peak: ${window.tradingApp ? window.tradingApp.formatCurrency(point.peak_equity) : '$' + point.peak_equity.toFixed(2)}`;
+                                    } else {
+                                        return `Drawdown: ${point.drawdown_percent.toFixed(2)}%`;
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            display: true,
+                            title: {
+                                display: true,
+                                text: 'Date'
+                            }
+                        },
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            title: {
+                                display: true,
+                                text: 'Portfolio Value'
+                            },
+                            ticks: {
+                                callback: function(value) {
+                                    return window.tradingApp ? window.tradingApp.formatCurrency(value) : '$' + value.toFixed(0);
+                                }
+                            }
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            title: {
+                                display: true,
+                                text: 'Drawdown %'
+                            },
+                            max: 0,
+                            ticks: {
+                                callback: function(value) {
+                                    return value.toFixed(1) + '%';
+                                }
+                            },
+                            grid: {
+                                drawOnChartArea: false,
+                            },
+                        }
+                    }
+                }
+            });
+            
+        } catch (error) {
+            console.error('Drawdown chart creation failed:', error);
+            // Fallback display
+            if (drawdownCanvas) {
+                drawdownCanvas.style.display = 'none';
+                const fallback = document.createElement('div');
+                fallback.className = 'text-center text-muted p-3';
+                fallback.innerHTML = `
+                    <strong>Drawdown Analysis</strong><br>
+                    Max Drawdown: ${metrics.max_drawdown_percent.toFixed(2)}%<br>
+                    Data Points: ${drawdownData.length}
+                `;
+                drawdownCanvas.parentNode.replaceChild(fallback, drawdownCanvas);
+            }
+        }
+    }
+    
+    updateDrawdownMetrics(metrics) {
+        // Update drawdown metrics elements if they exist
+        const elements = {
+            'drawdown-max': `${metrics.max_drawdown_percent.toFixed(2)}%`,
+            'drawdown-current': `${metrics.current_drawdown_percent.toFixed(2)}%`,
+            'drawdown-average': `${metrics.average_drawdown_percent.toFixed(2)}%`,
+            'drawdown-periods': metrics.total_drawdown_periods,
+            'drawdown-recovery': metrics.recovery_periods,
+            'drawdown-underwater': `${metrics.underwater_percentage.toFixed(1)}%`,
+            'drawdown-duration': `${metrics.max_drawdown_duration_days} days`,
+            'drawdown-peak': this.formatCurrency(metrics.peak_equity),
+            'drawdown-start': metrics.max_drawdown_start || 'N/A',
+            'drawdown-end': metrics.max_drawdown_end || 'N/A'
+        };
+        
+        Object.entries(elements).forEach(([id, value]) => {
+            const element = document.getElementById(id);
+            if (element) {
+                element.textContent = value;
+                
+                // Add color coding for drawdown indicators
+                if (id.includes('max') || id.includes('current') || id.includes('average')) {
+                    const numValue = parseFloat(value);
+                    if (numValue > 10) {
+                        element.className = 'text-danger';
+                    } else if (numValue > 5) {
+                        element.className = 'text-warn';
+                    } else {
+                        element.className = 'text-success';
+                    }
                 }
             }
         });
