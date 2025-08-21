@@ -2328,7 +2328,8 @@ function updatePortfolioSummaryUI(portfolioData) {
     });
 
     const cashBalance = portfolioData.cash_balance || 0;
-    const totalPortfolioValue = totalValue + cashBalance;
+    // FIXED: Check if backend provides calculated total portfolio value
+    const totalPortfolioValue = portfolioData.total_portfolio_value || (totalValue + cashBalance);
     const totalPnlPercent = totalCostBasis > 0 ? ((totalUnrealizedPnl / totalCostBasis) * 100) : 0;
 
     updateElementSafely("summary-total-value", formatCurrency(totalPortfolioValue));

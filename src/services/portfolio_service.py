@@ -291,7 +291,22 @@ class PortfolioService:
                 h["allocation_percent"] = (float(h.get("current_value", 0.0)) / total_value_for_alloc) * 100.0
 
             total_pnl = sum(float(h.get("pnl", 0.0)) for h in holdings)
-            total_pnl_percent = (total_pnl / total_initial_value * 100.0) if total_initial_value > 0 else 0.0
+            # FIXED: Try to get portfolio-level P&L from OKX if available
+            total_pnl_percent = 0.0
+            if total_initial_value > 0:
+                # Check if OKX provides overall portfolio P&L percentage
+                if hasattr(positions_data, '__iter__') and len(positions_data) > 0:
+                    # Look for aggregated P&L data from OKX
+                    okx_total_pnl_pct = None
+                    for pos in positions_data:
+                        if isinstance(pos, dict) and pos.get('totalUnrealizedPnlPercent'):
+                            okx_total_pnl_pct = float(pos.get('totalUnrealizedPnlPercent'))
+                            self.logger.debug(f"Using OKX total P&L percentage: {okx_total_pnl_pct:.2f}%")
+                            break
+                    
+                    total_pnl_percent = okx_total_pnl_pct if okx_total_pnl_pct is not None else (total_pnl / total_initial_value * 100.0)
+                else:
+                    total_pnl_percent = (total_pnl / total_initial_value * 100.0)
 
             # Calculate cash balance from real OKX account  
             cash_balance = 0.0

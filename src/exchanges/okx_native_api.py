@@ -189,7 +189,8 @@ class OKXNativeAPI:
                 'price': float(fill.get('fillPx', 0)),
                 'timestamp': timestamp_ms,
                 'datetime': datetime_obj.isoformat(),
-                'total_value': float(fill.get('fillSz', 0)) * float(fill.get('fillPx', 0)),
+                # FIXED: Use OKX notional value if available, otherwise calculate
+                'total_value': float(fill.get('notionalUsd') or fill.get('notional') or (float(fill.get('fillSz', 0)) * float(fill.get('fillPx', 0)))),
                 'fee': abs(float(fill.get('fee', 0))),
                 'fee_currency': fill.get('feeCcy', ''),
                 'trade_type': 'spot',
@@ -219,7 +220,8 @@ class OKXNativeAPI:
                 'price': float(order.get('avgPx', 0)),
                 'timestamp': timestamp_ms,
                 'datetime': datetime_obj.isoformat(),
-                'total_value': float(order.get('fillSz', 0)) * float(order.get('avgPx', 0)),
+                # FIXED: Use OKX notional/cost value if available, otherwise calculate
+                'total_value': float(order.get('notionalUsd') or order.get('cost') or order.get('notional') or (float(order.get('fillSz', 0)) * float(order.get('avgPx', 0)))),
                 'fee': abs(float(order.get('fee', 0))),
                 'fee_currency': order.get('feeCcy', ''),
                 'trade_type': 'spot',
