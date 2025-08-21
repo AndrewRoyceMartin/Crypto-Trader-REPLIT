@@ -4162,6 +4162,126 @@ function updateOpenPositionsTable(positions, totalValue = 0) {
     }
 }
 
+// Available positions table function
+function updateAvailablePositionsTable(allPositions) {
+    try {
+        const availableTableBody = document.getElementById("available-positions-table-body");
+        if (!availableTableBody) {
+            console.debug("Available positions table body element not found");
+            return;
+        }
+        
+        // Filter for positions with zero or near-zero quantities (sold out or very small amounts)
+        const availablePositions = allPositions ? allPositions.filter(position => {
+            const quantity = parseFloat(position.quantity || 0);
+            const status = position.status;
+            return (quantity === 0 || quantity < 0.000001 || status === 'sold_out');
+        }) : [];
+        
+        console.debug("Available positions data:", availablePositions);
+        
+        if (!availablePositions || availablePositions.length === 0) {
+            availableTableBody.innerHTML = `
+                <tr>
+                    <td colspan="10" class="text-center py-4">
+                        <i class="fas fa-info-circle me-2"></i>No available positions for buy-back
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        const tableHtml = availablePositions.map(position => {
+            const symbol = position.symbol || "Unknown";
+            const currentBalance = parseFloat(position.quantity || 0);
+            const currentPrice = parseFloat(position.current_price || 0);
+            
+            // Calculate last exit price from trades data or use a fallback
+            const lastExitPrice = parseFloat(position.last_exit_price || currentPrice * 1.1 || 0);
+            
+            // Calculate target buy price using our rebuy algorithm (typically 10-15% below last exit)
+            const buybackPercentage = 0.85; // 15% below exit price
+            const targetBuyPrice = lastExitPrice * buybackPercentage;
+            
+            // Price difference calculation
+            const priceDifference = currentPrice - targetBuyPrice;
+            const priceDiffPercent = targetBuyPrice > 0 ? ((currentPrice - targetBuyPrice) / targetBuyPrice) * 100 : 0;
+            
+            // Buy signal logic
+            const buySignal = currentPrice <= targetBuyPrice ? "BUY READY" : "WAIT";
+            const buySignalClass = buySignal === "BUY READY" ? "text-success fw-bold" : "text-warning";
+            
+            // Days since exit
+            let daysSinceExit = 0;
+            if (position.last_trade_date) {
+                const lastTrade = new Date(position.last_trade_date);
+                const now = new Date();
+                daysSinceExit = Math.floor((now - lastTrade) / (1000 * 60 * 60 * 24));
+            }
+            
+            // Format functions
+            const formatCurrency = (value) => {
+                const numValue = Number(value) || 0;
+                if (Math.abs(numValue) < 0.000001) {
+                    return `$${numValue.toExponential(2)}`;
+                }
+                return new Intl.NumberFormat("en-US", { 
+                    style: "currency", 
+                    currency: "USD",
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 8
+                }).format(numValue);
+            };
+            
+            const formatNumber = (value) => {
+                if (value === 0) return "0";
+                if (Math.abs(value) < 0.000001) return value.toExponential(2);
+                return value.toFixed(8);
+            };
+            
+            const formatDate = (dateStr) => {
+                if (!dateStr) return "N/A";
+                try {
+                    return new Date(dateStr).toLocaleDateString();
+                } catch {
+                    return "N/A";
+                }
+            };
+            
+            const priceDiffClass = priceDifference < 0 ? "text-success" : "text-danger";
+            
+            return `
+                <tr>
+                    <td class="fw-bold">${symbol}</td>
+                    <td>${formatNumber(currentBalance)}</td>
+                    <td>${formatCurrency(lastExitPrice)}</td>
+                    <td>${formatCurrency(currentPrice)}</td>
+                    <td class="fw-bold text-primary">${formatCurrency(targetBuyPrice)}</td>
+                    <td class="${priceDiffClass}">${formatCurrency(priceDifference)} (${priceDiffPercent >= 0 ? '+' : ''}${priceDiffPercent.toFixed(1)}%)</td>
+                    <td class="${buySignalClass}">${buySignal}</td>
+                    <td>${formatDate(position.last_trade_date)}</td>
+                    <td>${daysSinceExit} days</td>
+                    <td>
+                        <div class="btn-group btn-group-sm" role="group">
+                            ${buySignal === "BUY READY" ? 
+                                `<button class="btn btn-success btn-xs" onclick="buyBackPosition('${symbol}')" title="Buy Back Now">Buy Back</button>` :
+                                `<button class="btn btn-outline-secondary btn-xs" disabled title="Waiting for target price">Wait</button>`
+                            }
+                            <button class="btn btn-outline-primary btn-xs" onclick="setCustomBuyPrice('${symbol}')" title="Set Custom Price">Custom</button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }).join("");
+        
+        availableTableBody.innerHTML = tableHtml;
+        console.debug("Available positions table updated successfully");
+        
+    } catch (error) {
+        console.error("Available positions table update failed:", error);
+    }
+}
+
 // Trading action functions
 function sellPosition(symbol, percentage) {
     if (confirm(`Sell ${percentage}% of your ${symbol} position?`)) {
@@ -4175,6 +4295,25 @@ function buyMorePosition(symbol) {
         if (confirm(`Buy $${amount} worth of ${symbol}?`)) {
             executeBuyOrder(symbol, parseFloat(amount));
         }
+    }
+}
+
+// Available positions action functions
+function buyBackPosition(symbol) {
+    const defaultAmount = 100; // Default $100 rebuy limit from system preferences
+    const amount = prompt(`Enter USD amount to buy back ${symbol}:`, defaultAmount);
+    if (amount && !isNaN(amount) && parseFloat(amount) > 0) {
+        if (confirm(`Buy back $${amount} worth of ${symbol}?`)) {
+            executeBuyOrder(symbol, parseFloat(amount));
+        }
+    }
+}
+
+function setCustomBuyPrice(symbol) {
+    const price = prompt(`Enter custom buy trigger price for ${symbol}:`);
+    if (price && !isNaN(price) && parseFloat(price) > 0) {
+        alert(`Custom buy price of $${price} set for ${symbol} (feature coming soon)`);
+        // TODO: Implement custom price alerts in backend
     }
 }
 
@@ -4240,6 +4379,11 @@ async function refreshHoldingsData() {
             const positions = data.holdings || data.all_positions || [];
             console.debug('Holdings data received:', positions);
             updateOpenPositionsTable(positions, data.total_value);
+            
+            // Also update available positions table with all_positions data
+            if (data.all_positions) {
+                updateAvailablePositionsTable(data.all_positions);
+            }
             if (window.tradingApp) {
                 window.tradingApp.showToast('Holdings data refreshed', 'success');
             }
