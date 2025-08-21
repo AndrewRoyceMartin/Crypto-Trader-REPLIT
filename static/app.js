@@ -3063,8 +3063,30 @@ function clearPerformanceFilters() {
     }
 }
 function confirmLiveTrading() {
-    if (confirm('Start LIVE trading? This will use real money.')) {
-        startTrading('live', 'portfolio');
+    // Enhanced safety confirmation for live trading
+    const warningMessage = `
+🚨 LIVE TRADING WARNING 🚨
+
+You are about to start LIVE trading with REAL MONEY on your OKX account.
+
+This will:
+• Execute actual buy/sell orders
+• Use your real cryptocurrency holdings
+• Generate real profits or losses
+• Affect your actual portfolio balance
+
+Current Holdings:
+• PEPE: ${window.tradingApp?.currentCryptoData?.find(h => h.symbol === 'PEPE')?.quantity?.toLocaleString() || 'Unknown'} tokens
+• BTC: ${window.tradingApp?.currentCryptoData?.find(h => h.symbol === 'BTC')?.quantity?.toFixed(8) || 'Unknown'} BTC
+• USDT: $${window.tradingApp?.currentCryptoData?.find(h => h.symbol === 'USDT')?.quantity?.toFixed(2) || 'Unknown'}
+
+Are you absolutely certain you want to proceed with LIVE trading?
+    `.trim();
+    
+    if (confirm(warningMessage)) {
+        if (confirm('FINAL CONFIRMATION: Start live trading with real money?\n\nThis action cannot be undone once trades are executed.')) {
+            startTrading('live', 'portfolio');
+        }
     }
 }
 // Global variables to track sort state
@@ -3293,9 +3315,10 @@ function clearTradesFilters() {
 }
 async function startTrading(mode, type) {
     if (mode === 'live') {
-        if (!confirm('Are you sure you want to start LIVE trading? This will use real money.')) return;
-        window.tradingApp.showToast('Live trading is not enabled in this demo', 'warning');
-        return;
+        if (!confirm('⚠️ WARNING: You are about to start LIVE trading with REAL MONEY!\n\nThis will execute actual trades on your OKX account.\nAre you absolutely sure you want to proceed?')) return;
+        
+        // Additional confirmation for live trading
+        if (!confirm('Final confirmation: Start live trading with real money?\n\nClick OK to proceed with live trading or Cancel to abort.')) return;
     }
     window.tradingApp.showToast(`Starting ${mode} trading in ${type} mode...`, 'info');
     try {
@@ -3365,11 +3388,38 @@ async function toggleBot() {
         if (statusData.running) {
             await stopTrading();
         } else {
+            // Default to paper trading for the toggle button
             await startTrading('paper', 'portfolio');
         }
+        
+        // Update bot status display
+        await updateBotStatusDisplay();
     } catch (error) {
         window.tradingApp.showToast(`Error toggling bot: ${error.message}`, 'error');
         console.debug('Bot toggle error:', error);
+    }
+}
+
+async function updateBotStatusDisplay() {
+    try {
+        const response = await fetch('/api/bot/status');
+        const data = await response.json();
+        
+        const botStatusElement = document.getElementById('bot-status');
+        if (botStatusElement) {
+            if (data.running) {
+                const mode = data.mode?.toUpperCase() || 'UNKNOWN';
+                botStatusElement.textContent = `STOP BOT (${mode})`;
+                // Use different colors for different modes
+                const buttonClass = data.mode === 'live' ? 'btn btn-danger fw-bold' : 'btn btn-success fw-bold';
+                botStatusElement.parentElement.className = buttonClass;
+            } else {
+                botStatusElement.textContent = 'START BOT';
+                botStatusElement.parentElement.className = 'btn btn-warning fw-bold';
+            }
+        }
+    } catch (error) {
+        console.debug('Error updating bot status display:', error);
     }
 }
 
