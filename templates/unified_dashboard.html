@@ -134,8 +134,9 @@
         <section id="overview" class="mb-5">
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <h2><span class="icon icon-wallet me-2"></span>OKX Portfolio Overview</h2>
-                <div class="d-flex align-items-center">
-                    <span class="badge bg-success me-2">
+                <div class="d-flex align-items-center gap-2">
+                    <span id="okx-account-level" class="badge bg-info">Standard</span>
+                    <span class="badge bg-success">
                         <span class="icon icon-wifi me-1"></span>
                         <span id="overview-connection">Connected</span>
                     </span>
@@ -956,8 +957,58 @@
                 
                 console.log('OKX overview updated successfully');
                 
+                // Also try to fetch OKX native dashboard data for enhanced overview
+                try {
+                    const nativeRes = await fetch('/api/okx-dashboard');
+                    if (nativeRes.ok) {
+                        const nativeData = await nativeRes.json();
+                        if (nativeData.success && nativeData.data) {
+                            console.log('OKX Native Dashboard Data:', nativeData.data);
+                            updateNativeOKXDisplay(nativeData.data);
+                        }
+                    }
+                } catch (nativeError) {
+                    console.debug('OKX native dashboard unavailable:', nativeError.message);
+                }
+                
             } catch (error) {
                 console.error('Error updating OKX overview:', error);
+            }
+        }
+
+        // Function to update display with OKX native dashboard data
+        function updateNativeOKXDisplay(data) {
+            try {
+                // Update account level and additional native metrics
+                const accountEl = document.getElementById('okx-account-level');
+                if (accountEl && data.account_summary) {
+                    accountEl.textContent = data.account_summary.account_level || 'Standard';
+                }
+                
+                // Update with more accurate total equity if available
+                const totalBalanceEl = document.getElementById('okx-total-balance');
+                if (totalBalanceEl && data.account_summary?.total_equity_usd > 0) {
+                    totalBalanceEl.textContent = formatCurrency(data.account_summary.total_equity_usd);
+                }
+                
+                // Display position counts from native API
+                const positionsEl = document.getElementById('okx-active-positions');
+                if (positionsEl && data.quick_stats) {
+                    positionsEl.textContent = `${data.quick_stats.active_positions} Active`;
+                }
+                
+                // Show largest holding if available
+                if (data.quick_stats?.largest_holding) {
+                    const largestEl = document.getElementById('okx-best-performer');
+                    if (largestEl) {
+                        largestEl.textContent = `${data.quick_stats.largest_holding.symbol} ($${data.quick_stats.largest_holding.equity_usd.toFixed(2)})`;
+                    }
+                }
+                
+                console.log('Native OKX display updated with account level:', data.account_summary?.account_level);
+                
+            } catch (nativeDisplayError) {
+                console.debug('Error updating native OKX display:', nativeDisplayError);
             }
         }
 

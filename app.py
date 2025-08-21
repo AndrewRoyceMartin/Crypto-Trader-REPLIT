@@ -3499,6 +3499,97 @@ def api_test_sync_data():
         }), 500
     
 
+# ===== OKX Native Dashboard API =====
+@app.route('/api/okx-dashboard')
+def okx_dashboard():
+    """Native OKX Dashboard API - Direct integration with OKX native APIs for overview data."""
+    try:
+        from src.utils.okx_native import OKXNative
+        
+        # Initialize OKX native client
+        okx = OKXNative.from_env()
+        
+        # Fetch account balance (includes cash and positions)
+        balance_data = okx._request('/api/v5/account/balance')
+        
+        # Fetch account configuration
+        config_data = okx._request('/api/v5/account/config')
+        
+        # Parse balance data
+        balances = balance_data.get('data', [{}])[0] if balance_data.get('data') else {}
+        details = balances.get('details', [])
+        
+        # Calculate totals and build overview
+        total_eq_usd = float(balances.get('totalEq', 0))
+        
+        # Get positions with value > 0
+        crypto_positions = []
+        cash_positions = []
+        
+        for detail in details:
+            balance = float(detail.get('bal', 0))
+            if balance > 0:
+                asset_info = {
+                    'symbol': detail.get('ccy'),
+                    'balance': balance,
+                    'frozen': float(detail.get('frozenBal', 0)),
+                    'available': float(detail.get('availBal', 0)),
+                    'equity_usd': float(detail.get('eqUsd', 0))
+                }
+                
+                # Categorize as crypto or cash
+                if detail.get('ccy') in ['USD', 'USDT', 'AUD']:
+                    cash_positions.append(asset_info)
+                else:
+                    crypto_positions.append(asset_info)
+        
+        # Account configuration
+        account_config = config_data.get('data', [{}])[0] if config_data.get('data') else {}
+        account_level = account_config.get('acctLv', 'Unknown')
+        
+        # Build native OKX dashboard response
+        dashboard_data = {
+            'account_summary': {
+                'total_equity_usd': total_eq_usd,
+                'account_level': account_level,
+                'margin_ratio': balances.get('mgnRatio', ''),
+                'isolated_equity': float(balances.get('isoEq', 0)),
+                'available_equity': float(balances.get('availEq', 0)),
+                'order_frozen': float(balances.get('ordFrozen', 0))
+            },
+            'positions_overview': {
+                'total_crypto_positions': len(crypto_positions),
+                'total_cash_positions': len(cash_positions),
+                'crypto_holdings': crypto_positions,
+                'cash_holdings': cash_positions
+            },
+            'quick_stats': {
+                'total_assets': len(details),
+                'active_positions': len([d for d in details if float(d.get('bal', 0)) > 0]),
+                'total_equity_usd': total_eq_usd,
+                'largest_holding': max(crypto_positions, key=lambda x: x['equity_usd']) if crypto_positions else None
+            },
+            'metadata': {
+                'last_update': iso_utc(),
+                'source': 'okx_native_api',
+                'data_freshness': 'real_time'
+            }
+        }
+        
+        return jsonify({
+            'success': True,
+            'data': dashboard_data,
+            'timestamp': iso_utc()
+        })
+        
+    except Exception as e:
+        app.logger.error(f"OKX Dashboard endpoint error: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'timestamp': iso_utc()
+        }), 500
+
 @app.after_request
 def add_security_headers(resp):
     resp.headers["Content-Security-Policy"] = (
