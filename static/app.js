@@ -4146,6 +4146,48 @@ async function executeBuyOrder(symbol, amount) {
     }
 }
 
+// Function to refresh holdings data (called by refresh button)
+async function refreshHoldingsData() {
+    try {
+        const response = await fetch('/api/current-holdings', { cache: 'no-cache' });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        
+        const data = await response.json();
+        if (data.success && data.holdings) {
+            updateOpenPositionsTable(data.holdings, data.total_value);
+            if (window.tradingApp) {
+                window.tradingApp.showToast('Holdings data refreshed', 'success');
+            }
+        } else {
+            throw new Error(data.error || 'Failed to fetch holdings');
+        }
+    } catch (error) {
+        console.debug('Error refreshing holdings:', error);
+        if (window.tradingApp) {
+            window.tradingApp.showToast('Failed to refresh holdings data', 'error');
+        }
+        // Show error in table
+        const tableBody = document.getElementById('open-positions-table-body');
+        if (tableBody) {
+            tableBody.innerHTML = `
+                <tr>
+                    <td colspan="12" class="text-center text-danger py-4">
+                        <i class="fas fa-exclamation-triangle me-2"></i>Failed to load positions data
+                    </td>
+                </tr>
+            `;
+        }
+    }
+}
+
+// Auto-load positions on page load
+document.addEventListener('DOMContentLoaded', function() {
+    // Small delay to ensure page is fully loaded
+    setTimeout(() => {
+        refreshHoldingsData();
+    }, 500);
+});
+
 // Override holdings table to display positions on page load
 window.addEventListener("load", function() {
     if (window.dashboardManager && window.dashboardManager.updateHoldingsTable) {
@@ -4153,4 +4195,7 @@ window.addEventListener("load", function() {
             updateOpenPositionsTable(holdings);
         };
     }
+    
+    // Also refresh holdings on load as backup
+    setTimeout(refreshHoldingsData, 1000);
 });
