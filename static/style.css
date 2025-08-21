@@ -94,37 +94,7 @@ body {
     overflow-wrap: break-word;
 }
 
-/* Responsive font sizes for smaller screens */
-@media (max-width: 768px) {
-    .kpi-card .value {
-        font-size: 1.2rem;
-    }
-    
-    .kpi-card .label {
-        font-size: 0.75rem;
-        letter-spacing: 0.3px;
-    }
-    
-    .kpi-card {
-        min-height: 70px;
-        padding: 0.75rem;
-    }
-}
-
-@media (max-width: 576px) {
-    .kpi-card .value {
-        font-size: 1rem;
-    }
-    
-    .kpi-card .label {
-        font-size: 0.7rem;
-    }
-    
-    .kpi-card {
-        min-height: 60px;
-        padding: 0.5rem;
-    }
-}
+/* CONSOLIDATED RESPONSIVE STYLES - All breakpoints organized together */
 
 /* Text color utilities for better contrast - Chrome optimized */
 .kpi-card .text-white-75,
@@ -210,17 +180,7 @@ body {
     padding-right: 0.75rem;
 }
 
-/* Responsive grid improvements */
-@media (max-width: 768px) {
-    .row.g-2 > * {
-        padding-left: 0.25rem;
-        padding-right: 0.25rem;
-    }
-    
-    .row.g-md-3 {
-        margin-bottom: 1rem !important;
-    }
-}
+/* Responsive grid improvements - MOVED TO CONSOLIDATED SECTION */
 
 /* Additional table fixes for better positioning */
 .table-responsive .table thead th {
@@ -254,17 +214,7 @@ body {
     flex-direction: column;
 }
 
-/* Better mobile chart layout */
-@media (max-width: 768px) {
-    .chart-card {
-        min-height: 250px;
-        margin-bottom: 1rem;
-    }
-    
-    .chart-card .row.g-3 {
-        margin-bottom: 0.5rem;
-    }
-}
+/* Better mobile chart layout - MOVED TO CONSOLIDATED SECTION */
 
 /* Enhanced spacing between major sections */
 .container-fluid .row:not(.g-2):not(.g-3) + .row {
@@ -361,31 +311,7 @@ body {
     line-height: 1.2;
 }
 
-@media (max-width: 768px) {
-    .btn-xs {
-        font-size: 0.7rem;
-        padding: 0.2rem 0.4rem;
-    }
-}
-
-/* Tooltip positioning fixes for mobile */
-@media (max-width: 768px) {
-    .tooltip {
-        font-size: 0.75rem;
-    }
-    
-    .tooltip-inner {
-        max-width: 200px;
-        padding: 0.4rem 0.6rem;
-        text-align: center;
-    }
-    
-    /* Force bottom placement on mobile for info icons */
-    .fa-info-circle[data-bs-toggle="tooltip"] {
-        margin-left: 0.25rem;
-        font-size: 0.85rem;
-    }
-}
+/* Button and tooltip improvements - MOVED TO CONSOLIDATED SECTION */
 
 /* General tooltip styling improvements */
 .tooltip {
@@ -1461,16 +1387,7 @@ body {
     min-height: calc(100vh - 2rem);
 }
 
-@media (max-width: 768px) {
-    .modal-xl {
-        max-width: 95vw;
-        margin: 0.5rem;
-    }
-    
-    .chart-container-responsive {
-        height: 250px;
-    }
-}
+/* Modal sizing fixes - MOVED TO CONSOLIDATED SECTION */
 
 /* Optimized Table Selectors - Replace nth-child with class-based approach */
 /* Apply these classes to HTML table elements to replace overly-specific nth-child selectors */
@@ -1499,5 +1416,187 @@ body {
 
 .trading-table .status,
 .trading-table .action { text-align: center; }
+
+/* ===== CONSOLIDATED MEDIA QUERIES ===== */
+/* All responsive styles organized by breakpoint for better maintainability */
+
+/* Large tablets and small desktops: 768px and below */
+@media (max-width: 768px) {
+    /* KPI Cards responsive */
+    .kpi-card .value {
+        font-size: 1.2rem;
+    }
+    
+    .kpi-card .label {
+        font-size: 0.75rem;
+        letter-spacing: 0.3px;
+    }
+    
+    .kpi-card {
+        min-height: 70px;
+        padding: 0.75rem;
+    }
+    
+    /* Grid improvements */
+    .row.g-2 > * {
+        padding-left: 0.25rem;
+        padding-right: 0.25rem;
+    }
+    
+    .row.g-md-3 {
+        margin-bottom: 1rem;
+    }
+    
+    /* Chart layout */
+    .chart-card {
+        min-height: 250px;
+        margin-bottom: 1rem;
+    }
+    
+    .chart-card .row.g-3 {
+        margin-bottom: 0.5rem;
+    }
+    
+    .chart-container-responsive {
+        height: 250px;
+    }
+    
+    /* Modal improvements */
+    .modal-xl {
+        max-width: 95vw;
+        margin: 0.5rem;
+    }
+    
+    /* Dark mode improvements */
+    .navbar-dark {
+        background-color: #2d2d2d;
+    }
+    
+    .card {
+        background-color: #2d2d2d;
+        color: #e9ecef;
+    }
+    
+    .card-header {
+        background-color: #2d2d2d;
+        border-bottom-color: #495057;
+    }
+}
+
+/* Mobile phones: 576px and below */
+@media (max-width: 576px) {
+    /* KPI Cards mobile */
+    .kpi-card .value {
+        font-size: 1rem;
+    }
+    
+    .kpi-card .label {
+        font-size: 0.7rem;
+    }
+    
+    .kpi-card {
+        min-height: 60px;
+        padding: 0.5rem;
+    }
+    
+    /* Table improvements */
+    #positions-table {
+        font-size: 0.65rem;
+    }
+    
+    .table th {
+        padding: 0.3rem 0.2rem;
+        font-size: 0.6rem;
+    }
+    
+    .table td {
+        padding: 0.3rem 0.2rem;
+        font-size: 0.65rem;
+    }
+    
+    /* Button improvements */
+    .btn-xs {
+        font-size: 0.7rem;
+        padding: 0.2rem 0.4rem;
+    }
+    
+    .btn-sm {
+        font-size: 0.75rem;
+        padding: 0.15rem 0.3rem;
+    }
+    
+    /* Tooltip improvements */
+    .tooltip {
+        font-size: 0.75rem;
+    }
+    
+    .tooltip-inner {
+        max-width: 200px;
+        padding: 0.4rem 0.6rem;
+        text-align: center;
+    }
+    
+    .fa-info-circle[data-bs-toggle="tooltip"] {
+        margin-left: 0.25rem;
+        font-size: 0.85rem;
+    }
+}
+
+/* Dark mode preferences */
+@media (prefers-color-scheme: dark) {
+    body {
+        background-color: #1a1a1a;
+        color: #e9ecef;
+    }
+    
+    .navbar-dark {
+        background-color: #2d2d2d;
+    }
+    
+    .card {
+        background-color: #2d2d2d;
+        color: #e9ecef;
+    }
+    
+    .card-header {
+        background-color: #2d2d2d;
+        border-bottom-color: #495057;
+    }
+    
+    .portfolio-metric {
+        background-color: #343a40;
+    }
+    
+    .table {
+        color: #e9ecef;
+    }
+    
+    .table th {
+        border-bottom-color: #495057;
+    }
+    
+    .table td {
+        border-top-color: #495057;
+    }
+}
+
+/* Print styles */
+@media print {
+    .navbar,
+    .btn,
+    .modal {
+        display: none;
+    }
+    
+    .card {
+        box-shadow: none;
+        border: 1px solid #000;
+    }
+    
+    body {
+        background-color: white;
+        color: black;
+    }
+}
 
 /* End of file */
