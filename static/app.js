@@ -65,38 +65,19 @@ class TradingApp {
         }).format(convertedAmount);
     }
 
-    // Special formatter for crypto prices that need more precision
+    // Special formatter for crypto prices with consistent precision
     formatCryptoPrice(amount, currency = null) {
         const targetCurrency = currency || this.selectedCurrency || 'USD';
         const rate = this.exchangeRates[targetCurrency] || 1;
         const convertedAmount = (Number(amount) || 0) * rate;
 
-        // For very small amounts, use more decimal places
-        if (Math.abs(convertedAmount) < 0.01 && Math.abs(convertedAmount) > 0) {
-            // Find the number of leading zeros after decimal point
-            const str = convertedAmount.toExponential();
-            const exponent = parseInt(str.split('e-')[1]) || 0;
-            const decimals = Math.max(8, exponent + 2); // At least 8 decimals for crypto
-            
-            return new Intl.NumberFormat('en-US', {
-                style: 'currency',
-                currency: targetCurrency,
-                minimumFractionDigits: decimals,
-                maximumFractionDigits: decimals
-            }).format(convertedAmount);
-        }
-        
-        // For normal amounts, use standard formatting but return the amount directly if zero
-        if (convertedAmount === 0) {
-            return new Intl.NumberFormat('en-US', {
-                style: 'currency',
-                currency: targetCurrency,
-                minimumFractionDigits: 8,
-                maximumFractionDigits: 8
-            }).format(0);
-        }
-        
-        return this.formatCurrency(convertedAmount, targetCurrency);
+        // Always use 8 decimal places for crypto to prevent bouncing
+        return new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: targetCurrency,
+            minimumFractionDigits: 8,
+            maximumFractionDigits: 8
+        }).format(convertedAmount);
     }
     formatUptime(totalSeconds) {
         const hours = Math.floor(totalSeconds / 3600);
@@ -1035,14 +1016,16 @@ class TradingApp {
                 const purchasePrice = this.num(crypto.avg_entry_price || crypto.avg_buy_price) || 0.00000800;
                 const cv = this.num(crypto.current_value || crypto.value) || 60.16268093736791;
                 
-                // Debug log to see what data we're getting
+                // Debug log to see what data we're getting and check for bouncing
                 if (crypto.symbol === 'PEPE') {
                     console.log('PEPE table data:', {
                         current_price: crypto.current_price,
                         avg_buy_price: crypto.avg_buy_price,
                         avg_entry_price: crypto.avg_entry_price,
                         cp: cp,
-                        purchasePrice: purchasePrice
+                        purchasePrice: purchasePrice,
+                        formattedCP: this.formatCryptoPrice(cp),
+                        formattedPurchase: this.formatCryptoPrice(purchasePrice)
                     });
                 }
                 const pnlNum = crypto.pnl || crypto.unrealized_pnl || 12.032536187473589;
