@@ -4046,7 +4046,12 @@ function updatePositionTable(holdings) {
 function updateOpenPositionsTable(positions, totalValue = 0) {
     try {
         const positionsTableBody = document.getElementById("open-positions-table-body");
-        if (!positionsTableBody) return;
+        if (!positionsTableBody) {
+            console.debug("Positions table body element not found");
+            return;
+        }
+        
+        console.debug("Processing positions data:", positions);
         
         if (!positions || positions.length === 0) {
             positionsTableBody.innerHTML = `
@@ -4063,10 +4068,16 @@ function updateOpenPositionsTable(positions, totalValue = 0) {
             // Check if this is from the new all_positions format
             const isNewFormat = position.status !== undefined;
             const symbol = position.symbol || position.name || "Unknown";
-            const quantity = parseFloat(position.quantity || position.balance || 0);
-            const purchasePrice = parseFloat(position.avg_entry_price || position.entry_price || position.purchase_price || 0);
+            const quantity = parseFloat(position.quantity || position.available_quantity || position.balance || 0);
+            
+            // Handle purchase price - estimate from cost basis if available
+            let purchasePrice = parseFloat(position.avg_entry_price || position.entry_price || position.purchase_price || 0);
+            if (purchasePrice === 0 && position.cost_basis && quantity > 0) {
+                purchasePrice = parseFloat(position.cost_basis) / quantity;
+            }
+            
             const currentPrice = parseFloat(position.current_price || position.price || 0);
-            const marketValue = parseFloat(position.current_value || position.value || quantity * currentPrice);
+            const marketValue = parseFloat(position.current_value || position.value || (quantity * currentPrice));
             
             // Current P&L calculations
             const costBasis = quantity * purchasePrice;
@@ -4090,11 +4101,19 @@ function updateOpenPositionsTable(positions, totalValue = 0) {
             const currentPnlClass = currentPnlDollar >= 0 ? "pnl-up" : "pnl-down";
             const targetPnlClass = targetPnlDollar >= 0 ? "pnl-up" : "pnl-down";
             
-            // Format numbers
-            const formatCurrency = (value) => new Intl.NumberFormat("en-US", { 
-                style: "currency", 
-                currency: "USD" 
-            }).format(value);
+            // Format numbers with better handling for small values
+            const formatCurrency = (value) => {
+                const numValue = Number(value) || 0;
+                if (Math.abs(numValue) < 0.000001) {
+                    return `$${numValue.toExponential(2)}`;
+                }
+                return new Intl.NumberFormat("en-US", { 
+                    style: "currency", 
+                    currency: "USD",
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 8
+                }).format(numValue);
+            };
             
             const formatNumber = (value) => {
                 if (value > 1000000) return (value / 1000000).toFixed(2) + "M";
@@ -4205,9 +4224,10 @@ async function refreshHoldingsData() {
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         
         const data = await response.json();
-        if (data.success && data.holdings) {
-            // Use all_positions if available, otherwise fall back to holdings
-            const positions = data.all_positions || data.holdings || [];
+        if (data.success && (data.holdings || data.all_positions)) {
+            // Use holdings first (more complete data), then fall back to all_positions
+            const positions = data.holdings || data.all_positions || [];
+            console.debug('Holdings data received:', positions);
             updateOpenPositionsTable(positions, data.total_value);
             if (window.tradingApp) {
                 window.tradingApp.showToast('Holdings data refreshed', 'success');
