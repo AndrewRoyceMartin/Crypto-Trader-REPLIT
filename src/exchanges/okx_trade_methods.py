@@ -10,9 +10,9 @@ from datetime import datetime, timedelta, timezone
 class OKXTradeRetrieval:
     """OKX-specific trade retrieval methods with comprehensive API coverage."""
     
-    def __init__(self, exchange, logger):
+    def __init__(self, exchange, logger=None):
         self.exchange = exchange
-        self.logger = logger
+        self.logger = logger or logging.getLogger(__name__)
     
     def _normalize_symbol(self, s: Optional[str]) -> Optional[str]:
         """Convert standard format (BTC/USDT) to OKX instId format (BTC-USDT)."""
@@ -78,7 +78,7 @@ class OKXTradeRetrieval:
         dedup_set = set()
         
         # Method 1: OKX Private Trade Fills API (most accurate)
-        self.logger.info("Attempting OKX private trade fills API")
+        self.logger.info("Retrieving trades via OKX fills API")
         try:
             trades = self._get_okx_trade_fills(symbol, limit, since)
             for trade in trades:
@@ -86,12 +86,12 @@ class OKXTradeRetrieval:
                 if uid not in dedup_set:
                     all_trades.append(trade)
                     dedup_set.add(uid)
-            self.logger.info(f"Retrieved {len(trades)} trades from fills API")
+            self.logger.debug(f"Retrieved {len(trades)} trades from fills API")
         except Exception as e:
             self.logger.warning(f"OKX fills API failed: {e}")
         
         # Method 2: OKX Orders History API
-        self.logger.info("Attempting OKX orders history API")
+        self.logger.info("Retrieving trades via OKX orders API")
         try:
             trades = self._get_okx_orders_history(symbol, limit, since)
             for trade in trades:
@@ -99,12 +99,12 @@ class OKXTradeRetrieval:
                 if uid not in dedup_set:
                     all_trades.append(trade)
                     dedup_set.add(uid)
-            self.logger.info(f"Retrieved {len(trades)} trades from orders history API")
+            self.logger.debug(f"Retrieved {len(trades)} trades from orders history API")
         except Exception as e:
             self.logger.warning(f"OKX orders history API failed: {e}")
         
         # Method 3: Standard CCXT methods as fallback
-        self.logger.info("Attempting standard CCXT methods")
+        self.logger.info("Retrieving trades via CCXT fallback")
         try:
             trades = self._get_ccxt_trades(symbol, limit, since)
             for trade in trades:
@@ -112,14 +112,14 @@ class OKXTradeRetrieval:
                 if uid not in dedup_set:
                     all_trades.append(trade)
                     dedup_set.add(uid)
-            self.logger.info(f"Retrieved {len(trades)} trades from CCXT methods")
+            self.logger.debug(f"Retrieved {len(trades)} trades from CCXT methods")
         except Exception as e:
             self.logger.warning(f"CCXT methods failed: {e}")
         
         # Final sort by timestamp (most recent first)
         all_trades.sort(key=lambda x: x.get('timestamp', 0), reverse=True)
         
-        self.logger.info(f"Final result: {len(all_trades)} unique trades after enhanced deduplication")
+        self.logger.info(f"Trade retrieval complete: {len(all_trades)} unique trades")
         return all_trades[:limit]
     
     def _get_okx_trade_fills(self, symbol: Optional[str], limit: int, since: Optional[int] = None) -> List[Dict[str, Any]]:
@@ -178,12 +178,12 @@ class OKXTradeRetrieval:
                                     all_trades.append(trade)
                                     
                 except Exception as e:
-                    self.logger.debug(f"OKX fills pagination failed: {e}")
+                    self.logger.debug(f"Fills pagination failed: {e}")
             
             return all_trades
             
         except Exception as e:
-            self.logger.debug(f"OKX fills API error: {e}")
+            self.logger.warning(f"OKX fills API error: {e}")
             return []
     
     def _get_okx_orders_history(self, symbol: Optional[str], limit: int, since: Optional[int] = None) -> List[Dict[str, Any]]:
@@ -243,12 +243,12 @@ class OKXTradeRetrieval:
                                     all_trades.append(trade)
                                     
                 except Exception as e:
-                    self.logger.debug(f"OKX orders pagination failed: {e}")
+                    self.logger.debug(f"Orders pagination failed: {e}")
             
             return all_trades
             
         except Exception as e:
-            self.logger.debug(f"OKX orders history API error: {e}")
+            self.logger.warning(f"OKX orders history API error: {e}")
             return []
     
     def _get_ccxt_trades(self, symbol: Optional[str], limit: int, since: Optional[int] = None) -> List[Dict[str, Any]]:
@@ -267,7 +267,7 @@ class OKXTradeRetrieval:
                 if formatted:
                     trades.append(formatted)
         except Exception as e:
-            self.logger.debug(f"fetch_my_trades failed: {e}")
+            self.logger.warning(f"fetch_my_trades failed: {e}")
         
         try:
             # Try fetch_closed_orders with optional since parameter
@@ -278,7 +278,7 @@ class OKXTradeRetrieval:
                     if trade:
                         trades.append(trade)
         except Exception as e:
-            self.logger.debug(f"fetch_closed_orders failed: {e}")
+            self.logger.warning(f"fetch_closed_orders failed: {e}")
         
         return trades
     
