@@ -36,9 +36,8 @@ class CryptoPortfolioManager:
             assets if assets is not None else self._default_assets()
         )
 
-        # Core state
-        self.portfolio_data: Dict[str, Dict[str, Any]] = {}
-        self.price_history: Dict[str, List[Dict[str, Any]]] = {}
+        # DISABLED - No portfolio storage, always fetch from OKX
+        # These were caching portfolio data instead of fetching live
         self.cash_balance: float = 0.0  # available cash outside positions
 
         # Initialize portfolio structure (actual data comes from OKX)

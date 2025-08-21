@@ -201,12 +201,8 @@ class CryptoPriceAPI:
         self.last_request_time = time.time()
     
     def _is_cache_valid(self, cache_key: str) -> bool:
-        """Check if cached data is still valid."""
-        if cache_key not in self.cache:
-            return False
-        
-        cache_time = self.cache[cache_key].get('timestamp', 0)
-        return (time.time() - cache_time) < self.cache_duration
+        """DISABLED - Always return False to force live data fetch."""
+        return False  # Force live data every time
     
     def get_price(self, symbol: str) -> Optional[float]:
         """Get current price for a single cryptocurrency."""
