@@ -133,6 +133,12 @@ Implemented dedicated production-safe OKX native client for improved performance
 - Enhanced 24h/7d percentage calculation accuracy using OKX's native `open24h` field
 - Reduced API call overhead by eliminating redundant CCXT market loading and signing operations
 
+**Minimal UTC Helpers Optimization:**
+Streamlined datetime handling with minimal UTC helpers for improved consistency:
+- Updated `utcnow()` and `iso_utc()` functions with self-contained imports for better maintainability
+- Eliminated dependency on top-level datetime imports in helper functions
+- Improved code clarity and reduced import complexity throughout the system
+
 **Table Rendering System:**
 Dedicated table elements per dashboard view ensure no data conflicts, with robust currency conversion, error handling, and performance optimizations.
 

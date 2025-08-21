@@ -45,11 +45,10 @@ def require_admin(f):
 
 # === UTC DateTime Helpers ===
 def utcnow():
-    """Get current UTC datetime"""
+    from datetime import datetime, timezone
     return datetime.now(timezone.utc)
 
 def iso_utc(dt=None):
-    """Convert datetime to ISO UTC string"""
     return (dt or utcnow()).isoformat()
 
 # === OKX Native API Helpers ===
