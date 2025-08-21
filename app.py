@@ -12,6 +12,9 @@ import time
 import json
 import subprocess
 import requests
+import hmac
+import hashlib
+import base64
 from datetime import datetime, timedelta, timezone
 from typing import Any
 from flask import Flask, jsonify, request, render_template
@@ -25,6 +28,53 @@ try:
     LOCAL_TZ = pytz.timezone('America/New_York')  # Default to EST/EDT, user can change
 except ImportError:
     LOCAL_TZ = timezone.utc  # Fallback to UTC if pytz not available
+
+# === OKX Native API Helpers ===
+def now_utc_iso():
+    """Generate UTC ISO timestamp for OKX API requests."""
+    return datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%S.%fZ')
+
+def okx_sign(secret_key: str, timestamp: str, method: str, path: str, body: str = '') -> str:
+    """Generate OKX API signature using HMAC-SHA256."""
+    msg = f"{timestamp}{method}{path}{body}"
+    mac = hmac.new(secret_key.encode('utf-8'), msg.encode('utf-8'), hashlib.sha256)
+    return base64.b64encode(mac.digest()).decode('utf-8')
+
+def okx_request(path: str, api_key: str, secret_key: str, passphrase: str, method: str = 'GET', body: str = '', timeout: int = 10):
+    """Make authenticated request to OKX API with proper signing."""
+    base_url = 'https://' + (os.getenv("OKX_HOSTNAME") or os.getenv("OKX_REGION") or "www.okx.com")
+    ts = now_utc_iso()
+    sig = okx_sign(secret_key, ts, method, path, body)
+    headers = {
+        'OK-ACCESS-KEY': api_key,
+        'OK-ACCESS-SIGN': sig,
+        'OK-ACCESS-TIMESTAMP': ts,
+        'OK-ACCESS-PASSPHRASE': passphrase,
+        'Content-Type': 'application/json'
+    }
+    if method == 'GET':
+        resp = requests.get(base_url + path, headers=headers, timeout=timeout)
+    else:
+        resp = requests.post(base_url + path, data=body, headers=headers, timeout=timeout)
+    resp.raise_for_status()
+    return resp.json()
+
+def okx_ticker_pct_change_24h(inst_id: str, api_key: str, secret_key: str, passphrase: str) -> dict:
+    """Get accurate 24h percentage change from OKX ticker data."""
+    # OKX v5: /market/ticker gives 'last' and 'open24h'
+    data = okx_request(f"/api/v5/market/ticker?instId={inst_id}", api_key, secret_key, passphrase)
+    if data.get('code') == '0' and data.get('data'):
+        t = data['data'][0]
+        last = float(t.get('last', 0) or 0)
+        open24h = float(t.get('open24h', 0) or 0)
+        pct_24h = ((last - open24h) / open24h * 100) if open24h > 0 else 0.0
+        return {
+            'last': last,
+            'open24h': open24h,
+            'vol24h': float(t.get('vol24h', 0) or 0),
+            'pct_24h': pct_24h
+        }
+    return {'last': 0.0, 'open24h': 0.0, 'vol24h': 0.0, 'pct_24h': 0.0}
 
 # Set up logging for deployment
 logging.basicConfig(
