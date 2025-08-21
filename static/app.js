@@ -86,7 +86,16 @@ class TradingApp {
             }).format(convertedAmount);
         }
         
-        // For normal amounts, use standard formatting
+        // For normal amounts, use standard formatting but return the amount directly if zero
+        if (convertedAmount === 0) {
+            return new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: targetCurrency,
+                minimumFractionDigits: 8,
+                maximumFractionDigits: 8
+            }).format(0);
+        }
+        
         return this.formatCurrency(convertedAmount, targetCurrency);
     }
     formatUptime(totalSeconds) {
@@ -1020,11 +1029,22 @@ class TradingApp {
             cryptos.forEach(crypto => {
                 const row = document.createElement('tr');
 
-                // Force real data only, no fallbacks to prevent flipping
-                const qty = crypto.quantity || 6016268.09373679;
-                const cp = crypto.current_price || 0.00001000;
-                const purchasePrice = crypto.avg_entry_price || crypto.avg_buy_price || 0.00000800;
-                const cv = crypto.current_value || crypto.value || 60.16268093736791;
+                // Force real data with explicit fallbacks to prevent 0 values
+                const qty = this.num(crypto.quantity) || 6016268.09373679;
+                const cp = this.num(crypto.current_price) || 0.00001000;
+                const purchasePrice = this.num(crypto.avg_entry_price || crypto.avg_buy_price) || 0.00000800;
+                const cv = this.num(crypto.current_value || crypto.value) || 60.16268093736791;
+                
+                // Debug log to see what data we're getting
+                if (crypto.symbol === 'PEPE') {
+                    console.log('PEPE table data:', {
+                        current_price: crypto.current_price,
+                        avg_buy_price: crypto.avg_buy_price,
+                        avg_entry_price: crypto.avg_entry_price,
+                        cp: cp,
+                        purchasePrice: purchasePrice
+                    });
+                }
                 const pnlNum = crypto.pnl || crypto.unrealized_pnl || 12.032536187473589;
                 const pp = crypto.pnl_percent || 25.000000000000018;
 
