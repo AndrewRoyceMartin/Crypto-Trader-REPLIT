@@ -45,13 +45,23 @@ body {
 
 .kpi-card .label {
     font-size: 0.875rem;
-    opacity: 0.9;
     margin-bottom: 0.5rem;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
 }
 
 .kpi-card .value {
     font-size: 1.5rem;
     line-height: 1.2;
+}
+
+/* Text color utilities for better contrast */
+.text-white-75 {
+    color: rgba(255, 255, 255, 0.85) !important;
+}
+
+.text-white {
+    color: rgba(255, 255, 255, 1) !important;
 }
 
 .card-header {
