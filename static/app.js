@@ -1164,7 +1164,6 @@ class TradingApp {
         // Purchase price (avg entry)
         const purchasePrice = pepe.avg_buy_price || 0.00000800; // fallback to known value
         set('okx-purchase-price', this.formatCryptoPrice(purchasePrice, this.selectedCurrency));
-        set('okx-purchase-price', this.formatCurrency(purchasePrice));
         
         // Unrealized P&L with color coding
         const pnl = pepe.pnl || 0;
@@ -1183,17 +1182,17 @@ class TradingApp {
 
         // Real-Time Price Tracker
         const currentPrice = pepe.current_price || 0;
-        set('pepe-current-price', this.formatCurrency(currentPrice));
+        set('pepe-current-price', this.formatCryptoPrice(currentPrice, this.selectedCurrency));
         
         // Price change indicator
         const priceChangeText = `${pnlPercent >= 0 ? '+' : ''}${pnlPercent.toFixed(1)}% (24h)`;
         set('pepe-price-change', priceChangeText);
         
-        set('pepe-purchase-price', this.formatCurrency(purchasePrice));
+        set('pepe-purchase-price', this.formatCryptoPrice(purchasePrice, this.selectedCurrency));
         
         // Price difference
         const priceDiff = currentPrice - purchasePrice;
-        const priceDiffText = `${priceDiff >= 0 ? '+' : ''}${this.formatCurrency(priceDiff)}`;
+        const priceDiffText = `${priceDiff >= 0 ? '+' : ''}${this.formatCryptoPrice(priceDiff, this.selectedCurrency)}`;
         set('pepe-price-diff', priceDiffText);
         
         // Update price difference color
