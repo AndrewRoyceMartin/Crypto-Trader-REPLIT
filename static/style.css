@@ -356,3 +356,9 @@ footer {
 section[id] { 
   scroll-margin-top: calc(var(--nav-h) + 56px); 
 }
+
+
+/* Chart Cards */
+.chart-card-body {
+  min-height: 200px;
+}

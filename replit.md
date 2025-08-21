@@ -12,7 +12,7 @@ The system utilizes a modular architecture with a unified Flask-based web interf
 **Current Active Structure:**
 - **app.py** - Main Flask application entry point
 - **templates/unified_dashboard.html** - Single-page dashboard interface  
-- **static/style_clean.css** - Clean minimal styling system
+- **static/style.css** - Minimal trading UI styling system
 - **static/app_clean.js** - Dashboard functionality
 - **src/** - Modular source code architecture
 - **archive/** - Archived unused development files
