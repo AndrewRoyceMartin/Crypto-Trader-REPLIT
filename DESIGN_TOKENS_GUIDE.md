@@ -123,12 +123,36 @@ This guide documents the reusable utility classes and design tokens created to e
 - `.trade-buy` → `.trade-positive`
 - `.trade-sell` → `.trade-negative`
 
+## Font Stacks
+
+### System Fonts
+The system uses modern CSS custom properties for font stacks:
+
+- `--font-family-system` - Comprehensive system UI font stack
+  - `system-ui, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, 'Noto Sans', sans-serif`
+  - Includes emoji fonts: `'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji'`
+
+- `--font-family-mono` - Modern monospace font stack
+  - `ui-monospace, 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Courier New', monospace`
+
+### Usage
+```css
+.my-element {
+    font-family: var(--font-family-system);
+}
+
+.code-display {
+    font-family: var(--font-family-mono);
+}
+```
+
 ## Benefits
 1. **Consistency** - Standardized values across the application
 2. **Maintainability** - Single source of truth for design values
 3. **Performance** - Reduced CSS file size through reusability
 4. **Developer Experience** - Faster styling with utility classes
 5. **Design System** - Foundation for scalable UI development
+6. **Cross-Platform Compatibility** - Modern system font stacks for optimal display
 
 ## Usage Examples
 
