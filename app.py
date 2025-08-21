@@ -1772,6 +1772,309 @@ def api_worst_performer():
             }
         }), 500
 
+@app.route("/api/equity-curve")
+def api_equity_curve():
+    """Get equity curve data using direct OKX native APIs."""
+    try:
+        timeframe = request.args.get('timeframe', '30d')
+        
+        # Calculate date range
+        end_date = datetime.now(LOCAL_TZ)
+        if timeframe == '7d':
+            start_date = end_date - timedelta(days=7)
+        elif timeframe == '30d':
+            start_date = end_date - timedelta(days=30)
+        elif timeframe == '90d':
+            start_date = end_date - timedelta(days=90)
+        else:
+            start_date = end_date - timedelta(days=30)
+        
+        # Get current portfolio data for baseline
+        from src.services.portfolio_service import get_portfolio_service
+        portfolio_service = get_portfolio_service()
+        current_portfolio = portfolio_service.get_portfolio_data()
+        current_value = current_portfolio.get('total_current_value', 0.0)
+        holdings = current_portfolio.get('holdings', [])
+        
+        equity_points = []
+        
+        # Use OKX native API for equity curve data
+        import requests
+        import hmac
+        import hashlib
+        import base64
+        from datetime import timezone
+        
+        # OKX API credentials
+        api_key = os.getenv("OKX_API_KEY", "")
+        secret_key = os.getenv("OKX_SECRET_KEY", "")
+        passphrase = os.getenv("OKX_PASSPHRASE", "")
+        
+        def sign_request(timestamp, method, request_path, body=''):
+            message = timestamp + method + request_path + body
+            mac = hmac.new(bytes(secret_key, encoding='utf8'), bytes(message, encoding='utf-8'), digestmod='sha256')
+            d = mac.digest()
+            return base64.b64encode(d).decode('utf-8')
+        
+        base_url = 'https://www.okx.com'
+        
+        if all([api_key, secret_key, passphrase]):
+            try:
+                # Get account balance changes from OKX bills API
+                timestamp = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%S.%fZ')
+                method = 'GET'
+                
+                # Multiple approaches for equity curve data
+                endpoints_to_try = [
+                    f"/api/v5/account/bills?begin={int(start_date.timestamp() * 1000)}&end={int(end_date.timestamp() * 1000)}&limit=100",
+                    f"/api/v5/asset/bills?begin={int(start_date.timestamp() * 1000)}&end={int(end_date.timestamp() * 1000)}&limit=100"
+                ]
+                
+                for request_path in endpoints_to_try:
+                    try:
+                        signature = sign_request(timestamp, method, request_path)
+                        
+                        headers = {
+                            'OK-ACCESS-KEY': api_key,
+                            'OK-ACCESS-SIGN': signature,
+                            'OK-ACCESS-TIMESTAMP': timestamp,
+                            'OK-ACCESS-PASSPHRASE': passphrase,
+                            'Content-Type': 'application/json'
+                        }
+                        
+                        response = requests.get(base_url + request_path, headers=headers, timeout=10)
+                        
+                        if response.status_code == 200:
+                            bills_data = response.json()
+                            
+                            if bills_data.get('code') == '0' and bills_data.get('data'):
+                                logger.info(f"Retrieved {len(bills_data['data'])} bill records from OKX")
+                                
+                                # Process bills to create equity curve
+                                daily_equity = {}
+                                running_balance = {}
+                                
+                                for bill in bills_data['data']:
+                                    try:
+                                        ts = int(bill.get('ts', 0))
+                                        if ts == 0:
+                                            continue
+                                            
+                                        date_key = datetime.fromtimestamp(ts / 1000).strftime('%Y-%m-%d')
+                                        currency = bill.get('ccy', '')
+                                        balance_change = float(bill.get('balChg', 0))
+                                        balance_after = float(bill.get('bal', 0))
+                                        
+                                        # Track running balance for each currency
+                                        if currency not in running_balance:
+                                            running_balance[currency] = 0
+                                        running_balance[currency] = balance_after
+                                        
+                                        # Calculate total value for this date
+                                        if date_key not in daily_equity:
+                                            daily_equity[date_key] = {}
+                                        
+                                        # Store balance for this currency on this date
+                                        daily_equity[date_key][currency] = balance_after
+                                        
+                                    except Exception as bill_error:
+                                        logger.debug(f"Error processing bill: {bill_error}")
+                                        continue
+                                
+                                # Convert daily balances to equity values
+                                for date_str, currencies in daily_equity.items():
+                                    try:
+                                        total_equity = 0
+                                        
+                                        for currency, balance in currencies.items():
+                                            if currency in ['USDT', 'USD']:
+                                                total_equity += balance
+                                            elif balance > 0:
+                                                # Get current price for conversion
+                                                try:
+                                                    price = portfolio_service.exchange._get_current_price(f"{currency}/USDT")
+                                                    if price:
+                                                        total_equity += balance * price
+                                                except:
+                                                    continue
+                                        
+                                        if total_equity > 0:
+                                            equity_points.append({
+                                                'date': date_str,
+                                                'timestamp': date_str,
+                                                'equity': total_equity,
+                                                'source': 'okx_bills'
+                                            })
+                                            
+                                    except Exception as equity_error:
+                                        logger.debug(f"Error calculating equity for {date_str}: {equity_error}")
+                                        continue
+                                
+                                # If we got equity data, break from trying other endpoints
+                                if equity_points:
+                                    break
+                                    
+                    except Exception as endpoint_error:
+                        logger.warning(f"OKX endpoint {request_path} failed: {endpoint_error}")
+                        continue
+                        
+            except Exception as api_error:
+                logger.warning(f"OKX native API failed: {api_error}")
+        
+        # Enhanced fallback: Generate realistic equity curve using historical price data
+        if not equity_points:
+            logger.info("Generating equity curve using OKX historical price data")
+            
+            days_back = (end_date - start_date).days
+            
+            for i in range(days_back, -1, -1):
+                point_date = end_date - timedelta(days=i)
+                daily_equity = 0
+                
+                for holding in holdings:
+                    try:
+                        symbol = holding.get('symbol', '')
+                        quantity = float(holding.get('quantity', 0))
+                        
+                        if quantity > 0 and symbol:
+                            # Use OKX native API for historical prices
+                            try:
+                                timestamp = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%S.%fZ')
+                                method = 'GET'
+                                
+                                # Historical candles for this specific date
+                                hist_timestamp = int(point_date.timestamp() * 1000)
+                                request_path = f"/api/v5/market/candles?instId={symbol}-USDT&bar=1D&before={hist_timestamp}&limit=1"
+                                
+                                signature = sign_request(timestamp, method, request_path)
+                                
+                                headers = {
+                                    'OK-ACCESS-KEY': api_key,
+                                    'OK-ACCESS-SIGN': signature,
+                                    'OK-ACCESS-TIMESTAMP': timestamp,
+                                    'OK-ACCESS-PASSPHRASE': passphrase,
+                                    'Content-Type': 'application/json'
+                                }
+                                
+                                response = requests.get(base_url + request_path, headers=headers, timeout=5)
+                                
+                                if response.status_code == 200:
+                                    candle_data = response.json()
+                                    
+                                    if candle_data.get('code') == '0' and candle_data.get('data'):
+                                        # Use closing price from historical candle
+                                        historical_price = float(candle_data['data'][0][4])
+                                        daily_equity += quantity * historical_price
+                                    else:
+                                        # Fallback to current price
+                                        current_price = float(holding.get('current_price', 0))
+                                        daily_equity += quantity * current_price
+                                else:
+                                    # Fallback to current price
+                                    current_price = float(holding.get('current_price', 0))
+                                    daily_equity += quantity * current_price
+                                    
+                            except Exception as price_error:
+                                # Final fallback to current price
+                                current_price = float(holding.get('current_price', 0))
+                                daily_equity += quantity * current_price
+                                
+                    except Exception as holding_error:
+                        continue
+                
+                if daily_equity > 0:
+                    equity_points.append({
+                        'date': point_date.strftime('%Y-%m-%d'),
+                        'timestamp': point_date.isoformat(),
+                        'equity': daily_equity,
+                        'source': 'okx_historical_prices'
+                    })
+        
+        # Ensure we have current value as latest point
+        if current_value > 0:
+            today = end_date.strftime('%Y-%m-%d')
+            
+            # Remove any existing today entry and add current
+            equity_points = [p for p in equity_points if p['date'] != today]
+            equity_points.append({
+                'date': today,
+                'timestamp': end_date.isoformat(),
+                'equity': current_value,
+                'source': 'current_portfolio'
+            })
+        
+        # Sort by date
+        equity_points.sort(key=lambda x: x['date'])
+        
+        # Calculate performance metrics
+        total_return = 0.0
+        daily_returns = []
+        max_equity = 0.0
+        max_drawdown = 0.0
+        
+        if len(equity_points) >= 2:
+            initial_equity = equity_points[0]['equity']
+            final_equity = equity_points[-1]['equity']
+            
+            if initial_equity > 0:
+                total_return = ((final_equity - initial_equity) / initial_equity) * 100
+            
+            # Calculate daily returns and drawdown
+            for i in range(1, len(equity_points)):
+                prev_equity = equity_points[i-1]['equity']
+                curr_equity = equity_points[i]['equity']
+                
+                if prev_equity > 0:
+                    daily_return = ((curr_equity - prev_equity) / prev_equity) * 100
+                    daily_returns.append(daily_return)
+                
+                # Track maximum equity and drawdown
+                if curr_equity > max_equity:
+                    max_equity = curr_equity
+                
+                if max_equity > 0:
+                    drawdown = ((max_equity - curr_equity) / max_equity) * 100
+                    if drawdown > max_drawdown:
+                        max_drawdown = drawdown
+        
+        # Calculate volatility (standard deviation of daily returns)
+        volatility = 0.0
+        if len(daily_returns) > 1:
+            import statistics
+            volatility = statistics.stdev(daily_returns)
+        
+        return jsonify({
+            "success": True,
+            "equity_curve": equity_points,
+            "timeframe": timeframe,
+            "metrics": {
+                "total_return_percent": total_return,
+                "max_drawdown_percent": max_drawdown,
+                "volatility_percent": volatility,
+                "data_points": len(equity_points),
+                "start_equity": equity_points[0]['equity'] if equity_points else 0,
+                "end_equity": equity_points[-1]['equity'] if equity_points else 0,
+            },
+            "last_update": datetime.now(LOCAL_TZ).isoformat()
+        })
+        
+    except Exception as e:
+        logger.error(f"Error getting equity curve: {e}")
+        return jsonify({
+            "success": False,
+            "error": str(e),
+            "equity_curve": [],
+            "timeframe": timeframe,
+            "metrics": {
+                "total_return_percent": 0.0,
+                "max_drawdown_percent": 0.0,
+                "volatility_percent": 0.0,
+                "data_points": 0,
+                "start_equity": 0,
+                "end_equity": 0,
+            }
+        }), 500
+
 # Global server start time for uptime calculation (use LOCAL_TZ for consistency)
 server_start_time = datetime.now(LOCAL_TZ)
 

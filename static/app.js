@@ -32,7 +32,8 @@ class TradingApp {
             portfolioHistory: { data: null, timestamp: 0, ttl: 30000 }, // 30s
             assetAllocation: { data: null, timestamp: 0, ttl: 15000 }, // 15s
             bestPerformer: { data: null, timestamp: 0, ttl: 10000 },  // 10s
-            worstPerformer: { data: null, timestamp: 0, ttl: 10000 }   // 10s
+            worstPerformer: { data: null, timestamp: 0, ttl: 10000 },  // 10s
+            equityCurve: { data: null, timestamp: 0, ttl: 30000 }     // 30s
         };
 
         // Debug: force network fetches
@@ -385,6 +386,9 @@ class TradingApp {
         
         // Worst performer data
         this.updateWorstPerformer();
+        
+        // Equity curve
+        this.updateEquityCurve();
     }
 
     async updatePortfolioAnalytics() {
@@ -834,6 +838,163 @@ class TradingApp {
         if (cardTitle) {
             cardTitle.textContent = `Worst Performer: ${performer.symbol}`;
         }
+    }
+    
+    async updateEquityCurve() {
+        try {
+            const timeframe = document.getElementById('equity-timeframe')?.value || '30d';
+            const response = await fetch(`/api/equity-curve?timeframe=${timeframe}`, { cache: 'no-cache' });
+            if (!response.ok) return;
+            const data = await response.json();
+            
+            if (!data.success || !data.equity_curve) return;
+            
+            // Update equity curve chart
+            this.updateEquityCurveChart(data.equity_curve, data.metrics);
+            
+            // Update equity metrics display
+            this.updateEquityMetrics(data.metrics);
+            
+        } catch (error) {
+            console.error('Equity curve update failed:', error);
+        }
+    }
+    
+    updateEquityCurveChart(equityData, metrics) {
+        const equityCanvas = document.getElementById('equityChart');
+        if (!equityCanvas || !window.Chart) return;
+        
+        try {
+            // Destroy existing chart
+            if (this.equityChart) {
+                this.equityChart.destroy();
+            }
+            
+            // Prepare data for Chart.js
+            const labels = equityData.map(point => {
+                const date = new Date(point.date);
+                return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            });
+            const values = equityData.map(point => point.equity);
+            
+            // Determine line color based on overall performance
+            const lineColor = metrics.total_return_percent >= 0 ? '#28a745' : '#dc3545';
+            const fillColor = metrics.total_return_percent >= 0 ? 'rgba(40, 167, 69, 0.1)' : 'rgba(220, 53, 69, 0.1)';
+            
+            // Create equity curve line chart
+            this.equityChart = new Chart(equityCanvas, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Portfolio Equity',
+                        data: values,
+                        borderColor: lineColor,
+                        backgroundColor: fillColor,
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.1,
+                        pointBackgroundColor: lineColor,
+                        pointBorderColor: '#ffffff',
+                        pointBorderWidth: 2,
+                        pointRadius: 3,
+                        pointHoverRadius: 5
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { 
+                            display: true,
+                            position: 'top'
+                        },
+                        title: { 
+                            display: true, 
+                            text: `Equity Curve (${equityData.length} data points)`,
+                            font: { size: 12 }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const value = context.parsed.y;
+                                    const prevValue = context.dataIndex > 0 ? values[context.dataIndex - 1] : value;
+                                    const change = prevValue > 0 ? ((value - prevValue) / prevValue) * 100 : 0;
+                                    return [
+                                        `Equity: ${window.tradingApp ? window.tradingApp.formatCurrency(value) : '$' + value.toFixed(2)}`,
+                                        `Change: ${change >= 0 ? '+' : ''}${change.toFixed(2)}%`
+                                    ];
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            display: true,
+                            title: {
+                                display: true,
+                                text: 'Date'
+                            }
+                        },
+                        y: {
+                            display: true,
+                            title: {
+                                display: true,
+                                text: 'Portfolio Value'
+                            },
+                            ticks: {
+                                callback: function(value) {
+                                    return window.tradingApp ? window.tradingApp.formatCurrency(value) : '$' + value.toFixed(0);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+            
+        } catch (error) {
+            console.error('Equity curve chart creation failed:', error);
+            // Fallback display
+            if (equityCanvas) {
+                equityCanvas.style.display = 'none';
+                const fallback = document.createElement('div');
+                fallback.className = 'text-center text-muted p-3';
+                fallback.innerHTML = `
+                    <strong>Equity Curve</strong><br>
+                    Return: ${metrics.total_return_percent >= 0 ? '+' : ''}${metrics.total_return_percent.toFixed(2)}%<br>
+                    Data Points: ${equityData.length}
+                `;
+                equityCanvas.parentNode.replaceChild(fallback, equityCanvas);
+            }
+        }
+    }
+    
+    updateEquityMetrics(metrics) {
+        // Update equity metrics elements if they exist
+        const elements = {
+            'equity-total-return': `${metrics.total_return_percent >= 0 ? '+' : ''}${metrics.total_return_percent.toFixed(2)}%`,
+            'equity-max-drawdown': `${metrics.max_drawdown_percent.toFixed(2)}%`,
+            'equity-volatility': `${metrics.volatility_percent.toFixed(2)}%`,
+            'equity-data-points': metrics.data_points,
+            'equity-start-value': this.formatCurrency(metrics.start_equity),
+            'equity-end-value': this.formatCurrency(metrics.end_equity)
+        };
+        
+        Object.entries(elements).forEach(([id, value]) => {
+            const element = document.getElementById(id);
+            if (element) {
+                element.textContent = value;
+                
+                // Add color coding for performance indicators
+                if (id === 'equity-total-return') {
+                    const numValue = parseFloat(value);
+                    element.className = numValue >= 0 ? 'pnl-up' : 'pnl-down';
+                }
+                if (id === 'equity-max-drawdown') {
+                    element.className = 'text-warn';
+                }
+            }
+        });
     }
 
     debouncedUpdateDashboard() {
