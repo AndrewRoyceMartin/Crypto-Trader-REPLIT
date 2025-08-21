@@ -385,96 +385,11 @@
             </div>
         </section>
 
-        <hr class="section-divider my-5">
 
-        <!-- SECTION 3: PERFORMANCE -->
-        <section id="performance" class="mb-5">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <h2><span class="icon icon-chart me-2"></span>Performance Analytics</h2>
-                <div class="d-flex gap-2">
-                    <div class="btn-group btn-group-sm" role="group">
-                        <button class="btn btn-outline-secondary" data-range="1M">1M</button>
-                        <button class="btn btn-outline-secondary" data-range="3M">3M</button>
-                        <button class="btn btn-outline-secondary" data-range="6M">6M</button>
-                        <button class="btn btn-outline-secondary active" data-range="YTD">YTD</button>
-                        <button class="btn btn-outline-secondary" data-range="1Y">1Y</button>
-                    </div>
-                    <button class="btn btn-primary btn-sm" onclick="refreshPerformanceData()">
-                        <span class="icon icon-refresh me-1"></span> Refresh
-                    </button>
-                </div>
-            </div>
-
-            <!-- Performance KPIs -->
-            <div class="row g-3 mb-4">
-                <div class="col-6 col-md-3 col-xl-2">
-                    <div class="kpi-card">
-                        <div class="label">Total Invested</div>
-                        <div class="value" id="perf-total-invested">$0.00</div>
-                    </div>
-                </div>
-                <div class="col-6 col-md-3 col-xl-2">
-                    <div class="kpi-card">
-                        <div class="label">Current Value</div>
-                        <div class="value" id="perf-current-value">$0.00</div>
-                    </div>
-                </div>
-                <div class="col-6 col-md-3 col-xl-2">
-                    <div class="kpi-card">
-                        <div class="label">Total P&L</div>
-                        <div class="value" id="perf-total-pnl">$0.00</div>
-                    </div>
-                </div>
-                <div class="col-6 col-md-3 col-xl-2">
-                    <div class="kpi-card">
-                        <div class="label">Overall Return</div>
-                        <div class="value" id="perf-overall-return">0.00%</div>
-                    </div>
-                </div>
-                <div class="col-6 col-md-3 col-xl-2">
-                    <div class="kpi-card">
-                        <div class="label">Sharpe (ann.)</div>
-                        <div class="value" id="perf-sharpe">0.00</div>
-                    </div>
-                </div>
-                <div class="col-6 col-md-3 col-xl-2">
-                    <div class="kpi-card">
-                        <div class="label">Max Drawdown</div>
-                        <div class="value" id="perf-maxdd">0.00%</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Performance Charts -->
-            <div class="row g-3 mb-4">
-                <div class="col-lg-8">
-                    <div class="chart-card">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <h6 class="mb-0">Equity Curve</h6>
-                            <small class="meta">Portfolio growth over time</small>
-                        </div>
-                        <div class="card-body">
-                            <canvas id="equityCurveChart"></canvas>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-lg-4">
-                    <div class="chart-card">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <h6 class="mb-0">Drawdown</h6>
-                            <small class="meta">Risk analysis</small>
-                        </div>
-                        <div class="card-body">
-                            <canvas id="drawdownChart"></canvas>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
 
         <hr class="section-divider my-5">
 
-        <!-- SECTION 4: OPEN POSITIONS -->
+        <!-- SECTION 3: OPEN POSITIONS -->
         <section id="holdings" class="mb-5">
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <h2><span class="icon icon-coins me-2"></span>Open Positions</h2>
@@ -519,7 +434,7 @@
 
         <hr class="section-divider my-5">
 
-        <!-- SECTION 5: TRADES -->
+        <!-- SECTION 4: TRADES -->
         <section id="trades" class="mb-5">
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <h2><span class="icon icon-exchange me-2"></span>Recent Trades</h2>
@@ -641,7 +556,7 @@
 
     // Auto-update active section based on scroll position
     window.addEventListener('scroll', function() {
-        const sections = ['overview', 'portfolio', 'performance', 'holdings', 'trades'];
+        const sections = ['overview', 'portfolio', 'holdings', 'trades'];
         const scrollPos = window.scrollY + 100;
         
         sections.forEach(section => {
