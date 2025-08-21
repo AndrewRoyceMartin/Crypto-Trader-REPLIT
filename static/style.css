@@ -75,10 +75,14 @@ body {
     border-radius: 0.5rem;
     padding: 1rem;
     min-height: 200px;
+    max-width: 100%;
+    overflow: hidden;
 }
 
 .chart-card canvas {
     background-color: var(--card-bg) !important;
+    max-width: 100% !important;
+    height: auto !important;
 }
 
 /* KPI styling standardization */
@@ -106,6 +110,7 @@ body {
     justify-content: center;
     min-height: 80px;
     min-width: 0;
+    max-width: 100%;
     text-align: center;
     padding: var(--sp-md);
     margin-bottom: var(--sp-sm);
@@ -119,9 +124,10 @@ body {
     border: 1px solid rgba(0, 0, 0, 0.1);
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     
-    /* Text handling */
+    /* Text handling and overflow prevention */
     word-wrap: break-word;
     overflow-wrap: break-word;
+    overflow: hidden;
     
     /* Browser optimization */
     -webkit-box-sizing: border-box;
@@ -261,14 +267,33 @@ body {
 
 /* Responsive grid improvements - MOVED TO CONSOLIDATED SECTION */
 
-/* Additional table fixes for better positioning */
+/* Additional table fixes for better positioning and overflow prevention */
+.table-responsive {
+    max-height: 70vh;
+    overflow-x: auto;
+    overflow-y: auto;
+    border: 1px solid var(--card-border);
+    border-radius: 0.5rem;
+    -webkit-overflow-scrolling: touch;
+}
+
 .table-responsive .table thead th {
     border-bottom: 2px solid #dee2e6;
     vertical-align: bottom;
+    white-space: nowrap;
+    background-color: var(--dark-color);
+    position: sticky;
+    top: 0;
+    z-index: 10;
 }
 
 .table-responsive .table thead.sticky-top th {
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.table-responsive .table {
+    margin-bottom: 0;
+    min-width: 800px; /* Ensure minimum width for proper layout */
 }
 
 /* Prevent layout shifts */
