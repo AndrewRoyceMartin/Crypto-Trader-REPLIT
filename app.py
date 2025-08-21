@@ -4188,31 +4188,37 @@ def api_test_sync_data():
         
         # Test 1: Holdings Synchronization
         try:
-            # Get backend data via API
-            backend_response = requests.get('http://127.0.0.1:5000/api/crypto-portfolio', timeout=10)
-            backend_data = backend_response.json()
+            # Get portfolio data directly from service
+            portfolio_service = get_portfolio_service()
+            portfolio_data = portfolio_service.get_portfolio_data()
             
-            # Compare holdings
+            # Analyze holdings synchronization
+            holdings = portfolio_data.get('holdings', [])
             matches = []
             mismatches = []
             
-            for holding in backend_data.get('holdings', []):
+            for holding in holdings:
                 symbol = holding.get('symbol', '').upper()
-                backend_qty = float(holding.get('quantity', 0))
+                quantity = float(holding.get('quantity', 0))
                 is_live = holding.get('is_live', False)
                 
-                if backend_qty > 0:
-                    matches.append({
+                if quantity > 0:
+                    match_data = {
                         'symbol': symbol,
-                        'backend_quantity': backend_qty,
+                        'quantity': quantity,
                         'is_live': is_live,
                         'current_price': holding.get('current_price', 0),
                         'pnl': holding.get('pnl', 0),
                         'avg_entry_price': holding.get('avg_entry_price', 0)
-                    })
+                    }
+                    
+                    if is_live and quantity > 0:
+                        matches.append(match_data)
+                    else:
+                        mismatches.append(match_data)
             
             test_data['test_results']['holdings_sync'] = {
-                'status': 'pass',
+                'status': 'pass' if len(mismatches) == 0 else 'fail',
                 'perfect_matches': len(matches),
                 'mismatches': len(mismatches),
                 'matches': matches,
@@ -4227,23 +4233,31 @@ def api_test_sync_data():
         
         # Test 2: Price Freshness
         try:
-            # Make two API calls to check for timestamp differences
-            first_call = requests.get('http://127.0.0.1:5000/api/crypto-portfolio?debug=1', timeout=10).json()
-            time.sleep(1)
-            second_call = requests.get('http://127.0.0.1:5000/api/crypto-portfolio?debug=2', timeout=10).json()
+            # Test live data freshness by checking portfolio timestamps
+            portfolio_service = get_portfolio_service()
+            portfolio_data = portfolio_service.get_portfolio_data()
             
-            first_timestamp = first_call.get('timestamp', '')
-            second_timestamp = second_call.get('timestamp', '')
+            # Check if we have live data indicators
+            holdings = portfolio_data.get('holdings', [])
+            all_holdings_live = all(h.get('is_live', False) for h in holdings) if holdings else False
             
-            all_holdings_live = all(h.get('is_live', False) for h in first_call.get('holdings', []))
+            # Check for recent timestamp
+            last_update = portfolio_data.get('last_update', '')
+            is_recent = True
+            if last_update:
+                from datetime import datetime, timedelta
+                try:
+                    update_time = datetime.fromisoformat(last_update.replace('Z', '+00:00'))
+                    is_recent = (datetime.now(update_time.tzinfo) - update_time) < timedelta(minutes=5)
+                except:
+                    is_recent = False
             
             test_data['test_results']['price_freshness'] = {
-                'status': 'pass' if first_timestamp != second_timestamp and all_holdings_live else 'fail',
-                'first_timestamp': first_timestamp,
-                'second_timestamp': second_timestamp,
-                'timestamps_different': first_timestamp != second_timestamp,
+                'status': 'pass' if all_holdings_live and is_recent else 'fail',
+                'last_update': last_update,
                 'holdings_marked_live': all_holdings_live,
-                'total_holdings': len(first_call.get('holdings', []))
+                'data_is_recent': is_recent,
+                'total_holdings': len(holdings)
             }
             
         except Exception as e:
@@ -4252,119 +4266,69 @@ def api_test_sync_data():
                 'error': str(e)
             }
         
-        # Test 3: Advanced Strategy P&L Testing Framework Integration
+        # Test 3: Unrealized P&L Accuracy
         try:
-            # Try to run the comprehensive strategy P&L testing framework
-            import subprocess
+            # Test P&L calculation accuracy
+            portfolio_service = get_portfolio_service()
+            portfolio_data = portfolio_service.get_portfolio_data()
             
-            try:
-                # Execute the comprehensive strategy P&L test
-                result = subprocess.run([
-                    sys.executable, 'test_strategy_pnl_final.py'
-                ], capture_output=True, text=True, timeout=30)
-                
-                if result.returncode == 0 and result.stdout:
-                    # Try to parse JSON output from the advanced framework
-                    lines = result.stdout.strip().split('\n')
-                    strategy_data = None
-                    
-                    for line in reversed(lines):
-                        try:
-                            if line.startswith('{') and '"summary"' in line:
-                                strategy_data = json.loads(line)
-                                break
-                        except json.JSONDecodeError:
-                            continue
-                    
-                    if strategy_data and 'summary' in strategy_data:
-                        test_data['test_results']['pnl_calculation'] = {
-                            'status': 'pass' if strategy_data['summary']['all_tests_passed'] else 'fail',
-                            'framework': 'Advanced Strategy P&L Testing Framework',
-                            'total_tests': strategy_data['summary']['total_tests'],
-                            'passed_tests': strategy_data['summary']['passed_tests'],
-                            'failed_tests': strategy_data['summary']['failed_tests'],
-                            'test_categories': list(strategy_data.get('test_results', {}).keys()),
-                            'okx_integration': strategy_data.get('okx_integration', {}),
-                            'execution_time': f"{strategy_data.get('execution_time_ms', 0)}ms",
-                            'mathematical_precision': '6-decimal accuracy validated',
-                            'live_data_integration': True,
-                            'validation_details': strategy_data.get('test_results', {})
-                        }
-                    else:
-                        raise ValueError("Advanced framework output format invalid")
-                        
-                else:
-                    raise subprocess.CalledProcessError(result.returncode, 'test_strategy_pnl_final.py')
-                    
-            except (subprocess.TimeoutExpired, subprocess.CalledProcessError, ValueError, ImportError):
-                # Fallback to basic P&L calculation validation
-                backend_response = requests.get('http://127.0.0.1:5000/api/crypto-portfolio', timeout=10)
-                backend_data = backend_response.json()
-                
-                pnl_results = []
-                errors = []
-                
-                for holding in backend_data.get('holdings', []):
-                    try:
-                        symbol = holding.get('symbol', '')
-                        entry = float(holding.get('avg_entry_price', 0))
-                        current = float(holding.get('current_price', 0))
-                        qty = float(holding.get('quantity', 0))
-                        expected_pnl = (current - entry) * qty
-                        app_pnl = float(holding.get('pnl', 0))
-                        
-                        pnl_results.append({
-                            'symbol': symbol,
-                            'entry_price': entry,
-                            'current_price': current,
-                            'quantity': qty,
-                            'expected_pnl': expected_pnl,
-                            'calculated_pnl': app_pnl,
-                            'difference': abs(expected_pnl - app_pnl),
-                            'accurate': abs(expected_pnl - app_pnl) <= 0.01
-                        })
-                    except Exception as e:
-                        errors.append(f"Error processing {holding.get('symbol', 'unknown')}: {str(e)}")
-                
-                test_data['test_results']['pnl_calculation'] = {
-                    'status': 'pass' if len(errors) == 0 and len(pnl_results) > 0 else 'error',
-                    'framework': 'Basic P&L Validation (Fallback)',
-                    'calculations': pnl_results,
-                    'errors': errors,
-                    'accurate_count': sum(1 for calc in pnl_results if calc['accurate']),
-                    'note': 'Advanced Strategy P&L Framework unavailable - using basic validation'
-                }
-                
-        except Exception as e:
-            test_data['test_results']['pnl_calculation'] = {
-                'status': 'error',
-                'framework': 'P&L Testing Framework',
-                'error': str(e)
-            }
-        
-        # Test 4: Sync Alert System
-        try:
-            okx_assets = len(test_data['test_results']['holdings_sync']['matches'])
-            backend_assets = len(test_data['test_results']['holdings_sync']['matches'])
-            alerts_generated = 0  # Would be calculated based on discrepancies
+            holdings = portfolio_data.get('holdings', [])
+            calculation_errors = []
+            accurate_calculations = 0
             
-            test_data['test_results']['sync_alerts'] = {
-                'status': 'pass',
-                'okx_assets': okx_assets,
-                'backend_assets': backend_assets,
-                'alerts_generated': alerts_generated,
-                'perfect_sync': True
+            for holding in holdings:
+                try:
+                    quantity = float(holding.get('quantity', 0))
+                    current_price = float(holding.get('current_price', 0))
+                    avg_entry = float(holding.get('avg_entry_price', 0))
+                    reported_pnl = float(holding.get('pnl', 0))
+                    
+                    if quantity > 0 and current_price > 0 and avg_entry > 0:
+                        # Calculate expected P&L
+                        market_value = quantity * current_price
+                        cost_basis = quantity * avg_entry
+                        expected_pnl = market_value - cost_basis
+                        
+                        # Check if calculation is accurate (within 1% tolerance)
+                        if abs(expected_pnl) > 0:
+                            error_pct = abs(reported_pnl - expected_pnl) / abs(expected_pnl) * 100
+                            if error_pct < 1.0:  # Less than 1% error
+                                accurate_calculations += 1
+                            else:
+                                calculation_errors.append({
+                                    'symbol': holding.get('symbol'),
+                                    'expected_pnl': expected_pnl,
+                                    'reported_pnl': reported_pnl,
+                                    'error_percent': error_pct
+                                })
+                        else:
+                            accurate_calculations += 1
+                except Exception as e:
+                    calculation_errors.append({
+                        'symbol': holding.get('symbol', 'Unknown'),
+                        'error': str(e)
+                    })
+            
+            total_holdings = len([h for h in holdings if float(h.get('quantity', 0)) > 0])
+            accuracy_pct = (accurate_calculations / total_holdings * 100) if total_holdings > 0 else 100
+            
+            test_data['test_results']['unrealized_pnl'] = {
+                'status': 'pass' if accuracy_pct >= 95 else 'fail',
+                'calculation_accuracy': round(accuracy_pct, 2),
+                'test_cases': total_holdings,
+                'accurate_calculations': accurate_calculations,
+                'calculation_errors': calculation_errors
             }
             
         except Exception as e:
-            test_data['test_results']['sync_alerts'] = {
+            test_data['test_results']['unrealized_pnl'] = {
                 'status': 'error',
                 'error': str(e)
             }
         
-        # Test 5: Derivatives Access
+        # Test 4: Futures/Margin Access
         try:
-            test_data['test_results']['derivatives_access'] = {
+            test_data['test_results']['futures_margin'] = {
                 'status': 'pass',
                 'account_accessible': True,
                 'active_positions': 0,
@@ -4372,7 +4336,7 @@ def api_test_sync_data():
             }
             
         except Exception as e:
-            test_data['test_results']['derivatives_access'] = {
+            test_data['test_results']['futures_margin'] = {
                 'status': 'error',
                 'error': str(e)
             }
@@ -4385,6 +4349,7 @@ def api_test_sync_data():
             'error': str(e),
             'timestamp': datetime.now().isoformat()
         }), 500
+    
 
 @app.after_request
 def add_security_headers(resp):
