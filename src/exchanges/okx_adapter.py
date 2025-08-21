@@ -82,15 +82,35 @@ class OKXAdapter(BaseExchange):
         return self._is_connected and self.exchange is not None
     
     def get_balance(self) -> Dict[str, Any]:
-        """Get account balance."""
+        """Get account balance with enhanced error handling and validation."""
         if not self.is_connected():
             raise Exception("Not connected to exchange")
         
         try:
-            balance = self.exchange.fetch_balance()
-            return balance
+            # Fetch balance with retry logic
+            max_retries = 3
+            for attempt in range(max_retries):
+                try:
+                    balance = self.exchange.fetch_balance()
+                    
+                    # Validate balance response
+                    if not isinstance(balance, dict):
+                        raise ValueError("Invalid balance response format")
+                    
+                    # Log balance summary for debugging
+                    total_assets = len([k for k, v in balance.get('total', {}).items() if v > 0])
+                    self.logger.debug(f"Balance retrieved: {total_assets} assets with non-zero balance")
+                    
+                    return balance
+                    
+                except Exception as e:
+                    if attempt == max_retries - 1:  # Last attempt
+                        raise
+                    self.logger.warning(f"Balance fetch attempt {attempt + 1} failed: {e}, retrying...")
+                    continue
+                    
         except Exception as e:
-            self.logger.error(f"Error fetching balance: {str(e)}")
+            self.logger.error(f"Failed to fetch balance after {max_retries} attempts: {str(e)}")
             raise
     
     def get_positions(self) -> List[Dict]:
@@ -132,122 +152,285 @@ class OKXAdapter(BaseExchange):
             raise
     
     def get_trades(self, symbol: Optional[str] = None, limit: int = 50) -> List[Dict[str, Any]]:
-        """Get trade history using OKX-specific CCXT methods with direct API access."""
+        """
+        Get trade history using comprehensive OKX API endpoints.
+        Prioritizes OKX-specific endpoints for maximum accuracy and coverage.
+        """
         if not self.is_connected():
             self.logger.warning("Not connected to OKX exchange")
             return []
         
         try:
             all_trades = []
+            seen_trade_ids = set()
             
-            # Method 1: Use OKX-specific privateGetTradeFills endpoint directly via CCXT
-            self.logger.info("Attempting OKX privateGetTradeFills (most accurate for executed trades)")
+            # Method 1: OKX Trade Fills API (most comprehensive for executed trades)
             try:
-                params = {'limit': str(min(limit, 100))}
-                response = self.exchange.privateGetTradeFills(params)
+                fills_params = {
+                    'limit': str(min(limit, 100)),  # OKX max 100
+                    'instType': 'SPOT'  # Focus on spot trading
+                }
+                if symbol:
+                    fills_params['instId'] = symbol.replace('/', '-')
                 
-                if response and response.get('code') == '0' and 'data' in response:
+                self.logger.info(f"Fetching trade fills from OKX API with params: {fills_params}")
+                response = self.exchange.privateGetTradeFills(fills_params)
+                
+                if self._is_okx_success_response(response):
                     fills = response['data']
                     self.logger.info(f"OKX fills API returned {len(fills)} trade fills")
                     
                     for fill in fills:
                         trade = self._format_okx_fill_direct(fill)
-                        if trade:
+                        if trade and trade['id'] not in seen_trade_ids:
                             all_trades.append(trade)
+                            seen_trade_ids.add(trade['id'])
                 else:
-                    self.logger.info(f"OKX fills API response: code={response.get('code')}, msg={response.get('msg', 'No message')}")
+                    self.logger.debug(f"OKX fills API response: {response.get('code')} - {response.get('msg', 'No message')}")
                     
             except Exception as e:
                 self.logger.warning(f"OKX privateGetTradeFills failed: {e}")
             
-            # Method 2: Use OKX-specific privateGetTradeOrdersHistory endpoint
-            self.logger.info("Attempting OKX privateGetTradeOrdersHistory (backup method)")
+            # Method 2: OKX Orders History API (backup for different data coverage)
             try:
-                params = {'limit': str(min(limit, 100)), 'state': 'filled', 'instType': 'SPOT'}
-                response = self.exchange.privateGetTradeOrdersHistory(params)
+                orders_params = {
+                    'limit': str(min(limit, 100)),
+                    'state': 'filled',
+                    'instType': 'SPOT'
+                }
+                if symbol:
+                    orders_params['instId'] = symbol.replace('/', '-')
                 
-                if response and response.get('code') == '0' and 'data' in response:
+                self.logger.info(f"Fetching order history from OKX API with params: {orders_params}")
+                response = self.exchange.privateGetTradeOrdersHistory(orders_params)
+                
+                if self._is_okx_success_response(response):
                     orders = response['data']
-                    self.logger.info(f"OKX orders history API returned {len(orders)} filled orders")
+                    self.logger.info(f"OKX orders API returned {len(orders)} filled orders")
                     
                     for order in orders:
                         trade = self._format_okx_order_direct(order)
-                        if trade:
-                            # Avoid duplicates
-                            if not any(t.get('id') == trade.get('id') for t in all_trades):
-                                all_trades.append(trade)
+                        if trade and trade['id'] not in seen_trade_ids:
+                            all_trades.append(trade)
+                            seen_trade_ids.add(trade['id'])
                 else:
-                    self.logger.info(f"OKX orders history API response: code={response.get('code')}, msg={response.get('msg', 'No message')}")
+                    self.logger.debug(f"OKX orders API response: {response.get('code')} - {response.get('msg', 'No message')}")
                     
             except Exception as e:
                 self.logger.warning(f"OKX privateGetTradeOrdersHistory failed: {e}")
             
-            # Sort by timestamp (newest first)
+            # Method 3: Enhanced CCXT fallback for broader coverage
+            if len(all_trades) == 0:
+                self.logger.info("No trades from OKX direct APIs, attempting CCXT fallback methods")
+                fallback_trades = self._get_ccxt_trades_enhanced(symbol, limit)
+                for trade in fallback_trades:
+                    if trade.get('id') not in seen_trade_ids:
+                        all_trades.append(trade)
+                        seen_trade_ids.add(trade['id'])
+            
+            # Sort by timestamp (newest first) and apply limit
             all_trades.sort(key=lambda x: x.get('timestamp', 0), reverse=True)
+            result_trades = all_trades[:limit]
             
-            self.logger.info(f"Retrieved {len(all_trades)} authentic trades from OKX direct API calls")
+            self.logger.info(f"Successfully retrieved {len(result_trades)} unique trades from OKX APIs")
             
-            if not all_trades:
-                self.logger.info("No trades found via OKX direct API calls - this correctly indicates no recent trading activity")
+            if not result_trades:
+                self.logger.info("No trades found - this indicates no recent trading activity on the account")
             
-            return all_trades[:limit]
+            return result_trades
             
         except Exception as e:
-            self.logger.error(f"Error in OKX direct API trade retrieval: {e}")
+            self.logger.error(f"Critical error in OKX trade retrieval: {e}")
             return []
     
-    def _format_okx_fill_direct(self, fill: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-        """Format OKX fill data from direct API call."""
+    def _is_okx_success_response(self, response: Dict[str, Any]) -> bool:
+        """Check if OKX API response indicates success."""
+        return (response and 
+                response.get('code') == '0' and 
+                'data' in response and 
+                isinstance(response['data'], list))
+    
+    def _get_ccxt_trades_enhanced(self, symbol: Optional[str] = None, limit: int = 50) -> List[Dict[str, Any]]:
+        """Enhanced CCXT fallback method with multiple approaches."""
+        fallback_trades = []
+        
         try:
+            # CCXT Method 1: fetch_my_trades
+            self.logger.info("Attempting CCXT fetch_my_trades")
+            ccxt_trades = self.exchange.fetch_my_trades(symbol=symbol, limit=min(limit, 100))
+            for trade in ccxt_trades:
+                formatted = self._format_ccxt_trade(trade)
+                if formatted:
+                    fallback_trades.append(formatted)
+                    
+        except Exception as e:
+            self.logger.debug(f"CCXT fetch_my_trades failed: {e}")
+        
+        try:
+            # CCXT Method 2: fetch_closed_orders (converted to trades)
+            self.logger.info("Attempting CCXT fetch_closed_orders")
+            closed_orders = self.exchange.fetch_closed_orders(symbol=symbol, limit=min(limit, 100))
+            for order in closed_orders:
+                if order.get('status') == 'closed' and order.get('filled', 0) > 0:
+                    formatted = self._format_ccxt_order_as_trade(order)
+                    if formatted:
+                        fallback_trades.append(formatted)
+                        
+        except Exception as e:
+            self.logger.debug(f"CCXT fetch_closed_orders failed: {e}")
+        
+        return fallback_trades
+    
+    def _format_ccxt_trade(self, trade: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """Format CCXT trade data to match our standard format."""
+        try:
+            return {
+                'id': trade.get('id', ''),
+                'order_id': trade.get('order', ''),
+                'symbol': trade.get('symbol', ''),
+                'side': (trade.get('side', '') or '').upper(),
+                'quantity': float(trade.get('amount', 0)),
+                'price': float(trade.get('price', 0)),
+                'timestamp': int(trade.get('timestamp', 0)),
+                'datetime': trade.get('datetime', ''),
+                'total_value': float(trade.get('cost', 0)),
+                'fee': trade.get('fee', {}).get('cost', 0) if trade.get('fee') else 0,
+                'fee_currency': trade.get('fee', {}).get('currency', '') if trade.get('fee') else '',
+                'source': 'ccxt_trades'
+            }
+        except (ValueError, TypeError) as e:
+            self.logger.debug(f"Failed to format CCXT trade: {e}")
+            return None
+    
+    def _format_ccxt_order_as_trade(self, order: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """Format CCXT order data as trade data."""
+        try:
+            return {
+                'id': order.get('id', ''),
+                'order_id': order.get('id', ''),
+                'symbol': order.get('symbol', ''),
+                'side': (order.get('side', '') or '').upper(),
+                'quantity': float(order.get('filled', 0)),
+                'price': float(order.get('average', 0)) if order.get('average') else float(order.get('price', 0)),
+                'timestamp': int(order.get('timestamp', 0)),
+                'datetime': order.get('datetime', ''),
+                'total_value': float(order.get('cost', 0)),
+                'fee': order.get('fee', {}).get('cost', 0) if order.get('fee') else 0,
+                'fee_currency': order.get('fee', {}).get('currency', '') if order.get('fee') else '',
+                'source': 'ccxt_orders'
+            }
+        except (ValueError, TypeError) as e:
+            self.logger.debug(f"Failed to format CCXT order: {e}")
+            return None
+    
+    def _format_okx_fill_direct(self, fill: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """Format OKX fill data from direct API call with enhanced validation."""
+        try:
+            # Validate required fields
+            if not fill.get('fillId') or not fill.get('instId'):
+                self.logger.debug(f"OKX fill missing required fields: {fill}")
+                return None
+            
             timestamp_ms = int(fill.get('ts', 0))
+            if timestamp_ms == 0:
+                self.logger.debug("OKX fill has invalid timestamp")
+                return None
+                
             datetime_obj = datetime.fromtimestamp(timestamp_ms / 1000, timezone.utc)
+            
+            # Calculate values with proper error handling
+            quantity = float(fill.get('fillSz', 0))
+            price = float(fill.get('fillPx', 0))
+            total_value = quantity * price if quantity and price else 0
             
             return {
                 'id': fill.get('fillId', ''),
                 'order_id': fill.get('ordId', ''),
                 'symbol': (fill.get('instId', '') or '').replace('-', '/'),
                 'side': fill.get('side', '').upper(),
-                'quantity': float(fill.get('fillSz', 0)),
-                'price': float(fill.get('fillPx', 0)),
+                'quantity': quantity,
+                'price': price,
                 'timestamp': timestamp_ms,
                 'datetime': datetime_obj.isoformat(),
-                'total_value': float(fill.get('fillSz', 0)) * float(fill.get('fillPx', 0)),
+                'total_value': total_value,
                 'fee': abs(float(fill.get('fee', 0))),
                 'fee_currency': fill.get('feeCcy', ''),
-                'source': 'okx_fills_direct'
+                'trade_type': fill.get('instType', 'SPOT').lower(),
+                'source': 'okx_fills'
             }
-        except (ValueError, TypeError) as e:
-            self.logger.debug(f"Failed to format OKX fill: {e}")
+        except (ValueError, TypeError, OverflowError) as e:
+            self.logger.debug(f"Failed to format OKX fill {fill.get('fillId', 'unknown')}: {e}")
             return None
     
     def _format_okx_order_direct(self, order: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-        """Format OKX order data from direct API call."""
+        """Format OKX order data from direct API call with enhanced validation."""
         try:
+            # Only process filled orders
             if order.get('state') != 'filled':
+                return None
+            
+            # Validate required fields
+            if not order.get('ordId') or not order.get('instId'):
+                self.logger.debug(f"OKX order missing required fields: {order}")
                 return None
                 
             timestamp_ms = int(order.get('uTime', 0))
+            if timestamp_ms == 0:
+                self.logger.debug("OKX order has invalid timestamp")
+                return None
+                
             datetime_obj = datetime.fromtimestamp(timestamp_ms / 1000, timezone.utc)
+            
+            # Calculate values with proper validation
+            quantity = float(order.get('fillSz', 0))
+            price = float(order.get('avgPx', 0))
+            total_value = quantity * price if quantity and price else 0
             
             return {
                 'id': order.get('ordId', ''),
                 'order_id': order.get('ordId', ''),
                 'symbol': (order.get('instId', '') or '').replace('-', '/'),
                 'side': order.get('side', '').upper(),
-                'quantity': float(order.get('fillSz', 0)),
-                'price': float(order.get('avgPx', 0)),
+                'quantity': quantity,
+                'price': price,
                 'timestamp': timestamp_ms,
                 'datetime': datetime_obj.isoformat(),
-                'total_value': float(order.get('fillSz', 0)) * float(order.get('avgPx', 0)),
+                'total_value': total_value,
                 'fee': abs(float(order.get('fee', 0))),
                 'fee_currency': order.get('feeCcy', ''),
-                'source': 'okx_orders_direct'
+                'order_type': order.get('ordType', 'market'),
+                'trade_type': order.get('instType', 'SPOT').lower(),
+                'source': 'okx_orders'
             }
-        except (ValueError, TypeError) as e:
-            self.logger.debug(f"Failed to format OKX order: {e}")
+        except (ValueError, TypeError, OverflowError) as e:
+            self.logger.debug(f"Failed to format OKX order {order.get('ordId', 'unknown')}: {e}")
             return None
     
-    def _get_trades_fallback(self, symbol: Optional[str] = None, limit: int = 50) -> List[Dict[str, Any]]:
+    def get_order_book(self, symbol: str, limit: int = 20) -> Dict[str, Any]:
+        """Get order book for a symbol."""
+        if not self.is_connected():
+            raise Exception("Not connected to exchange")
+        
+        try:
+            order_book = self.exchange.fetch_order_book(symbol, limit)
+            return order_book
+        except Exception as e:
+            self.logger.error(f"Error fetching order book for {symbol}: {str(e)}")
+            raise
+    
+    def get_ticker(self, symbol: str) -> Dict[str, Any]:
+        """Get ticker information for a symbol."""
+        if not self.is_connected():
+            raise Exception("Not connected to exchange")
+        
+        try:
+            ticker = self.exchange.fetch_ticker(symbol)
+            return ticker
+        except Exception as e:
+            self.logger.error(f"Error fetching ticker for {symbol}: {str(e)}")
+            raise
+    
+    def _legacy_get_trades_fallback(self, symbol: Optional[str] = None, limit: int = 50) -> List[Dict[str, Any]]:
         """Fallback trade retrieval method using basic OKX API calls."""
         all_trades = []
         
