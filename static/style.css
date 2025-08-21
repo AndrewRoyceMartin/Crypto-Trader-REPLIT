@@ -155,8 +155,13 @@ body {
 .sticky-top {
     position: sticky;
     top: 0;
-    z-index: 1020;
+    z-index: 1050;
     background-color: inherit;
+}
+
+.table thead.sticky-top {
+    z-index: 1050; /* Above most content */
+    background-color: #212529; /* Needed for dark header to remain visible */
 }
 
 /* Prevent table overflow issues */
