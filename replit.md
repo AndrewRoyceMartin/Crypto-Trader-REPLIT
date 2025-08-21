@@ -64,6 +64,13 @@ Added centralized OKX signing and request helpers in `app.py` for improved nativ
 - `okx_request()` - Makes authenticated requests to OKX API with proper signing
 - `okx_ticker_pct_change_24h()` - Gets accurate 24h percentage changes from OKX ticker data using native API calls. The `/api/best-performer` and `/api/worst-performer` endpoints now use these centralized functions for consistent OKX native API integration and accurate 24h/7d percentage calculations.
 
+**Production-Safe Testing System:**
+The `/api/test-sync-data` endpoint has been secured with production guards:
+- Protected by `ENABLE_INTERNAL_TESTS` environment flag (disabled by default in production)
+- Eliminated self-HTTP requests in favor of direct service function calls
+- Uses `portfolio_service.get_portfolio_data()` directly instead of HTTP calls to avoid subprocess overhead
+- Returns disabled status with helpful message when tests are not explicitly enabled
+
 **Table Rendering System:**
 Dedicated table elements per dashboard view ensure no data conflicts, with robust currency conversion, error handling, and performance optimizations.
 
