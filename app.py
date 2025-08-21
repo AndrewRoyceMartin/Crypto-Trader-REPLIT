@@ -1019,115 +1019,137 @@ def api_portfolio_history():
         history_points = []
         
         try:
-            # Try OKX native account history first
-            okx_adapter = portfolio_service.exchange
+            # Use OKX native REST API directly - no CCXT wrappers
+            import requests
+            import hmac
+            import hashlib
+            import base64
+            from datetime import timezone
             
-            # Get account balance snapshots using OKX native API
-            if hasattr(okx_adapter, 'client') and okx_adapter.client:
-                try:
-                    # Use OKX's account balance history API directly
-                    balance_history = okx_adapter.client.privateGetAccountBalanceHistory({
-                        'begin': str(int(start_date.timestamp() * 1000)),
-                        'end': str(int(end_date.timestamp() * 1000)),
-                        'limit': '100'
-                    })
-                    
-                    if balance_history['code'] == '0' and balance_history['data']:
-                        for entry in balance_history['data']:
-                            try:
-                                timestamp = int(entry['ts'])
-                                date_key = datetime.fromtimestamp(timestamp / 1000).strftime('%Y-%m-%d')
-                                
-                                # Calculate total balance for this snapshot
-                                total_value = 0
-                                if 'bal' in entry:
-                                    for balance_item in entry['bal']:
-                                        currency = balance_item['ccy']
-                                        amount = float(balance_item['bal'])
-                                        
-                                        if currency == 'USDT' or currency == 'USD':
-                                            total_value += amount
-                                        else:
-                                            # Convert to USD using current exchange rate
-                                            try:
-                                                price = okx_adapter._get_current_price(f"{currency}/USDT")
-                                                if price:
-                                                    total_value += amount * price
-                                            except:
-                                                continue
-                                
-                                if total_value > 0:
-                                    history_points.append({
-                                        'date': date_key,
-                                        'timestamp': datetime.fromtimestamp(timestamp / 1000).isoformat(),
-                                        'value': total_value
-                                    })
-                            except Exception as entry_error:
-                                logger.debug(f"Error processing balance history entry: {entry_error}")
-                                continue
-                                
-                except Exception as okx_error:
-                    logger.warning(f"OKX native account history failed: {okx_error}")
+            # OKX API credentials
+            api_key = os.getenv("OKX_API_KEY", "")
+            secret_key = os.getenv("OKX_SECRET_KEY", "")
+            passphrase = os.getenv("OKX_PASSPHRASE", "")
             
-            # Fallback to CCXT ledger if native API fails
-            if not history_points:
-                since = int(start_date.timestamp() * 1000)
-                ledger_records = exchange.fetch_ledger(limit=100, since=since)
+            if all([api_key, secret_key, passphrase]):
+                # Create OKX native API request
+                timestamp = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%S.%fZ')
+                method = 'GET'
                 
-                # Process ledger to calculate portfolio values over time
-                running_balance = {}
-                daily_values = {}
+                # Try multiple OKX endpoints for historical data
+                endpoints = [
+                    '/api/v5/account/bills-archive',  # Account bill details
+                    '/api/v5/account/bills',          # Recent account bills
+                    '/api/v5/asset/balances'          # Asset balances history
+                ]
                 
-                for record in ledger_records:
-                    timestamp = record['timestamp']
-                    date_key = datetime.fromtimestamp(timestamp / 1000).strftime('%Y-%m-%d')
-                    currency = record['currency']
-                    amount = float(record['amount'])
-                    
-                    if currency not in running_balance:
-                        running_balance[currency] = 0
-                    running_balance[currency] += amount
-                    
-                    # Calculate daily portfolio value (simplified)
-                    if date_key not in daily_values:
-                        daily_values[date_key] = {}
-                    daily_values[date_key][currency] = running_balance[currency]
+                def sign_request(timestamp, method, request_path, body=''):
+                    message = timestamp + method + request_path + body
+                    mac = hmac.new(bytes(secret_key, encoding='utf8'), bytes(message, encoding='utf-8'), digestmod='sha256')
+                    d = mac.digest()
+                    return base64.b64encode(d).decode('utf-8')
                 
-                # Convert to time series data
-                for date_str, balances in daily_values.items():
+                base_url = 'https://www.okx.com'
+                
+                for endpoint in endpoints:
                     try:
-                        # Calculate total value for this date
-                        total_value = 0
-                        for currency, balance in balances.items():
-                            if currency == 'USDT' or currency == 'USD':
-                                total_value += balance
-                            else:
-                                # Get historical price (simplified - using current price as fallback)
-                                try:
-                                    ticker = exchange.fetch_ticker(f"{currency}/USDT")
-                                    price = ticker['last']
-                                    total_value += balance * price
-                                except:
-                                    continue
+                        # Add query parameters for date range
+                        query_params = f"?begin={int(start_date.timestamp() * 1000)}&end={int(end_date.timestamp() * 1000)}&limit=100"
+                        request_path = endpoint + query_params
                         
-                        if total_value > 0:
-                            history_points.append({
-                                'date': date_str,
-                                'timestamp': date_str,
-                                'value': total_value
-                            })
-                    except:
+                        signature = sign_request(timestamp, method, request_path)
+                        
+                        headers = {
+                            'OK-ACCESS-KEY': api_key,
+                            'OK-ACCESS-SIGN': signature,
+                            'OK-ACCESS-TIMESTAMP': timestamp,
+                            'OK-ACCESS-PASSPHRASE': passphrase,
+                            'Content-Type': 'application/json'
+                        }
+                        
+                        response = requests.get(base_url + request_path, headers=headers, timeout=10)
+                        
+                        if response.status_code == 200:
+                            data = response.json()
+                            
+                            if data.get('code') == '0' and data.get('data'):
+                                logger.info(f"Successfully fetched data from {endpoint}: {len(data['data'])} records")
+                                
+                                # Process the response data
+                                for record in data['data']:
+                                    try:
+                                        # Extract timestamp and balance info
+                                        ts = record.get('ts', record.get('cTime', record.get('uTime')))
+                                        if not ts:
+                                            continue
+                                            
+                                        timestamp_ms = int(ts)
+                                        date_key = datetime.fromtimestamp(timestamp_ms / 1000).strftime('%Y-%m-%d')
+                                        
+                                        # Calculate value based on record type
+                                        record_value = 0
+                                        
+                                        if 'bal' in record:  # Balance record
+                                            currency = record.get('ccy', '')
+                                            balance = float(record.get('bal', 0))
+                                            
+                                            if currency in ['USDT', 'USD']:
+                                                record_value = balance
+                                            elif balance > 0:
+                                                # Get current price for conversion
+                                                try:
+                                                    price = portfolio_service.exchange._get_current_price(f"{currency}/USDT")
+                                                    if price:
+                                                        record_value = balance * price
+                                                except:
+                                                    continue
+                                        
+                                        elif 'balChg' in record:  # Balance change record
+                                            currency = record.get('ccy', '')
+                                            balance_change = float(record.get('balChg', 0))
+                                            balance_after = float(record.get('balAfter', 0))
+                                            
+                                            if currency in ['USDT', 'USD']:
+                                                record_value = balance_after
+                                            elif balance_after > 0:
+                                                try:
+                                                    price = portfolio_service.exchange._get_current_price(f"{currency}/USDT")
+                                                    if price:
+                                                        record_value = balance_after * price
+                                                except:
+                                                    continue
+                                        
+                                        if record_value > 0:
+                                            history_points.append({
+                                                'date': date_key,
+                                                'timestamp': datetime.fromtimestamp(timestamp_ms / 1000).isoformat(),
+                                                'value': record_value,
+                                                'source': endpoint
+                                            })
+                                            
+                                    except Exception as record_error:
+                                        logger.debug(f"Error processing record: {record_error}")
+                                        continue
+                                
+                                # If we got data, break from trying other endpoints
+                                if history_points:
+                                    break
+                                    
+                    except Exception as api_error:
+                        logger.warning(f"OKX native API call to {endpoint} failed: {api_error}")
                         continue
                     
         except Exception as ledger_error:
             logger.warning(f"Could not fetch detailed ledger: {ledger_error}")
             
-            # Enhanced fallback: Use OKX historical price data for realistic progression
+            # Enhanced fallback: Generate realistic historical points using OKX native historical price API
             if not history_points:
+                logger.info("Generating historical portfolio progression using OKX native price data")
+                
                 days_back = (end_date - start_date).days
                 holdings = current_portfolio.get('holdings', [])
                 
-                # Get historical data for each holding using OKX native APIs
+                # Use OKX native API for historical prices
                 for i in range(days_back, -1, -1):
                     point_date = end_date - timedelta(days=i)
                     daily_value = 0
@@ -1138,28 +1160,47 @@ def api_portfolio_history():
                             quantity = float(holding.get('quantity', 0))
                             
                             if quantity > 0 and symbol:
-                                # Try to get historical price from OKX for this specific date
+                                # Use OKX native API for historical candle data
                                 try:
-                                    # Use OKX's historical kline data
-                                    historical_timestamp = int(point_date.timestamp() * 1000)
-                                    kline_data = exchange.fetch_ohlcv(
-                                        f"{symbol}/USDT", 
-                                        '1d', 
-                                        since=historical_timestamp, 
-                                        limit=1
-                                    )
+                                    timestamp = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%S.%fZ')
+                                    method = 'GET'
                                     
-                                    if kline_data and len(kline_data) > 0:
-                                        # Use actual closing price from OKX
-                                        historical_price = kline_data[0][4]  # Close price
-                                        daily_value += quantity * historical_price
+                                    # Historical candles endpoint
+                                    hist_timestamp = int(point_date.timestamp() * 1000)
+                                    request_path = f"/api/v5/market/candles?instId={symbol}-USDT&bar=1D&before={hist_timestamp}&limit=1"
+                                    
+                                    signature = sign_request(timestamp, method, request_path)
+                                    
+                                    headers = {
+                                        'OK-ACCESS-KEY': api_key,
+                                        'OK-ACCESS-SIGN': signature,
+                                        'OK-ACCESS-TIMESTAMP': timestamp,
+                                        'OK-ACCESS-PASSPHRASE': passphrase,
+                                        'Content-Type': 'application/json'
+                                    }
+                                    
+                                    response = requests.get(base_url + request_path, headers=headers, timeout=5)
+                                    
+                                    if response.status_code == 200:
+                                        candle_data = response.json()
+                                        
+                                        if candle_data.get('code') == '0' and candle_data.get('data'):
+                                            # Use closing price from candle data
+                                            historical_price = float(candle_data['data'][0][4])  # Close price
+                                            daily_value += quantity * historical_price
+                                        else:
+                                            # Fallback to current price
+                                            current_price = float(holding.get('current_price', 0))
+                                            if current_price > 0:
+                                                daily_value += quantity * current_price
                                     else:
-                                        # Fallback to current price if no historical data
+                                        # Fallback to current price
                                         current_price = float(holding.get('current_price', 0))
                                         if current_price > 0:
                                             daily_value += quantity * current_price
+                                            
                                 except Exception as price_error:
-                                    # If historical price fetch fails, use current price
+                                    # Final fallback to current price
                                     current_price = float(holding.get('current_price', 0))
                                     if current_price > 0:
                                         daily_value += quantity * current_price
@@ -1170,7 +1211,8 @@ def api_portfolio_history():
                         history_points.append({
                             'date': point_date.strftime('%Y-%m-%d'),
                             'timestamp': point_date.isoformat(),
-                            'value': daily_value
+                            'value': daily_value,
+                            'source': 'okx_native_historical'
                         })
         
         # Ensure we have current value as the latest point
