@@ -670,11 +670,107 @@ def DISABLED_api_crypto_portfolio():
         logger.error(f"Portfolio data error: {e}")
         return jsonify({"error": str(e)}), 500
 
+# Global bot state
+bot_state = {
+    "running": False,
+    "mode": None,
+    "symbol": None,
+    "timeframe": None,
+    "started_at": None,
+    "trader_instance": None
+}
+
+@app.route("/api/bot/status")
+def bot_status():
+    """Get current bot trading status."""
+    return jsonify({
+        "success": True,
+        "running": bot_state["running"],
+        "mode": bot_state["mode"],
+        "symbol": bot_state["symbol"], 
+        "timeframe": bot_state["timeframe"],
+        "started_at": bot_state["started_at"]
+    })
+
+@app.route("/api/bot/start", methods=["POST"])
+@require_admin
+def bot_start():
+    """Start the trading bot."""
+    try:
+        if bot_state["running"]:
+            return jsonify({"error": "Bot is already running"}), 400
+            
+        data = request.get_json() or {}
+        mode = data.get("mode", "paper")  # paper or live
+        symbol = data.get("symbol", "BTC-USDT")
+        timeframe = data.get("timeframe", "1h")
+        
+        # Validate mode
+        if mode not in ["paper", "live"]:
+            return jsonify({"error": "Mode must be 'paper' or 'live'"}), 400
+            
+        # Update bot state
+        bot_state.update({
+            "running": True,
+            "mode": mode,
+            "symbol": symbol,
+            "timeframe": timeframe,
+            "started_at": iso_utc()
+        })
+        
+        logger.info(f"Bot started in {mode} mode for {symbol} on {timeframe}")
+        
+        return jsonify({
+            "success": True,
+            "message": f"Bot started in {mode} mode",
+            "status": bot_state
+        })
+        
+    except Exception as e:
+        logger.error(f"Failed to start bot: {e}")
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/api/bot/stop", methods=["POST"])
+@require_admin  
+def bot_stop():
+    """Stop the trading bot."""
+    try:
+        if not bot_state["running"]:
+            return jsonify({"error": "Bot is not running"}), 400
+            
+        # Stop trader instance if exists
+        if bot_state["trader_instance"]:
+            try:
+                bot_state["trader_instance"].stop_trading()
+            except Exception as e:
+                logger.warning(f"Error stopping trader instance: {e}")
+                
+        # Reset bot state
+        bot_state.update({
+            "running": False,
+            "mode": None,
+            "symbol": None,
+            "timeframe": None,
+            "started_at": None,
+            "trader_instance": None
+        })
+        
+        logger.info("Bot stopped")
+        
+        return jsonify({
+            "success": True,
+            "message": "Bot stopped successfully"
+        })
+        
+    except Exception as e:
+        logger.error(f"Failed to stop bot: {e}")
+        return jsonify({"error": str(e)}), 500
+
 @app.route("/api/start_trading", methods=["POST"])
 @require_admin
 def start_trading():
-    """Redirect to new start-trading endpoint."""
-    return jsonify({"error": "Use /api/start-trading endpoint instead"}), 301
+    """Legacy endpoint - redirect to bot start."""
+    return jsonify({"error": "Use /api/bot/start endpoint instead"}), 301
 
 @app.route("/api/trade-history")
 def api_trade_history():

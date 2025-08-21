@@ -3299,15 +3299,16 @@ async function startTrading(mode, type) {
     }
     window.tradingApp.showToast(`Starting ${mode} trading in ${type} mode...`, 'info');
     try {
-        const response = await fetch('/api/start_trading', {
+        const response = await fetch('/api/bot/start', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+                'Content-Type': 'application/json',
+                'X-Admin-Token': 'trading-system-2024'
+            },
             body: JSON.stringify({
                 mode,
-                symbol: 'BTC/USDT',
-                timeframe: '1h',
-                trading_mode: type,
-                confirmation: true
+                symbol: 'BTC-USDT',
+                timeframe: '1h'
             })
         });
         const data = await response.json();
@@ -3321,6 +3322,54 @@ async function startTrading(mode, type) {
         }
     } catch (error) {
         window.tradingApp.showToast(`Error starting trading: ${error.message}`, 'error');
+        console.debug('Bot toggle error:', error);
+    }
+}
+
+async function stopTrading() {
+    try {
+        window.tradingApp.showToast('Stopping trading...', 'info');
+        const response = await fetch('/api/bot/stop', {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'X-Admin-Token': 'trading-system-2024'
+            }
+        });
+        const data = await response.json();
+        if (data.success) {
+            window.tradingApp.showToast('Trading stopped successfully', 'success');
+            window.tradingApp.updateDashboard();
+            window.tradingApp.updateCryptoPortfolio();
+            // Reset trading status display
+            const statusEl = document.getElementById('trading-status');
+            if (statusEl) {
+                statusEl.textContent = 'Inactive';
+                statusEl.className = 'badge bg-secondary';
+            }
+        } else {
+            window.tradingApp.showToast(`Failed to stop trading: ${data.error}`, 'error');
+        }
+    } catch (error) {
+        window.tradingApp.showToast(`Error stopping trading: ${error.message}`, 'error');
+        console.debug('Bot stop error:', error);
+    }
+}
+
+async function toggleBot() {
+    try {
+        // Check current bot status
+        const statusResponse = await fetch('/api/bot/status');
+        const statusData = await statusResponse.json();
+        
+        if (statusData.running) {
+            await stopTrading();
+        } else {
+            await startTrading('paper', 'portfolio');
+        }
+    } catch (error) {
+        window.tradingApp.showToast(`Error toggling bot: ${error.message}`, 'error');
+        console.debug('Bot toggle error:', error);
     }
 }
 
