@@ -132,31 +132,140 @@ class OKXAdapter(BaseExchange):
             raise
     
     def get_trades(self, symbol: Optional[str] = None, limit: int = 50) -> List[Dict[str, Any]]:
-        """Get trade history."""
+        """Get trade history using multiple methods to ensure we get recent trades."""
         if not self.is_connected():
             raise Exception("Not connected to exchange")
         
+        all_trades = []
+        
+        # Method 1: Try fetch_my_trades (standard method)
         try:
-            # OKX has strict limits - try smaller limit and specific symbol first
+            self.logger.info(f"Attempting fetch_my_trades with limit={limit}")
             if symbol:
                 trades = self.exchange.fetch_my_trades(symbol, limit=min(limit, 50))
             else:
-                # For OKX, don't fetch all symbols at once, use smaller limit
-                trades = self.exchange.fetch_my_trades(limit=min(limit, 20))
+                trades = self.exchange.fetch_my_trades(limit=min(limit, 100))
             
-            return [dict(trade) for trade in trades]
+            self.logger.info(f"fetch_my_trades returned {len(trades)} trades")
+            all_trades.extend([dict(trade) for trade in trades])
+            
         except Exception as e:
-            self.logger.error(f"Error fetching trades: {str(e)}")
-            # Try even smaller limit if first attempt fails
+            self.logger.warning(f"fetch_my_trades failed: {str(e)}")
+        
+        # Method 2: Try fetch_closed_orders (OKX specific method)
+        try:
+            self.logger.info(f"Attempting fetch_closed_orders (OKX-specific method)")
+            closed_orders = self.exchange.fetch_closed_orders(limit=min(limit, 100))
+            self.logger.info(f"fetch_closed_orders returned {len(closed_orders)} orders")
+            
+            # Convert filled orders to trade format
+            for order in closed_orders:
+                if order.get('status') == 'closed' and order.get('filled', 0) > 0:
+                    trade = {
+                        'id': order.get('id'),
+                        'symbol': order.get('symbol'),
+                        'side': order.get('side'),
+                        'amount': order.get('filled', order.get('amount', 0)),
+                        'price': order.get('average', order.get('price', 0)),
+                        'cost': order.get('cost', 0),
+                        'datetime': order.get('datetime'),
+                        'timestamp': order.get('timestamp'),
+                        'fee': order.get('fee'),
+                        'type': order.get('type', 'market'),
+                        'status': 'closed'
+                    }
+                    all_trades.append(trade)
+                    
+            self.logger.info(f"Converted {len(closed_orders)} closed orders to trades")
+            
+        except Exception as e:
+            self.logger.warning(f"fetch_closed_orders fallback failed: {str(e)}")
+        
+        # Method 3: Try fetch_closed_orders with specific symbols that we know exist in portfolio
+        for symbol in ['PEPE/USDT', 'BTC/USDT']:
             try:
-                if symbol:
-                    trades = self.exchange.fetch_my_trades(symbol, limit=10)
-                else:
-                    trades = self.exchange.fetch_my_trades(limit=10)
-                return [dict(trade) for trade in trades]
-            except Exception as e2:
-                self.logger.error(f"Error with smaller limit: {str(e2)}")
-                raise e
+                self.logger.info(f"Attempting fetch_closed_orders for {symbol}")
+                symbol_orders = self.exchange.fetch_closed_orders(symbol, limit=20)
+                self.logger.info(f"fetch_closed_orders for {symbol} returned {len(symbol_orders)} orders")
+                
+                for order in symbol_orders:
+                    if order.get('status') == 'closed' and order.get('filled', 0) > 0:
+                        # Only add if not already in all_trades
+                        order_id = order.get('id')
+                        if not any(t.get('id') == order_id for t in all_trades):
+                            trade = {
+                                'id': order_id,
+                                'symbol': order.get('symbol'),
+                                'side': order.get('side'),
+                                'amount': order.get('filled', order.get('amount', 0)),
+                                'price': order.get('average', order.get('price', 0)),
+                                'cost': order.get('cost', 0),
+                                'datetime': order.get('datetime'),
+                                'timestamp': order.get('timestamp'),
+                                'fee': order.get('fee'),
+                                'type': order.get('type', 'market'),
+                                'status': 'closed'
+                            }
+                            all_trades.append(trade)
+                            
+            except Exception as e:
+                self.logger.warning(f"fetch_closed_orders for {symbol} failed: {str(e)}")
+                
+        # Method 4: Try with time range for last 7 days (more focused)
+        try:
+            from datetime import datetime, timedelta
+            since = int((datetime.now() - timedelta(days=7)).timestamp() * 1000)
+            self.logger.info(f"Attempting fetch_closed_orders with time range (last 7 days)")
+            
+            recent_orders = self.exchange.fetch_closed_orders(since=since, limit=min(limit, 200))
+            self.logger.info(f"Time-range fetch_closed_orders returned {len(recent_orders)} orders")
+            
+            for order in recent_orders:
+                if order.get('status') == 'closed' and order.get('filled', 0) > 0:
+                    # Only add if not already in all_trades
+                    order_id = order.get('id')
+                    if not any(t.get('id') == order_id for t in all_trades):
+                        trade = {
+                            'id': order_id,
+                            'symbol': order.get('symbol'),
+                            'side': order.get('side'),
+                            'amount': order.get('filled', order.get('amount', 0)),
+                            'price': order.get('average', order.get('price', 0)),
+                            'cost': order.get('cost', 0),
+                            'datetime': order.get('datetime'),
+                            'timestamp': order.get('timestamp'),
+                            'fee': order.get('fee'),
+                            'type': order.get('type', 'market'),
+                            'status': 'closed'
+                        }
+                        all_trades.append(trade)
+                        
+        except Exception as e:
+            self.logger.warning(f"Time-range fetch_closed_orders failed: {str(e)}")
+        
+        # Sort by timestamp (most recent first)
+        all_trades.sort(key=lambda x: x.get('timestamp', 0), reverse=True)
+        
+        # Remove duplicates based on ID
+        seen_ids = set()
+        unique_trades = []
+        for trade in all_trades:
+            trade_id = trade.get('id')
+            if trade_id and trade_id not in seen_ids:
+                seen_ids.add(trade_id)
+                unique_trades.append(trade)
+        
+        self.logger.info(f"Final result: {len(unique_trades)} unique trades after deduplication")
+        
+        # If we still have no trades, log a helpful message
+        if len(unique_trades) == 0:
+            self.logger.warning("No trades found via any OKX API method. This could indicate:")
+            self.logger.warning("  1. No recent trading activity")
+            self.logger.warning("  2. API permissions don't include trade history")
+            self.logger.warning("  3. Trades made on different account/subaccount")
+            self.logger.warning("  4. Recent trades not yet reflected in API")
+        
+        return unique_trades[:limit]  # Return only up to the requested limit
     
     def get_ohlcv(self, symbol: str, timeframe: str, limit: int = 100) -> pd.DataFrame:
         """Get OHLCV data."""
