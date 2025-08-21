@@ -49,17 +49,30 @@
       justify-content: center;
     }
     
-    /* Force proper text rendering in Chrome */
-    .text-white-75 {
+    /* Ensure proper white text on colored backgrounds */
+    .bg-primary .text-white,
+    .bg-success .text-white,
+    .bg-dark .text-white,
+    .bg-gradient .text-white {
+      color: rgba(255, 255, 255, 1) !important;
+      text-rendering: optimizeLegibility;
+      -webkit-font-smoothing: antialiased;
+    }
+    
+    .bg-primary .text-white-75,
+    .bg-success .text-white-75,
+    .bg-dark .text-white-75,
+    .bg-gradient .text-white-75 {
       color: rgba(255, 255, 255, 0.85) !important;
       text-rendering: optimizeLegibility;
       -webkit-font-smoothing: antialiased;
     }
     
-    .text-white {
-      color: rgba(255, 255, 255, 1) !important;
-      text-rendering: optimizeLegibility;
-      -webkit-font-smoothing: antialiased;
+    /* Fix for cards that JavaScript changes to light backgrounds */
+    .bg-light .text-white,
+    .border-success.bg-light .text-success,
+    .border-danger.bg-light .text-danger {
+      color: #212529 !important;
     }
     
     /* Responsive chart heights */
