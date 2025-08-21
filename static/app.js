@@ -4162,8 +4162,29 @@ function updateOpenPositionsTable(positions, totalValue = 0) {
     }
 }
 
+// Fetch and update available positions table
+async function fetchAndUpdateAvailablePositions() {
+    try {
+        const response = await fetch('/api/available-positions', { cache: 'no-cache' });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        
+        const data = await response.json();
+        console.debug("Available positions API response:", data);
+        
+        if (data.success) {
+            updateAvailablePositionsTable(data.available_positions || []);
+        } else {
+            console.error("Available positions API error:", data.error);
+            updateAvailablePositionsTable([]);
+        }
+    } catch (error) {
+        console.error("Error fetching available positions:", error);
+        updateAvailablePositionsTable([]);
+    }
+}
+
 // Available positions table function
-function updateAvailablePositionsTable(allPositions) {
+function updateAvailablePositionsTable(availablePositions) {
     try {
         const availableTableBody = document.getElementById("available-positions-table-body");
         if (!availableTableBody) {
@@ -4171,14 +4192,7 @@ function updateAvailablePositionsTable(allPositions) {
             return;
         }
         
-        // Filter for positions with zero or near-zero quantities (sold out or very small amounts)
-        const availablePositions = allPositions ? allPositions.filter(position => {
-            const quantity = parseFloat(position.quantity || 0);
-            const status = position.status;
-            return (quantity === 0 || quantity < 0.000001 || status === 'sold_out');
-        }) : [];
-        
-        console.debug("Available positions data:", availablePositions);
+        console.debug("Updating available positions table with:", availablePositions);
         
         if (!availablePositions || availablePositions.length === 0) {
             availableTableBody.innerHTML = `
@@ -4193,31 +4207,16 @@ function updateAvailablePositionsTable(allPositions) {
 
         const tableHtml = availablePositions.map(position => {
             const symbol = position.symbol || "Unknown";
-            const currentBalance = parseFloat(position.quantity || 0);
+            const currentBalance = parseFloat(position.current_balance || 0);
             const currentPrice = parseFloat(position.current_price || 0);
+            const lastExitPrice = parseFloat(position.last_exit_price || 0);
+            const targetBuyPrice = parseFloat(position.target_buy_price || 0);
+            const priceDifference = parseFloat(position.price_difference || 0);
+            const priceDiffPercent = parseFloat(position.price_diff_percent || 0);
+            const buySignal = position.buy_signal || "WAIT";
+            const daysSinceExit = position.days_since_exit || 0;
             
-            // Calculate last exit price from trades data or use a fallback
-            const lastExitPrice = parseFloat(position.last_exit_price || currentPrice * 1.1 || 0);
-            
-            // Calculate target buy price using our rebuy algorithm (typically 10-15% below last exit)
-            const buybackPercentage = 0.85; // 15% below exit price
-            const targetBuyPrice = lastExitPrice * buybackPercentage;
-            
-            // Price difference calculation
-            const priceDifference = currentPrice - targetBuyPrice;
-            const priceDiffPercent = targetBuyPrice > 0 ? ((currentPrice - targetBuyPrice) / targetBuyPrice) * 100 : 0;
-            
-            // Buy signal logic
-            const buySignal = currentPrice <= targetBuyPrice ? "BUY READY" : "WAIT";
             const buySignalClass = buySignal === "BUY READY" ? "text-success fw-bold" : "text-warning";
-            
-            // Days since exit
-            let daysSinceExit = 0;
-            if (position.last_trade_date) {
-                const lastTrade = new Date(position.last_trade_date);
-                const now = new Date();
-                daysSinceExit = Math.floor((now - lastTrade) / (1000 * 60 * 60 * 24));
-            }
             
             // Format functions
             const formatCurrency = (value) => {
@@ -4239,10 +4238,10 @@ function updateAvailablePositionsTable(allPositions) {
                 return value.toFixed(8);
             };
             
-            const formatDate = (dateStr) => {
-                if (!dateStr) return "N/A";
+            const formatDate = (timestamp) => {
+                if (!timestamp) return "N/A";
                 try {
-                    return new Date(dateStr).toLocaleDateString();
+                    return new Date(timestamp).toLocaleDateString();
                 } catch {
                     return "N/A";
                 }
@@ -4418,10 +4417,8 @@ async function refreshHoldingsData() {
             console.debug('Holdings data received:', positions);
             updateOpenPositionsTable(positions, data.total_value);
             
-            // Also update available positions table with all_positions data
-            if (data.all_positions) {
-                updateAvailablePositionsTable(data.all_positions);
-            }
+            // Also update available positions table 
+            fetchAndUpdateAvailablePositions();
             if (window.tradingApp) {
                 window.tradingApp.showToast('Holdings data refreshed', 'success');
             }
