@@ -389,7 +389,8 @@ class OKXTradeRetrieval:
                 'price': price,
                 'timestamp': ts,
                 'datetime': datetime.fromtimestamp(ts / 1000, tz=timezone.utc).isoformat() if ts else '',
-                'total_value': qty * price,
+                # FIXED: Use OKX notional value if available, otherwise calculate
+                'total_value': float(fill.get('notionalUsd') or fill.get('notional') or (qty * price if qty and price else 0)),
                 'fee': abs(fee_raw),
                 'fee_sign': -1 if fee_raw < 0 else (1 if fee_raw > 0 else 0),
                 'fee_currency': fill.get('feeCcy', ''),
@@ -431,7 +432,8 @@ class OKXTradeRetrieval:
                 'price': price,
                 'timestamp': ts,
                 'datetime': datetime.fromtimestamp(ts / 1000, tz=timezone.utc).isoformat() if ts else '',
-                'total_value': qty * price if (qty and price) else float(order.get('notionalUsd', 0) or 0),
+                # FIXED: Prioritize OKX pre-calculated values
+                'total_value': float(order.get('notionalUsd') or order.get('cost') or (qty * price if qty and price else 0)),
                 'fee': abs(fee_raw),
                 'fee_sign': -1 if fee_raw < 0 else (1 if fee_raw > 0 else 0),
                 'fee_currency': order.get('feeCcy', ''),
@@ -506,7 +508,8 @@ class OKXTradeRetrieval:
                 'price': price,
                 'timestamp': ts,
                 'datetime': order.get('datetime') or (datetime.fromtimestamp(ts/1000, tz=timezone.utc).isoformat() if ts else ''),
-                'total_value': float(order.get('cost') or (qty * price)),
+                # FIXED: Use OKX cost directly when available (pre-calculated by exchange)
+                'total_value': float(order.get('cost') or order.get('notional') or (qty * price if qty and price else 0)),
                 'fee': abs(fee_cost),
                 'fee_sign': -1 if fee_cost < 0 else (1 if fee_cost > 0 else 0),
                 'fee_currency': fee_ccy,

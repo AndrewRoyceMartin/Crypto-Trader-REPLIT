@@ -90,6 +90,7 @@ class CryptoPortfolioManager:
                 base_price = 0.000001
 
             qty = self.initial_value / base_price
+            # FIXED: For seeding, use manual calculation (real values come from OKX in portfolio_service)
             current_value = qty * base_price
 
             self.portfolio_data[symbol] = {
