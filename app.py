@@ -2633,6 +2633,187 @@ def paper_trade_sell():
         logger.error(f"Error in paper sell trade: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
 
+@app.route("/api/buy", methods=["POST"])
+@require_admin
+def live_buy():
+    """Execute a live buy trade on OKX."""
+    if not warmup["done"]:
+        return jsonify({"error": "System still initializing"}), 503
+
+    try:
+        data = request.get_json() or {}
+        symbol = data.get('symbol', '').upper()
+        amount = float(data.get('amount', 0))
+
+        if not symbol or amount <= 0:
+            return jsonify({"success": False, "error": "Invalid symbol or amount"}), 400
+
+        # Format symbol for OKX (e.g., BTC-USDT)
+        if '/' in symbol:
+            symbol = symbol.replace('/', '-')
+        elif '-' not in symbol and symbol != 'USDT':
+            symbol = f"{symbol}-USDT"
+
+        logger.info(f"Live buy request: ${amount} worth of {symbol}")
+
+        # Initialize services
+        initialize_system()
+        
+        # Get current market price
+        try:
+            from src.utils.okx_native import OKXNative
+            okx_client = OKXNative()
+            ticker_response = okx_client.get_ticker(symbol)
+            
+            if not ticker_response or 'data' not in ticker_response or not ticker_response['data']:
+                return jsonify({"success": False, "error": f"Unable to get current price for {symbol}"}), 400
+            
+            current_price = float(ticker_response['data'][0]['last'])
+            quantity = amount / current_price
+            
+            # Execute market buy order
+            order_response = okx_client.place_order(
+                inst_id=symbol,
+                trade_mode='cash',
+                side='buy',
+                order_type='market',
+                size=str(round(quantity, 6))
+            )
+            
+            if order_response and order_response.get('code') == '0':
+                order_id = order_response['data'][0]['ordId']
+                logger.info(f"Live buy order placed: {order_id} - {quantity:.6f} {symbol} at ${current_price:.4f}")
+                
+                return jsonify({
+                    "success": True,
+                    "message": f"Bought {quantity:.6f} {symbol} at ${current_price:.4f}",
+                    "order_id": order_id,
+                    "trade": {
+                        "symbol": symbol,
+                        "action": "BUY",
+                        "quantity": quantity,
+                        "price": current_price,
+                        "total_cost": amount
+                    }
+                })
+            else:
+                error_msg = order_response.get('msg', 'Unknown error') if order_response else 'No response from exchange'
+                logger.error(f"Live buy order failed: {error_msg}")
+                return jsonify({"success": False, "error": f"Order failed: {error_msg}"}), 400
+                
+        except Exception as api_error:
+            logger.error(f"OKX API error during buy: {api_error}")
+            return jsonify({"success": False, "error": f"Exchange API error: {str(api_error)}"}), 500
+
+    except ValueError as ve:
+        logger.error(f"Invalid data in buy request: {ve}")
+        return jsonify({"success": False, "error": "Invalid amount format"}), 400
+    except Exception as e:
+        logger.error(f"Error in live buy trade: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+@app.route("/api/sell", methods=["POST"])
+@require_admin
+def live_sell():
+    """Execute a live sell trade on OKX."""
+    if not warmup["done"]:
+        return jsonify({"error": "System still initializing"}), 503
+
+    try:
+        data = request.get_json() or {}
+        symbol = data.get('symbol', '').upper()
+        percentage = float(data.get('percentage', 0))
+
+        if not symbol or percentage <= 0 or percentage > 100:
+            return jsonify({"success": False, "error": "Invalid symbol or percentage (1-100)"}), 400
+
+        # Format symbol for OKX
+        if '/' in symbol:
+            symbol = symbol.replace('/', '-')
+        elif '-' not in symbol and symbol != 'USDT':
+            symbol = f"{symbol}-USDT"
+
+        logger.info(f"Live sell request: {percentage}% of {symbol}")
+
+        # Initialize services
+        initialize_system()
+        
+        try:
+            from src.utils.okx_native import OKXNative
+            okx_client = OKXNative()
+            
+            # Get current balance
+            balance_response = okx_client.get_balance()
+            if not balance_response or 'data' not in balance_response:
+                return jsonify({"success": False, "error": "Unable to get account balance"}), 400
+            
+            # Find the asset balance
+            base_currency = symbol.split('-')[0]
+            available_balance = 0
+            
+            for balance_item in balance_response['data']:
+                for detail in balance_item.get('details', []):
+                    if detail['ccy'] == base_currency:
+                        available_balance = float(detail.get('availBal', 0))
+                        break
+                if available_balance > 0:
+                    break
+            
+            if available_balance <= 0:
+                return jsonify({"success": False, "error": f"No {base_currency} balance available"}), 400
+            
+            # Calculate quantity to sell
+            quantity_to_sell = available_balance * (percentage / 100)
+            
+            # Get current price
+            ticker_response = okx_client.get_ticker(symbol)
+            if not ticker_response or 'data' not in ticker_response or not ticker_response['data']:
+                return jsonify({"success": False, "error": f"Unable to get current price for {symbol}"}), 400
+            
+            current_price = float(ticker_response['data'][0]['last'])
+            
+            # Execute market sell order
+            order_response = okx_client.place_order(
+                inst_id=symbol,
+                trade_mode='cash',
+                side='sell',
+                order_type='market',
+                size=str(round(quantity_to_sell, 6))
+            )
+            
+            if order_response and order_response.get('code') == '0':
+                order_id = order_response['data'][0]['ordId']
+                total_value = quantity_to_sell * current_price
+                logger.info(f"Live sell order placed: {order_id} - {quantity_to_sell:.6f} {symbol} at ${current_price:.4f}")
+                
+                return jsonify({
+                    "success": True,
+                    "message": f"Sold {quantity_to_sell:.6f} {symbol} at ${current_price:.4f}",
+                    "order_id": order_id,
+                    "trade": {
+                        "symbol": symbol,
+                        "action": "SELL",
+                        "quantity": quantity_to_sell,
+                        "price": current_price,
+                        "total_value": total_value
+                    }
+                })
+            else:
+                error_msg = order_response.get('msg', 'Unknown error') if order_response else 'No response from exchange'
+                logger.error(f"Live sell order failed: {error_msg}")
+                return jsonify({"success": False, "error": f"Order failed: {error_msg}"}), 400
+                
+        except Exception as api_error:
+            logger.error(f"OKX API error during sell: {api_error}")
+            return jsonify({"success": False, "error": f"Exchange API error: {str(api_error)}"}), 500
+
+    except ValueError as ve:
+        logger.error(f"Invalid data in sell request: {ve}")
+        return jsonify({"success": False, "error": "Invalid percentage format"}), 400
+    except Exception as e:
+        logger.error(f"Error in live sell trade: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
 @app.route("/api/reset-entire-program", methods=["POST"])
 @require_admin
 def api_reset_entire_program():
