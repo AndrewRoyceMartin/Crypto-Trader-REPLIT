@@ -1,0 +1,56 @@
+~/workspace$ python test_okx_live_sync.py
+🚀 OKX Live Sync Test Suite
+==================================================
+test_futures_and_margin_balances (__main__.TestOKXLiveSync.test_futures_and_margin_balances)
+Check futures and margin account balances from live OKX ... 
+📊 Checking futures/margin account balances...
+✅ Futures/margin positions found and live:
+ℹ️ All positions have zero quantity (closed positions)
+ok
+test_live_holdings_match_backend (__main__.TestOKXLiveSync.test_live_holdings_match_backend)
+Compare live OKX holdings with backend API ... 
+🔍 Testing live OKX synchronization...
+OKX Endpoint: app.okx.com
+📡 Fetching live OKX balance data...
+📊 OKX Holdings Found: 2 assets
+   PEPE: 6016268.09373679
+   BTC: 0.00054477
+🖥️  Fetching backend portfolio data...
+💾 Backend Holdings Found: 2 assets
+   PEPE: 6016268.09373679 (🟢 Live)
+   BTC: 0.00054477 (🟢 Live)
+
+🔍 Comparing OKX vs Backend data...
+
+📊 SYNCHRONIZATION RESULTS:
+   Perfect Matches: 2
+   Mismatches: 0
+
+✅ PERFECT MATCHES:
+   ✅ PEPE: 6016268.09373679 (Live: True)
+   ✅ BTC: 0.00054477 (Live: True)
+
+🎉 SUCCESS: All OKX holdings perfectly synchronized with backend!
+ok
+test_price_data_freshness (__main__.TestOKXLiveSync.test_price_data_freshness)
+Verify that prices are fresh and from live sources ... 
+🕐 Testing price data freshness...
+📅 First call timestamp: 2025-08-21T01:11:34.362328+00:00
+📅 Second call timestamp: 2025-08-21T01:11:36.992604+00:00
+   PEPE: 🟢 Live
+   BTC: 🟢 Live
+✅ All price data is fresh and live!
+ok
+test_unrealized_pnl_calculation (__main__.TestOKXLiveSync.test_unrealized_pnl_calculation)
+Validate that unrealized PnL calculations are accurate ... 
+🧮 Validating PnL calculations...
+📊 PnL Calculation Results:
+   Perfect Calculations: 2
+   Calculation Errors: 0
+
+✅ ACCURATE CALCULATIONS:
+   ✅ PEPE: P&L $15.97 ($0.000011 - $0.000008) × 6016268.09
+   ✅ BTC: P&L $9.34 ($114266.000000 - $97126.100000) × 0.00
+
+🎉 All unrealized PnL values are calculated correctly!
+ok

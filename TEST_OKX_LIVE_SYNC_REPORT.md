@@ -79,6 +79,12 @@ if not all([OKX_API_KEY, OKX_API_SECRET, OKX_API_PASSPHRASE]):
 - Checks for active derivative positions
 - Confirms account type and trading capabilities
 
+### Test 5: Synchronization Alert System
+- Monitors for discrepancies between OKX and backend data
+- Generates alerts for missing assets or quantity drift (>0.05 tolerance)
+- Creates detailed alert logs for troubleshooting
+- Validates continuous synchronization integrity
+
 ## 6. Enhanced Comparison Logic
 **Problem**: Crude balance comparison with poor tolerance
 **Fix**: Sophisticated comparison system:

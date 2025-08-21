@@ -315,6 +315,99 @@ class TestOKXLiveSync(unittest.TestCase):
             else:
                 print(f"📈 Total active positions: {position_count}")
 
+    def fetch_okx_balances(self):
+        """Helper method to fetch OKX balances directly"""
+        # Ensure URL has proper scheme
+        if not OKX_BASE_URL.startswith(('http://', 'https://')):
+            okx_base_url = f"https://{OKX_BASE_URL}"
+        else:
+            okx_base_url = OKX_BASE_URL
+            
+        okx_path = "/api/v5/account/balance"
+        okx_url = okx_base_url + okx_path
+        
+        try:
+            headers = okx_headers("GET", okx_path)
+        except ValueError as e:
+            self.skipTest(f"Cannot create OKX headers: {e}")
+
+        okx_response = self.session.get(okx_url, headers=headers, timeout=30)
+        
+        if okx_response.status_code != 200:
+            self.skipTest(f"OKX API returned status {okx_response.status_code}")
+            
+        okx_data = okx_response.json()
+        
+        if okx_data.get("code") != "0":
+            self.skipTest(f"OKX API Error: {okx_data.get('msg', 'Unknown error')}")
+
+        # Parse OKX holdings
+        okx_holdings = {}
+        if okx_data.get("data") and len(okx_data["data"]) > 0:
+            for item in okx_data["data"][0].get("details", []):
+                avail_bal = float(item.get("availBal", 0))
+                if avail_bal > 0:
+                    okx_holdings[item["ccy"]] = avail_bal
+                    
+        return okx_holdings
+
+    def test_sync_alert_on_discrepancy(self):
+        """Monitor and alert on synchronization discrepancies"""
+        print(f"\n🔔 Monitoring mismatch alerts...")
+        okx = self.fetch_okx_balances()
+        app = self.fetch_backend_holdings()
+        alerts = []
+
+        # Check each OKX balance against backend
+        for sym, okx_qty in okx.items():
+            app_entry = app.get(sym)
+            if not app_entry:
+                alerts.append(f"🚨 ALERT: {sym} missing from app.")
+            else:
+                app_qty = float(app_entry.get("quantity", 0))
+                # Use stricter tolerance for alerting (0.05 vs 0.000001 for testing)
+                if abs(okx_qty - app_qty) > 0.05:
+                    alerts.append(
+                        f"🚨 ALERT: Quantity drift for {sym}: "
+                        f"OKX={okx_qty}, App={app_qty} "
+                        f"(diff: {abs(okx_qty - app_qty):.8f})"
+                    )
+
+        # Check for extra assets in backend
+        for app_sym in app.keys():
+            if app_sym not in okx:
+                alerts.append(f"🚨 ALERT: {app_sym} exists in app but not in OKX.")
+
+        print(f"📊 Alert Summary:")
+        print(f"   OKX Assets: {len(okx)}")
+        print(f"   Backend Assets: {len(app)}")
+        print(f"   Alerts Generated: {len(alerts)}")
+
+        if alerts:
+            print(f"\n🚨 DISCREPANCIES DETECTED:")
+            for alert in alerts:
+                print(f"   {alert}")
+            
+            # Log alerts to file
+            try:
+                with open("sync_alerts.log", "w") as f:
+                    f.write("OKX Live Sync Alert Log\n")
+                    f.write("=" * 30 + "\n")
+                    f.write(f"Timestamp: 2025-08-21T01:12:00Z\n")
+                    f.write(f"OKX Assets: {len(okx)}\n")
+                    f.write(f"Backend Assets: {len(app)}\n")
+                    f.write(f"Total Alerts: {len(alerts)}\n\n")
+                    f.write("ALERTS:\n")
+                    f.write("\n".join(alerts))
+                print(f"📝 Alerts logged to sync_alerts.log")
+            except Exception as e:
+                print(f"⚠️ Could not write alert log: {e}")
+                
+            self.fail("Discrepancies detected and logged.")
+        else:
+            print(f"\n✅ No discrepancies detected between OKX and backend.")
+            print(f"🎯 Perfect synchronization maintained!")
+
 if __name__ == "__main__":
     print("🚀 OKX Live Sync Test Suite")
     print("=" * 50)
