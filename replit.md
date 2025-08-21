@@ -39,6 +39,8 @@ The system utilizes a modular Flask-based web interface for live OKX trading, st
 
 **Robust Recent Trades Endpoint:** Implemented `/api/recent-trades` with dual-tier approach prioritizing native OKX fills API and graceful fallback to portfolio service data - supports flexible timeframe filtering (1d/7d/30d), comprehensive trade summaries with volume analysis, fee calculations, and symbol statistics, ensuring reliable trade history access regardless of API permission limitations.
 
+**Production-Safe Test Sync Endpoint:** Optimized `/api/test-sync-data` endpoint removing self-HTTP requests and subprocess calls for production safety - uses direct service function calls for reliable testing, gated behind `ENABLE_INTERNAL_TESTS` environment flag, provides comprehensive holdings synchronization analysis with live data validation, and eliminates potential security vulnerabilities from internal HTTP calls.
+
 ## External Dependencies
 
 ### Market Data & Trading APIs
