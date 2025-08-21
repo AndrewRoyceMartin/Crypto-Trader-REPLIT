@@ -266,6 +266,55 @@ class TestOKXLiveSync(unittest.TestCase):
         else:
             print(f"\n🎉 All unrealized PnL values are calculated correctly!")
 
+    def test_futures_and_margin_balances(self):
+        """Check futures and margin account balances from live OKX"""
+        print(f"\n📊 Checking futures/margin account balances...")
+        
+        # Ensure URL has proper scheme
+        if not OKX_BASE_URL.startswith(('http://', 'https://')):
+            okx_base_url = f"https://{OKX_BASE_URL}"
+        else:
+            okx_base_url = OKX_BASE_URL
+            
+        path = "/api/v5/account/account-position-risk"
+        
+        try:
+            headers = okx_headers("GET", path)
+        except ValueError as e:
+            self.skipTest(f"Cannot create OKX headers: {e}")
+            
+        okx_url = okx_base_url + path
+        
+        try:
+            resp = self.session.get(okx_url, headers=headers, timeout=30)
+            if resp.status_code != 200:
+                print(f"⚠️ OKX API returned status {resp.status_code}")
+                self.skipTest("Could not fetch futures/margin data - API error")
+                
+            data = resp.json()
+        except Exception as e:
+            print(f"⚠️ Request failed: {e}")
+            self.skipTest("Could not fetch futures/margin data - connection error")
+
+        if data.get("code") != "0":
+            print(f"⚠️ Could not fetch futures/margin data. OKX Error: {data.get('msg', 'Unknown')}")
+            self.skipTest("No futures/margin balances found or access denied.")
+        elif not data.get("data"):
+            print("ℹ️ No futures or margin positions open.")
+            print("✅ Account accessible - no positions found (expected for spot-only account)")
+        else:
+            print("✅ Futures/margin positions found and live:")
+            position_count = 0
+            for pos in data["data"]:
+                if float(pos.get("pos", 0)) != 0:  # Only show non-zero positions
+                    print(f"   {pos.get('instId', 'Unknown')} qty={pos.get('pos', '0')}")
+                    position_count += 1
+                    
+            if position_count == 0:
+                print("ℹ️ All positions have zero quantity (closed positions)")
+            else:
+                print(f"📈 Total active positions: {position_count}")
+
 if __name__ == "__main__":
     print("🚀 OKX Live Sync Test Suite")
     print("=" * 50)

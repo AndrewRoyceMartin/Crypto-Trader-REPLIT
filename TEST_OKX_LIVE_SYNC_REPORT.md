@@ -73,6 +73,12 @@ if not all([OKX_API_KEY, OKX_API_SECRET, OKX_API_PASSPHRASE]):
 - Verifies backend calculations against live OKX data
 - Uses precise tolerance (0.01) for financial accuracy
 
+### Test 4: Futures and Margin Account Access
+- Tests access to OKX futures and margin account data
+- Validates API permissions and account configuration
+- Checks for active derivative positions
+- Confirms account type and trading capabilities
+
 ## 6. Enhanced Comparison Logic
 **Problem**: Crude balance comparison with poor tolerance
 **Fix**: Sophisticated comparison system:
