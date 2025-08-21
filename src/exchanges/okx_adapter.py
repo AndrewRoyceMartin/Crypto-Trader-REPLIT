@@ -6,8 +6,10 @@ import ccxt
 import pandas as pd
 import logging
 import os
+import time
 from typing import Dict, List, Any, Optional
 from datetime import datetime, timezone
+from ccxt.base.errors import NetworkError, ExchangeError, RateLimitExceeded
 from .base import BaseExchange
 
 
@@ -21,6 +23,20 @@ class OKXAdapter(BaseExchange):
         self.exchange: Optional[ccxt.okx] = None
         self._is_connected = False
     
+    def _retry(self, fn, *args, max_attempts=3, base_delay=0.5, **kwargs):
+        """Retry helper with exponential backoff for network errors and rate limits."""
+        for i in range(max_attempts):
+            try:
+                return fn(*args, **kwargs)
+            except (RateLimitExceeded, NetworkError) as e:
+                wait = base_delay * (2 ** i)
+                self.logger.warning(f"{fn.__name__} retry {i+1}/{max_attempts} after {e}, sleeping {wait:.2f}s")
+                time.sleep(wait)
+            except ExchangeError:
+                raise
+        # last attempt
+        return fn(*args, **kwargs)
+
     def _build_client(self, default_type: str = 'spot') -> ccxt.okx:
         """Build OKX client with centralized configuration."""
         api_key = os.getenv("OKX_API_KEY") or self.config.get("apiKey", "")
@@ -77,35 +93,25 @@ class OKXAdapter(BaseExchange):
         return self._is_connected and self.exchange is not None
     
     def get_balance(self) -> Dict[str, Any]:
-        """Get account balance with enhanced error handling and validation."""
+        """Get account balance with robust retry logic."""
         if not self.is_connected():
             raise Exception("Not connected to exchange")
         
         try:
-            # Fetch balance with retry logic
-            max_retries = 3
-            for attempt in range(max_retries):
-                try:
-                    balance = self.exchange.fetch_balance()
-                    
-                    # Validate balance response
-                    if not isinstance(balance, dict):
-                        raise ValueError("Invalid balance response format")
-                    
-                    # Log balance summary for debugging
-                    total_assets = len([k for k, v in balance.get('total', {}).items() if v > 0])
-                    self.logger.debug(f"Balance retrieved: {total_assets} assets with non-zero balance")
-                    
-                    return balance
-                    
-                except Exception as e:
-                    if attempt == max_retries - 1:  # Last attempt
-                        raise
-                    self.logger.warning(f"Balance fetch attempt {attempt + 1} failed: {e}, retrying...")
-                    continue
+            balance = self._retry(self.exchange.fetch_balance)
+            
+            # Validate balance response
+            if not isinstance(balance, dict):
+                raise ValueError("Invalid balance response format")
+            
+            # Log balance summary for debugging
+            total_assets = len([k for k, v in balance.get('total', {}).items() if v > 0])
+            self.logger.debug(f"Balance retrieved: {total_assets} assets with non-zero balance")
+            
+            return balance
                     
         except Exception as e:
-            self.logger.error(f"Failed to fetch balance after {max_retries} attempts: {str(e)}")
+            self.logger.error(f"Failed to fetch balance: {str(e)}")
             raise
     
     def get_positions(self) -> List[Dict[str, Any]]:
@@ -436,12 +442,12 @@ class OKXAdapter(BaseExchange):
             raise
     
     def get_ticker(self, symbol: str) -> Dict[str, Any]:
-        """Get ticker information for a symbol."""
+        """Get ticker information for a symbol with retry logic."""
         if not self.is_connected():
             raise Exception("Not connected to exchange")
         
         try:
-            ticker = self.exchange.fetch_ticker(symbol)
+            ticker = self._retry(self.exchange.fetch_ticker, symbol)
             return ticker
         except Exception as e:
             self.logger.error(f"Error fetching ticker for {symbol}: {str(e)}")
@@ -460,7 +466,7 @@ class OKXAdapter(BaseExchange):
         rates = {"USD": 1.0}
         for cur, pair in pairs.items():
             try:
-                t = self.exchange.fetch_ticker(pair)
+                t = self._retry(self.exchange.fetch_ticker, pair)
                 last = float(t.get('last') or 0.0)  # USDT per 1 FIAT
                 # USD->FIAT ≈ 1 / (USDT per FIAT)
                 rates[cur] = (1.0 / last) if last > 0 else rates.get(cur, 1.0)
