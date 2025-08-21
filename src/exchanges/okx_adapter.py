@@ -157,15 +157,15 @@ class OKXAdapter(BaseExchange):
             raise
     
     def place_order(self, symbol: str, side: str, amount: float, order_type: str = "market", price: Optional[float] = None) -> Dict[str, Any]:
-        """Place an order on the exchange."""
+        """Place an order on the exchange with retry logic."""
         if not self.is_connected():
             raise Exception("Not connected to exchange")
         
         try:
             if order_type == "market":
-                order = self.exchange.create_market_order(symbol, side, amount)
+                order = self._retry(self.exchange.create_market_order, symbol, side, amount)
             elif order_type == "limit" and price is not None:
-                order = self.exchange.create_limit_order(symbol, side, amount, price)
+                order = self._retry(self.exchange.create_limit_order, symbol, side, amount, price)
             else:
                 raise ValueError("Invalid order type or missing price for limit order")
             
@@ -486,9 +486,9 @@ class OKXAdapter(BaseExchange):
         try:
             self.logger.info(f"Attempting fetch_my_trades with limit={limit}")
             if symbol:
-                trades = self.exchange.fetch_my_trades(symbol, limit=min(limit, 50))
+                trades = self._retry(self.exchange.fetch_my_trades, symbol, limit=min(limit, 50))
             else:
-                trades = self.exchange.fetch_my_trades(limit=min(limit, 100))
+                trades = self._retry(self.exchange.fetch_my_trades, limit=min(limit, 100))
             
             self.logger.info(f"fetch_my_trades returned {len(trades)} trades")
             all_trades.extend([dict(trade) for trade in trades])
@@ -499,7 +499,7 @@ class OKXAdapter(BaseExchange):
         # Method 2: Try fetch_closed_orders (OKX specific method)
         try:
             self.logger.info(f"Attempting fetch_closed_orders (OKX-specific method)")
-            closed_orders = self.exchange.fetch_closed_orders(limit=min(limit, 100))
+            closed_orders = self._retry(self.exchange.fetch_closed_orders, limit=min(limit, 100))
             self.logger.info(f"fetch_closed_orders returned {len(closed_orders)} orders")
             
             # Convert filled orders to trade format
@@ -529,7 +529,7 @@ class OKXAdapter(BaseExchange):
         for symbol_check in ['PEPE/USDT', 'BTC/USDT']:
             try:
                 self.logger.info(f"Attempting fetch_closed_orders for {symbol_check}")
-                symbol_orders = self.exchange.fetch_closed_orders(symbol_check, limit=20)
+                symbol_orders = self._retry(self.exchange.fetch_closed_orders, symbol_check, limit=20)
                 self.logger.info(f"fetch_closed_orders for {symbol_check} returned {len(symbol_orders)} orders")
                 
                 for order in symbol_orders:
@@ -561,7 +561,7 @@ class OKXAdapter(BaseExchange):
             since = int((datetime.now() - timedelta(days=7)).timestamp() * 1000)
             self.logger.info(f"Attempting fetch_closed_orders with time range (last 7 days)")
             
-            recent_orders = self.exchange.fetch_closed_orders(since=since, limit=min(limit, 200))
+            recent_orders = self._retry(self.exchange.fetch_closed_orders, since=since, limit=min(limit, 200))
             self.logger.info(f"Time-range fetch_closed_orders returned {len(recent_orders)} orders")
             
             for order in recent_orders:
@@ -641,7 +641,7 @@ class OKXAdapter(BaseExchange):
         # Method 1: Try fetch_my_trades with since parameter
         try:
             self.logger.info(f"Attempting fetch_my_trades with timeframe={timeframe}, since={since}")
-            trades = self.exchange.fetch_my_trades(since=since, limit=min(limit, 100))
+            trades = self._retry(self.exchange.fetch_my_trades, since=since, limit=min(limit, 100))
             self.logger.info(f"fetch_my_trades returned {len(trades)} trades for timeframe {timeframe}")
             all_trades.extend([dict(trade) for trade in trades])
         except Exception as e:
@@ -650,7 +650,7 @@ class OKXAdapter(BaseExchange):
         # Method 2: Try fetch_closed_orders with since parameter
         try:
             self.logger.info(f"Attempting fetch_closed_orders with timeframe={timeframe}")
-            closed_orders = self.exchange.fetch_closed_orders(since=since, limit=min(limit, 100))
+            closed_orders = self._retry(self.exchange.fetch_closed_orders, since=since, limit=min(limit, 100))
             self.logger.info(f"fetch_closed_orders returned {len(closed_orders)} orders for timeframe {timeframe}")
             
             for order in closed_orders:
@@ -726,12 +726,12 @@ class OKXAdapter(BaseExchange):
             raise
     
     def cancel_order(self, order_id: str, symbol: str) -> Dict[str, Any]:
-        """Cancel an order."""
+        """Cancel an order with retry logic."""
         if not self.is_connected():
             raise Exception("Not connected to exchange")
         
         try:
-            result = self.exchange.cancel_order(order_id, symbol)
+            result = self._retry(self.exchange.cancel_order, order_id, symbol)
             return dict(result)
         except Exception as e:
             self.logger.error(f"Error canceling order: {str(e)}")
