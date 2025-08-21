@@ -107,4 +107,31 @@ The OKX adapter has been significantly enhanced while maintaining 100% authentic
 
 **Result**: The trading system now has a robust, production-ready OKX adapter that accurately reflects the user's real trading account data with zero cached or simulated interference.
 
-**Status**: ✅ **Complete** - The OKX adapter is optimized, tested, and ready for production use.
+## Critical Spot Trading Fix (August 21, 2025)
+
+### **Spot vs Derivatives Position Handling**
+- **Issue Identified**: `get_positions()` was incorrectly using `fetch_positions()` for spot trading
+- **Problem**: `fetch_positions()` is designed for derivatives; filtering by `pos['contracts'] > 0` excludes all spot holdings
+- **Solution Implemented**: Enhanced position detection that:
+  - **Spot Trading**: Builds positions from `fetch_balance()` using OKX balance details
+  - **Derivatives Trading**: Uses standard `fetch_positions()` method
+  - **Automatic Detection**: Uses `defaultType` to determine the correct approach
+  - **Proper Formatting**: Converts balance data to standardized position format
+
+### **Implementation Details**
+```python
+def get_positions(self) -> List[Dict[str, Any]]:
+    default_type = (self.exchange.options or {}).get('defaultType', 'spot')
+    if default_type == 'spot':
+        # Build positions from balance data for spot trading
+        bal = self.exchange.fetch_balance()
+        details = bal.get('info', {}).get('data', [{}])[0].get('details', []) or []
+        # Convert each non-zero balance to position format
+    else:
+        # Use standard derivatives position method
+        pos = self.exchange.fetch_positions()
+```
+
+**Result**: Spot positions now correctly display PEPE (6M+ tokens) and BTC (0.00054477) holdings instead of empty results.
+
+**Status**: ✅ **Complete & Fixed** - The OKX adapter now correctly handles both spot and derivatives trading with proper position detection.

@@ -113,24 +113,46 @@ class OKXAdapter(BaseExchange):
             self.logger.error(f"Failed to fetch balance after {max_retries} attempts: {str(e)}")
             raise
     
-    def get_positions(self) -> List[Dict]:
+    def get_positions(self) -> List[Dict[str, Any]]:
         """
-        Get open positions from OKX.
-        Returns live portfolio positions from OKX account.
-        
-        Returns:
-            List of position data
+        Get open positions. For spot: derive from balances; for derivatives: use fetch_positions().
+        Correctly handles spot trading by building positions from balance data.
         """
+        if not self.is_connected():
+            raise Exception("Not connected to exchange")
+
         try:
-            if not self.is_connected():
-                raise Exception("Not connected to exchange")
-            
-            # Fetch real positions from OKX account
-            positions = self.exchange.fetch_positions()
-            return [dict(pos) for pos in positions if pos['contracts'] > 0]
-            
+            default_type = (self.exchange.options or {}).get('defaultType', 'spot')
+            if default_type == 'spot':
+                # For spot trading, build positions from balance data
+                bal = self.exchange.fetch_balance()
+                details = bal.get('info', {}).get('data', [{}])[0].get('details', []) or []
+                positions = []
+                
+                for d in details:
+                    ccy = d.get('ccy')
+                    total = float(d.get('bal', 0) or 0)
+                    avail = float(d.get('availBal', 0) or 0)
+                    if total > 0:
+                        positions.append({
+                            'symbol': f"{ccy}/USDT" if ccy and ccy != 'USDT' else 'USDT/USDT',
+                            'asset': ccy,
+                            'quantity': total,
+                            'available': avail,
+                            'type': 'spot',
+                        })
+                
+                self.logger.info(f"Retrieved {len(positions)} spot positions from OKX balance data")
+                return positions
+            else:
+                # For derivatives trading, use standard fetch_positions
+                pos = self.exchange.fetch_positions()
+                derivative_positions = [dict(p) for p in pos if float(p.get('contracts', 0) or 0) > 0]
+                self.logger.info(f"Retrieved {len(derivative_positions)} derivative positions from OKX")
+                return derivative_positions
+                
         except Exception as e:
-            self.logger.error(f"Error fetching positions: {str(e)}")
+            self.logger.error(f"Error fetching positions: {e}")
             raise
     
     def place_order(self, symbol: str, side: str, amount: float, order_type: str = "market", price: Optional[float] = None) -> Dict[str, Any]:
