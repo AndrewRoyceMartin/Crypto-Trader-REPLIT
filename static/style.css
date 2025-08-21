@@ -468,6 +468,85 @@ h4, h5, h6 {
     font-size: 0.75rem;
 }
 
+/* Unified Dashboard Styles */
+.section-divider {
+    border: none;
+    height: 3px;
+    background: linear-gradient(90deg, var(--bs-primary) 0%, var(--bs-info) 50%, var(--bs-success) 100%);
+    margin: 3rem 0 !important;
+    border-radius: 2px;
+}
+
+/* Navigation Pills */
+.nav-pills-container .nav-link {
+    color: rgba(255,255,255,0.75);
+    border-radius: 20px;
+    margin: 0 0.25rem;
+    padding: 0.5rem 1rem;
+    transition: all 0.3s ease;
+}
+
+.nav-pills-container .nav-link:hover {
+    color: white;
+    background: rgba(255,255,255,0.1);
+}
+
+.nav-pills-container .nav-link.active {
+    color: white;
+    background: var(--bs-primary);
+    box-shadow: 0 2px 8px rgba(0,123,255,0.3);
+}
+
+/* Section Headers */
+section h2 {
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid rgba(0,0,0,0.1);
+}
+
+/* Smooth Scrolling Enhancement */
+html {
+    scroll-behavior: smooth;
+}
+
+/* Sticky Navigation Enhancement */
+.navbar.sticky-top {
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+}
+
+/* Enhanced Chart Cards for unified view */
+.chart-card {
+    height: auto;
+    min-height: 300px;
+}
+
+.chart-card canvas {
+    max-height: 250px;
+}
+
+/* Responsive section spacing */
+@media (max-width: 768px) {
+    .section-divider {
+        margin: 2rem 0 !important;
+    }
+    
+    section h2 {
+        font-size: 1.5rem;
+    }
+    
+    .nav-pills-container {
+        flex-wrap: wrap;
+    }
+    
+    .nav-pills-container .nav-link {
+        font-size: 0.875rem;
+        padding: 0.375rem 0.75rem;
+        margin: 0.125rem;
+    }
+}
+
 /* Better mobile chart layout - MOVED TO CONSOLIDATED SECTION */
 
 /* Enhanced spacing between major sections */

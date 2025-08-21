@@ -494,12 +494,12 @@ def render_trades_page():
         return render_loading_skeleton(f"Trades Error: {e}", error=True)
 
 def render_full_dashboard():
-    """Render the original trading dashboard using templates."""
+    """Render the unified trading dashboard using templates."""
     try:
         from flask import render_template
         from version import get_version
         cache_version = int(time.time())
-        return render_template("index.html", cache_version=cache_version, version=get_version())
+        return render_template("unified_dashboard.html", cache_version=cache_version, version=get_version())
     except Exception as e:
         logger.error(f"Error rendering original dashboard: {e}")
         return """
