@@ -55,36 +55,9 @@ class PortfolioService:
 
         # Live exchange will provide real trade history - no simulation needed
 
-        # Cache a safe price getter to avoid attr-defined Pyright warnings
-        self._price_getter: Optional[Callable[[str], float]] = None
-        self._init_price_getter()
+        # No cached price getters - use only live OKX data
 
-    def _init_price_getter(self) -> None:
-        """Prepare a safe price getter without relying on private attributes."""
-        # Prefer a public method if your adapter exposes one; fallback to the simulated helper.
-        # We wrap it so typing stays clean for Pyright.
-        getter = getattr(self.exchange, "_get_current_price", None)
-        if callable(getter):
-            def _wrap(pair: str) -> float:
-                try:
-                    v = getter(pair)
-                    return float(v) if v is not None else 0.0
-                except Exception:
-                    return 0.0
-            self._price_getter = _wrap
-        else:
-            # Fallback: always return 0.0 if no method available
-            self._price_getter = lambda _pair: 0.0
-
-    def _safe_price(self, inst_pair: str) -> float:
-        """Get current price defensively."""
-        if self._price_getter is None:
-            self._init_price_getter()
-        try:
-            price = float(self._price_getter(inst_pair))  # type: ignore[misc]
-        except Exception:
-            price = 0.0
-        return price if price > 0.0 else 0.0
+    # Removed cached price methods - using only live OKX data
 
     def _initialize_exchange(self) -> None:
         """Initialize and connect to the live OKX exchange."""
@@ -160,17 +133,11 @@ class PortfolioService:
                 name = symbol  # Use symbol as name for simplicity
 
                 inst_pair = f"{symbol}/USDT"
-                # Get live price directly from OKX exchange to ensure accuracy
+                # Get live price directly from OKX exchange - NO FALLBACKS
                 current_price = self._get_live_okx_price(symbol)
                 if current_price <= 0.0:
-                    # Fallback to safe price method if live fetch fails
-                    current_price = self._safe_price(inst_pair)
-                    if current_price <= 0.0:
-                        # For PEPE, use a more realistic fallback price if API fails
-                        if symbol == 'PEPE':
-                            current_price = 0.00001  # Approximate PEPE price
-                        else:
-                            current_price = 1.0
+                    self.logger.error(f"Failed to get live OKX price for {symbol}, skipping asset")
+                    continue  # Skip this asset if we can't get live OKX price
 
                 # Since we can't get trade history, calculate cost basis from current holdings and market data
                 # This provides realistic cost basis from OKX trading history
@@ -204,11 +171,10 @@ class PortfolioService:
                             # cost_basis is already set from _estimate_cost_basis_from_holdings
                             self.logger.info(f"Before fallback check - {symbol} cost_basis: ${cost_basis:.2f}")
                             
-                            # Don't override it unless it's actually zero
-                            if cost_basis <= 0:  # Only fallback if estimation failed completely
-                                cost_basis = current_value * 0.8  # Conservative estimate: assume 20% profit
-                                self.logger.warning(f"Cost basis estimation failed for {symbol}, using fallback: ${cost_basis:.2f}")
-                                avg_entry_price = cost_basis / quantity if quantity > 0 else current_price
+                            # Use only real cost basis calculations - no fallbacks
+                            if cost_basis <= 0:  # Skip assets without proper cost basis
+                                self.logger.error(f"Cannot determine cost basis for {symbol}, skipping asset")
+                                continue
                             else:
                                 self.logger.info(f"Using estimated cost basis for {symbol}: ${cost_basis:.2f}")
                             # Keep the estimated avg_entry_price from our market calculation
