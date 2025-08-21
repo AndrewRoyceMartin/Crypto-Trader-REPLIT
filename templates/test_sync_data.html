@@ -163,32 +163,28 @@
             
             <div class="navbar-nav me-auto">
                 <a class="btn btn-outline-light btn-sm me-2" href="{{ url_for('index') }}">
-                    <i class="fas fa-home me-1"></i>
-                    Dashboard
+                    <i class="fas fa-home me-1"></i> Dashboard
                 </a>
                 <a class="btn btn-outline-light btn-sm me-2" href="{{ url_for('portfolio') }}">
-                    <i class="fas fa-wallet me-1"></i>
-                    Portfolio
+                    <i class="fas fa-wallet me-1"></i> Portfolio
                 </a>
                 <a class="btn btn-outline-light btn-sm me-2" href="{{ url_for('performance') }}">
-                    <i class="fas fa-chart-bar me-1"></i>
-                    Performance
+                    <i class="fas fa-chart-bar me-1"></i> Performance
                 </a>
                 <a class="btn btn-outline-light btn-sm me-2" href="{{ url_for('holdings') }}">
-                    <i class="fas fa-coins me-1"></i>
-                    Holdings
+                    <i class="fas fa-coins me-1"></i> Holdings
                 </a>
                 <a class="btn btn-outline-light btn-sm me-2" href="{{ url_for('trades') }}">
-                    <i class="fas fa-exchange-alt me-1"></i>
-                    Trades
+                    <i class="fas fa-exchange-alt me-1"></i> Trades
                 </a>
                 <a class="btn btn-light btn-sm me-2" href="{{ url_for('test_sync_data') }}">
-                    <i class="fas fa-sync-alt me-1"></i>
-                    Sync Test
+                    <i class="fas fa-sync-alt me-1"></i> Sync Test
                 </a>
-                <button class="btn btn-outline-success btn-sm me-2" onclick="window.location.href='{{ url_for('index') }}'">
-                    <i class="fas fa-file-invoice-dollar me-1"></i>
-                    ATO Export
+                <button class="btn btn-outline-success btn-sm me-2" onclick="exportATOTax()">
+                    <i class="fas fa-file-invoice-dollar me-1"></i> ATO Export
+                </button>
+                <button class="btn btn-outline-warning btn-sm me-2" id="take-profit-btn" onclick="executeTakeProfit()" title="Execute take profit trades for positions above 2% profit">
+                    <i class="fas fa-money-bill-wave me-1"></i> Take Profit
                 </button>
             </div>
             

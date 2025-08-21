@@ -123,7 +123,46 @@
               <i class="fas fa-sync-alt me-1"></i> Sync Test
             </a>
           </li>
+          <li class="nav-item me-2">
+            <button class="btn btn-outline-success btn-sm" onclick="exportATOTax()">
+              <i class="fas fa-file-invoice-dollar me-1"></i> ATO Export
+            </button>
+          </li>
+          <li class="nav-item me-2">
+            <button class="btn btn-outline-warning btn-sm" id="take-profit-btn" onclick="executeTakeProfit()" title="Execute take profit trades for positions above 2% profit">
+              <i class="fas fa-money-bill-wave me-1"></i> Take Profit
+            </button>
+          </li>
         </ul>
+        
+        <div class="navbar-nav ms-auto">
+          <div class="nav-item d-flex align-items-center">
+            <div class="me-3">
+              <select class="form-select form-select-sm" id="currency-selector" onchange="changeCurrency()" style="min-width: 80px; font-size: 0.8rem;">
+                <option value="USD" selected>USD</option>
+                <option value="AUD">AUD</option>
+                <option value="EUR">EUR</option>
+                <option value="GBP">GBP</option>
+              </select>
+            </div>
+            <span class="navbar-text me-3">
+              <i class="fas fa-server text-info me-1"></i>
+              <span class="text-light">Server Uptime:</span>
+              <span id="system-uptime" class="text-info ms-1">0s</span>
+            </span>
+            <span class="navbar-text me-3" id="server-connection-status">
+              <i class="fas fa-wifi text-success me-1"></i>
+              <span class="text-light">OKX API:</span>
+              <span id="server-connection-text" class="text-success ms-1">Connected</span>
+            </span>
+            <span class="navbar-text" id="okx-connection-status">
+              <i class="fas fa-server text-success me-1"></i>
+              <span class="text-light">Trading Mode:</span>
+              <span id="okx-connection-text" class="text-success ms-1">Live Trading</span>
+            </span>
+          </div>
+        </div>
+        
         <div class="navbar-text text-end text-white-50 small">
           <i class="fas fa-code-branch me-1"></i> v{{ version|default('dev') }}
         </div>
