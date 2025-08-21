@@ -33,9 +33,15 @@ body {
     margin-bottom: 1rem;
 }
 
-/* KPI Cards */
+/* KPI Cards - Chrome optimized */
 .kpi-card {
     transition: transform 0.2s ease, box-shadow 0.2s ease;
+    min-height: 80px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    -webkit-box-sizing: border-box;
+    box-sizing: border-box;
 }
 
 .kpi-card:hover {
@@ -48,20 +54,39 @@ body {
     margin-bottom: 0.5rem;
     letter-spacing: 0.5px;
     text-transform: uppercase;
+    font-weight: 600;
+    line-height: 1.2;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
 }
 
 .kpi-card .value {
     font-size: 1.5rem;
     line-height: 1.2;
+    font-weight: 700;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
 }
 
-/* Text color utilities for better contrast */
+/* Text color utilities for better contrast - Chrome optimized */
 .text-white-75 {
     color: rgba(255, 255, 255, 0.85) !important;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
 }
 
 .text-white {
     color: rgba(255, 255, 255, 1) !important;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+}
+
+/* Chrome specific fixes */
+@supports (-webkit-appearance: none) {
+    .kpi-card {
+        -webkit-transform: translateZ(0);
+        transform: translateZ(0);
+    }
 }
 
 .card-header {
