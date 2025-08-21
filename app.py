@@ -1692,13 +1692,6 @@ def api_best_performer():
         secret_key = os.getenv("OKX_SECRET_KEY", "")
         passphrase = os.getenv("OKX_PASSPHRASE", "")
         
-        def sign_request(timestamp, method, request_path, body=''):
-            message = timestamp + method + request_path + body
-            mac = hmac.new(bytes(secret_key, encoding='utf8'), bytes(message, encoding='utf-8'), digestmod='sha256')
-            d = mac.digest()
-            return base64.b64encode(d).decode('utf-8')
-        
-        base_url = 'https://www.okx.com'
         total_value = portfolio_data.get('total_current_value', 0.0)
         
         for holding in holdings:
@@ -1711,66 +1704,39 @@ def api_best_performer():
                 if not symbol or current_value <= 0:
                     continue
                 
-                # Get 24h ticker data from OKX native API
+                # Get 24h ticker data using centralized OKX function
                 if all([api_key, secret_key, passphrase]):
                     try:
-                        timestamp = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%S.%fZ')
-                        method = 'GET'
-                        request_path = f"/api/v5/market/ticker?instId={symbol}-USDT"
+                        ticker = okx_ticker_pct_change_24h(f"{symbol}-USDT", api_key, secret_key, passphrase)
+                        price_change_24h = ticker['pct_24h']
+                        volume_24h = ticker['vol24h']
+                        current_price = ticker['last'] or current_price
                         
-                        signature = sign_request(timestamp, method, request_path)
+                        # Get 7-day performance using historical data
+                        hist_request_path = f"/api/v5/market/candles?instId={symbol}-USDT&bar=1D&limit=7"
+                        hist_data = okx_request(hist_request_path, api_key, secret_key, passphrase)
+                        price_change_7d = 0.0
                         
-                        headers = {
-                            'OK-ACCESS-KEY': api_key,
-                            'OK-ACCESS-SIGN': signature,
-                            'OK-ACCESS-TIMESTAMP': timestamp,
-                            'OK-ACCESS-PASSPHRASE': passphrase,
-                            'Content-Type': 'application/json'
-                        }
+                        if hist_data.get('code') == '0' and len(hist_data.get('data', [])) >= 2:
+                            candles = hist_data['data']
+                            current_close = float(candles[0][4])  # Most recent close
+                            week_ago_close = float(candles[-1][4])  # 7 days ago close
+                            if week_ago_close > 0:
+                                price_change_7d = ((current_close - week_ago_close) / week_ago_close) * 100
                         
-                        response = requests.get(base_url + request_path, headers=headers, timeout=5)
+                        # Calculate comprehensive performance score
+                        allocation_percent = (current_value / total_value) * 100 if total_value > 0 else 0
                         
-                        if response.status_code == 200:
-                            ticker_data = response.json()
-                            
-                            if ticker_data.get('code') == '0' and ticker_data.get('data'):
-                                ticker = ticker_data['data'][0]
-                                
-                                # Extract performance metrics from OKX ticker
-                                price_change_24h = float(ticker.get('last24hChg', 0)) * 100  # Convert to percentage
-                                volume_24h = float(ticker.get('vol24h', 0))
-                                
-                                # Get 7-day performance using historical data
-                                hist_request_path = f"/api/v5/market/candles?instId={symbol}-USDT&bar=1D&limit=7"
-                                hist_signature = sign_request(timestamp, method, hist_request_path)
-                                hist_headers = headers.copy()
-                                hist_headers['OK-ACCESS-SIGN'] = hist_signature
-                                
-                                hist_response = requests.get(base_url + hist_request_path, headers=hist_headers, timeout=5)
-                                price_change_7d = 0.0
-                                
-                                if hist_response.status_code == 200:
-                                    hist_data = hist_response.json()
-                                    if hist_data.get('code') == '0' and len(hist_data.get('data', [])) >= 2:
-                                        candles = hist_data['data']
-                                        current_close = float(candles[0][4])  # Most recent close
-                                        week_ago_close = float(candles[-1][4])  # 7 days ago close
-                                        if week_ago_close > 0:
-                                            price_change_7d = ((current_close - week_ago_close) / week_ago_close) * 100
-                                
-                                # Calculate comprehensive performance score
-                                allocation_percent = (current_value / total_value) * 100 if total_value > 0 else 0
-                                
-                                # Weight the performance score based on multiple factors
-                                performance_score = (
-                                    price_change_24h * 0.4 +  # 24h price change (40%)
-                                    price_change_7d * 0.3 +   # 7d price change (30%) 
-                                    pnl_percent * 0.3         # Portfolio P&L (30%)
-                                )
-                                
-                                if performance_score > best_performance_score:
-                                    best_performance_score = performance_score
-                                    best_performer = {
+                        # Weight the performance score based on multiple factors
+                        performance_score = (
+                            price_change_24h * 0.4 +  # 24h price change (40%)
+                            price_change_7d * 0.3 +   # 7d price change (30%) 
+                            pnl_percent * 0.3         # Portfolio P&L (30%)
+                        )
+                        
+                        if performance_score > best_performance_score:
+                            best_performance_score = performance_score
+                            best_performer = {
                                         'symbol': symbol,
                                         'name': symbol,  # Could be enhanced with full names
                                         'price_change_24h': price_change_24h,
@@ -1892,13 +1858,6 @@ def api_worst_performer():
         secret_key = os.getenv("OKX_SECRET_KEY", "")
         passphrase = os.getenv("OKX_PASSPHRASE", "")
         
-        def sign_request(timestamp, method, request_path, body=''):
-            message = timestamp + method + request_path + body
-            mac = hmac.new(bytes(secret_key, encoding='utf8'), bytes(message, encoding='utf-8'), digestmod='sha256')
-            d = mac.digest()
-            return base64.b64encode(d).decode('utf-8')
-        
-        base_url = 'https://www.okx.com'
         total_value = portfolio_data.get('total_current_value', 0.0)
         
         for holding in holdings:
@@ -1911,66 +1870,39 @@ def api_worst_performer():
                 if not symbol or current_value <= 0:
                     continue
                 
-                # Get 24h ticker data from OKX native API
+                # Get 24h ticker data using centralized OKX function
                 if all([api_key, secret_key, passphrase]):
                     try:
-                        timestamp = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%S.%fZ')
-                        method = 'GET'
-                        request_path = f"/api/v5/market/ticker?instId={symbol}-USDT"
+                        ticker = okx_ticker_pct_change_24h(f"{symbol}-USDT", api_key, secret_key, passphrase)
+                        price_change_24h = ticker['pct_24h']
+                        volume_24h = ticker['vol24h']
+                        current_price = ticker['last'] or current_price
                         
-                        signature = sign_request(timestamp, method, request_path)
+                        # Get 7-day performance using historical data
+                        hist_request_path = f"/api/v5/market/candles?instId={symbol}-USDT&bar=1D&limit=7"
+                        hist_data = okx_request(hist_request_path, api_key, secret_key, passphrase)
+                        price_change_7d = 0.0
                         
-                        headers = {
-                            'OK-ACCESS-KEY': api_key,
-                            'OK-ACCESS-SIGN': signature,
-                            'OK-ACCESS-TIMESTAMP': timestamp,
-                            'OK-ACCESS-PASSPHRASE': passphrase,
-                            'Content-Type': 'application/json'
-                        }
+                        if hist_data.get('code') == '0' and len(hist_data.get('data', [])) >= 2:
+                            candles = hist_data['data']
+                            current_close = float(candles[0][4])  # Most recent close
+                            week_ago_close = float(candles[-1][4])  # 7 days ago close
+                            if week_ago_close > 0:
+                                price_change_7d = ((current_close - week_ago_close) / week_ago_close) * 100
                         
-                        response = requests.get(base_url + request_path, headers=headers, timeout=5)
+                        # Calculate comprehensive performance score
+                        allocation_percent = (current_value / total_value) * 100 if total_value > 0 else 0
                         
-                        if response.status_code == 200:
-                            ticker_data = response.json()
-                            
-                            if ticker_data.get('code') == '0' and ticker_data.get('data'):
-                                ticker = ticker_data['data'][0]
-                                
-                                # Extract performance metrics from OKX ticker
-                                price_change_24h = float(ticker.get('last24hChg', 0)) * 100  # Convert to percentage
-                                volume_24h = float(ticker.get('vol24h', 0))
-                                
-                                # Get 7-day performance using historical data
-                                hist_request_path = f"/api/v5/market/candles?instId={symbol}-USDT&bar=1D&limit=7"
-                                hist_signature = sign_request(timestamp, method, hist_request_path)
-                                hist_headers = headers.copy()
-                                hist_headers['OK-ACCESS-SIGN'] = hist_signature
-                                
-                                hist_response = requests.get(base_url + hist_request_path, headers=hist_headers, timeout=5)
-                                price_change_7d = 0.0
-                                
-                                if hist_response.status_code == 200:
-                                    hist_data = hist_response.json()
-                                    if hist_data.get('code') == '0' and len(hist_data.get('data', [])) >= 2:
-                                        candles = hist_data['data']
-                                        current_close = float(candles[0][4])  # Most recent close
-                                        week_ago_close = float(candles[-1][4])  # 7 days ago close
-                                        if week_ago_close > 0:
-                                            price_change_7d = ((current_close - week_ago_close) / week_ago_close) * 100
-                                
-                                # Calculate comprehensive performance score
-                                allocation_percent = (current_value / total_value) * 100 if total_value > 0 else 0
-                                
-                                # Weight the performance score based on multiple factors (lower is worse)
-                                performance_score = (
-                                    price_change_24h * 0.4 +  # 24h price change (40%)
-                                    price_change_7d * 0.3 +   # 7d price change (30%) 
-                                    pnl_percent * 0.3         # Portfolio P&L (30%)
-                                )
-                                
-                                if performance_score < worst_performance_score:
-                                    worst_performance_score = performance_score
-                                    worst_performer = {
+                        # Weight the performance score based on multiple factors (lower is worse)
+                        performance_score = (
+                            price_change_24h * 0.4 +  # 24h price change (40%)
+                            price_change_7d * 0.3 +   # 7d price change (30%) 
+                            pnl_percent * 0.3         # Portfolio P&L (30%)
+                        )
+                        
+                        if performance_score < worst_performance_score:
+                            worst_performance_score = performance_score
+                            worst_performer = {
                                         'symbol': symbol,
                                         'name': symbol,  # Could be enhanced with full names
                                         'price_change_24h': price_change_24h,
