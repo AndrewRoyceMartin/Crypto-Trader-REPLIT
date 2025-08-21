@@ -1447,7 +1447,7 @@ class TradingApp {
     async updatePerformanceAnalytics() {
         try {
             const timeframe = document.getElementById('performance-timeframe')?.value || '30d';
-            const response = await fetch(`/api/performance-analytics?timeframe=${timeframe}`, { cache: 'no-cache' });
+            const response = await fetch(`/api/performance-analytics?timeframe=${timeframe}&currency=${this.selectedCurrency}&force_okx=true`, { cache: 'no-cache' });
             if (!response.ok) return;
             const data = await response.json();
             
@@ -1731,12 +1731,11 @@ class TradingApp {
     }
 
     async setSelectedCurrency(currency) {
-        console.log(`Currency changed to: ${currency}. Refreshing data from OKX...`);
+        console.log(`Currency changed to: ${currency}. Clearing cache and fetching fresh OKX data...`);
         this.selectedCurrency = currency;
         
-        // Clear cache to force fresh data from OKX
-        this.apiCache.portfolio.timestamp = 0;
-        this.apiCache.status.timestamp = 0;
+        // Clear ALL cached data to force fresh OKX API calls
+        this.clearCache();
         
         // Fetch fresh exchange rates from OKX
         await this.fetchExchangeRates();
@@ -1746,16 +1745,19 @@ class TradingApp {
             return;
         }
         
-        // Force complete data refresh from OKX instead of local calculations
-        this.showToast(`Refreshing portfolio data with ${currency} from OKX...`, 'info');
+        // Force complete data refresh from OKX APIs with new currency parameter
+        this.showToast(`Refreshing all data with ${currency} from OKX native APIs...`, 'info');
         
-        // Refresh all data from OKX with new currency
+        // Refresh all data sources from OKX with currency parameter
         await Promise.all([
             this.updateCryptoPortfolio(),
+            this.updateCurrentHoldings(),
+            this.updateRecentTrades(),
+            this.updatePerformanceAnalytics(),
             this.updateDashboard()
         ]);
         
-        console.log(`Portfolio data refreshed from OKX with ${currency} currency`);
+        console.log(`All portfolio data refreshed from OKX native APIs with ${currency} currency`);
     }
 
     // ---------- Portfolio / Tables ----------

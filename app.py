@@ -777,6 +777,10 @@ def api_recent_trades():
     try:
         timeframe = request.args.get('timeframe', '7d')
         limit = int(request.args.get('limit', 50))
+        currency = request.args.get('currency', 'USD')
+        force_okx = request.args.get('force_okx', 'false').lower() == 'true'
+        
+        logger.info(f"Recent trades request with currency: {currency}, force_okx: {force_okx}")
         
         # Calculate date range
         end_date = datetime.now(LOCAL_TZ)
@@ -2612,6 +2616,10 @@ def api_performance_analytics():
     """Get performance analytics using direct OKX native APIs only."""
     try:
         timeframe = request.args.get('timeframe', '30d')
+        currency = request.args.get('currency', 'USD')
+        force_okx = request.args.get('force_okx', 'false').lower() == 'true'
+        
+        logger.info(f"Performance analytics request with currency: {currency}, force_okx: {force_okx}")
         
         # Calculate date range
         end_date = datetime.now(LOCAL_TZ)
