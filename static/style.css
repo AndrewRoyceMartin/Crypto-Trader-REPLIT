@@ -49,6 +49,10 @@ body {
     padding: 0.75rem;
     margin-bottom: 0.5rem;
     
+    /* Performance optimizations for animations */
+    contain: layout paint;
+    will-change: transform;
+    
     /* Visual styling */
     border-radius: 15px;
     border: 1px solid rgba(0, 0, 0, 0.1);
@@ -117,11 +121,21 @@ body {
     text-rendering: optimizeLegibility;
 }
 
-/* Chrome specific fixes */
+/* Performance optimizations for animations */
+.hover-lift,
+.clickable,
+.btn {
+    contain: layout;
+    will-change: transform;
+}
+
+/* Chrome specific fixes - enhanced with performance hints */
 @supports (-webkit-appearance: none) {
     .kpi-card {
         -webkit-transform: translateZ(0);
         transform: translateZ(0);
+        -webkit-backface-visibility: hidden;
+        backface-visibility: hidden;
     }
 }
 
@@ -280,6 +294,19 @@ body {
     @keyframes fadeInPulse {
         0%, 100% { opacity: 0.6; }
         50% { opacity: 0.9; }
+    }
+    
+    /* Performance optimizations for Chart.js containers */
+    .chart-card canvas {
+        contain: strict;
+        will-change: auto;
+    }
+    
+    /* Optimized animations */
+    .loading-spinner,
+    .progress-bar {
+        contain: layout paint;
+        will-change: transform;
     }
 }
 

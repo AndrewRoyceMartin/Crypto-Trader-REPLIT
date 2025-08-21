@@ -233,6 +233,37 @@ The mobile scroll hint system only appears when horizontal scrolling is actually
 - **Responsive** - Adapts automatically to screen size and content changes
 - **Smart Detection** - Works with dynamically loaded table data
 
+## Performance Optimizations
+
+### CSS Containment for Animations
+Modern performance optimizations ensure smooth animations on low-powered devices:
+
+**CSS Containment Properties:**
+- `contain: layout paint` - Isolates layout and paint operations
+- `contain: strict` - Full containment for heavy elements (charts)
+- `contain: layout` - Layout-only containment for interactive elements
+
+**Will-Change Hints:**
+- `will-change: transform` - Hints browser to prepare for transform animations
+- `will-change: auto` - Automatic optimization for charts and heavy elements
+
+### Optimized Elements
+- **KPI Cards** - Layout and paint containment for hover animations
+- **Interactive Elements** - Transform optimization for buttons and clickable items
+- **Chart Containers** - Strict containment for Chart.js performance
+- **Loading Elements** - Optimized spinners and progress bars
+
+### Browser-Specific Enhancements
+- **Chrome/WebKit** - Hardware acceleration with `translateZ(0)`
+- **Backface Visibility** - Hidden to prevent unnecessary repaints
+- **Transform3D** - GPU acceleration for smooth animations
+
+### Benefits
+- **Smooth Performance** - Better animation performance on mobile/low-power devices
+- **Reduced Reflows** - Containment prevents unnecessary layout calculations
+- **GPU Acceleration** - Hardware-accelerated transforms for better performance
+- **Battery Efficiency** - Optimized rendering reduces CPU usage
+
 ## Benefits
 1. **Consistency** - Standardized values across the application
 2. **Maintainability** - Single source of truth for design values
@@ -242,6 +273,7 @@ The mobile scroll hint system only appears when horizontal scrolling is actually
 6. **Cross-Platform Compatibility** - Modern system font stacks for optimal display
 7. **User Experience** - Dual dark mode support with persistent preferences
 8. **Smart UX** - Conditional scroll hints only appear when horizontal scrolling is needed
+9. **Performance** - CSS containment and will-change optimizations for smooth animations on low-powered devices
 
 ## Usage Examples
 
