@@ -48,13 +48,13 @@
 
             <div id="mainNav" class="collapse navbar-collapse">
                 <div class="navbar-nav me-auto nav-pills-container d-flex">
-                    <a class="nav-link active" href="#overview" onclick="scrollToSection('overview')">
+                    <a class="nav-link active" href="#overview">
                         <i class="fas fa-tachometer-alt me-1"></i>Overview
                     </a>
-                    <a class="nav-link" href="#portfolio" onclick="scrollToSection('portfolio')">Portfolio</a>
-                    <a class="nav-link" href="#performance" onclick="scrollToSection('performance')">Performance</a>
-                    <a class="nav-link" href="#holdings" onclick="scrollToSection('holdings')">Holdings</a>
-                    <a class="nav-link" href="#trades" onclick="scrollToSection('trades')">Trades</a>
+                    <a class="nav-link" href="#portfolio">Portfolio</a>
+                    <a class="nav-link" href="#performance">Performance</a>
+                    <a class="nav-link" href="#holdings">Holdings</a>
+                    <a class="nav-link" href="#trades">Trades</a>
                 </div>
 
                 <div class="navbar-nav ms-auto">
@@ -721,6 +721,13 @@
         }
     }
 
+    // Smooth scroll function
+    function scrollToSection(id) {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
     // Initialize all data loading when page loads
     document.addEventListener('DOMContentLoaded', function() {
         // Load all sections data
@@ -738,6 +745,24 @@
         setInterval(function() {
             if (typeof loadHoldingsData === 'function') loadHoldingsData();
         }, 60000); // Refresh holdings every 60s
+
+        // Highlight active nav based on section visibility
+        const links = [...document.querySelectorAll('.nav-pills-container .nav-link')];
+        const map = new Map(links.map(a => [a.getAttribute('href')?.replace('#','') || '', a]));
+
+        const obs = new IntersectionObserver((entries) => {
+            entries.forEach(e => {
+                if (e.isIntersecting) {
+                    const id = e.target.id;
+                    links.forEach(a => a.classList.toggle('active', a.getAttribute('href') === '#' + id));
+                    map.get(id)?.setAttribute('aria-current', 'page');
+                } else {
+                    map.get(e.target.id)?.removeAttribute('aria-current');
+                }
+            });
+        }, { root: null, rootMargin: '-120px 0px -70% 0px', threshold: [0.1, 0.6] });
+
+        document.querySelectorAll('section[id]').forEach(sec => obs.observe(sec));
     });
     </script>
 </body>
