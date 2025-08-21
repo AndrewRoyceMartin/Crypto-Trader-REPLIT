@@ -30,7 +30,8 @@ class TradingApp {
             config:    { data: null, timestamp: 0, ttl: 30000 }, // 30s
             analytics: { data: null, timestamp: 0, ttl: 5000 },  // 5s
             portfolioHistory: { data: null, timestamp: 0, ttl: 30000 }, // 30s
-            assetAllocation: { data: null, timestamp: 0, ttl: 15000 }  // 15s
+            assetAllocation: { data: null, timestamp: 0, ttl: 15000 }, // 15s
+            bestPerformer: { data: null, timestamp: 0, ttl: 10000 }   // 10s
         };
 
         // Debug: force network fetches
@@ -377,6 +378,9 @@ class TradingApp {
         
         // Asset allocation chart
         this.updateAssetAllocation();
+        
+        // Best performer data
+        this.updateBestPerformer();
     }
 
     async updatePortfolioAnalytics() {
@@ -726,6 +730,56 @@ class TradingApp {
                 }
             }
         });
+    }
+    
+    async updateBestPerformer() {
+        try {
+            const response = await fetch('/api/best-performer', { cache: 'no-cache' });
+            if (!response.ok) return;
+            const data = await response.json();
+            
+            if (!data.success || !data.best_performer) return;
+            
+            // Update best performer display elements
+            this.updateBestPerformerDisplay(data.best_performer);
+            
+        } catch (error) {
+            console.error('Best performer update failed:', error);
+        }
+    }
+    
+    updateBestPerformerDisplay(performer) {
+        // Update best performer elements if they exist
+        const elements = {
+            'best-performer-symbol': performer.symbol,
+            'best-performer-name': performer.name,
+            'best-performer-price': this.formatCurrency(performer.current_price),
+            'best-performer-24h': `${performer.price_change_24h >= 0 ? '+' : ''}${performer.price_change_24h.toFixed(2)}%`,
+            'best-performer-7d': `${performer.price_change_7d >= 0 ? '+' : ''}${performer.price_change_7d.toFixed(2)}%`,
+            'best-performer-pnl': `${performer.pnl_percent >= 0 ? '+' : ''}${performer.pnl_percent.toFixed(2)}%`,
+            'best-performer-allocation': `${performer.allocation_percent.toFixed(1)}%`,
+            'best-performer-value': this.formatCurrency(performer.current_value),
+            'best-performer-volume': this.formatNumber(performer.volume_24h)
+        };
+        
+        Object.entries(elements).forEach(([id, value]) => {
+            const element = document.getElementById(id);
+            if (element) {
+                element.textContent = value;
+                
+                // Add color coding for performance indicators
+                if (id.includes('24h') || id.includes('7d') || id.includes('pnl')) {
+                    const numValue = parseFloat(value);
+                    element.className = numValue >= 0 ? 'pnl-up' : 'pnl-down';
+                }
+            }
+        });
+        
+        // Update best performer card title if it exists
+        const cardTitle = document.getElementById('best-performer-card-title');
+        if (cardTitle) {
+            cardTitle.textContent = `Best Performer: ${performer.symbol}`;
+        }
     }
 
     debouncedUpdateDashboard() {
