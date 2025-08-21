@@ -4064,7 +4064,9 @@ function updateOpenPositionsTable(positions, totalValue = 0) {
             return;
         }
 
-        positionsTableBody.innerHTML = positions.map(position => {
+        const tableHtml = positions.map(position => {
+            console.debug("Processing individual position:", position);
+            
             // Check if this is from the new all_positions format
             const isNewFormat = position.status !== undefined;
             const symbol = position.symbol || position.name || "Unknown";
@@ -4078,6 +4080,8 @@ function updateOpenPositionsTable(positions, totalValue = 0) {
             
             const currentPrice = parseFloat(position.current_price || position.price || 0);
             const marketValue = parseFloat(position.current_value || position.value || (quantity * currentPrice));
+            
+            console.debug(`Field values - Symbol: ${symbol}, Quantity: ${quantity}, Purchase: ${purchasePrice}, Current: ${currentPrice}, Market: ${marketValue}`);
             
             // Current P&L calculations
             const costBasis = quantity * purchasePrice;
@@ -4121,7 +4125,7 @@ function updateOpenPositionsTable(positions, totalValue = 0) {
                 return value.toFixed(8);
             };
             
-            return `
+            const rowHtml = `
                 <tr>
                     <td class="fw-bold">${symbol}</td>
                     <td>${formatNumber(quantity)}</td>
@@ -4144,10 +4148,17 @@ function updateOpenPositionsTable(positions, totalValue = 0) {
                     </td>
                 </tr>
             `;
+            console.debug("Generated row HTML:", rowHtml);
+            return rowHtml;
         }).join("");
         
+        console.debug("Final table HTML:", tableHtml);
+        positionsTableBody.innerHTML = tableHtml;
+        console.debug("Table updated successfully");
+        
     } catch (error) {
-        console.debug("Open positions table update failed:", error);
+        console.error("Open positions table update failed:", error);
+        console.error("Error details:", error.stack);
     }
 }
 
