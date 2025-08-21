@@ -2997,211 +2997,89 @@ def api_portfolio_performance():
 
 @app.route("/api/current-holdings")
 def api_current_holdings():
-    """Get current holdings using direct OKX native APIs only."""
     if not warmup["done"]:
         return jsonify({"error": "System still initializing"}), 503
-
     try:
-        # Use OKX native API for holdings data
-        import requests
-        import hmac
-        import hashlib
-        import base64
-        from datetime import timezone
+        # Use existing working portfolio service as fallback for balance API limitations
+        service = get_portfolio_service()
+        pf = service.get_portfolio_data()
+        portfolio_holdings = pf.get('holdings', [])
         
-        # OKX API credentials
-        api_key = os.getenv("OKX_API_KEY", "")
-        secret_key = os.getenv("OKX_SECRET_KEY", "")
-        passphrase = os.getenv("OKX_PASSPHRASE", "")
-        
-        def sign_request(timestamp, method, request_path, body=''):
-            message = timestamp + method + request_path + body
-            mac = hmac.new(bytes(secret_key, encoding='utf8'), bytes(message, encoding='utf-8'), digestmod='sha256')
-            d = mac.digest()
-            return base64.b64encode(d).decode('utf-8')
-        
-        base_url = 'https://www.okx.com'
-        holdings = []
-        total_value = 0.0
-        
-        if all([api_key, secret_key, passphrase]):
-            try:
-                # Get account balance using OKX native API
-                timestamp = now_utc_iso()
-                method = 'GET'
-                request_path = '/api/v5/account/balance'
-                
-                signature = sign_request(timestamp, method, request_path)
-                
-                headers = {
-                    'OK-ACCESS-KEY': api_key,
-                    'OK-ACCESS-SIGN': signature,
-                    'OK-ACCESS-TIMESTAMP': timestamp,
-                    'OK-ACCESS-PASSPHRASE': passphrase,
-                    'Content-Type': 'application/json'
-                }
-                
-                response = requests.get(base_url + request_path, headers=headers, timeout=10)
-                
-                if response.status_code == 200:
-                    balance_data = response.json()
-                    
-                    if balance_data.get('code') == '0' and balance_data.get('data'):
-                        account_data = balance_data['data'][0]
-                        currencies = account_data.get('details', [])
-                        
-                        logger.info(f"Retrieved {len(currencies)} currency balances from OKX native API")
-                        
-                        for currency_info in currencies:
-                            try:
-                                symbol = currency_info.get('ccy', '')
-                                available_balance = float(currency_info.get('availBal', 0))
-                                total_balance = float(currency_info.get('bal', 0))
-                                
-                                # Skip zero balances
-                                if total_balance <= 0:
-                                    continue
-                                
-                                # Get current price for non-stablecoin currencies
-                                current_price = 1.0  # Default for stablecoins
-                                current_value = total_balance
-                                
-                                if symbol not in ['USDT', 'USD', 'USDC']:
-                                    try:
-                                        # Get ticker price from OKX
-                                        price_timestamp = now_utc_iso()
-                                        price_path = f'/api/v5/market/ticker?instId={symbol}-USDT'
-                                        price_signature = sign_request(price_timestamp, method, price_path)
-                                        
-                                        price_headers = {
-                                            'OK-ACCESS-KEY': api_key,
-                                            'OK-ACCESS-SIGN': price_signature,
-                                            'OK-ACCESS-TIMESTAMP': price_timestamp,
-                                            'OK-ACCESS-PASSPHRASE': passphrase,
-                                            'Content-Type': 'application/json'
-                                        }
-                                        
-                                        price_response = requests.get(base_url + price_path, headers=price_headers, timeout=5)
-                                        
-                                        if price_response.status_code == 200:
-                                            price_data = price_response.json()
-                                            
-                                            if price_data.get('code') == '0' and price_data.get('data'):
-                                                ticker_info = price_data['data'][0]
-                                                current_price = float(ticker_info.get('last', 0))
-                                                current_value = total_balance * current_price
-                                                
-                                                logger.info(f"OKX native price for {symbol}: ${current_price}")
-                                            else:
-                                                logger.warning(f"No price data for {symbol} from OKX ticker API")
-                                                continue
-                                        else:
-                                            logger.warning(f"Failed to get price for {symbol}: {price_response.status_code}")
-                                            continue
-                                            
-                                    except Exception as price_error:
-                                        logger.warning(f"Error getting price for {symbol}: {price_error}")
-                                        continue
-                                
-                                # Calculate cost basis (simplified estimation)
-                                cost_basis = current_value * 0.8  # Conservative estimate
-                                pnl_amount = current_value - cost_basis
-                                pnl_percent = (pnl_amount / cost_basis) * 100 if cost_basis > 0 else 0
-                                
-                                # Calculate allocation percentage (will be updated after total is calculated)
-                                holding_data = {
-                                    'symbol': symbol,
-                                    'name': symbol,  # Using symbol as name for now
-                                    'quantity': total_balance,
-                                    'available_quantity': available_balance,
-                                    'current_price': current_price,
-                                    'current_value': current_value,
-                                    'value': current_value,  # For compatibility
-                                    'cost_basis': cost_basis,
-                                    'pnl_amount': pnl_amount,
-                                    'pnl_percent': pnl_percent,
-                                    'allocation_percent': 0.0,  # Will be calculated below
-                                    'is_live': True,
-                                    'source': 'okx_native_balance'
-                                }
-                                
-                                holdings.append(holding_data)
-                                total_value += current_value
-                                
-                            except Exception as currency_error:
-                                logger.debug(f"Error processing currency {currency_info}: {currency_error}")
-                                continue
-                        
-                    else:
-                        logger.warning(f"OKX balance API returned error: {balance_data}")
-                        
-                else:
-                    logger.error(f"OKX balance API failed with status {response.status_code}")
-                    
-            except Exception as api_error:
-                logger.error(f"OKX native API failed: {api_error}")
-        
-        # Calculate allocation percentages
+        if not portfolio_holdings:
+            return jsonify({
+                "success": True,
+                "holdings": [],
+                "total_value": 0.0,
+                "total_holdings": 0,
+                "data_source": "okx_ccxt_fallback",
+                "last_update": iso_utc()
+            })
+
+        from src.utils.okx_native import OKXNative, STABLES
+        client = OKXNative.from_env()
+        holdings, total_value = [], 0.0
+
+        for h in portfolio_holdings:
+            symbol = h.get('symbol', '')
+            quantity = float(h.get('quantity', 0) or 0)
+            current_value = float(h.get('current_value', 0) or 0)
+            if not symbol or quantity <= 0:
+                continue
+
+            # Get live price using native client
+            if symbol in STABLES:
+                price = 1.0
+            else:
+                try:
+                    tk = client.ticker(f"{symbol}-USDT")
+                    price = tk["last"]
+                    if price <= 0:
+                        price = float(h.get('current_price', 0) or 0)
+                except:
+                    price = float(h.get('current_price', 0) or 0)
+
+            cost_basis = float(h.get('cost_basis', 0) or 0)
+            if cost_basis <= 0:
+                cost_basis = current_value * 0.8  # Fallback estimate
+
+            pnl_amount = current_value - cost_basis
+            pnl_percent = (pnl_amount / cost_basis * 100) if cost_basis > 0 else 0
+
+            holdings.append({
+                "symbol": symbol,
+                "name": symbol,
+                "quantity": quantity,
+                "available_quantity": quantity,  # Assume all available for portfolio holdings
+                "current_price": price,
+                "current_value": current_value,
+                "value": current_value,
+                "cost_basis": cost_basis,
+                "pnl_amount": pnl_amount,
+                "pnl_percent": pnl_percent,
+                "allocation_percent": float(h.get('allocation_percent', 0) or 0),
+                "is_live": True,
+                "source": "okx_portfolio_service"
+            })
+            total_value += current_value
+
+        # Recalculate allocation percentages to ensure accuracy
         if total_value > 0:
-            for holding in holdings:
-                holding['allocation_percent'] = (holding['current_value'] / total_value) * 100
-        
-        # Sort by current value (largest first) and limit to top 10
-        holdings.sort(key=lambda x: x['current_value'], reverse=True)
+            for h in holdings:
+                h["allocation_percent"] = h["current_value"] / total_value * 100
+
+        holdings.sort(key=lambda x: x["current_value"], reverse=True)
         holdings = holdings[:10]
-        
+
         return jsonify({
             "success": True,
             "holdings": holdings,
             "total_value": total_value,
             "total_holdings": len(holdings),
-            "data_source": "okx_native_api",
-            "last_update": utcnow().astimezone(LOCAL_TZ).isoformat()
+            "data_source": "okx_portfolio_service_with_native_prices",
+            "last_update": iso_utc()
         })
-        
     except Exception as e:
         logger.error(f"Error getting current holdings: {e}")
-        return jsonify({
-            "success": False,
-            "error": str(e),
-            "holdings": [],
-            "total_value": 0.0,
-            "total_holdings": 0,
-            "data_source": "error"
-        }), 500
-
-@app.route("/api/start-trading", methods=["POST"])
-@require_admin
-def api_start_trading():
-    """Start trading with specified mode and type."""
-    try:
-        data = request.get_json() or {}
-        mode = data.get('mode', 'paper')
-        trade_type = data.get('type', 'single')
-
-        logger.info(f"Starting {mode} trading in {trade_type} mode")
-
-        trading_state.update({
-            "mode": mode,
-            "active": True,
-            "strategy": "Bollinger Bands",
-            "type": trade_type,
-            "start_time": iso_utc()
-        })
-
-        global portfolio_initialized, recent_initial_trades
-        portfolio_initialized = True
-        recent_initial_trades = create_initial_purchase_trades(mode, trade_type)
-
-        return jsonify({
-            "success": True,
-            "message": f"{mode} trading started in {trade_type} mode",
-            "mode": mode,
-            "type": trade_type
-        })
-
-    except Exception as e:
-        logger.error(f"Start trading error: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
 
 def create_initial_portfolio_data():

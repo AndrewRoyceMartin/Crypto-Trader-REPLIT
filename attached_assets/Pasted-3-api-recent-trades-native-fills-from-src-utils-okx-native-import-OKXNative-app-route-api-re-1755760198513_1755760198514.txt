@@ -1,0 +1,66 @@
+3) /api/recent-trades (native fills)
+from src.utils.okx_native import OKXNative
+
+@app.route("/api/recent-trades")
+def api_recent_trades():
+    try:
+        timeframe = request.args.get('timeframe', '7d')
+        limit = int(request.args.get('limit', 50))
+
+        end = utcnow()
+        starts = {"1d":1, "7d":7, "30d":30}.get(timeframe, 7)
+        start = end - timedelta(days=starts)
+        begin_ms = int(start.timestamp() * 1000)
+        end_ms = int(end.timestamp() * 1000)
+
+        client = OKXNative.from_env()
+        fills = client.fills(begin_ms=begin_ms, end_ms=end_ms, limit=limit)
+        trades = []
+        for f in fills:
+            # OKX fills fields
+            trade_id = f.get("tradeId") or f.get("billId") or ""
+            ord_id = f.get("ordId") or ""
+            inst = f.get("instId", "")
+            side = (f.get("side", "") or "").upper()
+            sz = float(f.get("sz", 0) or 0)
+            px = float(f.get("px", 0) or 0)
+            ts = int(f.get("ts", 0) or 0)
+            if not inst or ts == 0:
+                continue
+            dt = datetime.fromtimestamp(ts/1000, tz=timezone.utc).isoformat()
+            val = sz * px if px > 0 else 0.0
+            sym = inst.replace("-USDT","").replace("-USD","")
+
+            trades.append({
+                "id": trade_id or f"okx_{ts}",
+                "order_id": ord_id,
+                "symbol": sym,
+                "side": side,
+                "quantity": sz,
+                "price": px,
+                "value": val,
+                "fee": abs(float(f.get("fee", 0) or 0)),
+                "fee_currency": f.get("feeCcy", ""),
+                "timestamp": dt,
+                "source": "okx_native_api",
+                "exchange": "OKX"
+            })
+
+        trades.sort(key=lambda x: x["timestamp"], reverse=True)
+        trades = trades[:limit]
+
+        summary = {
+            "total_trades": len(trades),
+            "total_buy_volume": sum(t["value"] for t in trades if t["side"] == "BUY"),
+            "total_sell_volume": sum(t["value"] for t in trades if t["side"] == "SELL"),
+            "net_volume": 0.0,
+            "total_fees": sum(t["fee"] for t in trades),
+            "unique_symbols": len(set(t["symbol"] for t in trades)),
+            "avg_trade_size": (sum(t["value"] for t in trades) / len(trades)) if trades else 0.0
+        }
+        summary["net_volume"] = summary["total_buy_volume"] - summary["total_sell_volume"]
+
+        return jsonify({"success": True, "trades": trades, "timeframe": timeframe, "summary": summary, "last_update": iso_utc()})
+    except Exception as e:
+        logger.error(f"Error getting recent trades: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500

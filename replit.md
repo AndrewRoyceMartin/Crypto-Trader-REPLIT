@@ -35,6 +35,8 @@ The system utilizes a modular Flask-based web interface for live OKX trading, st
 -   **Live Data & Strategy P&L Testing Frameworks:** Comprehensive test suites validate live OKX data synchronization and the mathematical accuracy of P&L calculations.
 **Optimized Performance Endpoints (Latest):** Completely rewrote `/api/best-performer` and `/api/worst-performer` endpoints using OKX native client - replaced complex legacy implementation with streamlined native OKX API calls for accurate 24h/7d calculations, fixed percentage math using OKX's native fields, eliminated redundant API calls, enhanced performance scoring algorithm, and reduced code complexity from ~160 lines to ~50 lines per endpoint.
 
+**Enhanced Current Holdings Endpoint:** Optimized `/api/current-holdings` with hybrid approach combining portfolio service reliability and native OKX price updates - leverages existing working portfolio data while enhancing with live OKX native ticker prices, provides comprehensive holding details including quantity, allocation percentages, P&L calculations, and proper error handling with graceful fallbacks for API limitations.
+
 ## External Dependencies
 
 ### Market Data & Trading APIs

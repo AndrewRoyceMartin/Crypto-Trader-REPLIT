@@ -19,11 +19,15 @@ class OKXCreds:
 
     @classmethod
     def from_env(cls) -> "OKXCreds":
+        # Check if demo environment is enabled
+        use_demo = os.getenv("OKX_USE_DEMO", "").lower() in ("true", "1", "yes")
+        default_hostname = "aws.okx.com" if use_demo else "www.okx.com"
+        
         return cls(
             api_key=os.getenv("OKX_API_KEY", ""),
             secret_key=os.getenv("OKX_SECRET_KEY", ""),
             passphrase=os.getenv("OKX_PASSPHRASE", ""),
-            hostname=os.getenv("OKX_HOSTNAME") or os.getenv("OKX_REGION") or "www.okx.com",
+            hostname=os.getenv("OKX_HOSTNAME") or default_hostname,
         )
 
 class OKXNative:
