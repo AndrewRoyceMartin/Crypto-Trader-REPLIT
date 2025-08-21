@@ -4,7 +4,7 @@ Enhanced OKX trade retrieval methods designed specifically for OKX API compatibi
 
 import logging
 from typing import Dict, List, Any, Optional
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 
 class OKXTradeRetrieval:
@@ -200,47 +200,64 @@ class OKXTradeRetrieval:
         return trades
     
     def _format_okx_fill(self, fill: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-        """Format OKX fill data into standard trade format."""
+        """Format OKX fill data into standard trade format with enhanced timezone and fee handling."""
         try:
+            ts = int(fill.get('ts', 0)) or 0
+            price = float(fill.get('fillPx', 0) or 0)
+            qty = float(fill.get('fillSz', 0) or 0)
+            fee_raw = float(fill.get('fee', 0) or 0)
+
             return {
                 'id': fill.get('fillId', ''),
                 'order_id': fill.get('ordId', ''),
-                'symbol': self._denormalize_symbol(fill.get('instId', '')),
-                'side': fill.get('side', '').upper(),
-                'quantity': float(fill.get('fillSz', 0)),
-                'price': float(fill.get('fillPx', 0)),
-                'timestamp': int(fill.get('ts', 0)),
-                'datetime': datetime.fromtimestamp(int(fill.get('ts', 0)) / 1000).isoformat() if fill.get('ts') else '',
-                'total_value': float(fill.get('fillSz', 0)) * float(fill.get('fillPx', 0)),
-                'fee': float(fill.get('fee', 0)),
+                'client_order_id': fill.get('clOrdId', '') or None,
+                'symbol': self._denormalize_symbol(fill.get('instId', '') or ''),
+                'inst_type': fill.get('instType', '').upper() or self._inst_type(),
+                'side': (fill.get('side', '') or '').upper(),
+                'quantity': qty,
+                'price': price,
+                'timestamp': ts,
+                'datetime': datetime.fromtimestamp(ts / 1000, tz=timezone.utc).isoformat() if ts else '',
+                'total_value': qty * price,
+                'fee': abs(fee_raw),
+                'fee_sign': -1 if fee_raw < 0 else (1 if fee_raw > 0 else 0),
                 'fee_currency': fill.get('feeCcy', ''),
-                'trade_type': fill.get('instType', 'SPOT').lower(),
-                'source': 'okx_fills'
+                'trade_type': 'spot' if (fill.get('instType', '').upper() or self._inst_type()) == 'SPOT' else 'derivatives',
+                'source': 'okx_fills',
             }
         except (ValueError, TypeError) as e:
             self.logger.debug(f"Failed to format OKX fill: {e}")
             return None
     
     def _format_okx_order(self, order: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-        """Format OKX order data into standard trade format."""
+        """Format OKX order data into standard trade format with enhanced timezone and fee handling."""
         try:
-            if order.get('state') != 'filled':
+            if (order.get('state') or '').lower() != 'filled':
                 return None
-                
+
+            # prefer accumulated filled size for filled orders
+            qty = float(order.get('accFillSz') or order.get('fillSz') or order.get('sz') or 0)
+            price = float(order.get('avgPx') or order.get('px') or 0)
+            ts = int(order.get('uTime') or order.get('cTime') or 0)
+            fee_raw = float(order.get('fee', 0) or 0)
+
             return {
                 'id': order.get('ordId', ''),
                 'order_id': order.get('ordId', ''),
-                'symbol': self._denormalize_symbol(order.get('instId', '')),
-                'side': order.get('side', '').upper(),
-                'quantity': float(order.get('fillSz', 0)),
-                'price': float(order.get('avgPx', 0)),
-                'timestamp': int(order.get('uTime', 0)),
-                'datetime': datetime.fromtimestamp(int(order.get('uTime', 0)) / 1000).isoformat() if order.get('uTime') else '',
-                'total_value': float(order.get('fillSz', 0)) * float(order.get('avgPx', 0)),
-                'fee': float(order.get('fee', 0)),
+                'client_order_id': order.get('clOrdId', '') or None,
+                'symbol': self._denormalize_symbol(order.get('instId', '') or ''),
+                'inst_type': order.get('instType', '').upper() or self._inst_type(),
+                'side': (order.get('side', '') or '').upper(),
+                'quantity': qty,
+                'price': price,
+                'timestamp': ts,
+                'datetime': datetime.fromtimestamp(ts / 1000, tz=timezone.utc).isoformat() if ts else '',
+                'total_value': qty * price if (qty and price) else float(order.get('notionalUsd', 0) or 0),
+                'fee': abs(fee_raw),
+                'fee_sign': -1 if fee_raw < 0 else (1 if fee_raw > 0 else 0),
                 'fee_currency': order.get('feeCcy', ''),
-                'trade_type': order.get('instType', 'SPOT').lower(),
-                'source': 'okx_orders'
+                'trade_type': 'spot' if (order.get('instType', '').upper() or self._inst_type()) == 'SPOT' else 'derivatives',
+                'source': 'okx_orders',
             }
         except (ValueError, TypeError) as e:
             self.logger.debug(f"Failed to format OKX order: {e}")
@@ -269,22 +286,32 @@ class OKXTradeRetrieval:
             return None
     
     def _format_ccxt_order_as_trade(self, order: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-        """Format CCXT order data as trade."""
+        """Format CCXT order data as trade with enhanced timestamp and fee handling."""
         try:
+            ts = int(order.get('lastTradeTimestamp') or order.get('timestamp') or 0)
+            qty = float(order.get('filled') or order.get('amount') or 0)
+            price = float(order.get('average') or order.get('price') or 0)
+            fee = order.get('fee') or {}
+            fee_cost = float(fee.get('cost', 0) or 0)
+            fee_ccy = fee.get('currency', '')
+            
             return {
                 'id': order.get('id', ''),
                 'order_id': order.get('id', ''),
+                'client_order_id': order.get('clientOrderId', '') or None,
                 'symbol': order.get('symbol', ''),
+                'inst_type': self._inst_type(),
                 'side': (order.get('side', '') or '').upper(),
-                'quantity': float(order.get('filled', 0)),
-                'price': float(order.get('average', 0)),
-                'timestamp': int(order.get('timestamp', 0)),
-                'datetime': order.get('datetime', ''),
-                'total_value': float(order.get('cost', 0)),
-                'fee': order.get('fee', {}).get('cost', 0) if order.get('fee') else 0,
-                'fee_currency': order.get('fee', {}).get('currency', '') if order.get('fee') else '',
-                'trade_type': 'spot',
-                'source': 'ccxt_orders'
+                'quantity': qty,
+                'price': price,
+                'timestamp': ts,
+                'datetime': order.get('datetime') or (datetime.fromtimestamp(ts/1000, tz=timezone.utc).isoformat() if ts else ''),
+                'total_value': float(order.get('cost') or (qty * price)),
+                'fee': abs(fee_cost),
+                'fee_sign': -1 if fee_cost < 0 else (1 if fee_cost > 0 else 0),
+                'fee_currency': fee_ccy,
+                'trade_type': 'spot' if self._inst_type() == 'SPOT' else 'derivatives',
+                'source': 'ccxt_orders',
             }
         except (ValueError, TypeError) as e:
             self.logger.debug(f"Failed to format CCXT order: {e}")
