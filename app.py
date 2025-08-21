@@ -854,6 +854,116 @@ def api_status():
         "server_uptime_seconds": (datetime.now(LOCAL_TZ) - server_start_time).total_seconds()
     })
 
+@app.route("/api/portfolio-analytics")
+def api_portfolio_analytics():
+    """Get comprehensive portfolio analytics using direct OKX APIs."""
+    try:
+        # Get real OKX portfolio data
+        from src.services.portfolio_service import get_portfolio_service
+        portfolio_service = get_portfolio_service()
+        portfolio_data = portfolio_service.get_portfolio_data()
+        
+        total_value = portfolio_data.get('total_current_value', 0.0)
+        total_pnl = portfolio_data.get('total_pnl', 0.0)
+        holdings = portfolio_data.get('holdings', [])
+        
+        # Calculate portfolio concentration and diversification
+        position_values = []
+        asset_allocations = []
+        volatility_data = []
+        
+        for holding in holdings:
+            position_value = float(holding.get('current_value', 0))
+            if position_value > 0:
+                position_values.append(position_value)
+                allocation_pct = (position_value / total_value * 100) if total_value > 0 else 0
+                asset_allocations.append({
+                    'symbol': holding.get('symbol', 'Unknown'),
+                    'allocation': allocation_pct,
+                    'value': position_value,
+                    'pnl': float(holding.get('pnl', 0)),
+                    'pnl_percent': float(holding.get('pnl_percent', 0))
+                })
+        
+        # Portfolio risk metrics from actual holdings
+        largest_position = max(position_values) if position_values else 0
+        largest_position_pct = (largest_position / total_value * 100) if total_value > 0 else 0
+        
+        # Calculate portfolio correlation (simplified - based on sector/market cap)
+        num_positions = len(holdings)
+        diversification_score = min(100, (num_positions * 20))  # Max 100% at 5+ positions
+        
+        # Risk assessment based on actual portfolio
+        concentration_risk = "High" if largest_position_pct > 50 else "Medium" if largest_position_pct > 25 else "Low"
+        
+        # Get recent trading activity
+        try:
+            recent_trades = portfolio_service.get_trade_history(limit=10)
+            trading_activity = len(recent_trades)
+        except:
+            trading_activity = 0
+        
+        return jsonify({
+            "success": True,
+            "analytics": {
+                "portfolio_value": total_value,
+                "total_pnl": total_pnl,
+                "total_pnl_percent": (total_pnl / (total_value - total_pnl) * 100) if (total_value - total_pnl) > 0 else 0,
+                "position_count": num_positions,
+                "largest_position_value": largest_position,
+                "largest_position_percent": largest_position_pct,
+                "concentration_risk": concentration_risk,
+                "diversification_score": diversification_score,
+                "trading_activity_7d": trading_activity,
+                "asset_allocations": asset_allocations[:10],  # Top 10 positions
+                "risk_assessment": {
+                    "concentration": concentration_risk,
+                    "diversification": "Good" if diversification_score > 60 else "Moderate" if diversification_score > 30 else "Poor",
+                    "liquidity": "High",  # OKX spot trading is highly liquid
+                    "market_exposure": "Crypto",
+                    "position_sizing": "Balanced" if largest_position_pct < 40 else "Concentrated"
+                },
+                "performance_metrics": {
+                    "unrealized_pnl": total_pnl,
+                    "best_performer": max(asset_allocations, key=lambda x: x['pnl_percent'])['symbol'] if asset_allocations else "N/A",
+                    "worst_performer": min(asset_allocations, key=lambda x: x['pnl_percent'])['symbol'] if asset_allocations else "N/A",
+                    "average_position_size": sum(position_values) / len(position_values) if position_values else 0
+                }
+            },
+            "last_update": datetime.now(LOCAL_TZ).isoformat()
+        })
+    except Exception as e:
+        logger.error(f"Error getting portfolio analytics: {e}")
+        return jsonify({
+            "success": False,
+            "error": str(e),
+            "analytics": {
+                "portfolio_value": 0.0,
+                "total_pnl": 0.0,
+                "total_pnl_percent": 0.0,
+                "position_count": 0,
+                "largest_position_value": 0.0,
+                "largest_position_percent": 0.0,
+                "concentration_risk": "Unknown",
+                "diversification_score": 0,
+                "trading_activity_7d": 0,
+                "asset_allocations": [],
+                "risk_assessment": {
+                    "concentration": "Unknown",
+                    "diversification": "Unknown",
+                    "liquidity": "Unknown",
+                    "market_exposure": "Unknown",
+                    "position_sizing": "Unknown"
+                },
+                "performance_metrics": {
+                    "unrealized_pnl": 0.0,
+                    "best_performer": "N/A",
+                    "worst_performer": "N/A",
+                    "average_position_size": 0.0
+                }
+            }
+        }), 500
+
 # Global server start time for uptime calculation (use LOCAL_TZ for consistency)
 server_start_time = datetime.now(LOCAL_TZ)
 

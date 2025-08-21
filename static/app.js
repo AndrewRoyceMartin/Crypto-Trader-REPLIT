@@ -27,7 +27,8 @@ class TradingApp {
         this.apiCache = {
             status:    { data: null, timestamp: 0, ttl: 1000 },  // 1s
             portfolio: { data: null, timestamp: 0, ttl: 1000 },  // 1s
-            config:    { data: null, timestamp: 0, ttl: 30000 }  // 30s
+            config:    { data: null, timestamp: 0, ttl: 30000 }, // 30s
+            analytics: { data: null, timestamp: 0, ttl: 5000 }   // 5s
         };
 
         // Debug: force network fetches
@@ -365,6 +366,110 @@ class TradingApp {
         // Status widgets
         this.updatePriceSourceStatus();
         this.updateOKXStatus();
+        
+        // Portfolio analytics
+        this.updatePortfolioAnalytics();
+    }
+
+    async updatePortfolioAnalytics() {
+        try {
+            const response = await fetch('/api/portfolio-analytics', { cache: 'no-cache' });
+            if (!response.ok) return;
+            const data = await response.json();
+            
+            if (!data.success || !data.analytics) return;
+            
+            const analytics = data.analytics;
+            
+            // Update risk chart with actual portfolio data
+            this.updateRiskChart(analytics);
+            
+            // Update analytics display elements
+            this.updateAnalyticsDisplay(analytics);
+            
+        } catch (error) {
+            console.error('Portfolio analytics update failed:', error);
+        }
+    }
+    
+    updateRiskChart(analytics) {
+        const riskCanvas = document.getElementById('riskChart');
+        if (!riskCanvas || !window.Chart) return;
+        
+        try {
+            // Destroy existing chart
+            if (this.riskChart) {
+                this.riskChart.destroy();
+            }
+            
+            // Create analytics chart with real OKX data
+            this.riskChart = new Chart(riskCanvas, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Risk Exposure', 'Available Capital'],
+                    datasets: [{
+                        data: [
+                            analytics.current_risk_exposure || 0,
+                            Math.max(0, analytics.portfolio_value - (analytics.current_risk_exposure || 0))
+                        ],
+                        backgroundColor: ['#dc3545', '#28a745'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        title: { 
+                            display: true, 
+                            text: `Portfolio Analytics - ${analytics.concentration_risk} Risk`,
+                            font: { size: 12 }
+                        }
+                    }
+                }
+            });
+        } catch (error) {
+            console.error('Risk chart creation failed:', error);
+            // Fallback display
+            if (riskCanvas) {
+                riskCanvas.style.display = 'none';
+                const fallback = document.createElement('div');
+                fallback.className = 'text-center text-muted p-3';
+                fallback.innerHTML = `
+                    <strong>Portfolio Analytics</strong><br>
+                    Risk Level: ${analytics.concentration_risk}<br>
+                    Positions: ${analytics.position_count}<br>
+                    Diversification: ${analytics.risk_assessment?.diversification || 'Unknown'}
+                `;
+                riskCanvas.parentNode.replaceChild(fallback, riskCanvas);
+            }
+        }
+    }
+    
+    updateAnalyticsDisplay(analytics) {
+        // Update any analytics KPIs or displays if they exist
+        const elements = {
+            'analytics-concentration': analytics.concentration_risk,
+            'analytics-diversification': analytics.risk_assessment?.diversification || 'Unknown',
+            'analytics-positions': analytics.position_count,
+            'analytics-largest-position': `${analytics.largest_position_percent.toFixed(1)}%`,
+            'analytics-best-performer': analytics.performance_metrics?.best_performer || 'N/A',
+            'analytics-worst-performer': analytics.performance_metrics?.worst_performer || 'N/A'
+        };
+        
+        Object.entries(elements).forEach(([id, value]) => {
+            const element = document.getElementById(id);
+            if (element) {
+                element.textContent = value;
+                
+                // Add color coding for risk levels
+                if (id === 'analytics-concentration') {
+                    element.className = value === 'High' ? 'text-danger' : 
+                                      value === 'Medium' ? 'text-warning' : 'text-success';
+                }
+            }
+        });
     }
 
     debouncedUpdateDashboard() {
