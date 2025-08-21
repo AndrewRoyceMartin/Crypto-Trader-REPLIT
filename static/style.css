@@ -407,6 +407,67 @@ h4, h5, h6 {
     }
 }
 
+/* Progress bar utilities - replace inline styles */
+.progress-thin {
+    height: 8px;
+}
+
+.progress-bar-zero {
+    width: 0%;
+}
+
+/* Currency selector utility */
+.currency-select {
+    min-width: 80px;
+    font-size: 0.8rem;
+}
+
+/* Table responsive utilities */
+.table-responsive-400 {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.table-sortable th {
+    cursor: pointer;
+    color: white;
+}
+
+/* Chart container utilities */
+.chart-container-300 {
+    height: 300px;
+}
+
+.chart-container-320 {
+    height: 320px;
+    background: #fff;
+}
+
+/* Progress bar height variants */
+.progress-10 {
+    height: 10px;
+}
+
+.progress-bar-zero {
+    width: 0%;
+}
+
+/* Table responsive variants */
+.table-responsive-480 {
+    max-height: 480px;
+    overflow-y: auto;
+}
+
+.table-responsive-300 {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+/* Small text utilities */
+.text-xs {
+    font-size: 0.75rem;
+}
+
 /* Better mobile chart layout - MOVED TO CONSOLIDATED SECTION */
 
 /* Enhanced spacing between major sections */

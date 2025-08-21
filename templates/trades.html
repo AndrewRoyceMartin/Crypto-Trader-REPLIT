@@ -46,7 +46,7 @@
         <div class="nav-item d-flex align-items-center">
 
           <div class="me-3">
-            <select class="form-select form-select-sm" id="currency-selector" onchange="changeCurrency()" style="min-width: 80px; font-size: 0.8rem;">
+            <select class="form-select form-select-sm currency-select" id="currency-selector" onchange="changeCurrency()">
               <option value="USD" selected>USD</option>
               <option value="AUD">AUD</option>
               <option value="EUR">EUR</option>
@@ -211,17 +211,17 @@
         <h6 class="mb-0"><i class="fas fa-list me-2"></i>Recent Trades</h6>
         <div class="small text-muted">New → Old</div>
       </div>
-      <div class="table-responsive" style="max-height: 480px; overflow-y: auto;">
+      <div class="table-responsive table-responsive-480">
         <table class="table table-sm">
           <thead class="table-dark sticky-top">
             <tr>
-              <th onclick="sortTradesTable(0)" class="sortable" style="cursor:pointer;">Trade # <i id="trades-sort-0" class="fas fa-sort ms-1"></i></th>
-              <th onclick="sortTradesTable(1)" class="sortable" style="cursor:pointer;">Time <i id="trades-sort-1" class="fas fa-sort ms-1"></i></th>
-              <th onclick="sortTradesTable(2)" class="sortable" style="cursor:pointer;">Symbol <i id="trades-sort-2" class="fas fa-sort ms-1"></i></th>
-              <th onclick="sortTradesTable(3)" class="sortable" style="cursor:pointer;">Action <i id="trades-sort-3" class="fas fa-sort ms-1"></i></th>
-              <th onclick="sortTradesTable(4)" class="sortable" style="cursor:pointer;">Size <i id="trades-sort-4" class="fas fa-sort ms-1"></i></th>
-              <th onclick="sortTradesTable(5)" class="sortable" style="cursor:pointer;">Price <i id="trades-sort-5" class="fas fa-sort ms-1"></i></th>
-              <th onclick="sortTradesTable(6)" class="sortable" style="cursor:pointer;">P&L <i id="trades-sort-6" class="fas fa-sort ms-1"></i></th>
+              <th onclick="sortTradesTable(0)" class="sortable table-sortable">Trade # <i id="trades-sort-0" class="fas fa-sort ms-1"></i></th>
+              <th onclick="sortTradesTable(1)" class="sortable table-sortable">Time <i id="trades-sort-1" class="fas fa-sort ms-1"></i></th>
+              <th onclick="sortTradesTable(2)" class="sortable table-sortable">Symbol <i id="trades-sort-2" class="fas fa-sort ms-1"></i></th>
+              <th onclick="sortTradesTable(3)" class="sortable table-sortable">Action <i id="trades-sort-3" class="fas fa-sort ms-1"></i></th>
+              <th onclick="sortTradesTable(4)" class="sortable table-sortable">Size <i id="trades-sort-4" class="fas fa-sort ms-1"></i></th>
+              <th onclick="sortTradesTable(5)" class="sortable table-sortable">Price <i id="trades-sort-5" class="fas fa-sort ms-1"></i></th>
+              <th onclick="sortTradesTable(6)" class="sortable table-sortable">P&L <i id="trades-sort-6" class="fas fa-sort ms-1"></i></th>
             </tr>
           </thead>
           <tbody id="trades-table">

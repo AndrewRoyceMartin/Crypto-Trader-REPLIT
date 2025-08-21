@@ -61,7 +61,7 @@
         <div class="nav-item d-flex align-items-center">
 
           <div class="me-3">
-            <select class="form-select form-select-sm" id="currency-selector" onchange="changeCurrency()" style="min-width:80px;font-size:0.8rem;">
+            <select class="form-select form-select-sm currency-select" id="currency-selector" onchange="changeCurrency()">
               <option value="USD" selected>USD</option>
               <option value="AUD">AUD</option>
               <option value="EUR">EUR</option>
@@ -211,7 +211,7 @@
             <small class="text-muted">Top 10 + Others</small>
           </div>
           <div class="card-body">
-            <div class="chart-container p-2 rounded" style="height:320px;background:#fff;">
+            <div class="chart-container p-2 rounded chart-container-320">
               <canvas id="allocationChart"></canvas>
             </div>
           </div>
@@ -228,8 +228,8 @@
                 <small class="text-muted">Long Exposure</small>
                 <small id="exposure-long-text" class="text-muted">0%</small>
               </div>
-              <div class="progress" style="height:10px;">
-                <div id="exposure-long" class="progress-bar" role="progressbar" style="width:0%"></div>
+              <div class="progress progress-10">
+                <div id="exposure-long" class="progress-bar progress-bar-zero" role="progressbar"></div>
               </div>
             </div>
             <div class="mb-3">
@@ -237,8 +237,8 @@
                 <small class="text-muted">Stablecoin Allocation</small>
                 <small id="exposure-stable-text" class="text-muted">0%</small>
               </div>
-              <div class="progress" style="height:10px;">
-                <div id="exposure-stable" class="progress-bar bg-info" role="progressbar" style="width:0%"></div>
+              <div class="progress progress-10">
+                <div id="exposure-stable" class="progress-bar bg-info progress-bar-zero" role="progressbar"></div>
               </div>
             </div>
             <div>
@@ -246,8 +246,8 @@
                 <small class="text-muted">Largest Position</small>
                 <small id="exposure-largest-text" class="text-muted">0%</small>
               </div>
-              <div class="progress" style="height:10px;">
-                <div id="exposure-largest" class="progress-bar bg-warning" role="progressbar" style="width:0%"></div>
+              <div class="progress progress-10">
+                <div id="exposure-largest" class="progress-bar bg-warning progress-bar-zero" role="progressbar"></div>
               </div>
             </div>
             <small class="text-muted d-block mt-2">* Basic exposure metrics; refine when you track stables/leverage server-side.</small>
@@ -287,17 +287,17 @@
               <table class="table table-striped table-hover">
                 <thead class="table-dark sticky-top">
                   <tr>
-                    <th onclick="sortPositionsTable(0)" style="cursor:pointer;" class="sortable">Symbol</th>
-                    <th onclick="sortPositionsTable(1)" style="cursor:pointer;" class="sortable">Name</th>
-                    <th onclick="sortPositionsTable(2)" style="cursor:pointer;" class="sortable">Quantity</th>
-                    <th onclick="sortPositionsTable(3)" style="cursor:pointer;" class="sortable">Current Price</th>
-                    <th onclick="sortPositionsTable(4)" style="cursor:pointer;" class="sortable">Current Value</th>
-                    <th onclick="sortPositionsTable(5)" style="cursor:pointer;" class="sortable">Position %</th>
-                    <th onclick="sortPositionsTable(6)" style="cursor:pointer;" class="sortable">Unrealized P&L</th>
-                    <th onclick="sortPositionsTable(7)" style="cursor:pointer;" class="sortable">P&L %</th>
-                    <th onclick="sortPositionsTable(8)" style="cursor:pointer;" class="sortable">Target Sell</th>
-                    <th onclick="sortPositionsTable(9)" style="cursor:pointer;" class="sortable">Potential Profit</th>
-                    <th onclick="sortPositionsTable(10)" style="cursor:pointer;" class="sortable">Status</th>
+                    <th onclick="sortPositionsTable(0)" class="sortable table-sortable">Symbol</th>
+                    <th onclick="sortPositionsTable(1)" class="sortable table-sortable">Name</th>
+                    <th onclick="sortPositionsTable(2)" class="sortable table-sortable">Quantity</th>
+                    <th onclick="sortPositionsTable(3)" class="sortable table-sortable">Current Price</th>
+                    <th onclick="sortPositionsTable(4)" class="sortable table-sortable">Current Value</th>
+                    <th onclick="sortPositionsTable(5)" class="sortable table-sortable">Position %</th>
+                    <th onclick="sortPositionsTable(6)" class="sortable table-sortable">Unrealized P&L</th>
+                    <th onclick="sortPositionsTable(7)" class="sortable table-sortable">P&L %</th>
+                    <th onclick="sortPositionsTable(8)" class="sortable table-sortable">Target Sell</th>
+                    <th onclick="sortPositionsTable(9)" class="sortable table-sortable">Potential Profit</th>
+                    <th onclick="sortPositionsTable(10)" class="sortable table-sortable">Status</th>
                   </tr>
                 </thead>
                 <tbody id="positions-table-body">
@@ -350,7 +350,7 @@
             </button>
           </div>
           <div class="card-body">
-            <div class="table-responsive" style="max-height:300px;overflow-y:auto;">
+            <div class="table-responsive table-responsive-300">
               <table class="table table-sm">
                 <thead class="table-light">
                   <tr>
@@ -407,7 +407,7 @@
               </div>
             </div>
 
-            <div class="table-responsive" style="max-height:300px;overflow-y:auto;">
+            <div class="table-responsive table-responsive-300">
               <table class="table table-sm">
                 <thead class="table-dark sticky-top">
                   <tr>
@@ -456,15 +456,15 @@
         <div class="col-md-6 text-md-end">
           <div class="mb-2">
             <p class="mb-1"><small><strong>Copyright Notice & Disclaimers</strong></small></p>
-            <p class="mb-1 text-white" style="font-size:0.75rem;">
+            <p class="mb-1 text-white text-xs">
               © 2025 ARM Digital Enterprises. All rights reserved. This software and its contents are protected by Australian and international copyright laws.
             </p>
           </div>
           <div class="mb-0">
-            <p class="mb-1 text-white" style="font-size:0.75rem;">
+            <p class="mb-1 text-white text-xs">
               <strong>Investment Disclaimer:</strong> This system is for informational purposes only. Cryptocurrency trading involves substantial risk of loss. Past performance does not guarantee future results. Consult qualified financial advisors before making investment decisions.
             </p>
-            <p class="mb-0 text-white" style="font-size:0.75rem;">
+            <p class="mb-0 text-white text-xs">
               <strong>Compliance:</strong> This system complies with Australian Tax Office (ATO) requirements for capital gains reporting. Users are responsible for their own tax obligations and compliance with applicable laws and regulations.
             </p>
           </div>
