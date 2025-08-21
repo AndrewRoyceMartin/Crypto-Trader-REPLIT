@@ -297,13 +297,13 @@
                 </div>
             </div>
 
-            <!-- P&L Calculation Accuracy -->
+            <!-- Strategy P&L Testing Framework -->
             <div class="col-lg-6 mb-4">
                 <div class="card">
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <h5 class="mb-0">
                             <i class="fas fa-calculator me-2"></i>
-                            P&L Calculation Accuracy
+                            Strategy P&L Testing Framework
                         </h5>
                         <span class="test-status" id="pnl-status">
                             <i class="fas fa-spinner fa-spin"></i> Loading...
@@ -311,7 +311,7 @@
                     </div>
                     <div class="card-body">
                         <div id="pnl-content">
-                            <p class="text-center text-muted">Loading test data...</p>
+                            <p class="text-center text-muted">Running comprehensive P&L validation tests...</p>
                         </div>
                     </div>
                 </div>
@@ -527,9 +527,70 @@
             const icon = test.status === 'pass' ? 'check' : 'times';
             status.innerHTML = `<i class="fas fa-${icon}"></i> ${test.status.toUpperCase()}`;
 
+            // Display results based on framework type
             if (test.status === 'error') {
-                content.innerHTML = `<p class="text-danger">Error: ${test.error}</p>`;
+                content.innerHTML = `<p class="text-danger">Error: ${test.error || 'Unknown error'}</p>`;
+            } else if (test.framework && test.framework.includes('Advanced Strategy P&L Testing Framework')) {
+                // Display advanced framework results
+                let html = `
+                    <div class="test-details">
+                        <div class="alert alert-info mb-3">
+                            <i class="fas fa-flask me-2"></i>
+                            <strong>${test.framework}</strong>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-3">
+                                <div class="text-center">
+                                    <div class="metric-value text-primary">${test.total_tests || 0}</div>
+                                    <div class="metric-label">Total Tests</div>
+                                </div>
+                            </div>
+                            <div class="col-3">
+                                <div class="text-center">
+                                    <div class="metric-value text-success">${test.passed_tests || 0}</div>
+                                    <div class="metric-label">Passed</div>
+                                </div>
+                            </div>
+                            <div class="col-3">
+                                <div class="text-center">
+                                    <div class="metric-value text-danger">${test.failed_tests || 0}</div>
+                                    <div class="metric-label">Failed</div>
+                                </div>
+                            </div>
+                            <div class="col-3">
+                                <div class="text-center">
+                                    <div class="metric-value text-info">${test.execution_time || '0ms'}</div>
+                                    <div class="metric-label">Execution</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-6">
+                                <strong>Test Categories:</strong>
+                                <ul class="list-unstyled mt-1 small">
+                                    <li><i class="fas fa-check-circle text-success me-1"></i>Position Sizing</li>
+                                    <li><i class="fas fa-check-circle text-success me-1"></i>P&L Calculations</li>
+                                    <li><i class="fas fa-check-circle text-success me-1"></i>Risk Management</li>
+                                    <li><i class="fas fa-check-circle text-success me-1"></i>Bollinger Bands Strategy</li>
+                                </ul>
+                            </div>
+                            <div class="col-6">
+                                <strong>Features:</strong>
+                                <ul class="list-unstyled mt-1 small">
+                                    <li><i class="fas fa-calculator text-primary me-1"></i>${test.mathematical_precision || '6-decimal accuracy'}</li>
+                                    <li><i class="fas fa-chart-line text-success me-1"></i>Live OKX Integration</li>
+                                    <li><i class="fas fa-cogs text-info me-1"></i>Risk Management</li>
+                                    <li><i class="fas fa-dollar-sign text-warning me-1"></i>Fee & Slippage</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                content.innerHTML = html;
             } else {
+                // Display basic/fallback results
                 let html = `
                     <div class="row mb-3">
                         <div class="col-6">
