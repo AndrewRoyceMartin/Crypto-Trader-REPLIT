@@ -36,7 +36,8 @@ class TradingApp {
             equityCurve: { data: null, timestamp: 0, ttl: 30000 },    // 30s
             drawdownAnalysis: { data: null, timestamp: 0, ttl: 30000 }, // 30s
             currentHoldings: { data: null, timestamp: 0, ttl: 15000 },  // 15s
-            recentTrades: { data: null, timestamp: 0, ttl: 20000 }      // 20s
+            recentTrades: { data: null, timestamp: 0, ttl: 20000 },     // 20s
+            performanceAnalytics: { data: null, timestamp: 0, ttl: 30000 } // 30s
         };
 
         // Debug: force network fetches
@@ -401,6 +402,9 @@ class TradingApp {
         
         // Recent trades
         this.updateRecentTrades();
+        
+        // Performance analytics
+        this.updatePerformanceAnalytics();
     }
 
     async updatePortfolioAnalytics() {
@@ -1438,6 +1442,138 @@ class TradingApp {
                 }
             }
         });
+    }
+    
+    async updatePerformanceAnalytics() {
+        try {
+            const timeframe = document.getElementById('performance-timeframe')?.value || '30d';
+            const response = await fetch(`/api/performance-analytics?timeframe=${timeframe}`, { cache: 'no-cache' });
+            if (!response.ok) return;
+            const data = await response.json();
+            
+            if (!data.success || !data.metrics) return;
+            
+            // Update performance analytics cards
+            this.updatePerformanceCards(data.metrics, timeframe);
+            
+        } catch (error) {
+            console.error('Performance analytics update failed:', error);
+        }
+    }
+    
+    updatePerformanceCards(metrics, timeframe) {
+        try {
+            // Update performance metric elements if they exist
+            const elements = {
+                // Total Return Card
+                'perf-total-return': this.formatCurrency(metrics.total_return),
+                'perf-total-return-percent': `${metrics.total_return_percent >= 0 ? '+' : ''}${metrics.total_return_percent.toFixed(2)}%`,
+                
+                // Daily Change Card  
+                'perf-daily-change': this.formatCurrency(metrics.daily_change),
+                'perf-daily-change-percent': `${metrics.daily_change_percent >= 0 ? '+' : ''}${metrics.daily_change_percent.toFixed(2)}%`,
+                
+                // Trading Activity Card
+                'perf-total-trades': metrics.total_trades,
+                'perf-win-rate': `${metrics.win_rate.toFixed(1)}%`,
+                
+                // Risk Metrics Card
+                'perf-sharpe-ratio': metrics.sharpe_ratio.toFixed(2),
+                'perf-volatility': `${metrics.volatility.toFixed(2)}%`,
+                'perf-max-drawdown': `${metrics.max_drawdown.toFixed(2)}%`,
+                
+                // Portfolio Value
+                'perf-current-value': this.formatCurrency(metrics.current_value)
+            };
+            
+            Object.entries(elements).forEach(([id, value]) => {
+                const element = document.getElementById(id);
+                if (element) {
+                    element.textContent = value;
+                    
+                    // Add color coding for performance indicators
+                    if (id.includes('total-return')) {
+                        const numValue = metrics.total_return_percent;
+                        element.className = numValue >= 0 ? 'pnl-up' : 'pnl-down';
+                    }
+                    if (id.includes('daily-change')) {
+                        const numValue = metrics.daily_change_percent;
+                        element.className = numValue >= 0 ? 'pnl-up' : 'pnl-down';
+                    }
+                    if (id.includes('win-rate')) {
+                        const numValue = metrics.win_rate;
+                        if (numValue >= 60) {
+                            element.className = 'text-success';
+                        } else if (numValue >= 40) {
+                            element.className = 'text-warning';
+                        } else {
+                            element.className = 'text-danger';
+                        }
+                    }
+                    if (id.includes('sharpe-ratio')) {
+                        const numValue = metrics.sharpe_ratio;
+                        if (numValue >= 1.0) {
+                            element.className = 'text-success';
+                        } else if (numValue >= 0.5) {
+                            element.className = 'text-warning';
+                        } else {
+                            element.className = 'text-danger';
+                        }
+                    }
+                    if (id.includes('max-drawdown')) {
+                        const numValue = metrics.max_drawdown;
+                        if (numValue <= 5) {
+                            element.className = 'text-success';
+                        } else if (numValue <= 15) {
+                            element.className = 'text-warning';
+                        } else {
+                            element.className = 'text-danger';
+                        }
+                    }
+                    if (id.includes('volatility')) {
+                        const numValue = metrics.volatility;
+                        if (numValue <= 10) {
+                            element.className = 'text-success';
+                        } else if (numValue <= 25) {
+                            element.className = 'text-warning';
+                        } else {
+                            element.className = 'text-danger';
+                        }
+                    }
+                }
+            });
+            
+            // Update timeframe labels if they exist
+            const timeframeElements = document.querySelectorAll('.performance-timeframe-label');
+            timeframeElements.forEach(element => {
+                element.textContent = timeframe.toUpperCase();
+            });
+            
+            // Update card titles with current data source
+            const cardTitles = document.querySelectorAll('.performance-card-title');
+            cardTitles.forEach(title => {
+                if (!title.textContent.includes('OKX')) {
+                    title.innerHTML += ' <small class="text-muted">(OKX Live)</small>';
+                }
+            });
+            
+        } catch (error) {
+            console.error('Performance cards update failed:', error);
+            
+            // Show error state in performance cards
+            const errorElements = [
+                'perf-total-return', 'perf-daily-change', 'perf-total-trades', 
+                'perf-win-rate', 'perf-sharpe-ratio', 'perf-max-drawdown'
+            ];
+            
+            errorElements.forEach(id => {
+                const element = document.getElementById(id);
+                if (element) {
+                    element.textContent = 'Error';
+                    element.className = 'text-danger';
+                }
+            });
+        }
     }
 
     debouncedUpdateDashboard() {

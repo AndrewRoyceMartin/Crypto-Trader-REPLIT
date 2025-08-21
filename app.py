@@ -2607,6 +2607,293 @@ def api_drawdown_analysis():
             }
         }), 500
 
+@app.route("/api/performance-analytics")
+def api_performance_analytics():
+    """Get performance analytics using direct OKX native APIs only."""
+    try:
+        timeframe = request.args.get('timeframe', '30d')
+        
+        # Calculate date range
+        end_date = datetime.now(LOCAL_TZ)
+        if timeframe == '7d':
+            start_date = end_date - timedelta(days=7)
+        elif timeframe == '30d':
+            start_date = end_date - timedelta(days=30)
+        elif timeframe == '90d':
+            start_date = end_date - timedelta(days=90)
+        else:
+            start_date = end_date - timedelta(days=30)
+        
+        # Use OKX native API for performance data
+        import requests
+        import hmac
+        import hashlib
+        import base64
+        from datetime import timezone
+        
+        # OKX API credentials
+        api_key = os.getenv("OKX_API_KEY", "")
+        secret_key = os.getenv("OKX_SECRET_KEY", "")
+        passphrase = os.getenv("OKX_PASSPHRASE", "")
+        
+        def sign_request(timestamp, method, request_path, body=''):
+            message = timestamp + method + request_path + body
+            mac = hmac.new(bytes(secret_key, encoding='utf8'), bytes(message, encoding='utf-8'), digestmod='sha256')
+            d = mac.digest()
+            return base64.b64encode(d).decode('utf-8')
+        
+        base_url = 'https://www.okx.com'
+        
+        # Initialize performance metrics
+        total_return = 0.0
+        total_return_percent = 0.0
+        daily_change = 0.0
+        daily_change_percent = 0.0
+        total_trades = 0
+        win_rate = 0.0
+        sharpe_ratio = 0.0
+        volatility = 0.0
+        max_drawdown = 0.0
+        
+        if all([api_key, secret_key, passphrase]):
+            try:
+                # Get current account balance
+                timestamp = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%S.%fZ')
+                method = 'GET'
+                request_path = '/api/v5/account/balance'
+                
+                signature = sign_request(timestamp, method, request_path)
+                
+                headers = {
+                    'OK-ACCESS-KEY': api_key,
+                    'OK-ACCESS-SIGN': signature,
+                    'OK-ACCESS-TIMESTAMP': timestamp,
+                    'OK-ACCESS-PASSPHRASE': passphrase,
+                    'Content-Type': 'application/json'
+                }
+                
+                current_value = 0.0
+                response = requests.get(base_url + request_path, headers=headers, timeout=10)
+                
+                if response.status_code == 200:
+                    balance_data = response.json()
+                    
+                    if balance_data.get('code') == '0' and balance_data.get('data'):
+                        account_data = balance_data['data'][0]
+                        currencies = account_data.get('details', [])
+                        
+                        # Calculate current total value
+                        for currency_info in currencies:
+                            try:
+                                symbol = currency_info.get('ccy', '')
+                                total_balance = float(currency_info.get('bal', 0))
+                                
+                                if total_balance <= 0:
+                                    continue
+                                
+                                if symbol in ['USDT', 'USD', 'USDC']:
+                                    current_value += total_balance
+                                else:
+                                    # Get current price
+                                    try:
+                                        price_timestamp = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%S.%fZ')
+                                        price_path = f'/api/v5/market/ticker?instId={symbol}-USDT'
+                                        price_signature = sign_request(price_timestamp, method, price_path)
+                                        
+                                        price_headers = {
+                                            'OK-ACCESS-KEY': api_key,
+                                            'OK-ACCESS-SIGN': price_signature,
+                                            'OK-ACCESS-TIMESTAMP': price_timestamp,
+                                            'OK-ACCESS-PASSPHRASE': passphrase,
+                                            'Content-Type': 'application/json'
+                                        }
+                                        
+                                        price_response = requests.get(base_url + price_path, headers=price_headers, timeout=5)
+                                        
+                                        if price_response.status_code == 200:
+                                            price_data = price_response.json()
+                                            
+                                            if price_data.get('code') == '0' and price_data.get('data'):
+                                                ticker_info = price_data['data'][0]
+                                                current_price = float(ticker_info.get('last', 0))
+                                                current_value += total_balance * current_price
+                                                
+                                    except Exception as price_error:
+                                        logger.debug(f"Error getting price for {symbol}: {price_error}")
+                                        continue
+                                        
+                            except Exception as currency_error:
+                                continue
+                
+                # Get account bills for historical performance
+                bills_request_path = f"/api/v5/account/bills?begin={int(start_date.timestamp() * 1000)}&end={int(end_date.timestamp() * 1000)}&limit=100"
+                bills_signature = sign_request(timestamp, method, bills_request_path)
+                
+                bills_headers = {
+                    'OK-ACCESS-KEY': api_key,
+                    'OK-ACCESS-SIGN': bills_signature,
+                    'OK-ACCESS-TIMESTAMP': timestamp,
+                    'OK-ACCESS-PASSPHRASE': passphrase,
+                    'Content-Type': 'application/json'
+                }
+                
+                bills_response = requests.get(base_url + bills_request_path, headers=bills_headers, timeout=10)
+                
+                if bills_response.status_code == 200:
+                    bills_data = bills_response.json()
+                    
+                    if bills_data.get('code') == '0' and bills_data.get('data'):
+                        daily_values = {}
+                        trade_records = []
+                        
+                        for bill in bills_data['data']:
+                            try:
+                                ts = int(bill.get('ts', 0))
+                                if ts == 0:
+                                    continue
+                                    
+                                date_key = datetime.fromtimestamp(ts / 1000).strftime('%Y-%m-%d')
+                                bill_type = bill.get('type', '')
+                                balance_change = float(bill.get('balChg', 0))
+                                
+                                # Track daily portfolio values
+                                if date_key not in daily_values:
+                                    daily_values[date_key] = 0
+                                daily_values[date_key] += abs(balance_change)
+                                
+                                # Count trades
+                                if bill_type in ['1', '2']:  # Trade-related bills
+                                    trade_records.append({
+                                        'date': date_key,
+                                        'balance_change': balance_change,
+                                        'type': bill_type
+                                    })
+                                    
+                            except Exception as bill_error:
+                                continue
+                        
+                        total_trades = len(trade_records)
+                        
+                        # Calculate performance metrics
+                        sorted_dates = sorted(daily_values.keys())
+                        if len(sorted_dates) >= 2:
+                            # Calculate total return
+                            initial_value = daily_values[sorted_dates[0]]
+                            if initial_value > 0 and current_value > 0:
+                                total_return = current_value - initial_value
+                                total_return_percent = (total_return / initial_value) * 100
+                            
+                            # Calculate daily change (yesterday vs today)
+                            if len(sorted_dates) >= 2:
+                                yesterday_value = daily_values[sorted_dates[-2]]
+                                if yesterday_value > 0:
+                                    daily_change = current_value - yesterday_value
+                                    daily_change_percent = (daily_change / yesterday_value) * 100
+                            
+                            # Calculate win rate from trade records
+                            if trade_records:
+                                winning_trades = sum(1 for trade in trade_records if trade['balance_change'] > 0)
+                                win_rate = (winning_trades / len(trade_records)) * 100
+                            
+                            # Calculate volatility (simplified)
+                            if len(sorted_dates) > 1:
+                                daily_returns = []
+                                for i in range(1, len(sorted_dates)):
+                                    prev_value = daily_values[sorted_dates[i-1]]
+                                    curr_value = daily_values[sorted_dates[i]]
+                                    if prev_value > 0:
+                                        daily_return = ((curr_value - prev_value) / prev_value) * 100
+                                        daily_returns.append(daily_return)
+                                
+                                if daily_returns:
+                                    import statistics
+                                    volatility = statistics.stdev(daily_returns) if len(daily_returns) > 1 else 0
+                                    
+                                    # Calculate Sharpe ratio (simplified)
+                                    if volatility > 0:
+                                        avg_return = statistics.mean(daily_returns)
+                                        sharpe_ratio = avg_return / volatility
+                            
+                            # Calculate max drawdown
+                            peak_value = 0
+                            for date in sorted_dates:
+                                value = daily_values[date]
+                                if value > peak_value:
+                                    peak_value = value
+                                elif peak_value > 0:
+                                    drawdown = ((peak_value - value) / peak_value) * 100
+                                    if drawdown > max_drawdown:
+                                        max_drawdown = drawdown
+                
+                # Get trade fills for more accurate trade count
+                try:
+                    fills_request_path = f"/api/v5/trade/fills?begin={int(start_date.timestamp() * 1000)}&end={int(end_date.timestamp() * 1000)}&limit=100"
+                    fills_signature = sign_request(timestamp, method, fills_request_path)
+                    
+                    fills_headers = {
+                        'OK-ACCESS-KEY': api_key,
+                        'OK-ACCESS-SIGN': fills_signature,
+                        'OK-ACCESS-TIMESTAMP': timestamp,
+                        'OK-ACCESS-PASSPHRASE': passphrase,
+                        'Content-Type': 'application/json'
+                    }
+                    
+                    fills_response = requests.get(base_url + fills_request_path, headers=fills_headers, timeout=10)
+                    
+                    if fills_response.status_code == 200:
+                        fills_data = fills_response.json()
+                        
+                        if fills_data.get('code') == '0' and fills_data.get('data'):
+                            actual_trades = len(fills_data['data'])
+                            if actual_trades > total_trades:
+                                total_trades = actual_trades
+                                
+                except Exception as fills_error:
+                    logger.debug(f"Error getting trade fills: {fills_error}")
+                
+            except Exception as api_error:
+                logger.error(f"OKX performance API failed: {api_error}")
+        
+        return jsonify({
+            "success": True,
+            "timeframe": timeframe,
+            "metrics": {
+                "total_return": total_return,
+                "total_return_percent": total_return_percent,
+                "daily_change": daily_change,
+                "daily_change_percent": daily_change_percent,
+                "total_trades": total_trades,
+                "win_rate": win_rate,
+                "sharpe_ratio": sharpe_ratio,
+                "volatility": volatility,
+                "max_drawdown": max_drawdown,
+                "current_value": current_value
+            },
+            "data_source": "okx_native_api",
+            "last_update": datetime.now(LOCAL_TZ).isoformat()
+        })
+        
+    except Exception as e:
+        logger.error(f"Error getting performance analytics: {e}")
+        return jsonify({
+            "success": False,
+            "error": str(e),
+            "timeframe": timeframe,
+            "metrics": {
+                "total_return": 0.0,
+                "total_return_percent": 0.0,
+                "daily_change": 0.0,
+                "daily_change_percent": 0.0,
+                "total_trades": 0,
+                "win_rate": 0.0,
+                "sharpe_ratio": 0.0,
+                "volatility": 0.0,
+                "max_drawdown": 0.0,
+                "current_value": 0.0
+            },
+            "data_source": "error"
+        }), 500
+
 # Global server start time for uptime calculation (use LOCAL_TZ for consistency)
 server_start_time = datetime.now(LOCAL_TZ)
 
