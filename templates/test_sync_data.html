@@ -76,34 +76,10 @@
             100% { transform: rotate(360deg); }
         }
         
-        /* Fallback tooltip styling */
+        /* Tooltip styling */
         [data-bs-toggle="tooltip"] {
             cursor: help;
             border-bottom: 1px dotted #666;
-        }
-        
-        /* Custom tooltip for better visibility */
-        .custom-tooltip {
-            position: relative;
-            display: inline;
-        }
-        
-        .custom-tooltip:hover::after {
-            content: attr(data-tooltip);
-            position: absolute;
-            bottom: 125%;
-            left: 50%;
-            transform: translateX(-50%);
-            background-color: #333;
-            color: white;
-            padding: 8px 12px;
-            border-radius: 4px;
-            font-size: 12px;
-            white-space: nowrap;
-            z-index: 1000;
-            max-width: 300px;
-            white-space: normal;
-            word-wrap: break-word;
         }
     </style>
 </head>
@@ -123,7 +99,7 @@
                     <div class="col-md-3">
                         <div class="card">
                             <div class="card-body text-center">
-                                <h5 class="card-title custom-tooltip" data-tooltip="Total number of OKX sync tests executed in the current session" data-bs-toggle="tooltip" data-bs-placement="top" title="Total number of OKX sync tests executed in the current session">Tests Run</h5>
+                                <h5 class="card-title" data-bs-toggle="tooltip" data-bs-placement="top" title="Total number of OKX sync tests executed in the current session">Tests Run</h5>
                                 <div class="metric-highlight text-primary" id="tests-run">0</div>
                             </div>
                         </div>
@@ -131,7 +107,7 @@
                     <div class="col-md-3">
                         <div class="card">
                             <div class="card-body text-center">
-                                <h5 class="card-title custom-tooltip" data-tooltip="Number of tests that completed successfully without errors or discrepancies" data-bs-toggle="tooltip" data-bs-placement="top" title="Number of tests that completed successfully without errors or discrepancies">Passed</h5>
+                                <h5 class="card-title" data-bs-toggle="tooltip" data-bs-placement="top" title="Number of tests that completed successfully without errors or discrepancies">Passed</h5>
                                 <div class="metric-highlight text-success" id="tests-passed">0</div>
                             </div>
                         </div>
@@ -139,7 +115,7 @@
                     <div class="col-md-3">
                         <div class="card">
                             <div class="card-body text-center">
-                                <h5 class="card-title custom-tooltip" data-tooltip="Number of tests that detected synchronization issues or calculation errors" data-bs-toggle="tooltip" data-bs-placement="top" title="Number of tests that detected synchronization issues or calculation errors">Failed</h5>
+                                <h5 class="card-title" data-bs-toggle="tooltip" data-bs-placement="top" title="Number of tests that detected synchronization issues or calculation errors">Failed</h5>
                                 <div class="metric-highlight text-danger" id="tests-failed">0</div>
                             </div>
                         </div>
@@ -147,7 +123,7 @@
                     <div class="col-md-3">
                         <div class="card">
                             <div class="card-body text-center">
-                                <h5 class="card-title custom-tooltip" data-tooltip="Timestamp of the most recent test execution" data-bs-toggle="tooltip" data-bs-placement="top" title="Timestamp of the most recent test execution">Last Run</h5>
+                                <h5 class="card-title" data-bs-toggle="tooltip" data-bs-placement="top" title="Timestamp of the most recent test execution">Last Run</h5>
                                 <div class="metric-highlight text-muted" id="last-run">Never</div>
                             </div>
                         </div>
