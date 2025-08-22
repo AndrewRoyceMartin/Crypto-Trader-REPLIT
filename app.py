@@ -2945,7 +2945,7 @@ def api_available_positions() -> Any:
                     current_price = 0.0
                     if symbol not in ['AUD', 'USD', 'EUR', 'GBP', 'USDT', 'USDC', 'DAI', 'BUSD']:  # Skip fiat and stablecoins
                         try:
-                            current_price = portfolio_service._get_live_okx_price(symbol, currency)
+                            current_price = float(portfolio_service._get_live_okx_price(symbol) or 0.0)
                         except Exception as price_error:
                             logger.debug(f"Could not get live price for {symbol}: {price_error}")
                             current_price = 0.0
