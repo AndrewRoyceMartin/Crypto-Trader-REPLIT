@@ -932,14 +932,106 @@ def api_trade_history():
                 exchange = service.exchange.exchange  # Access the CCXT exchange instance directly
                 logger.info("Using the same OKX exchange instance that portfolio service uses successfully")
                 
-                # Method 1: OKX Trade Fills API (most comprehensive for executed trades) - same as OKXAdapter
+                # Method 1: OKX Account Bills API (captures ALL transaction types including conversions, simple trades, etc.)
                 try:
-                    fills_params = {
-                        'limit': '100',
-                        'instType': 'SPOT'
+                    # Get ALL account bills which should include conversions, simple trades, spot trades, etc.
+                    bills_params = {
+                        'limit': '100'
+                        # No instType filter - get ALL transaction types
                     }
                     
-                    logger.info(f"Fetching trade fills from OKX API with params: {fills_params}")
+                    logger.info(f"Fetching ALL account bills from OKX API with params: {bills_params}")
+                    response = exchange.privateGetAccountBills(bills_params)
+                    
+                    logger.info(f"OKX account bills API response: {response}")
+                    if response.get('code') == '0' and response.get('data'):
+                        bills = response['data']
+                        logger.info(f"OKX account bills API returned {len(bills)} transaction records")
+                        
+                        if bills:
+                            logger.info(f"First bill sample: {bills[0]}")
+                        
+                        for bill in bills:
+                            try:
+                                logger.info(f"Processing bill: {bill}")
+                                
+                                # Process ALL bill types to capture Simple trades, Converts, etc.
+                                bill_type = bill.get('type', '')
+                                logger.info(f"Processing bill type: {bill_type} for symbol: {bill.get('instId', '')}")
+                                
+                                # Don't filter by bill type - capture everything and let filtering happen later
+                                
+                                inst_id = bill.get('instId', '')
+                                side = 'BUY' if bill_type == '1' else 'SELL'
+                                
+                                # Convert instrument ID to display symbol (BTC-USDT -> BTC/USDT)
+                                symbol = inst_id.replace('-', '/') if inst_id else 'Unknown'
+                                
+                                # Determine transaction type based on instrument and bill details
+                                transaction_type = 'Trade'  # Default
+                                if inst_id:
+                                    if '-AUD' in inst_id:
+                                        transaction_type = 'Simple trade'  # Direct crypto/fiat (GALA-AUD, SOL-AUD)
+                                    elif 'USD-AUD' in inst_id or 'USDT-AUD' in inst_id:
+                                        transaction_type = 'Convert'  # Currency conversion
+                                    elif '-USDT' in inst_id or '-USD' in inst_id:
+                                        transaction_type = 'Trade'  # Traditional crypto trading (BTC-USDT, PEPE-USDT)
+                                
+                                # Parse bill data
+                                bill_id = bill.get('billId', '')
+                                timestamp_ms = int(bill.get('ts', 0))
+                                timestamp_dt = datetime.fromtimestamp(timestamp_ms / 1000, timezone.utc) if timestamp_ms > 0 else datetime.now(timezone.utc)
+                                
+                                # Get quantity and price from bill
+                                quantity = abs(float(bill.get('balChg', 0)))  # Balance change (absolute value)
+                                px = bill.get('px', '0')
+                                price = float(px) if px and px != '' else 0
+                                fee = abs(float(bill.get('fee', 0)))
+                                total_value = quantity * price if quantity and price else abs(float(bill.get('balChg', 0)))
+                                
+                                if quantity > 0:
+                                    formatted_trade = {
+                                        'id': bill_id,
+                                        'trade_number': len(all_trades) + 1,
+                                        'symbol': symbol,
+                                        'type': transaction_type,
+                                        'transaction_type': transaction_type,
+                                        'action': side,
+                                        'side': side,
+                                        'quantity': quantity,
+                                        'price': price,
+                                        'timestamp': timestamp_dt.isoformat() + 'Z',
+                                        'total_value': total_value,
+                                        'pnl': 0,
+                                        'strategy': '',
+                                        'order_id': '',
+                                        'fee': fee,
+                                        'fee_currency': bill.get('feeCcy', 'USDT'),
+                                        'source': 'okx_account_bills_ccxt'
+                                    }
+                                    all_trades.append(formatted_trade)
+                                    logger.info(f"Added bill trade: id={bill_id}, symbol={symbol}, type={transaction_type}, qty={quantity}, price={price}, timestamp={timestamp_dt}")
+                                else:
+                                    logger.warning(f"Skipped bill trade: id={bill_id}, qty={quantity}, price={price} (invalid data)")
+                                    
+                            except Exception as e:
+                                logger.error(f"Error processing bill: {e}")
+                                continue
+                    else:
+                        logger.info(f"OKX account bills API response: {response.get('code')} - {response.get('msg', 'No message')}")
+                        
+                except Exception as e:
+                    logger.warning(f"OKX privateGetAccountBills failed: {e}")
+                
+                # Method 2: OKX Trade Fills API (backup for executed trades) - same as OKXAdapter
+                try:
+                    # Get ALL fills without instType filter to capture all trade types (SPOT, conversions, etc.)
+                    fills_params = {
+                        'limit': '100'
+                        # Removed instType filter to get all trade types (Simple trades, Converts, etc.)
+                    }
+                    
+                    logger.info(f"Fetching ALL trade fills from OKX API with params: {fills_params}")
                     response = exchange.privateGetTradeFills(fills_params)
                     
                     if response.get('code') == '0' and response.get('data'):
@@ -1013,15 +1105,16 @@ def api_trade_history():
                 except Exception as e:
                     logger.warning(f"OKX privateGetTradeFills failed: {e}")
                 
-                # Method 2: OKX Orders History API (backup for different data coverage) - same as OKXAdapter
+                # Method 2: OKX Orders History API (backup for different data coverage) - same as OKXAdapter  
                 try:
+                    # Try SPOT orders first (most common)
                     orders_params = {
                         'limit': '100',
                         'state': 'filled',
-                        'instType': 'SPOT'
+                        'instType': 'SPOT'  # Required parameter
                     }
                     
-                    logger.info(f"Fetching order history from OKX API with params: {orders_params}")
+                    logger.info(f"Fetching SPOT filled orders from OKX API with params: {orders_params}")
                     response = exchange.privateGetTradeOrdersHistory(orders_params)
                     
                     if response.get('code') == '0' and response.get('data'):
