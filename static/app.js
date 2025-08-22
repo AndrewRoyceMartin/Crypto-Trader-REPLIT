@@ -3125,16 +3125,7 @@ class TradingApp {
             console.debug('Failed to fetch trade history:', e);
         }
 
-        try {
-            const status = await this.fetchWithCache('/api/status', 'status');
-            if (status?.recent_trades?.length) {
-                this.displayRecentTrades(status.recent_trades);
-                return;
-            }
-        } catch (e) {
-            console.debug('Failed to fetch trades from status:', e);
-        }
-
+        // Only show empty state if trade-history fails - don't overwrite with status data
         this.displayDashboardRecentTrades([]);
     }
 
