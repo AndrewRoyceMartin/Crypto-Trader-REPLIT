@@ -18,9 +18,10 @@ from datetime import datetime, timedelta, timezone
 
 # Only suppress specific pkg_resources deprecation warning - all other warnings will show
 warnings.filterwarnings('ignore', message='pkg_resources is deprecated as an API.*', category=DeprecationWarning)
-from typing import Any
+from typing import Any, Optional, Iterator
 from functools import wraps
 from flask import Flask, jsonify, request, render_template
+from flask.typing import ResponseReturnValue
 
 # Top-level imports only (satisfies linter)
 from src.services.portfolio_service import get_portfolio_service as _get_ps  # noqa: E402
@@ -139,7 +140,7 @@ def okx_ticker_pct_change_24h(inst_id: str, api_key: str = "", secret_key: str =
         logger.error(f"Failed to get OKX ticker for {inst_id}: {e}")
         return {'last': 0.0, 'open24h': 0.0, 'vol24h': 0.0, 'pct_24h': 0.0}
 
-def _date_range(start: datetime, end: datetime) -> list[datetime]:
+def _date_range(start: datetime, end: datetime) -> Iterator[datetime]:
     d = start
     while d.date() <= end.date():
         yield d
@@ -264,7 +265,7 @@ def get_public_price(pair: str) -> float:
             logger.error(f"Both native and CCXT price fetch failed for {pair}: {fallback_error}")
             return 0.0
 
-def create_initial_purchase_trades(mode: str, trade_type: str) -> dict[str, Any]:
+def create_initial_purchase_trades(mode: str, trade_type: str) -> list[dict[str, Any]]:
     """Create trade records using real OKX cost basis instead of $10 simulations."""
     try:
         initialize_system()
@@ -658,7 +659,7 @@ def render_full_dashboard() -> str:
 # COMPLETELY REMOVED: Old simulation endpoint that was overriding real OKX cost basis
 # This function was calculating real OKX data but then overriding it with $10 simulation values
 # Now using only the real OKX endpoint from web_interface.py
-def DISABLED_api_crypto_portfolio() -> tuple[Any, int]:
+def DISABLED_api_crypto_portfolio() -> ResponseReturnValue:
     """Get portfolio data - respects reset state."""
     if not warmup["done"]:
         return jsonify({"error": "System still initializing"}), 503
@@ -2468,7 +2469,7 @@ def api_export_ato() -> Any:
         logger.error(f"ATO export error: {e}")
         return jsonify({"error": str(e)}), 500
 
-def create_sample_portfolio_for_export() -> dict[str, Any]:
+def create_sample_portfolio_for_export() -> list[dict[str, Any]]:
     """Create sample portfolio data for ATO export using OKX simulation."""
     try:
         initialize_system()
