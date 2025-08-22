@@ -257,6 +257,9 @@ trading_state = {
     "type": None
 }
 
+# Bot state for compatibility
+bot_state: BotState = {"running": False}
+
 # Thread safety for shared state
 _state_lock = threading.RLock()
 
@@ -2791,16 +2794,30 @@ def api_current_holdings() -> ResponseReturnValue:
         # Get historical positions including sold ones
         all_positions = get_all_positions_including_sold(service)
         
-        return jsonify({
-            "success": True,
-            "holdings": holdings,
-            "all_positions": all_positions.get('positions', []),
-            "position_summary": {
+        # Fix: all_positions might be a list or dict, handle both cases
+        if isinstance(all_positions, dict):
+            positions = all_positions.get('positions', [])
+            position_summary = {
                 "total_positions": all_positions.get('total_positions', 0),
                 "active_positions": all_positions.get('active_positions', 0),
                 "sold_positions": all_positions.get('sold_positions', 0),
                 "reduced_positions": all_positions.get('reduced_positions', 0)
-            },
+            }
+        else:
+            # all_positions is a list
+            positions = all_positions if isinstance(all_positions, list) else []
+            position_summary = {
+                "total_positions": len(positions),
+                "active_positions": len(positions),
+                "sold_positions": 0,
+                "reduced_positions": 0
+            }
+        
+        return jsonify({
+            "success": True,
+            "holdings": holdings,
+            "all_positions": positions,
+            "position_summary": position_summary,
             "total_value": total_value,
             "total_holdings": len(holdings),
             "data_source": "okx_portfolio_service_with_native_prices",
