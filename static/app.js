@@ -2918,23 +2918,61 @@ class TradingApp {
             return;
         }
 
-        let html = '';
+        // Clear existing content safely
+        tableBody.textContent = '';
+        
         recent.forEach((t, idx) => {
             const pnlClass = (t.pnl || 0) >= 0 ? 'text-success' : 'text-danger';
             const sideBadge = t.side === 'BUY' ? 'badge bg-success' : 'badge bg-danger';
-            html += `
-                <tr>
-                    <td>${idx + 1}</td>
-                    <td class="text-start">${this.formatTradeTime(t.timestamp)}</td>
-                    <td><strong>${t.symbol}</strong></td>
-                    <td><span class="${sideBadge}">${t.side}</span></td>
-                    <td class="text-end">${this.num(t.quantity).toFixed(6)}</td>
-                    <td class="text-end">${this.formatCurrency(t.price)}</td>
-                    <td class="text-end ${pnlClass}">${this.formatCurrency(t.pnl)}</td>
-                </tr>
-            `;
+            
+            const row = document.createElement('tr');
+            
+            // Index cell
+            const indexCell = document.createElement('td');
+            indexCell.textContent = idx + 1;
+            row.appendChild(indexCell);
+            
+            // Time cell
+            const timeCell = document.createElement('td');
+            timeCell.className = 'text-start';
+            timeCell.textContent = this.formatTradeTime(t.timestamp);
+            row.appendChild(timeCell);
+            
+            // Symbol cell with strong formatting
+            const symbolCell = document.createElement('td');
+            const strongSymbol = document.createElement('strong');
+            strongSymbol.textContent = t.symbol;
+            symbolCell.appendChild(strongSymbol);
+            row.appendChild(symbolCell);
+            
+            // Side cell with badge
+            const sideCell = document.createElement('td');
+            const sideBadgeSpan = document.createElement('span');
+            sideBadgeSpan.className = sideBadge;
+            sideBadgeSpan.textContent = t.side;
+            sideCell.appendChild(sideBadgeSpan);
+            row.appendChild(sideCell);
+            
+            // Quantity cell
+            const quantityCell = document.createElement('td');
+            quantityCell.className = 'text-end';
+            quantityCell.textContent = this.num(t.quantity).toFixed(6);
+            row.appendChild(quantityCell);
+            
+            // Price cell
+            const priceCell = document.createElement('td');
+            priceCell.className = 'text-end';
+            priceCell.textContent = this.formatCurrency(t.price);
+            row.appendChild(priceCell);
+            
+            // PnL cell
+            const pnlCell = document.createElement('td');
+            pnlCell.className = `text-end ${pnlClass}`;
+            pnlCell.textContent = this.formatCurrency(t.pnl);
+            row.appendChild(pnlCell);
+            
+            tableBody.appendChild(row);
         });
-        tableBody.innerHTML = html;
     }
 
     applyTradeFilters() {
