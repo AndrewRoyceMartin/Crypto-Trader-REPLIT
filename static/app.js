@@ -130,24 +130,24 @@ class TradingApp {
     // Get crypto coin icon and name
     getCoinDisplay(symbol) {
         const coinInfo = {
-            'BTC': { icon: 'https://cryptoicons.org/api/icon/btc/32', name: 'Bitcoin', color: '#f7931a', type: 'image' },
-            'ETH': { icon: 'https://cryptoicons.org/api/icon/eth/32', name: 'Ethereum', color: '#627eea', type: 'image' },
-            'SOL': { icon: 'https://cryptoicons.org/api/icon/sol/32', name: 'Solana', color: '#9945ff', type: 'image' },
-            'TRX': { icon: 'https://cryptoicons.org/api/icon/trx/32', name: 'TRON', color: '#ff0013', type: 'image' },
-            'GALA': { icon: 'fas fa-gamepad', name: 'Gala Games', color: '#ff6600', type: 'font' },
-            'PEPE': { icon: 'https://cryptoicons.org/api/icon/pepe/32', name: 'Pepe', color: '#28a745', type: 'image' },
+            'BTC': { icon: 'https://assets.coingecko.com/coins/images/1/standard/bitcoin.png', name: 'Bitcoin', color: '#f7931a', type: 'image' },
+            'ETH': { icon: 'https://assets.coingecko.com/coins/images/279/standard/ethereum.png', name: 'Ethereum', color: '#627eea', type: 'image' },
+            'SOL': { icon: 'https://assets.coingecko.com/coins/images/4128/standard/solana.png', name: 'Solana', color: '#9945ff', type: 'image' },
+            'TRX': { icon: 'https://assets.coingecko.com/coins/images/1094/standard/tron-logo.png', name: 'TRON', color: '#ff0013', type: 'image' },
+            'GALA': { icon: 'https://assets.coingecko.com/coins/images/12493/standard/GALA-v2.png', name: 'Gala Games', color: '#ff6600', type: 'image' },
+            'PEPE': { icon: 'https://assets.coingecko.com/coins/images/29850/standard/pepe-token.jpeg', name: 'Pepe', color: '#28a745', type: 'image' },
             'AUD': { icon: 'fas fa-dollar-sign', name: 'Australian Dollar', color: '#007bff', type: 'font' },
-            'USDT': { icon: 'https://cryptoicons.org/api/icon/usdt/32', name: 'Tether USDT', color: '#26a17b', type: 'image' },
-            'USDC': { icon: 'https://cryptoicons.org/api/icon/usdc/32', name: 'USD Coin', color: '#2775ca', type: 'image' },
-            'DOGE': { icon: 'https://cryptoicons.org/api/icon/doge/32', name: 'Dogecoin', color: '#c2a633', type: 'image' },
-            'ADA': { icon: 'https://cryptoicons.org/api/icon/ada/32', name: 'Cardano', color: '#0033ad', type: 'image' },
-            'DOT': { icon: 'https://cryptoicons.org/api/icon/dot/32', name: 'Polkadot', color: '#e6007a', type: 'image' },
-            'MATIC': { icon: 'https://cryptoicons.org/api/icon/matic/32', name: 'Polygon', color: '#8247e5', type: 'image' },
-            'LINK': { icon: 'https://cryptoicons.org/api/icon/link/32', name: 'Chainlink', color: '#375bd2', type: 'image' },
-            'XRP': { icon: 'https://cryptoicons.org/api/icon/xrp/32', name: 'Ripple', color: '#23292f', type: 'image' },
-            'BNB': { icon: 'https://cryptoicons.org/api/icon/bnb/32', name: 'Binance Coin', color: '#f3ba2f', type: 'image' },
-            'SHIB': { icon: 'https://cryptoicons.org/api/icon/shib/32', name: 'Shiba Inu', color: '#ff6600', type: 'image' },
-            'AAVE': { icon: 'https://cryptoicons.org/api/icon/aave/32', name: 'Aave', color: '#b6509e', type: 'image' }
+            'USDT': { icon: 'https://assets.coingecko.com/coins/images/325/standard/Tether.png', name: 'Tether USDT', color: '#26a17b', type: 'image' },
+            'USDC': { icon: 'https://assets.coingecko.com/coins/images/6319/standard/usdc.png', name: 'USD Coin', color: '#2775ca', type: 'image' },
+            'DOGE': { icon: 'https://assets.coingecko.com/coins/images/5/standard/dogecoin.png', name: 'Dogecoin', color: '#c2a633', type: 'image' },
+            'ADA': { icon: 'https://assets.coingecko.com/coins/images/975/standard/cardano.png', name: 'Cardano', color: '#0033ad', type: 'image' },
+            'DOT': { icon: 'https://assets.coingecko.com/coins/images/12171/standard/polkadot.png', name: 'Polkadot', color: '#e6007a', type: 'image' },
+            'MATIC': { icon: 'https://assets.coingecko.com/coins/images/4713/standard/polygon.png', name: 'Polygon', color: '#8247e5', type: 'image' },
+            'LINK': { icon: 'https://assets.coingecko.com/coins/images/877/standard/chainlink-new-logo.png', name: 'Chainlink', color: '#375bd2', type: 'image' },
+            'XRP': { icon: 'https://assets.coingecko.com/coins/images/44/standard/xrp-symbol-white-128.png', name: 'Ripple', color: '#23292f', type: 'image' },
+            'BNB': { icon: 'https://assets.coingecko.com/coins/images/825/standard/bnb-icon2_2x.png', name: 'Binance Coin', color: '#f3ba2f', type: 'image' },
+            'SHIB': { icon: 'https://assets.coingecko.com/coins/images/11939/standard/shiba.png', name: 'Shiba Inu', color: '#ff6600', type: 'image' },
+            'AAVE': { icon: 'https://assets.coingecko.com/coins/images/12645/standard/AAVE.png', name: 'Aave', color: '#b6509e', type: 'image' }
         };
         
         return coinInfo[symbol] || { icon: 'fas fa-coins', name: symbol, color: '#6c757d', type: 'font' };
@@ -5092,24 +5092,24 @@ function createAvailablePositionRow(position) {
     // Get coin display info safely
     const getCoinDisplay = (symbol) => {
         const coinInfo = {
-            'BTC': { icon: 'https://cryptoicons.org/api/icon/btc/32', name: 'Bitcoin', color: '#f7931a', type: 'image' },
-            'ETH': { icon: 'https://cryptoicons.org/api/icon/eth/32', name: 'Ethereum', color: '#627eea', type: 'image' },
-            'SOL': { icon: 'https://cryptoicons.org/api/icon/sol/32', name: 'Solana', color: '#9945ff', type: 'image' },
-            'TRX': { icon: 'https://cryptoicons.org/api/icon/trx/32', name: 'TRON', color: '#ff0013', type: 'image' },
-            'GALA': { icon: 'fas fa-gamepad', name: 'Gala Games', color: '#ff6600', type: 'font' },
-            'PEPE': { icon: 'https://cryptoicons.org/api/icon/pepe/32', name: 'Pepe', color: '#28a745', type: 'image' },
+            'BTC': { icon: 'https://assets.coingecko.com/coins/images/1/standard/bitcoin.png', name: 'Bitcoin', color: '#f7931a', type: 'image' },
+            'ETH': { icon: 'https://assets.coingecko.com/coins/images/279/standard/ethereum.png', name: 'Ethereum', color: '#627eea', type: 'image' },
+            'SOL': { icon: 'https://assets.coingecko.com/coins/images/4128/standard/solana.png', name: 'Solana', color: '#9945ff', type: 'image' },
+            'TRX': { icon: 'https://assets.coingecko.com/coins/images/1094/standard/tron-logo.png', name: 'TRON', color: '#ff0013', type: 'image' },
+            'GALA': { icon: 'https://assets.coingecko.com/coins/images/12493/standard/GALA-v2.png', name: 'Gala Games', color: '#ff6600', type: 'image' },
+            'PEPE': { icon: 'https://assets.coingecko.com/coins/images/29850/standard/pepe-token.jpeg', name: 'Pepe', color: '#28a745', type: 'image' },
             'AUD': { icon: 'fas fa-dollar-sign', name: 'Australian Dollar', color: '#007bff', type: 'font' },
-            'USDT': { icon: 'https://cryptoicons.org/api/icon/usdt/32', name: 'Tether USDT', color: '#26a17b', type: 'image' },
-            'USDC': { icon: 'https://cryptoicons.org/api/icon/usdc/32', name: 'USD Coin', color: '#2775ca', type: 'image' },
-            'DOGE': { icon: 'https://cryptoicons.org/api/icon/doge/32', name: 'Dogecoin', color: '#c2a633', type: 'image' },
-            'ADA': { icon: 'https://cryptoicons.org/api/icon/ada/32', name: 'Cardano', color: '#0033ad', type: 'image' },
-            'DOT': { icon: 'https://cryptoicons.org/api/icon/dot/32', name: 'Polkadot', color: '#e6007a', type: 'image' },
-            'MATIC': { icon: 'https://cryptoicons.org/api/icon/matic/32', name: 'Polygon', color: '#8247e5', type: 'image' },
-            'LINK': { icon: 'https://cryptoicons.org/api/icon/link/32', name: 'Chainlink', color: '#375bd2', type: 'image' },
-            'XRP': { icon: 'https://cryptoicons.org/api/icon/xrp/32', name: 'Ripple', color: '#23292f', type: 'image' },
-            'BNB': { icon: 'https://cryptoicons.org/api/icon/bnb/32', name: 'Binance Coin', color: '#f3ba2f', type: 'image' },
-            'SHIB': { icon: 'https://cryptoicons.org/api/icon/shib/32', name: 'Shiba Inu', color: '#ff6600', type: 'image' },
-            'AAVE': { icon: 'https://cryptoicons.org/api/icon/aave/32', name: 'Aave', color: '#b6509e', type: 'image' }
+            'USDT': { icon: 'https://assets.coingecko.com/coins/images/325/standard/Tether.png', name: 'Tether USDT', color: '#26a17b', type: 'image' },
+            'USDC': { icon: 'https://assets.coingecko.com/coins/images/6319/standard/usdc.png', name: 'USD Coin', color: '#2775ca', type: 'image' },
+            'DOGE': { icon: 'https://assets.coingecko.com/coins/images/5/standard/dogecoin.png', name: 'Dogecoin', color: '#c2a633', type: 'image' },
+            'ADA': { icon: 'https://assets.coingecko.com/coins/images/975/standard/cardano.png', name: 'Cardano', color: '#0033ad', type: 'image' },
+            'DOT': { icon: 'https://assets.coingecko.com/coins/images/12171/standard/polkadot.png', name: 'Polkadot', color: '#e6007a', type: 'image' },
+            'MATIC': { icon: 'https://assets.coingecko.com/coins/images/4713/standard/polygon.png', name: 'Polygon', color: '#8247e5', type: 'image' },
+            'LINK': { icon: 'https://assets.coingecko.com/coins/images/877/standard/chainlink-new-logo.png', name: 'Chainlink', color: '#375bd2', type: 'image' },
+            'XRP': { icon: 'https://assets.coingecko.com/coins/images/44/standard/xrp-symbol-white-128.png', name: 'Ripple', color: '#23292f', type: 'image' },
+            'BNB': { icon: 'https://assets.coingecko.com/coins/images/825/standard/bnb-icon2_2x.png', name: 'Binance Coin', color: '#f3ba2f', type: 'image' },
+            'SHIB': { icon: 'https://assets.coingecko.com/coins/images/11939/standard/shiba.png', name: 'Shiba Inu', color: '#ff6600', type: 'image' },
+            'AAVE': { icon: 'https://assets.coingecko.com/coins/images/12645/standard/AAVE.png', name: 'Aave', color: '#b6509e', type: 'image' }
         };
         return coinInfo[symbol] || { icon: 'fas fa-coins', name: symbol, color: '#6c757d', type: 'font' };
     };
