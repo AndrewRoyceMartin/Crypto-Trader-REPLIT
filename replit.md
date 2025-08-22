@@ -53,6 +53,8 @@ The system utilizes a modular Flask-based web interface for live OKX trading, st
 
 **Enhanced Buy-Back Algorithm (August 2025):** Completely redesigned the aggressive 15% below exit price algorithm with a conservative adaptive approach - now uses 3% below exit price for patient entries, 2% below current price for moderate drops (4%+), and 1% below current for significant drops (8%+), includes time-based adjustments after 1-2 weeks, provides multiple buy signals (BUY READY, NEAR TARGET, WAIT), and delivers $11,384 more reasonable target prices compared to the old overly aggressive method, making buy-back opportunities actually achievable rather than unrealistic.
 
+**Latest UI Improvements (August 2025):** Added countdown timer next to Open Positions showing time until next data refresh with 90-second intervals and color warnings. Updated 24h P&L card to display clean 2 decimal places instead of 6+ decimal micro-values. Fixed sync test page display issue by removing production guard and completely redesigned test data display from raw JSON to clean HTML format with colored status indicators, organized visual cards showing test session details, and readable metrics.
+
 ## External Dependencies
 
 ### Market Data & Trading APIs
