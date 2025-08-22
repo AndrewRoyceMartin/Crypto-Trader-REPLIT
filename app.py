@@ -1040,12 +1040,23 @@ def filter_trades_by_timeframe(trades, timeframe):
 def api_recent_trades():
     """Get recent trades - redirect to working trade-history endpoint with limit."""
     try:
+        # Validate timeframe parameter against allowed values
         timeframe = request.args.get('timeframe', '7d')
-        limit = int(request.args.get('limit', 50))
+        allowed_timeframes = ['24h', '3d', '7d', '30d', '90d', '1y', 'all']
+        if timeframe not in allowed_timeframes:
+            timeframe = '7d'  # Default to safe value
+            
+        # Validate limit parameter
+        try:
+            limit = int(request.args.get('limit', 50))
+            if limit < 1 or limit > 10000:  # Reasonable bounds
+                limit = 50  # Default to safe value
+        except (ValueError, TypeError):
+            limit = 50  # Default to safe value
         
-        # Use internal redirect to working trade-history endpoint
+        # Use internal redirect to working trade-history endpoint with url_for
         from flask import redirect, url_for
-        return redirect(f"/api/trade-history?timeframe={timeframe}&limit={limit}")
+        return redirect(url_for('api_trade_history', timeframe=timeframe, limit=limit))
         
     except Exception as e:
         logger.error(f"Error redirecting recent trades: {e}")
