@@ -3291,7 +3291,15 @@ def execute_take_profit():
                             else:
                                 executed_trade['exchange_executed'] = False
                         except Exception as trade_error:
-                            logger.error(f"Error executing take profit trade for {symbol}: {trade_error}")
+                            error_msg = str(trade_error).lower()
+                            if 'minimum amount precision' in error_msg or 'minimum order size' in error_msg:
+                                executed_trade['error'] = f"Order size too small for OKX minimum requirements (${quantity * sell_price:.6f})"
+                                executed_trade['error_type'] = 'minimum_order_size'
+                                logger.warning(f"Take profit blocked for {symbol}: Position value ${quantity * sell_price:.6f} below OKX minimum order size")
+                            else:
+                                executed_trade['error'] = f"Trade execution failed: {trade_error}"
+                                executed_trade['error_type'] = 'execution_error'
+                                logger.error(f"Error executing take profit trade for {symbol}: {trade_error}")
                             executed_trade['exchange_executed'] = False
 
                         executed_trades.append(executed_trade)

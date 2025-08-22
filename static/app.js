@@ -3470,7 +3470,17 @@ async function executeTakeProfit() {
             const profit = data.total_profit || 0;
             const reinvested = data.reinvested_amount || 0;
             
-            if (trades.length > 0) {
+            // Check for minimum order size warnings
+            const minOrderWarnings = trades.filter(trade => trade.error_type === 'minimum_order_size') || [];
+            const successfulTrades = trades.filter(trade => trade.exchange_executed) || [];
+            
+            if (minOrderWarnings.length > 0) {
+                const symbols = minOrderWarnings.map(trade => trade.symbol).join(', ');
+                window.tradingApp.showToast(
+                    `⚠️ Take profit blocked for ${symbols}: Position size below OKX minimum order requirements. Consider accumulating larger positions for future trades.`, 
+                    'warning'
+                );
+            } else if (successfulTrades.length > 0) {
                 window.tradingApp.showToast(
                     `Take profit executed: ${trades.length} trades, $${profit.toFixed(2)} profit, $${reinvested.toFixed(2)} reinvested`, 
                     'success'
@@ -3479,17 +3489,18 @@ async function executeTakeProfit() {
                 // Refresh portfolio and trades data
                 await window.tradingApp.updateCryptoPortfolio();
                 await window.tradingApp.updateDashboard();
-                
-                // Show detailed results
-                console.log('Take profit results:', {
-                    trades_executed: trades.length,
-                    total_profit: profit,
-                    reinvested_amount: reinvested,
-                    trades: trades
-                });
-            } else {
+            } else if (trades.length === 0) {
                 window.tradingApp.showToast('No positions met take profit criteria (2% profit threshold)', 'info');
             }
+            
+            // Show detailed results
+            console.log('Take profit results:', {
+                trades_executed: trades.length,
+                total_profit: profit,
+                reinvested_amount: reinvested,
+                trades: trades,
+                min_order_warnings: minOrderWarnings.length
+            });
         } else {
             window.tradingApp.showToast(`Take profit failed: ${data.error}`, 'error');
         }
@@ -3537,7 +3548,12 @@ async function sellCrypto(symbol) {
             window.tradingApp.updateDashboard();
             window.tradingApp.updateCryptoPortfolio();
         } else {
-            window.tradingApp.showToast(`Sell failed: ${data.error}`, 'error');
+            const errorMsg = data.error?.toLowerCase() || '';
+            if (errorMsg.includes('minimum amount precision') || errorMsg.includes('minimum order size')) {
+                window.tradingApp.showToast(`⚠️ Sell blocked: Order size below OKX minimum requirements. Try selling a larger quantity.`, 'warning');
+            } else {
+                window.tradingApp.showToast(`Sell failed: ${data.error}`, 'error');
+            }
         }
     } catch (error) {
         window.tradingApp.showToast(`Error selling ${symbol}: ${error.message}`, 'error');
