@@ -2395,8 +2395,11 @@ def api_current_holdings():
                 "current_value": current_value,
                 "value": current_value,
                 "cost_basis": cost_basis,
+                "pnl": pnl_amount,  # Frontend expects 'pnl' field
                 "pnl_amount": pnl_amount,
                 "pnl_percent": pnl_percent,
+                "unrealized_pnl": pnl_amount,  # Consistent with portfolio service
+                "unrealized_pnl_percent": pnl_percent,  # Consistent with portfolio service
                 "allocation_percent": float(h.get('allocation_percent', 0) or 0),
                 "is_live": True,
                 "source": "okx_portfolio_service"

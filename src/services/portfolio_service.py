@@ -317,18 +317,38 @@ class PortfolioService:
                     okx_position_pnl = self._get_okx_position_pnl(symbol, positions_data)
                     if okx_position_pnl is not None:
                         pnl = okx_position_pnl
-                        pnl_percent = (pnl / cost_basis * 100.0) if cost_basis > 0 else 0.0
-                        self.logger.info(f"Using OKX position P&L for {symbol}: ${pnl:.2f}")
+                        if cost_basis > 0:
+                            pnl_percent = (pnl / cost_basis * 100.0)
+                        else:
+                            # For zero cost basis, treat all value as profit
+                            pnl_percent = 100.0 if pnl > 0 else 0.0
+                        self.logger.info(f"Using OKX position P&L for {symbol}: ${pnl:.2f} ({pnl_percent:.2f}%)")
                     else:
                         # Fallback to manual calculation if OKX P&L not available
                         pnl = current_value - cost_basis
-                        pnl_percent = (pnl / cost_basis * 100.0) if cost_basis > 0 else 0.0
-                        self.logger.debug(f"Using calculated P&L for {symbol}: ${pnl:.2f}")
+                        if cost_basis > 0:
+                            pnl_percent = (pnl / cost_basis * 100.0)
+                        else:
+                            # For zero cost basis (e.g., airdrops, rewards), calculate based on current value
+                            pnl_percent = 100.0 if current_value > 0 else 0.0
+                            pnl = current_value  # All current value is profit for zero cost basis
+                        self.logger.debug(f"Using calculated P&L for {symbol}: ${pnl:.2f} ({pnl_percent:.2f}%)")
                     has_position = quantity > 0.0
                 else:
                     # No real position - skip this symbol completely
                     continue
 
+                # Debug P&L values before adding to holdings
+                self.logger.info(f"Final P&L for {symbol}: pnl=${pnl:.8f}, pnl_percent={pnl_percent:.2f}%")
+                
+                # Ensure P&L values are properly handled for JSON serialization
+                try:
+                    pnl_safe = float(pnl) if pnl is not None and str(pnl) != 'nan' else 0.0
+                    pnl_percent_safe = float(pnl_percent) if pnl_percent is not None and str(pnl_percent) != 'nan' else 0.0
+                except (ValueError, TypeError):
+                    pnl_safe = 0.0
+                    pnl_percent_safe = 0.0
+                
                 holdings.append({
                     "rank": 1,  # Default rank for real holdings
                     "symbol": symbol,
@@ -339,9 +359,10 @@ class PortfolioService:
                     "current_value": float(current_value),
                     "cost_basis": float(cost_basis),
                     "avg_entry_price": float(avg_entry_price),
-                    "pnl": float(pnl),
-                    "pnl_percent": float(pnl_percent),
-                    "unrealized_pnl": float(pnl),
+                    "pnl": pnl_safe,
+                    "pnl_percent": pnl_percent_safe,
+                    "unrealized_pnl": pnl_safe,  # Ensure P&L values are consistently set
+                    "unrealized_pnl_percent": pnl_percent_safe,  # Add missing field
                     "is_live": True,  # real OKX holdings
                     "has_position": bool(has_position),
                 })
