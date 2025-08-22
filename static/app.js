@@ -1299,17 +1299,22 @@ class TradingApp {
         if (!holdingsTableBody) return;
         
         try {
-            // Clear existing rows
-            holdingsTableBody.innerHTML = '';
+            // Clear existing rows safely
+            holdingsTableBody.textContent = '';
             
             if (!holdings || holdings.length === 0) {
                 // Show empty state
                 const emptyRow = document.createElement('tr');
-                emptyRow.innerHTML = `
-                    <td colspan="7" class="text-center text-muted py-4">
-                        <i class="fas fa-coins me-2"></i>No holdings found
-                    </td>
-                `;
+                const emptyCell = document.createElement('td');
+                emptyCell.setAttribute('colspan', '7');
+                emptyCell.className = 'text-center text-muted py-4';
+                
+                const icon = document.createElement('i');
+                icon.className = 'fas fa-coins me-2';
+                emptyCell.appendChild(icon);
+                emptyCell.appendChild(document.createTextNode('No holdings found'));
+                
+                emptyRow.appendChild(emptyCell);
                 holdingsTableBody.appendChild(emptyRow);
                 return;
             }
@@ -1333,12 +1338,23 @@ class TradingApp {
             if (significantHoldings.length === 0) {
                 // Show message that small positions are moved to Available Positions
                 const infoRow = document.createElement('tr');
-                infoRow.innerHTML = `
-                    <td colspan="7" class="text-center text-muted py-4">
-                        <i class="fas fa-info-circle me-2"></i>No positions above $0.01 threshold
-                        <br><small>Small positions (< $0.01) are available in the Available Positions section</small>
-                    </td>
-                `;
+                const infoCell = document.createElement('td');
+                infoCell.setAttribute('colspan', '7');
+                infoCell.className = 'text-center text-muted py-4';
+                
+                const icon = document.createElement('i');
+                icon.className = 'fas fa-info-circle me-2';
+                infoCell.appendChild(icon);
+                infoCell.appendChild(document.createTextNode('No positions above $0.01 threshold'));
+                
+                const lineBreak = document.createElement('br');
+                infoCell.appendChild(lineBreak);
+                
+                const smallText = document.createElement('small');
+                smallText.textContent = 'Small positions (< $0.01) are available in the Available Positions section';
+                infoCell.appendChild(smallText);
+                
+                infoRow.appendChild(infoCell);
                 holdingsTableBody.appendChild(infoRow);
                 return;
             }
@@ -1354,40 +1370,85 @@ class TradingApp {
                 // Get coin display info
                 const coinDisplay = this.getCoinDisplay(holding.symbol);
                 
-                row.innerHTML = `
-                    <td>
-                        <div class="d-flex align-items-center">
-                            <div class="coin-icon me-2" style="color: ${coinDisplay.color};">
-                                <i class="${coinDisplay.icon}"></i>
-                            </div>
-                            <div>
-                                <strong>${holding.symbol}</strong>
-                                <br><small class="text-muted">${coinDisplay.name}</small>
-                            </div>
-                        </div>
-                    </td>
-                    <td>${holding.quantity.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 8 })}</td>
-                    <td>${this.formatCurrency(holding.current_price)}</td>
-                    <td>${this.formatCurrency(holding.current_value)}</td>
-                    <td class="${pnlClass}">
-                        ${this.formatSmallCurrency(holding.pnl_amount)}<br>
-                        <small>(${pnlSign}${holding.pnl_percent.toFixed(2)}%)</small>
-                    </td>
-                    <td>
-                        <div class="progress" style="height: 8px;">
-                            <div class="progress-bar bg-primary" 
-                                 style="width: ${Math.min(holding.allocation_percent, 100)}%"
-                                 title="${holding.allocation_percent.toFixed(1)}%">
-                            </div>
-                        </div>
-                        <small class="text-muted">${holding.allocation_percent.toFixed(1)}%</small>
-                    </td>
-                    <td>
-                        <span class="badge bg-light text-dark">
-                            <i class="fas fa-link me-1"></i>OKX
-                        </span>
-                    </td>
-                `;
+                // Create symbol cell with safe DOM methods
+                const symbolCell = document.createElement('td');
+                const flexDiv = document.createElement('div');
+                flexDiv.className = 'd-flex align-items-center';
+                
+                const iconDiv = document.createElement('div');
+                iconDiv.className = 'coin-icon me-2';
+                iconDiv.style.color = coinDisplay.color;
+                const icon = document.createElement('i');
+                icon.className = coinDisplay.icon;
+                iconDiv.appendChild(icon);
+                
+                const textDiv = document.createElement('div');
+                const symbolStrong = document.createElement('strong');
+                symbolStrong.textContent = holding.symbol;
+                textDiv.appendChild(symbolStrong);
+                textDiv.appendChild(document.createElement('br'));
+                const nameSmall = document.createElement('small');
+                nameSmall.className = 'text-muted';
+                nameSmall.textContent = coinDisplay.name;
+                textDiv.appendChild(nameSmall);
+                
+                flexDiv.appendChild(iconDiv);
+                flexDiv.appendChild(textDiv);
+                symbolCell.appendChild(flexDiv);
+                row.appendChild(symbolCell);
+                
+                // Quantity cell
+                const quantityCell = document.createElement('td');
+                quantityCell.textContent = holding.quantity.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 8 });
+                row.appendChild(quantityCell);
+                
+                // Price cell
+                const priceCell = document.createElement('td');
+                priceCell.textContent = this.formatCurrency(holding.current_price);
+                row.appendChild(priceCell);
+                
+                // Value cell
+                const valueCell = document.createElement('td');
+                valueCell.textContent = this.formatCurrency(holding.current_value);
+                row.appendChild(valueCell);
+                
+                // PnL cell
+                const pnlCell = document.createElement('td');
+                pnlCell.className = pnlClass;
+                pnlCell.textContent = this.formatSmallCurrency(holding.pnl_amount);
+                pnlCell.appendChild(document.createElement('br'));
+                const pnlSmall = document.createElement('small');
+                pnlSmall.textContent = `(${pnlSign}${holding.pnl_percent.toFixed(2)}%)`;
+                pnlCell.appendChild(pnlSmall);
+                row.appendChild(pnlCell);
+                
+                // Allocation cell
+                const allocationCell = document.createElement('td');
+                const progressDiv = document.createElement('div');
+                progressDiv.className = 'progress';
+                progressDiv.style.height = '8px';
+                const progressBar = document.createElement('div');
+                progressBar.className = 'progress-bar bg-primary';
+                progressBar.style.width = `${Math.min(holding.allocation_percent, 100)}%`;
+                progressBar.setAttribute('title', `${holding.allocation_percent.toFixed(1)}%`);
+                progressDiv.appendChild(progressBar);
+                allocationCell.appendChild(progressDiv);
+                const allocationSmall = document.createElement('small');
+                allocationSmall.className = 'text-muted';
+                allocationSmall.textContent = `${holding.allocation_percent.toFixed(1)}%`;
+                allocationCell.appendChild(allocationSmall);
+                row.appendChild(allocationCell);
+                
+                // Source cell
+                const sourceCell = document.createElement('td');
+                const sourceBadge = document.createElement('span');
+                sourceBadge.className = 'badge bg-light text-dark';
+                const sourceIcon = document.createElement('i');
+                sourceIcon.className = 'fas fa-link me-1';
+                sourceBadge.appendChild(sourceIcon);
+                sourceBadge.appendChild(document.createTextNode('OKX'));
+                sourceCell.appendChild(sourceBadge);
+                row.appendChild(sourceCell);
                 
                 holdingsTableBody.appendChild(row);
             });
@@ -1408,13 +1469,19 @@ class TradingApp {
             console.debug('Holdings table update failed:', error);
             
             // Fallback display
-            holdingsTableBody.innerHTML = `
-                <tr>
-                    <td colspan="7" class="text-center text-danger py-4">
-                        <i class="fas fa-exclamation-triangle me-2"></i>Error loading holdings
-                    </td>
-                </tr>
-            `;
+            holdingsTableBody.textContent = '';
+            const errorRow = document.createElement('tr');
+            const errorCell = document.createElement('td');
+            errorCell.setAttribute('colspan', '7');
+            errorCell.className = 'text-center text-danger py-4';
+            
+            const errorIcon = document.createElement('i');
+            errorIcon.className = 'fas fa-exclamation-triangle me-2';
+            errorCell.appendChild(errorIcon);
+            errorCell.appendChild(document.createTextNode('Error loading holdings'));
+            
+            errorRow.appendChild(errorCell);
+            holdingsTableBody.appendChild(errorRow);
         }
     }
     
@@ -1441,17 +1508,22 @@ class TradingApp {
         if (!tradesTableBody) return;
         
         try {
-            // Clear existing rows
-            tradesTableBody.innerHTML = '';
+            // Clear existing rows safely
+            tradesTableBody.textContent = '';
             
             if (!trades || trades.length === 0) {
                 // Show empty state
                 const emptyRow = document.createElement('tr');
-                emptyRow.innerHTML = `
-                    <td colspan="7" class="text-center text-muted py-4">
-                        <i class="fas fa-exchange-alt me-2"></i>No recent trades found
-                    </td>
-                `;
+                const emptyCell = document.createElement('td');
+                emptyCell.setAttribute('colspan', '7');
+                emptyCell.className = 'text-center text-muted py-4';
+                
+                const emptyIcon = document.createElement('i');
+                emptyIcon.className = 'fas fa-exchange-alt me-2';
+                emptyCell.appendChild(emptyIcon);
+                emptyCell.appendChild(document.createTextNode('No recent trades found'));
+                
+                emptyRow.appendChild(emptyCell);
                 tradesTableBody.appendChild(emptyRow);
                 
                 // Update summary with zeros
@@ -1483,25 +1555,59 @@ class TradingApp {
                 const exchange = trade.source === 'okx_direct' ? 'OKX' : trade.exchange || 'Internal';
                 const totalValue = trade.total_value || trade.value || (trade.quantity * trade.price);
                 
-                row.innerHTML = `
-                    <td>
-                        <span class="${sideClass}">
-                            <i class="fas ${sideIcon} me-1"></i>${trade.side}
-                        </span>
-                    </td>
-                    <td>
-                        <strong>${symbol}</strong>
-                        <br><small class="text-muted">${exchange}</small>
-                    </td>
-                    <td>${trade.quantity.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 8 })}</td>
-                    <td>${trade.price > 0 ? this.formatCurrency(trade.price) : 'N/A'}</td>
-                    <td>${this.formatCurrency(totalValue)}</td>
-                    <td>${trade.fee > 0 ? this.formatCurrency(trade.fee) : '-'}</td>
-                    <td>
-                        <div>${dateStr}</div>
-                        <small class="text-muted">${timeStr}</small>
-                    </td>
-                `;
+                // Side cell
+                const sideCell = document.createElement('td');
+                const sideSpan = document.createElement('span');
+                sideSpan.className = sideClass;
+                const sideIconElement = document.createElement('i');
+                sideIconElement.className = `fas ${sideIcon} me-1`;
+                sideSpan.appendChild(sideIconElement);
+                sideSpan.appendChild(document.createTextNode(trade.side));
+                sideCell.appendChild(sideSpan);
+                row.appendChild(sideCell);
+                
+                // Symbol cell
+                const symbolCell = document.createElement('td');
+                const symbolStrong = document.createElement('strong');
+                symbolStrong.textContent = symbol;
+                symbolCell.appendChild(symbolStrong);
+                symbolCell.appendChild(document.createElement('br'));
+                const exchangeSmall = document.createElement('small');
+                exchangeSmall.className = 'text-muted';
+                exchangeSmall.textContent = exchange;
+                symbolCell.appendChild(exchangeSmall);
+                row.appendChild(symbolCell);
+                
+                // Quantity cell
+                const quantityCell = document.createElement('td');
+                quantityCell.textContent = trade.quantity.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 8 });
+                row.appendChild(quantityCell);
+                
+                // Price cell
+                const priceCell = document.createElement('td');
+                priceCell.textContent = trade.price > 0 ? this.formatCurrency(trade.price) : 'N/A';
+                row.appendChild(priceCell);
+                
+                // Total value cell
+                const valueCell = document.createElement('td');
+                valueCell.textContent = this.formatCurrency(totalValue);
+                row.appendChild(valueCell);
+                
+                // Fee cell
+                const feeCell = document.createElement('td');
+                feeCell.textContent = trade.fee > 0 ? this.formatCurrency(trade.fee) : '-';
+                row.appendChild(feeCell);
+                
+                // Date/time cell
+                const dateCell = document.createElement('td');
+                const dateDiv = document.createElement('div');
+                dateDiv.textContent = dateStr;
+                dateCell.appendChild(dateDiv);
+                const timeSmall = document.createElement('small');
+                timeSmall.className = 'text-muted';
+                timeSmall.textContent = timeStr;
+                dateCell.appendChild(timeSmall);
+                row.appendChild(dateCell);
                 
                 tradesTableBody.appendChild(row);
             });
@@ -1513,13 +1619,19 @@ class TradingApp {
             console.debug('Trades table update failed:', error);
             
             // Fallback display
-            tradesTableBody.innerHTML = `
-                <tr>
-                    <td colspan="7" class="text-center text-danger py-4">
-                        <i class="fas fa-exclamation-triangle me-2"></i>Error loading trades
-                    </td>
-                </tr>
-            `;
+            tradesTableBody.textContent = '';
+            const errorRow = document.createElement('tr');
+            const errorCell = document.createElement('td');
+            errorCell.setAttribute('colspan', '7');
+            errorCell.className = 'text-center text-danger py-4';
+            
+            const errorIcon = document.createElement('i');
+            errorIcon.className = 'fas fa-exclamation-triangle me-2';
+            errorCell.appendChild(errorIcon);
+            errorCell.appendChild(document.createTextNode('Error loading trades'));
+            
+            errorRow.appendChild(errorCell);
+            tradesTableBody.appendChild(errorRow);
         }
     }
     
@@ -4047,27 +4159,70 @@ function updateRecentTradesPreview(trades) {
 
     const normalized = window.tradingApp?.normalizeTrades(trades || []) || [];
     if (!normalized.length) {
-        previewBody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-3">No recent trades</td></tr>';
+        previewBody.textContent = '';
+        const emptyRow = document.createElement('tr');
+        const emptyCell = document.createElement('td');
+        emptyCell.setAttribute('colspan', '7');
+        emptyCell.className = 'text-center text-muted py-3';
+        emptyCell.textContent = 'No recent trades';
+        emptyRow.appendChild(emptyCell);
+        previewBody.appendChild(emptyRow);
         return;
     }
 
-    let html = '';
+    previewBody.textContent = '';
     normalized.slice(0, 5).forEach((t, i) => {
         const pnlClass = (t.pnl || 0) >= 0 ? 'text-success' : 'text-danger';
         const sideBadge = t.side === 'BUY' ? 'badge bg-success' : 'badge bg-danger';
-        html += `
-            <tr>
-                <td>${i + 1}</td>
-                <td class="text-start">${window.tradingApp.formatTradeTime(t.timestamp)}</td>
-                <td><strong>${t.symbol}</strong></td>
-                <td><span class="${sideBadge}">${t.side}</span></td>
-                <td class="text-end">${window.tradingApp.num(t.quantity).toFixed(6)}</td>
-                <td class="text-end">${window.tradingApp.formatCurrency(t.price)}</td>
-                <td class="text-end ${pnlClass}">${window.tradingApp.formatCurrency(t.pnl)}</td>
-            </tr>
-        `;
+        
+        const row = document.createElement('tr');
+        
+        // Index cell
+        const indexCell = document.createElement('td');
+        indexCell.textContent = i + 1;
+        row.appendChild(indexCell);
+        
+        // Time cell
+        const timeCell = document.createElement('td');
+        timeCell.className = 'text-start';
+        timeCell.textContent = window.tradingApp.formatTradeTime(t.timestamp);
+        row.appendChild(timeCell);
+        
+        // Symbol cell
+        const symbolCell = document.createElement('td');
+        const symbolStrong = document.createElement('strong');
+        symbolStrong.textContent = t.symbol;
+        symbolCell.appendChild(symbolStrong);
+        row.appendChild(symbolCell);
+        
+        // Side cell
+        const sideCell = document.createElement('td');
+        const sideBadgeSpan = document.createElement('span');
+        sideBadgeSpan.className = sideBadge;
+        sideBadgeSpan.textContent = t.side;
+        sideCell.appendChild(sideBadgeSpan);
+        row.appendChild(sideCell);
+        
+        // Quantity cell
+        const quantityCell = document.createElement('td');
+        quantityCell.className = 'text-end';
+        quantityCell.textContent = window.tradingApp.num(t.quantity).toFixed(6);
+        row.appendChild(quantityCell);
+        
+        // Price cell
+        const priceCell = document.createElement('td');
+        priceCell.className = 'text-end';
+        priceCell.textContent = window.tradingApp.formatCurrency(t.price);
+        row.appendChild(priceCell);
+        
+        // PnL cell
+        const pnlCell = document.createElement('td');
+        pnlCell.className = `text-end ${pnlClass}`;
+        pnlCell.textContent = window.tradingApp.formatCurrency(t.pnl);
+        row.appendChild(pnlCell);
+        
+        previewBody.appendChild(row);
     });
-    previewBody.innerHTML = html;
 }
 
 // Quick Overview charts
