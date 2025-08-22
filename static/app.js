@@ -1793,7 +1793,10 @@ class TradingApp {
             const cardTitles = document.querySelectorAll('.performance-card-title');
             cardTitles.forEach(title => {
                 if (!title.textContent.includes('OKX')) {
-                    title.innerHTML += ' <small class="text-muted">(OKX Live)</small>';
+                    const smallElement = document.createElement('small');
+                    smallElement.className = 'text-muted';
+                    smallElement.textContent = ' (OKX Live)';
+                    title.appendChild(smallElement);
                 }
             });
             
@@ -2300,11 +2303,17 @@ class TradingApp {
             if (price <= targetBuyPrice)            { signal = 'BUY';  signalClass = 'bg-success'; }
             else if (price >= targetSellPrice)      { signal = 'SELL'; signalClass = 'bg-danger'; }
             else if (absolutePnl > 0.5)             { signal = 'TAKE PROFIT'; signalClass = 'bg-warning text-dark'; }
-            signalCell.innerHTML = `<span class="badge ${signalClass}">${signal}</span>`;
+            const badgeSpan = document.createElement('span');
+            badgeSpan.className = `badge ${signalClass}`;
+            badgeSpan.textContent = signal;
+            signalCell.appendChild(badgeSpan);
 
             const actionsCell = document.createElement('td');
             actionsCell.className = 'text-center';
-            actionsCell.innerHTML = '<button class="btn btn-sm btn-outline-primary">View</button>';
+            const viewButton = document.createElement('button');
+            viewButton.className = 'btn btn-sm btn-outline-primary';
+            viewButton.textContent = 'View';
+            actionsCell.appendChild(viewButton);
 
             const targetBuyCell = document.createElement('td');
             targetBuyCell.className = 'text-end';
@@ -2733,13 +2742,37 @@ class TradingApp {
             const container = document.querySelector('.container-fluid');
             if (container) container.insertBefore(warningBanner, container.firstChild);
         }
-        warningBanner.innerHTML = `
-            <i class="fas fa-exclamation-triangle me-2"></i>
-            <strong>CRITICAL: Price Data Unavailable</strong>
-            <br>Live price data could not be retrieved for: ${failedSymbols.join(', ')}
-            <br>This system NEVER uses simulated prices. Please check your internet connection or try refreshing.
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        `;
+        // Clear existing content
+        warningBanner.textContent = '';
+        
+        // Create elements safely
+        const icon = document.createElement('i');
+        icon.className = 'fas fa-exclamation-triangle me-2';
+        warningBanner.appendChild(icon);
+        
+        const strong = document.createElement('strong');
+        strong.textContent = 'CRITICAL: Price Data Unavailable';
+        warningBanner.appendChild(strong);
+        
+        warningBanner.appendChild(document.createElement('br'));
+        
+        const failedText = document.createTextNode('Live price data could not be retrieved for: ');
+        warningBanner.appendChild(failedText);
+        
+        const failedSymbolsText = document.createTextNode(failedSymbols.join(', '));
+        warningBanner.appendChild(failedSymbolsText);
+        
+        warningBanner.appendChild(document.createElement('br'));
+        
+        const finalText = document.createTextNode('This system NEVER uses simulated prices. Please check your internet connection or try refreshing.');
+        warningBanner.appendChild(finalText);
+        
+        const closeButton = document.createElement('button');
+        closeButton.type = 'button';
+        closeButton.className = 'btn-close';
+        closeButton.setAttribute('data-bs-dismiss', 'alert');
+        closeButton.setAttribute('aria-label', 'Close');
+        warningBanner.appendChild(closeButton);
     }
 
     // ---------- Charts ----------
@@ -2920,7 +2953,12 @@ class TradingApp {
                 element.style.textAlign = 'center';
                 element.style.padding = '20px';
                 element.style.minHeight = '200px';
-                element.innerHTML = `<div><i class="fas fa-chart-area me-2"></i>${message}</div>`;
+                const messageDiv = document.createElement('div');
+                const icon = document.createElement('i');
+                icon.className = 'fas fa-chart-area me-2';
+                messageDiv.appendChild(icon);
+                messageDiv.appendChild(document.createTextNode(message));
+                element.appendChild(messageDiv);
             }
         });
     }
@@ -3975,7 +4013,7 @@ function updatePortfolioSummaryUI(portfolioData) {
         const changeClass = change24h >= 0 ? "text-success" : "text-danger";
         const arrow = change24h >= 0 ? "↗" : "↘";
         const prefix = change24h >= 0 ? "+" : "";
-        change24hElement.innerHTML = `${arrow} ${prefix}${formatCurrency(change24h)}`;
+        change24hElement.textContent = `${arrow} ${prefix}${formatCurrency(change24h)}`;
         change24hElement.className = `mb-0 fw-bold ${changeClass}`;
     }
 
@@ -4030,43 +4068,80 @@ function updateHoldingsSummary(holdings) {
 
     const activeListEl = document.getElementById('active-holdings-list');
     if (activeListEl) {
+        activeListEl.textContent = '';
         if (active.length) {
             const sortedActive = [...active].sort((a, b) => (b.current_value || 0) - (a.current_value || 0));
-            activeListEl.innerHTML = sortedActive.map(h => {
+            sortedActive.forEach(h => {
                 const pnlClass = (h.pnl_percent || 0) >= 0 ? 'text-success' : 'text-danger';
                 const pnlIcon = (h.pnl_percent || 0) >= 0 ? '↗' : '↘';
-                return `
-                    <div class="d-flex justify-content-between align-items-center py-1 border-bottom">
-                        <div>
-                            <strong class="text-primary">${h.symbol}</strong>
-                            <small class="text-muted ms-2">${formatCurrency(h.current_value || 0)}</small>
-                        </div>
-                        <div class="${pnlClass}">
-                            <small>${pnlIcon} ${fmtFixed(h.pnl_percent || 0, 2)}%</small>
-                        </div>
-                    </div>
-                `;
-            }).join('');
+                
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'd-flex justify-content-between align-items-center py-1 border-bottom';
+                
+                const leftDiv = document.createElement('div');
+                const symbolStrong = document.createElement('strong');
+                symbolStrong.className = 'text-primary';
+                symbolStrong.textContent = h.symbol || '';
+                leftDiv.appendChild(symbolStrong);
+                
+                const valueSmall = document.createElement('small');
+                valueSmall.className = 'text-muted ms-2';
+                valueSmall.textContent = formatCurrency(h.current_value || 0);
+                leftDiv.appendChild(valueSmall);
+                
+                const rightDiv = document.createElement('div');
+                rightDiv.className = pnlClass;
+                const pnlSmall = document.createElement('small');
+                pnlSmall.textContent = `${pnlIcon} ${fmtFixed(h.pnl_percent || 0, 2)}%`;
+                rightDiv.appendChild(pnlSmall);
+                
+                itemDiv.appendChild(leftDiv);
+                itemDiv.appendChild(rightDiv);
+                activeListEl.appendChild(itemDiv);
+            });
         } else {
-            activeListEl.innerHTML = '<div class="text-muted text-center py-3">No active holdings</div>';
+            const noDataDiv = document.createElement('div');
+            noDataDiv.className = 'text-muted text-center py-3';
+            noDataDiv.textContent = 'No active holdings';
+            activeListEl.appendChild(noDataDiv);
         }
     }
 
     const soldListEl = document.getElementById('zero-holdings-list');
     if (soldListEl) {
+        soldListEl.textContent = '';
         if (sold.length) {
             const sortedSold = [...sold].sort((a, b) => (a.symbol || '').localeCompare(b.symbol || ''));
-            soldListEl.innerHTML = sortedSold.map(h => `
-                <div class="d-flex justify-content-between align-items-center py-1 border-bottom">
-                    <div>
-                        <strong class="text-warning">${h.symbol}</strong>
-                        <small class="text-muted ms-2">Sold out</small>
-                    </div>
-                    <div class="text-muted"><small>Last: ${formatCurrency(h.current_price || 0)}</small></div>
-                </div>
-            `).join('');
+            sortedSold.forEach(h => {
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'd-flex justify-content-between align-items-center py-1 border-bottom';
+                
+                const leftDiv = document.createElement('div');
+                const symbolStrong = document.createElement('strong');
+                symbolStrong.className = 'text-warning';
+                symbolStrong.textContent = h.symbol || '';
+                leftDiv.appendChild(symbolStrong);
+                
+                const statusSmall = document.createElement('small');
+                statusSmall.className = 'text-muted ms-2';
+                statusSmall.textContent = 'Sold out';
+                leftDiv.appendChild(statusSmall);
+                
+                const rightDiv = document.createElement('div');
+                rightDiv.className = 'text-muted';
+                const priceSmall = document.createElement('small');
+                priceSmall.textContent = `Last: ${formatCurrency(h.current_price || 0)}`;
+                rightDiv.appendChild(priceSmall);
+                
+                itemDiv.appendChild(leftDiv);
+                itemDiv.appendChild(rightDiv);
+                soldListEl.appendChild(itemDiv);
+            });
         } else {
-            soldListEl.innerHTML = '<div class="text-muted text-center py-3">No sold positions</div>';
+            const noDataDiv = document.createElement('div');
+            noDataDiv.className = 'text-muted text-center py-3';
+            noDataDiv.textContent = 'No sold positions';
+            soldListEl.appendChild(noDataDiv);
         }
     }
 }
