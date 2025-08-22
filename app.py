@@ -2435,39 +2435,100 @@ def api_current_holdings():
 
 @app.route('/api/available-positions')
 def api_available_positions():
-    """Get cryptocurrencies with zero balance ready for buy-back"""
+    """Get all available OKX assets that can be traded (current balances + rebuy opportunities)."""
     try:
         currency = request.args.get('currency', 'USD')
         logger.info(f"Fetching available positions with currency: {currency}")
         
-        # Get all trade history to find sold-out positions
+        # Get current balances from portfolio service
+        portfolio_service = get_portfolio_service()
+        portfolio_data = portfolio_service.get_portfolio_data()
+        
+        # Get raw OKX balances directly
+        okx_balance = portfolio_service.exchange.fetch_balance()
+        
+        available_positions = []
+        
+        # First, add all current OKX balances as available positions
+        logger.info(f"OKX balance keys: {list(okx_balance.keys())}")
+        
+        for symbol, balance_info in okx_balance.items():
+            if symbol in ['info', 'timestamp', 'datetime', 'free', 'used', 'total']:
+                continue  # Skip metadata fields
+                
+            total_balance = balance_info.get('total', 0)
+            if total_balance <= 0.000001:  # Skip very small balances
+                continue
+                
+            logger.info(f"Processing OKX asset: {symbol} with balance {total_balance}")
+            
+            try:
+                # Get current price if it's a crypto (skip fiat)
+                if symbol in ['AUD', 'USD', 'USDT', 'USDC']:
+                    current_price = 1.0  # Fiat assets
+                    buy_signal = "FIAT BALANCE"
+                    calculation_method = "fiat_currency"
+                else:
+                    # Get current crypto price
+                    market_symbol = f"{symbol}/USDT"
+                    current_ticker = portfolio_service.exchange.fetch_ticker(market_symbol)
+                    current_price = current_ticker.get('last', 0)
+                    buy_signal = "CURRENT HOLDING"
+                    calculation_method = "existing_balance"
+                
+                if current_price <= 0 and symbol not in ['AUD', 'USD', 'USDT', 'USDC']:
+                    continue
+                
+                available_position = {
+                    'symbol': symbol,
+                    'current_price': current_price,
+                    'current_balance': total_balance,
+                    'free_balance': balance_info.get('free', 0),
+                    'used_balance': balance_info.get('used', 0),
+                    'position_type': 'current_holding',
+                    'buy_signal': buy_signal,
+                    'calculation_method': calculation_method,
+                    'last_exit_price': 0,
+                    'target_buy_price': current_price,
+                    'price_difference': 0,
+                    'price_diff_percent': 0,
+                    'price_drop_from_exit': 0,
+                    'last_trade_date': '',
+                    'days_since_exit': 0
+                }
+                
+                available_positions.append(available_position)
+                logger.info(f"Added current holding: {symbol} with balance {total_balance}")
+                
+            except Exception as symbol_error:
+                logger.debug(f"Error processing current balance for {symbol}: {symbol_error}")
+                continue
+        
+        # Second, add rebuy opportunities for previously sold positions  
         from src.utils.database import DatabaseManager
         database_manager = DatabaseManager()
         trades_df = database_manager.get_trades()
         
-        if trades_df.empty:
-            return jsonify({
-                'success': True,
-                'available_positions': [],
-                'count': 0,
-                'message': 'No trade history found'
-            })
-        
-        # Convert DataFrame to list of dictionaries for easier processing
-        trades = trades_df.to_dict('records')
-        
-        # Group trades by symbol to find last exit trades
-        symbol_trades = {}
-        for trade in trades:
-            symbol = trade.get('symbol', '')
-            if symbol and symbol != 'SAMPLE':  # Skip sample data
-                if symbol not in symbol_trades:
-                    symbol_trades[symbol] = []
-                symbol_trades[symbol].append(trade)
-        
-        # Get current balances from portfolio service (working approach)
-        portfolio_service = get_portfolio_service()
-        portfolio_data = portfolio_service.get_portfolio_data()
+        if not trades_df.empty:
+            # Convert DataFrame to list of dictionaries for easier processing
+            trades = trades_df.to_dict('records')
+            
+            # Group trades by symbol to find last exit trades
+            symbol_trades = {}
+            for trade in trades:
+                symbol = trade.get('symbol', '')
+                if symbol and symbol != 'SAMPLE':  # Skip sample data
+                    if symbol not in symbol_trades:
+                        symbol_trades[symbol] = []
+                    symbol_trades[symbol].append(trade)
+            
+            # Extract current holdings for balance check
+            current_holdings = portfolio_data.get('holdings', [])
+            current_balances = {}
+            for holding in current_holdings:
+                symbol = holding.get('symbol', '')
+                if symbol:
+                    current_balances[symbol] = {'total': holding.get('quantity', 0)}
         
         # Extract current holdings for balance check
         current_holdings = portfolio_data.get('holdings', [])
