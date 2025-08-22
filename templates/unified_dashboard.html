@@ -267,6 +267,10 @@
                         <span class="icon icon-clock me-1"></span>
                         Last updated: <span id="positions-last-refresh">—</span>
                     </small>
+                    <small class="text-info">
+                        <span class="icon icon-timer me-1"></span>
+                        Next refresh: <span id="positions-next-refresh">—</span>
+                    </small>
                 </div>
                 <button class="btn btn-outline-primary btn-sm" onclick="refreshHoldingsData()" aria-label="Refresh positions data">
                     <span class="icon icon-refresh me-1"></span> Refresh
@@ -748,6 +752,7 @@
     // Positions refresh tracking
     let positionsLastRefreshTime = null;
     let positionsRefreshInterval = null;
+    const REFRESH_INTERVAL_MS = 90000; // 90 seconds between refreshes
     
     function updatePositionsRefreshTime() {
         positionsLastRefreshTime = new Date();
@@ -758,12 +763,13 @@
             clearInterval(positionsRefreshInterval);
         }
         
-        // Start new interval to update time display every 30 seconds
-        positionsRefreshInterval = setInterval(updatePositionsTimeDisplay, 30000);
+        // Start new interval to update time display every 5 seconds for smooth countdown
+        positionsRefreshInterval = setInterval(updatePositionsTimeDisplay, 5000);
     }
     
     function updatePositionsTimeDisplay() {
         const refreshDisplay = document.getElementById('positions-last-refresh');
+        const nextRefreshDisplay = document.getElementById('positions-next-refresh');
         if (!refreshDisplay || !positionsLastRefreshTime) return;
         
         const now = new Date();
@@ -771,12 +777,32 @@
         const diffMinutes = Math.floor(diffMs / 60000);
         const diffSeconds = Math.floor((diffMs % 60000) / 1000);
         
+        // Update "last refresh" display
         if (diffMinutes > 0) {
             refreshDisplay.textContent = `${diffMinutes}m ${diffSeconds}s ago`;
             refreshDisplay.className = diffMinutes > 2 ? 'text-warning' : 'text-muted';
         } else {
             refreshDisplay.textContent = `${diffSeconds}s ago`;
             refreshDisplay.className = 'text-success';
+        }
+        
+        // Update "next refresh" countdown
+        if (nextRefreshDisplay) {
+            const nextRefreshMs = REFRESH_INTERVAL_MS - diffMs;
+            if (nextRefreshMs > 0) {
+                const nextMinutes = Math.floor(nextRefreshMs / 60000);
+                const nextSeconds = Math.floor((nextRefreshMs % 60000) / 1000);
+                
+                if (nextMinutes > 0) {
+                    nextRefreshDisplay.textContent = `${nextMinutes}m ${nextSeconds}s`;
+                } else {
+                    nextRefreshDisplay.textContent = `${nextSeconds}s`;
+                }
+                nextRefreshDisplay.className = nextRefreshMs < 15000 ? 'text-warning' : 'text-info';
+            } else {
+                nextRefreshDisplay.textContent = 'now';
+                nextRefreshDisplay.className = 'text-success';
+            }
         }
     }
     
