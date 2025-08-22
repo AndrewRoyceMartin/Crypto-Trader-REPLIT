@@ -3309,7 +3309,7 @@ class TradingApp {
             const quantity = this.num(trade.quantity).toFixed(6);
             const pnl = Number.isFinite(trade.pnl) ? this.formatCurrency(trade.pnl) : this.formatCurrency(0);
             const pnlClass = (Number(trade.pnl) || 0) >= 0 ? 'text-success' : 'text-danger';
-            const sideUp = (trade.side || '').toUpperCase();
+            const sideUp = (trade.side || trade.action || '').toUpperCase();
             const totalValue = this.formatCurrency(trade.total_value || (trade.quantity * trade.price));
             const tradeNum = trade.trade_number || (index + 1);
             const symbol = trade.symbol.replace('/USDT', '').replace('/USD', ''); // Clean symbol
