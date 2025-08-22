@@ -4370,21 +4370,54 @@ function updatePositionTable(holdings) {
     filtered.forEach(h => {
         const pnlClass = (h.pnl_percent || 0) >= 0 ? 'text-success' : 'text-danger';
         const pnlSign = (h.pnl_percent || 0) >= 0 ? '+' : '';
-        tableBody.innerHTML += `
-            <tr>
-                <td><strong class="text-primary">${h.symbol}</strong></td>
-                <td class="small text-muted">${h.name}</td>
-                <td>${(h.quantity || 0).toFixed(8)}</td>
-                <td>$${(h.current_price || 0).toFixed(4)}</td>
-                <td>$${(h.current_value || 0).toFixed(2)}</td>
-                <td>${(h.allocation_percent || 0).toFixed(2)}%</td>
-                <td class="${pnlClass}">$${(h.unrealized_pnl || 0).toFixed(2)}</td>
-                <td class="${pnlClass}">${pnlSign}${(h.pnl_percent || 0).toFixed(2)}%</td>
-                <td>-</td>
-                <td>-</td>
-                <td><span class="badge bg-success">Active</span></td>
-            </tr>
-        `;
+        
+        // Create table row using safe DOM methods
+        const row = document.createElement('tr');
+        
+        // Symbol column with safe text insertion
+        const symbolCell = document.createElement('td');
+        const symbolStrong = document.createElement('strong');
+        symbolStrong.className = 'text-primary';
+        symbolStrong.textContent = h.symbol || '';
+        symbolCell.appendChild(symbolStrong);
+        row.appendChild(symbolCell);
+        
+        // Name column with safe text insertion
+        const nameCell = document.createElement('td');
+        nameCell.className = 'small text-muted';
+        nameCell.textContent = h.name || '';
+        row.appendChild(nameCell);
+        
+        // Numeric columns (safe as they go through toFixed())
+        const cells = [
+            (h.quantity || 0).toFixed(8),
+            '$' + (h.current_price || 0).toFixed(4),
+            '$' + (h.current_value || 0).toFixed(2),
+            (h.allocation_percent || 0).toFixed(2) + '%',
+            '$' + (h.unrealized_pnl || 0).toFixed(2),
+            pnlSign + (h.pnl_percent || 0).toFixed(2) + '%',
+            '-',
+            '-'
+        ];
+        
+        cells.forEach((cellText, index) => {
+            const cell = document.createElement('td');
+            if (index === 5 || index === 6) { // PnL columns
+                cell.className = pnlClass;
+            }
+            cell.textContent = cellText;
+            row.appendChild(cell);
+        });
+        
+        // Status column with badge
+        const statusCell = document.createElement('td');
+        const badge = document.createElement('span');
+        badge.className = 'badge bg-success';
+        badge.textContent = 'Active';
+        statusCell.appendChild(badge);
+        row.appendChild(statusCell);
+        
+        tableBody.appendChild(row);
     });
     const totalPositions = filtered.length;
     const totalValue = filtered.reduce((s, h) => s + (h.current_value || 0), 0);
