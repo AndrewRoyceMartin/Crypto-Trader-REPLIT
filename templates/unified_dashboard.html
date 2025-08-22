@@ -669,23 +669,19 @@
                     }
                 }
                 
-                // Update P&L with proper formatting
+                // Update P&L with proper formatting - 2 decimal places
                 const dayPnl = document.getElementById('okx-day-pnl');
                 const dayPnlPercent = document.getElementById('okx-day-pnl-percent');
                 if (dayPnl && portfolioData.total_pnl !== undefined) {
                     const pnlValue = portfolioData.total_pnl || 0;
                     
-                    // Format P&L value with proper decimals for micro amounts
-                    if (Math.abs(pnlValue) < 0.000001 && pnlValue !== 0) {
-                        dayPnl.textContent = new Intl.NumberFormat("en-US", { 
-                            style: "currency", 
-                            currency: "USD",
-                            minimumFractionDigits: 8,
-                            maximumFractionDigits: 12
-                        }).format(pnlValue);
-                    } else {
-                        dayPnl.textContent = `$${pnlValue.toFixed(6)}`;
-                    }
+                    // Format P&L value with 2 decimal places for clean display
+                    dayPnl.textContent = new Intl.NumberFormat("en-US", { 
+                        style: "currency", 
+                        currency: "USD",
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2
+                    }).format(pnlValue);
                     dayPnl.className = `value ${pnlValue >= 0 ? 'text-success' : 'text-danger'}`;
                     
                     if (dayPnlPercent && portfolioData.total_pnl_percent !== undefined) {
