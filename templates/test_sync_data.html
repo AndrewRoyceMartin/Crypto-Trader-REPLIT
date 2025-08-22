@@ -93,7 +93,7 @@
                     <div class="col-md-3">
                         <div class="card">
                             <div class="card-body text-center">
-                                <h5 class="card-title">Tests Run</h5>
+                                <h5 class="card-title" data-bs-toggle="tooltip" data-bs-placement="top" title="Total number of OKX sync tests executed in the current session">Tests Run</h5>
                                 <div class="metric-highlight text-primary" id="tests-run">0</div>
                             </div>
                         </div>
@@ -101,7 +101,7 @@
                     <div class="col-md-3">
                         <div class="card">
                             <div class="card-body text-center">
-                                <h5 class="card-title">Passed</h5>
+                                <h5 class="card-title" data-bs-toggle="tooltip" data-bs-placement="top" title="Number of tests that completed successfully without errors or discrepancies">Passed</h5>
                                 <div class="metric-highlight text-success" id="tests-passed">0</div>
                             </div>
                         </div>
@@ -109,7 +109,7 @@
                     <div class="col-md-3">
                         <div class="card">
                             <div class="card-body text-center">
-                                <h5 class="card-title">Failed</h5>
+                                <h5 class="card-title" data-bs-toggle="tooltip" data-bs-placement="top" title="Number of tests that detected synchronization issues or calculation errors">Failed</h5>
                                 <div class="metric-highlight text-danger" id="tests-failed">0</div>
                             </div>
                         </div>
@@ -117,7 +117,7 @@
                     <div class="col-md-3">
                         <div class="card">
                             <div class="card-body text-center">
-                                <h5 class="card-title">Last Run</h5>
+                                <h5 class="card-title" data-bs-toggle="tooltip" data-bs-placement="top" title="Timestamp of the most recent test execution">Last Run</h5>
                                 <div class="metric-highlight text-muted" id="last-run">Never</div>
                             </div>
                         </div>
@@ -249,6 +249,9 @@
 
             html += '</div>';
             container.innerHTML = html;
+            
+            // Initialize tooltips for the test cards
+            initializeTooltips();
 
             // Create a nicely formatted HTML display instead of raw JSON
             const rawDataDiv = document.getElementById('raw-data');
@@ -273,24 +276,43 @@
                         <small class="text-muted">Status: <span class="text-${statusColor}">${result.status.toUpperCase()}</span></small>
                 `;
                 
-                // Add specific details based on test type
+                // Add specific details based on test type with tooltips
                 if (result.perfect_matches !== undefined) {
-                    htmlOutput += `<br><small>✓ Perfect Matches: ${result.perfect_matches}, Mismatches: ${result.mismatches || 0}</small>`;
+                    htmlOutput += `<br><small>✓ 
+                        <span data-bs-toggle="tooltip" data-bs-placement="top" title="Perfect Matches: Holdings quantities and values that exactly match between OKX API and dashboard display. Mismatches: Discrepancies that could indicate sync issues.">
+                            Perfect Matches: ${result.perfect_matches}, Mismatches: ${result.mismatches || 0}
+                        </span>
+                    </small>`;
                 }
                 if (result.calculation_accuracy !== undefined) {
-                    htmlOutput += `<br><small>✓ Calculation Accuracy: ${result.calculation_accuracy}%</small>`;
+                    htmlOutput += `<br><small>✓ 
+                        <span data-bs-toggle="tooltip" data-bs-placement="top" title="Percentage of P&L calculations that match OKX's native values within acceptable tolerance. 100% indicates perfect mathematical accuracy.">
+                            Calculation Accuracy: ${result.calculation_accuracy}%
+                        </span>
+                    </small>`;
                 }
                 if (result.data_is_recent !== undefined) {
-                    htmlOutput += `<br><small>✓ Data Recent: ${result.data_is_recent ? 'Yes' : 'No'}, Live Holdings: ${result.holdings_marked_live ? 'Yes' : 'No'}</small>`;
+                    htmlOutput += `<br><small>✓ 
+                        <span data-bs-toggle="tooltip" data-bs-placement="top" title="Data Recent: Confirms prices are fetched within the last few minutes. Live Holdings: Ensures position data comes directly from OKX rather than cache.">
+                            Data Recent: ${result.data_is_recent ? 'Yes' : 'No'}, Live Holdings: ${result.holdings_marked_live ? 'Yes' : 'No'}
+                        </span>
+                    </small>`;
                 }
                 if (result.account_accessible !== undefined) {
-                    htmlOutput += `<br><small>✓ Account Access: ${result.account_accessible ? 'Yes' : 'No'}, Positions: ${result.active_positions}</small>`;
+                    htmlOutput += `<br><small>✓ 
+                        <span data-bs-toggle="tooltip" data-bs-placement="top" title="Account Access: Verifies API can connect to OKX futures/margin endpoints. Positions: Current number of active derivative positions.">
+                            Account Access: ${result.account_accessible ? 'Yes' : 'No'}, Positions: ${result.active_positions}
+                        </span>
+                    </small>`;
                 }
                 
                 htmlOutput += `</div>`;
             });
             
             rawDataDiv.innerHTML = htmlOutput;
+            
+            // Initialize Bootstrap tooltips for all elements
+            initializeTooltips();
         }
 
         function getTestDisplayName(testName) {
@@ -315,15 +337,17 @@
 
             let content = `<p class="text-muted mb-3">${getTestDescription(testName)}</p>`;
 
-            // Add specific metrics based on test type
+            // Add specific metrics based on test type with tooltips
             if (result.perfect_matches !== undefined) {
                 content += `
                     <div class="row">
                         <div class="col-6">
-                            <strong>Perfect Matches:</strong> <span class="text-success">${result.perfect_matches}</span>
+                            <strong data-bs-toggle="tooltip" data-bs-placement="top" title="Number of holdings where quantities and values exactly match between OKX API and dashboard">Perfect Matches:</strong> 
+                            <span class="text-success">${result.perfect_matches}</span>
                         </div>
                         <div class="col-6">
-                            <strong>Mismatches:</strong> <span class="text-danger">${result.mismatches || 0}</span>
+                            <strong data-bs-toggle="tooltip" data-bs-placement="top" title="Holdings with discrepancies that could indicate synchronization issues">Mismatches:</strong> 
+                            <span class="text-danger">${result.mismatches || 0}</span>
                         </div>
                     </div>
                 `;
@@ -333,13 +357,13 @@
                 content += `
                     <div class="row">
                         <div class="col-6">
-                            <strong>Live Updates:</strong> 
+                            <strong data-bs-toggle="tooltip" data-bs-placement="top" title="Confirms that data timestamps are different between API calls, indicating fresh data retrieval rather than cached responses">Live Updates:</strong> 
                             <span class="${result.timestamps_different ? 'live-indicator' : 'cached-indicator'}">
                                 ${result.timestamps_different ? 'YES' : 'NO'}
                             </span>
                         </div>
                         <div class="col-6">
-                            <strong>Holdings Live:</strong> 
+                            <strong data-bs-toggle="tooltip" data-bs-placement="top" title="Ensures position data is marked as live from OKX rather than cached or estimated values">Holdings Live:</strong> 
                             <span class="${result.holdings_marked_live ? 'live-indicator' : 'cached-indicator'}">
                                 ${result.holdings_marked_live ? 'YES' : 'NO'}
                             </span>
@@ -352,10 +376,12 @@
                 content += `
                     <div class="row">
                         <div class="col-6">
-                            <strong>Accuracy:</strong> <span class="text-primary">${result.calculation_accuracy}%</span>
+                            <strong data-bs-toggle="tooltip" data-bs-placement="top" title="Percentage of P&L calculations that match OKX's native values within acceptable tolerance. 100% indicates perfect mathematical accuracy">Accuracy:</strong> 
+                            <span class="text-primary">${result.calculation_accuracy}%</span>
                         </div>
                         <div class="col-6">
-                            <strong>Test Cases:</strong> ${result.test_cases || 0}
+                            <strong data-bs-toggle="tooltip" data-bs-placement="top" title="Number of individual calculations tested for accuracy against OKX's native P&L values">Test Cases:</strong> 
+                            ${result.test_cases || 0}
                         </div>
                     </div>
                 `;
@@ -375,8 +401,25 @@
             return descriptions[testName] || 'Test validation for OKX data synchronization.';
         }
 
-        // Auto-run tests on page load
+        // Initialize Bootstrap tooltips
+        function initializeTooltips() {
+            // Remove any existing tooltips first
+            const existingTooltips = document.querySelectorAll('.tooltip');
+            existingTooltips.forEach(tooltip => tooltip.remove());
+            
+            // Initialize new tooltips
+            const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl, {
+                    delay: { show: 300, hide: 100 },
+                    placement: 'top'
+                });
+            });
+        }
+
+        // Auto-run tests on page load and initialize tooltips
         document.addEventListener('DOMContentLoaded', function() {
+            initializeTooltips();
             setTimeout(runSyncTests, 1000);
         });
     </script>
