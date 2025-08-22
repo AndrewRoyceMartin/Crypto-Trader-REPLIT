@@ -45,6 +45,9 @@ The system utilizes a modular Flask-based web interface for live OKX trading, st
 -   **Available Positions Enhancement:** Displays a comprehensive list of 68+ major tradeable cryptocurrencies.
 -   **Stable Target Price System:** Implements locked target buy prices that prevent exponential recalculation, ensuring orders can actually be executed. Target prices lock for 24 hours and only recalculate if market drops >5% from original price.
 -   **Target Price Manager:** SQLite-based persistence for target prices with tier-based discounting (Large cap: 3-8%, Mid cap: 5-12%, Gaming/Meta: 8-15%, Meme coins: 10-20%).
+-   **Centralized Exchange Access:** A `get_reusable_exchange()` function prioritizes using the existing portfolio service exchange instance to eliminate redundant re-authentication and market loading calls per request, improving performance and reliability.
+-   **Environment-Dependent CSP:** Content Security Policy headers are dynamically configured for development vs production environments, allowing localhost connections for HMR during development while maintaining strict security in production.
+-   **Thread-Safe State Management:** All shared state operations use centralized thread-safe helpers (`_set_warmup()`, `_set_bot_state()`, `_get_warmup_done()`, `_get_warmup_error()`) with RLock protection to prevent race conditions and ensure data consistency across concurrent requests.
 
 ## External Dependencies
 

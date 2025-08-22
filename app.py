@@ -94,6 +94,41 @@ def okx_sign(secret_key: str, timestamp: str, method: str, path: str, body: str 
 # Global HTTP session for connection reuse
 _requests_session = requests.Session()
 
+def get_reusable_exchange():
+    """Get centralized CCXT exchange instance to avoid re-auth and load_markets() calls."""
+    try:
+        service = get_portfolio_service()
+        if (hasattr(service, 'exchange') and hasattr(service.exchange, 'exchange') and 
+            service.exchange.exchange is not None):
+            logger.debug("Reusing existing portfolio service exchange instance")
+            return service.exchange.exchange
+    except Exception as e:
+        logger.debug(f"Could not reuse portfolio service exchange: {e}")
+    
+    # Fallback to creating new instance (should be rare)
+    logger.warning("Creating new ccxt exchange instance - portfolio service unavailable")
+    okx_api_key = os.getenv("OKX_API_KEY")
+    okx_secret = os.getenv("OKX_SECRET_KEY")
+    okx_passphrase = os.getenv("OKX_PASSPHRASE")
+    
+    if not all([okx_api_key, okx_secret, okx_passphrase]):
+        raise RuntimeError("OKX API credentials required")
+    
+    import ccxt
+    exchange = ccxt.okx({
+        'apiKey': okx_api_key,
+        'secret': okx_secret,
+        'password': okx_passphrase,
+        'timeout': 15000,
+        'enableRateLimit': True,
+        'sandbox': False
+    })
+    exchange.set_sandbox_mode(False)
+    if hasattr(exchange, 'headers') and exchange.headers:
+        exchange.headers.pop('x-simulated-trading', None)
+    exchange.load_markets()
+    return exchange
+
 def _okx_base_url() -> str:
     # Prefer www.okx.com over app.okx.com unless explicitly overridden
     raw = os.getenv("OKX_HOSTNAME") or os.getenv("OKX_REGION") or "www.okx.com"
@@ -238,6 +273,16 @@ def _get_bot_running() -> bool:
     """Thread-safe bot running state read."""
     with _state_lock:
         return bot_state.get("running", False)
+
+def _get_warmup_done() -> bool:
+    """Thread-safe warmup done state read."""
+    with _state_lock:
+        return warmup.get("done", False)
+
+def _get_warmup_error() -> str:
+    """Thread-safe warmup error state read."""
+    with _state_lock:
+        return warmup.get("error", "")
 # Portfolio state - starts empty, only populates when trading begins
 portfolio_initialized = False
 # Recent initial trades for display
@@ -426,37 +471,7 @@ def get_df(symbol: str, timeframe: str) -> Optional[list[dict[str, float]]]:
         return df
 
     try:
-        # Try to use existing connected exchange instance first
-        service = get_portfolio_service()
-        ex = None
-        
-        if (hasattr(service, 'exchange') and hasattr(service.exchange, 'exchange') and 
-            service.exchange.exchange is not None):
-            ex = service.exchange.exchange
-            logger.debug("Using existing exchange instance (no market reload needed)")
-        else:
-            # Fallback to creating new instance only when necessary
-            import ccxt
-            okx_api_key = os.getenv("OKX_API_KEY", "")
-            okx_secret = os.getenv("OKX_SECRET_KEY", "")
-            okx_pass = os.getenv("OKX_PASSPHRASE", "")
-            
-            if not (okx_api_key and okx_secret and okx_pass):
-                raise RuntimeError("OKX API credentials required. No simulation mode available.")
-                
-            ex = ccxt.okx({
-                'apiKey': okx_api_key,
-                'secret': okx_secret,
-                'password': okx_pass,
-                'sandbox': False,
-                'enableRateLimit': True
-            })
-            # Force live trading mode
-            ex.set_sandbox_mode(False)
-            if ex.headers:
-                ex.headers.pop('x-simulated-trading', None)
-            ex.load_markets()
-            logger.debug("Created new exchange instance with market reload")
+        ex = get_reusable_exchange()
 
         ohlcv = ex.fetch_ohlcv(symbol, timeframe=timeframe, limit=200)
         # Convert to basic structure without pandas dependency
@@ -568,7 +583,9 @@ def health() -> ResponseReturnValue:
 @app.route("/ready")
 def ready() -> ResponseReturnValue:
     """UI can poll this and show a spinner until ready."""
-    return (jsonify({"ready": True, **warmup}), 200) if warmup["done"] else (jsonify({"ready": False, **warmup}), 503)
+    with _state_lock:
+        warmup_copy = warmup.copy()
+    return (jsonify({"ready": True, **warmup_copy}), 200) if warmup_copy["done"] else (jsonify({"ready": False, **warmup_copy}), 503)
 
 @app.route("/api/price")
 def api_price() -> ResponseReturnValue:
@@ -583,41 +600,7 @@ def api_price() -> ResponseReturnValue:
 
         df = cache_get(sym, tf)
         if df is None or len(df) < lim:
-            # Try to use existing connected exchange instance first
-            service = get_portfolio_service()
-            ex = None
-            
-            if (hasattr(service, 'exchange') and hasattr(service.exchange, 'exchange') and 
-                service.exchange.exchange is not None):
-                ex = service.exchange.exchange
-                logger.debug("Using existing exchange instance (no market reload needed)")
-            else:
-                # Fallback to creating new instance only when necessary
-                import ccxt
-                okx_api_key = os.getenv("OKX_API_KEY", "")
-                okx_secret = os.getenv("OKX_SECRET_KEY", "")
-                okx_pass = os.getenv("OKX_PASSPHRASE", "")
-                
-                if not (okx_api_key and okx_secret and okx_pass):
-                    raise RuntimeError("OKX API credentials required. No simulation mode available.")
-                    
-                # 🌍 Regional endpoint support (2024 OKX update)
-                hostname = os.getenv("OKX_HOSTNAME") or os.getenv("OKX_REGION") or "www.okx.com"
-                
-                ex = ccxt.okx({
-                    'apiKey': okx_api_key,
-                    'secret': okx_secret,
-                    'password': okx_pass,
-                    'hostname': hostname,  # Regional endpoint support
-                    'sandbox': False,
-                    'enableRateLimit': True
-                })
-                # Force live trading mode
-                ex.set_sandbox_mode(False)
-                if ex.headers:
-                    ex.headers.pop('x-simulated-trading', None)
-                ex.load_markets()
-                logger.debug("Created new exchange instance with market reload")
+            ex = get_reusable_exchange()
                 
             ohlcv = ex.fetch_ohlcv(sym, timeframe=tf, limit=lim)
             # Convert to basic structure without pandas dependency
@@ -649,10 +632,10 @@ def index() -> str:
     """Main dashboard route with ultra-fast loading."""
     start_warmup()
 
-    if warmup["done"] and not warmup["error"]:
+    if _get_warmup_done() and not _get_warmup_error():
         return render_full_dashboard()
-    elif warmup["done"] and warmup["error"]:
-        return render_loading_skeleton(f"System Error: {warmup['error']}", error=True)
+    elif _get_warmup_done() and _get_warmup_error():
+        return render_loading_skeleton(f"System Error: {_get_warmup_error()}", error=True)
     else:
         return render_loading_skeleton()
 
@@ -661,10 +644,10 @@ def portfolio() -> str:
     """Dedicated portfolio page with comprehensive KPIs, allocation charts, and position management"""
     start_warmup()
 
-    if warmup["done"] and not warmup["error"]:
+    if _get_warmup_done() and not _get_warmup_error():
         return render_portfolio_page()
-    elif warmup["done"] and warmup["error"]:
-        return render_loading_skeleton(f"System Error: {warmup['error']}", error=True)
+    elif _get_warmup_done() and _get_warmup_error():
+        return render_loading_skeleton(f"System Error: {_get_warmup_error()}", error=True)
     else:
         return render_loading_skeleton()
 
@@ -684,10 +667,10 @@ def performance() -> str:
     """Dedicated performance analytics page with comprehensive charts and metrics"""
     start_warmup()
 
-    if warmup["done"] and not warmup["error"]:
+    if _get_warmup_done() and not _get_warmup_error():
         return render_performance_page()
-    elif warmup["done"] and warmup["error"]:
-        return render_loading_skeleton(f"System Error: {warmup['error']}", error=True)
+    elif _get_warmup_done() and _get_warmup_error():
+        return render_loading_skeleton(f"System Error: {_get_warmup_error()}", error=True)
     else:
         return render_loading_skeleton()
 
@@ -707,10 +690,10 @@ def holdings() -> str:
     """Dedicated holdings page showing current positions and portfolio analytics"""
     start_warmup()
 
-    if warmup["done"] and not warmup["error"]:
+    if _get_warmup_done() and not _get_warmup_error():
         return render_holdings_page()
-    elif warmup["done"] and warmup["error"]:
-        return render_loading_skeleton(f"System Error: {warmup['error']}", error=True)
+    elif _get_warmup_done() and _get_warmup_error():
+        return render_loading_skeleton(f"System Error: {_get_warmup_error()}", error=True)
     else:
         return render_loading_skeleton()
 
@@ -730,10 +713,10 @@ def trades() -> str:
     """Dedicated trades page showing trading history with analytics"""
     start_warmup()
 
-    if warmup["done"] and not warmup["error"]:
+    if _get_warmup_done() and not _get_warmup_error():
         return render_trades_page()
-    elif warmup["done"] and warmup["error"]:
-        return render_loading_skeleton(f"System Error: {warmup['error']}", error=True)
+    elif _get_warmup_done() and _get_warmup_error():
+        return render_loading_skeleton(f"System Error: {_get_warmup_error()}", error=True)
     else:
         return render_loading_skeleton()
 
@@ -777,7 +760,7 @@ def render_full_dashboard() -> str:
 # Now using only the real OKX endpoint from web_interface.py
 def DISABLED_api_crypto_portfolio() -> ResponseReturnValue:
     """Get portfolio data - respects reset state."""
-    if not warmup["done"]:
+    if not _get_warmup_done():
         return jsonify({"error": "System still initializing"}), 503
 
     try:
@@ -2443,7 +2426,7 @@ server_start_time = datetime.now(LOCAL_TZ)
 @app.route("/api/live-prices")
 def api_live_prices() -> ResponseReturnValue:
     """Get live cryptocurrency prices from OKX simulation."""
-    if not warmup["done"]:
+    if not _get_warmup_done():
         return jsonify({"error": "System still initializing"}), 503
 
     try:
@@ -2604,7 +2587,7 @@ def create_sample_portfolio_for_export() -> list[dict[str, Any]]:
 @app.route("/api/config")
 def api_config() -> ResponseReturnValue:
     """Get system configuration."""
-    if not warmup["done"]:
+    if not _get_warmup_done():
         return jsonify({"error": "System still initializing"}), 503
 
     return jsonify({
@@ -2665,7 +2648,7 @@ def api_price_source_status() -> ResponseReturnValue:
 @app.route("/api/portfolio-summary")
 def api_portfolio_summary() -> ResponseReturnValue:
     """Get portfolio summary."""
-    if not warmup["done"]:
+    if not _get_warmup_done():
         return jsonify({"error": "System still initializing"}), 503
 
     try:
@@ -2697,7 +2680,7 @@ def static_files(filename: str) -> ResponseReturnValue:
 @app.route("/api/portfolio-performance")
 def api_portfolio_performance() -> ResponseReturnValue:
     """Get portfolio performance data."""
-    if not warmup["done"]:
+    if not _get_warmup_done():
         return jsonify({"error": "System still initializing"}), 503
 
     try:
@@ -2727,7 +2710,7 @@ def api_portfolio_performance() -> ResponseReturnValue:
 
 @app.route("/api/current-holdings")
 def api_current_holdings() -> ResponseReturnValue:
-    if not warmup["done"]:
+    if not _get_warmup_done():
         return jsonify({"error": "System still initializing"}), 503
     try:
         # Use existing working portfolio service as fallback for balance API limitations
@@ -3139,7 +3122,7 @@ def get_all_positions_including_sold(portfolio_service: Any) -> list[dict[str, A
 @require_admin
 def paper_trade_buy() -> ResponseReturnValue:
     """Execute a paper buy trade."""
-    if not warmup["done"]:
+    if not _get_warmup_done():
         return jsonify({"error": "System still initializing"}), 503
 
     try:
@@ -3200,7 +3183,7 @@ def create_initial_portfolio_data() -> dict[str, Any]:
 @require_admin
 def paper_trade_sell() -> ResponseReturnValue:
     """Execute a paper sell trade."""
-    if not warmup["done"]:
+    if not _get_warmup_done():
         return jsonify({"error": "System still initializing"}), 503
 
     try:
@@ -3241,7 +3224,7 @@ def paper_trade_sell() -> ResponseReturnValue:
 @require_admin
 def live_buy() -> ResponseReturnValue:
     """Execute a live buy trade on OKX."""
-    if not warmup["done"]:
+    if not _get_warmup_done():
         return jsonify({"error": "System still initializing"}), 503
 
     try:
@@ -3316,7 +3299,7 @@ def live_buy() -> ResponseReturnValue:
 @require_admin
 def live_sell() -> ResponseReturnValue:
     """Execute a live sell trade on OKX."""
-    if not warmup["done"]:
+    if not _get_warmup_done():
         return jsonify({"error": "System still initializing"}), 503
 
     try:
@@ -3414,7 +3397,7 @@ def live_sell() -> ResponseReturnValue:
 @require_admin
 def api_reset_entire_program() -> ResponseReturnValue:
     """Reset the entire trading system to initial state."""
-    if not warmup["done"]:
+    if not _get_warmup_done():
         return jsonify({"error": "System still initializing"}), 503
 
     try:
@@ -3640,7 +3623,7 @@ def api_portfolio_history() -> ResponseReturnValue:
 @app.route("/<path:path>")
 def catch_all_routes(path: str) -> ResponseReturnValue:
     """Handle remaining routes."""
-    if warmup["done"] and not warmup["error"]:
+    if _get_warmup_done() and not _get_warmup_error():
         if path.startswith("api/"):
             return jsonify({"error": "Endpoint not found"}), 404
         return render_full_dashboard()
@@ -4532,13 +4515,21 @@ def okx_dashboard() -> str:
 
 @app.after_request
 def add_security_headers(resp: Any) -> Any:
+    # Environment-dependent CSP configuration
+    is_development = os.getenv("FLASK_ENV") == "development" or os.getenv("NODE_ENV") == "development"
+    connect_src = "'self' wss: ws:"
+    
+    # Allow localhost connections for HMR in development
+    if is_development:
+        connect_src += " http://localhost:* https://localhost:* ws://localhost:* wss://localhost:*"
+    
     resp.headers["Content-Security-Policy"] = (
         "default-src 'self'; "
         "script-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com 'unsafe-inline'; "
         "style-src 'self' https://fonts.googleapis.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com 'unsafe-inline'; "
         "font-src 'self' https://fonts.gstatic.com; "
         "img-src 'self' data:; "
-        "connect-src 'self' wss: ws:; "
+        f"connect-src {connect_src}; "
         "frame-ancestors 'none'; "
         "base-uri 'self'; "
         "form-action 'self'"
