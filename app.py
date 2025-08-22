@@ -2373,69 +2373,82 @@ def api_available_positions():
         
         available_positions = []
         
-        # Process ALL balance entries (including zero balances)
-        if isinstance(balance_data, dict):
-            # Filter out system keys and only keep real cryptocurrency symbols
-            excluded_keys = ['info', 'timestamp', 'datetime', 'free', 'used', 'total']
+        # Define comprehensive list of major cryptocurrencies available on OKX
+        # This ensures ALL assets are shown, not just ones with current balances  
+        major_crypto_assets = [
+            'BTC', 'ETH', 'SOL', 'ADA', 'DOT', 'AVAX', 'MATIC', 'LINK', 'UNI', 'LTC',
+            'BCH', 'XLM', 'ALGO', 'ATOM', 'ICP', 'FTM', 'NEAR', 'SAND', 'MANA', 'CRO',
+            'APE', 'GALA', 'TRX', 'PEPE', 'SHIB', 'DOGE', 'XRP', 'BNB', 'USDT', 'USDC',
+            'DAI', 'BUSD', 'FTT', 'AXS', 'ENJ', 'CHZ', 'BAT', 'ZEC', 'ETC', 'DASH',
+            'THETA', 'VET', 'HOT', 'OMG', 'ZIL', 'ICX', 'REP', 'KNC', 'REN', 'LRC',
+            'STORJ', 'GRT', 'COMP', 'MKR', 'YFI', 'SUSHI', 'SNX', 'AAVE', 'CRV', 'BAL',
+            '1INCH', 'RUNE', 'ALPHA', 'PERP', 'DYDX', 'IMX', 'API3', 'AUDIO', 'CTX',
+            'AUD'  # Include AUD fiat
+        ]
+        
+        # Process ALL major assets (including zero balances from the comprehensive list)
+        for symbol in major_crypto_assets:
+            # Get balance from actual OKX data or default to zero
+            balance_info = balance_data.get(symbol, {'total': 0, 'free': 0, 'used': 0})
             
-            for symbol, balance_info in balance_data.items():
-                if (isinstance(balance_info, dict) and 
-                    'free' in balance_info and 
-                    symbol not in excluded_keys):
-                    try:
-                        # Get balance details
-                        free_balance = float(balance_info.get('free', 0.0) or 0.0)
-                        used_balance = float(balance_info.get('used', 0.0) or 0.0)
-                        total_balance = float(balance_info.get('total', 0.0) or 0.0)
+            if isinstance(balance_info, dict):
+                try:
+                    # Get balance details
+                    free_balance = float(balance_info.get('free', 0.0) or 0.0)
+                    used_balance = float(balance_info.get('used', 0.0) or 0.0)
+                    total_balance = float(balance_info.get('total', 0.0) or 0.0)
+                    
+                    # Get current price for this asset
+                    current_price = 0.0
+                    if symbol not in ['AUD', 'USD', 'EUR', 'GBP', 'USDT', 'USDC', 'DAI', 'BUSD']:  # Skip fiat and stablecoins
+                        try:
+                            current_price = portfolio_service._get_live_okx_price(symbol, currency)
+                        except:
+                            current_price = 0.0
+                    elif symbol in ['USDT', 'USDC', 'DAI', 'BUSD']:
+                        current_price = 1.0  # Stablecoins pegged to USD
+                    elif symbol == 'AUD':
+                        current_price = 0.65  # Approximate AUD to USD conversion
+                    
+                    # Determine position type and buy signal
+                    if total_balance > 0:
+                        position_type = 'current_holding'
+                        buy_signal = 'FIAT BALANCE' if symbol in ['AUD', 'USD', 'EUR', 'GBP'] else 'CURRENT HOLDING'
+                    else:
+                        position_type = 'zero_balance'
+                        buy_signal = 'READY TO BUY' if current_price > 0 else 'NO PRICE DATA'
+                    
+                    available_position = {
+                        'symbol': symbol,
+                        'current_price': current_price,
+                        'current_balance': total_balance,
+                        'free_balance': free_balance,
+                        'used_balance': used_balance,
+                        'position_type': position_type,
+                        'buy_signal': buy_signal,
+                        'calculation_method': 'comprehensive_asset_list',
+                        'last_exit_price': 0,
+                        'target_buy_price': current_price,
+                        'price_difference': 0,
+                        'price_diff_percent': 0,
+                        'price_drop_from_exit': 0,
+                        'last_trade_date': '',
+                        'days_since_exit': 0
+                    }
+                    
+                    available_positions.append(available_position)
+                    
+                    if total_balance > 0:
+                        logger.info(f"Added available position: {symbol} with balance {total_balance}")
+                    else:
+                        logger.debug(f"Added zero-balance position: {symbol}")
                         
-                        # Get current price for this asset
-                        current_price = 0.0
-                        if symbol not in ['AUD', 'USD', 'EUR', 'GBP', 'USDT', 'USDC']:  # Skip fiat and stablecoins
-                            try:
-                                current_price = portfolio_service._get_live_okx_price(symbol, currency)
-                            except:
-                                current_price = 0.0
-                        elif symbol == 'USDT':
-                            current_price = 1.0  # USDT is pegged to USD
-                        elif symbol == 'AUD':
-                            current_price = 0.65  # Approximate AUD to USD conversion
-                        
-                        # Determine position type and buy signal
-                        if total_balance > 0:
-                            position_type = 'current_holding'
-                            buy_signal = 'FIAT BALANCE' if symbol in ['AUD', 'USD', 'EUR', 'GBP'] else 'CURRENT HOLDING'
-                        else:
-                            position_type = 'zero_balance'
-                            buy_signal = 'READY TO BUY' if current_price > 0 else 'NO PRICE DATA'
-                        
-                        available_position = {
-                            'symbol': symbol,
-                            'current_price': current_price,
-                            'current_balance': total_balance,
-                            'free_balance': free_balance,
-                            'used_balance': used_balance,
-                            'position_type': position_type,
-                            'buy_signal': buy_signal,
-                            'calculation_method': 'direct_okx_balance',
-                            'last_exit_price': 0,
-                            'target_buy_price': current_price,
-                            'price_difference': 0,
-                            'price_diff_percent': 0,
-                            'price_drop_from_exit': 0,
-                            'last_trade_date': '',
-                            'days_since_exit': 0
-                        }
-                        
-                        available_positions.append(available_position)
-                        
-                        if total_balance > 0:
-                            logger.info(f"Added available position: {symbol} with balance {total_balance}")
-                        else:
-                            logger.debug(f"Added zero-balance position: {symbol}")
-                            
-                    except Exception as symbol_error:
-                        logger.debug(f"Error processing balance for {symbol}: {symbol_error}")
-                        continue
+                except Exception as symbol_error:
+                    logger.debug(f"Error processing asset {symbol}: {symbol_error}")
+                    continue
+                    
+        # Sort positions: current holdings first (non-zero balances), then available assets alphabetically
+        available_positions.sort(key=lambda x: (x['current_balance'] == 0, x['symbol']))
         
         logger.info(f"Found {len(available_positions)} available positions from current holdings")
         
