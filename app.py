@@ -58,8 +58,11 @@ def utcnow() -> datetime:
     from datetime import datetime, timezone
     return datetime.now(timezone.utc)
 
-def iso_utc(dt: datetime = None) -> str:
-    return (dt or utcnow()).isoformat()
+def iso_utc(dt: Optional[datetime] = None) -> str:
+    """Canonical RFC3339 timestamp formatter with Z suffix."""
+    d = (dt or utcnow()).astimezone(timezone.utc)
+    # RFC3339 with Z
+    return d.replace(microsecond=0).isoformat().replace("+00:00", "Z")
 
 # === OKX Native API Helpers ===
 def now_utc_iso() -> str:
@@ -1020,7 +1023,7 @@ def api_trade_history() -> Any:
                                         'side': side,    # OKX native action (BUY/SELL)
                                         'quantity': quantity,
                                         'price': price,
-                                        'timestamp': timestamp_dt.isoformat() + 'Z',
+                                        'timestamp': iso_utc(timestamp_dt),
                                         'total_value': total_value,
                                         'pnl': 0,
                                         'strategy': '',
@@ -1128,7 +1131,7 @@ def api_trade_history() -> Any:
                                         'side': side,
                                         'quantity': quantity,
                                         'price': price,
-                                        'timestamp': timestamp_dt.isoformat() + 'Z',
+                                        'timestamp': iso_utc(timestamp_dt),
                                         'total_value': total_value,
                                         'pnl': 0,
                                         'strategy': '',
@@ -1214,7 +1217,7 @@ def api_trade_history() -> Any:
                                         'side': side,
                                         'quantity': quantity,
                                         'price': price,
-                                        'timestamp': timestamp_dt.isoformat() + 'Z',
+                                        'timestamp': iso_utc(timestamp_dt),
                                         'total_value': total_value,
                                         'pnl': 0,
                                         'strategy': '',
@@ -1354,14 +1357,11 @@ def filter_trades_by_timeframe(trades: list[dict[str, Any]], timeframe: str) -> 
         
         if isinstance(trade_timestamp, str):
             try:
-                # Handle OKX timestamp format like "2025-08-21T07:55:49.148000+00:00Z"
+                # Handle ISO timestamp format (canonical format from iso_utc)
                 timestamp_str = trade_timestamp
                 
-                # Remove trailing Z if it exists (since we already have timezone info)
-                if timestamp_str.endswith('Z') and '+' in timestamp_str:
-                    timestamp_str = timestamp_str[:-1]
-                # If just ends with Z but no timezone, replace Z with +00:00
-                elif timestamp_str.endswith('Z') and '+' not in timestamp_str:
+                # Normalize Z suffix to timezone offset for parsing
+                if timestamp_str.endswith('Z'):
                     timestamp_str = timestamp_str.replace('Z', '+00:00')
                 
                 # Parse the cleaned timestamp
@@ -1479,7 +1479,7 @@ def api_best_performer() -> Any:
             "success": True,
             "best_performer": best_performer,
             "performance_data": best_performer,
-            "last_update": utcnow().isoformat()
+            "last_update": iso_utc()
         })
         
     except Exception as e:
@@ -1630,7 +1630,7 @@ def api_equity_curve() -> Any:
                 if total > 0:
                     equity_points.append({
                         "date": dkey,
-                        "timestamp": day_dt.isoformat(),
+                        "timestamp": iso_utc(day_dt),
                         "equity": total,
                         "source": "okx_bills+candles"
                     })
@@ -1675,7 +1675,7 @@ def api_equity_curve() -> Any:
                         total += quantity * px
                 if total > 0:
                     equity_points.append({
-                        "date": dkey, "timestamp": day_dt.isoformat(), "equity": total, "source": "portfolio_service+candles"
+                        "date": dkey, "timestamp": iso_utc(day_dt), "equity": total, "source": "portfolio_service+candles"
                     })
 
         # ensure one point for "today" using portfolio service live valuation
@@ -1689,7 +1689,7 @@ def api_equity_curve() -> Any:
                 today = end.strftime("%Y-%m-%d")
                 equity_points = [p for p in equity_points if p["date"] != today]
                 equity_points.append({
-                    "date": today, "timestamp": end.isoformat(), "equity": total_now, "source": "portfolio_service_live"
+                    "date": today, "timestamp": iso_utc(end), "equity": total_now, "source": "portfolio_service_live"
                 })
         except Exception as live_error:
             logger.debug(f"Live portfolio value unavailable: {live_error}")
@@ -2353,14 +2353,14 @@ def api_live_prices() -> Any:
                     formatted_prices[symbol] = {
                         'price': price,
                         'is_live': True,
-                        'timestamp': utcnow().astimezone(LOCAL_TZ).isoformat(),
+                        'timestamp': iso_utc(),
                         'source': 'OKX_Simulation'
                     }
                 else:
                     formatted_prices[symbol] = {
                         'price': 1.0,
                         'is_live': False,
-                        'timestamp': utcnow().astimezone(LOCAL_TZ).isoformat(),
+                        'timestamp': iso_utc(),
                         'source': 'OKX_Fallback'
                     }
             except Exception as sym_error:
@@ -2390,7 +2390,7 @@ def api_exchange_rates() -> Any:
         return jsonify({
             "rates": exchange_rates,
             "base": "USD",
-            "timestamp": utcnow().astimezone(LOCAL_TZ).isoformat()
+            "timestamp": iso_utc()
         })
     except Exception as e:
         logger.error(f"Exchange rates error: {e}")
@@ -2524,7 +2524,7 @@ def api_price_source_status() -> Any:
                 "api_provider": "OKX_Live_Exchange",
                 "exchange_type": "Live",
                 "error": "OKX API credentials not configured",
-                "last_update": utcnow().astimezone(LOCAL_TZ).isoformat()
+                "last_update": iso_utc()
             }), 500
 
         from src.exchanges.okx_adapter import OKXAdapter
@@ -2571,7 +2571,7 @@ def api_portfolio_summary() -> Any:
             "total_pnl_percent": okx_portfolio['total_pnl_percent'],
             "total_cryptos": len(okx_portfolio['holdings']),
             "cash_balance": okx_portfolio.get('cash_balance', 0),
-            "last_update": okx_portfolio.get('last_update', utcnow().astimezone(LOCAL_TZ).isoformat())
+            "last_update": okx_portfolio.get('last_update', iso_utc())
         }
         return jsonify(summary)
     except Exception as e:
@@ -3445,7 +3445,7 @@ def api_asset_allocation() -> Any:
             "allocation": allocation_data,
             "total_value": total_value,
             "currency": currency,
-            "timestamp": utcnow().isoformat()
+            "timestamp": iso_utc()
         })
         
     except Exception as e:
@@ -3663,7 +3663,7 @@ def api_okx_status() -> Any:
             'total_prices': 0,  # Remove simulation references
             'balance': {},  # Don't expose balance in status
             'initialized': connected,
-            'last_sync': utcnow().astimezone(LOCAL_TZ).isoformat() if connected else None,
+            'last_sync': iso_utc() if connected else None,
             'market_status': 'open' if connected else 'closed'
         }
 
