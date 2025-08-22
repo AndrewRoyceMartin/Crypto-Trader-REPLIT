@@ -4145,7 +4145,35 @@ function updateOpenPositionsTable(positions, totalValue = 0) {
             return;
         }
 
-        const tableHtml = positions.map(position => {
+        // Filter positions: only show positions worth >= $0.01 in Open Positions
+        const significantPositions = positions.filter(position => {
+            const currentValue = parseFloat(position.current_value || position.value || 0);
+            return currentValue >= 0.01; // Only show positions worth 1 cent or more
+        });
+        
+        console.log('Filtering Open Positions:', {
+            total_positions: positions.length,
+            significant_positions: significantPositions.length,
+            filtered_out: positions.filter(p => parseFloat(p.current_value || p.value || 0) < 0.01).map(p => ({
+                symbol: p.symbol,
+                value: parseFloat(p.current_value || p.value || 0),
+                note: `${p.symbol} worth $${(parseFloat(p.current_value || p.value || 0)).toFixed(8)} filtered to Available Positions`
+            }))
+        });
+        
+        if (significantPositions.length === 0) {
+            positionsTableBody.innerHTML = `
+                <tr>
+                    <td colspan="13" class="text-center py-4">
+                        <i class="fas fa-info-circle me-2"></i>No positions above $0.01 threshold
+                        <br><small class="text-muted">Small positions (< $0.01) are available in the Available Positions section</small>
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        const tableHtml = significantPositions.map(position => {
             console.debug("Processing individual position:", position);
             
             // Check if this is from the new all_positions format
