@@ -61,6 +61,8 @@ The system utilizes a modular Flask-based web interface for live OKX trading, st
 
 **Missing API Endpoints Fix (August 2025):** Resolved console 404 errors by implementing three missing API endpoints that JavaScript was requesting: `/api/portfolio-analytics` (redirects to existing performance analytics), `/api/asset-allocation` (provides portfolio breakdown by asset with allocation percentages), and `/api/portfolio-history` (returns historical portfolio value data using OKX candle data). All endpoints now return proper JSON responses with appropriate error handling and fallback mechanisms, eliminating the JavaScript console warnings and providing complete API coverage for the dashboard interface.
 
+**Recent Trades Data Fix (August 2025):** Fixed Recent Trades endpoint returning empty data by aligning it with the working trade-history endpoint logic. The issue was the Recent Trades endpoint was trying OKX native fills API first (which had permission limitations), then falling back to portfolio service data incorrectly. Updated `/api/recent-trades` to use the same reliable data sources as `/api/trade-history` - combining database real trades with OKX direct API trades, ensuring consistent trade data display across all dashboard interfaces.
+
 ## External Dependencies
 
 ### Market Data & Trading APIs

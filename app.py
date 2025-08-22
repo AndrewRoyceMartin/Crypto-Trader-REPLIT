@@ -1007,123 +1007,19 @@ def filter_trades_by_timeframe(trades, timeframe):
     
     return filtered_trades
 
-@app.route("/api/recent-trades")
+@app.route("/api/recent-trades")  
 def api_recent_trades():
+    """Get recent trades - redirect to working trade-history endpoint with limit."""
     try:
         timeframe = request.args.get('timeframe', '7d')
         limit = int(request.args.get('limit', 50))
-
-        # Try native OKX fills first, fallback to portfolio service data
-        trades = []
         
-        try:
-            end = utcnow()
-            starts = {"1d":1, "7d":7, "30d":30}.get(timeframe, 7)
-            start = end - timedelta(days=starts)
-            begin_ms = int(start.timestamp() * 1000)
-            end_ms = int(end.timestamp() * 1000)
-
-            from src.utils.okx_native import OKXNative
-            client = OKXNative.from_env()
-            fills = client.fills(begin_ms=begin_ms, end_ms=end_ms, limit=limit)
-            
-            for f in fills:
-                # OKX fills fields
-                trade_id = f.get("tradeId") or f.get("billId") or ""
-                ord_id = f.get("ordId") or ""
-                inst = f.get("instId", "")
-                side = (f.get("side", "") or "").upper()
-                sz = float(f.get("sz", 0) or 0)
-                px = float(f.get("px", 0) or 0)
-                ts = int(f.get("ts", 0) or 0)
-                if not inst or ts == 0:
-                    continue
-                dt = datetime.fromtimestamp(ts/1000, tz=timezone.utc).isoformat()
-                val = sz * px if px > 0 else 0.0
-                sym = inst.replace("-USDT","").replace("-USD","")
-
-                trades.append({
-                    "id": trade_id or f"okx_{ts}",
-                    "order_id": ord_id,
-                    "symbol": sym,
-                    "side": side,
-                    "quantity": sz,
-                    "price": px,
-                    "value": val,
-                    "fee": abs(float(f.get("fee", 0) or 0)),
-                    "fee_currency": f.get("feeCcy", ""),
-                    "timestamp": dt,
-                    "source": "okx_native_fills",
-                    "exchange": "OKX"
-                })
-            
-            logger.info(f"Retrieved {len(trades)} trades from OKX native fills API")
-            
-        except Exception as native_error:
-            logger.info(f"OKX native fills API unavailable (using portfolio fallback): {native_error}")
-            
-            # Fallback: Use existing portfolio service trade data
-            try:
-                service = get_portfolio_service()
-                portfolio_data = service.get_portfolio_data()
-                portfolio_trades = portfolio_data.get('trades', [])
-                
-                # Filter trades by timeframe
-                end_time = datetime.now(timezone.utc)
-                start_time = end_time - timedelta(days={"1d":1, "7d":7, "30d":30}.get(timeframe, 7))
-                
-                for trade in portfolio_trades:
-                    try:
-                        timestamp_str = trade.get('timestamp', '')
-                        if timestamp_str:
-                            if isinstance(timestamp_str, str):
-                                trade_time = datetime.fromisoformat(timestamp_str.replace('Z', '+00:00'))
-                            else:
-                                continue
-                                
-                            if trade_time < start_time:
-                                continue
-                            
-                            trades.append({
-                                "id": trade.get('id', f"trade_{trade_time.timestamp()}"),
-                                "order_id": trade.get('order_id', ''),
-                                "symbol": trade.get('symbol', ''),
-                                "side": (trade.get('side', '') or '').upper(),
-                                "quantity": float(trade.get('quantity', 0)),
-                                "price": float(trade.get('price', 0)),
-                                "value": float(trade.get('value', 0)),
-                                "fee": abs(float(trade.get('fee', 0))),
-                                "fee_currency": trade.get('fee_currency', 'USDT'),
-                                "timestamp": timestamp_str,
-                                "source": "portfolio_service_fallback",
-                                "exchange": "OKX"
-                            })
-                    except Exception as trade_error:
-                        logger.debug(f"Error processing trade: {trade_error}")
-                        continue
-                        
-                logger.info(f"Retrieved {len(trades)} trades from portfolio service fallback")
-                
-            except Exception as fallback_error:
-                logger.error(f"Both native and fallback trade retrieval failed: {fallback_error}")
-
-        trades.sort(key=lambda x: x["timestamp"], reverse=True)
-        trades = trades[:limit]
-
-        summary = {
-            "total_trades": len(trades),
-            "total_buy_volume": sum(t["value"] for t in trades if t["side"] == "BUY"),
-            "total_sell_volume": sum(t["value"] for t in trades if t["side"] == "SELL"),
-            "net_volume": 0.0,
-            "total_fees": sum(t["fee"] for t in trades),
-            "unique_symbols": len(set(t["symbol"] for t in trades)),
-            "avg_trade_size": (sum(t["value"] for t in trades) / len(trades)) if trades else 0.0
-        }
-        summary["net_volume"] = summary["total_buy_volume"] - summary["total_sell_volume"]
-
-        return jsonify({"success": True, "trades": trades, "timeframe": timeframe, "summary": summary, "last_update": iso_utc()})
+        # Use internal redirect to working trade-history endpoint
+        from flask import redirect, url_for
+        return redirect(f"/api/trade-history?timeframe={timeframe}&limit={limit}")
+        
     except Exception as e:
-        logger.error(f"Error getting recent trades: {e}")
+        logger.error(f"Error redirecting recent trades: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
 
 @app.route("/api/best-performer")
