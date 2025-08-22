@@ -133,16 +133,22 @@ class TradingApp {
             'BTC': { icon: 'fab fa-bitcoin', name: 'Bitcoin', color: '#f7931a' },
             'ETH': { icon: 'fab fa-ethereum', name: 'Ethereum', color: '#627eea' },
             'SOL': { icon: 'fas fa-sun', name: 'Solana', color: '#9945ff' },
-            'TRX': { icon: 'fas fa-play', name: 'TRON', color: '#ff0013' },
+            'TRX': { icon: 'fas fa-play-circle', name: 'TRON', color: '#ff0013' },
+            'GALA': { icon: 'fas fa-gamepad', name: 'Gala Games', color: '#ff6600' },
             'PEPE': { icon: 'fas fa-frog', name: 'Pepe', color: '#28a745' },
             'AUD': { icon: 'fas fa-dollar-sign', name: 'Australian Dollar', color: '#007bff' },
-            'USDT': { icon: 'fas fa-coins', name: 'Tether', color: '#26a17b' },
-            'USDC': { icon: 'fas fa-coins', name: 'USD Coin', color: '#2775ca' },
+            'USDT': { icon: 'fas fa-coins', name: 'Tether USDT', color: '#26a17b' },
+            'USDC': { icon: 'fas fa-circle', name: 'USD Coin', color: '#2775ca' },
             'DOGE': { icon: 'fas fa-dog', name: 'Dogecoin', color: '#c2a633' },
             'ADA': { icon: 'fas fa-heart', name: 'Cardano', color: '#0033ad' },
             'DOT': { icon: 'fas fa-circle', name: 'Polkadot', color: '#e6007a' },
-            'MATIC': { icon: 'fas fa-polygon', name: 'Polygon', color: '#8247e5' },
-            'LINK': { icon: 'fas fa-link', name: 'Chainlink', color: '#375bd2' }
+            'MATIC': { icon: 'fas fa-shapes', name: 'Polygon', color: '#8247e5' },
+            'LINK': { icon: 'fas fa-link', name: 'Chainlink', color: '#375bd2' },
+            'XRP': { icon: 'fas fa-water', name: 'Ripple', color: '#23292f' },
+            'BNB': { icon: 'fas fa-fire', name: 'Binance Coin', color: '#f3ba2f' },
+            'SHIB': { icon: 'fas fa-dog', name: 'Shiba Inu', color: '#ff6600' },
+            '1INCH': { icon: 'fas fa-exchange-alt', name: '1inch', color: '#1e2329' },
+            'AAVE': { icon: 'fas fa-chart-line', name: 'Aave', color: '#b6509e' }
         };
         
         return coinInfo[symbol] || { icon: 'fas fa-coins', name: symbol, color: '#6c757d' };
@@ -5079,15 +5085,22 @@ function createAvailablePositionRow(position) {
             'BTC': { icon: 'fab fa-bitcoin', name: 'Bitcoin', color: '#f7931a' },
             'ETH': { icon: 'fab fa-ethereum', name: 'Ethereum', color: '#627eea' },
             'SOL': { icon: 'fas fa-sun', name: 'Solana', color: '#9945ff' },
+            'TRX': { icon: 'fas fa-play-circle', name: 'TRON', color: '#ff0013' },
+            'GALA': { icon: 'fas fa-gamepad', name: 'Gala Games', color: '#ff6600' },
             'PEPE': { icon: 'fas fa-frog', name: 'Pepe', color: '#28a745' },
             'AUD': { icon: 'fas fa-dollar-sign', name: 'Australian Dollar', color: '#007bff' },
-            'USDT': { icon: 'fas fa-coins', name: 'Tether', color: '#26a17b' },
-            'USDC': { icon: 'fas fa-coins', name: 'USD Coin', color: '#2775ca' },
+            'USDT': { icon: 'fas fa-coins', name: 'Tether USDT', color: '#26a17b' },
+            'USDC': { icon: 'fas fa-circle', name: 'USD Coin', color: '#2775ca' },
             'DOGE': { icon: 'fas fa-dog', name: 'Dogecoin', color: '#c2a633' },
             'ADA': { icon: 'fas fa-heart', name: 'Cardano', color: '#0033ad' },
             'DOT': { icon: 'fas fa-circle', name: 'Polkadot', color: '#e6007a' },
-            'MATIC': { icon: 'fas fa-polygon', name: 'Polygon', color: '#8247e5' },
-            'LINK': { icon: 'fas fa-link', name: 'Chainlink', color: '#375bd2' }
+            'MATIC': { icon: 'fas fa-shapes', name: 'Polygon', color: '#8247e5' },
+            'LINK': { icon: 'fas fa-link', name: 'Chainlink', color: '#375bd2' },
+            'XRP': { icon: 'fas fa-water', name: 'Ripple', color: '#23292f' },
+            'BNB': { icon: 'fas fa-fire', name: 'Binance Coin', color: '#f3ba2f' },
+            'SHIB': { icon: 'fas fa-dog', name: 'Shiba Inu', color: '#ff6600' },
+            '1INCH': { icon: 'fas fa-exchange-alt', name: '1inch', color: '#1e2329' },
+            'AAVE': { icon: 'fas fa-chart-line', name: 'Aave', color: '#b6509e' }
         };
         return coinInfo[symbol] || { icon: 'fas fa-coins', name: symbol, color: '#6c757d' };
     };
