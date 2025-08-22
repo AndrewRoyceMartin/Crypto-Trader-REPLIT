@@ -284,10 +284,11 @@ class PortfolioService:
                             # cost_basis is already set from _estimate_cost_basis_from_holdings
                             self.logger.info(f"Before fallback check - {symbol} cost_basis: ${cost_basis:.2f}")
                             
-                            # Use only real cost basis calculations - no fallbacks
-                            if cost_basis <= 0:  # Skip assets without proper cost basis
-                                self.logger.error(f"Cannot determine cost basis for {symbol}, skipping asset")
-                                continue
+                            # Use cost basis calculations - allow zero cost basis for current holdings display
+                            if cost_basis <= 0:
+                                self.logger.warning(f"Zero cost basis for {symbol}, using current price for display")
+                                cost_basis = quantity * current_price if quantity > 0 else 0.0
+                                avg_entry_price = current_price
                             else:
                                 self.logger.info(f"Using estimated cost basis for {symbol}: ${cost_basis:.2f}")
                             # Keep the estimated avg_entry_price from our market calculation
@@ -413,14 +414,16 @@ class PortfolioService:
             }
 
         except Exception as e:
-            self.logger.error("OKX Portfolio data error: %s", e)
+            self.logger.error("OKX Portfolio data error: %s", e, exc_info=True)
             # Return empty portfolio on error - no fallback simulation
             return {
                 "holdings": [],
                 "total_current_value": 0.0,
+                "total_estimated_value": 0.0,
                 "total_pnl": 0.0,
                 "total_pnl_percent": 0.0,
                 "cash_balance": 0.0,
+                "aud_balance": 0.0,
                 "last_update": datetime.now(timezone.utc).isoformat(),
             }
     

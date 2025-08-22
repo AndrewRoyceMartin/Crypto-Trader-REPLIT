@@ -390,14 +390,18 @@ def crypto_portfolio_okx():
             "summary": {
                 "total_cryptos": len(holdings_list),
                 "total_current_value": okx_portfolio_data['total_current_value'],
+                "total_estimated_value": okx_portfolio_data.get('total_estimated_value', okx_portfolio_data['total_current_value']),
                 "total_pnl": okx_portfolio_data['total_pnl'],
                 "total_pnl_percent": okx_portfolio_data['total_pnl_percent'],
-                "cash_balance": okx_portfolio_data['cash_balance']
+                "cash_balance": okx_portfolio_data['cash_balance'],
+                "aud_balance": okx_portfolio_data.get('aud_balance', 0.0)
             },
             "total_pnl": okx_portfolio_data['total_pnl'],
             "total_pnl_percent": okx_portfolio_data['total_pnl_percent'],
             "total_current_value": okx_portfolio_data['total_current_value'],
+            "total_estimated_value": okx_portfolio_data.get('total_estimated_value', okx_portfolio_data['total_current_value']),
             "cash_balance": okx_portfolio_data['cash_balance'],
+            "aud_balance": okx_portfolio_data.get('aud_balance', 0.0),
             "last_update": okx_portfolio_data['last_update'],
             "exchange_info": {
                 "exchange": "Live OKX",
