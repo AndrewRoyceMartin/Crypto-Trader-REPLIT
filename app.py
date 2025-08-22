@@ -933,10 +933,15 @@ def api_trade_history():
         if not db_trades.empty:
             real_trades = 0
             for _, trade in db_trades.iterrows():
-                # Skip sample trades or test data
+                # Skip sample trades or test data with improved filtering
+                trade_value = float(trade['size']) * float(trade['price'])
+                
+                # Filter out test/sample data based on multiple criteria
                 if (trade.get('strategy') == 'Enhanced Bollinger Bands' or 
                     'sample' in str(trade.get('source', '')).lower() or
-                    'test' in str(trade.get('order_id', '')).lower()):
+                    'test' in str(trade.get('order_id', '')).lower() or
+                    trade_value < 0.01 or  # Exclude trades under $0.01 (likely test data)
+                    float(trade['size']) < 0.1):  # Exclude microscopic quantities
                     continue
                     
                 formatted_trade = {
