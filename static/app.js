@@ -1427,7 +1427,9 @@ class TradingApp {
                 
                 if (coinDisplay.type === 'image') {
                     const icon = document.createElement('img');
-                    icon.src = coinDisplay.icon;
+                    // Add cache-busting parameter to force fresh image load
+                    const cacheBuster = Date.now() + Math.random();
+                    icon.src = coinDisplay.icon + '?v=' + cacheBuster;
                     icon.style.width = '24px';
                     icon.style.height = '24px';
                     icon.style.borderRadius = '50%';
@@ -5138,7 +5140,9 @@ function createAvailablePositionRow(position) {
     
     if (coinDisplay.type === 'image') {
         const icon = document.createElement('img');
-        icon.src = coinDisplay.icon;
+        // Add cache-busting parameter to force fresh image load
+        const cacheBuster = Date.now() + Math.random();
+        icon.src = coinDisplay.icon + '?v=' + cacheBuster;
         icon.style.width = '24px';
         icon.style.height = '24px';
         icon.style.borderRadius = '50%';
