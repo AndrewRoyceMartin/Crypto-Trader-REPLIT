@@ -924,73 +924,91 @@ def api_trade_history():
         # Get trades from OKX only
         all_trades = []
         
-        # Use OKX fills API to get executed trade history
+        # Use the SAME working approach that portfolio service uses for trading history
         try:
-            from src.utils.okx_native import OKXNativeAPI
-            from datetime import datetime, timedelta
-            import os
-            
-            # Initialize OKX native client
-            api_key = os.getenv("OKX_API_KEY", "")
-            secret_key = os.getenv("OKX_API_SECRET", "") or os.getenv("OKX_SECRET_KEY", "")
-            passphrase = os.getenv("OKX_API_PASSPHRASE", "") or os.getenv("OKX_PASSPHRASE", "")
-            
-            if api_key and secret_key and passphrase:
-                okx_client = OKXNativeAPI(api_key, secret_key, passphrase)
+            service = get_portfolio_service()
+            if service and hasattr(service, 'exchange') and hasattr(service.exchange, 'get_trades'):
+                # Use the exact same method that successfully gets "2 trades from OKX"
+                okx_trades = service.exchange.get_trades(limit=100)
+                logger.info(f"Retrieved {len(okx_trades)} TRADING HISTORY records from OKX (same method as portfolio service)")
                 
-                # Get last 30 days of fills (executed trades) for comprehensive history
-                end_time = int(datetime.now().timestamp() * 1000)
-                start_time = int((datetime.now() - timedelta(days=30)).timestamp() * 1000)
-                
-                fills = okx_client.fills(begin_ms=start_time, end_ms=end_time, limit=100)
-                logger.info(f"Retrieved {len(fills)} trade fills from OKX execution history")
-                
-                if fills:
-                    logger.info(f"Sample fill data: {fills[0]}")
-                
-                # Process fills to extract executed trades
-                for fill in fills:
-                    if not fill.get('tradeId'):
-                        continue
+                # Format trades for frontend display with proper transaction types
+                for trade in okx_trades:
+                    if trade.get('id') or trade.get('symbol'):  # Valid trade record
+                        symbol = trade.get('symbol', '')
                         
-                    inst_id = fill.get('instId', '')
-                    side = fill.get('side', '').upper()
-                    
-                    # Determine transaction type based on trading pair
-                    transaction_type = 'Trade'  # Default
-                    if inst_id:
-                        symbol = inst_id.replace('-', '/')  # Convert BTC-USDT to BTC/USDT
+                        # Determine transaction type based on trading pair
+                        transaction_type = 'Trade'  # Default
+                        if symbol:
+                            if '/AUD' in symbol or '-AUD' in symbol:
+                                transaction_type = 'Simple trade'  # Direct crypto/fiat 
+                            elif '/USDT' in symbol or '/USD' in symbol or '-USDT' in symbol or '-USD' in symbol:
+                                transaction_type = 'Trade'  # Traditional crypto trading
+                            elif 'USD/AUD' in symbol or 'AUD/USD' in symbol or 'USD-AUD' in symbol or 'AUD-USD' in symbol:
+                                transaction_type = 'Convert'  # Currency conversion
+                            else:
+                                transaction_type = 'Trade'
                         
-                        if '-AUD' in inst_id:
-                            transaction_type = 'Simple trade'  # Direct crypto/fiat 
-                        elif '-USDT' in inst_id or '-USD' in inst_id:
-                            transaction_type = 'Trade'  # Traditional crypto trading
-                        elif 'USD-AUD' in inst_id or 'AUD-USD' in inst_id:
-                            transaction_type = 'Convert'  # Currency conversion
-                        else:
-                            transaction_type = 'Trade'
-                    
-                    formatted_trade = {
-                        'id': fill.get('tradeId', ''),
-                        'trade_number': len(all_trades) + 1,
-                        'symbol': symbol,
-                        'type': transaction_type,
-                        'transaction_type': transaction_type,
-                        'action': side,
-                        'side': side,
-                        'quantity': float(fill.get('sz', 0)),
-                        'price': float(fill.get('px', 0)),
-                        'timestamp': datetime.fromtimestamp(int(fill.get('ts', 0)) / 1000).isoformat() + 'Z',
-                        'total_value': float(fill.get('sz', 0)) * float(fill.get('px', 0)),
-                        'pnl': 0,  # Fills don't include P&L
-                        'strategy': '',
-                        'order_id': fill.get('ordId', ''),
-                        'source': 'okx_fills_api'
-                    }
-                    all_trades.append(formatted_trade)
+                        formatted_trade = {
+                            'id': trade.get('id', trade.get('order_id', '')),
+                            'trade_number': len(all_trades) + 1,
+                            'symbol': symbol,
+                            'type': transaction_type,
+                            'transaction_type': transaction_type,
+                            'action': trade.get('side', '').upper(),
+                            'side': trade.get('side', '').upper(),
+                            'quantity': trade.get('amount', trade.get('quantity', 0)),
+                            'price': trade.get('price', 0),
+                            'timestamp': trade.get('datetime', trade.get('timestamp', '')),
+                            'total_value': trade.get('cost', trade.get('total_value', 0)),
+                            'pnl': 0,  # Calculate if needed
+                            'strategy': '',
+                            'order_id': trade.get('order_id', ''),
+                            'source': 'okx_portfolio_service'
+                        }
+                        all_trades.append(formatted_trade)
                 
-                if not fills:
-                    logger.info("OKX fills API returned 0 fills - no recent trading activity")
+                if not okx_trades:
+                    logger.info("Portfolio service OKX method returned 0 trades - checking alternative OKX API access")
+                    
+                    # Alternative: Try direct native OKX client as backup 
+                    try:
+                        from src.utils.okx_native import OKXNative, OKXCreds
+                        okx_creds = OKXCreds.from_env()
+                        okx_client = OKXNative(okx_creds)
+                        
+                        fills = okx_client.fills(limit=100)
+                        logger.info(f"Direct OKX fills API retrieved {len(fills)} trading records")
+                        
+                        for fill in fills:
+                            inst_id = fill.get('instId', '')
+                            if inst_id and fill.get('tradeId'):
+                                symbol = inst_id.replace('-', '/')
+                                
+                                transaction_type = 'Trade'
+                                if '-AUD' in inst_id:
+                                    transaction_type = 'Simple trade'
+                                elif '-USDT' in inst_id or '-USD' in inst_id:
+                                    transaction_type = 'Trade'
+                                elif 'USD-AUD' in inst_id:
+                                    transaction_type = 'Convert'
+                                
+                                formatted_trade = {
+                                    'id': fill.get('tradeId'),
+                                    'symbol': symbol,
+                                    'type': transaction_type,
+                                    'action': fill.get('side', '').upper(),
+                                    'side': fill.get('side', '').upper(),
+                                    'quantity': float(fill.get('sz', 0)),
+                                    'price': float(fill.get('px', 0)),
+                                    'timestamp': datetime.fromtimestamp(int(fill.get('ts', 0)) / 1000).isoformat() + 'Z',
+                                    'total_value': float(fill.get('sz', 0)) * float(fill.get('px', 0)),
+                                    'source': 'okx_direct_fills'
+                                }
+                                all_trades.append(formatted_trade)
+                        
+                    except Exception as fallback_error:
+                        logger.warning(f"Direct OKX fills API also failed: {fallback_error}")
             else:
                 logger.error("Portfolio service not available - cannot access OKX exchange")
                     
