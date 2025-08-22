@@ -2409,6 +2409,87 @@ def reset_target_price(symbol: str):
         logger.error(f"Error resetting target price for {symbol}: {e}")
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
+@app.route('/api/entry-confidence/<symbol>')
+def api_entry_confidence(symbol: str):
+    """Get entry point confidence analysis for a specific symbol."""
+    try:
+        from src.utils.entry_confidence import get_confidence_analyzer
+        
+        # Get current price
+        portfolio_service = _get_ps()
+        current_price = portfolio_service._get_live_okx_price(symbol.upper())
+        
+        if current_price <= 0:
+            return jsonify({
+                'status': 'error',
+                'message': f'Unable to get current price for {symbol}'
+            }), 400
+        
+        # Calculate confidence
+        analyzer = get_confidence_analyzer()
+        confidence_data = analyzer.calculate_confidence(symbol.upper(), current_price)
+        
+        return jsonify({
+            'status': 'success',
+            'data': confidence_data
+        })
+        
+    except Exception as e:
+        logger.error(f"Error getting entry confidence for {symbol}: {e}")
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+@app.route('/api/entry-confidence-batch')
+def api_entry_confidence_batch():
+    """Get entry confidence for multiple symbols."""
+    try:
+        # Get symbols from query parameter or use defaults
+        symbols_param = request.args.get('symbols', '')
+        if symbols_param:
+            symbols = [s.strip().upper() for s in symbols_param.split(',')]
+        else:
+            # Default major cryptocurrencies
+            symbols = ['BTC', 'ETH', 'SOL', 'ADA', 'MATIC', 'AVAX', 'LINK', 'DOT']
+        
+        # Limit to prevent timeout
+        symbols = symbols[:10]
+        
+        from src.utils.entry_confidence import get_confidence_analyzer
+        portfolio_service = _get_ps()
+        analyzer = get_confidence_analyzer()
+        
+        results = []
+        
+        for symbol in symbols:
+            try:
+                current_price = portfolio_service._get_live_okx_price(symbol)
+                if current_price > 0:
+                    confidence_data = analyzer.calculate_confidence(symbol, current_price)
+                    results.append(confidence_data)
+                else:
+                    logger.warning(f"Could not get price for {symbol}")
+            except Exception as symbol_error:
+                logger.error(f"Error analyzing {symbol}: {symbol_error}")
+                continue
+        
+        # Sort by confidence score (highest first)
+        results.sort(key=lambda x: x['confidence_score'], reverse=True)
+        
+        return jsonify({
+            'status': 'success',
+            'analyzed_symbols': len(results),
+            'data': results,
+            'summary': {
+                'excellent_entries': len([r for r in results if r['confidence_score'] >= 90]),
+                'good_entries': len([r for r in results if 75 <= r['confidence_score'] < 90]),
+                'fair_entries': len([r for r in results if 60 <= r['confidence_score'] < 75]),
+                'weak_entries': len([r for r in results if r['confidence_score'] < 60])
+            }
+        })
+        
+    except Exception as e:
+        logger.error(f"Error getting batch entry confidence: {e}")
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
 @app.route('/api/available-positions')
 def api_available_positions():
     """Get all available OKX assets that can be traded, including zero balances."""
@@ -2489,6 +2570,24 @@ def api_available_positions():
                         position_type = 'zero_balance'
                         buy_signal = 'READY TO BUY' if current_price > 0 else 'NO PRICE DATA'
                     
+                    # Calculate entry confidence for tradeable assets
+                    confidence_score = 50.0  # Default
+                    confidence_level = "FAIR"
+                    timing_signal = "WAIT"
+                    
+                    if current_price > 0 and symbol not in ['AUD', 'USD', 'EUR', 'GBP', 'USDT', 'USDC', 'DAI', 'BUSD']:
+                        try:
+                            from src.utils.entry_confidence import get_confidence_analyzer
+                            analyzer = get_confidence_analyzer()
+                            confidence_data = analyzer.calculate_confidence(symbol, current_price)
+                            confidence_score = confidence_data['confidence_score']
+                            confidence_level = confidence_data['confidence_level']
+                            timing_signal = confidence_data['timing_signal']
+                        except Exception as conf_error:
+                            logger.debug(f"Could not calculate confidence for {symbol}: {conf_error}")
+                    
+                    target_price = get_stable_target_price(symbol, current_price)
+                    
                     available_position = {
                         'symbol': symbol,
                         'current_price': current_price,
@@ -2499,12 +2598,17 @@ def api_available_positions():
                         'buy_signal': buy_signal,
                         'calculation_method': 'comprehensive_asset_list',
                         'last_exit_price': 0,
-                        'target_buy_price': get_stable_target_price(symbol, current_price),
-                        'price_difference': current_price - get_stable_target_price(symbol, current_price),
-                        'price_diff_percent': ((current_price - get_stable_target_price(symbol, current_price)) / current_price * 100),
+                        'target_buy_price': target_price,
+                        'price_difference': current_price - target_price,
+                        'price_diff_percent': ((current_price - target_price) / current_price * 100) if current_price > 0 else 0,
                         'price_drop_from_exit': 0,
                         'last_trade_date': '',
-                        'days_since_exit': 0
+                        'days_since_exit': 0,
+                        'entry_confidence': {
+                            'score': confidence_score,
+                            'level': confidence_level,
+                            'timing_signal': timing_signal
+                        }
                     }
                     
                     available_positions.append(available_position)

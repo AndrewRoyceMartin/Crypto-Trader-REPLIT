@@ -4460,7 +4460,38 @@ function updateAvailablePositionsTable(availablePositions) {
             const buySignal = position.buy_signal || "WAIT";
             const daysSinceExit = position.days_since_exit || 0;
             
+            // Entry confidence data
+            const entryConfidence = position.entry_confidence || { score: 50, level: "FAIR", timing_signal: "WAIT" };
+            const confidenceScore = entryConfidence.score || 50;
+            const confidenceLevel = entryConfidence.level || "FAIR";
+            const timingSignal = entryConfidence.timing_signal || "WAIT";
+            
             const buySignalClass = buySignal === "BUY READY" ? "text-success fw-bold" : "text-warning";
+            
+            // Confidence score styling
+            const getConfidenceClass = (score) => {
+                if (score >= 90) return "text-success fw-bold";
+                if (score >= 75) return "text-success";
+                if (score >= 60) return "text-warning";
+                if (score >= 40) return "text-muted";
+                return "text-danger";
+            };
+            
+            // Timing signal styling
+            const getTimingSignalClass = (signal) => {
+                if (signal === "STRONG_BUY" || signal === "BUY") return "text-success fw-bold";
+                if (signal === "CAUTIOUS_BUY") return "text-warning fw-bold";
+                if (signal === "WAIT") return "text-muted";
+                return "text-danger";
+            };
+            
+            // Risk level styling
+            const getRiskLevelClass = (level) => {
+                if (level === "LOW") return "text-success";
+                if (level === "MODERATE") return "text-warning";
+                if (level === "HIGH") return "text-danger";
+                return "text-danger fw-bold";
+            };
             
             // Format functions
             const formatCurrency = (value) => {
@@ -4538,20 +4569,28 @@ function updateAvailablePositionsTable(availablePositions) {
                         </div>
                     </td>
                     <td>${formatNumber(currentBalance)}</td>
-                    <td>${formatCurrency(lastExitPrice)}</td>
                     <td>${formatCurrency(currentPrice)}</td>
                     <td class="fw-bold text-primary">${formatCurrency(targetBuyPrice)}</td>
-                    <td class="${priceDiffClass}">${formatCurrency(priceDifference)} (${priceDiffPercent >= 0 ? '+' : ''}${priceDiffPercent.toFixed(1)}%)</td>
+                    <td class="${priceDiffClass}">${priceDiffPercent >= 0 ? '+' : ''}${priceDiffPercent.toFixed(1)}%</td>
+                    <td class="${getConfidenceClass(confidenceScore)}">
+                        <div class="d-flex align-items-center">
+                            <span class="fw-bold me-1">${confidenceScore.toFixed(1)}</span>
+                            <small class="text-muted">/ 100</small>
+                        </div>
+                        <small class="${getConfidenceClass(confidenceScore)}">${confidenceLevel}</small>
+                    </td>
+                    <td class="${getTimingSignalClass(timingSignal)}">${timingSignal.replace('_', ' ')}</td>
+                    <td class="${getRiskLevelClass(entryConfidence.risk_level || 'MODERATE')}">${entryConfidence.risk_level || 'MODERATE'}</td>
                     <td class="${buySignalClass}">${buySignal}</td>
-                    <td>${formatDate(position.last_trade_date)}</td>
-                    <td>${daysSinceExit} days</td>
                     <td>
                         <div class="btn-group btn-group-sm" role="group">
-                            ${buySignal === "BUY READY" ? 
-                                `<button class="btn btn-success btn-xs" onclick="buyBackPosition('${symbol}')" title="Buy Back Now">Buy Back</button>` :
-                                `<button class="btn btn-outline-secondary btn-xs" disabled title="Waiting for target price">Wait</button>`
+                            ${confidenceScore >= 75 && timingSignal !== "WAIT" ? 
+                                `<button class="btn btn-success btn-xs" onclick="buyBackPosition('${symbol}')" title="High Confidence Entry">Buy</button>` :
+                                confidenceScore >= 60 ? 
+                                    `<button class="btn btn-warning btn-xs" onclick="buyBackPosition('${symbol}')" title="Cautious Entry">Cautious</button>` :
+                                    `<button class="btn btn-outline-secondary btn-xs" disabled title="Low confidence - wait for better setup">Wait</button>`
                             }
-                            <button class="btn btn-outline-primary btn-xs" onclick="setCustomBuyPrice('${symbol}')" title="Set Custom Price">Custom</button>
+                            <button class="btn btn-outline-info btn-xs" onclick="showConfidenceDetails('${symbol}')" title="View Detailed Analysis">Details</button>
                         </div>
                     </td>
                 </tr>
@@ -4570,6 +4609,150 @@ function updateAvailablePositionsTable(availablePositions) {
 function sellPosition(symbol, percentage) {
     if (confirm(`Sell ${percentage}% of your ${symbol} position?`)) {
         executeSellOrder(symbol, percentage);
+    }
+}
+
+// Show detailed confidence analysis
+async function showConfidenceDetails(symbol) {
+    try {
+        const response = await fetch(`/api/entry-confidence/${symbol}`, { cache: 'no-cache' });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        
+        const data = await response.json();
+        if (data.status === 'success') {
+            const info = data.data;
+            const breakdown = info.breakdown;
+            
+            const modalHtml = `
+                <div class="modal fade" id="confidenceModal" tabindex="-1">
+                    <div class="modal-dialog modal-lg">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Entry Confidence Analysis - ${symbol}</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <div class="card h-100">
+                                            <div class="card-body text-center">
+                                                <h2 class="display-4 ${info.confidence_score >= 75 ? 'text-success' : info.confidence_score >= 60 ? 'text-warning' : 'text-danger'}">${info.confidence_score}</h2>
+                                                <p class="card-text">
+                                                    <strong class="${info.confidence_score >= 75 ? 'text-success' : info.confidence_score >= 60 ? 'text-warning' : 'text-danger'}">${info.confidence_level}</strong>
+                                                    <br><small class="text-muted">Confidence Level</small>
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="card h-100">
+                                            <div class="card-body">
+                                                <h6 class="card-title">Signal & Risk</h6>
+                                                <p><strong>Timing Signal:</strong> <span class="${info.timing_signal === 'BUY' ? 'text-success' : info.timing_signal === 'CAUTIOUS_BUY' ? 'text-warning' : 'text-muted'}">${info.timing_signal.replace('_', ' ')}</span></p>
+                                                <p><strong>Risk Level:</strong> <span class="${info.risk_level === 'LOW' ? 'text-success' : info.risk_level === 'MODERATE' ? 'text-warning' : 'text-danger'}">${info.risk_level}</span></p>
+                                                <small class="text-muted">${info.entry_recommendation}</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h6 class="mb-0">Detailed Analysis Breakdown</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label class="form-label">Technical Analysis</label>
+                                                    <div class="progress">
+                                                        <div class="progress-bar ${breakdown.technical_analysis >= 70 ? 'bg-success' : breakdown.technical_analysis >= 50 ? 'bg-warning' : 'bg-danger'}" 
+                                                             style="width: ${breakdown.technical_analysis}%"></div>
+                                                    </div>
+                                                    <small class="text-muted">${breakdown.technical_analysis}/100</small>
+                                                </div>
+                                                
+                                                <div class="mb-3">
+                                                    <label class="form-label">Volatility Assessment</label>
+                                                    <div class="progress">
+                                                        <div class="progress-bar ${breakdown.volatility_assessment >= 70 ? 'bg-success' : breakdown.volatility_assessment >= 50 ? 'bg-warning' : 'bg-danger'}" 
+                                                             style="width: ${breakdown.volatility_assessment}%"></div>
+                                                    </div>
+                                                    <small class="text-muted">${breakdown.volatility_assessment}/100</small>
+                                                </div>
+                                                
+                                                <div class="mb-3">
+                                                    <label class="form-label">Momentum Indicators</label>
+                                                    <div class="progress">
+                                                        <div class="progress-bar ${breakdown.momentum_indicators >= 70 ? 'bg-success' : breakdown.momentum_indicators >= 50 ? 'bg-warning' : 'bg-danger'}" 
+                                                             style="width: ${breakdown.momentum_indicators}%"></div>
+                                                    </div>
+                                                    <small class="text-muted">${breakdown.momentum_indicators}/100</small>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label class="form-label">Volume Analysis</label>
+                                                    <div class="progress">
+                                                        <div class="progress-bar ${breakdown.volume_analysis >= 70 ? 'bg-success' : breakdown.volume_analysis >= 50 ? 'bg-warning' : 'bg-danger'}" 
+                                                             style="width: ${breakdown.volume_analysis}%"></div>
+                                                    </div>
+                                                    <small class="text-muted">${breakdown.volume_analysis}/100</small>
+                                                </div>
+                                                
+                                                <div class="mb-3">
+                                                    <label class="form-label">Support/Resistance</label>
+                                                    <div class="progress">
+                                                        <div class="progress-bar ${breakdown.support_resistance >= 70 ? 'bg-success' : breakdown.support_resistance >= 50 ? 'bg-warning' : 'bg-danger'}" 
+                                                             style="width: ${breakdown.support_resistance}%"></div>
+                                                    </div>
+                                                    <small class="text-muted">${breakdown.support_resistance}/100</small>
+                                                </div>
+                                                
+                                                <div class="alert alert-info">
+                                                    <small><strong>Analysis Time:</strong> ${new Date(info.calculated_at).toLocaleString()}</small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                ${info.confidence_score >= 60 ? 
+                                    `<button type="button" class="btn btn-primary" onclick="buyBackPosition('${symbol}'); bootstrap.Modal.getInstance(document.getElementById('confidenceModal')).hide();">Execute Trade</button>` : 
+                                    ''
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Remove existing modal if any
+            const existingModal = document.getElementById('confidenceModal');
+            if (existingModal) {
+                existingModal.remove();
+            }
+            
+            // Add modal to body
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+            
+            // Show modal
+            const modal = new bootstrap.Modal(document.getElementById('confidenceModal'));
+            modal.show();
+            
+            // Clean up when modal is hidden
+            document.getElementById('confidenceModal').addEventListener('hidden.bs.modal', function() {
+                this.remove();
+            });
+            
+        } else {
+            alert(`Error getting confidence data: ${data.message}`);
+        }
+    } catch (error) {
+        console.error('Error showing confidence details:', error);
+        alert('Failed to load confidence analysis');
     }
 }
 
