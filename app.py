@@ -1483,13 +1483,13 @@ def api_best_performer() -> Any:
                 price_24h = float(ticker.get("pct_24h", 0) or 0)
                 
                 # Get 7d price data
-                candles = client.candles(f"{symbol}-USDT", bar="1D", limit=7)
+                candles = client.candles(f"{symbol}-USDT", bar="1D", limit=7) or []
                 price_7d = 0
-                if len(candles) >= 7:
-                    current_price = float(candles[0][4])  # most recent close
-                    week_ago_price = float(candles[6][4])  # 7 days ago close
-                    if week_ago_price > 0:
-                        price_7d = ((current_price - week_ago_price) / week_ago_price) * 100
+                if len(candles) >= 2:
+                    newest_close = float(candles[0][4])  # most recent close (assuming newest first)
+                    oldest_close = float(candles[-1][4])  # oldest available close
+                    if oldest_close > 0:
+                        price_7d = ((newest_close - oldest_close) / oldest_close) * 100
                 
                 # Calculate performance score
                 portfolio_pnl = float(holding.get('pnl_percent', 0))
@@ -1554,13 +1554,13 @@ def api_worst_performer() -> Any:
             volume_24h = float(tk.get('vol24h', 0) or 0)
             current_price = float(tk.get('last', 0) or h.get('current_price', 0) or 0)
 
-            c = client.candles(inst, bar="1D", limit=7)
+            candles = client.candles(inst, bar="1D", limit=7) or []
             price_change_7d = 0.0
-            if len(c) >= 2:
-                curr_close = float(c[0][4])
-                week_close = float(c[-1][4])
-                if week_close > 0:
-                    price_change_7d = (curr_close - week_close) / week_close * 100
+            if len(candles) >= 2:
+                newest_close = float(candles[0][4])
+                oldest_close = float(candles[-1][4])
+                if oldest_close > 0:
+                    price_change_7d = (newest_close - oldest_close) / oldest_close * 100
 
             pnl_percent = float(h.get('pnl_percent', 0) or 0)
             alloc = (cv / total_value * 100) if total_value > 0 else 0
