@@ -924,93 +924,212 @@ def api_trade_history():
         # Get trades from OKX only
         all_trades = []
         
-        # Use the EXACT SAME METHOD that portfolio service uses successfully to get "2 trades from OKX"
+        # Use the EXACT same method that OKXAdapter uses successfully to get trades
         try:
             service = get_portfolio_service()
-            if service and hasattr(service, 'exchange') and hasattr(service.exchange, 'get_trades'):
-                # This is the WORKING method that successfully gets "2 trades from OKX"
-                raw_trades = service.exchange.get_trades(limit=100)
-                logger.info(f"Retrieved {len(raw_trades)} trades using same method as portfolio service")
+            if service and hasattr(service, 'exchange') and service.exchange:
+                # This is the WORKING OKX exchange instance that successfully gets "2 trades from OKX"
+                exchange = service.exchange.exchange  # Access the CCXT exchange instance directly
+                logger.info("Using the same OKX exchange instance that portfolio service uses successfully")
                 
-                if raw_trades:
-                    logger.info(f"Sample trade data: {raw_trades[0]}")
-                
-                # Process trades using the same format as portfolio service
-                for trade in raw_trades:
-                    if not (trade.get('id') or trade.get('symbol')):
-                        continue
-                        
-                    symbol = trade.get('symbol', '')
-                    side = trade.get('side', '').upper()
-                    
-                    # Determine transaction type based on symbol
-                    transaction_type = 'Trade'  # Default
-                    if symbol:
-                        if '/AUD' in symbol or '-AUD' in symbol:
-                            transaction_type = 'Simple trade'  # Direct crypto/fiat (GALA/AUD, SOL/AUD)
-                        elif '/USDT' in symbol or '/USD' in symbol:
-                            transaction_type = 'Trade'  # Traditional crypto trading (BTC/USDT, PEPE/USDT)
-                        elif 'USD/AUD' in symbol or 'AUD/USD' in symbol:
-                            transaction_type = 'Convert'  # Currency conversion
-                    
-                    try:
-                        # Handle fee parsing - can be a float or dict
-                        fee_value = trade.get('fee', 0)
-                        if isinstance(fee_value, dict):
-                            fee = float(fee_value.get('cost', 0))
-                        else:
-                            fee = float(fee_value) if fee_value else 0
-                        
-                        # Handle amount and quantity - both can be used safely
-                        quantity = trade.get('quantity')
-                        if quantity is None:
-                            quantity = trade.get('amount', 0)
-                        quantity = float(quantity)
-                        price = float(trade.get('price', 0))
-                        
-                        # Handle total_value calculation
-                        total_val = trade.get('total_value')
-                        if total_val is not None:
-                            total_value = float(total_val)
-                        else:
-                            cost = trade.get('cost')
-                            if cost is not None:
-                                total_value = float(cost)
-                            else:
-                                total_value = quantity * price
-                        
-                    except Exception as e:
-                        logger.error(f"Error processing trade fields: {e}")
-                        continue
-                    
-                    formatted_trade = {
-                        'id': trade.get('id', trade.get('order_id', trade.get('order', ''))),
-                        'trade_number': len(all_trades) + 1,
-                        'symbol': symbol,
-                        'type': transaction_type,
-                        'transaction_type': transaction_type,
-                        'action': side,
-                        'side': side,
-                        'quantity': quantity,
-                        'price': price,
-                        'timestamp': trade.get('datetime', trade.get('timestamp', '')),
-                        'total_value': total_value,
-                        'pnl': 0,
-                        'strategy': '',
-                        'order_id': trade.get('order_id', trade.get('order', '')),
-                        'fee': fee,
-                        'source': 'okx_exchange_ccxt'
+                # Method 1: OKX Trade Fills API (most comprehensive for executed trades) - same as OKXAdapter
+                try:
+                    fills_params = {
+                        'limit': '100',
+                        'instType': 'SPOT'
                     }
-                    all_trades.append(formatted_trade)
-                
-                if not raw_trades:
-                    logger.info("Portfolio service exchange.get_trades() returned 0 trades")
                     
+                    logger.info(f"Fetching trade fills from OKX API with params: {fills_params}")
+                    response = exchange.privateGetTradeFills(fills_params)
+                    
+                    if response.get('code') == '0' and response.get('data'):
+                        fills = response['data']
+                        logger.info(f"OKX fills API returned {len(fills)} trade fills")
+                        
+                        for fill in fills:
+                            try:
+                                # Use the same formatting as OKXAdapter._format_okx_fill_direct
+                                inst_id = fill.get('instId', '')
+                                side = fill.get('side', '').upper()
+                                
+                                # Convert instrument ID to display symbol (BTC-USDT -> BTC/USDT)
+                                symbol = inst_id.replace('-', '/') if inst_id else 'Unknown'
+                                
+                                # Determine transaction type based on instrument
+                                transaction_type = 'Trade'  # Default
+                                if inst_id:
+                                    if '-AUD' in inst_id:
+                                        transaction_type = 'Simple trade'  # Direct crypto/fiat (GALA-AUD, SOL-AUD)
+                                    elif '-USDT' in inst_id or '-USD' in inst_id:
+                                        transaction_type = 'Trade'  # Traditional crypto trading (BTC-USDT, PEPE-USDT)
+                                    elif 'USD-AUD' in inst_id or 'AUD-USD' in inst_id:
+                                        transaction_type = 'Convert'  # Currency conversion
+                                
+                                # Parse fill data using proper OKX fields
+                                fill_id = fill.get('fillId', fill.get('tradeId', ''))
+                                timestamp_ms = int(fill.get('ts', 0))
+                                timestamp_dt = datetime.fromtimestamp(timestamp_ms / 1000, timezone.utc) if timestamp_ms > 0 else datetime.now(timezone.utc)
+                                
+                                quantity = float(fill.get('fillSz', fill.get('sz', 0)))
+                                price = float(fill.get('fillPx', fill.get('px', 0)))
+                                fee = float(fill.get('fee', 0))
+                                total_value = quantity * price if quantity and price else 0
+                                
+                                if quantity > 0 and price > 0:
+                                    formatted_trade = {
+                                        'id': fill_id,
+                                        'trade_number': len(all_trades) + 1,
+                                        'symbol': symbol,
+                                        'type': transaction_type,
+                                        'transaction_type': transaction_type,
+                                        'action': side,
+                                        'side': side,
+                                        'quantity': quantity,
+                                        'price': price,
+                                        'timestamp': timestamp_dt.isoformat() + 'Z',
+                                        'total_value': total_value,
+                                        'pnl': 0,
+                                        'strategy': '',
+                                        'order_id': fill.get('ordId', ''),
+                                        'fee': abs(fee),  # Fee is negative in OKX, make it positive for display
+                                        'fee_currency': fill.get('feeCcy', 'USDT'),
+                                        'source': 'okx_trade_fills_ccxt'
+                                    }
+                                    all_trades.append(formatted_trade)
+                                    
+                            except Exception as e:
+                                logger.error(f"Error processing fill: {e}")
+                                continue
+                    else:
+                        logger.info(f"OKX fills API response: {response.get('code')} - {response.get('msg', 'No message')}")
+                        
+                except Exception as e:
+                    logger.warning(f"OKX privateGetTradeFills failed: {e}")
+                
+                # Method 2: OKX Orders History API (backup for different data coverage) - same as OKXAdapter
+                try:
+                    orders_params = {
+                        'limit': '100',
+                        'state': 'filled',
+                        'instType': 'SPOT'
+                    }
+                    
+                    logger.info(f"Fetching order history from OKX API with params: {orders_params}")
+                    response = exchange.privateGetTradeOrdersHistory(orders_params)
+                    
+                    if response.get('code') == '0' and response.get('data'):
+                        orders = response['data']
+                        logger.info(f"OKX orders API returned {len(orders)} filled orders")
+                        
+                        for order in orders:
+                            try:
+                                # Only process filled/executed orders
+                                if order.get('state') != 'filled':
+                                    continue
+                                    
+                                inst_id = order.get('instId', '')
+                                side = order.get('side', '').upper()
+                                
+                                # Convert instrument ID to display symbol (BTC-USDT -> BTC/USDT)
+                                symbol = inst_id.replace('-', '/') if inst_id else 'Unknown'
+                                
+                                # Determine transaction type based on instrument
+                                transaction_type = 'Trade'  # Default
+                                if inst_id:
+                                    if '-AUD' in inst_id:
+                                        transaction_type = 'Simple trade'  # Direct crypto/fiat (GALA-AUD, SOL-AUD)
+                                    elif '-USDT' in inst_id or '-USD' in inst_id:
+                                        transaction_type = 'Trade'  # Traditional crypto trading (BTC-USDT, PEPE-USDT)
+                                    elif 'USD-AUD' in inst_id or 'AUD-USD' in inst_id:
+                                        transaction_type = 'Convert'  # Currency conversion
+                                
+                                # Parse executed order data using proper OKX fields
+                                ord_id = order.get('ordId', order.get('clOrdId', ''))
+                                timestamp_ms = int(order.get('uTime', order.get('cTime', 0)))  # Update time for filled orders
+                                timestamp_dt = datetime.fromtimestamp(timestamp_ms / 1000, timezone.utc) if timestamp_ms > 0 else datetime.now(timezone.utc)
+                                
+                                # Use filled size and average fill price for executed orders
+                                quantity = float(order.get('fillSz', order.get('sz', 0)))  # fillSz = filled size
+                                price = float(order.get('avgPx', order.get('px', 0)))      # avgPx = average fill price
+                                fee = float(order.get('fee', 0))
+                                total_value = quantity * price if quantity and price else 0
+                                
+                                # Check if trade already exists (by ID) to avoid duplicates
+                                trade_id = ord_id
+                                if not any(t.get('id') == trade_id for t in all_trades) and quantity > 0 and price > 0:
+                                    formatted_trade = {
+                                        'id': trade_id,
+                                        'trade_number': len(all_trades) + 1,
+                                        'symbol': symbol,
+                                        'type': transaction_type,
+                                        'transaction_type': transaction_type,
+                                        'action': side,
+                                        'side': side,
+                                        'quantity': quantity,
+                                        'price': price,
+                                        'timestamp': timestamp_dt.isoformat() + 'Z',
+                                        'total_value': total_value,
+                                        'pnl': 0,
+                                        'strategy': '',
+                                        'order_id': ord_id,
+                                        'fee': abs(fee),  # Fee is negative in OKX, make it positive for display
+                                        'fee_currency': order.get('feeCcy', 'USDT'),
+                                        'source': 'okx_executed_orders_ccxt'
+                                    }
+                                    all_trades.append(formatted_trade)
+                                    
+                            except Exception as e:
+                                logger.error(f"Error processing executed order: {e}")
+                                continue
+                    else:
+                        logger.info(f"OKX orders API response: {response.get('code')} - {response.get('msg', 'No message')}")
+                        
+                except Exception as e:
+                    logger.warning(f"OKX privateGetTradeOrdersHistory failed: {e}")
+                
+                # Method 3: CCXT fallback methods - same as OKXAdapter
+                if len(all_trades) == 0:
+                    logger.info("No trades from OKX direct APIs, attempting CCXT fallback methods")
+                    try:
+                        ccxt_trades = exchange.fetch_my_trades(limit=100)
+                        logger.info(f"CCXT fetch_my_trades returned {len(ccxt_trades)} trades")
+                        
+                        for trade in ccxt_trades:
+                            try:
+                                formatted_trade = {
+                                    'id': trade.get('id', ''),
+                                    'trade_number': len(all_trades) + 1,
+                                    'symbol': trade.get('symbol', ''),
+                                    'type': 'Trade',
+                                    'transaction_type': 'Trade',
+                                    'action': trade.get('side', '').upper(),
+                                    'side': trade.get('side', '').upper(),
+                                    'quantity': float(trade.get('amount', 0)),
+                                    'price': float(trade.get('price', 0)),
+                                    'timestamp': trade.get('datetime', ''),
+                                    'total_value': float(trade.get('cost', 0)),
+                                    'pnl': 0,
+                                    'strategy': '',
+                                    'order_id': trade.get('order', ''),
+                                    'fee': float(trade.get('fee', {}).get('cost', 0)) if isinstance(trade.get('fee'), dict) else 0,
+                                    'fee_currency': trade.get('fee', {}).get('currency', 'USDT') if isinstance(trade.get('fee'), dict) else 'USDT',
+                                    'source': 'okx_ccxt_fallback'
+                                }
+                                
+                                if formatted_trade['quantity'] > 0 and formatted_trade['price'] > 0:
+                                    all_trades.append(formatted_trade)
+                                    
+                            except Exception as e:
+                                logger.error(f"Error processing CCXT trade: {e}")
+                                continue
+                                
+                    except Exception as e:
+                        logger.warning(f"CCXT fetch_my_trades fallback failed: {e}")
             else:
                 logger.error("Portfolio service not available - cannot access OKX exchange")
                     
         except Exception as okx_error:
-            logger.error(f"Portfolio service trade retrieval failed: {okx_error}")
+            logger.error(f"OKX trade history using working exchange instance failed: {okx_error}")
 
         # Filter trades by timeframe if we have trades
         if timeframe != 'all' and all_trades:
