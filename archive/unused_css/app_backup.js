@@ -2057,7 +2057,11 @@ function updateServerStatus(apiStatus) {
         
         // Update old top-right corner connection status (fallback)
         if (connectionStatus && (!connectionIcon || !connectionText)) {
-            connectionStatus.innerHTML = `<i class="fas fa-circle text-success me-1"></i>Connected to ${apiStatus.api_provider}`;
+            connectionStatus.textContent = '';
+            const icon = document.createElement('i');
+            icon.className = 'fas fa-circle text-success me-1';
+            connectionStatus.appendChild(icon);
+            connectionStatus.appendChild(document.createTextNode(`Connected to ${apiStatus.api_provider}`));
         }
         
         // Update crypto portfolio status badge
@@ -2223,10 +2227,6 @@ function checkApiStatusAndDisplay() {
         .catch(error => {
             console.error("Error checking API status:", error);
             // Server status error handled elsewhere
-                status: "error",
-                error: "Connection failed",
-                api_provider: "Unknown"
-            });
         });
 }
 
@@ -2366,18 +2366,53 @@ function displayPerformanceData(data) {
         const statusClass = crypto.status === 'winning' ? 'text-success' : 'text-danger';
         const pnlClass = crypto.accumulated_pnl_percent > 0 ? 'text-success' : 'text-danger';
         
-        row.innerHTML = `
-            <td>${crypto.rank}</td>
-            <td><strong>${crypto.symbol}</strong></td>
-            <td>${crypto.name}</td>
-            <td>${crypto.days_invested}</td>
-            <td>$${crypto.total_invested.toLocaleString()}</td>
-            <td>$${crypto.current_value.toLocaleString()}</td>
-            <td class="${pnlClass}">$${crypto.total_accumulated_pnl.toLocaleString()}</td>
-            <td class="${pnlClass}">${crypto.accumulated_pnl_percent.toFixed(2)}%</td>
-            <td>${crypto.daily_return_percent.toFixed(3)}%</td>
-            <td><span class="badge ${crypto.best_performer ? 'bg-success' : crypto.status === 'winning' ? 'bg-info' : 'bg-secondary'}">${crypto.status === 'winning' ? 'WINNING' : 'LOSING'}</span></td>
-        `;
+        // Create table cells safely
+        const rankCell = document.createElement('td');
+        rankCell.textContent = crypto.rank;
+        row.appendChild(rankCell);
+        
+        const symbolCell = document.createElement('td');
+        const symbolStrong = document.createElement('strong');
+        symbolStrong.textContent = crypto.symbol;
+        symbolCell.appendChild(symbolStrong);
+        row.appendChild(symbolCell);
+        
+        const nameCell = document.createElement('td');
+        nameCell.textContent = crypto.name;
+        row.appendChild(nameCell);
+        
+        const daysCell = document.createElement('td');
+        daysCell.textContent = crypto.days_invested;
+        row.appendChild(daysCell);
+        
+        const investedCell = document.createElement('td');
+        investedCell.textContent = `$${crypto.total_invested.toLocaleString()}`;
+        row.appendChild(investedCell);
+        
+        const valueCell = document.createElement('td');
+        valueCell.textContent = `$${crypto.current_value.toLocaleString()}`;
+        row.appendChild(valueCell);
+        
+        const pnlCell = document.createElement('td');
+        pnlCell.className = pnlClass;
+        pnlCell.textContent = `$${crypto.total_accumulated_pnl.toLocaleString()}`;
+        row.appendChild(pnlCell);
+        
+        const pnlPercentCell = document.createElement('td');
+        pnlPercentCell.className = pnlClass;
+        pnlPercentCell.textContent = `${crypto.accumulated_pnl_percent.toFixed(2)}%`;
+        row.appendChild(pnlPercentCell);
+        
+        const dailyReturnCell = document.createElement('td');
+        dailyReturnCell.textContent = `${crypto.daily_return_percent.toFixed(3)}%`;
+        row.appendChild(dailyReturnCell);
+        
+        const statusCell = document.createElement('td');
+        const statusBadge = document.createElement('span');
+        statusBadge.className = `badge ${crypto.best_performer ? 'bg-success' : crypto.status === 'winning' ? 'bg-info' : 'bg-secondary'}`;
+        statusBadge.textContent = crypto.status === 'winning' ? 'WINNING' : 'LOSING';
+        statusCell.appendChild(statusBadge);
+        row.appendChild(statusCell);
         tbody.appendChild(row);
     });
 }
@@ -2449,19 +2484,57 @@ function displayPositionsData(data) {
                 break;
         }
         
-        row.innerHTML = `
-            <td><strong>${position.symbol}</strong></td>
-            <td>${position.name}</td>
-            <td>${position.quantity.toFixed(6)}</td>
-            <td>$${position.current_price.toFixed(4)}</td>
-            <td>$${position.current_value.toLocaleString()}</td>
-            <td>${position.position_percent.toFixed(1)}%</td>
-            <td class="${pnlClass}">$${position.unrealized_pnl.toLocaleString()}</td>
-            <td class="${pnlClass}">${position.pnl_percent.toFixed(2)}%</td>
-            <td>$${position.avg_buy_price.toFixed(4)}</td>
-            <td class="text-info">$${position.potential_profit.toLocaleString()}</td>
-            <td>${statusBadge}</td>
-        `;
+        // Create table cells safely
+        const symbolCell = document.createElement('td');
+        const symbolStrong = document.createElement('strong');
+        symbolStrong.textContent = position.symbol;
+        symbolCell.appendChild(symbolStrong);
+        row.appendChild(symbolCell);
+        
+        const nameCell = document.createElement('td');
+        nameCell.textContent = position.name;
+        row.appendChild(nameCell);
+        
+        const quantityCell = document.createElement('td');
+        quantityCell.textContent = position.quantity.toFixed(6);
+        row.appendChild(quantityCell);
+        
+        const priceCell = document.createElement('td');
+        priceCell.textContent = `$${position.current_price.toFixed(4)}`;
+        row.appendChild(priceCell);
+        
+        const valueCell = document.createElement('td');
+        valueCell.textContent = `$${position.current_value.toLocaleString()}`;
+        row.appendChild(valueCell);
+        
+        const percentCell = document.createElement('td');
+        percentCell.textContent = `${position.position_percent.toFixed(1)}%`;
+        row.appendChild(percentCell);
+        
+        const pnlCell = document.createElement('td');
+        pnlCell.className = pnlClass;
+        pnlCell.textContent = `$${position.unrealized_pnl.toLocaleString()}`;
+        row.appendChild(pnlCell);
+        
+        const pnlPercentCell = document.createElement('td');
+        pnlPercentCell.className = pnlClass;
+        pnlPercentCell.textContent = `${position.pnl_percent.toFixed(2)}%`;
+        row.appendChild(pnlPercentCell);
+        
+        const avgPriceCell = document.createElement('td');
+        avgPriceCell.textContent = `$${position.avg_buy_price.toFixed(4)}`;
+        row.appendChild(avgPriceCell);
+        
+        const profitCell = document.createElement('td');
+        profitCell.className = 'text-info';
+        profitCell.textContent = `$${position.potential_profit.toLocaleString()}`;
+        row.appendChild(profitCell);
+        
+        const statusCell = document.createElement('td');
+        if (statusBadge) {
+            statusCell.innerHTML = statusBadge;  // statusBadge is hardcoded HTML, safe
+        }
+        row.appendChild(statusCell);
         tbody.appendChild(row);
     });
 }
