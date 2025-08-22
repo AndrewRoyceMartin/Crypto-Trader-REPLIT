@@ -3471,8 +3471,17 @@ async function executeTakeProfit() {
             const reinvested = data.reinvested_amount || 0;
             
             // Check for minimum order size warnings
-            const minOrderWarnings = trades.filter(trade => trade.error_type === 'minimum_order_size') || [];
-            const successfulTrades = trades.filter(trade => trade.exchange_executed) || [];
+            const minOrderWarnings = trades.filter(trade => trade.error_type === 'minimum_order_size');
+            const successfulTrades = trades.filter(trade => trade.exchange_executed === true);
+            const failedTrades = trades.filter(trade => trade.exchange_executed === false);
+            
+            console.log('Trade analysis:', {
+                total_trades: trades.length,
+                min_order_warnings: minOrderWarnings.length,
+                successful_trades: successfulTrades.length,
+                failed_trades: failedTrades.length,
+                trades: trades
+            });
             
             if (minOrderWarnings.length > 0) {
                 const symbols = minOrderWarnings.map(trade => trade.symbol).join(', ');
@@ -3485,13 +3494,18 @@ async function executeTakeProfit() {
                     `Take profit executed: ${trades.length} trades, $${profit.toFixed(2)} profit, $${reinvested.toFixed(2)} reinvested`, 
                     'success'
                 );
-                
-                // Refresh portfolio and trades data
-                await window.tradingApp.updateCryptoPortfolio();
-                await window.tradingApp.updateDashboard();
+            } else if (failedTrades.length > 0) {
+                window.tradingApp.showToast(
+                    `Take profit failed: ${failedTrades.length} trades could not be executed`, 
+                    'error'
+                );
             } else if (trades.length === 0) {
                 window.tradingApp.showToast('No positions met take profit criteria (2% profit threshold)', 'info');
             }
+            
+            // Always refresh data after take profit attempt
+            await window.tradingApp.updateCryptoPortfolio();
+            await window.tradingApp.updateDashboard();
             
             // Show detailed results
             console.log('Take profit results:', {
