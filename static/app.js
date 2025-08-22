@@ -3303,15 +3303,15 @@ class TradingApp {
             const tradeNum = trade.trade_number || (index + 1);
             const symbol = trade.symbol.replace('/USDT', '').replace('/USD', ''); // Clean symbol
 
-            // Safe DOM creation instead of innerHTML
+            // Safe DOM creation matching HTML table structure: Type, Action, Symbol, Time, Size, Price, P&L
             const cells = [
-                { content: `#${tradeNum}`, classes: 'badge bg-secondary', containerTag: 'span' },
-                { content: timestamp, containerTag: 'small' },
-                { content: symbol, containerTag: 'strong' },
+                { content: trade.type || trade.transaction_type || 'Trade', classes: 'badge bg-primary', containerTag: 'span' },
                 { content: sideUp || '-', classes: `badge ${sideUp === 'BUY' ? 'bg-success' : 'bg-danger'}`, containerTag: 'span' },
+                { content: symbol, containerTag: 'strong' },
+                { content: timestamp, containerTag: 'small' },
                 { content: quantity },
                 { content: price },
-                { content: totalValue, cellClass: pnlClass }
+                { content: pnl, cellClass: pnlClass }
             ];
             
             cells.forEach(cellData => {
