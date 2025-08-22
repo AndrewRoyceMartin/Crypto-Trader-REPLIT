@@ -1428,10 +1428,18 @@ class TradingApp {
                 if (coinDisplay.type === 'image') {
                     const icon = document.createElement('img');
                     icon.src = coinDisplay.icon;
-                    icon.style.width = '20px';
-                    icon.style.height = '20px';
+                    icon.style.width = '24px';
+                    icon.style.height = '24px';
                     icon.style.borderRadius = '50%';
+                    icon.style.objectFit = 'cover';
                     icon.alt = coinDisplay.name;
+                    icon.onerror = function() {
+                        // Fallback to FontAwesome icon if image fails to load
+                        const fallbackIcon = document.createElement('i');
+                        fallbackIcon.className = 'fas fa-coins';
+                        fallbackIcon.style.color = coinDisplay.color;
+                        iconDiv.replaceChild(fallbackIcon, icon);
+                    };
                     iconDiv.appendChild(icon);
                 } else {
                     const icon = document.createElement('i');
@@ -5131,10 +5139,18 @@ function createAvailablePositionRow(position) {
     if (coinDisplay.type === 'image') {
         const icon = document.createElement('img');
         icon.src = coinDisplay.icon;
-        icon.style.width = '20px';
-        icon.style.height = '20px';
+        icon.style.width = '24px';
+        icon.style.height = '24px';
         icon.style.borderRadius = '50%';
+        icon.style.objectFit = 'cover';
         icon.alt = coinDisplay.name;
+        icon.onerror = function() {
+            // Fallback to FontAwesome icon if image fails to load
+            const fallbackIcon = document.createElement('i');
+            fallbackIcon.className = 'fas fa-coins';
+            fallbackIcon.style.color = coinDisplay.color;
+            iconDiv.replaceChild(fallbackIcon, icon);
+        };
         iconDiv.appendChild(icon);
     } else {
         const icon = document.createElement('i');
