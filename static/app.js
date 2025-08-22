@@ -4230,8 +4230,19 @@ function updateOpenPositionsTable(positions, totalValue = 0) {
             const currentPnlDollar = parseFloat(position.pnl_amount || 0);
             const currentPnlPercent = parseFloat(position.pnl_percent || 0);
             
-            // Target calculations (20% profit target based on OKX cost basis)
-            const targetTotalValue = totalCostBasis * 1.20;
+            // Target calculations - Dynamic profit targets based on realistic trading strategy
+            let targetMultiplier = 1.20; // Default 20% profit target
+            
+            // Adjust target based on asset type and volatility
+            if (symbol === 'BTC' || symbol === 'ETH') {
+                targetMultiplier = 1.15; // 15% for major coins (more conservative)
+            } else if (symbol === 'PEPE' || symbol.includes('MEME')) {
+                targetMultiplier = 1.30; // 30% for meme coins (higher volatility)
+            } else if (['SOL', 'GALA', 'TRX', 'ADA', 'MATIC', 'DOT'].includes(symbol)) {
+                targetMultiplier = 1.25; // 25% for altcoins
+            }
+            
+            const targetTotalValue = totalCostBasis * targetMultiplier;
             const targetPnlDollar = targetTotalValue - totalCostBasis;
             const targetPnlPercent = totalCostBasis > 0 ? (targetPnlDollar / totalCostBasis) * 100 : 0;
             
