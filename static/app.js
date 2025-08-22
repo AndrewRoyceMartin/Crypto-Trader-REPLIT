@@ -4712,10 +4712,12 @@ function updateOpenPositionsTable(positions, totalValue = 0) {
             return;
         }
 
-        // Filter positions: only show positions worth >= $0.01 in Open Positions
+        // Filter positions: show all positions that have actual holdings, regardless of dollar value
         const significantPositions = positions.filter(position => {
+            const quantity = parseFloat(position.quantity || 0);
             const currentValue = parseFloat(position.current_value || position.value || 0);
-            return currentValue >= 0.01; // Only show positions worth 1 cent or more
+            // Show position if you actually own coins, even if value is tiny
+            return quantity > 0 && currentValue >= 0.0001; // Show positions worth at least 0.01 cents
         });
         
         console.log('Filtering Open Positions:', {
@@ -4763,8 +4765,8 @@ function updateOpenPositionsTable(positions, totalValue = 0) {
             // Check if this is from the new all_positions format
             const isNewFormat = position.status !== undefined;
             const symbol = position.symbol || position.name || "Unknown";
-            // Prioritize available_quantity (current OKX balance) over quantity (which may contain historical data)
-            const quantity = parseFloat(position.available_quantity || position.quantity || 0);
+            // Use the standard quantity field from API response
+            const quantity = parseFloat(position.quantity || 0);
             
             // Handle purchase price - estimate from cost basis if available
             let purchasePrice = parseFloat(position.avg_entry_price || position.entry_price || position.purchase_price || 0);
