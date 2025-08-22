@@ -912,7 +912,7 @@ def start_trading():
 
 @app.route("/api/trade-history")
 def api_trade_history():
-    """Get all trade history records from OKX exchange and database with timeframe filtering."""
+    """Get trade history records from OKX exchange only."""
     try:
         initialize_system()
         logger.info("Ultra-lightweight initialization")
@@ -920,59 +920,17 @@ def api_trade_history():
         # Get timeframe parameter
         timeframe = request.args.get('timeframe', '7d')
         logger.info(f"Fetching trade history for timeframe: {timeframe}")
-        
-        from src.utils.database import DatabaseManager
-        db = DatabaseManager()
-        logger.info("Database ready")
 
-        # Only use authentic trade data - no database fallbacks for sample data
+        # Get trades from OKX only
         all_trades = []
-        db_trades = db.get_trades()
         
-        # Only include real trades from database (filter out sample data)
-        if not db_trades.empty:
-            real_trades = 0
-            for _, trade in db_trades.iterrows():
-                # Skip sample trades or test data with improved filtering
-                trade_value = float(trade['size']) * float(trade['price'])
-                
-                # Filter out test/sample data based on multiple criteria
-                if (trade.get('strategy') == 'Enhanced Bollinger Bands' or 
-                    'sample' in str(trade.get('source', '')).lower() or
-                    'test' in str(trade.get('order_id', '')).lower() or
-                    trade_value < 0.01 or  # Exclude trades under $0.01 (likely test data)
-                    float(trade['size']) < 0.1):  # Exclude microscopic quantities
-                    continue
-                    
-                formatted_trade = {
-                    'id': trade['id'],
-                    'trade_number': trade['id'],
-                    'symbol': trade['symbol'],
-                    'action': trade['action'],
-                    'side': trade['action'],
-                    'quantity': trade['size'],
-                    'price': trade['price'],
-                    'timestamp': str(trade.get('timestamp')),
-                    'total_value': trade['size'] * trade['price'],
-                    'pnl': trade.get('pnl', 0),
-                    'strategy': trade.get('strategy', ''),
-                    'order_id': trade.get('order_id', ''),
-                    'source': 'database_real'
-                }
-                all_trades.append(formatted_trade)
-                real_trades += 1
-
-            logger.info(f"Loaded {real_trades} authentic trades from database (filtered out sample data)")
-        else:
-            logger.info("No authentic trades found in database")
-
         # Use OKX exchange directly via portfolio service (existing working authentication)
         try:
             service = get_portfolio_service()
             if service and hasattr(service, 'exchange'):
                 # Use OKX exchange with enhanced direct API calls
                 okx_trades = service.exchange.get_trades(limit=1000)
-                logger.info(f"Retrieved {len(okx_trades)} authentic trades from OKX direct API for timeframe {timeframe}")
+                logger.info(f"Retrieved {len(okx_trades)} trades from OKX direct API for timeframe {timeframe}")
                 
                 # Format trades for frontend display
                 for trade in okx_trades:
@@ -1002,7 +960,7 @@ def api_trade_history():
         except Exception as okx_error:
             logger.error(f"OKX direct API trade retrieval failed: {okx_error}")
 
-        # Filter trades by timeframe if we have trades from database
+        # Filter trades by timeframe if we have trades
         if timeframe != 'all' and all_trades:
             all_trades = filter_trades_by_timeframe(all_trades, timeframe)
 
