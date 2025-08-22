@@ -378,32 +378,43 @@ def background_warmup() -> None:
         )
 
 def get_df(symbol: str, timeframe: str) -> Optional[list[dict[str, Any]]]:
-    """Get OHLCV data with on-demand fetch."""
+    """Get OHLCV data with on-demand fetch, preferring existing exchange instance."""
     df = cache_get(symbol, timeframe)
     if df is not None:
         return df
 
     try:
-        import ccxt
-        okx_api_key = os.getenv("OKX_API_KEY", "")
-        okx_secret = os.getenv("OKX_SECRET_KEY", "")
-        okx_pass = os.getenv("OKX_PASSPHRASE", "")
+        # Try to use existing connected exchange instance first
+        service = get_portfolio_service()
+        ex = None
         
-        if not (okx_api_key and okx_secret and okx_pass):
-            raise RuntimeError("OKX API credentials required. No simulation mode available.")
+        if (hasattr(service, 'exchange') and hasattr(service.exchange, 'exchange') and 
+            service.exchange.exchange is not None):
+            ex = service.exchange.exchange
+            logger.debug("Using existing exchange instance (no market reload needed)")
+        else:
+            # Fallback to creating new instance only when necessary
+            import ccxt
+            okx_api_key = os.getenv("OKX_API_KEY", "")
+            okx_secret = os.getenv("OKX_SECRET_KEY", "")
+            okx_pass = os.getenv("OKX_PASSPHRASE", "")
             
-        ex = ccxt.okx({
-            'apiKey': okx_api_key,
-            'secret': okx_secret,
-            'password': okx_pass,
-            'sandbox': False,
-            'enableRateLimit': True
-        })
-        # Force live trading mode
-        ex.set_sandbox_mode(False)
-        if ex.headers:
-            ex.headers.pop('x-simulated-trading', None)
-        ex.load_markets()
+            if not (okx_api_key and okx_secret and okx_pass):
+                raise RuntimeError("OKX API credentials required. No simulation mode available.")
+                
+            ex = ccxt.okx({
+                'apiKey': okx_api_key,
+                'secret': okx_secret,
+                'password': okx_pass,
+                'sandbox': False,
+                'enableRateLimit': True
+            })
+            # Force live trading mode
+            ex.set_sandbox_mode(False)
+            if ex.headers:
+                ex.headers.pop('x-simulated-trading', None)
+            ex.load_markets()
+            logger.debug("Created new exchange instance with market reload")
 
         ohlcv = ex.fetch_ohlcv(symbol, timeframe=timeframe, limit=200)
         # Convert to basic structure without pandas dependency
@@ -529,30 +540,42 @@ def api_price() -> Any:
 
         df = cache_get(sym, tf)
         if df is None or len(df) < lim:
-            import ccxt
-            okx_api_key = os.getenv("OKX_API_KEY", "")
-            okx_secret = os.getenv("OKX_SECRET_KEY", "")
-            okx_pass = os.getenv("OKX_PASSPHRASE", "")
+            # Try to use existing connected exchange instance first
+            service = get_portfolio_service()
+            ex = None
             
-            if not (okx_api_key and okx_secret and okx_pass):
-                raise RuntimeError("OKX API credentials required. No simulation mode available.")
+            if (hasattr(service, 'exchange') and hasattr(service.exchange, 'exchange') and 
+                service.exchange.exchange is not None):
+                ex = service.exchange.exchange
+                logger.debug("Using existing exchange instance (no market reload needed)")
+            else:
+                # Fallback to creating new instance only when necessary
+                import ccxt
+                okx_api_key = os.getenv("OKX_API_KEY", "")
+                okx_secret = os.getenv("OKX_SECRET_KEY", "")
+                okx_pass = os.getenv("OKX_PASSPHRASE", "")
                 
-            # 🌍 Regional endpoint support (2024 OKX update)
-            hostname = os.getenv("OKX_HOSTNAME") or os.getenv("OKX_REGION") or "www.okx.com"
-            
-            ex = ccxt.okx({
-                'apiKey': okx_api_key,
-                'secret': okx_secret,
-                'password': okx_pass,
-                'hostname': hostname,  # Regional endpoint support
-                'sandbox': False,
-                'enableRateLimit': True
-            })
-            # Force live trading mode
-            ex.set_sandbox_mode(False)
-            if ex.headers:
-                ex.headers.pop('x-simulated-trading', None)
-            ex.load_markets()
+                if not (okx_api_key and okx_secret and okx_pass):
+                    raise RuntimeError("OKX API credentials required. No simulation mode available.")
+                    
+                # 🌍 Regional endpoint support (2024 OKX update)
+                hostname = os.getenv("OKX_HOSTNAME") or os.getenv("OKX_REGION") or "www.okx.com"
+                
+                ex = ccxt.okx({
+                    'apiKey': okx_api_key,
+                    'secret': okx_secret,
+                    'password': okx_pass,
+                    'hostname': hostname,  # Regional endpoint support
+                    'sandbox': False,
+                    'enableRateLimit': True
+                })
+                # Force live trading mode
+                ex.set_sandbox_mode(False)
+                if ex.headers:
+                    ex.headers.pop('x-simulated-trading', None)
+                ex.load_markets()
+                logger.debug("Created new exchange instance with market reload")
+                
             ohlcv = ex.fetch_ohlcv(sym, timeframe=tf, limit=lim)
             # Convert to basic structure without pandas dependency
             processed_data = []
