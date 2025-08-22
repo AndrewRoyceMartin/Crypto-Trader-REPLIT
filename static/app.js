@@ -384,19 +384,19 @@ class TradingApp {
 
         // Update quick KPIs if status has portfolio summary
         if (data.portfolio) {
-            const kpiEquityEl = document.getElementById('kpi-total-equity');
-            const kpiDailyEl  = document.getElementById('kpi-daily-pnl');
+            const kpiEquityEl = document.getElementById('okx-total-balance');
+            const kpiDailyEl  = document.getElementById('okx-day-pnl');
             
             if (kpiEquityEl) {
                 const totalValue = data.portfolio.total_value || 0;
                 kpiEquityEl.textContent = this.formatCurrency(totalValue);
                 // Add error indicator if needed
                 if (data.portfolio.error && totalValue === 0) {
-                    const errorNote = document.getElementById('kpi-equity-error') || document.createElement('small');
-                    errorNote.id = 'kpi-equity-error';
+                    const errorNote = document.getElementById('okx-equity-error') || document.createElement('small');
+                    errorNote.id = 'okx-equity-error';
                     errorNote.className = 'text-warning d-block';
                     errorNote.textContent = data.portfolio.error;
-                    if (!document.getElementById('kpi-equity-error')) {
+                    if (!document.getElementById('okx-equity-error')) {
                         kpiEquityEl.parentNode.appendChild(errorNote);
                     }
                 }
@@ -408,11 +408,11 @@ class TradingApp {
                 kpiDailyEl.className = v >= 0 ? 'h5 mb-0 text-success' : 'h5 mb-0 text-danger';
                 // Add error indicator if needed
                 if (data.portfolio.error && v === 0) {
-                    const errorNote = document.getElementById('kpi-daily-error') || document.createElement('small');
-                    errorNote.id = 'kpi-daily-error';
+                    const errorNote = document.getElementById('okx-daily-error') || document.createElement('small');
+                    errorNote.id = 'okx-daily-error';
                     errorNote.className = 'text-warning d-block';
                     errorNote.textContent = data.portfolio.error;
-                    if (!document.getElementById('kpi-daily-error')) {
+                    if (!document.getElementById('okx-daily-error')) {
                         kpiDailyEl.parentNode.appendChild(errorNote);
                     }
                 }
@@ -4091,7 +4091,7 @@ function updateElementSafely(elementId, value) {
     } else {
         const currentPage = window.location.pathname;
         const expectedElements = {
-            '/': ['kpi-total-equity', 'kpi-daily-pnl', 'kpi-unrealized-pnl', 'kpi-cash', 'kpi-exposure', 'kpi-win-rate'],
+            '/': ['okx-total-balance', 'okx-day-pnl', 'okx-day-pnl-percent', 'okx-estimated-total', 'okx-active-positions', 'okx-best-performer'],
             '/portfolio': ['summary-total-value', 'summary-total-change', 'summary-total-assets', 'summary-cash-balance'],
             '/holdings': ['holdings-total-assets', 'holdings-active-count', 'holdings-zero-count']
         };
@@ -4302,15 +4302,15 @@ function updateQuickOverview(portfolioData) {
     updateElementSafely("overview-last-update", new Date().toLocaleTimeString());
     
     // Legacy KPI elements (if they exist)
-    updateElementSafely("kpi-total-equity", formatCurrency(totalEquity));
-    updateElementSafely("kpi-daily-pnl", formatCurrency(dailyPnl));
-    updateElementSafely("kpi-unrealized-pnl", formatCurrency(totalUnrealizedPnl));
-    updateElementSafely("kpi-cash", formatCurrency(cashBalance));
-    updateElementSafely("kpi-exposure", `${exposure.toFixed(1)}%`);
-    updateElementSafely("kpi-win-rate", `${winRate.toFixed(1)}%`);
+    updateElementSafely("okx-total-balance", formatCurrency(totalEquity));
+    updateElementSafely("okx-day-pnl", formatCurrency(dailyPnl));
+    updateElementSafely("okx-day-pnl-percent", formatCurrency(totalUnrealizedPnl));
+    updateElementSafely("okx-estimated-total", formatCurrency(cashBalance));
+    updateElementSafely("okx-active-positions", `${exposure.toFixed(1)}%`);
+    updateElementSafely("okx-best-performer", `${winRate.toFixed(1)}%`);
 
-    const dailyPnlEl = document.getElementById("kpi-daily-pnl");
-    const unrlEl = document.getElementById("kpi-unrealized-pnl");
+    const dailyPnlEl = document.getElementById("okx-day-pnl");
+    const unrlEl = document.getElementById("okx-day-pnl-percent");
     if (dailyPnlEl) dailyPnlEl.className = dailyPnl >= 0 ? "h5 mb-0 text-success" : "h5 mb-0 text-danger";
     if (unrlEl)     unrlEl.className     = totalUnrealizedPnl >= 0 ? "h5 mb-0 text-success" : "h5 mb-0 text-danger";
 

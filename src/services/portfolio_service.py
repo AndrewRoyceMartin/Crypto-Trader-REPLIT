@@ -623,7 +623,11 @@ class PortfolioService:
             # Skip error logging for known fiat currencies and stablecoins that don't have direct trading pairs
             known_non_tradeable = ['AUD', 'USD', 'EUR', 'GBP', 'USDT', 'USDC']
             if symbol not in known_non_tradeable:
-                self.logger.error(f"Error fetching live OKX price for {symbol}: {e}")
+                # Reduce noise: missing market symbols are expected, not errors
+                if "does not have market symbol" in str(e):
+                    self.logger.debug(f"Market symbol not available for {symbol}: {e}")
+                else:
+                    self.logger.error(f"Error fetching live OKX price for {symbol}: {e}")
             return 0.0
     
     def _calculate_real_cost_basis(self, symbol: str, trade_history: List[Dict]) -> tuple[float, float]:
