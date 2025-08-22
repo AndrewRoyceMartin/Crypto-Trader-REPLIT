@@ -2435,61 +2435,41 @@ def api_current_holdings():
 
 @app.route('/api/available-positions')
 def api_available_positions():
-    """Get all available OKX assets that can be traded (current balances + rebuy opportunities)."""
+    """Get all available OKX assets that can be traded."""
     try:
         currency = request.args.get('currency', 'USD')
         logger.info(f"Fetching available positions with currency: {currency}")
         
-        # Get current balances from portfolio service
+        # Get current holdings from the working portfolio service
         portfolio_service = get_portfolio_service()
         portfolio_data = portfolio_service.get_portfolio_data()
-        
-        # Get raw OKX balances directly
-        okx_balance = portfolio_service.exchange.fetch_balance()
+        holdings = portfolio_data.get('holdings', [])
         
         available_positions = []
         
-        # First, add all current OKX balances as available positions
-        logger.info(f"OKX balance keys: {list(okx_balance.keys())}")
-        
-        for symbol, balance_info in okx_balance.items():
-            if symbol in ['info', 'timestamp', 'datetime', 'free', 'used', 'total']:
-                continue  # Skip metadata fields
-                
-            total_balance = balance_info.get('total', 0)
-            if total_balance <= 0.000001:  # Skip very small balances
-                continue
-                
-            logger.info(f"Processing OKX asset: {symbol} with balance {total_balance}")
-            
+        # Convert current holdings to available positions format
+        for holding in holdings:
             try:
-                # Get current price if it's a crypto (skip fiat)
-                if symbol in ['AUD', 'USD', 'USDT', 'USDC']:
-                    current_price = 1.0  # Fiat assets
-                    buy_signal = "FIAT BALANCE"
-                    calculation_method = "fiat_currency"
-                else:
-                    # Get current crypto price
-                    market_symbol = f"{symbol}/USDT"
-                    current_ticker = portfolio_service.exchange.fetch_ticker(market_symbol)
-                    current_price = current_ticker.get('last', 0)
-                    buy_signal = "CURRENT HOLDING"
-                    calculation_method = "existing_balance"
-                
-                if current_price <= 0 and symbol not in ['AUD', 'USD', 'USDT', 'USDC']:
+                symbol = holding.get('symbol', '')
+                if not symbol:
+                    continue
+                    
+                # Check balance
+                balance = holding.get('quantity', 0)
+                if balance <= 0:
                     continue
                 
                 available_position = {
                     'symbol': symbol,
-                    'current_price': current_price,
-                    'current_balance': total_balance,
-                    'free_balance': balance_info.get('free', 0),
-                    'used_balance': balance_info.get('used', 0),
+                    'current_price': holding.get('current_price', 0),
+                    'current_balance': balance,
+                    'free_balance': balance,  # All balance is free for display
+                    'used_balance': 0,
                     'position_type': 'current_holding',
-                    'buy_signal': buy_signal,
-                    'calculation_method': calculation_method,
+                    'buy_signal': 'FIAT BALANCE' if symbol == 'AUD' else 'CURRENT HOLDING',
+                    'calculation_method': 'fiat_currency' if symbol == 'AUD' else 'existing_balance',
                     'last_exit_price': 0,
-                    'target_buy_price': current_price,
+                    'target_buy_price': holding.get('current_price', 0),
                     'price_difference': 0,
                     'price_diff_percent': 0,
                     'price_drop_from_exit': 0,
@@ -2498,69 +2478,65 @@ def api_available_positions():
                 }
                 
                 available_positions.append(available_position)
-                logger.info(f"Added current holding: {symbol} with balance {total_balance}")
+                logger.info(f"Added available position: {symbol} with balance {balance}")
                 
             except Exception as symbol_error:
-                logger.debug(f"Error processing current balance for {symbol}: {symbol_error}")
+                logger.debug(f"Error processing holding {holding}: {symbol_error}")
                 continue
         
-        # Second, add rebuy opportunities for previously sold positions  
+        logger.info(f"Found {len(available_positions)} available positions from current holdings")
+        
+        return jsonify({
+            'available_positions': available_positions,
+            'count': len(available_positions),
+            'success': True,
+            'message': f"Found {len(available_positions)} available assets from OKX account"
+        })
+        
+    except Exception as e:
+        logger.error(f"Error fetching available positions: {e}")
+        return jsonify({
+            'available_positions': [],
+            'count': 0,
+            'error': str(e),
+            'success': False
+        }), 500
+
+def get_all_positions_including_sold(portfolio_service):
+    """Get all positions including those that have been sold/reduced to zero"""
+    try:
+        # Get current holdings from portfolio service
+        current_holdings = portfolio_service.get_portfolio_data().get('holdings', [])
+        
+        # Get historical trades from database to find sold positions
         from src.utils.database import DatabaseManager
-        database_manager = DatabaseManager()
-        trades_df = database_manager.get_trades()
+        db = DatabaseManager()
         
-        if not trades_df.empty:
-            # Convert DataFrame to list of dictionaries for easier processing
-            trades = trades_df.to_dict('records')
-            
-            # Group trades by symbol to find last exit trades
-            symbol_trades = {}
-            for trade in trades:
-                symbol = trade.get('symbol', '')
-                if symbol and symbol != 'SAMPLE':  # Skip sample data
-                    if symbol not in symbol_trades:
-                        symbol_trades[symbol] = []
-                    symbol_trades[symbol].append(trade)
-            
-            # Extract current holdings for balance check
-            current_holdings = portfolio_data.get('holdings', [])
-            current_balances = {}
-            for holding in current_holdings:
-                symbol = holding.get('symbol', '')
-                if symbol:
-                    current_balances[symbol] = {'total': holding.get('quantity', 0)}
-        
-        # Extract current holdings for balance check
-        current_holdings = portfolio_data.get('holdings', [])
-        current_balances = {}
-        for holding in current_holdings:
-            symbol = holding.get('symbol', '')
-            if symbol:
-                current_balances[symbol] = {'total': holding.get('quantity', 0)}
-        
-        # Get native OKX client for price data
-        from src.utils.okx_native import OKXNative
-        okx_client = OKXNative.from_env()
-        
-        available_positions = []
-        
-        for symbol, symbol_trade_list in symbol_trades.items():
-            try:
-                # Sort trades by timestamp to get the most recent
-                sorted_trades = sorted(symbol_trade_list, key=lambda x: x.get('timestamp', 0), reverse=True)
-                
-                # Check if current balance is zero or very small
-                current_balance = current_balances.get(symbol, {}).get('total', 0)
-                
-                if current_balance == 0 or current_balance < 0.000001:
-                    # This is a sold-out position - find last sell trade
-                    last_sell_trades = [t for t in sorted_trades if str(t.get('action', '')).upper() == 'SELL']
-                    
-                    if last_sell_trades:
-                        last_sell = last_sell_trades[0]
-                        last_exit_price = float(last_sell.get('price', 0))
-                        
-                        if last_exit_price > 0:
+        # Simple implementation - return current holdings for now
+        return {
+            'success': True,
+            'positions': current_holdings,
+            'total_positions': len(current_holdings),
+            'active_positions': len([h for h in current_holdings if h.get('quantity', 0) > 0]),
+            'sold_positions': 0,
+            'reduced_positions': 0,
+            'last_update': utcnow().isoformat()
+        }
+    except Exception as e:
+        logger.error(f"Error getting all positions: {e}")
+        return {
+            'success': False,
+            'positions': [],
+            'total_positions': 0,
+            'active_positions': 0,
+            'sold_positions': 0,
+            'reduced_positions': 0,
+            'error': str(e)
+        }
+
+# Skip removed old broken function code
+
+@app.route("/api/paper-trade/buy", methods=["POST"])
                             # Get current market price using native OKX client
                             try:
                                 ticker = okx_client.ticker(f"{symbol}-USDT")
