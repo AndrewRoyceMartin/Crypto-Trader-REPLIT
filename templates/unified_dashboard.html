@@ -632,18 +632,39 @@
             
             const portfolioData = await portfolioResponse.json();
             if (portfolioData && portfolioData.total_current_value !== undefined) {
-                // Update total balance with actual OKX data
+                // Update total balance - use extended decimal formatting for micro-values
                 const totalBalance = document.getElementById('okx-total-balance');
-                if (totalBalance && portfolioData.total_current_value) {
-                    totalBalance.textContent = `$${portfolioData.total_current_value.toFixed(6)}`;
+                if (totalBalance) {
+                    const balance = portfolioData.total_current_value || 0;
+                    if (balance < 0.000001 && balance > 0) {
+                        totalBalance.textContent = new Intl.NumberFormat("en-US", { 
+                            style: "currency", 
+                            currency: "USD",
+                            minimumFractionDigits: 8,
+                            maximumFractionDigits: 12
+                        }).format(balance);
+                    } else {
+                        totalBalance.textContent = `$${balance.toFixed(6)}`;
+                    }
                 }
                 
-                // Update 24h P&L
+                // Update P&L with proper formatting
                 const dayPnl = document.getElementById('okx-day-pnl');
                 const dayPnlPercent = document.getElementById('okx-day-pnl-percent');
                 if (dayPnl && portfolioData.total_pnl !== undefined) {
                     const pnlValue = portfolioData.total_pnl || 0;
-                    dayPnl.textContent = `$${pnlValue.toFixed(6)}`;
+                    
+                    // Format P&L value with proper decimals for micro amounts
+                    if (Math.abs(pnlValue) < 0.000001 && pnlValue !== 0) {
+                        dayPnl.textContent = new Intl.NumberFormat("en-US", { 
+                            style: "currency", 
+                            currency: "USD",
+                            minimumFractionDigits: 8,
+                            maximumFractionDigits: 12
+                        }).format(pnlValue);
+                    } else {
+                        dayPnl.textContent = `$${pnlValue.toFixed(6)}`;
+                    }
                     dayPnl.className = `value ${pnlValue >= 0 ? 'text-success' : 'text-danger'}`;
                     
                     if (dayPnlPercent && portfolioData.total_pnl_percent !== undefined) {
@@ -665,10 +686,21 @@
                     const cryptoCount = portfolioData.holdings.filter(p => !['USD', 'USDT', 'AUD'].includes(p.symbol)).length;
                     positionsDetail.textContent = `${cryptoCount} crypto`;
                 }
+                
+                // Update best performer - use the actual holding if it's profitable
+                const bestPerformer = document.getElementById('okx-best-performer');
+                const bestGain = document.getElementById('okx-best-gain');
+                if (portfolioData.holdings && portfolioData.holdings.length > 0) {
+                    const profitableHolding = portfolioData.holdings.find(h => h.pnl_percent > 0);
+                    if (profitableHolding) {
+                        if (bestPerformer) bestPerformer.textContent = profitableHolding.symbol;
+                        if (bestGain) bestGain.textContent = `+${profitableHolding.pnl_percent.toFixed(2)}%`;
+                    }
+                }
             }
             
-            // Update best performer from separate API
-            if (bestPerformerResponse.ok) {
+            // Only use separate best performer API if no holdings data available
+            if (bestPerformerResponse.ok && (!portfolioData.holdings || portfolioData.holdings.length === 0)) {
                 const bestData = await bestPerformerResponse.json();
                 if (bestData.success && bestData.symbol) {
                     const bestPerformer = document.getElementById('okx-best-performer');
