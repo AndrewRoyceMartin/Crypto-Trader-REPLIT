@@ -377,12 +377,38 @@ class PortfolioService:
             except (TypeError, ValueError):
                 cash_balance = 0.0
 
+            # Calculate total estimated value including fiat balances
+            total_estimated_value = total_value  # Start with crypto holdings value
+            
+            # Add AUD balance converted to USD (if available)
+            aud_balance = 0.0
+            try:
+                if ('AUD' in account_balances and 
+                    isinstance(account_balances['AUD'], dict) and 
+                    'free' in account_balances['AUD']):
+                    aud_balance = float(account_balances['AUD'].get('free', 0.0) or 0.0)
+                    
+                    # Convert AUD to USD using approximate rate (1 AUD ≈ 0.65 USD)
+                    # For production, this should use real exchange rates
+                    aud_to_usd_rate = 0.65  # Approximate conversion rate
+                    aud_in_usd = aud_balance * aud_to_usd_rate
+                    total_estimated_value += aud_in_usd
+                    
+                    self.logger.info(f"Including AUD balance in total: {aud_balance:.2f} AUD (≈${aud_in_usd:.2f} USD)")
+            except (TypeError, ValueError):
+                aud_balance = 0.0
+
+            # Add USDT balance to total
+            total_estimated_value += cash_balance
+
             return {
                 "holdings": holdings,
-                "total_current_value": float(total_value),
+                "total_current_value": float(total_value),  # Crypto holdings only
+                "total_estimated_value": float(total_estimated_value),  # Total including fiat
                 "total_pnl": float(total_pnl),
                 "total_pnl_percent": float(total_pnl_percent),
                 "cash_balance": float(cash_balance),
+                "aud_balance": float(aud_balance),
                 "last_update": datetime.now(timezone.utc).isoformat(),
             }
 

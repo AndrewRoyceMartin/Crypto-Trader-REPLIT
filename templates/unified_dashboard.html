@@ -638,11 +638,22 @@
             
             const portfolioData = await portfolioResponse.json();
             if (portfolioData && portfolioData.total_current_value !== undefined) {
-                // Update total balance - use extended decimal formatting for micro-values
+                // Update total balance - use total estimated value including fiat
                 const totalBalance = document.getElementById('okx-total-balance');
                 if (totalBalance) {
-                    const balance = portfolioData.total_current_value || 0;
-                    if (balance < 0.000001 && balance > 0) {
+                    // Use total_estimated_value (includes AUD + crypto) instead of just crypto holdings
+                    const balance = portfolioData.total_estimated_value || portfolioData.total_current_value || 0;
+                    
+                    if (balance >= 1) {
+                        // For larger amounts (like your AUD balance), use standard currency formatting
+                        totalBalance.textContent = new Intl.NumberFormat("en-US", { 
+                            style: "currency", 
+                            currency: "USD",
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2
+                        }).format(balance);
+                    } else if (balance < 0.000001 && balance > 0) {
+                        // For micro-values, use extended decimals
                         totalBalance.textContent = new Intl.NumberFormat("en-US", { 
                             style: "currency", 
                             currency: "USD",
@@ -650,7 +661,7 @@
                             maximumFractionDigits: 12
                         }).format(balance);
                     } else {
-                        totalBalance.textContent = `$${balance.toFixed(6)}`;
+                        totalBalance.textContent = `$${balance.toFixed(2)}`;
                     }
                 }
                 
