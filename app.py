@@ -233,6 +233,11 @@ def _set_bot_state(**kv) -> None:
     """Thread-safe bot state update."""
     with _state_lock:
         bot_state.update(kv)
+
+def _get_bot_running() -> bool:
+    """Thread-safe bot running state read."""
+    with _state_lock:
+        return bot_state.get("running", False)
 # Portfolio state - starts empty, only populates when trading begins
 portfolio_initialized = False
 # Recent initial trades for display
@@ -816,14 +821,15 @@ multi_currency_trader = None
 @app.route("/api/bot/status")
 def bot_status() -> Any:
     """Get current bot trading status with multi-currency details."""
-    status = {
-        "success": True,
-        "running": bot_state["running"],
-        "mode": bot_state["mode"],
-        "symbol": bot_state["symbol"], 
-        "timeframe": bot_state["timeframe"],
-        "started_at": bot_state["started_at"]
-    }
+    with _state_lock:
+        status = {
+            "success": True,
+            "running": bot_state["running"],
+            "mode": bot_state["mode"],
+            "symbol": bot_state["symbol"], 
+            "timeframe": bot_state["timeframe"],
+            "started_at": bot_state["started_at"]
+        }
     
     # Add multi-currency details if available
     global multi_currency_trader
@@ -847,7 +853,7 @@ def bot_status() -> Any:
 def bot_start() -> Any:
     """Start the multi-currency trading bot with universal rebuy mechanism."""
     try:
-        if bot_state["running"]:
+        if _get_bot_running():
             return jsonify({"error": "Bot is already running"}), 400
             
         data = request.get_json() or {}
@@ -880,7 +886,7 @@ def bot_start() -> Any:
             retry_count = 0
             max_retries = 3
             
-            while bot_state["running"] and retry_count < max_retries:
+            while _get_bot_running() and retry_count < max_retries:
                 try:
                     trader_instance.start_trading(timeframe)
                     break  # Success, exit retry loop
@@ -932,13 +938,14 @@ def bot_start() -> Any:
         logger.info(f"Multi-currency bot started in {mode} mode with ${config.get_float('strategy', 'rebuy_max_usd', 100.0):.2f} rebuy limit")
         
         # Create a safe copy of bot_state without any non-serializable objects
-        safe_status = {
-            "running": bot_state["running"],
-            "mode": bot_state["mode"],
-            "symbol": bot_state["symbol"],
-            "timeframe": bot_state["timeframe"],
-            "started_at": bot_state["started_at"]
-        }
+        with _state_lock:
+            safe_status = {
+                "running": bot_state["running"],
+                "mode": bot_state["mode"],
+                "symbol": bot_state["symbol"],
+                "timeframe": bot_state["timeframe"],
+                "started_at": bot_state["started_at"]
+            }
         
         return jsonify({
             "success": True,
@@ -966,7 +973,7 @@ def bot_start() -> Any:
 def bot_stop() -> Any:
     """Stop the trading bot."""
     try:
-        if not bot_state["running"]:
+        if not _get_bot_running():
             return jsonify({"error": "Bot is not running"}), 400
             
         # Stop trader instance if exists
