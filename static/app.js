@@ -4108,7 +4108,7 @@ function updateOpenPositionsTable(positions, totalValue = 0) {
         if (!positions || positions.length === 0) {
             positionsTableBody.innerHTML = `
                 <tr>
-                    <td colspan="12" class="text-center py-4">
+                    <td colspan="13" class="text-center py-4">
                         <i class="fas fa-info-circle me-2"></i>No open positions
                     </td>
                 </tr>
@@ -4188,6 +4188,7 @@ function updateOpenPositionsTable(positions, totalValue = 0) {
                 <tr>
                     <td class="fw-bold">${symbol}</td>
                     <td>${formatNumber(quantity)}</td>
+                    <td>${formatCurrency(marketValue)}</td>
                     <td>${formatCurrency(purchasePrice)}</td>
                     <td>${formatCurrency(currentPrice)}</td>
                     <td>${formatCurrency(marketValue)}</td>
