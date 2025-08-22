@@ -59,6 +59,8 @@ The system utilizes a modular Flask-based web interface for live OKX trading, st
 
 **Code Quality Enhancement (August 2025):** Conducted comprehensive review and fix of all warnings and errors in app.py - resolved 10 LSP diagnostics including type compatibility issues with Config objects, method calls on potentially None objects, missing parameters in function calls, unbound variable references, and unknown OKXNative class members. Fixed OKXAdapter constructor to accept dict instead of Config object, updated OKXNative method calls to use correct API (ticker, balance methods), implemented proper error handling for exchange connectivity, and added mock trading functionality placeholders for buy/sell operations. All Python compilation and LSP diagnostic errors have been eliminated.
 
+**Missing API Endpoints Fix (August 2025):** Resolved console 404 errors by implementing three missing API endpoints that JavaScript was requesting: `/api/portfolio-analytics` (redirects to existing performance analytics), `/api/asset-allocation` (provides portfolio breakdown by asset with allocation percentages), and `/api/portfolio-history` (returns historical portfolio value data using OKX candle data). All endpoints now return proper JSON responses with appropriate error handling and fallback mechanisms, eliminating the JavaScript console warnings and providing complete API coverage for the dashboard interface.
+
 ## External Dependencies
 
 ### Market Data & Trading APIs
