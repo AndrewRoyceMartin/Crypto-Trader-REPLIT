@@ -419,7 +419,7 @@ def background_warmup() -> None:
             ', '.join(warmup.get('loaded', []))
         )
 
-def get_df(symbol: str, timeframe: str) -> Optional[list[dict[str, Any]]]:
+def get_df(symbol: str, timeframe: str) -> Optional[list[dict[str, float]]]:
     """Get OHLCV data with on-demand fetch, preferring existing exchange instance."""
     df = cache_get(symbol, timeframe)
     if df is not None:
@@ -1107,11 +1107,11 @@ def api_trade_history() -> ResponseReturnValue:
                                 # Parse fill data using proper OKX fields
                                 fill_id = fill.get('fillId', fill.get('tradeId', ''))
                                 timestamp_ms = int(fill.get('ts', 0))
-                                timestamp_dt = datetime.fromtimestamp(timestamp_ms / 1000, timezone.utc) if timestamp_ms > 0 else datetime.now(timezone.utc)
+                                timestamp_dt = datetime.fromtimestamp(timestamp_ms / 1000, timezone.utc) if timestamp_ms > 0 else utcnow()
                                 
-                                quantity = float(fill.get('fillSz', fill.get('sz', 0)))
-                                price = float(fill.get('fillPx', fill.get('px', 0)))
-                                fee = float(fill.get('fee', 0))
+                                quantity = float(fill.get('fillSz', fill.get('sz', 0)) or 0)
+                                price = float(fill.get('fillPx', fill.get('px', 0)) or 0)
+                                fee = float(fill.get('fee', 0) or 0)
                                 total_value = quantity * price if quantity and price else 0
                                 
                                 # Skip duplicates
@@ -1188,7 +1188,7 @@ def api_trade_history() -> ResponseReturnValue:
                                     continue
                                 
                                 # Properly map bill types and balance changes to actions
-                                bal_chg = float(bill.get('balChg', 0))
+                                bal_chg = float(bill.get('balChg', 0) or 0)
                                 if bal_chg > 0:
                                     side = 'BUY'  # Positive balance change = incoming = buying
                                 elif bal_chg < 0:
@@ -1213,14 +1213,14 @@ def api_trade_history() -> ResponseReturnValue:
                                 # Parse bill data
                                 bill_id = bill.get('billId', '')
                                 timestamp_ms = int(bill.get('ts', 0))
-                                timestamp_dt = datetime.fromtimestamp(timestamp_ms / 1000, timezone.utc) if timestamp_ms > 0 else datetime.now(timezone.utc)
+                                timestamp_dt = datetime.fromtimestamp(timestamp_ms / 1000, timezone.utc) if timestamp_ms > 0 else utcnow()
                                 
                                 # Get quantity and price from bill
-                                quantity = abs(float(bill.get('balChg', 0)))  # Balance change (absolute value)
+                                quantity = abs(float(bill.get('balChg', 0) or 0))  # Balance change (absolute value)
                                 px = bill.get('px', '0')
-                                price = float(px) if px and px != '' else 0
-                                fee = abs(float(bill.get('fee', 0)))
-                                total_value = quantity * price if quantity and price else abs(float(bill.get('balChg', 0)))
+                                price = float(px or 0) if px and px != '' else 0
+                                fee = abs(float(bill.get('fee', 0) or 0))
+                                total_value = quantity * price if quantity and price else abs(float(bill.get('balChg', 0) or 0))
                                 
                                 # Skip duplicates
                                 if bill_id in trade_ids_seen:
@@ -1303,12 +1303,12 @@ def api_trade_history() -> ResponseReturnValue:
                                 # Parse executed order data using proper OKX fields
                                 ord_id = order.get('ordId', order.get('clOrdId', ''))
                                 timestamp_ms = int(order.get('uTime', order.get('cTime', 0)))  # Update time for filled orders
-                                timestamp_dt = datetime.fromtimestamp(timestamp_ms / 1000, timezone.utc) if timestamp_ms > 0 else datetime.now(timezone.utc)
+                                timestamp_dt = datetime.fromtimestamp(timestamp_ms / 1000, timezone.utc) if timestamp_ms > 0 else utcnow()
                                 
                                 # Use filled size and average fill price for executed orders
-                                quantity = float(order.get('fillSz', order.get('sz', 0)))  # fillSz = filled size
-                                price = float(order.get('avgPx', order.get('px', 0)))      # avgPx = average fill price
-                                fee = float(order.get('fee', 0))
+                                quantity = float(order.get('fillSz', order.get('sz', 0)) or 0)  # fillSz = filled size
+                                price = float(order.get('avgPx', order.get('px', 0)) or 0)      # avgPx = average fill price
+                                fee = float(order.get('fee', 0) or 0)
                                 total_value = quantity * price if quantity and price else 0
                                 
                                 # Check if trade already exists (by ID) to avoid duplicates
@@ -1367,14 +1367,14 @@ def api_trade_history() -> ResponseReturnValue:
                                     'transaction_type': 'Trade',
                                     'action': trade.get('side', '').upper(),
                                     'side': trade.get('side', '').upper(),
-                                    'quantity': float(trade.get('amount', 0)),
-                                    'price': float(trade.get('price', 0)),
+                                    'quantity': float(trade.get('amount', 0) or 0),
+                                    'price': float(trade.get('price', 0) or 0),
                                     'timestamp': trade.get('datetime', ''),
-                                    'total_value': float(trade.get('cost', 0)),
+                                    'total_value': float(trade.get('cost', 0) or 0),
                                     'pnl': 0,
                                     'strategy': '',
                                     'order_id': trade.get('order', ''),
-                                    'fee': float(trade.get('fee', {}).get('cost', 0)) if isinstance(trade.get('fee'), dict) else 0,
+                                    'fee': float(trade.get('fee', {}).get('cost', 0) or 0) if isinstance(trade.get('fee'), dict) else 0,
                                     'fee_currency': trade.get('fee', {}).get('currency', 'USDT') if isinstance(trade.get('fee'), dict) else 'USDT',
                                     'source': 'okx_ccxt_fallback'
                                 }
@@ -1560,7 +1560,7 @@ def api_best_performer() -> ResponseReturnValue:
                         price_7d = ((newest_close - oldest_close) / oldest_close) * 100
                 
                 # Calculate performance score
-                portfolio_pnl = float(holding.get('pnl_percent', 0))
+                portfolio_pnl = float(holding.get('pnl_percent', 0) or 0)
                 volume = float(ticker.get("vol24h", 0) or 0)
                 performance_score = (price_24h * 0.3) + (price_7d * 0.4) + (portfolio_pnl * 0.3)
                 
@@ -1569,9 +1569,9 @@ def api_best_performer() -> ResponseReturnValue:
                     best_performer = {
                         "symbol": symbol,
                         "name": symbol,
-                        "current_price": float(holding.get('current_price', 0)),
-                        "current_value": float(holding.get('current_value', 0)),
-                        "allocation_percent": float(holding.get('allocation_percent', 0)),
+                        "current_price": float(holding.get('current_price', 0) or 0),
+                        "current_value": float(holding.get('current_value', 0) or 0),
+                        "allocation_percent": float(holding.get('allocation_percent', 0) or 0),
                         "pnl_percent": portfolio_pnl,
                         "price_change_24h": price_24h,
                         "price_change_7d": price_7d,
@@ -4365,10 +4365,10 @@ def api_test_sync_data() -> ResponseReturnValue:
             
             for holding in holdings:
                 try:
-                    quantity = float(holding.get('quantity', 0))
-                    current_price = float(holding.get('current_price', 0))
-                    avg_entry = float(holding.get('avg_entry_price', 0))
-                    reported_pnl = float(holding.get('pnl', 0))
+                    quantity = float(holding.get('quantity', 0) or 0)
+                    current_price = float(holding.get('current_price', 0) or 0)
+                    avg_entry = float(holding.get('avg_entry_price', 0) or 0)
+                    reported_pnl = float(holding.get('pnl', 0) or 0)
                     
                     if quantity > 0 and current_price > 0 and avg_entry > 0:
                         # Calculate expected P&L
@@ -4396,7 +4396,7 @@ def api_test_sync_data() -> ResponseReturnValue:
                         'error': str(e)
                     })
             
-            total_holdings = len([h for h in holdings if float(h.get('quantity', 0)) > 0])
+            total_holdings = len([h for h in holdings if float(h.get('quantity', 0) or 0) > 0])
             accuracy_pct = (accurate_calculations / total_holdings * 100) if total_holdings > 0 else 100
             
             test_data['test_results']['unrealized_pnl'] = {
@@ -4460,21 +4460,21 @@ def okx_dashboard() -> str:
         details = balances.get('details', [])
         
         # Calculate totals and build overview
-        total_eq_usd = float(balances.get('totalEq', 0))
+        total_eq_usd = float(balances.get('totalEq', 0) or 0)
         
         # Get positions with value > 0
         crypto_positions = []
         cash_positions = []
         
         for detail in details:
-            balance = float(detail.get('bal', 0))
+            balance = float(detail.get('bal', 0) or 0)
             if balance > 0:
                 asset_info = {
                     'symbol': detail.get('ccy'),
                     'balance': balance,
-                    'frozen': float(detail.get('frozenBal', 0)),
-                    'available': float(detail.get('availBal', 0)),
-                    'equity_usd': float(detail.get('eqUsd', 0))
+                    'frozen': float(detail.get('frozenBal', 0) or 0),
+                    'available': float(detail.get('availBal', 0) or 0),
+                    'equity_usd': float(detail.get('eqUsd', 0) or 0)
                 }
                 
                 # Categorize as crypto or cash
@@ -4493,9 +4493,9 @@ def okx_dashboard() -> str:
                 'total_equity_usd': total_eq_usd,
                 'account_level': account_level,
                 'margin_ratio': balances.get('mgnRatio', ''),
-                'isolated_equity': float(balances.get('isoEq', 0)),
-                'available_equity': float(balances.get('availEq', 0)),
-                'order_frozen': float(balances.get('ordFrozen', 0))
+                'isolated_equity': float(balances.get('isoEq', 0) or 0),
+                'available_equity': float(balances.get('availEq', 0) or 0),
+                'order_frozen': float(balances.get('ordFrozen', 0) or 0)
             },
             'positions_overview': {
                 'total_crypto_positions': len(crypto_positions),
@@ -4505,7 +4505,7 @@ def okx_dashboard() -> str:
             },
             'quick_stats': {
                 'total_assets': len(details),
-                'active_positions': len([d for d in details if float(d.get('bal', 0)) > 0]),
+                'active_positions': len([d for d in details if float(d.get('bal', 0) or 0) > 0]),
                 'total_equity_usd': total_eq_usd,
                 'largest_holding': max(crypto_positions, key=lambda x: x['equity_usd']) if crypto_positions else None
             },
