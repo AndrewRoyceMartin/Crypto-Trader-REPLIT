@@ -5540,6 +5540,139 @@ async function executeBuyOrder(symbol, amount) {
     }
 }
 
+// Function to refresh trades data (called by refresh button)
+async function refreshTradesData() {
+    console.log('Refreshing trades data from OKX trading history...');
+    try {
+        const timeframe = document.getElementById('trades-timeframe')?.value || '7d';
+        
+        // Show loading state
+        const tableBody = document.getElementById('trades-table');
+        if (tableBody) {
+            tableBody.innerHTML = '<tr><td colspan="7" class="text-center">Loading trades from OKX...</td></tr>';
+        }
+        
+        // Fetch from the working trade-history endpoint
+        const response = await fetch(`/api/trade-history?timeframe=${timeframe}&_refresh=${Date.now()}`, { 
+            cache: 'no-cache',
+            headers: {
+                'Cache-Control': 'no-cache'
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log('OKX trading history response:', data);
+        
+        if (data.success && data.trades) {
+            // Update the trades table directly
+            updateTradesTableFromOKX(data.trades);
+            console.log(`Updated trades table with ${data.trades.length} trades from OKX trading history`);
+            
+            // Update count if element exists
+            const countElement = document.getElementById('recent-trades-count');
+            if (countElement) {
+                countElement.textContent = data.trades.length;
+            }
+        } else {
+            console.warn('No trades data in response:', data);
+            if (tableBody) {
+                tableBody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">No recent trades found</td></tr>';
+            }
+        }
+    } catch (error) {
+        console.error('Failed to refresh trades data:', error);
+        const tableBody = document.getElementById('trades-table');
+        if (tableBody) {
+            tableBody.innerHTML = '<tr><td colspan="7" class="text-center text-danger">Failed to load trades</td></tr>';
+        }
+    }
+}
+
+// Helper function to update trades table from OKX data
+function updateTradesTableFromOKX(trades) {
+    const tableBody = document.getElementById('trades-table');
+    if (!tableBody || !trades) return;
+    
+    tableBody.innerHTML = '';
+    
+    if (!trades.length) {
+        tableBody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">No trades found in OKX history</td></tr>';
+        return;
+    }
+    
+    trades.forEach((trade, index) => {
+        const row = document.createElement('tr');
+        const timestamp = new Date(trade.timestamp).toLocaleString();
+        const symbol = (trade.symbol || '').replace('/USDT', '');
+        const side = trade.side || trade.action || '';
+        const sideClass = side === 'BUY' ? 'badge bg-success' : 'badge bg-danger';
+        const quantity = parseFloat(trade.quantity || 0).toFixed(6);
+        const price = parseFloat(trade.price || 0).toLocaleString('en-US', {
+            style: 'currency',
+            currency: 'USD',
+            minimumFractionDigits: 2
+        });
+        const pnl = parseFloat(trade.pnl || 0).toLocaleString('en-US', {
+            style: 'currency',
+            currency: 'USD',
+            minimumFractionDigits: 2
+        });
+        const pnlClass = (parseFloat(trade.pnl || 0)) >= 0 ? 'text-success' : 'text-danger';
+        
+        // Create cells using DOM manipulation for security
+        const tradeNumberCell = document.createElement('td');
+        tradeNumberCell.textContent = trade.trade_number || (index + 1);
+        
+        const timeCell = document.createElement('td');
+        timeCell.textContent = timestamp;
+        
+        const symbolCell = document.createElement('td');
+        const symbolStrong = document.createElement('strong');
+        symbolStrong.textContent = symbol;
+        symbolCell.appendChild(symbolStrong);
+        
+        const sideCell = document.createElement('td');
+        const sideBadge = document.createElement('span');
+        sideBadge.className = sideClass;
+        sideBadge.textContent = side;
+        sideCell.appendChild(sideBadge);
+        
+        const quantityCell = document.createElement('td');
+        quantityCell.className = 'text-end';
+        quantityCell.textContent = quantity;
+        
+        const priceCell = document.createElement('td');
+        priceCell.className = 'text-end';
+        priceCell.textContent = price;
+        
+        const pnlCell = document.createElement('td');
+        pnlCell.className = `text-end ${pnlClass}`;
+        pnlCell.textContent = pnl;
+        
+        // Append all cells to row
+        row.appendChild(tradeNumberCell);
+        row.appendChild(timeCell);
+        row.appendChild(symbolCell);
+        row.appendChild(sideCell);
+        row.appendChild(quantityCell);
+        row.appendChild(priceCell);
+        row.appendChild(pnlCell);
+        
+        tableBody.appendChild(row);
+    });
+}
+
+// Function to filter trades by timeframe (called by dropdown)
+async function filterTradesByTimeframe() {
+    console.log('Filtering trades by timeframe...');
+    // Simply call refresh since our API already handles timeframes
+    await refreshTradesData();
+}
+
 // Function to refresh holdings data (called by refresh button)
 async function refreshHoldingsData() {
     try {
