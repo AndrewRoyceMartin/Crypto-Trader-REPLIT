@@ -4568,27 +4568,29 @@ if __name__ == "__main__":
     # PRODUCTION NOTE: Use gunicorn instead of app.run() for production:
     # gunicorn -w 4 -k gthread -t 60 app:application
     
-    # Deployment stability optimizations
-    gc.set_threshold(400, 8, 8)  # Aggressive garbage collection for memory management
-    logger.info("Configured aggressive garbage collection for deployment stability")
+    # Deployment stability optimizations - Reduced overhead version
+    gc.set_threshold(700, 10, 10)  # Less aggressive GC to reduce CPU overhead
+    logger.info("Configured optimized garbage collection for deployment stability")
     
     def deployment_stability_monitor():
-        """Monitor memory and force cleanup to prevent deployment crashes"""
-        import psutil
-        while True:
-            try:
-                time.sleep(180)  # Check every 3 minutes
+        """Lightweight memory monitoring to prevent deployment crashes"""
+        try:
+            import psutil
+            while True:
+                time.sleep(300)  # Check every 5 minutes (reduced frequency)
                 memory_percent = psutil.virtual_memory().percent
-                if memory_percent > 85:
+                if memory_percent > 90:  # Only act on very high memory usage
                     collected = gc.collect()
-                    logger.warning(f"High memory usage ({memory_percent}%), collected {collected} objects")
-            except Exception:
-                pass  # Silently handle errors in monitoring thread
+                    logger.warning(f"Critical memory usage ({memory_percent}%), collected {collected} objects")
+        except ImportError:
+            logger.info("psutil not available, skipping memory monitoring")
+        except Exception:
+            pass  # Silently handle errors in monitoring thread
     
-    # Start monitoring thread for deployment stability
+    # Start lightweight monitoring thread for deployment stability
     monitor_thread = threading.Thread(target=deployment_stability_monitor, daemon=True)
     monitor_thread.start()
-    logger.info("Started deployment stability monitoring")
+    logger.info("Started lightweight deployment stability monitoring")
     
     initialize_system()  # config/db only; no network calls here
     port = int(os.environ.get("PORT", "5000"))
