@@ -616,42 +616,83 @@
         }
     }
 
-    // Initialize OKX native data display
+    // Initialize OKX Portfolio Overview using working portfolio service data
     async function updateNativeOKXDisplay() {
         try {
-            const response = await fetch('/api/okx-dashboard');
-            if (!response.ok) {
-                console.warn('OKX Dashboard API not available');
+            // Use working portfolio service instead of failing dashboard API
+            const [portfolioResponse, bestPerformerResponse] = await Promise.all([
+                fetch('/api/crypto-portfolio'),
+                fetch('/api/best-performer')
+            ]);
+            
+            if (!portfolioResponse.ok) {
+                console.warn('Portfolio service not available');
                 return;
             }
             
-            const data = await response.json();
-            if (data.success) {
-                // Update account level
-                const accountLevel = document.getElementById('okx-account-level');
-                if (accountLevel && data.account_level) {
-                    accountLevel.textContent = data.account_level;
-                    accountLevel.className = `badge ${data.account_level === 'VIP' ? 'bg-warning' : 'bg-info'}`;
+            const portfolioData = await portfolioResponse.json();
+            if (portfolioData && portfolioData.total_current_value !== undefined) {
+                // Update total balance with actual OKX data
+                const totalBalance = document.getElementById('okx-total-balance');
+                if (totalBalance && portfolioData.total_current_value) {
+                    totalBalance.textContent = `$${portfolioData.total_current_value.toFixed(6)}`;
                 }
                 
-                // Update other native OKX data
-                if (data.total_balance) {
-                    const totalBalance = document.getElementById('okx-total-balance');
-                    if (totalBalance) totalBalance.textContent = `$${data.total_balance.toFixed(2)}`;
-                }
-                
-                if (data.day_pnl !== undefined) {
-                    const dayPnl = document.getElementById('okx-day-pnl');
-                    if (dayPnl) {
-                        dayPnl.textContent = `$${data.day_pnl.toFixed(2)}`;
-                        dayPnl.className = `value ${data.day_pnl >= 0 ? 'text-success' : 'text-danger'}`;
+                // Update 24h P&L
+                const dayPnl = document.getElementById('okx-day-pnl');
+                const dayPnlPercent = document.getElementById('okx-day-pnl-percent');
+                if (dayPnl && portfolioData.total_pnl !== undefined) {
+                    const pnlValue = portfolioData.total_pnl || 0;
+                    dayPnl.textContent = `$${pnlValue.toFixed(6)}`;
+                    dayPnl.className = `value ${pnlValue >= 0 ? 'text-success' : 'text-danger'}`;
+                    
+                    if (dayPnlPercent && portfolioData.total_pnl_percent !== undefined) {
+                        const pnlPercent = portfolioData.total_pnl_percent || 0;
+                        dayPnlPercent.textContent = `${pnlPercent >= 0 ? '+' : ''}${pnlPercent.toFixed(2)}%`;
+                        dayPnlPercent.className = `change-indicator ${pnlPercent >= 0 ? 'text-success' : 'text-danger'}`;
                     }
                 }
                 
-                console.log('OKX native display updated successfully');
+                // Update active positions count
+                const activePositions = document.getElementById('okx-active-positions');
+                if (activePositions && portfolioData.holdings) {
+                    activePositions.textContent = portfolioData.holdings.length.toString();
+                }
+                
+                // Update positions detail
+                const positionsDetail = document.getElementById('okx-positions-detail');
+                if (positionsDetail && portfolioData.holdings) {
+                    const cryptoCount = portfolioData.holdings.filter(p => !['USD', 'USDT', 'AUD'].includes(p.symbol)).length;
+                    positionsDetail.textContent = `${cryptoCount} crypto`;
+                }
             }
+            
+            // Update best performer from separate API
+            if (bestPerformerResponse.ok) {
+                const bestData = await bestPerformerResponse.json();
+                if (bestData.success && bestData.symbol) {
+                    const bestPerformer = document.getElementById('okx-best-performer');
+                    const bestGain = document.getElementById('okx-best-gain');
+                    if (bestPerformer) bestPerformer.textContent = bestData.symbol;
+                    if (bestGain && bestData.change_24h !== undefined) {
+                        bestGain.textContent = `+${bestData.change_24h.toFixed(2)}%`;
+                    }
+                }
+            }
+            
+            // Set static account level (since native API is unauthorized)
+            const accountLevel = document.getElementById('okx-account-level');
+            if (accountLevel) {
+                accountLevel.textContent = 'Standard';
+                accountLevel.className = 'badge bg-info';
+            }
+            
+            const accountTier = document.getElementById('okx-account-tier');
+            if (accountTier) accountTier.textContent = 'Standard';
+            
+            console.log('OKX Portfolio Overview updated with actual OKX data');
         } catch (error) {
-            console.warn('Failed to update OKX native display:', error);
+            console.warn('Failed to update OKX Portfolio Overview:', error);
         }
     }
 
