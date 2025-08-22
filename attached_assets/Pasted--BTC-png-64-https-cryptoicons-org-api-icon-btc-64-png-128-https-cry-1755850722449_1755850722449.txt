@@ -1,0 +1,162 @@
+{
+  "BTC": {
+    "png_64": "https://cryptoicons.org/api/icon/btc/64",
+    "png_128": "https://cryptoicons.org/api/icon/btc/128",
+    "svg": "https://cryptologos.cc/logos/bitcoin-btc-logo.svg"
+  },
+  "ETH": {
+    "png_64": "https://cryptoicons.org/api/icon/eth/64",
+    "png_128": "https://cryptoicons.org/api/icon/eth/128",
+    "svg": "https://cryptologos.cc/logos/ethereum-eth-logo.svg"
+  },
+  "SOL": {
+    "png_64": "https://cryptoicons.org/api/icon/sol/64",
+    "png_128": "https://cryptoicons.org/api/icon/sol/128",
+    "svg": "https://cryptologos.cc/logos/solana-sol-logo.svg"
+  },
+  "ADA": {
+    "png_64": "https://cryptoicons.org/api/icon/ada/64",
+    "png_128": "https://cryptoicons.org/api/icon/ada/128",
+    "svg": "https://cryptologos.cc/logos/cardano-ada-logo.svg"
+  },
+  "XRP": {
+    "png_64": "https://cryptoicons.org/api/icon/xrp/64",
+    "png_128": "https://cryptoicons.org/api/icon/xrp/128",
+    "svg": "https://cryptologos.cc/logos/xrp-xrp-logo.svg"
+  },
+  "DOGE": {
+    "png_64": "https://cryptoicons.org/api/icon/doge/64",
+    "png_128": "https://cryptoicons.org/api/icon/doge/128",
+    "svg": "https://cryptologos.cc/logos/dogecoin-doge-logo.svg"
+  },
+  "BNB": {
+    "png_64": "https://cryptoicons.org/api/icon/bnb/64",
+    "png_128": "https://cryptoicons.org/api/icon/bnb/128",
+    "svg": "https://cryptologos.cc/logos/bnb-bnb-logo.svg"
+  },
+  "AVAX": {
+    "png_64": "https://cryptoicons.org/api/icon/avax/64",
+    "png_128": "https://cryptoicons.org/api/icon/avax/128",
+    "svg": "https://cryptologos.cc/logos/avalanche-avax-logo.svg"
+  },
+  "LINK": {
+    "png_64": "https://cryptoicons.org/api/icon/link/64",
+    "png_128": "https://cryptoicons.org/api/icon/link/128",
+    "svg": "https://cryptologos.cc/logos/chainlink-link-logo.svg"
+  },
+  "UNI": {
+    "png_64": "https://cryptoicons.org/api/icon/uni/64",
+    "png_128": "https://cryptoicons.org/api/icon/uni/128",
+    "svg": "https://cryptologos.cc/logos/uniswap-uni-logo.svg"
+  },
+  "LTC": {
+    "png_64": "https://cryptoicons.org/api/icon/ltc/64",
+    "png_128": "https://cryptoicons.org/api/icon/ltc/128",
+    "svg": "https://cryptologos.cc/logos/litecoin-ltc-logo.svg"
+  },
+  "BCH": {
+    "png_64": "https://cryptoicons.org/api/icon/bch/64",
+    "png_128": "https://cryptoicons.org/api/icon/bch/128",
+    "svg": "https://cryptologos.cc/logos/bitcoin-cash-bch-logo.svg"
+  },
+  "MATIC": {
+    "png_64": "https://cryptoicons.org/api/icon/matic/64",
+    "png_128": "https://cryptoicons.org/api/icon/matic/128",
+    "svg": "https://cryptologos.cc/logos/polygon-matic-logo.svg"
+  },
+  "DOT": {
+    "png_64": "https://cryptoicons.org/api/icon/dot/64",
+    "png_128": "https://cryptoicons.org/api/icon/dot/128",
+    "svg": "https://cryptologos.cc/logos/polkadot-new-dot-logo.svg"
+  },
+  "ATOM": {
+    "png_64": "https://cryptoicons.org/api/icon/atom/64",
+    "png_128": "https://cryptoicons.org/api/icon/atom/128",
+    "svg": "https://cryptologos.cc/logos/cosmos-atom-logo.svg"
+  },
+  "XLM": {
+    "png_64": "https://cryptoicons.org/api/icon/xlm/64",
+    "png_128": "https://cryptoicons.org/api/icon/xlm/128",
+    "svg": "https://cryptologos.cc/logos/stellar-xlm-logo.svg"
+  },
+  "ALGO": {
+    "png_64": "https://cryptoicons.org/api/icon/algo/64",
+    "png_128": "https://cryptoicons.org/api/icon/algo/128",
+    "svg": "https://cryptologos.cc/logos/algorand-algo-logo.svg"
+  },
+  "ICP": {
+    "png_64": "https://cryptoicons.org/api/icon/icp/64",
+    "png_128": "https://cryptoicons.org/api/icon/icp/128",
+    "svg": "https://cryptologos.cc/logos/internet-computer-icp-logo.svg"
+  },
+  "NEAR": {
+    "png_64": "https://cryptoicons.org/api/icon/near/64",
+    "png_128": "https://cryptoicons.org/api/icon/near/128",
+    "svg": "https://cryptologos.cc/logos/near-protocol-near-logo.svg"
+  },
+  "APT": {
+    "png_64": "https://cryptoicons.org/api/icon/apt/64",
+    "png_128": "https://cryptoicons.org/api/icon/apt/128",
+    "svg": "https://cryptologos.cc/logos/aptos-apt-logo.svg"
+  },
+  "ARB": {
+    "png_64": "https://cryptoicons.org/api/icon/arb/64",
+    "png_128": "https://cryptoicons.org/api/icon/arb/128",
+    "svg": "https://cryptologos.cc/logos/arbitrum-arb-logo.svg"
+  },
+  "OP": {
+    "png_64": "https://cryptoicons.org/api/icon/op/64",
+    "png_128": "https://cryptoicons.org/api/icon/op/128",
+    "svg": "https://cryptologos.cc/logos/optimism-ethereum-op-logo.svg"
+  },
+  "TRX": {
+    "png_64": "https://cryptoicons.org/api/icon/trx/64",
+    "png_128": "https://cryptoicons.org/api/icon/trx/128",
+    "svg": "https://cryptologos.cc/logos/tron-trx-logo.svg"
+  },
+  "PEPE": {
+    "png_64": "https://cryptoicons.org/api/icon/pepe/64",
+    "png_128": "https://cryptoicons.org/api/icon/pepe/128",
+    "svg": "https://cryptologos.cc/logos/pepe-pepe-logo.svg"
+  },
+  "SHIB": {
+    "png_64": "https://cryptoicons.org/api/icon/shib/64",
+    "png_128": "https://cryptoicons.org/api/icon/shib/128",
+    "svg": "https://cryptologos.cc/logos/shiba-inu-shib-logo.svg"
+  },
+  "AAVE": {
+    "png_64": "https://cryptoicons.org/api/icon/aave/64",
+    "png_128": "https://cryptoicons.org/api/icon/aave/128",
+    "svg": "https://cryptologos.cc/logos/aave-aave-logo.svg"
+  },
+  "SNX": {
+    "png_64": "https://cryptoicons.org/api/icon/snx/64",
+    "png_128": "https://cryptoicons.org/api/icon/snx/128",
+    "svg": "https://cryptologos.cc/logos/synthetix-snx-logo.svg"
+  },
+  "CRV": {
+    "png_64": "https://cryptoicons.org/api/icon/crv/64",
+    "png_128": "https://cryptoicons.org/api/icon/crv/128",
+    "svg": "https://cryptologos.cc/logos/curve-dao-token-crv-logo.svg"
+  },
+  "MKR": {
+    "png_64": "https://cryptoicons.org/api/icon/mkr/64",
+    "png_128": "https://cryptoicons.org/api/icon/mkr/128",
+    "svg": "https://cryptologos.cc/logos/maker-mkr-logo.svg"
+  },
+  "USDT": {
+    "png_64": "https://cryptoicons.org/api/icon/usdt/64",
+    "png_128": "https://cryptoicons.org/api/icon/usdt/128",
+    "svg": "https://cryptologos.cc/logos/tether-usdt-logo.svg"
+  },
+  "USDC": {
+    "png_64": "https://cryptoicons.org/api/icon/usdc/64",
+    "png_128": "https://cryptoicons.org/api/icon/usdc/128",
+    "svg": "https://cryptologos.cc/logos/usd-coin-usdc-logo.svg"
+  },
+  "DAI": {
+    "png_64": "https://cryptoicons.org/api/icon/dai/64",
+    "png_128": "https://cryptoicons.org/api/icon/dai/128",
+    "svg": "https://cryptologos.cc/logos/multi-collateral-dai-dai-logo.svg"
+  }
+}
