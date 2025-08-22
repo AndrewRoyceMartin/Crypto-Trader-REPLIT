@@ -4184,17 +4184,23 @@ function updateOpenPositionsTable(positions, totalValue = 0) {
                 return value.toFixed(8);
             };
             
-            // Format meaningful dollar amounts (not micro-values)
+            // Format micro-cap token values in a meaningful way
             const formatMeaningfulCurrency = (value) => {
-                if (value < 0.01) {
-                    return '$' + value.toFixed(8);
+                const numValue = Number(value) || 0;
+                if (Math.abs(numValue) < 0.000001 && numValue !== 0) {
+                    // For micro-values, show in millionths for readability
+                    const millionths = numValue * 1000000;
+                    return `${millionths.toFixed(2)} µUSD`;
+                }
+                if (Math.abs(numValue) < 0.01 && numValue !== 0) {
+                    return '$' + numValue.toFixed(8);
                 }
                 return new Intl.NumberFormat("en-US", { 
                     style: "currency", 
                     currency: "USD",
                     minimumFractionDigits: 2,
                     maximumFractionDigits: 6
-                }).format(value);
+                }).format(numValue);
             };
             
             // Display total position values, not per-unit prices
