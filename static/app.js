@@ -25,11 +25,11 @@ class TradingApp {
 
         // API cache
         this.apiCache = {
-            status:    { data: null, timestamp: 0, ttl: 1000 },  // 1s
-            portfolio: { data: null, timestamp: 0, ttl: 1000 },  // 1s
-            config:    { data: null, timestamp: 0, ttl: 30000 }, // 30s
-            analytics: { data: null, timestamp: 0, ttl: 5000 },  // 5s
-            portfolioHistory: { data: null, timestamp: 0, ttl: 30000 }, // 30s
+            status:    { data: null, timestamp: 0, ttl: 15000 },  // 15s (reduced from 1s for stability)
+            portfolio: { data: null, timestamp: 0, ttl: 10000 },  // 10s (reduced from 1s for stability)
+            config:    { data: null, timestamp: 0, ttl: 60000 }, // 60s (increased from 30s)
+            analytics: { data: null, timestamp: 0, ttl: 30000 },  // 30s (reduced from 5s for stability)
+            portfolioHistory: { data: null, timestamp: 0, ttl: 120000 }, // 2min (increased for stability)
             assetAllocation: { data: null, timestamp: 0, ttl: 15000 }, // 15s
             bestPerformer: { data: null, timestamp: 0, ttl: 10000 },  // 10s
             worstPerformer: { data: null, timestamp: 0, ttl: 10000 },  // 10s
