@@ -924,62 +924,91 @@ def api_trade_history():
         # Get trades from OKX only
         all_trades = []
         
-        # Use OKX exchange to get executed trades (trading history)
+        # Use OKX account bills API to get ALL transaction types (trades, simple trades, converts)
         try:
-            service = get_portfolio_service()
-            if service and hasattr(service, 'exchange'):
-                # Use the existing OKX adapter get_trades method which should get executed trades
-                okx_trades = service.exchange.get_trades(limit=1000)
-                logger.info(f"Retrieved {len(okx_trades)} executed trades from OKX trading history for timeframe {timeframe}")
+            from src.utils.okx_native import OKXNativeAPI
+            from datetime import datetime, timedelta
+            import os
+            
+            # Initialize OKX native client
+            api_key = os.getenv("OKX_API_KEY", "")
+            secret_key = os.getenv("OKX_API_SECRET", "") or os.getenv("OKX_SECRET_KEY", "")
+            passphrase = os.getenv("OKX_API_PASSPHRASE", "") or os.getenv("OKX_PASSPHRASE", "")
+            
+            if api_key and secret_key and passphrase:
+                okx_client = OKXNativeAPI(api_key, secret_key, passphrase)
                 
-                # Log the type of data we're getting to verify it's trading history not order history
-                if okx_trades:
-                    sample_trade = okx_trades[0]
-                    logger.info(f"Sample trade data: ID={sample_trade.get('id')}, Symbol={sample_trade.get('symbol')}, Status={sample_trade.get('status', 'N/A')}, Side={sample_trade.get('side')}, Amount={sample_trade.get('amount', sample_trade.get('quantity'))}")
-                    logger.info(f"This appears to be from {'order history' if sample_trade.get('status') else 'trade fills/execution history'}")
+                # Get last 90 days of account bills for comprehensive history
+                end_time = int(datetime.now().timestamp() * 1000)
+                start_time = int((datetime.now() - timedelta(days=90)).timestamp() * 1000)
                 
-                # Format trades for frontend display
-                for trade in okx_trades:
-                    if trade.get('id'):  # Only process valid trades
-                        symbol = trade.get('symbol', '')
+                bills = okx_client.bills(begin_ms=start_time, end_ms=end_time, limit=100)
+                logger.info(f"Retrieved {len(bills)} account bills from OKX comprehensive history")
+                
+                if bills:
+                    logger.info(f"Sample bill data: {bills[0]}")
+                
+                # Process bills to extract different transaction types
+                for bill in bills:
+                    if not bill.get('billId'):
+                        continue
                         
-                        # Determine transaction type based on trading pair
-                        transaction_type = 'Trade'  # Default
-                        if symbol:
-                            if '/USDT' in symbol or '/USD' in symbol:
-                                # Traditional crypto/stablecoin trading
-                                transaction_type = 'Trade'
-                            elif '/AUD' in symbol:
-                                # Direct crypto to fiat purchases 
+                    bill_type = bill.get('type', '')
+                    sub_type = bill.get('subType', '')
+                    inst_id = bill.get('instId', '')
+                    
+                    # Determine transaction type and skip non-trading bills
+                    transaction_type = 'Trade'  # Default
+                    skip_bill = False
+                    
+                    if bill_type == '2':  # Trade-related bills
+                        if sub_type == '1':  # Buy/Sell
+                            if '/AUD' in inst_id:
                                 transaction_type = 'Simple trade'
-                            elif 'USD/AUD' in symbol or 'AUD/USD' in symbol:
-                                # Currency conversions
-                                transaction_type = 'Convert'
-                            else:
-                                # Other trading pairs
+                            elif '/USDT' in inst_id or '/USD' in inst_id:
                                 transaction_type = 'Trade'
-                        
-                        formatted_trade = {
-                            'id': trade.get('id', ''),
-                            'trade_number': len(all_trades) + 1,
-                            'symbol': trade.get('symbol', ''),
-                            'type': transaction_type,  # Add transaction type
-                            'transaction_type': transaction_type,  # Backup field name
-                            'action': trade.get('side', ''),
-                            'side': trade.get('side', ''),
-                            'quantity': trade.get('quantity', 0),
-                            'price': trade.get('price', 0),
-                            'timestamp': trade.get('datetime', ''),
-                            'total_value': trade.get('total_value', 0),
-                            'pnl': 0,  # Calculate separately if needed
-                            'strategy': '',  # Real trades don't have strategies
-                            'order_id': trade.get('order_id', ''),
-                            'source': 'okx_direct'
-                        }
-                        all_trades.append(formatted_trade)
-                        
-                if not okx_trades:
-                    logger.info("OKX direct API returned 0 trades - this correctly indicates no recent trading activity")
+                            else:
+                                transaction_type = 'Trade'
+                        elif sub_type == '9':  # System token conversion
+                            transaction_type = 'Convert'
+                        else:
+                            # Skip fees, transfers, etc.
+                            skip_bill = True
+                    else:
+                        # Skip non-trade bills (transfers, deposits, withdrawals, etc.)
+                        skip_bill = True
+                    
+                    if skip_bill or not inst_id:
+                        continue
+                    
+                    # Determine side from balance change
+                    balance_change = float(bill.get('balChg', 0))
+                    side = 'BUY' if balance_change > 0 else 'SELL'
+                    
+                    # Extract symbol from instId (e.g., "BTC-USDT" -> "BTC/USDT")
+                    symbol = inst_id.replace('-', '/')
+                    
+                    formatted_trade = {
+                        'id': bill.get('billId', ''),
+                        'trade_number': len(all_trades) + 1,
+                        'symbol': symbol,
+                        'type': transaction_type,
+                        'transaction_type': transaction_type,
+                        'action': side,
+                        'side': side,
+                        'quantity': abs(float(bill.get('sz', 0))),
+                        'price': 0,  # Bills don't include price, would need separate lookup
+                        'timestamp': datetime.fromtimestamp(int(bill.get('ts', 0)) / 1000).isoformat() + 'Z',
+                        'total_value': abs(balance_change),
+                        'pnl': float(bill.get('pnl', 0)),
+                        'strategy': '',
+                        'order_id': bill.get('ordId', ''),
+                        'source': 'okx_bills_api'
+                    }
+                    all_trades.append(formatted_trade)
+                
+                if not bills:
+                    logger.info("OKX bills API returned 0 bills - no recent account activity")
             else:
                 logger.error("Portfolio service not available - cannot access OKX exchange")
                     
