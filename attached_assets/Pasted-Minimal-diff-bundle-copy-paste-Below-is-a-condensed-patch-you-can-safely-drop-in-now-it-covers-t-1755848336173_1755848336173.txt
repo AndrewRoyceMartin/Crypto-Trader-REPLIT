@@ -1,0 +1,71 @@
+Minimal diff bundle (copy/paste)
+
+Below is a condensed patch you can safely drop in now (it covers the most error-prone bits for pyright + OKX):
+
+# --- types & helpers (top of file) ---
+from typing import Any, Optional, Iterator, TypedDict
+from flask.typing import ResponseReturnValue
+
+class WarmupState(TypedDict, total=False):
+    started: bool
+    done: bool
+    error: str
+    loaded: list[str]
+    start_time: str
+    start_ts: float
+
+class BotState(TypedDict, total=False):
+    running: bool
+    mode: Optional[str]
+    symbol: Optional[str]
+    timeframe: Optional[str]
+    started_at: Optional[str]
+
+_state_lock = threading.RLock()
+warmup: WarmupState = {"started": False, "done": False, "error": "", "loaded": []}
+bot_state: BotState = {"running": False, "mode": None, "symbol": None, "timeframe": None, "started_at": None}
+
+def iso_utc(dt: Optional[datetime] = None) -> str:
+    d = (dt or utcnow()).astimezone(timezone.utc)
+    return d.replace(microsecond=0).isoformat().replace("+00:00", "Z")
+
+def _date_range(start: datetime, end: datetime) -> Iterator[datetime]:
+    d = start
+    while d.date() <= end.date():
+        yield d
+        d += timedelta(days=1)
+
+def _okx_base_url() -> str:
+    raw = os.getenv("OKX_HOSTNAME") or os.getenv("OKX_REGION") or "www.okx.com"
+    base = raw.rstrip("/")
+    if not base.startswith("http"):
+        base = f"https://{base}"
+    return base
+
+_requests_session = requests.Session()
+
+def okx_request(path: str, api_key: str, secret_key: str, passphrase: str,
+                method: str = 'GET', body: Any = None, timeout: int = 10) -> dict[str, Any]:
+    base_url = _okx_base_url()
+    ts = now_utc_iso()
+    method = method.upper()
+    body_str = ""
+    headers = {
+        'OK-ACCESS-KEY': api_key,
+        'OK-ACCESS-TIMESTAMP': ts,
+        'OK-ACCESS-PASSPHRASE': passphrase,
+        'Content-Type': 'application/json'
+    }
+    if os.getenv("OKX_SIMULATED", "0").lower() in ("1", "true", "yes"):
+        headers['x-simulated-trading'] = '1'
+    if method == 'POST':
+        import json as _json
+        body_str = _json.dumps(body or {}, separators=(',', ':'))
+    sig = okx_sign(secret_key, ts, method, path, body_str)
+    headers['OK-ACCESS-SIGN'] = sig
+    if method == 'GET':
+        resp = _requests_session.get(base_url + path, headers=headers, timeout=timeout)
+    else:
+        resp = _requests_session.post(base_url + path, headers=headers, data=body_str, timeout=timeout)
+    resp.raise_for_status()
+    return resp.json()

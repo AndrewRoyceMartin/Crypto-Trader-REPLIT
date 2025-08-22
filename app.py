@@ -18,7 +18,7 @@ from datetime import datetime, timedelta, timezone
 
 # Only suppress specific pkg_resources deprecation warning - all other warnings will show
 warnings.filterwarnings('ignore', message='pkg_resources is deprecated as an API.*', category=DeprecationWarning)
-from typing import Any, Optional, Iterator
+from typing import Any, Optional, Iterator, TypedDict
 from functools import wraps
 from flask import Flask, jsonify, request, render_template
 from flask.typing import ResponseReturnValue
@@ -52,6 +52,22 @@ def require_admin(f: Any) -> Any:
             return jsonify({"error": "unauthorized"}), 401
         return f(*args, **kwargs)
     return _w
+
+# === Type Definitions ===
+class WarmupState(TypedDict, total=False):
+    started: bool
+    done: bool
+    error: str
+    loaded: list[str]
+    start_time: str
+    start_ts: float
+
+class BotState(TypedDict, total=False):
+    running: bool
+    mode: Optional[str]
+    symbol: Optional[str]
+    timeframe: Optional[str]
+    started_at: Optional[str]
 
 # === UTC DateTime Helpers ===
 def utcnow() -> datetime:
@@ -164,7 +180,7 @@ WARMUP_SLEEP_SEC      = int(os.getenv("WARMUP_SLEEP_SEC", "1"))       # pause be
 CACHE_FILE            = "warmup_cache.parquet"                        # persistent cache file
 
 # Warm-up state & TTL cache
-warmup = {"started": False, "done": False, "error": "", "loaded": []}
+warmup: WarmupState = {"started": False, "done": False, "error": "", "loaded": []}
 # Global trading state
 trading_state = {
     "mode": "stopped",
@@ -723,14 +739,7 @@ def DISABLED_api_crypto_portfolio() -> ResponseReturnValue:
         return jsonify({"error": str(e)}), 500
 
 # Global bot state
-bot_state = {
-    "running": False,
-    "mode": None,
-    "symbol": None,
-    "timeframe": None,
-    "started_at": None,
-    "trader_instance": None
-}
+bot_state: BotState = {"running": False, "mode": None, "symbol": None, "timeframe": None, "started_at": None}
 
 # Global multi-currency trader instance (separate from JSON-serializable state)
 multi_currency_trader = None
