@@ -3242,9 +3242,20 @@ class TradingApp {
 
         const parseTime = (t) => {
             if (!t) return 0;
-            const d = new Date(t);
-            const n = d.getTime();
-            return Number.isFinite(n) ? n : 0;
+            try {
+                let dateStr = t;
+                if (typeof dateStr === 'string') {
+                    // Fix OKX timestamp format: remove trailing Z if timezone offset is present
+                    if (dateStr.includes('+') && dateStr.endsWith('Z')) {
+                        dateStr = dateStr.slice(0, -1);
+                    }
+                }
+                const d = new Date(dateStr);
+                const n = d.getTime();
+                return Number.isFinite(n) ? n : 0;
+            } catch (e) {
+                return 0;
+            }
         };
 
         let filtered = this.allTrades.filter(trade => {
@@ -5587,7 +5598,23 @@ function updateTradesTableFromOKX(trades) {
     
     trades.forEach((trade, index) => {
         const row = document.createElement('tr');
-        const timestamp = new Date(trade.timestamp).toLocaleString();
+        // Fix timestamp parsing for OKX format: "2025-08-22T02:19:28.148000+00:00Z"
+        let timestamp = '-';
+        try {
+            let dateStr = trade.timestamp;
+            if (typeof dateStr === 'string') {
+                // Remove trailing Z if timezone offset is present
+                if (dateStr.includes('+') && dateStr.endsWith('Z')) {
+                    dateStr = dateStr.slice(0, -1);
+                }
+                const date = new Date(dateStr);
+                if (!isNaN(date.getTime())) {
+                    timestamp = date.toLocaleString();
+                }
+            }
+        } catch (e) {
+            console.debug('Date parsing failed for:', trade.timestamp);
+        }
         const symbol = (trade.symbol || '').replace('/USDT', '');
         const side = trade.side || trade.action || '';
         const sideClass = side === 'BUY' ? 'badge bg-success' : 'badge bg-danger';
