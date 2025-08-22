@@ -475,7 +475,7 @@ app = Flask(__name__)
 # Register the real OKX endpoint directly without circular import
 
 @app.route("/api/status")
-def api_status() -> Any:
+def api_status() -> ResponseReturnValue:
     """Simple status endpoint to check warmup and system health."""
     return jsonify({
         "status": "running",
@@ -484,7 +484,7 @@ def api_status() -> Any:
         "timestamp": iso_utc()
     })
 @app.route("/api/crypto-portfolio")
-def crypto_portfolio_okx() -> Any:
+def crypto_portfolio_okx() -> ResponseReturnValue:
     """Get real OKX portfolio data using PortfolioService."""
     try:
         # Get selected currency from request (default to USD)
@@ -538,17 +538,17 @@ def start_warmup() -> None:
 
 # Ultra-fast health endpoints
 @app.route("/health")
-def health() -> tuple[Any, int]:
+def health() -> ResponseReturnValue:
     """Platform watchdog checks this; return 200 immediately once listening."""
     return jsonify({"status": "ok"}), 200
 
 @app.route("/ready")
-def ready() -> tuple[Any, int]:
+def ready() -> ResponseReturnValue:
     """UI can poll this and show a spinner until ready."""
     return (jsonify({"ready": True, **warmup}), 200) if warmup["done"] else (jsonify({"ready": False, **warmup}), 503)
 
 @app.route("/api/price")
-def api_price() -> Any:
+def api_price() -> ResponseReturnValue:
     """
     Returns latest OHLCV slice for the selected symbol & timeframe.
     Uses cache with TTL; fetches on demand if missing/stale.
@@ -819,7 +819,7 @@ bot_state: BotState = {"running": False, "mode": None, "symbol": None, "timefram
 multi_currency_trader = None
 
 @app.route("/api/bot/status")
-def bot_status() -> Any:
+def bot_status() -> ResponseReturnValue:
     """Get current bot trading status with multi-currency details."""
     with _state_lock:
         status = {
@@ -850,7 +850,7 @@ def bot_status() -> Any:
 
 @app.route("/api/bot/start", methods=["POST"])
 @require_admin
-def bot_start() -> Any:
+def bot_start() -> ResponseReturnValue:
     """Start the multi-currency trading bot with universal rebuy mechanism."""
     try:
         if _get_bot_running():
@@ -970,7 +970,7 @@ def bot_start() -> Any:
 
 @app.route("/api/bot/stop", methods=["POST"])
 @require_admin  
-def bot_stop() -> Any:
+def bot_stop() -> ResponseReturnValue:
     """Stop the trading bot."""
     try:
         if not _get_bot_running():
@@ -1010,12 +1010,12 @@ def bot_stop() -> Any:
 
 @app.route("/api/start_trading", methods=["POST"])
 @require_admin
-def start_trading() -> Any:
+def start_trading() -> ResponseReturnValue:
     """Legacy endpoint - redirect to bot start."""
     return jsonify({"error": "Use /api/bot/start endpoint instead"}), 301
 
 @app.route("/api/trade-history")
-def api_trade_history() -> Any:
+def api_trade_history() -> ResponseReturnValue:
     """Get trade history records from OKX exchange only."""
     try:
         initialize_system()
@@ -1470,7 +1470,7 @@ def filter_trades_by_timeframe(trades: list[dict[str, Any]], timeframe: str) -> 
     return filtered_trades
 
 @app.route("/api/recent-trades")  
-def api_recent_trades() -> Any:
+def api_recent_trades() -> ResponseReturnValue:
     """Get recent trades - redirect to working trade-history endpoint with limit."""
     try:
         # Validate timeframe parameter against allowed values
@@ -1496,7 +1496,7 @@ def api_recent_trades() -> Any:
         return jsonify({"success": False, "error": str(e)}), 500
 
 @app.route("/api/best-performer")
-def api_best_performer() -> Any:
+def api_best_performer() -> ResponseReturnValue:
     """Get best performing asset for the dashboard."""
     try:
         from src.utils.okx_native import OKXNative
@@ -1572,7 +1572,7 @@ def api_best_performer() -> Any:
         return jsonify({"success": False, "error": str(e)}), 500
 
 @app.route("/api/worst-performer")
-def api_worst_performer() -> Any:
+def api_worst_performer() -> ResponseReturnValue:
     try:
         service = get_portfolio_service()
         pf = service.get_portfolio_data()
@@ -1632,7 +1632,7 @@ def api_worst_performer() -> Any:
         return jsonify({"success": False, "error": str(e)}), 500
 
 @app.route("/api/equity-curve")
-def api_equity_curve() -> Any:
+def api_equity_curve() -> ResponseReturnValue:
     """Equity curve from OKX: prefer account bills + historical candles; fallback to current balances + candles."""
     try:
         timeframe = request.args.get('timeframe', '30d')
@@ -1824,7 +1824,7 @@ def api_equity_curve() -> Any:
         return jsonify({"success": False, "error": str(e), "equity_curve": [], "timeframe": request.args.get('timeframe','30d')}), 500
 
 @app.route("/api/drawdown-analysis")
-def api_drawdown_analysis() -> Any:
+def api_drawdown_analysis() -> ResponseReturnValue:
     """Get drawdown analysis using direct OKX native APIs."""
     try:
         timeframe = request.args.get('timeframe', '30d')
@@ -2128,7 +2128,7 @@ def api_drawdown_analysis() -> Any:
         }), 500
 
 @app.route("/api/performance-analytics")
-def api_performance_analytics() -> Any:
+def api_performance_analytics() -> ResponseReturnValue:
     """Get performance analytics using direct OKX native APIs only."""
     try:
         timeframe = request.args.get('timeframe', '30d')
@@ -2418,7 +2418,7 @@ def api_performance_analytics() -> Any:
 server_start_time = datetime.now(LOCAL_TZ)
 
 @app.route("/api/live-prices")
-def api_live_prices() -> Any:
+def api_live_prices() -> ResponseReturnValue:
     """Get live cryptocurrency prices from OKX simulation."""
     if not warmup["done"]:
         return jsonify({"error": "System still initializing"}), 503
@@ -2463,7 +2463,7 @@ def api_live_prices() -> Any:
         return jsonify({"error": str(e)}), 500
 
 @app.route("/api/exchange-rates")
-def api_exchange_rates() -> Any:
+def api_exchange_rates() -> ResponseReturnValue:
     """Get current exchange rates from USD to other currencies."""
     try:
         exchange_rates = {
@@ -2482,7 +2482,7 @@ def api_exchange_rates() -> Any:
         return jsonify({"error": str(e)}), 500
 
 @app.route("/api/export/ato")
-def api_export_ato() -> Any:
+def api_export_ato() -> ResponseReturnValue:
     """Export cryptocurrency trading data for Australian Tax Office (ATO) reporting."""
     try:
         logger.info("Generating ATO export with current portfolio data")
@@ -2579,7 +2579,7 @@ def create_sample_portfolio_for_export() -> list[dict[str, Any]]:
 
 # Add missing API routes that the original dashboard expects
 @app.route("/api/config")
-def api_config() -> Any:
+def api_config() -> ResponseReturnValue:
     """Get system configuration."""
     if not warmup["done"]:
         return jsonify({"error": "System still initializing"}), 503
@@ -2592,7 +2592,7 @@ def api_config() -> Any:
     })
 
 @app.route("/api/price-source-status")
-def api_price_source_status() -> Any:
+def api_price_source_status() -> ResponseReturnValue:
     """Get OKX API status instead of CoinGecko."""
     if not warmup["done"]:
         return jsonify({"status": "initializing"}), 503
@@ -2640,7 +2640,7 @@ def api_price_source_status() -> Any:
         }), 500
 
 @app.route("/api/portfolio-summary")
-def api_portfolio_summary() -> Any:
+def api_portfolio_summary() -> ResponseReturnValue:
     """Get portfolio summary."""
     if not warmup["done"]:
         return jsonify({"error": "System still initializing"}), 503
@@ -2665,14 +2665,14 @@ def api_portfolio_summary() -> Any:
 
 # Add static file serving
 @app.route("/static/<path:filename>")
-def static_files(filename: str) -> Any:
+def static_files(filename: str) -> ResponseReturnValue:
     """Serve static files."""
     from flask import send_from_directory
     return send_from_directory("static", filename)
 
 # Add more portfolio endpoints expected by dashboard
 @app.route("/api/portfolio-performance")
-def api_portfolio_performance() -> Any:
+def api_portfolio_performance() -> ResponseReturnValue:
     """Get portfolio performance data."""
     if not warmup["done"]:
         return jsonify({"error": "System still initializing"}), 503
@@ -2703,7 +2703,7 @@ def api_portfolio_performance() -> Any:
         }), 500
 
 @app.route("/api/current-holdings")
-def api_current_holdings() -> Any:
+def api_current_holdings() -> ResponseReturnValue:
     if not warmup["done"]:
         return jsonify({"error": "System still initializing"}), 503
     try:
@@ -2804,7 +2804,7 @@ def api_current_holdings() -> Any:
         return jsonify({"success": False, "error": str(e)}), 500
 
 @app.route('/api/target-price-status')
-def target_price_status() -> Any:
+def target_price_status() -> ResponseReturnValue:
     """Get status of all locked target prices."""
     try:
         from src.utils.target_price_manager import get_target_price_manager
@@ -2828,7 +2828,7 @@ def target_price_status() -> Any:
 
 @app.route('/api/reset-target-price/<symbol>', methods=['POST'])
 @require_admin
-def reset_target_price(symbol: str) -> Any:
+def reset_target_price(symbol: str) -> ResponseReturnValue:
     """Manually reset a target price for recalculation."""
     try:
         from src.utils.target_price_manager import get_target_price_manager
@@ -2846,7 +2846,7 @@ def reset_target_price(symbol: str) -> Any:
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
 @app.route('/api/entry-confidence/<symbol>')
-def api_entry_confidence(symbol: str) -> Any:
+def api_entry_confidence(symbol: str) -> ResponseReturnValue:
     """Get entry point confidence analysis for a specific symbol."""
     try:
         from src.utils.entry_confidence import get_confidence_analyzer
@@ -2875,7 +2875,7 @@ def api_entry_confidence(symbol: str) -> Any:
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
 @app.route('/api/entry-confidence-batch')
-def api_entry_confidence_batch() -> Any:
+def api_entry_confidence_batch() -> ResponseReturnValue:
     """Get entry confidence for multiple symbols."""
     try:
         # Get symbols from query parameter or use defaults
@@ -2927,7 +2927,7 @@ def api_entry_confidence_batch() -> Any:
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
 @app.route('/api/available-positions')
-def api_available_positions() -> Any:
+def api_available_positions() -> ResponseReturnValue:
     """Get all available OKX assets that can be traded, including zero balances."""
     try:
         currency = request.args.get('currency', 'USD')
@@ -3114,7 +3114,7 @@ def get_all_positions_including_sold(portfolio_service: Any) -> list[dict[str, A
 
 @app.route("/api/paper-trade/buy", methods=["POST"])
 @require_admin
-def paper_trade_buy() -> Any:
+def paper_trade_buy() -> ResponseReturnValue:
     """Execute a paper buy trade."""
     if not warmup["done"]:
         return jsonify({"error": "System still initializing"}), 503
@@ -3175,7 +3175,7 @@ def create_initial_portfolio_data() -> dict[str, Any]:
 
 @app.route("/api/paper-trade/sell", methods=["POST"])
 @require_admin
-def paper_trade_sell() -> Any:
+def paper_trade_sell() -> ResponseReturnValue:
     """Execute a paper sell trade."""
     if not warmup["done"]:
         return jsonify({"error": "System still initializing"}), 503
@@ -3216,7 +3216,7 @@ def paper_trade_sell() -> Any:
 
 @app.route("/api/buy", methods=["POST"])
 @require_admin
-def live_buy() -> Any:
+def live_buy() -> ResponseReturnValue:
     """Execute a live buy trade on OKX."""
     if not warmup["done"]:
         return jsonify({"error": "System still initializing"}), 503
@@ -3291,7 +3291,7 @@ def live_buy() -> Any:
 
 @app.route("/api/sell", methods=["POST"])
 @require_admin
-def live_sell() -> Any:
+def live_sell() -> ResponseReturnValue:
     """Execute a live sell trade on OKX."""
     if not warmup["done"]:
         return jsonify({"error": "System still initializing"}), 503
@@ -3389,7 +3389,7 @@ def live_sell() -> Any:
 
 @app.route("/api/reset-entire-program", methods=["POST"])
 @require_admin
-def api_reset_entire_program() -> Any:
+def api_reset_entire_program() -> ResponseReturnValue:
     """Reset the entire trading system to initial state."""
     if not warmup["done"]:
         return jsonify({"error": "System still initializing"}), 503
@@ -3449,7 +3449,7 @@ def api_reset_entire_program() -> Any:
         }), 500
 
 @app.route("/api/portfolio-analytics")
-def api_portfolio_analytics() -> Any:
+def api_portfolio_analytics() -> ResponseReturnValue:
     """Portfolio analytics endpoint that redirects to performance analytics."""
     try:
         timeframe = request.args.get('timeframe', '30d')
@@ -3481,7 +3481,7 @@ def api_portfolio_analytics() -> Any:
         return jsonify({"success": False, "error": str(e)}), 500
 
 @app.route("/api/asset-allocation")
-def api_asset_allocation() -> Any:
+def api_asset_allocation() -> ResponseReturnValue:
     """Asset allocation endpoint showing portfolio breakdown by asset."""
     try:
         currency = request.args.get('currency', 'USD')
@@ -3538,7 +3538,7 @@ def api_asset_allocation() -> Any:
         return jsonify({"success": False, "error": str(e)}), 500
 
 @app.route("/api/portfolio-history")
-def api_portfolio_history() -> Any:
+def api_portfolio_history() -> ResponseReturnValue:
     """Portfolio history endpoint showing value over time."""
     try:
         timeframe = request.args.get('timeframe', '30d')
@@ -3615,7 +3615,7 @@ def api_portfolio_history() -> Any:
 
 # Catch-all for other routes - serve loading screen if not ready
 @app.route("/<path:path>")
-def catch_all_routes(path: str) -> tuple[Any, int] | str:
+def catch_all_routes(path: str) -> ResponseReturnValue:
     """Handle remaining routes."""
     if warmup["done"] and not warmup["error"]:
         if path.startswith("api/"):
@@ -3702,7 +3702,7 @@ def render_loading_skeleton(message: str = "Loading live cryptocurrency data..."
 
 # OKX Exchange Status Endpoint
 @app.route("/api/okx-status")
-def api_okx_status() -> Any:
+def api_okx_status() -> ResponseReturnValue:
     """Get OKX exchange connection status with clear simulation/live distinction."""
     try:
         # Use real OKX connection for status check
@@ -3772,7 +3772,7 @@ def api_okx_status() -> Any:
 
 @app.route("/api/execute-take-profit", methods=["POST"])
 @require_admin
-def execute_take_profit() -> Any:
+def execute_take_profit() -> ResponseReturnValue:
     """Execute take profit trades and automatically reinvest in buy targets."""
     try:
         from src.utils.bot_pricing import BotPricingCalculator, BotParams
@@ -3990,7 +3990,7 @@ def execute_take_profit() -> Any:
         }), 500
 
 @app.route("/api/performance")
-def api_performance() -> Any:
+def api_performance() -> ResponseReturnValue:
     """API endpoint for performance analytics data supporting comprehensive dashboard."""
     try:
         
@@ -4237,7 +4237,7 @@ def test_sync_data() -> str:
     return render_template('test_sync_data.html')
 
 @app.route('/api/test-sync-data')
-def api_test_sync_data() -> Any:
+def api_test_sync_data() -> ResponseReturnValue:
     """Get comprehensive test sync data for display"""
     try:
         # Collect test data
