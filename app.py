@@ -278,6 +278,29 @@ def get_portfolio_service() -> Any:
     """Get the global PortfolioService singleton from the service module."""
     return _get_ps()
 
+def normalize_pair(pair: str) -> str:
+    """Normalize trading pair to standard format (uppercase with forward slash).
+    
+    Args:
+        pair: Trading pair like 'btc-usdt', 'BTC/USDT', etc.
+        
+    Returns:
+        str: Normalized pair like 'BTC/USDT'
+    """
+    return pair.upper().replace('-', '/')
+
+def to_okx_inst(pair: str) -> str:
+    """Convert normalized pair to OKX instrument format.
+    
+    Args:
+        pair: Normalized pair like 'BTC/USDT'
+        
+    Returns:
+        str: OKX instrument format like 'BTC-USDT'
+    """
+    p = normalize_pair(pair)
+    return p.replace('/', '-')
+
 def validate_symbol(pair: str) -> bool:
     """Validate symbol against WATCHLIST and available markets."""
     try:
@@ -316,7 +339,7 @@ def get_public_price(pair: str) -> float:
         # Use native OKX client for better performance
         client = get_okx_native_client()
         # Convert SYMBOL/USDT to SYMBOL-USDT for OKX API
-        okx_symbol = pair.replace('/', '-')
+        okx_symbol = to_okx_inst(pair)
         return client.price(okx_symbol)
     except Exception as e:
         logger.debug(f"Native price fetch failed for {pair}: {e}")
@@ -1069,7 +1092,7 @@ def api_trade_history() -> ResponseReturnValue:
                                     continue
                                 
                                 # Convert instrument ID to display symbol (BTC-USDT -> BTC/USDT)
-                                symbol = inst_id.replace('-', '/') if inst_id else 'Unknown'
+                                symbol = normalize_pair(inst_id) if inst_id else 'Unknown'
                                 
                                 # Determine transaction type based on instrument
                                 transaction_type = 'Trade'  # Default
@@ -1175,7 +1198,7 @@ def api_trade_history() -> ResponseReturnValue:
                                     continue
                                 
                                 # Convert instrument ID to display symbol (BTC-USDT -> BTC/USDT)
-                                symbol = inst_id.replace('-', '/') if inst_id else 'Unknown'
+                                symbol = normalize_pair(inst_id) if inst_id else 'Unknown'
                                 
                                 # Determine transaction type based on instrument and bill details
                                 transaction_type = 'Trade'  # Default
@@ -1265,7 +1288,7 @@ def api_trade_history() -> ResponseReturnValue:
                                 side = order.get('side', '').upper()
                                 
                                 # Convert instrument ID to display symbol (BTC-USDT -> BTC/USDT)
-                                symbol = inst_id.replace('-', '/') if inst_id else 'Unknown'
+                                symbol = normalize_pair(inst_id) if inst_id else 'Unknown'
                                 
                                 # Determine transaction type based on instrument
                                 transaction_type = 'Trade'  # Default
@@ -2834,7 +2857,7 @@ def reset_target_price(symbol: str) -> ResponseReturnValue:
         from src.utils.target_price_manager import get_target_price_manager
         target_manager = get_target_price_manager()
         
-        target_manager.reset_target_price(symbol.upper())
+        target_manager.reset_target_price(normalize_pair(symbol))
         
         return jsonify({
             'status': 'success',
@@ -2853,7 +2876,7 @@ def api_entry_confidence(symbol: str) -> ResponseReturnValue:
         
         # Get current price
         portfolio_service = _get_ps()
-        current_price = portfolio_service._get_live_okx_price(symbol.upper())
+        current_price = portfolio_service._get_live_okx_price(normalize_pair(symbol))
         
         if current_price <= 0:
             return jsonify({
@@ -2863,7 +2886,7 @@ def api_entry_confidence(symbol: str) -> ResponseReturnValue:
         
         # Calculate confidence
         analyzer = get_confidence_analyzer()
-        confidence_data = analyzer.calculate_confidence(symbol.upper(), current_price)
+        confidence_data = analyzer.calculate_confidence(normalize_pair(symbol), current_price)
         
         return jsonify({
             'status': 'success',
@@ -2881,7 +2904,7 @@ def api_entry_confidence_batch() -> ResponseReturnValue:
         # Get symbols from query parameter or use defaults
         symbols_param = request.args.get('symbols', '')
         if symbols_param:
-            symbols = [s.strip().upper() for s in symbols_param.split(',')]
+            symbols = [normalize_pair(s.strip()) for s in symbols_param.split(',')]
         else:
             # Default major cryptocurrencies
             symbols = ['BTC', 'ETH', 'SOL', 'ADA', 'MATIC', 'AVAX', 'LINK', 'DOT']
