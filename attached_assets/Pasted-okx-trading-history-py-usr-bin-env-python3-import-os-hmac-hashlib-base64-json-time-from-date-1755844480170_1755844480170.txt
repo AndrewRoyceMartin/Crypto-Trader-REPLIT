@@ -1,0 +1,187 @@
+okx_trading_history.py
+#!/usr/bin/env python3
+import os, hmac, hashlib, base64, json, time
+from datetime import datetime, timedelta, timezone
+from typing import List, Dict, Optional, Any
+from urllib.parse import urlencode
+import requests
+
+OKX_BASE = "https://www.okx.com"
+
+API_KEY        = os.getenv("OKX_API_KEY", "")
+API_SECRET     = os.getenv("OKX_API_SECRET", "")
+API_PASSPHRASE = os.getenv("OKX_API_PASSPHRASE", "")
+USE_DEMO       = os.getenv("OKX_USE_DEMO", "0") == "1"
+
+session = requests.Session()
+session.headers.update({"Content-Type": "application/json"})
+
+def _now_iso_ms() -> str:
+    # Example: "2025-08-22T06:30:00.123Z"
+    now = datetime.now(timezone.utc)
+    return now.strftime("%Y-%m-%dT%H:%M:%S.") + f"{int(now.microsecond/1000):03d}Z"
+
+def _sign(ts: str, method: str, request_path_with_query: str, body_str: str) -> str:
+    msg = f"{ts}{method.upper()}{request_path_with_query}{body_str}".encode("utf-8")
+    sig = hmac.new(API_SECRET.encode("utf-8"), msg, hashlib.sha256).digest()
+    return base64.b64encode(sig).decode()
+
+def _headers(ts: str, sign: str) -> Dict[str, str]:
+    h = {
+        "OK-ACCESS-KEY": API_KEY,
+        "OK-ACCESS-SIGN": sign,
+        "OK-ACCESS-TIMESTAMP": ts,
+        "OK-ACCESS-PASSPHRASE": API_PASSPHRASE,
+    }
+    if USE_DEMO:
+        h["x-simulated-trading"] = "1"
+    return h
+
+def _request(method: str, path: str, params: Optional[Dict[str, Any]]=None, body: Optional[Dict[str, Any]]=None) -> Dict[str, Any]:
+    # Build querystring EXACTLY as we sign it
+    qs = urlencode(params or {}, doseq=True)
+    request_path_with_query = path + (f"?{qs}" if qs else "")
+    url = OKX_BASE + request_path_with_query
+
+    body_str = "" if (method.upper() == "GET" or not body) else json.dumps(body, separators=(",", ":"))
+
+    ts = _now_iso_ms()
+    sign = _sign(ts, method, request_path_with_query, body_str)
+    headers = _headers(ts, sign)
+
+    for attempt in range(6):
+        r = session.request(method, url, headers=headers, data=(None if not body_str else body_str), timeout=20)
+        if r.status_code == 429:
+            time.sleep(0.5 * (2 ** attempt))
+            continue
+        if r.status_code >= 500:
+            time.sleep(0.5 * (2 ** attempt))
+            continue
+        break
+
+    r.raise_for_status()
+    data = r.json()
+    if data.get("code") not in (None, "0", 0):
+        raise RuntimeError(f"OKX error {data.get('code')}: {data.get('msg')} (path={path}, params={params})")
+    return data
+
+# ---------- Trading History (Fills) ----------
+# Recent (~7 days)
+def get_recent_fills(instType: str, instId: Optional[str]=None, limit: int=100) -> List[Dict[str, Any]]:
+    """
+    instType: "SPOT" | "MARGIN" | "SWAP" | "FUTURES"
+    instId  : e.g., "BTC-USDT" (optional)
+    """
+    params = {"instType": instType, "limit": str(limit)}
+    if instId:
+        params["instId"] = instId
+    data = _request("GET", "/api/v5/trade/fills", params=params)
+    return data.get("data", [])
+
+# Historical (up to ~3 months)
+def get_fills_history(instType: str, instId: Optional[str]=None, since: Optional[int]=None, until: Optional[int]=None, limit: int=100) -> List[Dict[str, Any]]:
+    """
+    since/until are Unix ms timestamps (OKX expects ms)
+    """
+    params = {"instType": instType, "limit": str(limit)}
+    if instId:
+        params["instId"] = instId
+    if since is not None:
+        params["begin"] = str(since)
+    if until is not None:
+        params["end"] = str(until)
+
+    out: List[Dict[str, Any]] = []
+    before: Optional[str] = None
+
+    while True:
+        page_params = dict(params)
+        if before:
+            page_params["before"] = before
+
+        chunk = _request("GET", "/api/v5/trade/fills-history", params=page_params).get("data", [])
+        if not chunk:
+            break
+
+        out.extend(chunk)
+        # Pagination cursor — OKX returns fillId per row; use the last row's id for `before`.
+        last = chunk[-1]
+        fill_id = last.get("fillId") or last.get("billId") or last.get("tradeId") or last.get("ts")
+        if not fill_id:
+            break
+        before = str(fill_id)
+
+        # Defensive stop to avoid accidental infinite loops
+        if len(out) >= 5000:
+            break
+
+        # small pause to be nice to rate limits
+        time.sleep(0.05)
+    return out
+
+# Convenience: pull N days back, starting from now, using fills-history and then recent if needed.
+def get_all_fills(instType: str, instId: Optional[str]=None, days: int=30, limit_per_page: int=100) -> List[Dict[str, Any]]:
+    now_ms = int(datetime.now(timezone.utc).timestamp() * 1000)
+    since_ms = int((datetime.now(timezone.utc) - timedelta(days=days)).timestamp() * 1000)
+    hist = get_fills_history(instType, instId=instId, since=since_ms, until=now_ms, limit=limit_per_page)
+
+    # Top up with recent endpoint in case you’re near the 7-day edge and want freshest ordering
+    recent = get_recent_fills(instType, instId=instId, limit=limit_per_page)
+    # Merge without dupes (by fillId if present)
+    seen = set()
+    out = []
+    for row in hist + recent:
+        key = row.get("fillId") or f"{row.get('ordId')}|{row.get('ts')}|{row.get('px')}|{row.get('sz')}"
+        if key in seen:
+            continue
+        seen.add(key)
+        out.append(row)
+
+    # Sort newest→oldest by timestamp `ts` (string ms)
+    out.sort(key=lambda r: int(r.get("ts", "0")), reverse=True)
+    return out
+
+# -------- Normalisation helpers (optional) --------
+def normalise_fill(row: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Return a compact, uniform record for storage/display.
+    """
+    return {
+        "ts": int(row.get("ts", "0")),              # ms
+        "instId": row.get("instId"),
+        "side": row.get("side"),                    # buy/sell
+        "ordType": row.get("ordType"),              # market/limit/...
+        "px": float(row.get("px", "0")),
+        "sz": float(row.get("sz", "0")),
+        "fee": float(row.get("fee", "0")),
+        "feeCcy": row.get("feeCcy"),
+        "fillPx": float(row.get("fillPx", row.get("px", "0"))),
+        "fillSz": float(row.get("fillSz", row.get("sz", "0"))),
+        "ordId": row.get("ordId"),
+        "fillId": row.get("fillId") or row.get("billId") or row.get("tradeId"),
+    }
+
+if __name__ == "__main__":
+    # Example usage: last 30 days of SPOT fills for BTC-USDT
+    instType = "SPOT"
+    instId   = "BTC-USDT"  # or None for all SPOT instruments accessible
+
+    fills = get_all_fills(instType, instId=instId, days=30)
+    print(f"Total fills fetched: {len(fills)}")
+    # Show the last 5 in normalised form
+    for row in fills[:5]:
+        print(normalise_fill(row))
+
+Common reasons you see empty results even though orders exist
+
+Wrong instType: For spot trades use SPOT; for perpetuals use SWAP; for dated futures use FUTURES.
+
+Wrong symbol format: Must be BTC-USDT (dash), not BTC/USDT.
+
+No trades in the window: /trade/fills only covers ~7 days. Use /trade/fills-history with begin/end (ms) for older.
+
+Paper vs live header: Paper requires x-simulated-trading: 1. Don’t send that for live.
+
+Timezones and ms: begin/end are milliseconds since epoch (UTC). If you pass seconds you’ll miss everything.
+
+Cursor logic: For deep history, keep passing before=<last fillId> until you get an empty page.
