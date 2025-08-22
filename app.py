@@ -3682,18 +3682,6 @@ def test_sync_data():
 def api_test_sync_data():
     """Get comprehensive test sync data for display"""
     try:
-        # Guard heavy tests behind environment flag for production
-        if os.getenv('ENABLE_INTERNAL_TESTS', '0') != '1':
-            from datetime import datetime as dt, timezone as tz
-            return jsonify({
-                'status': 'disabled', 
-                'reason': 'internal tests disabled in prod', 
-                'timestamp': iso_utc(),
-                'note': 'Set ENABLE_INTERNAL_TESTS=1 to enable comprehensive testing'
-            })
-
-        
-        
         # Collect test data
         from datetime import datetime as dt
         test_data = {
