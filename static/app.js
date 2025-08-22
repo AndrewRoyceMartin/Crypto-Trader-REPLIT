@@ -3914,10 +3914,20 @@ function updateQuickOverview(portfolioData) {
 
     const cashBalance = portfolioData.cash_balance || 0;
     const totalEquity = totalValue + cashBalance;
+    const estimatedTotal = portfolioData.total_estimated_value || summary.total_estimated_value || totalEquity;
     const dailyPnl = summary.daily_pnl || 0;
     const exposure = totalEquity > 0 ? ((totalValue / totalEquity) * 100) : 0;
     const winRate = summary.win_rate || 0;
 
+    // Update OKX Portfolio Overview KPI cards
+    updateElementSafely("okx-total-balance", formatCurrency(totalValue));
+    updateElementSafely("okx-estimated-total", formatCurrency(estimatedTotal));
+    updateElementSafely("okx-day-pnl", formatCurrency(dailyPnl));
+    updateElementSafely("okx-day-pnl-percent", `${dailyPnl >= 0 ? '+' : ''}${(summary.daily_pnl_percent || 0).toFixed(2)}%`);
+    updateElementSafely("okx-active-positions", holdings.filter(h => h.has_position).length);
+    updateElementSafely("overview-last-update", new Date().toLocaleTimeString());
+    
+    // Legacy KPI elements (if they exist)
     updateElementSafely("kpi-total-equity", formatCurrency(totalEquity));
     updateElementSafely("kpi-daily-pnl", formatCurrency(dailyPnl));
     updateElementSafely("kpi-unrealized-pnl", formatCurrency(totalUnrealizedPnl));
