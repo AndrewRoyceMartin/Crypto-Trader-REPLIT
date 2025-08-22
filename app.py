@@ -3031,12 +3031,24 @@ def api_portfolio_analytics():
         force_okx = request.args.get('force_okx', 'true')
         
         # Use existing performance analytics endpoint directly
-        from flask import url_for
-        import requests
+        from flask import url_for, redirect
+        from urllib.parse import urlencode
         
-        # Direct redirect to existing endpoint to avoid internal HTTP calls
-        from flask import redirect, url_for
-        return redirect(f"/api/performance-analytics?timeframe={timeframe}&currency={currency}&force_okx={force_okx}")
+        # Validate and sanitize parameters
+        valid_timeframes = ['1d', '7d', '30d', '90d', '1y']
+        valid_currencies = ['USD', 'EUR', 'GBP', 'AUD']
+        
+        timeframe = timeframe if timeframe in valid_timeframes else '30d'
+        currency = currency if currency in valid_currencies else 'USD'
+        force_okx = 'true' if force_okx.lower() == 'true' else 'false'
+        
+        # Safely construct redirect URL with proper encoding
+        query_params = urlencode({
+            'timeframe': timeframe,
+            'currency': currency,
+            'force_okx': force_okx
+        })
+        return redirect(f"/api/performance-analytics?{query_params}")
         
     except Exception as e:
         logger.error(f"Portfolio analytics error: {e}")
