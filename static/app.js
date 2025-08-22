@@ -92,6 +92,25 @@ class TradingApp {
         }).format(numericAmount);
     }
 
+    // Special formatter for very small P&L values to avoid scientific notation
+    formatSmallCurrency(amount, currency = null) {
+        const targetCurrency = currency || this.selectedCurrency || 'USD';
+        const numericAmount = Number(amount) || 0;
+
+        // If amount is very small (like 2.24e-7), use more decimal places
+        if (Math.abs(numericAmount) < 0.000001 && numericAmount !== 0) {
+            return new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: targetCurrency,
+                minimumFractionDigits: 8,
+                maximumFractionDigits: 10
+            }).format(numericAmount);
+        }
+
+        // Otherwise use regular currency formatting
+        return this.formatCurrency(amount, currency);
+    }
+
     formatNumber(amount) {
         // Format large numbers with appropriate suffixes
         const numericAmount = Number(amount) || 0;
@@ -1288,7 +1307,7 @@ class TradingApp {
                     <td>${this.formatCurrency(holding.current_price)}</td>
                     <td>${this.formatCurrency(holding.current_value)}</td>
                     <td class="${pnlClass}">
-                        ${this.formatCurrency(holding.pnl_amount)}<br>
+                        ${this.formatSmallCurrency(holding.pnl_amount)}<br>
                         <small>(${pnlSign}${holding.pnl_percent.toFixed(2)}%)</small>
                     </td>
                     <td>
@@ -4108,8 +4127,14 @@ function updateOpenPositionsTable(positions, totalValue = 0) {
             // Format numbers with better handling for small values
             const formatCurrency = (value) => {
                 const numValue = Number(value) || 0;
-                if (Math.abs(numValue) < 0.000001) {
-                    return `$${numValue.toExponential(2)}`;
+                // Use extended decimal places for very small values instead of scientific notation
+                if (Math.abs(numValue) < 0.000001 && numValue !== 0) {
+                    return new Intl.NumberFormat("en-US", { 
+                        style: "currency", 
+                        currency: "USD",
+                        minimumFractionDigits: 8,
+                        maximumFractionDigits: 12
+                    }).format(numValue);
                 }
                 return new Intl.NumberFormat("en-US", { 
                     style: "currency", 
@@ -4221,8 +4246,14 @@ function updateAvailablePositionsTable(availablePositions) {
             // Format functions
             const formatCurrency = (value) => {
                 const numValue = Number(value) || 0;
-                if (Math.abs(numValue) < 0.000001) {
-                    return `$${numValue.toExponential(2)}`;
+                // Use extended decimal places for very small values instead of scientific notation
+                if (Math.abs(numValue) < 0.000001 && numValue !== 0) {
+                    return new Intl.NumberFormat("en-US", { 
+                        style: "currency", 
+                        currency: "USD",
+                        minimumFractionDigits: 8,
+                        maximumFractionDigits: 12
+                    }).format(numValue);
                 }
                 return new Intl.NumberFormat("en-US", { 
                     style: "currency", 
@@ -4234,7 +4265,10 @@ function updateAvailablePositionsTable(availablePositions) {
             
             const formatNumber = (value) => {
                 if (value === 0) return "0";
-                if (Math.abs(value) < 0.000001) return value.toExponential(2);
+                // Use fixed decimal places for small values instead of scientific notation
+                if (Math.abs(value) < 0.000001 && value !== 0) {
+                    return value.toFixed(12);
+                }
                 return value.toFixed(8);
             };
             
