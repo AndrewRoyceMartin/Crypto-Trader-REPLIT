@@ -3823,8 +3823,8 @@ async function toggleBot() {
         if (statusData.running) {
             await stopTrading();
         } else {
-            // Default to paper trading for the toggle button
-            await startTrading('paper', 'portfolio');
+            // Start live trading
+            await startTrading('live', 'portfolio');
         }
         
         // Update bot status display
@@ -3841,16 +3841,27 @@ async function updateBotStatusDisplay() {
         const data = await response.json();
         
         const botStatusElement = document.getElementById('bot-status');
+        const botCardElement = document.getElementById('okx-bot-status');
+        
         if (botStatusElement) {
             if (data.running) {
-                const mode = data.mode?.toUpperCase() || 'UNKNOWN';
-                botStatusElement.textContent = `STOP BOT (${mode})`;
-                // Use different colors for different modes
-                const buttonClass = data.mode === 'live' ? 'btn btn-danger fw-bold' : 'btn btn-success fw-bold';
-                botStatusElement.parentElement.className = buttonClass;
+                botStatusElement.textContent = 'STOP BOT';
+                botStatusElement.parentElement.className = 'btn btn-danger fw-bold w-100';
             } else {
                 botStatusElement.textContent = 'START BOT';
-                botStatusElement.parentElement.className = 'btn btn-warning fw-bold';
+                botStatusElement.parentElement.className = 'btn btn-warning fw-bold w-100';
+            }
+        }
+        
+        // Update the trading bot card status
+        if (botCardElement) {
+            if (data.running) {
+                const mode = data.mode?.toUpperCase() || 'LIVE';
+                botCardElement.textContent = `Active (${mode})`;
+                botCardElement.className = 'value text-success';
+            } else {
+                botCardElement.textContent = 'Inactive';
+                botCardElement.className = 'value text-muted';
             }
         }
     } catch (error) {
