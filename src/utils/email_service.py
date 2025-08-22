@@ -65,7 +65,7 @@ class EmailService:
     def send_trade_notification(self, trade_data, recipient_email=None, sender_email=None):
         """Send email notification when a trade is executed."""
         if not self.enabled:
-            logger.warning("Email service not enabled - SENDGRID_API_KEY missing")
+            logger.warning("Email service not enabled - missing credentials")
             return False
         
         if not self.settings["email_notifications"]["enabled"]:
@@ -160,7 +160,7 @@ This is an automated notification from your Algorithmic Trading System.
     def send_system_alert(self, alert_message, alert_type="info", recipient_email="trader@example.com", sender_email="trading-system@replit.app"):
         """Send system alert email for important events."""
         if not self.enabled:
-            logger.warning("Email service not enabled - SENDGRID_API_KEY missing")
+            logger.warning("Email service not enabled - missing credentials")
             return False
         
         try:

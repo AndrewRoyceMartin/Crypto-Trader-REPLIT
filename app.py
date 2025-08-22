@@ -1048,17 +1048,17 @@ def api_trade_history() -> ResponseReturnValue:
                     logger.info(f"Fetching ALL trade fills from OKX API with params: {fills_params}")
                     response = exchange.privateGetTradeFills(fills_params)
                     
-                    logger.info(f"OKX fills API response: {response}")
+                    logger.debug(f"OKX fills API response: {response}")
                     if response.get('code') == '0' and response.get('data'):
                         fills = response['data']
                         logger.info(f"OKX fills API returned {len(fills)} trade fills")
                         
                         if fills:
-                            logger.info(f"First fill sample: {fills[0]}")
+                            logger.debug(f"First fill sample: {fills[0]}")
                         
                         for fill in fills:
                             try:
-                                logger.info(f"Processing fill: {fill}")
+                                logger.debug(f"Processing fill: {fill}")
                                 # Use the same formatting as OKXAdapter._format_okx_fill_direct
                                 inst_id = fill.get('instId', '')
                                 side = fill.get('side', '').upper()  # This is the CORRECT OKX action field
@@ -1147,11 +1147,11 @@ def api_trade_history() -> ResponseReturnValue:
                         logger.info(f"OKX account bills API returned {len(bills)} transaction records")
                         
                         if bills:
-                            logger.info(f"First bill sample: {bills[0]}")
+                            logger.debug(f"First bill sample: {bills[0]}")
                         
                         for bill in bills:
                             try:
-                                logger.info(f"Processing bill: {bill}")
+                                logger.debug(f"Processing bill: {bill}")
                                 
                                 # Process ALL bill types to capture Simple trades, Converts, etc.
                                 bill_type = bill.get('type', '')
@@ -2951,7 +2951,7 @@ def api_available_positions() -> ResponseReturnValue:
             # Use the raw ccxt fetch_balance method which can include zero balances
             if exchange.exchange:
                 balance_data = exchange.exchange.fetch_balance()
-                logger.info(f"Raw OKX balance response keys: {list(balance_data.keys())}")
+                logger.debug(f"Raw OKX balance response keys: {list(balance_data.keys())}")
             else:
                 raise Exception("Exchange not initialized")
         except Exception as balance_error:
