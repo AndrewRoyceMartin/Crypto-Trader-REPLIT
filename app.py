@@ -91,22 +91,49 @@ def okx_sign(secret_key: str, timestamp: str, method: str, path: str, body: str 
     mac = hmac.new(secret_key.encode('utf-8'), msg.encode('utf-8'), hashlib.sha256)
     return base64.b64encode(mac.digest()).decode('utf-8')
 
-def okx_request(path: str, api_key: str, secret_key: str, passphrase: str, method: str = 'GET', body: str = '', timeout: int = 10) -> dict[str, Any]:
-    """Make authenticated request to OKX API with proper signing."""
-    base_url = 'https://' + (os.getenv("OKX_HOSTNAME") or os.getenv("OKX_REGION") or "www.okx.com")
+def _okx_base_url() -> str:
+    raw = os.getenv("OKX_HOSTNAME") or os.getenv("OKX_REGION") or "www.okx.com"
+    base = raw.rstrip("/")
+    if not base.startswith("http"):
+        base = f"https://{base}"
+    return base
+
+def okx_request(
+    path: str,
+    api_key: str,
+    secret_key: str,
+    passphrase: str,
+    method: str = 'GET',
+    body: Any = None,
+    timeout: int = 10
+) -> dict[str, Any]:
+    """Make authenticated request to OKX API with proper signing and simulated trading support."""
+    base_url = _okx_base_url()
     ts = now_utc_iso()
-    sig = okx_sign(secret_key, ts, method, path, body)
+    method = method.upper()
+
+    # build the exact body string for signature
+    body_str = ""
     headers = {
         'OK-ACCESS-KEY': api_key,
-        'OK-ACCESS-SIGN': sig,
         'OK-ACCESS-TIMESTAMP': ts,
         'OK-ACCESS-PASSPHRASE': passphrase,
         'Content-Type': 'application/json'
     }
+
+    if os.getenv("OKX_SIMULATED", "0").lower() in ("1", "true", "yes"):
+        headers['x-simulated-trading'] = '1'
+
+    if method == 'POST':
+        import json as _json
+        body_str = _json.dumps(body or {}, separators=(',', ':'))
+    sig = okx_sign(secret_key, ts, method, path, body_str)
+    headers['OK-ACCESS-SIGN'] = sig
+
     if method == 'GET':
         resp = requests.get(base_url + path, headers=headers, timeout=timeout)
     else:
-        resp = requests.post(base_url + path, data=body, headers=headers, timeout=timeout)
+        resp = requests.post(base_url + path, headers=headers, data=body_str, timeout=timeout)
     resp.raise_for_status()
     return resp.json()
 
