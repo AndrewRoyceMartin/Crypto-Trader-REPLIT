@@ -4593,6 +4593,56 @@ if __name__ == "__main__":
     logger.info("Started lightweight deployment stability monitoring")
     
     initialize_system()  # config/db only; no network calls here
+    
+    # Auto-start trading upon deployment
+    def auto_start_trading():
+        """Automatically start trading bot when app deploys"""
+        try:
+            time.sleep(10)  # Give system time to fully initialize
+            logger.info("Auto-starting trading bot on deployment...")
+            
+            # Import required components
+            from src.trading.multi_currency_trader import MultiCurrencyTrader
+            from src.config import Config
+            from src.exchanges.okx_adapter import OKXAdapter
+            
+            config = Config()
+            # Convert Config object to dict for OKXAdapter
+            config_dict = {
+                'strategy': {
+                    'rebuy_max_usd': config.get_float('strategy', 'rebuy_max_usd', 100.0)
+                }
+            }
+            exchange = OKXAdapter(config_dict)
+            
+            # Create and start multi-currency trader instance
+            global multi_currency_trader
+            trader_instance = MultiCurrencyTrader(config, exchange)
+            multi_currency_trader = trader_instance
+            
+            # Start trading using the correct method
+            trader_instance.start_trading("1h")
+            
+            # Update bot state
+            _set_bot_state(
+                running=True,
+                mode="live",
+                symbol="ALL_CURRENCIES",
+                timeframe="1h",
+                started_at=iso_utc()
+            )
+            
+            logger.info("✅ Trading bot auto-started successfully in LIVE mode")
+            
+        except Exception as e:
+            logger.error(f"❌ Failed to auto-start trading bot: {e}")
+            # Don't crash the app if auto-start fails
+    
+    # Start auto-trading in background thread
+    auto_trade_thread = threading.Thread(target=auto_start_trading, daemon=True)
+    auto_trade_thread.start()
+    logger.info("Initiated auto-start trading sequence...")
+    
     port = int(os.environ.get("PORT", "5000"))
     logger.info(f"Ultra-fast Flask server starting on 0.0.0.0:{port}")
     # Development server with threading to avoid self-call deadlocks
