@@ -924,7 +924,7 @@ def api_trade_history():
         # Get trades from OKX only
         all_trades = []
         
-        # Use OKX account bills API to get ALL transaction types (trades, simple trades, converts)
+        # Use OKX fills API to get executed trade history
         try:
             from src.utils.okx_native import OKXNativeAPI
             from datetime import datetime, timedelta
@@ -938,77 +938,59 @@ def api_trade_history():
             if api_key and secret_key and passphrase:
                 okx_client = OKXNativeAPI(api_key, secret_key, passphrase)
                 
-                # Get last 90 days of account bills for comprehensive history
+                # Get last 30 days of fills (executed trades) for comprehensive history
                 end_time = int(datetime.now().timestamp() * 1000)
-                start_time = int((datetime.now() - timedelta(days=90)).timestamp() * 1000)
+                start_time = int((datetime.now() - timedelta(days=30)).timestamp() * 1000)
                 
-                bills = okx_client.bills(begin_ms=start_time, end_ms=end_time, limit=100)
-                logger.info(f"Retrieved {len(bills)} account bills from OKX comprehensive history")
+                fills = okx_client.fills(begin_ms=start_time, end_ms=end_time, limit=100)
+                logger.info(f"Retrieved {len(fills)} trade fills from OKX execution history")
                 
-                if bills:
-                    logger.info(f"Sample bill data: {bills[0]}")
+                if fills:
+                    logger.info(f"Sample fill data: {fills[0]}")
                 
-                # Process bills to extract different transaction types
-                for bill in bills:
-                    if not bill.get('billId'):
+                # Process fills to extract executed trades
+                for fill in fills:
+                    if not fill.get('tradeId'):
                         continue
                         
-                    bill_type = bill.get('type', '')
-                    sub_type = bill.get('subType', '')
-                    inst_id = bill.get('instId', '')
+                    inst_id = fill.get('instId', '')
+                    side = fill.get('side', '').upper()
                     
-                    # Determine transaction type and skip non-trading bills
+                    # Determine transaction type based on trading pair
                     transaction_type = 'Trade'  # Default
-                    skip_bill = False
-                    
-                    if bill_type == '2':  # Trade-related bills
-                        if sub_type == '1':  # Buy/Sell
-                            if '/AUD' in inst_id:
-                                transaction_type = 'Simple trade'
-                            elif '/USDT' in inst_id or '/USD' in inst_id:
-                                transaction_type = 'Trade'
-                            else:
-                                transaction_type = 'Trade'
-                        elif sub_type == '9':  # System token conversion
-                            transaction_type = 'Convert'
+                    if inst_id:
+                        symbol = inst_id.replace('-', '/')  # Convert BTC-USDT to BTC/USDT
+                        
+                        if '-AUD' in inst_id:
+                            transaction_type = 'Simple trade'  # Direct crypto/fiat 
+                        elif '-USDT' in inst_id or '-USD' in inst_id:
+                            transaction_type = 'Trade'  # Traditional crypto trading
+                        elif 'USD-AUD' in inst_id or 'AUD-USD' in inst_id:
+                            transaction_type = 'Convert'  # Currency conversion
                         else:
-                            # Skip fees, transfers, etc.
-                            skip_bill = True
-                    else:
-                        # Skip non-trade bills (transfers, deposits, withdrawals, etc.)
-                        skip_bill = True
-                    
-                    if skip_bill or not inst_id:
-                        continue
-                    
-                    # Determine side from balance change
-                    balance_change = float(bill.get('balChg', 0))
-                    side = 'BUY' if balance_change > 0 else 'SELL'
-                    
-                    # Extract symbol from instId (e.g., "BTC-USDT" -> "BTC/USDT")
-                    symbol = inst_id.replace('-', '/')
+                            transaction_type = 'Trade'
                     
                     formatted_trade = {
-                        'id': bill.get('billId', ''),
+                        'id': fill.get('tradeId', ''),
                         'trade_number': len(all_trades) + 1,
                         'symbol': symbol,
                         'type': transaction_type,
                         'transaction_type': transaction_type,
                         'action': side,
                         'side': side,
-                        'quantity': abs(float(bill.get('sz', 0))),
-                        'price': 0,  # Bills don't include price, would need separate lookup
-                        'timestamp': datetime.fromtimestamp(int(bill.get('ts', 0)) / 1000).isoformat() + 'Z',
-                        'total_value': abs(balance_change),
-                        'pnl': float(bill.get('pnl', 0)),
+                        'quantity': float(fill.get('sz', 0)),
+                        'price': float(fill.get('px', 0)),
+                        'timestamp': datetime.fromtimestamp(int(fill.get('ts', 0)) / 1000).isoformat() + 'Z',
+                        'total_value': float(fill.get('sz', 0)) * float(fill.get('px', 0)),
+                        'pnl': 0,  # Fills don't include P&L
                         'strategy': '',
-                        'order_id': bill.get('ordId', ''),
-                        'source': 'okx_bills_api'
+                        'order_id': fill.get('ordId', ''),
+                        'source': 'okx_fills_api'
                     }
                     all_trades.append(formatted_trade)
                 
-                if not bills:
-                    logger.info("OKX bills API returned 0 bills - no recent account activity")
+                if not fills:
+                    logger.info("OKX fills API returned 0 fills - no recent trading activity")
             else:
                 logger.error("Portfolio service not available - cannot access OKX exchange")
                     
