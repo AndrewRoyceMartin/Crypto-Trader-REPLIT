@@ -4515,7 +4515,7 @@ def add_security_headers(resp: Any) -> Any:
         "style-src 'self' https://fonts.googleapis.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com 'unsafe-inline'; "
         "font-src 'self' https://fonts.gstatic.com; "
         "img-src 'self' data:; "
-        "connect-src 'self'; "
+        "connect-src 'self' wss: ws:; "
         "frame-ancestors 'none'; "
         "base-uri 'self'; "
         "form-action 'self'"

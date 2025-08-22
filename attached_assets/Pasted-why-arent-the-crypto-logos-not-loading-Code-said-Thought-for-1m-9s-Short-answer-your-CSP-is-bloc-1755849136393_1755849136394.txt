@@ -1,0 +1,65 @@
+why arent the crypto logos not loading?
+Code said:
+Thought for 1m 9s
+
+Short answer: your CSP is blocking them.
+
+You set:
+
+resp.headers["Content-Security-Policy"] = (
+    "default-src 'self'; "
+    ...
+    "img-src 'self' data:; "
+    "connect-src 'self'; "
+    ...
+)
+
+
+That allows images only from your own origin or data: URIs. Most crypto logo sources are on external CDNs (e.g. CoinGecko, CoinMarketCap, cryptoicons, OKX static), so the browser refuses to load them.
+
+Fix (pick one)
+1) Allow common logo CDNs (tight, production-friendly)
+@app.after_request
+def add_security_headers(resp):
+    resp.headers["Content-Security-Policy"] = (
+        "default-src 'self'; "
+        "script-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com 'unsafe-inline'; "
+        "style-src 'self' https://fonts.googleapis.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com 'unsafe-inline'; "
+        "font-src 'self' https://fonts.gstatic.com; "
+        "img-src 'self' data: https://assets.coingecko.com https://s2.coinmarketcap.com https://cryptoicons.org https://static.okx.com; "
+        "connect-src 'self'; "
+        "frame-ancestors 'none'; "
+        "base-uri 'self'; "
+        "form-action 'self'"
+    )
+    ...
+    return resp
+
+2) Dev-friendly (broad)
+
+If you just want them working quickly:
+
+"img-src 'self' data: https:; "
+
+
+(Looser; consider locking down later.)
+
+Also check these gotchas
+
+Mixed content: Ensure logo URLs are https://, not http:// (http will be blocked on https pages).
+
+Use Flask static paths: In templates, prefer
+
+<img src="{{ url_for('static', filename='icons/' ~ symbol|lower ~ '.svg') }}"
+     onerror="this.src='{{ url_for('static', filename='icons/placeholder.svg') }}'">
+
+
+This avoids path issues and provides a fallback.
+
+Case sensitivity: If your files are btc.svg but your symbol is BTC, lowercase it (symbol|lower) or store both cases.
+
+MIME type: With X-Content-Type-Options: nosniff, SVGs must be served with image/svg+xml. Flask will do this; just make sure files are in /static/... and served via url_for('static', ...) (your custom /static/<path> route is fine).
+
+CSP console: Open DevTools → Console/Network. You’ll likely see:
+
+Refused to load the image … because it violates the following Content Security Policy directive: "img-src 'self' data:".
