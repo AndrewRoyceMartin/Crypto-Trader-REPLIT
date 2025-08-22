@@ -4891,24 +4891,30 @@ function updateOpenPositionsTable(positions, totalValue = 0) {
             const displayCurrentPrice = currentPrice; // Keep per-unit for reference
             const displayTargetValue = targetTotalValue;
             
-            // Get coin display info
+            // Get coin display info (use same as Available Positions for consistency)
             const getCoinDisplay = (symbol) => {
                 const coinInfo = {
-                    'BTC': { icon: 'fab fa-bitcoin', name: 'Bitcoin', color: '#f7931a' },
-                    'ETH': { icon: 'fab fa-ethereum', name: 'Ethereum', color: '#627eea' },
-                    'SOL': { icon: 'fas fa-sun', name: 'Solana', color: '#9945ff' },
-                    'PEPE': { icon: 'fas fa-frog', name: 'Pepe', color: '#28a745' },
-                    'AUD': { icon: 'fas fa-dollar-sign', name: 'Australian Dollar', color: '#007bff' },
-                    'USDT': { icon: 'fas fa-coins', name: 'Tether', color: '#26a17b' },
-                    'USDC': { icon: 'fas fa-coins', name: 'USD Coin', color: '#2775ca' },
-                    'DOGE': { icon: 'fas fa-dog', name: 'Dogecoin', color: '#c2a633' },
-                    'ADA': { icon: 'fas fa-heart', name: 'Cardano', color: '#0033ad' },
-                    'DOT': { icon: 'fas fa-circle', name: 'Polkadot', color: '#e6007a' },
-                    'MATIC': { icon: 'fas fa-polygon', name: 'Polygon', color: '#8247e5' },
-                    'LINK': { icon: 'fas fa-link', name: 'Chainlink', color: '#375bd2' }
+                    'BTC': { icon: 'https://assets.coingecko.com/coins/images/1/standard/bitcoin.png', name: 'Bitcoin', color: '#f7931a', type: 'image' },
+                    'ETH': { icon: 'https://assets.coingecko.com/coins/images/279/standard/ethereum.png', name: 'Ethereum', color: '#627eea', type: 'image' },
+                    'SOL': { icon: 'https://assets.coingecko.com/coins/images/4128/standard/solana.png', name: 'Solana', color: '#9945ff', type: 'image' },
+                    'TRX': { icon: 'https://assets.coingecko.com/coins/images/1094/standard/tron-logo.png', name: 'TRON', color: '#ff0013', type: 'image' },
+                    'GALA': { icon: 'https://assets.coingecko.com/coins/images/12493/standard/GALA-v2.png', name: 'Gala Games', color: '#ff6600', type: 'image' },
+                    'PEPE': { icon: 'https://assets.coingecko.com/coins/images/29850/standard/pepe-token.jpeg', name: 'Pepe', color: '#28a745', type: 'image' },
+                    'AUD': { icon: 'fas fa-dollar-sign', name: 'Australian Dollar', color: '#007bff', type: 'font' },
+                    'USDT': { icon: 'https://assets.coingecko.com/coins/images/325/standard/Tether.png', name: 'Tether USDT', color: '#26a17b', type: 'image' },
+                    'USDC': { icon: 'https://assets.coingecko.com/coins/images/6319/standard/usdc.png', name: 'USD Coin', color: '#2775ca', type: 'image' },
+                    'DOGE': { icon: 'https://assets.coingecko.com/coins/images/5/standard/dogecoin.png', name: 'Dogecoin', color: '#c2a633', type: 'image' },
+                    'ADA': { icon: 'https://assets.coingecko.com/coins/images/975/standard/cardano.png', name: 'Cardano', color: '#0033ad', type: 'image' },
+                    'DOT': { icon: 'https://assets.coingecko.com/coins/images/12171/standard/polkadot.png', name: 'Polkadot', color: '#e6007a', type: 'image' },
+                    'MATIC': { icon: 'https://assets.coingecko.com/coins/images/4713/standard/polygon.png', name: 'Polygon', color: '#8247e5', type: 'image' },
+                    'LINK': { icon: 'https://assets.coingecko.com/coins/images/877/standard/chainlink-new-logo.png', name: 'Chainlink', color: '#375bd2', type: 'image' },
+                    'XRP': { icon: 'https://assets.coingecko.com/coins/images/44/standard/xrp-symbol-white-128.png', name: 'Ripple', color: '#23292f', type: 'image' },
+                    'BNB': { icon: 'https://assets.coingecko.com/coins/images/825/standard/bnb-icon2_2x.png', name: 'Binance Coin', color: '#f3ba2f', type: 'image' },
+                    'SHIB': { icon: 'https://assets.coingecko.com/coins/images/11939/standard/shiba.png', name: 'Shiba Inu', color: '#ff6600', type: 'image' },
+                    'AAVE': { icon: 'https://assets.coingecko.com/coins/images/12645/standard/AAVE.png', name: 'Aave', color: '#b6509e', type: 'image' }
                 };
                 
-                return coinInfo[symbol] || { icon: 'fas fa-coins', name: symbol, color: '#6c757d' };
+                return coinInfo[symbol] || { icon: 'fas fa-coins', name: symbol, color: '#6c757d', type: 'font' };
             };
             
             const coinDisplay = getCoinDisplay(symbol);
@@ -4924,9 +4930,30 @@ function updateOpenPositionsTable(positions, totalValue = 0) {
             const iconDiv = document.createElement('div');
             iconDiv.className = 'coin-icon me-2';
             iconDiv.style.color = coinDisplay.color;
-            const icon = document.createElement('i');
-            icon.className = coinDisplay.icon;
-            iconDiv.appendChild(icon);
+            
+            if (coinDisplay.type === 'image') {
+                const icon = document.createElement('img');
+                // Add cache-busting parameter to force fresh image load
+                const cacheBuster = Date.now() + Math.random();
+                icon.src = coinDisplay.icon + '?v=' + cacheBuster;
+                icon.style.width = '24px';
+                icon.style.height = '24px';
+                icon.style.borderRadius = '50%';
+                icon.style.objectFit = 'cover';
+                icon.alt = coinDisplay.name;
+                icon.onerror = function() {
+                    // Fallback to FontAwesome icon if image fails to load
+                    const fallbackIcon = document.createElement('i');
+                    fallbackIcon.className = 'fas fa-coins';
+                    fallbackIcon.style.color = coinDisplay.color;
+                    iconDiv.replaceChild(fallbackIcon, icon);
+                };
+                iconDiv.appendChild(icon);
+            } else {
+                const icon = document.createElement('i');
+                icon.className = coinDisplay.icon;
+                iconDiv.appendChild(icon);
+            }
             
             const textDiv = document.createElement('div');
             const symbolStrong = document.createElement('strong');
