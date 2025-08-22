@@ -138,7 +138,7 @@
                     <div class="col-12">
                         <div class="card">
                             <div class="card-header">
-                                <h5 class="mb-0">Raw Test Data</h5>
+                                <h5 class="mb-0">Formatted Test Data</h5>
                             </div>
                             <div class="card-body">
                                 <div class="code-block" id="raw-data">
@@ -251,7 +251,18 @@
             container.innerHTML = html;
 
             // Update raw data display
-            document.getElementById('raw-data').textContent = JSON.stringify(data, null, 2);
+            // Format the raw data more readably
+            const formattedData = {
+                timestamp: data.timestamp,
+                okx_endpoint: data.okx_endpoint,
+                tests_available: data.tests_available,
+                test_results: Object.keys(data.test_results || {}).map(testName => ({
+                    test_name: testName,
+                    status: data.test_results[testName].status,
+                    details: data.test_results[testName]
+                }))
+            };
+            document.getElementById('raw-data').textContent = JSON.stringify(formattedData, null, 2);
         }
 
         function getTestDisplayName(testName) {
