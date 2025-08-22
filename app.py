@@ -1042,57 +1042,83 @@ def api_trade_history() -> Any:
                 except Exception as e:
                     logger.warning(f"OKX privateGetTradeFills failed: {e}")
                 
-                # Method 2: OKX Trade Fills API (backup for executed trades) - same as OKXAdapter
+                # Method 2: OKX Account Bills API (for Simple trades, conversions, etc.)
                 try:
-                    # Get ALL fills without instType filter to capture all trade types (SPOT, conversions, etc.)
-                    fills_params = {
+                    # Get ALL account bills which captures Simple trades, conversions, spot trades, etc.
+                    bills_params = {
                         'limit': '100'
-                        # Removed instType filter to get all trade types (Simple trades, Converts, etc.)
+                        # No instType filter - get ALL transaction types including Simple trades
                     }
                     
-                    logger.info(f"Fetching ALL trade fills from OKX API with params: {fills_params}")
-                    response = exchange.privateGetTradeFills(fills_params)
+                    logger.info(f"Fetching ALL account bills from OKX API with params: {bills_params}")
+                    response = exchange.privateGetAccountBills(bills_params)
                     
                     if response.get('code') == '0' and response.get('data'):
-                        fills = response['data']
-                        logger.info(f"OKX fills API returned {len(fills)} trade fills")
+                        bills = response['data']
+                        logger.info(f"OKX account bills API returned {len(bills)} transaction records")
                         
-                        if fills:
-                            logger.info(f"First fill sample: {fills[0]}")
+                        if bills:
+                            logger.info(f"First bill sample: {bills[0]}")
                         
-                        for fill in fills:
+                        for bill in bills:
                             try:
-                                logger.info(f"Processing fill: {fill}")
-                                # Use the same formatting as OKXAdapter._format_okx_fill_direct
-                                inst_id = fill.get('instId', '')
-                                side = fill.get('side', '').upper()
+                                logger.info(f"Processing bill: {bill}")
+                                
+                                # Process ALL bill types to capture Simple trades, Converts, etc.
+                                bill_type = bill.get('type', '')
+                                logger.info(f"Processing bill type: {bill_type} for symbol: {bill.get('instId', '')}")
+                                
+                                inst_id = bill.get('instId', '')
+                                
+                                # Skip if we don't have instrument ID (probably internal transfers)
+                                if not inst_id:
+                                    logger.info(f"Skipping bill without instrument ID: {bill.get('billId', '')}")
+                                    continue
+                                
+                                # Properly map bill types and balance changes to actions
+                                bal_chg = float(bill.get('balChg', 0))
+                                if bal_chg > 0:
+                                    side = 'BUY'  # Positive balance change = incoming = buying
+                                elif bal_chg < 0:
+                                    side = 'SELL'  # Negative balance change = outgoing = selling
+                                else:
+                                    logger.info(f"Skipping bill with zero balance change: {bill.get('billId', '')}")
+                                    continue
                                 
                                 # Convert instrument ID to display symbol (BTC-USDT -> BTC/USDT)
                                 symbol = inst_id.replace('-', '/') if inst_id else 'Unknown'
                                 
-                                # Determine transaction type based on instrument
+                                # Determine transaction type based on instrument and bill details
                                 transaction_type = 'Trade'  # Default
                                 if inst_id:
                                     if '-AUD' in inst_id:
                                         transaction_type = 'Simple trade'  # Direct crypto/fiat (GALA-AUD, SOL-AUD)
+                                    elif 'USD-AUD' in inst_id or 'USDT-AUD' in inst_id:
+                                        transaction_type = 'Convert'  # Currency conversion
                                     elif '-USDT' in inst_id or '-USD' in inst_id:
                                         transaction_type = 'Trade'  # Traditional crypto trading (BTC-USDT, PEPE-USDT)
-                                    elif 'USD-AUD' in inst_id or 'AUD-USD' in inst_id:
-                                        transaction_type = 'Convert'  # Currency conversion
                                 
-                                # Parse fill data using proper OKX fields
-                                fill_id = fill.get('fillId', fill.get('tradeId', ''))
-                                timestamp_ms = int(fill.get('ts', 0))
+                                # Parse bill data
+                                bill_id = bill.get('billId', '')
+                                timestamp_ms = int(bill.get('ts', 0))
                                 timestamp_dt = datetime.fromtimestamp(timestamp_ms / 1000, timezone.utc) if timestamp_ms > 0 else datetime.now(timezone.utc)
                                 
-                                quantity = float(fill.get('fillSz', fill.get('sz', 0)))
-                                price = float(fill.get('fillPx', fill.get('px', 0)))
-                                fee = float(fill.get('fee', 0))
-                                total_value = quantity * price if quantity and price else 0
+                                # Get quantity and price from bill
+                                quantity = abs(float(bill.get('balChg', 0)))  # Balance change (absolute value)
+                                px = bill.get('px', '0')
+                                price = float(px) if px and px != '' else 0
+                                fee = abs(float(bill.get('fee', 0)))
+                                total_value = quantity * price if quantity and price else abs(float(bill.get('balChg', 0)))
                                 
-                                if quantity > 0 and price > 0:
+                                # Skip duplicates
+                                if bill_id in trade_ids_seen:
+                                    logger.info(f"Skipping duplicate bill: {bill_id}")
+                                    continue
+                                trade_ids_seen.add(bill_id)
+                                
+                                if quantity > 0:
                                     formatted_trade = {
-                                        'id': fill_id,
+                                        'id': bill_id,
                                         'trade_number': len(all_trades) + 1,
                                         'symbol': symbol,
                                         'type': transaction_type,
@@ -1105,26 +1131,26 @@ def api_trade_history() -> Any:
                                         'total_value': total_value,
                                         'pnl': 0,
                                         'strategy': '',
-                                        'order_id': fill.get('ordId', ''),
-                                        'fee': abs(fee),  # Fee is negative in OKX, make it positive for display
-                                        'fee_currency': fill.get('feeCcy', 'USDT'),
-                                        'source': 'okx_trade_fills_ccxt'
+                                        'order_id': '',
+                                        'fee': fee,
+                                        'fee_currency': bill.get('feeCcy', 'USDT'),
+                                        'source': 'okx_account_bills_ccxt'
                                     }
                                     all_trades.append(formatted_trade)
-                                    logger.info(f"Added fill trade: id={fill_id}, symbol={symbol}, qty={quantity}, price={price}, timestamp={timestamp_dt}")
+                                    logger.info(f"Added bill trade: id={bill_id}, symbol={symbol}, type={transaction_type}, action={side}, qty={quantity}, price={price}, timestamp={timestamp_dt}")
                                 else:
-                                    logger.warning(f"Skipped fill trade: id={fill_id}, qty={quantity}, price={price} (invalid data)")
+                                    logger.warning(f"Skipped bill trade: id={bill_id}, qty={quantity}, price={price} (invalid data)")
                                     
                             except Exception as e:
-                                logger.error(f"Error processing fill: {e}")
+                                logger.error(f"Error processing bill: {e}")
                                 continue
                     else:
-                        logger.info(f"OKX fills API response: {response.get('code')} - {response.get('msg', 'No message')}")
+                        logger.info(f"OKX account bills API response: {response.get('code')} - {response.get('msg', 'No message')}")
                         
                 except Exception as e:
-                    logger.warning(f"OKX privateGetTradeFills failed: {e}")
+                    logger.warning(f"OKX privateGetAccountBills failed: {e}")
                 
-                # Method 2: OKX Orders History API (backup for different data coverage) - same as OKXAdapter  
+                # Method 3: OKX Orders History API (backup for different data coverage) - same as OKXAdapter  
                 try:
                     # Try SPOT orders first (most common)
                     orders_params = {
