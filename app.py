@@ -924,13 +924,19 @@ def api_trade_history():
         # Get trades from OKX only
         all_trades = []
         
-        # Use OKX exchange directly via portfolio service (existing working authentication)
+        # Use OKX exchange to get executed trades (trading history)
         try:
             service = get_portfolio_service()
             if service and hasattr(service, 'exchange'):
-                # Use OKX exchange with enhanced direct API calls
+                # Use the existing OKX adapter get_trades method which should get executed trades
                 okx_trades = service.exchange.get_trades(limit=1000)
-                logger.info(f"Retrieved {len(okx_trades)} trades from OKX direct API for timeframe {timeframe}")
+                logger.info(f"Retrieved {len(okx_trades)} executed trades from OKX trading history for timeframe {timeframe}")
+                
+                # Log the type of data we're getting to verify it's trading history not order history
+                if okx_trades:
+                    sample_trade = okx_trades[0]
+                    logger.info(f"Sample trade data: ID={sample_trade.get('id')}, Symbol={sample_trade.get('symbol')}, Status={sample_trade.get('status', 'N/A')}, Side={sample_trade.get('side')}, Amount={sample_trade.get('amount', sample_trade.get('quantity'))}")
+                    logger.info(f"This appears to be from {'order history' if sample_trade.get('status') else 'trade fills/execution history'}")
                 
                 # Format trades for frontend display
                 for trade in okx_trades:
