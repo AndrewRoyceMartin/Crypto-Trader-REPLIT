@@ -1421,7 +1421,8 @@ class TradingApp {
     async updateRecentTrades() {
         try {
             const timeframe = document.getElementById('trades-timeframe')?.value || '7d';
-            const response = await fetch(`/api/recent-trades?timeframe=${timeframe}&limit=20`, { cache: 'no-cache' });
+            // Use the working trade-history endpoint directly 
+            const response = await fetch(`/api/trade-history?timeframe=${timeframe}&limit=20`, { cache: 'no-cache' });
             if (!response.ok) return;
             const data = await response.json();
             
@@ -1477,6 +1478,11 @@ class TradingApp {
                 const dateStr = tradeDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
                 const timeStr = tradeDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
                 
+                // Handle different trade data formats
+                const symbol = trade.symbol || trade.asset || 'Unknown';
+                const exchange = trade.source === 'okx_direct' ? 'OKX' : trade.exchange || 'Internal';
+                const totalValue = trade.total_value || trade.value || (trade.quantity * trade.price);
+                
                 row.innerHTML = `
                     <td>
                         <span class="${sideClass}">
@@ -1484,12 +1490,12 @@ class TradingApp {
                         </span>
                     </td>
                     <td>
-                        <strong>${trade.symbol}</strong>
-                        <br><small class="text-muted">${trade.exchange}</small>
+                        <strong>${symbol}</strong>
+                        <br><small class="text-muted">${exchange}</small>
                     </td>
                     <td>${trade.quantity.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 8 })}</td>
                     <td>${trade.price > 0 ? this.formatCurrency(trade.price) : 'N/A'}</td>
-                    <td>${this.formatCurrency(trade.value)}</td>
+                    <td>${this.formatCurrency(totalValue)}</td>
                     <td>${trade.fee > 0 ? this.formatCurrency(trade.fee) : '-'}</td>
                     <td>
                         <div>${dateStr}</div>
@@ -2882,7 +2888,21 @@ class TradingApp {
             this.displayDashboardRecentTrades(trades);
             return;
         }
-        this.allTrades = this.normalizeTrades(trades || []);
+        
+        // Handle trade-history data format
+        const normalizedTrades = (trades || []).map(trade => ({
+            ...trade,
+            trade_id: trade.id || trade.trade_id || Math.random().toString(36).substr(2, 9),
+            symbol: trade.symbol || 'Unknown',
+            side: trade.side || trade.action || 'Unknown',
+            quantity: parseFloat(trade.quantity || 0),
+            price: parseFloat(trade.price || 0),
+            pnl: parseFloat(trade.pnl || 0),
+            timestamp: trade.timestamp || Date.now(),
+            source: trade.source || 'unknown'
+        }));
+        
+        this.allTrades = normalizedTrades;
         this.applyTradeFilters();
     }
 
@@ -2976,7 +2996,7 @@ class TradingApp {
 
         filtered.sort((a, b) => (parseTime(b.timestamp) - parseTime(a.timestamp)));
 
-        filtered.forEach(trade => {
+        filtered.forEach((trade, index) => {
             const row = document.createElement('tr');
             const ms = parseTime(trade.timestamp);
             const timestamp = ms ? new Date(ms).toLocaleString() : '-';
@@ -2985,15 +3005,18 @@ class TradingApp {
             const pnl = Number.isFinite(trade.pnl) ? this.formatCurrency(trade.pnl) : this.formatCurrency(0);
             const pnlClass = (Number(trade.pnl) || 0) >= 0 ? 'text-success' : 'text-danger';
             const sideUp = (trade.side || '').toUpperCase();
+            const totalValue = this.formatCurrency(trade.total_value || (trade.quantity * trade.price));
+            const tradeNum = trade.trade_number || (index + 1);
+            const symbol = trade.symbol.replace('/USDT', '').replace('/USD', ''); // Clean symbol
 
             row.innerHTML = `
-                <td><span class="badge bg-secondary">#${trade.trade_id}</span></td>
+                <td><span class="badge bg-secondary">#${tradeNum}</span></td>
                 <td><small>${timestamp}</small></td>
-                <td><strong>${trade.symbol || ''}</strong></td>
+                <td><strong>${symbol}</strong></td>
                 <td><span class="badge ${sideUp === 'BUY' ? 'bg-success' : 'bg-danger'}">${sideUp || '-'}</span></td>
                 <td>${quantity}</td>
                 <td>${price}</td>
-                <td class="${pnlClass}">${pnl}</td>
+                <td class="${pnlClass}">${totalValue}</td>
             `;
             tableBody.appendChild(row);
         });
