@@ -4527,7 +4527,7 @@ def add_security_headers(resp: Any) -> Any:
         "default-src 'self'; "
         "script-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com 'unsafe-inline'; "
         "style-src 'self' https://fonts.googleapis.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com 'unsafe-inline'; "
-        "font-src 'self' https://fonts.gstatic.com; "
+        "font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; "
         "img-src 'self' data: https://assets.coingecko.com https://s2.coinmarketcap.com https://cryptoicons.org https://static.okx.com; "
         f"connect-src {connect_src}; "
         "frame-ancestors 'none'; "
