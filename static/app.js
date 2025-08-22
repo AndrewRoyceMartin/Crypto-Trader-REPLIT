@@ -1545,7 +1545,7 @@ class TradingApp {
     }
     
     updateTradesTable(trades, summary) {
-        const tradesTableBody = document.getElementById('trades-table-body');
+        const tradesTableBody = document.getElementById('trades-table');
         if (!tradesTableBody) return;
         
         try {
@@ -1582,29 +1582,32 @@ class TradingApp {
             trades.forEach(trade => {
                 const row = document.createElement('tr');
                 
-                // Side color class and icon
-                const sideClass = trade.side === 'BUY' ? 'text-success' : 'text-danger';
-                const sideIcon = trade.side === 'BUY' ? 'fa-arrow-up' : 'fa-arrow-down';
-                
-                // Format date and time
-                const tradeDate = new Date(trade.timestamp);
-                const dateStr = tradeDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                const timeStr = tradeDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-                
-                // Handle different trade data formats
+                // Format data
+                const side = trade.side || trade.action || '';
+                const sideClass = side === 'BUY' ? 'badge bg-success' : 'badge bg-danger';
+                const transactionType = trade.type || trade.transaction_type || 'Trade';
                 const symbol = trade.symbol || trade.asset || 'Unknown';
-                const exchange = trade.source === 'okx_direct' ? 'OKX' : trade.exchange || 'Internal';
-                const totalValue = trade.total_value || trade.value || (trade.quantity * trade.price);
+                const tradeDate = new Date(trade.timestamp);
+                const timestamp = tradeDate.toLocaleString();
+                const quantity = trade.quantity || 0;
+                const price = trade.price || 0;
+                const pnl = trade.pnl || 0;
+                const pnlClass = pnl >= 0 ? 'text-success' : 'text-danger';
                 
-                // Side cell
+                // Type cell
+                const typeCell = document.createElement('td');
+                const typeBadge = document.createElement('span');
+                typeBadge.className = 'badge bg-primary';
+                typeBadge.textContent = transactionType;
+                typeCell.appendChild(typeBadge);
+                row.appendChild(typeCell);
+                
+                // Action cell (side)
                 const sideCell = document.createElement('td');
-                const sideSpan = document.createElement('span');
-                sideSpan.className = sideClass;
-                const sideIconElement = document.createElement('i');
-                sideIconElement.className = `fas ${sideIcon} me-1`;
-                sideSpan.appendChild(sideIconElement);
-                sideSpan.appendChild(document.createTextNode(trade.side));
-                sideCell.appendChild(sideSpan);
+                const sideBadge = document.createElement('span');
+                sideBadge.className = sideClass;
+                sideBadge.textContent = side;
+                sideCell.appendChild(sideBadge);
                 row.appendChild(sideCell);
                 
                 // Symbol cell
@@ -1612,43 +1615,30 @@ class TradingApp {
                 const symbolStrong = document.createElement('strong');
                 symbolStrong.textContent = symbol;
                 symbolCell.appendChild(symbolStrong);
-                symbolCell.appendChild(document.createElement('br'));
-                const exchangeSmall = document.createElement('small');
-                exchangeSmall.className = 'text-muted';
-                exchangeSmall.textContent = exchange;
-                symbolCell.appendChild(exchangeSmall);
                 row.appendChild(symbolCell);
                 
-                // Quantity cell
+                // Time cell
+                const timeCell = document.createElement('td');
+                timeCell.textContent = timestamp;
+                row.appendChild(timeCell);
+                
+                // Size cell
                 const quantityCell = document.createElement('td');
-                quantityCell.textContent = trade.quantity.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 8 });
+                quantityCell.className = 'text-end';
+                quantityCell.textContent = parseFloat(quantity).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 8 });
                 row.appendChild(quantityCell);
                 
                 // Price cell
                 const priceCell = document.createElement('td');
-                priceCell.textContent = trade.price > 0 ? this.formatCurrency(trade.price) : 'N/A';
+                priceCell.className = 'text-end';
+                priceCell.textContent = price > 0 ? this.formatCurrency(price) : 'N/A';
                 row.appendChild(priceCell);
                 
-                // Total value cell
-                const valueCell = document.createElement('td');
-                valueCell.textContent = this.formatCurrency(totalValue);
-                row.appendChild(valueCell);
-                
-                // Fee cell
-                const feeCell = document.createElement('td');
-                feeCell.textContent = trade.fee > 0 ? this.formatCurrency(trade.fee) : '-';
-                row.appendChild(feeCell);
-                
-                // Date/time cell
-                const dateCell = document.createElement('td');
-                const dateDiv = document.createElement('div');
-                dateDiv.textContent = dateStr;
-                dateCell.appendChild(dateDiv);
-                const timeSmall = document.createElement('small');
-                timeSmall.className = 'text-muted';
-                timeSmall.textContent = timeStr;
-                dateCell.appendChild(timeSmall);
-                row.appendChild(dateCell);
+                // P&L cell
+                const pnlCell = document.createElement('td');
+                pnlCell.className = `text-end ${pnlClass}`;
+                pnlCell.textContent = this.formatCurrency(pnl);
+                row.appendChild(pnlCell);
                 
                 tradesTableBody.appendChild(row);
             });
@@ -5623,23 +5613,29 @@ function updateTradesTableFromOKX(trades) {
         });
         const pnlClass = (parseFloat(trade.pnl || 0)) >= 0 ? 'text-success' : 'text-danger';
         
+        // Determine transaction type based on trade data
+        const transactionType = trade.type || trade.transaction_type || 'Trade';
+        
         // Create cells using DOM manipulation for security
-        const tradeNumberCell = document.createElement('td');
-        tradeNumberCell.textContent = trade.trade_number || (index + 1);
-        
-        const timeCell = document.createElement('td');
-        timeCell.textContent = timestamp;
-        
-        const symbolCell = document.createElement('td');
-        const symbolStrong = document.createElement('strong');
-        symbolStrong.textContent = symbol;
-        symbolCell.appendChild(symbolStrong);
+        const typeCell = document.createElement('td');
+        const typeBadge = document.createElement('span');
+        typeBadge.className = 'badge bg-primary';
+        typeBadge.textContent = transactionType;
+        typeCell.appendChild(typeBadge);
         
         const sideCell = document.createElement('td');
         const sideBadge = document.createElement('span');
         sideBadge.className = sideClass;
         sideBadge.textContent = side;
         sideCell.appendChild(sideBadge);
+        
+        const symbolCell = document.createElement('td');
+        const symbolStrong = document.createElement('strong');
+        symbolStrong.textContent = symbol;
+        symbolCell.appendChild(symbolStrong);
+        
+        const timeCell = document.createElement('td');
+        timeCell.textContent = timestamp;
         
         const quantityCell = document.createElement('td');
         quantityCell.className = 'text-end';
@@ -5654,10 +5650,10 @@ function updateTradesTableFromOKX(trades) {
         pnlCell.textContent = pnl;
         
         // Append all cells to row
-        row.appendChild(tradeNumberCell);
-        row.appendChild(timeCell);
-        row.appendChild(symbolCell);
+        row.appendChild(typeCell);
         row.appendChild(sideCell);
+        row.appendChild(symbolCell);
+        row.appendChild(timeCell);
         row.appendChild(quantityCell);
         row.appendChild(priceCell);
         row.appendChild(pnlCell);
