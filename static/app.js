@@ -1058,11 +1058,20 @@ class TradingApp {
                 equityCanvas.style.display = 'none';
                 const fallback = document.createElement('div');
                 fallback.className = 'text-center text-muted p-3';
-                fallback.innerHTML = `
-                    <strong>Equity Curve</strong><br>
-                    Return: ${metrics.total_return_percent >= 0 ? '+' : ''}${metrics.total_return_percent.toFixed(2)}%<br>
-                    Data Points: ${equityData.length}
-                `;
+                // Safe DOM creation instead of innerHTML
+                const title = document.createElement('strong');
+                title.textContent = 'Equity Curve';
+                fallback.appendChild(title);
+                fallback.appendChild(document.createElement('br'));
+                
+                const returnText = document.createTextNode(
+                    `Return: ${metrics.total_return_percent >= 0 ? '+' : ''}${metrics.total_return_percent.toFixed(2)}%`
+                );
+                fallback.appendChild(returnText);
+                fallback.appendChild(document.createElement('br'));
+                
+                const dataPointsText = document.createTextNode(`Data Points: ${equityData.length}`);
+                fallback.appendChild(dataPointsText);
                 equityCanvas.parentNode.replaceChild(fallback, equityCanvas);
             }
         }
@@ -1256,11 +1265,20 @@ class TradingApp {
                 drawdownCanvas.style.display = 'none';
                 const fallback = document.createElement('div');
                 fallback.className = 'text-center text-muted p-3';
-                fallback.innerHTML = `
-                    <strong>Drawdown Analysis</strong><br>
-                    Max Drawdown: ${metrics.max_drawdown_percent.toFixed(2)}%<br>
-                    Data Points: ${drawdownData.length}
-                `;
+                // Safe DOM creation instead of innerHTML
+                const title = document.createElement('strong');
+                title.textContent = 'Drawdown Analysis';
+                fallback.appendChild(title);
+                fallback.appendChild(document.createElement('br'));
+                
+                const drawdownText = document.createTextNode(
+                    `Max Drawdown: ${metrics.max_drawdown_percent.toFixed(2)}%`
+                );
+                fallback.appendChild(drawdownText);
+                fallback.appendChild(document.createElement('br'));
+                
+                const dataPointsText = document.createTextNode(`Data Points: ${drawdownData.length}`);
+                fallback.appendChild(dataPointsText);
                 drawdownCanvas.parentNode.replaceChild(fallback, drawdownCanvas);
             }
         }
@@ -2019,16 +2037,31 @@ class TradingApp {
             else cell.colSpan = 10;
 
             cell.className = 'text-center text-warning p-4';
-            cell.innerHTML = `
-                <div class="mb-2">
-                    <i class="fas fa-exclamation-triangle fa-2x text-warning"></i>
-                </div>
-                <h5>Portfolio Empty</h5>
-                <p class="mb-3">Start trading to populate your cryptocurrency portfolio with live data.</p>
-                <button class="btn btn-success" onclick="startTrading('paper', 'portfolio')">
-                    <i class="fas fa-play"></i> Start Paper Trading
-                </button>
-            `;
+            // Safe DOM creation instead of innerHTML
+            const iconDiv = document.createElement('div');
+            iconDiv.className = 'mb-2';
+            const icon = document.createElement('i');
+            icon.className = 'fas fa-exclamation-triangle fa-2x text-warning';
+            iconDiv.appendChild(icon);
+            cell.appendChild(iconDiv);
+            
+            const title = document.createElement('h5');
+            title.textContent = 'Portfolio Empty';
+            cell.appendChild(title);
+            
+            const description = document.createElement('p');
+            description.className = 'mb-3';
+            description.textContent = 'Start trading to populate your cryptocurrency portfolio with live data.';
+            cell.appendChild(description);
+            
+            const button = document.createElement('button');
+            button.className = 'btn btn-success';
+            button.onclick = () => startTrading('paper', 'portfolio');
+            const playIcon = document.createElement('i');
+            playIcon.className = 'fas fa-play';
+            button.appendChild(playIcon);
+            button.appendChild(document.createTextNode(' Start Paper Trading'));
+            cell.appendChild(button);
             row.appendChild(cell);
             tableBody.appendChild(row);
         });
@@ -2564,27 +2597,53 @@ class TradingApp {
                 const takeProfit = this.formatCryptoPrice(purchasePrice * 1.2);
                 const daysHeld = '30';
 
-                row.innerHTML = `
-                    <td class="text-start"><strong>${crypto.symbol || 'PEPE'}</strong></td>
-                    <td class="text-start">${side}</td>
-                    <td class="text-end">${qty.toLocaleString(undefined, {maximumFractionDigits: 0})}</td>
-                    <td class="text-end">${this.formatCryptoPrice(purchasePrice)}</td>
-                    <td class="text-end">${this.formatCryptoPrice(cp)}</td>
-                    <td class="text-end">${this.formatCurrency(cv, this.selectedCurrency)}</td>
-                    <td class="text-end ${pnlClass}"><strong>${this.formatCurrency(pnlNum)}</strong></td>
-                    <td class="text-end ${pnlClass}">${pnlIcon} <strong>${pp.toFixed(1)}%</strong></td>
-                    <td class="text-end ${pp >= 0 ? 'text-success' : 'text-danger'}">${change24h}</td>
-                    <td class="text-end">${weight}%</td>
-                    <td class="text-end">${target}%</td>
-                    <td class="text-end">${deviation}%</td>
-                    <td class="text-center">
-                        <small class="text-muted">${stopLoss} / ${takeProfit}</small>
-                    </td>
-                    <td class="text-end">${daysHeld}</td>
-                    <td class="text-center text-nowrap">
-                        <button class="btn btn-xs btn-outline-primary px-2 py-1 small" onclick="alert('PEPE position details')">View</button>
-                    </td>
-                `;
+                // Safe DOM creation instead of innerHTML
+                const cells = [
+                    { content: crypto.symbol || 'PEPE', classes: 'text-start', tag: 'strong' },
+                    { content: side, classes: 'text-start' },
+                    { content: qty.toLocaleString(undefined, {maximumFractionDigits: 0}), classes: 'text-end' },
+                    { content: this.formatCryptoPrice(purchasePrice), classes: 'text-end' },
+                    { content: this.formatCryptoPrice(cp), classes: 'text-end' },
+                    { content: this.formatCurrency(cv, this.selectedCurrency), classes: 'text-end' },
+                    { content: this.formatCurrency(pnlNum), classes: `text-end ${pnlClass}`, tag: 'strong' },
+                    { content: `${pnlIcon} ${pp.toFixed(1)}%`, classes: `text-end ${pnlClass}`, tag: 'strong' },
+                    { content: change24h, classes: `text-end ${pp >= 0 ? 'text-success' : 'text-danger'}` },
+                    { content: `${weight}%`, classes: 'text-end' },
+                    { content: `${target}%`, classes: 'text-end' },
+                    { content: `${deviation}%`, classes: 'text-end' },
+                    { content: `${stopLoss} / ${takeProfit}`, classes: 'text-center', containerTag: 'small', containerClass: 'text-muted' },
+                    { content: daysHeld, classes: 'text-end' }
+                ];
+                
+                cells.forEach(cellData => {
+                    const td = document.createElement('td');
+                    td.className = cellData.classes;
+                    
+                    let element;
+                    if (cellData.containerTag) {
+                        element = document.createElement(cellData.containerTag);
+                        element.className = cellData.containerClass;
+                        element.textContent = cellData.content;
+                    } else if (cellData.tag) {
+                        element = document.createElement(cellData.tag);
+                        element.textContent = cellData.content;
+                    } else {
+                        element = document.createTextNode(cellData.content);
+                    }
+                    
+                    td.appendChild(element);
+                    row.appendChild(td);
+                });
+                
+                // Add final button cell
+                const buttonTd = document.createElement('td');
+                buttonTd.className = 'text-center text-nowrap';
+                const viewButton = document.createElement('button');
+                viewButton.className = 'btn btn-xs btn-outline-primary px-2 py-1 small';
+                viewButton.onclick = () => alert('PEPE position details');
+                viewButton.textContent = 'View';
+                buttonTd.appendChild(viewButton);
+                row.appendChild(buttonTd);
                 tableBody.appendChild(row);
             });
         } finally {
@@ -3263,15 +3322,32 @@ class TradingApp {
             const tradeNum = trade.trade_number || (index + 1);
             const symbol = trade.symbol.replace('/USDT', '').replace('/USD', ''); // Clean symbol
 
-            row.innerHTML = `
-                <td><span class="badge bg-secondary">#${tradeNum}</span></td>
-                <td><small>${timestamp}</small></td>
-                <td><strong>${symbol}</strong></td>
-                <td><span class="badge ${sideUp === 'BUY' ? 'bg-success' : 'bg-danger'}">${sideUp || '-'}</span></td>
-                <td>${quantity}</td>
-                <td>${price}</td>
-                <td class="${pnlClass}">${totalValue}</td>
-            `;
+            // Safe DOM creation instead of innerHTML
+            const cells = [
+                { content: `#${tradeNum}`, classes: 'badge bg-secondary', containerTag: 'span' },
+                { content: timestamp, containerTag: 'small' },
+                { content: symbol, containerTag: 'strong' },
+                { content: sideUp || '-', classes: `badge ${sideUp === 'BUY' ? 'bg-success' : 'bg-danger'}`, containerTag: 'span' },
+                { content: quantity },
+                { content: price },
+                { content: totalValue, cellClass: pnlClass }
+            ];
+            
+            cells.forEach(cellData => {
+                const td = document.createElement('td');
+                if (cellData.cellClass) td.className = cellData.cellClass;
+                
+                if (cellData.containerTag) {
+                    const container = document.createElement(cellData.containerTag);
+                    if (cellData.classes) container.className = cellData.classes;
+                    container.textContent = cellData.content;
+                    td.appendChild(container);
+                } else {
+                    td.textContent = cellData.content;
+                }
+                
+                row.appendChild(td);
+            });
             tableBody.appendChild(row);
         });
     }
@@ -3788,9 +3864,14 @@ async function executeTakeProfit() {
     }
     
     const button = document.getElementById('take-profit-btn');
-    const originalText = button.innerHTML;
+    const originalText = button.textContent;
     button.disabled = true;
-    button.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Processing...';
+    // Safe DOM creation instead of innerHTML
+    button.textContent = '';
+    const spinner = document.createElement('i');
+    spinner.className = 'fas fa-spinner fa-spin me-1';
+    button.appendChild(spinner);
+    button.appendChild(document.createTextNode('Processing...'));
     
     window.tradingApp.showToast('Executing take profit trades...', 'info');
     
@@ -3860,7 +3941,7 @@ async function executeTakeProfit() {
         window.tradingApp.showToast(`Take profit error: ${error.message}`, 'error');
     } finally {
         button.disabled = false;
-        button.innerHTML = originalText;
+        button.textContent = originalText;
     }
 }
 async function buyCrypto(symbol) {
@@ -4259,33 +4340,81 @@ function updateTopMovers(holdings) {
         .slice(0, 10);
 
     if (!sorted.length) {
-        el.innerHTML = '<div class="text-muted text-center">No data</div>';
+        // Safe DOM creation instead of innerHTML
+        el.textContent = '';
+        const noDataDiv = document.createElement('div');
+        noDataDiv.className = 'text-muted text-center';
+        noDataDiv.textContent = 'No data';
+        el.appendChild(noDataDiv);
         return;
     }
 
     const gainers = sorted.filter(h => (h.pnl_percent || 0) > 0).slice(0, 5);
     const losers  = sorted.filter(h => (h.pnl_percent || 0) < 0).slice(0, 5);
 
-    let html = '';
+    // Safe DOM creation instead of innerHTML
+    el.textContent = ''; // Clear content
+    
     if (gainers.length) {
-        html += '<div class="mb-2"><strong class="text-success">↗ Top Gainers</strong></div>';
-        gainers.forEach(c => html += `
-            <div class="d-flex justify-content-between small mb-1">
-                <span class="text-primary fw-bold">${c.symbol}</span>
-                <span class="text-success">+${(c.pnl_percent || 0).toFixed(2)}%</span>
-            </div>
-        `);
+        const gainersDiv = document.createElement('div');
+        gainersDiv.className = 'mb-2';
+        const gainersTitle = document.createElement('strong');
+        gainersTitle.className = 'text-success';
+        gainersTitle.textContent = '↗ Top Gainers';
+        gainersDiv.appendChild(gainersTitle);
+        el.appendChild(gainersDiv);
+        
+        gainers.forEach(c => {
+            const itemDiv = document.createElement('div');
+            itemDiv.className = 'd-flex justify-content-between small mb-1';
+            
+            const symbolSpan = document.createElement('span');
+            symbolSpan.className = 'text-primary fw-bold';
+            symbolSpan.textContent = c.symbol;
+            
+            const percentSpan = document.createElement('span');
+            percentSpan.className = 'text-success';
+            percentSpan.textContent = `+${(c.pnl_percent || 0).toFixed(2)}%`;
+            
+            itemDiv.appendChild(symbolSpan);
+            itemDiv.appendChild(percentSpan);
+            el.appendChild(itemDiv);
+        });
     }
+    
     if (losers.length) {
-        html += '<div class="mb-2 mt-3"><strong class="text-danger">↘ Top Losers</strong></div>';
-        losers.forEach(c => html += `
-            <div class="d-flex justify-content-between small mb-1">
-                <span class="text-primary fw-bold">${c.symbol}</span>
-                <span class="text-danger">-${Math.abs(c.pnl_percent || 0).toFixed(2)}%</span>
-            </div>
-        `);
+        const losersDiv = document.createElement('div');
+        losersDiv.className = 'mb-2 mt-3';
+        const losersTitle = document.createElement('strong');
+        losersTitle.className = 'text-danger';
+        losersTitle.textContent = '↘ Top Losers';
+        losersDiv.appendChild(losersTitle);
+        el.appendChild(losersDiv);
+        
+        losers.forEach(c => {
+            const itemDiv = document.createElement('div');
+            itemDiv.className = 'd-flex justify-content-between small mb-1';
+            
+            const symbolSpan = document.createElement('span');
+            symbolSpan.className = 'text-primary fw-bold';
+            symbolSpan.textContent = c.symbol;
+            
+            const percentSpan = document.createElement('span');
+            percentSpan.className = 'text-danger';
+            percentSpan.textContent = `-${Math.abs(c.pnl_percent || 0).toFixed(2)}%`;
+            
+            itemDiv.appendChild(symbolSpan);
+            itemDiv.appendChild(percentSpan);
+            el.appendChild(itemDiv);
+        });
     }
-    el.innerHTML = html || '<div class="text-muted text-center">No significant moves</div>';
+    
+    if (!gainers.length && !losers.length) {
+        const noDataDiv = document.createElement('div');
+        noDataDiv.className = 'text-muted text-center';
+        noDataDiv.textContent = 'No significant moves';
+        el.appendChild(noDataDiv);
+    }
 }
 function renderDashboardOverview(portfolioData, recentTrades = []) {
     updateQuickOverview(portfolioData);
@@ -4566,13 +4695,20 @@ function updateOpenPositionsTable(positions, totalValue = 0) {
         console.debug("Processing positions data:", positions);
         
         if (!positions || positions.length === 0) {
-            positionsTableBody.innerHTML = `
-                <tr>
-                    <td colspan="13" class="text-center py-4">
-                        <i class="fas fa-info-circle me-2"></i>No open positions
-                    </td>
-                </tr>
-            `;
+            // Safe DOM creation instead of innerHTML
+            positionsTableBody.textContent = '';
+            const row = document.createElement('tr');
+            const cell = document.createElement('td');
+            cell.colSpan = 13;
+            cell.className = 'text-center py-4';
+            
+            const icon = document.createElement('i');
+            icon.className = 'fas fa-info-circle me-2';
+            cell.appendChild(icon);
+            cell.appendChild(document.createTextNode('No open positions'));
+            
+            row.appendChild(cell);
+            positionsTableBody.appendChild(row);
             return;
         }
 
@@ -4593,14 +4729,28 @@ function updateOpenPositionsTable(positions, totalValue = 0) {
         });
         
         if (significantPositions.length === 0) {
-            positionsTableBody.innerHTML = `
-                <tr>
-                    <td colspan="13" class="text-center py-4">
-                        <i class="fas fa-info-circle me-2"></i>No positions above $0.01 threshold
-                        <br><small class="text-muted">Small positions (< $0.01) are available in the Available Positions section</small>
-                    </td>
-                </tr>
-            `;
+            // Safe DOM creation instead of innerHTML
+            positionsTableBody.textContent = '';
+            const row = document.createElement('tr');
+            const cell = document.createElement('td');
+            cell.colSpan = 13;
+            cell.className = 'text-center py-4';
+            
+            const icon = document.createElement('i');
+            icon.className = 'fas fa-info-circle me-2';
+            cell.appendChild(icon);
+            cell.appendChild(document.createTextNode('No positions above $0.01 threshold'));
+            
+            const br = document.createElement('br');
+            cell.appendChild(br);
+            
+            const small = document.createElement('small');
+            small.className = 'text-muted';
+            small.textContent = 'Small positions (< $0.01) are available in the Available Positions section';
+            cell.appendChild(small);
+            
+            row.appendChild(cell);
+            positionsTableBody.appendChild(row);
             return;
         }
 
@@ -5078,13 +5228,20 @@ function updateAvailablePositionsTable(availablePositions) {
         console.debug("Updating available positions table with:", availablePositions);
         
         if (!availablePositions || availablePositions.length === 0) {
-            availableTableBody.innerHTML = `
-                <tr>
-                    <td colspan="10" class="text-center py-4">
-                        <i class="fas fa-info-circle me-2"></i>No available positions for buy-back
-                    </td>
-                </tr>
-            `;
+            // Safe DOM creation instead of innerHTML
+            availableTableBody.textContent = '';
+            const row = document.createElement('tr');
+            const cell = document.createElement('td');
+            cell.colSpan = 10;
+            cell.className = 'text-center py-4';
+            
+            const icon = document.createElement('i');
+            icon.className = 'fas fa-info-circle me-2';
+            cell.appendChild(icon);
+            cell.appendChild(document.createTextNode('No available positions for buy-back'));
+            
+            row.appendChild(cell);
+            availableTableBody.appendChild(row);
             return;
         }
 
@@ -5405,13 +5562,20 @@ async function refreshHoldingsData() {
         // Show error in table
         const tableBody = document.getElementById('open-positions-table-body');
         if (tableBody) {
-            tableBody.innerHTML = `
-                <tr>
-                    <td colspan="12" class="text-center text-danger py-4">
-                        <i class="fas fa-exclamation-triangle me-2"></i>Failed to load positions data
-                    </td>
-                </tr>
-            `;
+            // Safe DOM creation instead of innerHTML
+            tableBody.textContent = '';
+            const row = document.createElement('tr');
+            const cell = document.createElement('td');
+            cell.colSpan = 12;
+            cell.className = 'text-center text-danger py-4';
+            
+            const icon = document.createElement('i');
+            icon.className = 'fas fa-exclamation-triangle me-2';
+            cell.appendChild(icon);
+            cell.appendChild(document.createTextNode('Failed to load positions data'));
+            
+            row.appendChild(cell);
+            tableBody.appendChild(row);
         }
     }
 }
