@@ -9,16 +9,15 @@ import sys
 import logging
 import threading
 import time
-import json
 import requests
 import hmac
 import hashlib
 import base64
 import warnings
+from datetime import datetime, timedelta, timezone
 
 # Only suppress specific pkg_resources deprecation warning - all other warnings will show
 warnings.filterwarnings('ignore', message='pkg_resources is deprecated as an API.*', category=DeprecationWarning)
-from datetime import datetime, timezone, timedelta
 from typing import Any
 from functools import wraps
 from flask import Flask, jsonify, request, render_template
@@ -1355,9 +1354,9 @@ def api_recent_trades():
         except (ValueError, TypeError):
             limit = 50  # Default to safe value
         
-        # Use internal redirect to working trade-history endpoint with url_for
-        from flask import redirect, url_for
-        return redirect(url_for('api_trade_history', timeframe=timeframe, limit=limit))
+        # Use internal redirect to working trade-history endpoint
+        from flask import redirect
+        return redirect(f'/api/trade-history?timeframe={timeframe}&limit={limit}')
         
     except Exception as e:
         logger.error(f"Error redirecting recent trades: {e}")
@@ -1719,11 +1718,6 @@ def api_drawdown_analysis():
         drawdown_data = []
         
         # Use OKX native API for historical balance and price data
-        import requests
-        import hmac
-        import hashlib
-        import base64
-        from datetime import timezone
         
         # OKX API credentials
         api_key = os.getenv("OKX_API_KEY", "")
@@ -1862,11 +1856,11 @@ def api_drawdown_analysis():
                                     current_price = float(holding.get('current_price', 0))
                                     daily_equity += quantity * current_price
                                     
-                            except Exception as price_error:
+                            except Exception:
                                 current_price = float(holding.get('current_price', 0))
                                 daily_equity += quantity * current_price
                                 
-                    except Exception as holding_error:
+                    except Exception:
                         continue
                 
                 if daily_equity > 0:
@@ -2022,11 +2016,6 @@ def api_performance_analytics():
             start_date = end_date - timedelta(days=30)
         
         # Use OKX native API for performance data
-        import requests
-        import hmac
-        import hashlib
-        import base64
-        from datetime import timezone
         
         # OKX API credentials
         api_key = os.getenv("OKX_API_KEY", "")
@@ -3335,7 +3324,7 @@ def api_portfolio_analytics():
         force_okx = request.args.get('force_okx', 'true')
         
         # Use existing performance analytics endpoint directly
-        from flask import url_for, redirect
+        from flask import redirect
         from urllib.parse import urlencode
         
         # Validate and sanitize parameters
@@ -3985,7 +3974,6 @@ def api_performance():
 
         # Calculate monthly returns based on actual portfolio progression
         monthly_returns = {}
-        current_year = end_dt.year
         
         # Group equity curve data by month to calculate real monthly returns
         monthly_data = {}
@@ -4288,7 +4276,7 @@ def api_test_sync_data():
         
     except Exception as e:
         logger.error(f"Error generating test sync data: {e}")
-        from datetime import datetime as dt
+        # Use existing datetime import
         return jsonify({
             'error': str(e),
             'timestamp': iso_utc()

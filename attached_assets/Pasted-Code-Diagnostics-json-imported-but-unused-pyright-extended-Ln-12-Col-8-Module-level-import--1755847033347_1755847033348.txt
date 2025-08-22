@@ -1,0 +1,112 @@
+Code Diagnostics
+`json` imported but unused
+(pyright-extended)
+Ln 12, Col 8
+Module level import not at top of file
+(pyright-extended)
+Ln 21, Col 1
+Module level import not at top of file
+(pyright-extended)
+Ln 22, Col 1
+Module level import not at top of file
+(pyright-extended)
+Ln 23, Col 1
+Module level import not at top of file
+(pyright-extended)
+Ln 24, Col 1
+"privateGetAccountBills" is not a known member of "None"
+(pyright-extended)
+Ln 943, Col 41
+"privateGetTradeFills" is not a known member of "None"
+(pyright-extended)
+Ln 1034, Col 41
+"privateGetTradeOrdersHistory" is not a known member of "None"
+(pyright-extended)
+Ln 1117, Col 41
+"fetch_my_trades" is not a known member of "None"
+(pyright-extended)
+Ln 1199, Col 48
+Cannot access member "get" for type "object"   Member "get" is unknown
+(pyright-extended)
+Ln 1205, Col 49
+Cannot access member "get" for type "object"   Member "get" is unknown
+(pyright-extended)
+Ln 1207, Col 53
+Cannot access member "get" for type "object"   Member "get" is unknown
+(pyright-extended)
+Ln 1210, Col 53
+Cannot access member "get" for type "object"   Member "get" is unknown
+(pyright-extended)
+Ln 1211, Col 51
+Cannot access member "get" for type "object"   Member "get" is unknown
+(pyright-extended)
+Ln 1212, Col 61
+Cannot access member "get" for type "object"   Member "get" is unknown
+(pyright-extended)
+Ln 1213, Col 58
+Cannot access member "get" for type "object"   Member "get" is unknown
+(pyright-extended)
+Ln 1214, Col 56
+Cannot access member "get" for type "object"   Member "get" is unknown
+(pyright-extended)
+Ln 1215, Col 64
+Cannot access member "get" for type "object"   Member "get" is unknown
+(pyright-extended)
+Ln 1218, Col 55
+Cannot access member "get" for type "object"   Member "get" is unknown
+(pyright-extended)
+Ln 1219, Col 56
+Cannot access member "get" for type "object"   Member "get" is unknown
+(pyright-extended)
+Ln 1219, Col 107
+Cannot access member "get" for type "object"   Member "get" is unknown
+(pyright-extended)
+Ln 1220, Col 59
+Cannot access member "get" for type "object"   Member "get" is unknown
+(pyright-extended)
+Ln 1220, Col 118
+`hashlib` imported but unused
+(pyright-extended)
+Ln 1724, Col 16
+`datetime.timezone` imported but unused
+(pyright-extended)
+Ln 1726, Col 30
+Local variable `price_error` is assigned to but never used
+(pyright-extended)
+Ln 1865, Col 49
+Local variable `holding_error` is assigned to but never used
+(pyright-extended)
+Ln 1869, Col 41
+`hashlib` imported but unused
+(pyright-extended)
+Ln 2027, Col 16
+`datetime.timezone` imported but unused
+(pyright-extended)
+Ln 2029, Col 30
+Local variable `currency_error` is assigned to but never used
+(pyright-extended)
+Ln 2123, Col 49
+Local variable `bill_error` is assigned to but never used
+(pyright-extended)
+Ln 2170, Col 49
+Local variable `portfolio_service` is assigned to but never used
+(pyright-extended)
+Ln 2306, Col 9
+Local variable `db` is assigned to but never used
+(pyright-extended)
+Ln 2969, Col 9
+Local variable `portfolio_service` is assigned to but never used
+(pyright-extended)
+Ln 3009, Col 9
+Local variable `portfolio_service` is assigned to but never used
+(pyright-extended)
+Ln 3070, Col 9
+`flask.url_for` imported but unused
+(pyright-extended)
+Ln 3338, Col 27
+Local variable `current_year` is assigned to but never used
+(pyright-extended)
+Ln 3988, Col 9
+`datetime.datetime` imported but unused
+(pyright-extended)
+Ln 4291, Col 42
