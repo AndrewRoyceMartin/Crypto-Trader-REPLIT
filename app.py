@@ -946,8 +946,12 @@ def api_trade_history():
                         fills = response['data']
                         logger.info(f"OKX fills API returned {len(fills)} trade fills")
                         
+                        if fills:
+                            logger.info(f"First fill sample: {fills[0]}")
+                        
                         for fill in fills:
                             try:
+                                logger.info(f"Processing fill: {fill}")
                                 # Use the same formatting as OKXAdapter._format_okx_fill_direct
                                 inst_id = fill.get('instId', '')
                                 side = fill.get('side', '').upper()
@@ -996,6 +1000,9 @@ def api_trade_history():
                                         'source': 'okx_trade_fills_ccxt'
                                     }
                                     all_trades.append(formatted_trade)
+                                    logger.info(f"Added fill trade: id={fill_id}, symbol={symbol}, qty={quantity}, price={price}, timestamp={timestamp_dt}")
+                                else:
+                                    logger.warning(f"Skipped fill trade: id={fill_id}, qty={quantity}, price={price} (invalid data)")
                                     
                             except Exception as e:
                                 logger.error(f"Error processing fill: {e}")
@@ -1056,7 +1063,8 @@ def api_trade_history():
                                 
                                 # Check if trade already exists (by ID) to avoid duplicates
                                 trade_id = ord_id
-                                if not any(t.get('id') == trade_id for t in all_trades) and quantity > 0 and price > 0:
+                                exists = any(t.get('id') == trade_id for t in all_trades)
+                                if not exists and quantity > 0 and price > 0:
                                     formatted_trade = {
                                         'id': trade_id,
                                         'trade_number': len(all_trades) + 1,
@@ -1077,6 +1085,11 @@ def api_trade_history():
                                         'source': 'okx_executed_orders_ccxt'
                                     }
                                     all_trades.append(formatted_trade)
+                                    logger.info(f"Added order trade: id={ord_id}, symbol={symbol}, qty={quantity}, price={price}, timestamp={timestamp_dt}")
+                                elif exists:
+                                    logger.info(f"Skipped duplicate order trade: id={trade_id}")
+                                else:
+                                    logger.warning(f"Skipped order trade: id={ord_id}, qty={quantity}, price={price} (invalid data)")
                                     
                             except Exception as e:
                                 logger.error(f"Error processing executed order: {e}")
@@ -1131,9 +1144,18 @@ def api_trade_history():
         except Exception as okx_error:
             logger.error(f"OKX trade history using working exchange instance failed: {okx_error}")
 
+        # Debug: Check what trades we got before filtering
+        logger.info(f"Before filtering: {len(all_trades)} trades collected")
+        if all_trades:
+            for i, trade in enumerate(all_trades[:3]):  # Log first 3 trades
+                logger.info(f"Trade {i+1} sample: id={trade.get('id')}, symbol={trade.get('symbol')}, timestamp={trade.get('timestamp')}, source={trade.get('source')}")
+        
         # Filter trades by timeframe if we have trades
         if timeframe != 'all' and all_trades:
+            logger.info(f"About to filter {len(all_trades)} trades for timeframe: {timeframe}")
             all_trades = filter_trades_by_timeframe(all_trades, timeframe)
+        else:
+            logger.info(f"Skipping timeframe filtering (timeframe={timeframe}, trades_count={len(all_trades)})")
 
         all_trades.sort(key=lambda x: x.get('timestamp', ''), reverse=True)
 
@@ -1164,6 +1186,7 @@ def filter_trades_by_timeframe(trades, timeframe):
         return trades
     
     now = utcnow()
+    logger.info(f"Filtering {len(trades)} trades by timeframe {timeframe}. Current time: {now}")
     
     # Calculate cutoff time based on timeframe
     if timeframe == '24h':
@@ -1182,22 +1205,44 @@ def filter_trades_by_timeframe(trades, timeframe):
         return trades  # Unknown timeframe, return all
     
     cutoff_timestamp = cutoff.timestamp() * 1000  # Convert to milliseconds
+    logger.info(f"Cutoff time for {timeframe}: {cutoff} (timestamp: {cutoff_timestamp})")
     
     # Filter trades
     filtered_trades = []
     for trade in trades:
         trade_timestamp = trade.get('timestamp', 0)
+        original_timestamp = trade_timestamp
+        
         if isinstance(trade_timestamp, str):
             try:
-                # Try parsing ISO format
-                trade_time = datetime.fromisoformat(trade_timestamp.replace('Z', '+00:00'))
+                # Handle OKX timestamp format like "2025-08-21T07:55:49.148000+00:00Z"
+                timestamp_str = trade_timestamp
+                
+                # Remove trailing Z if it exists (since we already have timezone info)
+                if timestamp_str.endswith('Z') and '+' in timestamp_str:
+                    timestamp_str = timestamp_str[:-1]
+                # If just ends with Z but no timezone, replace Z with +00:00
+                elif timestamp_str.endswith('Z') and '+' not in timestamp_str:
+                    timestamp_str = timestamp_str.replace('Z', '+00:00')
+                
+                # Parse the cleaned timestamp
+                trade_time = datetime.fromisoformat(timestamp_str)
                 trade_timestamp = trade_time.timestamp() * 1000
-            except:
+                
+                logger.info(f"Trade {trade.get('id', 'unknown')}: original='{original_timestamp}' -> cleaned='{timestamp_str}' -> parsed={trade_time} -> timestamp={trade_timestamp} (cutoff={cutoff_timestamp})")
+                
+            except Exception as e:
+                # If parsing fails, skip this trade but log the issue
+                logger.warning(f"Failed to parse timestamp '{original_timestamp}': {e}")
                 continue
         
         if trade_timestamp >= cutoff_timestamp:
+            logger.info(f"Trade {trade.get('id', 'unknown')} INCLUDED: {trade_timestamp} >= {cutoff_timestamp}")
             filtered_trades.append(trade)
+        else:
+            logger.info(f"Trade {trade.get('id', 'unknown')} FILTERED OUT: {trade_timestamp} < {cutoff_timestamp}")
     
+    logger.info(f"After filtering: {len(filtered_trades)} trades remain")
     return filtered_trades
 
 @app.route("/api/recent-trades")  
