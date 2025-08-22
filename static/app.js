@@ -1293,8 +1293,37 @@ class TradingApp {
                 return;
             }
             
-            // Populate holdings rows
-            holdings.forEach(holding => {
+            // Filter holdings: only show positions worth >= $0.01 in Open Positions
+            const significantHoldings = holdings.filter(holding => {
+                const currentValue = holding.current_value || 0;
+                return currentValue >= 0.01; // Only show positions worth 1 cent or more
+            });
+            
+            console.log('Filtering positions:', {
+                total_holdings: holdings.length,
+                significant_holdings: significantHoldings.length,
+                filtered_out: holdings.filter(h => (h.current_value || 0) < 0.01).map(h => ({
+                    symbol: h.symbol,
+                    value: h.current_value,
+                    note: `${h.symbol} worth $${(h.current_value || 0).toFixed(8)} filtered to Available Positions`
+                }))
+            });
+            
+            if (significantHoldings.length === 0) {
+                // Show message that small positions are moved to Available Positions
+                const infoRow = document.createElement('tr');
+                infoRow.innerHTML = `
+                    <td colspan="7" class="text-center text-muted py-4">
+                        <i class="fas fa-info-circle me-2"></i>No positions above $0.01 threshold
+                        <br><small>Small positions (< $0.01) are available in the Available Positions section</small>
+                    </td>
+                `;
+                holdingsTableBody.appendChild(infoRow);
+                return;
+            }
+            
+            // Populate significant holdings rows only
+            significantHoldings.forEach(holding => {
                 const row = document.createElement('tr');
                 
                 // PnL color class
@@ -1338,10 +1367,10 @@ class TradingApp {
                 totalValueElement.textContent = this.formatCurrency(totalValue);
             }
             
-            // Update holdings count
+            // Update holdings count (only significant holdings)
             const holdingsCountElement = document.getElementById('holdings-count');
             if (holdingsCountElement) {
-                holdingsCountElement.textContent = holdings.length;
+                holdingsCountElement.textContent = significantHoldings.length;
             }
             
         } catch (error) {

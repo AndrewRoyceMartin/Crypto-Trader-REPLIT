@@ -2534,249 +2534,6 @@ def get_all_positions_including_sold(portfolio_service):
             'error': str(e)
         }
 
-# Skip removed old broken function code
-
-@app.route("/api/paper-trade/buy", methods=["POST"])
-                            # Get current market price using native OKX client
-                            try:
-                                ticker = okx_client.ticker(f"{symbol}-USDT")
-                                current_price = float(ticker.get('last', last_exit_price))
-                            except Exception as price_error:
-                                logger.debug(f"Error getting price for {symbol}: {price_error}")
-                                current_price = last_exit_price
-                            
-                            # Calculate days since exit first
-                            last_trade_date = last_sell.get('timestamp')
-                            days_since_exit = 0
-                            if last_trade_date:
-                                try:
-                                    from datetime import datetime
-                                    if isinstance(last_trade_date, str):
-                                        # Handle ISO format
-                                        last_date = datetime.fromisoformat(last_trade_date.replace('Z', '+00:00'))
-                                    else:
-                                        # Handle timestamp
-                                        last_date = datetime.fromtimestamp(last_trade_date / 1000 if last_trade_date > 1e10 else last_trade_date)
-                                    days_since_exit = (datetime.now() - last_date).days
-                                except Exception as date_error:
-                                    logger.debug(f"Error parsing date for {symbol}: {date_error}")
-                                    days_since_exit = 0
-                            
-                            # ENHANCED BUY-BACK ALGORITHM V2 - More conservative and adaptive
-                            price_drop_from_exit = ((last_exit_price - current_price) / last_exit_price) * 100
-                            
-                            # Algorithm Selection: Choose between multiple approaches
-                            algorithm_choice = "adaptive_conservative"  # Best performing algorithm
-                            
-                            if algorithm_choice == "adaptive_conservative":
-                                # CONSERVATIVE APPROACH: Wait for meaningful drops
-                                if price_drop_from_exit >= 8:
-                                    # Significant drop: target 1% below current (quick entry)
-                                    target_buy_price = current_price * 0.99
-                                    method = "conservative_quick_entry"
-                                elif price_drop_from_exit >= 4:
-                                    # Moderate drop: target 2% below current
-                                    target_buy_price = current_price * 0.98
-                                    method = "conservative_moderate"
-                                elif price_drop_from_exit >= 1:
-                                    # Small drop: target 3% below exit (reasonable)
-                                    target_buy_price = last_exit_price * 0.97
-                                    method = "conservative_wait_3pct"
-                                else:
-                                    # No drop: wait for 3% drop from exit (patient)
-                                    target_buy_price = last_exit_price * 0.97
-                                    method = "conservative_patient"
-                            
-                            elif algorithm_choice == "momentum_based":
-                                # MOMENTUM APPROACH: Consider volatility and trend
-                                volatility_factor = 0.02  # 2% base adjustment
-                                if abs(price_drop_from_exit) < 1:
-                                    # Sideways movement: wait for clear signal
-                                    target_buy_price = last_exit_price * (1 - volatility_factor * 2)
-                                    method = "momentum_sideways"
-                                else:
-                                    # Trending: adjust based on momentum
-                                    target_buy_price = current_price * (1 - volatility_factor)
-                                    method = "momentum_trend"
-                            
-                            # Time-based refinement (more conservative over time)
-                            if days_since_exit > 14:
-                                # After 2 weeks, slightly more aggressive but still conservative
-                                time_adjusted_target = current_price * 0.985  # 1.5% below current
-                                if time_adjusted_target > target_buy_price:
-                                    target_buy_price = time_adjusted_target
-                                    method += "+time_2weeks"
-                            elif days_since_exit > 7:
-                                # After 1 week, moderately more aggressive
-                                time_adjusted_target = current_price * 0.98  # 2% below current
-                                if time_adjusted_target > target_buy_price:
-                                    target_buy_price = time_adjusted_target
-                                    method += "+time_1week"
-                            
-                            # Determine buy signal with improved logic
-                            if current_price <= target_buy_price:
-                                buy_signal = "BUY READY"
-                            elif price_drop_from_exit >= 3:
-                                buy_signal = "NEAR TARGET"
-                            else:
-                                buy_signal = "WAIT"
-                                
-                            # Add additional analytics
-                            price_from_target_pct = ((current_price - target_buy_price) / target_buy_price) * 100
-                            
-                            available_positions.append({
-                                'symbol': symbol,
-                                'current_balance': current_balance,
-                                'last_exit_price': last_exit_price,
-                                'current_price': current_price,
-                                'target_buy_price': target_buy_price,
-                                'price_difference': current_price - target_buy_price,
-                                'price_diff_percent': ((current_price - target_buy_price) / target_buy_price) * 100 if target_buy_price > 0 else 0,
-                                'price_drop_from_exit': price_drop_from_exit,
-                                'price_from_target_pct': price_from_target_pct,
-                                'calculation_method': method,
-                                'buy_signal': buy_signal,
-                                'last_trade_date': last_trade_date,
-                                'days_since_exit': days_since_exit
-                            })
-            except Exception as symbol_error:
-                logger.debug(f"Error processing symbol {symbol}: {symbol_error}")
-                continue
-        
-        logger.info(f"Found {len(available_positions)} available positions for buy-back")
-        
-        return jsonify({
-            'success': True,
-            'available_positions': available_positions,
-            'count': len(available_positions)
-        })
-        
-    except Exception as e:
-        logger.error(f"Error fetching available positions: {e}")
-        return jsonify({'success': False, 'error': str(e)}), 500
-
-def get_all_positions_including_sold(portfolio_service):
-    """Get all positions including those that have been sold/reduced to zero"""
-    try:
-        # Get current holdings from portfolio service
-        current_holdings = portfolio_service.get_portfolio_data().get('holdings', [])
-        
-        # Get historical trades from database to find sold positions
-        from src.utils.database import DatabaseManager
-        db = DatabaseManager()
-        
-        # Get all unique symbols that have been traded in the last 30 days
-        trades_df = db.get_trades()
-        if trades_df.empty:
-            traded_symbols = []
-        else:
-            # Filter recent trades (last 30 days)
-            from datetime import datetime, timedelta
-            cutoff_date = datetime.utcnow() - timedelta(days=30)
-            recent_trades = trades_df[trades_df['timestamp'] >= cutoff_date.isoformat()]
-            traded_symbols = recent_trades['symbol'].unique().tolist() if not recent_trades.empty else []
-        
-        # Create a comprehensive positions map
-        all_positions = {}
-        
-        # First, add current holdings
-        for holding in current_holdings:
-            symbol = holding.get('symbol')
-            if symbol:
-                all_positions[symbol] = {
-                    'symbol': symbol,
-                    'quantity': holding.get('quantity', 0),
-                    'current_value': holding.get('current_value', 0),
-                    'current_price': holding.get('current_price', 0),
-                    'allocation_percent': holding.get('allocation_percent', 0),
-                    'pnl': holding.get('pnl', 0),
-                    'pnl_percent': holding.get('pnl_percent', 0),
-                    'status': 'active' if holding.get('quantity', 0) > 0 else 'empty',
-                    'last_trade_date': None,
-                    'total_bought': 0,
-                    'total_sold': 0,
-                    'net_quantity': holding.get('quantity', 0)
-                }
-        
-        # Then add historical positions that might be sold out
-        for symbol in traded_symbols:
-            if symbol not in all_positions:
-                # This symbol was traded but not in current holdings - likely sold out
-                all_positions[symbol] = {
-                    'symbol': symbol,
-                    'quantity': 0,
-                    'current_value': 0,
-                    'current_price': 0,
-                    'allocation_percent': 0,
-                    'pnl': 0,
-                    'pnl_percent': 0,
-                    'status': 'sold_out',
-                    'last_trade_date': None,
-                    'total_bought': 0,
-                    'total_sold': 0,
-                    'net_quantity': 0
-                }
-        
-        # Calculate trade statistics for each position
-        if not trades_df.empty:
-            for symbol in all_positions:
-                symbol_trades = trades_df[trades_df['symbol'] == symbol]
-                if not symbol_trades.empty:
-                    total_bought = symbol_trades[symbol_trades['action'] == 'BUY']['size'].sum() if 'BUY' in symbol_trades['action'].values else 0
-                    total_sold = symbol_trades[symbol_trades['action'] == 'SELL']['size'].sum() if 'SELL' in symbol_trades['action'].values else 0
-                    last_trade_date = symbol_trades['timestamp'].max() if not symbol_trades.empty else None
-                    
-                    all_positions[symbol]['total_bought'] = total_bought
-                    all_positions[symbol]['total_sold'] = total_sold
-                    all_positions[symbol]['net_quantity'] = total_bought - total_sold
-                    all_positions[symbol]['last_trade_date'] = last_trade_date
-                    
-                    # Update status based on trade history
-                    if total_sold > 0 and abs(all_positions[symbol]['quantity']) < 0.00001:
-                        all_positions[symbol]['status'] = 'sold_out'
-                    elif total_bought > 0 and all_positions[symbol]['quantity'] > 0:
-                        all_positions[symbol]['status'] = 'active'
-                    elif total_bought > 0:
-                        all_positions[symbol]['status'] = 'reduced'
-        
-        return {
-            'success': True,
-            'positions': list(all_positions.values()),
-            'total_positions': len(all_positions),
-            'active_positions': len([p for p in all_positions.values() if p['status'] == 'active']),
-            'sold_positions': len([p for p in all_positions.values() if p['status'] == 'sold_out']),
-            'reduced_positions': len([p for p in all_positions.values() if p['status'] == 'reduced']),
-            'last_update': utcnow().isoformat()
-        }
-        
-    except Exception as e:
-        logger.error(f"Error getting all positions: {e}")
-        return {
-            'success': False,
-            'error': str(e),
-            'positions': []
-        }
-
-def create_initial_portfolio_data():
-    """Create initial portfolio data using OKX simulation."""
-    try:
-        initialize_system()
-        portfolio_service = get_portfolio_service()
-        okx_portfolio = portfolio_service.get_portfolio_data()
-
-        return [
-            {
-                "symbol": h['symbol'],
-                "name": h['name'],
-                "rank": h.get('rank', 1),
-                "current_price": h['current_price']
-            }
-            for h in okx_portfolio.get('holdings', [])
-        ]
-    except Exception as e:
-        logger.error(f"Error creating initial portfolio data: {e}")
-        return []
-
 @app.route("/api/paper-trade/buy", methods=["POST"])
 @require_admin
 def paper_trade_buy():
@@ -2807,7 +2564,7 @@ def paper_trade_buy():
             "message": f"Paper bought {quantity:.6f} {symbol} at ${current_price:.4f}",
             "trade": {
                 "symbol": symbol,
-                "action": "BUY",
+                "action": "BUY", 
                 "quantity": quantity,
                 "price": current_price,
                 "total_cost": amount
@@ -2817,6 +2574,26 @@ def paper_trade_buy():
     except Exception as e:
         logger.error(f"Error in paper buy trade: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
+
+def create_initial_portfolio_data():
+    """Create initial portfolio data using OKX simulation."""
+    try:
+        initialize_system()
+        portfolio_service = get_portfolio_service()
+        okx_portfolio = portfolio_service.get_portfolio_data()
+
+        return [
+            {
+                "symbol": h['symbol'],
+                "name": h['name'],
+                "rank": h.get('rank', 1),
+                "current_price": h['current_price']
+            }
+            for h in okx_portfolio.get('holdings', [])
+        ]
+    except Exception as e:
+        logger.error(f"Error creating initial portfolio data: {e}")
+        return []
 
 @app.route("/api/paper-trade/sell", methods=["POST"])
 @require_admin
