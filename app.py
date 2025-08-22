@@ -1519,9 +1519,9 @@ def api_worst_performer() -> Any:
 
             inst = f"{symbol}-USDT"
             tk = client.ticker(inst)
-            price_change_24h = tk['pct_24h']
-            volume_24h = tk['vol24h']
-            current_price = tk['last'] or float(h.get('current_price', 0) or 0)
+            price_change_24h = float(tk.get('pct_24h', 0) or 0)
+            volume_24h = float(tk.get('vol24h', 0) or 0)
+            current_price = float(tk.get('last', 0) or h.get('current_price', 0) or 0)
 
             c = client.candles(inst, bar="1D", limit=7)
             price_change_7d = 0.0
@@ -2663,7 +2663,7 @@ def api_current_holdings() -> Any:
             else:
                 try:
                     tk = client.ticker(f"{symbol}-USDT")
-                    price = tk["last"]
+                    price = float(tk.get("last", 0) or 0)
                     if price <= 0:
                         price = float(h.get('current_price', 0) or 0)
                 except Exception as ticker_error:
