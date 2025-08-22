@@ -127,6 +127,27 @@ class TradingApp {
             return numericAmount.toFixed(2);
         }
     }
+    // Get crypto coin icon and name
+    getCoinDisplay(symbol) {
+        const coinInfo = {
+            'BTC': { icon: 'fab fa-bitcoin', name: 'Bitcoin', color: '#f7931a' },
+            'ETH': { icon: 'fab fa-ethereum', name: 'Ethereum', color: '#627eea' },
+            'SOL': { icon: 'fas fa-sun', name: 'Solana', color: '#9945ff' },
+            'TRX': { icon: 'fas fa-play', name: 'TRON', color: '#ff0013' },
+            'PEPE': { icon: 'fas fa-frog', name: 'Pepe', color: '#28a745' },
+            'AUD': { icon: 'fas fa-dollar-sign', name: 'Australian Dollar', color: '#007bff' },
+            'USDT': { icon: 'fas fa-coins', name: 'Tether', color: '#26a17b' },
+            'USDC': { icon: 'fas fa-coins', name: 'USD Coin', color: '#2775ca' },
+            'DOGE': { icon: 'fas fa-dog', name: 'Dogecoin', color: '#c2a633' },
+            'ADA': { icon: 'fas fa-heart', name: 'Cardano', color: '#0033ad' },
+            'DOT': { icon: 'fas fa-circle', name: 'Polkadot', color: '#e6007a' },
+            'MATIC': { icon: 'fas fa-polygon', name: 'Polygon', color: '#8247e5' },
+            'LINK': { icon: 'fas fa-link', name: 'Chainlink', color: '#375bd2' }
+        };
+        
+        return coinInfo[symbol] || { icon: 'fas fa-coins', name: symbol, color: '#6c757d' };
+    }
+
     formatUptime(totalSeconds) {
         const hours = Math.floor(totalSeconds / 3600);
         const minutes = Math.floor((totalSeconds % 3600) / 60);
@@ -1330,10 +1351,20 @@ class TradingApp {
                 const pnlClass = holding.pnl_percent >= 0 ? 'pnl-up' : 'pnl-down';
                 const pnlSign = holding.pnl_percent >= 0 ? '+' : '';
                 
+                // Get coin display info
+                const coinDisplay = this.getCoinDisplay(holding.symbol);
+                
                 row.innerHTML = `
                     <td>
-                        <strong>${holding.symbol}</strong>
-                        <br><small class="text-muted">${holding.name}</small>
+                        <div class="d-flex align-items-center">
+                            <div class="coin-icon me-2" style="color: ${coinDisplay.color};">
+                                <i class="${coinDisplay.icon}"></i>
+                            </div>
+                            <div>
+                                <strong>${holding.symbol}</strong>
+                                <br><small class="text-muted">${coinDisplay.name}</small>
+                            </div>
+                        </div>
                     </td>
                     <td>${holding.quantity.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 8 })}</td>
                     <td>${this.formatCurrency(holding.current_price)}</td>
@@ -4266,9 +4297,41 @@ function updateOpenPositionsTable(positions, totalValue = 0) {
             const displayCurrentPrice = currentPrice; // Keep per-unit for reference
             const displayTargetValue = targetTotalValue;
             
+            // Get coin display info
+            const getCoinDisplay = (symbol) => {
+                const coinInfo = {
+                    'BTC': { icon: 'fab fa-bitcoin', name: 'Bitcoin', color: '#f7931a' },
+                    'ETH': { icon: 'fab fa-ethereum', name: 'Ethereum', color: '#627eea' },
+                    'SOL': { icon: 'fas fa-sun', name: 'Solana', color: '#9945ff' },
+                    'PEPE': { icon: 'fas fa-frog', name: 'Pepe', color: '#28a745' },
+                    'AUD': { icon: 'fas fa-dollar-sign', name: 'Australian Dollar', color: '#007bff' },
+                    'USDT': { icon: 'fas fa-coins', name: 'Tether', color: '#26a17b' },
+                    'USDC': { icon: 'fas fa-coins', name: 'USD Coin', color: '#2775ca' },
+                    'DOGE': { icon: 'fas fa-dog', name: 'Dogecoin', color: '#c2a633' },
+                    'ADA': { icon: 'fas fa-heart', name: 'Cardano', color: '#0033ad' },
+                    'DOT': { icon: 'fas fa-circle', name: 'Polkadot', color: '#e6007a' },
+                    'MATIC': { icon: 'fas fa-polygon', name: 'Polygon', color: '#8247e5' },
+                    'LINK': { icon: 'fas fa-link', name: 'Chainlink', color: '#375bd2' }
+                };
+                
+                return coinInfo[symbol] || { icon: 'fas fa-coins', name: symbol, color: '#6c757d' };
+            };
+            
+            const coinDisplay = getCoinDisplay(symbol);
+
             const rowHtml = `
                 <tr>
-                    <td class="fw-bold">${symbol}</td>
+                    <td>
+                        <div class="d-flex align-items-center">
+                            <div class="coin-icon me-2" style="color: ${coinDisplay.color};">
+                                <i class="${coinDisplay.icon}"></i>
+                            </div>
+                            <div>
+                                <strong>${symbol}</strong>
+                                <br><small class="text-muted">${coinDisplay.name}</small>
+                            </div>
+                        </div>
+                    </td>
                     <td>${formatNumber(quantity)}</td>
                     <td>${formatMeaningfulCurrency(displayCurrentValue)}</td>
                     <td>${formatMeaningfulCurrency(displayCostBasis)}</td>
@@ -4405,9 +4468,41 @@ function updateAvailablePositionsTable(availablePositions) {
             
             const priceDiffClass = priceDifference < 0 ? "text-success" : "text-danger";
             
+            // Get coin display info
+            const getCoinDisplay = (symbol) => {
+                const coinInfo = {
+                    'BTC': { icon: 'fab fa-bitcoin', name: 'Bitcoin', color: '#f7931a' },
+                    'ETH': { icon: 'fab fa-ethereum', name: 'Ethereum', color: '#627eea' },
+                    'SOL': { icon: 'fas fa-sun', name: 'Solana', color: '#9945ff' },
+                    'PEPE': { icon: 'fas fa-frog', name: 'Pepe', color: '#28a745' },
+                    'AUD': { icon: 'fas fa-dollar-sign', name: 'Australian Dollar', color: '#007bff' },
+                    'USDT': { icon: 'fas fa-coins', name: 'Tether', color: '#26a17b' },
+                    'USDC': { icon: 'fas fa-coins', name: 'USD Coin', color: '#2775ca' },
+                    'DOGE': { icon: 'fas fa-dog', name: 'Dogecoin', color: '#c2a633' },
+                    'ADA': { icon: 'fas fa-heart', name: 'Cardano', color: '#0033ad' },
+                    'DOT': { icon: 'fas fa-circle', name: 'Polkadot', color: '#e6007a' },
+                    'MATIC': { icon: 'fas fa-polygon', name: 'Polygon', color: '#8247e5' },
+                    'LINK': { icon: 'fas fa-link', name: 'Chainlink', color: '#375bd2' }
+                };
+                
+                return coinInfo[symbol] || { icon: 'fas fa-coins', name: symbol, color: '#6c757d' };
+            };
+            
+            const coinDisplay = getCoinDisplay(symbol);
+            
             return `
                 <tr>
-                    <td class="fw-bold">${symbol}</td>
+                    <td>
+                        <div class="d-flex align-items-center">
+                            <div class="coin-icon me-2" style="color: ${coinDisplay.color};">
+                                <i class="${coinDisplay.icon}"></i>
+                            </div>
+                            <div>
+                                <strong>${symbol}</strong>
+                                <br><small class="text-muted">${coinDisplay.name}</small>
+                            </div>
+                        </div>
+                    </td>
                     <td>${formatNumber(currentBalance)}</td>
                     <td>${formatCurrency(lastExitPrice)}</td>
                     <td>${formatCurrency(currentPrice)}</td>
