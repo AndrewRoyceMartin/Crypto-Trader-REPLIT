@@ -220,6 +220,19 @@ trading_state = {
     "start_time": None,   # ISO string when set
     "type": None
 }
+
+# Thread safety for shared state
+_state_lock = threading.RLock()
+
+def _set_warmup(**kv) -> None:
+    """Thread-safe warmup state update."""
+    with _state_lock:
+        warmup.update(kv)
+
+def _set_bot_state(**kv) -> None:
+    """Thread-safe bot state update."""
+    with _state_lock:
+        bot_state.update(kv)
 # Portfolio state - starts empty, only populates when trading begins
 portfolio_initialized = False
 # Recent initial trades for display
@@ -355,26 +368,27 @@ def create_initial_purchase_trades(mode: str, trade_type: str) -> list[dict[str,
 
 def background_warmup() -> None:
     global warmup
-    if warmup["started"]:
-        return
-    warmup.update({"started": True, "done": False, "error": "", "loaded": [], "start_time": iso_utc(), "start_ts": time.time()})
+    with _state_lock:
+        if warmup["started"]:
+            return
+    _set_warmup(started=True, done=False, error="", loaded=[], start_time=iso_utc(), start_ts=time.time())
     try:
         # ping OKX quickly
         from src.utils.okx_native import OKXNative
         client = OKXNative.from_env()
         _ = client.ticker("BTC-USDT")  # connectivity check
-        warmup["loaded"] = WATCHLIST[:MAX_STARTUP_SYMBOLS]
-        warmup["done"] = True
+        _set_warmup(loaded=WATCHLIST[:MAX_STARTUP_SYMBOLS])
+        _set_warmup(done=True)
         logger.info("Warmup complete (OKX reachable)")
     except Exception as e:
-        warmup.update({"error": str(e), "done": True})
+        _set_warmup(error=str(e), done=True)
         logger.error(f"Warmup error: {e}")
 
-        warmup["done"] = True
+        _set_warmup(done=True)
         logger.info(
             "Warmup complete: connectivity=%s, symbols available: %s",
             warmup.get("connectivity", "unknown"), 
-            ', '.join(warmup['loaded'])
+            ', '.join(warmup.get('loaded', []))
         )
 
 def get_df(symbol: str, timeframe: str) -> Optional[list[dict[str, Any]]]:
@@ -512,9 +526,10 @@ def crypto_portfolio_okx() -> Any:
 warmup_thread = None
 def start_warmup() -> None:
     global warmup_thread
-    if warmup_thread is None:
-        warmup_thread = threading.Thread(target=background_warmup, daemon=True)
-        warmup_thread.start()
+    with _state_lock:
+        if warmup_thread is None:
+            warmup_thread = threading.Thread(target=background_warmup, daemon=True)
+            warmup_thread.start()
 
 # Ultra-fast health endpoints
 @app.route("/health")
@@ -895,7 +910,7 @@ def bot_start() -> Any:
                     else:
                         # Fatal error or max retries exceeded
                         logger.error(f"Fatal error in multi-currency trading bot: {e}")
-                        bot_state["running"] = False
+                        _set_bot_state(running=False)
                         break
         
         trading_thread = threading.Thread(target=start_background_trading, daemon=True)
@@ -905,14 +920,14 @@ def bot_start() -> Any:
         global multi_currency_trader
         multi_currency_trader = trader_instance
         
-        bot_state.update({
-            "running": True,
-            "mode": mode,
-            "symbol": "ALL_CURRENCIES",  # Indicates multi-currency trading
-            "timeframe": timeframe,
-            "started_at": iso_utc(),
-            "trader_instance": None  # Don't store in JSON-serializable state
-        })
+        _set_bot_state(
+            running=True,
+            mode=mode,
+            symbol="ALL_CURRENCIES",  # Indicates multi-currency trading
+            timeframe=timeframe,
+            started_at=iso_utc(),
+            trader_instance=None  # Don't store in JSON-serializable state
+        )
         
         logger.info(f"Multi-currency bot started in {mode} mode with ${config.get_float('strategy', 'rebuy_max_usd', 100.0):.2f} rebuy limit")
         
@@ -943,7 +958,7 @@ def bot_start() -> Any:
         
     except Exception as e:
         logger.error(f"Failed to start multi-currency bot: {e}")
-        bot_state["running"] = False  # Reset state on failure
+        _set_bot_state(running=False)  # Reset state on failure
         return jsonify({"error": f"Failed to start multi-currency trading: {str(e)}"}), 500
 
 @app.route("/api/bot/stop", methods=["POST"])
@@ -966,14 +981,14 @@ def bot_stop() -> Any:
         multi_currency_trader = None
                 
         # Reset bot state
-        bot_state.update({
-            "running": False,
-            "mode": None,
-            "symbol": None,
-            "timeframe": None,
-            "started_at": None,
-            "trader_instance": None
-        })
+        _set_bot_state(
+            running=False,
+            mode=None,
+            symbol=None,
+            timeframe=None,
+            started_at=None,
+            trader_instance=None
+        )
         
         logger.info("Bot stopped")
         
