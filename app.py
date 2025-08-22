@@ -220,7 +220,7 @@ def get_portfolio_summary() -> dict[str, Any]:
         logger.info(f"Portfolio summary unavailable: {e}")
         return {"total_value": 0.0, "daily_pnl": 0.0, "daily_pnl_percent": 0.0, "error": "Portfolio data unavailable"}
 
-def cache_get(sym: str, tf: str) -> Any:
+def cache_get(sym: str, tf: str) -> Optional[Any]:
     """DISABLED - Always return None to force live OKX data fetch."""
     return None  # Always force live data fetch
 
@@ -346,7 +346,7 @@ def background_warmup() -> None:
             ', '.join(warmup['loaded'])
         )
 
-def get_df(symbol: str, timeframe: str) -> Any:
+def get_df(symbol: str, timeframe: str) -> Optional[list[dict[str, Any]]]:
     """Get OHLCV data with on-demand fetch."""
     df = cache_get(symbol, timeframe)
     if df is not None:
