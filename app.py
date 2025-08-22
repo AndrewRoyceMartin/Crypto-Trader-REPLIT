@@ -44,24 +44,24 @@ except ImportError:
 # Admin authentication
 ADMIN_TOKEN = os.getenv("ADMIN_TOKEN", "")
 
-def require_admin(f):
+def require_admin(f: Any) -> Any:
     @wraps(f)
-    def _w(*args, **kwargs):
+    def _w(*args: Any, **kwargs: Any) -> Any:
         if ADMIN_TOKEN and request.headers.get("X-Admin-Token") != ADMIN_TOKEN:
             return jsonify({"error": "unauthorized"}), 401
         return f(*args, **kwargs)
     return _w
 
 # === UTC DateTime Helpers ===
-def utcnow():
+def utcnow() -> datetime:
     from datetime import datetime, timezone
     return datetime.now(timezone.utc)
 
-def iso_utc(dt=None):
+def iso_utc(dt: datetime = None) -> str:
     return (dt or utcnow()).isoformat()
 
 # === OKX Native API Helpers ===
-def now_utc_iso():
+def now_utc_iso() -> str:
     """Generate UTC ISO timestamp for OKX API requests."""
     return utcnow().strftime('%Y-%m-%dT%H:%M:%S.%fZ')
 
@@ -71,7 +71,7 @@ def okx_sign(secret_key: str, timestamp: str, method: str, path: str, body: str 
     mac = hmac.new(secret_key.encode('utf-8'), msg.encode('utf-8'), hashlib.sha256)
     return base64.b64encode(mac.digest()).decode('utf-8')
 
-def okx_request(path: str, api_key: str, secret_key: str, passphrase: str, method: str = 'GET', body: str = '', timeout: int = 10):
+def okx_request(path: str, api_key: str, secret_key: str, passphrase: str, method: str = 'GET', body: str = '', timeout: int = 10) -> dict[str, Any]:
     """Make authenticated request to OKX API with proper signing."""
     base_url = 'https://' + (os.getenv("OKX_HOSTNAME") or os.getenv("OKX_REGION") or "www.okx.com")
     ts = now_utc_iso()
@@ -93,7 +93,7 @@ def okx_request(path: str, api_key: str, secret_key: str, passphrase: str, metho
 # Global client cache
 _okx_client_cache = None
 
-def get_okx_native_client():
+def get_okx_native_client() -> Any:
     """Get cached OKX native client instance."""
     global _okx_client_cache
     if _okx_client_cache is None:
@@ -139,7 +139,7 @@ def okx_ticker_pct_change_24h(inst_id: str, api_key: str = "", secret_key: str =
         logger.error(f"Failed to get OKX ticker for {inst_id}: {e}")
         return {'last': 0.0, 'open24h': 0.0, 'vol24h': 0.0, 'pct_24h': 0.0}
 
-def _date_range(start: datetime, end: datetime):
+def _date_range(start: datetime, end: datetime) -> list[datetime]:
     d = start
     while d.date() <= end.date():
         yield d
@@ -173,7 +173,7 @@ trading_state = {
 portfolio_initialized = False
 # Recent initial trades for display
 recent_initial_trades = []
-# (symbol, timeframe) -> {"df": pd.DataFrame, "ts": datetime}
+# (symbol, timeframe) -> {"data": list, "ts": datetime}
 _price_cache: dict[tuple[str, str], dict[str, Any]] = {}
 _cache_lock = threading.RLock()
 
@@ -264,7 +264,7 @@ def get_public_price(pair: str) -> float:
             logger.error(f"Both native and CCXT price fetch failed for {pair}: {fallback_error}")
             return 0.0
 
-def create_initial_purchase_trades(mode, trade_type):
+def create_initial_purchase_trades(mode: str, trade_type: str) -> dict[str, Any]:
     """Create trade records using real OKX cost basis instead of $10 simulations."""
     try:
         initialize_system()
@@ -334,7 +334,6 @@ def get_df(symbol: str, timeframe: str):
 
     try:
         import ccxt
-        import pandas as pd
         okx_api_key = os.getenv("OKX_API_KEY", "")
         okx_secret = os.getenv("OKX_SECRET_KEY", "")
         okx_pass = os.getenv("OKX_PASSPHRASE", "")
@@ -356,16 +355,23 @@ def get_df(symbol: str, timeframe: str):
         ex.load_markets()
 
         ohlcv = ex.fetch_ohlcv(symbol, timeframe=timeframe, limit=200)
-        df = pd.DataFrame(ohlcv, columns=["ts","open","high","low","close","volume"])  # type: ignore[call-arg]
-        df["ts"] = pd.to_datetime(df["ts"], unit="ms", utc=True)
-        df.set_index("ts", inplace=True)
-        cache_put(symbol, timeframe, df)
-        return df
+        # Convert to basic structure without pandas dependency
+        processed_data = []
+        for candle in ohlcv:
+            processed_data.append({
+                "ts": candle[0],
+                "open": candle[1],
+                "high": candle[2], 
+                "low": candle[3],
+                "close": candle[4],
+                "volume": candle[5]
+            })
+        cache_put(symbol, timeframe, processed_data)
+        return processed_data
 
     except Exception as e:
         logger.error(f"Failed to fetch data for {symbol}: {e}")
-        import pandas as pd
-        return pd.DataFrame()
+        return None
 
 def initialize_system():
     """Initialize only essential components - no network I/O."""
@@ -388,7 +394,7 @@ app = Flask(__name__)
 # Register the real OKX endpoint directly without circular import
 
 @app.route("/api/status")
-def api_status():
+def api_status() -> Any:
     """Simple status endpoint to check warmup and system health."""
     return jsonify({
         "status": "running",
@@ -450,17 +456,17 @@ def start_warmup():
 
 # Ultra-fast health endpoints
 @app.route("/health")
-def health():
+def health() -> tuple[Any, int]:
     """Platform watchdog checks this; return 200 immediately once listening."""
     return jsonify({"status": "ok"}), 200
 
 @app.route("/ready")
-def ready():
+def ready() -> tuple[Any, int]:
     """UI can poll this and show a spinner until ready."""
     return (jsonify({"ready": True, **warmup}), 200) if warmup["done"] else (jsonify({"ready": False, **warmup}), 503)
 
 @app.route("/api/price")
-def api_price():
+def api_price() -> Any:
     """
     Returns latest OHLCV slice for the selected symbol & timeframe.
     Uses cache with TTL; fetches on demand if missing/stale.
@@ -473,7 +479,6 @@ def api_price():
         df = cache_get(sym, tf)
         if df is None or len(df) < lim:
             import ccxt
-            import pandas as pd
             okx_api_key = os.getenv("OKX_API_KEY", "")
             okx_secret = os.getenv("OKX_SECRET_KEY", "")
             okx_pass = os.getenv("OKX_PASSPHRASE", "")
@@ -498,20 +503,32 @@ def api_price():
                 ex.headers.pop('x-simulated-trading', None)
             ex.load_markets()
             ohlcv = ex.fetch_ohlcv(sym, timeframe=tf, limit=lim)
-            df = pd.DataFrame(ohlcv, columns=["ts","open","high","low","close","volume"])  # type: ignore[call-arg]
-            df["ts"] = pd.to_datetime(df["ts"], unit="ms", utc=True)
-            df.set_index("ts", inplace=True)
+            # Convert to basic structure without pandas dependency
+            processed_data = []
+            for candle in ohlcv:
+                processed_data.append({
+                    "ts": candle[0],
+                    "open": candle[1],
+                    "high": candle[2],
+                    "low": candle[3], 
+                    "close": candle[4],
+                    "volume": candle[5]
+                })
+            df = processed_data
             cache_put(sym, tf, df)
 
-        out = df.tail(lim).reset_index()
-        out["ts"] = out["ts"].astype(str)
-        return jsonify(out.to_dict(orient="records"))
+        # Convert to simple list format for API response
+        out = df[-lim:] if len(df) >= lim else df
+        # Convert timestamp to string for JSON serialization
+        for item in out:
+            item["ts"] = str(item["ts"])
+        return jsonify(out)
     except Exception as e:
         logger.error(f"api_price error: {e}")
         return jsonify({"error": str(e)}), 500
 
 @app.route("/")
-def index():
+def index() -> str:
     """Main dashboard route with ultra-fast loading."""
     start_warmup()
 
@@ -523,7 +540,7 @@ def index():
         return render_loading_skeleton()
 
 @app.route('/portfolio')
-def portfolio():
+def portfolio() -> str:
     """Dedicated portfolio page with comprehensive KPIs, allocation charts, and position management"""
     start_warmup()
 
@@ -534,7 +551,7 @@ def portfolio():
     else:
         return render_loading_skeleton()
 
-def render_portfolio_page():
+def render_portfolio_page() -> str:
     """Render the dedicated portfolio page."""
     try:
         from flask import render_template
@@ -614,7 +631,7 @@ def render_trades_page():
         logger.error(f"Error rendering trades page: {e}")
         return render_loading_skeleton(f"Trades Error: {e}", error=True)
 
-def render_full_dashboard():
+def render_full_dashboard() -> str:
     """Render the unified trading dashboard using templates."""
     try:
         from flask import render_template
@@ -3491,7 +3508,7 @@ def catch_all_routes(path):
     else:
         return render_loading_skeleton("System still initializing..."), 503
 
-def render_loading_skeleton(message="Loading live cryptocurrency data...", error=False):
+def render_loading_skeleton(message: str = "Loading live cryptocurrency data...", error: bool = False) -> str:
     """Render a loading skeleton UI that polls /ready endpoint."""
     start_ts = warmup.get("start_ts")
     elapsed = f" ({(time.time() - start_ts):.1f}s)" if start_ts else ""
