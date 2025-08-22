@@ -4185,17 +4185,23 @@ function updateOpenPositionsTable(positions, totalValue = 0) {
                 return value.toFixed(8);
             };
             
+            // Display total position values, not per-unit prices
+            const displayCurrentValue = totalMarketValue;
+            const displayCostBasis = totalCostBasis;
+            const displayCurrentPrice = currentPrice; // Keep per-unit for reference
+            const displayTargetValue = targetTotalValue;
+            
             const rowHtml = `
                 <tr>
                     <td class="fw-bold">${symbol}</td>
                     <td>${formatNumber(quantity)}</td>
-                    <td>${formatCurrency(totalMarketValue)}</td>
-                    <td>${formatCurrency(totalCostBasis)}</td>
-                    <td>${formatCurrency(currentPrice)}</td>
-                    <td>${formatCurrency(totalMarketValue)}</td>
+                    <td>${formatCurrency(displayCurrentValue)}</td>
+                    <td>${formatCurrency(displayCostBasis)}</td>
+                    <td>${formatCurrency(displayCurrentPrice)}</td>
+                    <td>${formatCurrency(displayCurrentValue)}</td>
                     <td class="${currentPnlClass}">${formatCurrency(currentPnlDollar)}</td>
                     <td class="${currentPnlClass}">${currentPnlPercent >= 0 ? "+" : ""}${currentPnlPercent.toFixed(2)}%</td>
-                    <td>${formatCurrency(targetTotalValue)}</td>
+                    <td>${formatCurrency(displayTargetValue)}</td>
                     <td class="${targetPnlClass}">${formatCurrency(targetPnlDollar)}</td>
                     <td class="${targetPnlClass}">+${targetPnlPercent.toFixed(2)}%</td>
                     <td>${daysHeld} days</td>
