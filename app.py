@@ -2435,54 +2435,99 @@ def api_current_holdings():
 
 @app.route('/api/available-positions')
 def api_available_positions():
-    """Get all available OKX assets that can be traded."""
+    """Get all available OKX assets that can be traded, including zero balances."""
     try:
         currency = request.args.get('currency', 'USD')
         logger.info(f"Fetching available positions with currency: {currency}")
         
-        # Get current holdings from the working portfolio service
+        # Get ALL OKX account balances directly (including zero balances)
         portfolio_service = get_portfolio_service()
-        portfolio_data = portfolio_service.get_portfolio_data()
-        holdings = portfolio_data.get('holdings', [])
+        
+        # Get the raw balance data from OKX using ccxt fetch_balance with showZeroBalances
+        exchange = portfolio_service.exchange
+        if not exchange or not exchange.is_connected():
+            return jsonify({
+                'available_positions': [],
+                'count': 0,
+                'error': 'OKX exchange not connected',
+                'success': False
+            }), 500
+            
+        # Fetch ALL balances from OKX including zero balances using raw ccxt method
+        try:
+            # Use the raw ccxt fetch_balance method which can include zero balances
+            balance_data = exchange.exchange.fetch_balance()
+            logger.info(f"Raw OKX balance response keys: {list(balance_data.keys())}")
+        except Exception as balance_error:
+            logger.error(f"Error fetching raw OKX balance: {balance_error}")
+            # Fallback to the adapter's get_balance method
+            balance_data = exchange.get_balance()
         
         available_positions = []
         
-        # Convert current holdings to available positions format
-        for holding in holdings:
-            try:
-                symbol = holding.get('symbol', '')
-                if not symbol:
-                    continue
-                    
-                # Check balance
-                balance = holding.get('quantity', 0)
-                if balance <= 0:
-                    continue
-                
-                available_position = {
-                    'symbol': symbol,
-                    'current_price': holding.get('current_price', 0),
-                    'current_balance': balance,
-                    'free_balance': balance,  # All balance is free for display
-                    'used_balance': 0,
-                    'position_type': 'current_holding',
-                    'buy_signal': 'FIAT BALANCE' if symbol == 'AUD' else 'CURRENT HOLDING',
-                    'calculation_method': 'fiat_currency' if symbol == 'AUD' else 'existing_balance',
-                    'last_exit_price': 0,
-                    'target_buy_price': holding.get('current_price', 0),
-                    'price_difference': 0,
-                    'price_diff_percent': 0,
-                    'price_drop_from_exit': 0,
-                    'last_trade_date': '',
-                    'days_since_exit': 0
-                }
-                
-                available_positions.append(available_position)
-                logger.info(f"Added available position: {symbol} with balance {balance}")
-                
-            except Exception as symbol_error:
-                logger.debug(f"Error processing holding {holding}: {symbol_error}")
-                continue
+        # Process ALL balance entries (including zero balances)
+        if isinstance(balance_data, dict):
+            # Filter out system keys and only keep real cryptocurrency symbols
+            excluded_keys = ['info', 'timestamp', 'datetime', 'free', 'used', 'total']
+            
+            for symbol, balance_info in balance_data.items():
+                if (isinstance(balance_info, dict) and 
+                    'free' in balance_info and 
+                    symbol not in excluded_keys):
+                    try:
+                        # Get balance details
+                        free_balance = float(balance_info.get('free', 0.0) or 0.0)
+                        used_balance = float(balance_info.get('used', 0.0) or 0.0)
+                        total_balance = float(balance_info.get('total', 0.0) or 0.0)
+                        
+                        # Get current price for this asset
+                        current_price = 0.0
+                        if symbol not in ['AUD', 'USD', 'EUR', 'GBP', 'USDT', 'USDC']:  # Skip fiat and stablecoins
+                            try:
+                                current_price = portfolio_service._get_live_okx_price(symbol, currency)
+                            except:
+                                current_price = 0.0
+                        elif symbol == 'USDT':
+                            current_price = 1.0  # USDT is pegged to USD
+                        elif symbol == 'AUD':
+                            current_price = 0.65  # Approximate AUD to USD conversion
+                        
+                        # Determine position type and buy signal
+                        if total_balance > 0:
+                            position_type = 'current_holding'
+                            buy_signal = 'FIAT BALANCE' if symbol in ['AUD', 'USD', 'EUR', 'GBP'] else 'CURRENT HOLDING'
+                        else:
+                            position_type = 'zero_balance'
+                            buy_signal = 'READY TO BUY' if current_price > 0 else 'NO PRICE DATA'
+                        
+                        available_position = {
+                            'symbol': symbol,
+                            'current_price': current_price,
+                            'current_balance': total_balance,
+                            'free_balance': free_balance,
+                            'used_balance': used_balance,
+                            'position_type': position_type,
+                            'buy_signal': buy_signal,
+                            'calculation_method': 'direct_okx_balance',
+                            'last_exit_price': 0,
+                            'target_buy_price': current_price,
+                            'price_difference': 0,
+                            'price_diff_percent': 0,
+                            'price_drop_from_exit': 0,
+                            'last_trade_date': '',
+                            'days_since_exit': 0
+                        }
+                        
+                        available_positions.append(available_position)
+                        
+                        if total_balance > 0:
+                            logger.info(f"Added available position: {symbol} with balance {total_balance}")
+                        else:
+                            logger.debug(f"Added zero-balance position: {symbol}")
+                            
+                    except Exception as symbol_error:
+                        logger.debug(f"Error processing balance for {symbol}: {symbol_error}")
+                        continue
         
         logger.info(f"Found {len(available_positions)} available positions from current holdings")
         
