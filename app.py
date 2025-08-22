@@ -941,10 +941,30 @@ def api_trade_history():
                 # Format trades for frontend display
                 for trade in okx_trades:
                     if trade.get('id'):  # Only process valid trades
+                        symbol = trade.get('symbol', '')
+                        
+                        # Determine transaction type based on trading pair
+                        transaction_type = 'Trade'  # Default
+                        if symbol:
+                            if '/USDT' in symbol or '/USD' in symbol:
+                                # Traditional crypto/stablecoin trading
+                                transaction_type = 'Trade'
+                            elif '/AUD' in symbol:
+                                # Direct crypto to fiat purchases 
+                                transaction_type = 'Simple trade'
+                            elif 'USD/AUD' in symbol or 'AUD/USD' in symbol:
+                                # Currency conversions
+                                transaction_type = 'Convert'
+                            else:
+                                # Other trading pairs
+                                transaction_type = 'Trade'
+                        
                         formatted_trade = {
                             'id': trade.get('id', ''),
                             'trade_number': len(all_trades) + 1,
                             'symbol': trade.get('symbol', ''),
+                            'type': transaction_type,  # Add transaction type
+                            'transaction_type': transaction_type,  # Backup field name
                             'action': trade.get('side', ''),
                             'side': trade.get('side', ''),
                             'quantity': trade.get('quantity', 0),
