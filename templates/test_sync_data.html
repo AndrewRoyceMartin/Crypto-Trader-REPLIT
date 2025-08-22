@@ -250,19 +250,47 @@
             html += '</div>';
             container.innerHTML = html;
 
-            // Update raw data display
-            // Format the raw data more readably
-            const formattedData = {
-                timestamp: data.timestamp,
-                okx_endpoint: data.okx_endpoint,
-                tests_available: data.tests_available,
-                test_results: Object.keys(data.test_results || {}).map(testName => ({
-                    test_name: testName,
-                    status: data.test_results[testName].status,
-                    details: data.test_results[testName]
-                }))
-            };
-            document.getElementById('raw-data').textContent = JSON.stringify(formattedData, null, 2);
+            // Create a nicely formatted HTML display instead of raw JSON
+            const rawDataDiv = document.getElementById('raw-data');
+            let htmlOutput = `
+                <div class="mb-3">
+                    <strong>Test Session:</strong> ${new Date(data.timestamp).toLocaleString()}<br>
+                    <strong>OKX Endpoint:</strong> ${data.okx_endpoint}<br>
+                    <strong>Tests Available:</strong> ${data.tests_available}
+                </div>
+                <h6>Test Results Summary:</h6>
+            `;
+            
+            Object.entries(data.test_results || {}).forEach(([testName, result]) => {
+                const statusColor = result.status === 'pass' ? 'success' : result.status === 'fail' ? 'danger' : 'warning';
+                const statusIcon = result.status === 'pass' ? 'fa-check-circle' : result.status === 'fail' ? 'fa-times-circle' : 'fa-exclamation-triangle';
+                
+                htmlOutput += `
+                    <div class="border-start border-${statusColor} ps-3 mb-3">
+                        <h6 class="text-${statusColor}">
+                            <i class="fas ${statusIcon} me-2"></i>${getTestDisplayName(testName)}
+                        </h6>
+                        <small class="text-muted">Status: <span class="text-${statusColor}">${result.status.toUpperCase()}</span></small>
+                `;
+                
+                // Add specific details based on test type
+                if (result.perfect_matches !== undefined) {
+                    htmlOutput += `<br><small>✓ Perfect Matches: ${result.perfect_matches}, Mismatches: ${result.mismatches || 0}</small>`;
+                }
+                if (result.calculation_accuracy !== undefined) {
+                    htmlOutput += `<br><small>✓ Calculation Accuracy: ${result.calculation_accuracy}%</small>`;
+                }
+                if (result.data_is_recent !== undefined) {
+                    htmlOutput += `<br><small>✓ Data Recent: ${result.data_is_recent ? 'Yes' : 'No'}, Live Holdings: ${result.holdings_marked_live ? 'Yes' : 'No'}</small>`;
+                }
+                if (result.account_accessible !== undefined) {
+                    htmlOutput += `<br><small>✓ Account Access: ${result.account_accessible ? 'Yes' : 'No'}, Positions: ${result.active_positions}</small>`;
+                }
+                
+                htmlOutput += `</div>`;
+            });
+            
+            rawDataDiv.innerHTML = htmlOutput;
         }
 
         function getTestDisplayName(testName) {
