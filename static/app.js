@@ -2426,41 +2426,78 @@ class TradingApp {
             const formattedValue = this.formatCurrency(value);
             const formattedUnrealizedPnl = this.formatCurrency(Math.abs(finalPnl));
 
+            // Create cells safely using DOM methods instead of innerHTML
             if (isPerformancePage) {
                 const daysInvested = Math.floor((Date.now() - new Date('2025-08-01').getTime()) / (1000 * 60 * 60 * 24));
                 const status = finalPnl >= 0 ? 'Winner' : 'Loser';
                 const statusClass = finalPnl >= 0 ? 'bg-success' : 'bg-danger';
 
-                row.innerHTML = `
-                    <td><span class="badge bg-primary">#${rank}</span></td>
-                    <td>
-                        <strong>${symbol}</strong>
-                        ${isLive ? '<span class="badge bg-success ms-1" title="Live OKX data">Live</span>' : '<span class="badge bg-warning ms-1" title="Simulation data">Sim</span>'}
-                    </td>
-                    <td class="text-muted">${name}</td>
-                    <td><strong>${formattedPurchasePrice}</strong></td>
-                    <td><strong class="text-primary">${formattedCurrentPrice}</strong></td>
-                    <td><strong class="text-info">${formattedTargetPrice}</strong></td>
-                    <td><strong>${formattedValue}</strong></td>
-                    <td><strong>${formattedValue}</strong></td>
-                    <td class="${pnlClass}"><strong>${pnlSign}${formattedUnrealizedPnl}</strong></td>
-                    <td class="${pnlClass}"><strong>${pnlSign}${this.num(finalPnlPercent).toFixed(2)}%</strong></td>
-                    <td class="text-muted">${daysInvested}</td>
-                    <td><span class="badge ${statusClass}">${status}</span></td>
-                `;
+                // Safe DOM creation for performance page
+                const cells = [
+                    { content: `#${rank}`, classes: 'badge bg-primary' },
+                    { content: symbol, classes: 'strong', badge: isLive ? 'Live' : 'Sim', badgeClass: isLive ? 'badge bg-success ms-1' : 'badge bg-warning ms-1' },
+                    { content: name, classes: 'text-muted' },
+                    { content: formattedPurchasePrice, classes: 'strong' },
+                    { content: formattedCurrentPrice, classes: 'strong text-primary' },
+                    { content: formattedTargetPrice, classes: 'strong text-info' },
+                    { content: formattedValue, classes: 'strong' },
+                    { content: formattedValue, classes: 'strong' },
+                    { content: `${pnlSign}${formattedUnrealizedPnl}`, classes: `strong ${pnlClass}` },
+                    { content: `${pnlSign}${this.num(finalPnlPercent).toFixed(2)}%`, classes: `strong ${pnlClass}` },
+                    { content: daysInvested, classes: 'text-muted' },
+                    { content: status, classes: `badge ${statusClass}` }
+                ];
+                
+                cells.forEach(cellData => {
+                    const td = document.createElement('td');
+                    const content = document.createElement(cellData.classes.includes('badge') ? 'span' : (cellData.classes.includes('strong') ? 'strong' : 'span'));
+                    content.textContent = cellData.content;
+                    content.className = cellData.classes;
+                    td.appendChild(content);
+                    
+                    // Add badge if specified
+                    if (cellData.badge) {
+                        const badge = document.createElement('span');
+                        badge.textContent = cellData.badge;
+                        badge.className = cellData.badgeClass;
+                        if (cellData.badge === 'Live') badge.title = 'Live OKX data';
+                        else badge.title = 'Simulation data';
+                        td.appendChild(badge);
+                    }
+                    
+                    row.appendChild(td);
+                });
             } else {
-                row.innerHTML = `
-                    <td><span class="badge bg-primary">#${rank}</span></td>
-                    <td>
-                        <strong>${symbol}</strong>
-                        ${isLive ? '<span class="badge bg-success ms-1" title="Live OKX data">Live</span>' : '<span class="badge bg-warning ms-1" title="Simulation data">Sim</span>'}
-                    </td>
-                    <td><strong class="text-primary">${formattedCurrentPrice}</strong></td>
-                    <td>${formattedQuantity}</td>
-                    <td><strong>${formattedValue}</strong></td>
-                    <td class="${pnlClass}"><strong>${pnlSign}${formattedUnrealizedPnl}</strong></td>
-                    <td class="${pnlClass}"><strong>${pnlSign}${this.num(finalPnlPercent).toFixed(2)}%</strong></td>
-                `;
+                // Safe DOM creation for regular table
+                const cells = [
+                    { content: `#${rank}`, classes: 'badge bg-primary' },
+                    { content: symbol, classes: 'strong', badge: isLive ? 'Live' : 'Sim', badgeClass: isLive ? 'badge bg-success ms-1' : 'badge bg-warning ms-1' },
+                    { content: formattedCurrentPrice, classes: 'strong text-primary' },
+                    { content: formattedQuantity },
+                    { content: formattedValue, classes: 'strong' },
+                    { content: `${pnlSign}${formattedUnrealizedPnl}`, classes: `strong ${pnlClass}` },
+                    { content: `${pnlSign}${this.num(finalPnlPercent).toFixed(2)}%`, classes: `strong ${pnlClass}` }
+                ];
+                
+                cells.forEach(cellData => {
+                    const td = document.createElement('td');
+                    const content = document.createElement(cellData.classes && cellData.classes.includes('badge') ? 'span' : (cellData.classes && cellData.classes.includes('strong') ? 'strong' : 'span'));
+                    content.textContent = cellData.content;
+                    if (cellData.classes) content.className = cellData.classes;
+                    td.appendChild(content);
+                    
+                    // Add badge if specified
+                    if (cellData.badge) {
+                        const badge = document.createElement('span');
+                        badge.textContent = cellData.badge;
+                        badge.className = cellData.badgeClass;
+                        if (cellData.badge === 'Live') badge.title = 'Live OKX data';
+                        else badge.title = 'Simulation data';
+                        td.appendChild(badge);
+                    }
+                    
+                    row.appendChild(td);
+                });
             }
 
             tableBody.appendChild(row);
@@ -2640,7 +2677,13 @@ class TradingApp {
         if (!pepe) return;
 
         const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
-        const setHTML = (id, html) => { const el = document.getElementById(id); if (el) el.innerHTML = html; };
+        const setHTML = (id, html) => { 
+            const el = document.getElementById(id); 
+            if (el) {
+                // Security: Only allow safe text content, not HTML
+                el.textContent = html;
+            }
+        };
 
         // OKX Account Summary
         set('okx-holdings-count', cryptos.length);
