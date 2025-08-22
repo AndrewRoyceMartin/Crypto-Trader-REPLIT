@@ -4136,15 +4136,14 @@ function updateOpenPositionsTable(positions, totalValue = 0) {
             
             console.debug(`Field values - Symbol: ${symbol}, Quantity: ${quantity}, Purchase: ${purchasePrice}, Current: ${currentPrice}, Market: ${marketValue}`);
             
-            // Calculate meaningful total portfolio values (not micro-values)
-            const totalCostBasis = quantity * purchasePrice;
-            const totalMarketValue = quantity * currentPrice; // Use calculated total, not API's micro-value
-            const currentPnlDollar = totalMarketValue - totalCostBasis;
-            const currentPnlPercent = totalCostBasis > 0 ? (currentPnlDollar / totalCostBasis) * 100 : 0;
+            // Use direct OKX portfolio values - no calculations needed
+            const totalCostBasis = parseFloat(position.cost_basis || 0);
+            const totalMarketValue = parseFloat(position.current_value || 0);
+            const currentPnlDollar = parseFloat(position.pnl_amount || 0);
+            const currentPnlPercent = parseFloat(position.pnl_percent || 0);
             
-            // Target calculations (20% profit target as default)
-            const targetPricePerUnit = purchasePrice * 1.20;
-            const targetTotalValue = quantity * targetPricePerUnit;
+            // Target calculations (20% profit target based on OKX cost basis)
+            const targetTotalValue = totalCostBasis * 1.20;
             const targetPnlDollar = targetTotalValue - totalCostBasis;
             const targetPnlPercent = totalCostBasis > 0 ? (targetPnlDollar / totalCostBasis) * 100 : 0;
             
