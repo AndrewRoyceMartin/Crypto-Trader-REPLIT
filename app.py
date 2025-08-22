@@ -10,7 +10,6 @@ import logging
 import threading
 import time
 import json
-import subprocess
 import requests
 import hmac
 import hashlib
@@ -26,6 +25,15 @@ from flask import Flask, jsonify, request, render_template
 
 # Top-level imports only (satisfies linter)
 from src.services.portfolio_service import get_portfolio_service as _get_ps  # noqa: E402
+
+# Set up logging for deployment - MOVED TO TOP to avoid NameError
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[logging.StreamHandler(sys.stdout)]
+)
+
+logger = logging.getLogger(__name__)
 
 # For local timezone support
 try:
@@ -138,14 +146,6 @@ def _date_range(start: datetime, end: datetime):
         yield d
         d += timedelta(days=1)
 
-# Set up logging for deployment
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[logging.StreamHandler(sys.stdout)]
-)
-
-logger = logging.getLogger(__name__)
 
 # --- Ultra-fast boot knobs ---
 WATCHLIST = [s.strip() for s in os.getenv(
@@ -371,7 +371,6 @@ def get_df(symbol: str, timeframe: str):
 def initialize_system():
     """Initialize only essential components - no network I/O."""
     try:
-        logging.basicConfig(level=logging.INFO)
         logger.info("Ultra-lightweight initialization")
 
         from src.utils.database import DatabaseManager
