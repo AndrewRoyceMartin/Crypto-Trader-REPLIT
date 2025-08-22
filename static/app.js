@@ -3841,7 +3841,6 @@ async function updateBotStatusDisplay() {
         const data = await response.json();
         
         const botStatusElement = document.getElementById('bot-status-top');
-        const botCardElement = document.getElementById('okx-bot-status');
         
         if (botStatusElement) {
             if (data.running) {
@@ -3853,15 +3852,15 @@ async function updateBotStatusDisplay() {
             }
         }
         
-        // Update the trading bot card status
-        if (botCardElement) {
+        // Update the trading status badge
+        const tradingStatusElement = document.getElementById('trading-status');
+        if (tradingStatusElement) {
             if (data.running) {
-                const mode = data.mode?.toUpperCase() || 'LIVE';
-                botCardElement.textContent = `Active (${mode})`;
-                botCardElement.className = 'value text-success';
+                tradingStatusElement.innerHTML = '<span class="icon icon-circle me-1" aria-hidden="true"></span>Active';
+                tradingStatusElement.className = 'badge bg-success ms-2';
             } else {
-                botCardElement.textContent = 'Inactive';
-                botCardElement.className = 'value text-muted';
+                tradingStatusElement.innerHTML = '<span class="icon icon-circle me-1" aria-hidden="true"></span>Inactive';
+                tradingStatusElement.className = 'badge bg-secondary ms-2';
             }
         }
     } catch (error) {

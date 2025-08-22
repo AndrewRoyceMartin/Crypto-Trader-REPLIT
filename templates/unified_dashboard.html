@@ -128,6 +128,9 @@
                 <button class="btn btn-warning btn-sm" onclick="toggleBot()" aria-label="Toggle trading bot" title="Start or stop the automated trading bot">
                     <span class="icon icon-robot me-1" aria-hidden="true"></span><span id="bot-status-top">START BOT</span>
                 </button>
+                <span id="trading-status" class="badge bg-secondary ms-2">
+                    <span class="icon icon-circle me-1" aria-hidden="true"></span>Inactive
+                </span>
             </div>
         </div>
     </div>
@@ -196,15 +199,6 @@
                         </div>
                         <div id="okx-active-positions" class="value">0</div>
                         <div id="okx-positions-detail" class="change-indicator"></div>
-                    </div>
-                </div>
-                <div class="col-6 col-md-2">
-                    <div class="kpi-card">
-                        <div class="label">
-                            <span class="icon icon-robot me-1"></span>Trading Bot
-                        </div>
-                        <div id="okx-bot-status" class="value">Inactive</div>
-                        <div id="okx-bot-details" class="change-indicator"></div>
                     </div>
                 </div>
                 <div class="col-6 col-md-2">
