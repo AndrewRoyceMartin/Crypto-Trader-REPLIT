@@ -4136,9 +4136,9 @@ function updateOpenPositionsTable(positions, totalValue = 0) {
             
             console.debug(`Field values - Symbol: ${symbol}, Quantity: ${quantity}, Purchase: ${purchasePrice}, Current: ${currentPrice}, Market: ${marketValue}`);
             
-            // Total portfolio calculations
+            // Calculate meaningful total portfolio values (not micro-values)
             const totalCostBasis = quantity * purchasePrice;
-            const totalMarketValue = marketValue;
+            const totalMarketValue = quantity * currentPrice; // Use calculated total, not API's micro-value
             const currentPnlDollar = totalMarketValue - totalCostBasis;
             const currentPnlPercent = totalCostBasis > 0 ? (currentPnlDollar / totalCostBasis) * 100 : 0;
             
@@ -4185,6 +4185,19 @@ function updateOpenPositionsTable(positions, totalValue = 0) {
                 return value.toFixed(8);
             };
             
+            // Format meaningful dollar amounts (not micro-values)
+            const formatMeaningfulCurrency = (value) => {
+                if (value < 0.01) {
+                    return '$' + value.toFixed(8);
+                }
+                return new Intl.NumberFormat("en-US", { 
+                    style: "currency", 
+                    currency: "USD",
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 6
+                }).format(value);
+            };
+            
             // Display total position values, not per-unit prices
             const displayCurrentValue = totalMarketValue;
             const displayCostBasis = totalCostBasis;
@@ -4195,14 +4208,14 @@ function updateOpenPositionsTable(positions, totalValue = 0) {
                 <tr>
                     <td class="fw-bold">${symbol}</td>
                     <td>${formatNumber(quantity)}</td>
-                    <td>${formatCurrency(displayCurrentValue)}</td>
-                    <td>${formatCurrency(displayCostBasis)}</td>
+                    <td>${formatMeaningfulCurrency(displayCurrentValue)}</td>
+                    <td>${formatMeaningfulCurrency(displayCostBasis)}</td>
                     <td>${formatCurrency(displayCurrentPrice)}</td>
-                    <td>${formatCurrency(displayCurrentValue)}</td>
-                    <td class="${currentPnlClass}">${formatCurrency(currentPnlDollar)}</td>
+                    <td>${formatMeaningfulCurrency(displayCurrentValue)}</td>
+                    <td class="${currentPnlClass}">${formatMeaningfulCurrency(currentPnlDollar)}</td>
                     <td class="${currentPnlClass}">${currentPnlPercent >= 0 ? "+" : ""}${currentPnlPercent.toFixed(2)}%</td>
-                    <td>${formatCurrency(displayTargetValue)}</td>
-                    <td class="${targetPnlClass}">${formatCurrency(targetPnlDollar)}</td>
+                    <td>${formatMeaningfulCurrency(displayTargetValue)}</td>
+                    <td class="${targetPnlClass}">${formatMeaningfulCurrency(targetPnlDollar)}</td>
                     <td class="${targetPnlClass}">+${targetPnlPercent.toFixed(2)}%</td>
                     <td>${daysHeld} days</td>
                     <td>
