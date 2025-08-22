@@ -532,12 +532,22 @@ class TradingApp {
                 riskCanvas.style.display = 'none';
                 const fallback = document.createElement('div');
                 fallback.className = 'text-center text-muted p-3';
-                fallback.innerHTML = `
-                    <strong>Portfolio Analytics</strong><br>
-                    Risk Level: ${analytics.concentration_risk}<br>
-                    Positions: ${analytics.position_count}<br>
-                    Diversification: ${analytics.risk_assessment?.diversification || 'Unknown'}
-                `;
+                // Create content safely using DOM methods
+                const title = document.createElement('strong');
+                title.textContent = 'Portfolio Analytics';
+                fallback.appendChild(title);
+                fallback.appendChild(document.createElement('br'));
+                
+                const riskText = document.createTextNode(`Risk Level: ${analytics.concentration_risk}`);
+                fallback.appendChild(riskText);
+                fallback.appendChild(document.createElement('br'));
+                
+                const positionsText = document.createTextNode(`Positions: ${analytics.position_count}`);
+                fallback.appendChild(positionsText);
+                fallback.appendChild(document.createElement('br'));
+                
+                const diversificationText = document.createTextNode(`Diversification: ${analytics.risk_assessment?.diversification || 'Unknown'}`);
+                fallback.appendChild(diversificationText);
                 riskCanvas.parentNode.replaceChild(fallback, riskCanvas);
             }
         }
@@ -667,11 +677,19 @@ class TradingApp {
                 portfolioCanvas.style.display = 'none';
                 const fallback = document.createElement('div');
                 fallback.className = 'text-center text-muted p-3';
-                fallback.innerHTML = `
-                    <strong>Portfolio History</strong><br>
-                    Current Value: ${this.formatCurrency(historyData[historyData.length - 1]?.value || 0)}<br>
-                    Data Points: ${historyData.length}
-                `;
+                // Create content safely using DOM methods
+                const title = document.createElement('strong');
+                title.textContent = 'Portfolio History';
+                fallback.appendChild(title);
+                fallback.appendChild(document.createElement('br'));
+                
+                const currentValue = this.formatCurrency(historyData[historyData.length - 1]?.value || 0);
+                const valueText = document.createTextNode(`Current Value: ${currentValue}`);
+                fallback.appendChild(valueText);
+                fallback.appendChild(document.createElement('br'));
+                
+                const dataPointsText = document.createTextNode(`Data Points: ${historyData.length}`);
+                fallback.appendChild(dataPointsText);
                 portfolioCanvas.parentNode.replaceChild(fallback, portfolioCanvas);
             }
         }
@@ -780,12 +798,17 @@ class TradingApp {
                 allocationCanvas.style.display = 'none';
                 const fallback = document.createElement('div');
                 fallback.className = 'text-center text-muted p-3';
-                fallback.innerHTML = `
-                    <strong>Asset Allocation</strong><br>
-                    ${allocationData.map(item => 
-                        `${item.symbol}: ${item.allocation_percent.toFixed(1)}%`
-                    ).join('<br>')}
-                `;
+                // Create content safely using DOM methods
+                const title = document.createElement('strong');
+                title.textContent = 'Asset Allocation';
+                fallback.appendChild(title);
+                fallback.appendChild(document.createElement('br'));
+                
+                allocationData.forEach((item, index) => {
+                    if (index > 0) fallback.appendChild(document.createElement('br'));
+                    const itemText = document.createTextNode(`${item.symbol}: ${item.allocation_percent.toFixed(1)}%`);
+                    fallback.appendChild(itemText);
+                });
                 allocationCanvas.parentNode.replaceChild(fallback, allocationCanvas);
             }
         }
@@ -4430,7 +4453,10 @@ function updateOpenPositionsTable(positions, totalValue = 0) {
             return;
         }
 
-        const tableHtml = significantPositions.map(position => {
+        // Clear existing content safely
+        positionsTableBody.textContent = '';
+        
+        significantPositions.forEach(position => {
             console.debug("Processing individual position:", position);
             
             // Check if this is from the new all_positions format
@@ -4555,47 +4581,90 @@ function updateOpenPositionsTable(positions, totalValue = 0) {
             };
             
             const coinDisplay = getCoinDisplay(symbol);
-
-            const rowHtml = `
-                <tr>
-                    <td>
-                        <div class="d-flex align-items-center">
-                            <div class="coin-icon me-2" style="color: ${coinDisplay.color};">
-                                <i class="${coinDisplay.icon}"></i>
-                            </div>
-                            <div>
-                                <strong>${symbol}</strong>
-                                <br><small class="text-muted">${coinDisplay.name}</small>
-                            </div>
-                        </div>
-                    </td>
-                    <td>${formatNumber(quantity)}</td>
-                    <td>${formatMeaningfulCurrency(displayCurrentValue)}</td>
-                    <td>${formatMeaningfulCurrency(displayCostBasis)}</td>
-                    <td>${formatCurrency(displayCurrentPrice)}</td>
-                    <td>${formatMeaningfulCurrency(displayCurrentValue)}</td>
-                    <td class="${currentPnlClass}">${formatMeaningfulCurrency(currentPnlDollar)}</td>
-                    <td class="${currentPnlClass}">${currentPnlPercent >= 0 ? "+" : ""}${currentPnlPercent.toFixed(2)}%</td>
-                    <td>${formatMeaningfulCurrency(displayTargetValue)}</td>
-                    <td class="${targetPnlClass}">${formatMeaningfulCurrency(targetPnlDollar)}</td>
-                    <td class="${targetPnlClass}">+${targetPnlPercent.toFixed(2)}%</td>
-                    <td>${daysHeld} days</td>
-                    <td>
-                        <div class="btn-group btn-group-sm" role="group">
-                            <button class="btn btn-outline-success btn-xs" onclick="sellPosition('${symbol}', 25)" title="Sell 25%">25%</button>
-                            <button class="btn btn-outline-success btn-xs" onclick="sellPosition('${symbol}', 50)" title="Sell 50%">50%</button>
-                            <button class="btn btn-outline-success btn-xs" onclick="sellPosition('${symbol}', 100)" title="Sell All">All</button>
-                            <button class="btn btn-outline-primary btn-xs" onclick="buyMorePosition('${symbol}')" title="Buy More">+</button>
-                        </div>
-                    </td>
-                </tr>
-            `;
-            console.debug("Generated row HTML:", rowHtml);
-            return rowHtml;
-        }).join("");
-        
-        console.debug("Final table HTML:", tableHtml);
-        positionsTableBody.innerHTML = tableHtml;
+            
+            // Create row using safe DOM methods
+            const row = document.createElement('tr');
+            
+            // Symbol cell with icon
+            const symbolCell = document.createElement('td');
+            const symbolDiv = document.createElement('div');
+            symbolDiv.className = 'd-flex align-items-center';
+            
+            const iconDiv = document.createElement('div');
+            iconDiv.className = 'coin-icon me-2';
+            iconDiv.style.color = coinDisplay.color;
+            const icon = document.createElement('i');
+            icon.className = coinDisplay.icon;
+            iconDiv.appendChild(icon);
+            
+            const textDiv = document.createElement('div');
+            const symbolStrong = document.createElement('strong');
+            symbolStrong.textContent = symbol;
+            const symbolSmall = document.createElement('small');
+            symbolSmall.className = 'text-muted';
+            symbolSmall.textContent = coinDisplay.name;
+            textDiv.appendChild(symbolStrong);
+            textDiv.appendChild(document.createElement('br'));
+            textDiv.appendChild(symbolSmall);
+            
+            symbolDiv.appendChild(iconDiv);
+            symbolDiv.appendChild(textDiv);
+            symbolCell.appendChild(symbolDiv);
+            row.appendChild(symbolCell);
+            
+            // Create all other cells safely
+            const cells = [
+                formatNumber(quantity),
+                formatMeaningfulCurrency(displayCurrentValue),
+                formatMeaningfulCurrency(displayCostBasis),
+                formatCurrency(displayCurrentPrice),
+                formatMeaningfulCurrency(displayCurrentValue),
+                { text: formatMeaningfulCurrency(currentPnlDollar), className: currentPnlClass },
+                { text: `${currentPnlPercent >= 0 ? "+" : ""}${currentPnlPercent.toFixed(2)}%`, className: currentPnlClass },
+                formatMeaningfulCurrency(displayTargetValue),
+                { text: formatMeaningfulCurrency(targetPnlDollar), className: targetPnlClass },
+                { text: `+${targetPnlPercent.toFixed(2)}%`, className: targetPnlClass },
+                `${daysHeld} days`
+            ];
+            
+            cells.forEach(cellData => {
+                const cell = document.createElement('td');
+                if (typeof cellData === 'object') {
+                    cell.textContent = cellData.text;
+                    if (cellData.className) cell.className = cellData.className;
+                } else {
+                    cell.textContent = cellData;
+                }
+                row.appendChild(cell);
+            });
+            
+            // Action buttons cell
+            const actionsCell = document.createElement('td');
+            const btnGroup = document.createElement('div');
+            btnGroup.className = 'btn-group btn-group-sm';
+            btnGroup.setAttribute('role', 'group');
+            
+            const buttons = [
+                { text: '25%', title: 'Sell 25%', onclick: () => sellPosition(symbol, 25) },
+                { text: '50%', title: 'Sell 50%', onclick: () => sellPosition(symbol, 50) },
+                { text: 'All', title: 'Sell All', onclick: () => sellPosition(symbol, 100) },
+                { text: '+', title: 'Buy More', className: 'btn-outline-primary', onclick: () => buyMorePosition(symbol) }
+            ];
+            
+            buttons.forEach(btnData => {
+                const btn = document.createElement('button');
+                btn.className = `btn ${btnData.className || 'btn-outline-success'} btn-xs`;
+                btn.textContent = btnData.text;
+                btn.title = btnData.title;
+                btn.onclick = btnData.onclick;
+                btnGroup.appendChild(btn);
+            });
+            
+            actionsCell.appendChild(btnGroup);
+            row.appendChild(actionsCell);
+            
+            positionsTableBody.appendChild(row);
+        });
         console.debug("Table updated successfully");
         
         // Update refresh time tracking
@@ -4630,6 +4699,222 @@ async function fetchAndUpdateAvailablePositions() {
     }
 }
 
+// Helper function to safely create available position row
+function createAvailablePositionRow(position) {
+    const symbol = position.symbol || "Unknown";
+    const currentBalance = parseFloat(position.current_balance || 0);
+    const currentPrice = parseFloat(position.current_price || 0);
+    const lastExitPrice = parseFloat(position.last_exit_price || 0);
+    const targetBuyPrice = parseFloat(position.target_buy_price || 0);
+    const priceDifference = parseFloat(position.price_difference || 0);
+    const priceDiffPercent = parseFloat(position.price_diff_percent || 0);
+    const buySignal = position.buy_signal || "WAIT";
+    const daysSinceExit = position.days_since_exit || 0;
+    
+    // Entry confidence data
+    const entryConfidence = position.entry_confidence || { score: 50, level: "FAIR", timing_signal: "WAIT" };
+    const confidenceScore = entryConfidence.score || 50;
+    const confidenceLevel = entryConfidence.level || "FAIR";
+    const timingSignal = entryConfidence.timing_signal || "WAIT";
+    
+    const buySignalClass = buySignal === "BUY READY" ? "text-success fw-bold" : "text-warning";
+    const priceDiffClass = priceDifference < 0 ? "text-success" : "text-danger";
+    
+    // Styling functions
+    const getConfidenceClass = (score) => {
+        if (score >= 90) return "text-success fw-bold";
+        if (score >= 75) return "text-success";
+        if (score >= 60) return "text-warning";
+        if (score >= 40) return "text-muted";
+        return "text-danger";
+    };
+    
+    const getTimingSignalClass = (signal) => {
+        if (signal === "STRONG_BUY" || signal === "BUY") return "text-success fw-bold";
+        if (signal === "CAUTIOUS_BUY") return "text-warning fw-bold";
+        if (signal === "WAIT") return "text-muted";
+        return "text-danger";
+    };
+    
+    const getRiskLevelClass = (level) => {
+        if (level === "LOW") return "text-success";
+        if (level === "MODERATE") return "text-warning";
+        if (level === "HIGH") return "text-danger";
+        return "text-danger fw-bold";
+    };
+    
+    // Format functions
+    const formatCurrency = (value) => {
+        const numValue = Number(value) || 0;
+        if (Math.abs(numValue) < 0.000001 && numValue !== 0) {
+            return new Intl.NumberFormat("en-US", { 
+                style: "currency", 
+                currency: "USD",
+                minimumFractionDigits: 8,
+                maximumFractionDigits: 12
+            }).format(numValue);
+        }
+        return new Intl.NumberFormat("en-US", { 
+            style: "currency", 
+            currency: "USD",
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 8
+        }).format(numValue);
+    };
+    
+    const formatNumber = (value) => {
+        if (value > 1000000) return (value / 1000000).toFixed(2) + "M";
+        if (value > 1000) return (value / 1000).toFixed(2) + "K";
+        return value.toFixed(8);
+    };
+    
+    // Get coin display info safely
+    const getCoinDisplay = (symbol) => {
+        const coinInfo = {
+            'BTC': { icon: 'fab fa-bitcoin', name: 'Bitcoin', color: '#f7931a' },
+            'ETH': { icon: 'fab fa-ethereum', name: 'Ethereum', color: '#627eea' },
+            'SOL': { icon: 'fas fa-sun', name: 'Solana', color: '#9945ff' },
+            'PEPE': { icon: 'fas fa-frog', name: 'Pepe', color: '#28a745' },
+            'AUD': { icon: 'fas fa-dollar-sign', name: 'Australian Dollar', color: '#007bff' },
+            'USDT': { icon: 'fas fa-coins', name: 'Tether', color: '#26a17b' },
+            'USDC': { icon: 'fas fa-coins', name: 'USD Coin', color: '#2775ca' },
+            'DOGE': { icon: 'fas fa-dog', name: 'Dogecoin', color: '#c2a633' },
+            'ADA': { icon: 'fas fa-heart', name: 'Cardano', color: '#0033ad' },
+            'DOT': { icon: 'fas fa-circle', name: 'Polkadot', color: '#e6007a' },
+            'MATIC': { icon: 'fas fa-polygon', name: 'Polygon', color: '#8247e5' },
+            'LINK': { icon: 'fas fa-link', name: 'Chainlink', color: '#375bd2' }
+        };
+        return coinInfo[symbol] || { icon: 'fas fa-coins', name: symbol, color: '#6c757d' };
+    };
+    
+    const coinDisplay = getCoinDisplay(symbol);
+    
+    // Create row using safe DOM methods
+    const row = document.createElement('tr');
+    
+    // Symbol cell with icon
+    const symbolCell = document.createElement('td');
+    const symbolDiv = document.createElement('div');
+    symbolDiv.className = 'd-flex align-items-center';
+    
+    const iconDiv = document.createElement('div');
+    iconDiv.className = 'coin-icon me-2';
+    iconDiv.style.color = coinDisplay.color;
+    const icon = document.createElement('i');
+    icon.className = coinDisplay.icon;
+    iconDiv.appendChild(icon);
+    
+    const textDiv = document.createElement('div');
+    const symbolStrong = document.createElement('strong');
+    symbolStrong.textContent = symbol;
+    const symbolSmall = document.createElement('small');
+    symbolSmall.className = 'text-muted';
+    symbolSmall.textContent = coinDisplay.name;
+    textDiv.appendChild(symbolStrong);
+    textDiv.appendChild(document.createElement('br'));
+    textDiv.appendChild(symbolSmall);
+    
+    symbolDiv.appendChild(iconDiv);
+    symbolDiv.appendChild(textDiv);
+    symbolCell.appendChild(symbolDiv);
+    row.appendChild(symbolCell);
+    
+    // Create remaining cells
+    const cells = [
+        formatNumber(currentBalance),
+        formatCurrency(currentPrice),
+        { text: formatCurrency(targetBuyPrice), className: 'fw-bold text-primary' },
+        { text: `${priceDiffPercent >= 0 ? '+' : ''}${priceDiffPercent.toFixed(1)}%`, className: priceDiffClass }
+    ];
+    
+    cells.forEach(cellData => {
+        const cell = document.createElement('td');
+        if (typeof cellData === 'object') {
+            cell.textContent = cellData.text;
+            if (cellData.className) cell.className = cellData.className;
+        } else {
+            cell.textContent = cellData;
+        }
+        row.appendChild(cell);
+    });
+    
+    // Confidence score cell
+    const confidenceCell = document.createElement('td');
+    confidenceCell.className = getConfidenceClass(confidenceScore);
+    const confidenceDiv = document.createElement('div');
+    confidenceDiv.className = 'd-flex align-items-center';
+    const scoreSpan = document.createElement('span');
+    scoreSpan.className = 'fw-bold me-1';
+    scoreSpan.textContent = confidenceScore.toFixed(1);
+    const maxSpan = document.createElement('small');
+    maxSpan.className = 'text-muted';
+    maxSpan.textContent = '/ 100';
+    confidenceDiv.appendChild(scoreSpan);
+    confidenceDiv.appendChild(maxSpan);
+    confidenceCell.appendChild(confidenceDiv);
+    const levelSmall = document.createElement('small');
+    levelSmall.className = getConfidenceClass(confidenceScore);
+    levelSmall.textContent = confidenceLevel;
+    confidenceCell.appendChild(levelSmall);
+    row.appendChild(confidenceCell);
+    
+    // Timing, risk, and buy signal cells
+    const timingCell = document.createElement('td');
+    timingCell.className = getTimingSignalClass(timingSignal);
+    timingCell.textContent = timingSignal.replace('_', ' ');
+    row.appendChild(timingCell);
+    
+    const riskCell = document.createElement('td');
+    riskCell.className = getRiskLevelClass(entryConfidence.risk_level || 'MODERATE');
+    riskCell.textContent = entryConfidence.risk_level || 'MODERATE';
+    row.appendChild(riskCell);
+    
+    const signalCell = document.createElement('td');
+    signalCell.className = buySignalClass;
+    signalCell.textContent = buySignal;
+    row.appendChild(signalCell);
+    
+    // Action buttons cell
+    const actionsCell = document.createElement('td');
+    const btnGroup = document.createElement('div');
+    btnGroup.className = 'btn-group btn-group-sm';
+    btnGroup.setAttribute('role', 'group');
+    
+    // Main action button
+    const mainBtn = document.createElement('button');
+    if (confidenceScore >= 75 && timingSignal !== "WAIT") {
+        mainBtn.className = 'btn btn-success btn-xs';
+        mainBtn.textContent = 'Buy';
+        mainBtn.title = 'High Confidence Entry';
+    } else if (confidenceScore >= 60) {
+        mainBtn.className = 'btn btn-warning btn-xs';
+        mainBtn.textContent = 'Cautious';
+        mainBtn.title = 'Cautious Entry';
+    } else {
+        mainBtn.className = 'btn btn-outline-secondary btn-xs';
+        mainBtn.textContent = 'Wait';
+        mainBtn.disabled = true;
+        mainBtn.title = 'Low confidence - wait for better setup';
+    }
+    if (!mainBtn.disabled) {
+        mainBtn.onclick = () => buyBackPosition(symbol);
+    }
+    
+    // Details button
+    const detailsBtn = document.createElement('button');
+    detailsBtn.className = 'btn btn-outline-info btn-xs';
+    detailsBtn.textContent = 'Details';
+    detailsBtn.title = 'View Detailed Analysis';
+    detailsBtn.onclick = () => showConfidenceDetails(symbol);
+    
+    btnGroup.appendChild(mainBtn);
+    btnGroup.appendChild(detailsBtn);
+    actionsCell.appendChild(btnGroup);
+    row.appendChild(actionsCell);
+    
+    return row;
+}
+
 // Available positions table function
 function updateAvailablePositionsTable(availablePositions) {
     try {
@@ -4652,155 +4937,15 @@ function updateAvailablePositionsTable(availablePositions) {
             return;
         }
 
-        const tableHtml = availablePositions.map(position => {
-            const symbol = position.symbol || "Unknown";
-            const currentBalance = parseFloat(position.current_balance || 0);
-            const currentPrice = parseFloat(position.current_price || 0);
-            const lastExitPrice = parseFloat(position.last_exit_price || 0);
-            const targetBuyPrice = parseFloat(position.target_buy_price || 0);
-            const priceDifference = parseFloat(position.price_difference || 0);
-            const priceDiffPercent = parseFloat(position.price_diff_percent || 0);
-            const buySignal = position.buy_signal || "WAIT";
-            const daysSinceExit = position.days_since_exit || 0;
-            
-            // Entry confidence data
-            const entryConfidence = position.entry_confidence || { score: 50, level: "FAIR", timing_signal: "WAIT" };
-            const confidenceScore = entryConfidence.score || 50;
-            const confidenceLevel = entryConfidence.level || "FAIR";
-            const timingSignal = entryConfidence.timing_signal || "WAIT";
-            
-            const buySignalClass = buySignal === "BUY READY" ? "text-success fw-bold" : "text-warning";
-            
-            // Confidence score styling
-            const getConfidenceClass = (score) => {
-                if (score >= 90) return "text-success fw-bold";
-                if (score >= 75) return "text-success";
-                if (score >= 60) return "text-warning";
-                if (score >= 40) return "text-muted";
-                return "text-danger";
-            };
-            
-            // Timing signal styling
-            const getTimingSignalClass = (signal) => {
-                if (signal === "STRONG_BUY" || signal === "BUY") return "text-success fw-bold";
-                if (signal === "CAUTIOUS_BUY") return "text-warning fw-bold";
-                if (signal === "WAIT") return "text-muted";
-                return "text-danger";
-            };
-            
-            // Risk level styling
-            const getRiskLevelClass = (level) => {
-                if (level === "LOW") return "text-success";
-                if (level === "MODERATE") return "text-warning";
-                if (level === "HIGH") return "text-danger";
-                return "text-danger fw-bold";
-            };
-            
-            // Format functions
-            const formatCurrency = (value) => {
-                const numValue = Number(value) || 0;
-                // Use extended decimal places for very small values instead of scientific notation
-                if (Math.abs(numValue) < 0.000001 && numValue !== 0) {
-                    return new Intl.NumberFormat("en-US", { 
-                        style: "currency", 
-                        currency: "USD",
-                        minimumFractionDigits: 8,
-                        maximumFractionDigits: 12
-                    }).format(numValue);
-                }
-                return new Intl.NumberFormat("en-US", { 
-                    style: "currency", 
-                    currency: "USD",
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 8
-                }).format(numValue);
-            };
-            
-            const formatNumber = (value) => {
-                if (value === 0) return "0";
-                // Use fixed decimal places for small values instead of scientific notation
-                if (Math.abs(value) < 0.000001 && value !== 0) {
-                    return value.toFixed(12);
-                }
-                return value.toFixed(8);
-            };
-            
-            const formatDate = (timestamp) => {
-                if (!timestamp) return "N/A";
-                try {
-                    return new Date(timestamp).toLocaleDateString();
-                } catch {
-                    return "N/A";
-                }
-            };
-            
-            const priceDiffClass = priceDifference < 0 ? "text-success" : "text-danger";
-            
-            // Get coin display info
-            const getCoinDisplay = (symbol) => {
-                const coinInfo = {
-                    'BTC': { icon: 'fab fa-bitcoin', name: 'Bitcoin', color: '#f7931a' },
-                    'ETH': { icon: 'fab fa-ethereum', name: 'Ethereum', color: '#627eea' },
-                    'SOL': { icon: 'fas fa-sun', name: 'Solana', color: '#9945ff' },
-                    'PEPE': { icon: 'fas fa-frog', name: 'Pepe', color: '#28a745' },
-                    'AUD': { icon: 'fas fa-dollar-sign', name: 'Australian Dollar', color: '#007bff' },
-                    'USDT': { icon: 'fas fa-coins', name: 'Tether', color: '#26a17b' },
-                    'USDC': { icon: 'fas fa-coins', name: 'USD Coin', color: '#2775ca' },
-                    'DOGE': { icon: 'fas fa-dog', name: 'Dogecoin', color: '#c2a633' },
-                    'ADA': { icon: 'fas fa-heart', name: 'Cardano', color: '#0033ad' },
-                    'DOT': { icon: 'fas fa-circle', name: 'Polkadot', color: '#e6007a' },
-                    'MATIC': { icon: 'fas fa-polygon', name: 'Polygon', color: '#8247e5' },
-                    'LINK': { icon: 'fas fa-link', name: 'Chainlink', color: '#375bd2' }
-                };
-                
-                return coinInfo[symbol] || { icon: 'fas fa-coins', name: symbol, color: '#6c757d' };
-            };
-            
-            const coinDisplay = getCoinDisplay(symbol);
-            
-            return `
-                <tr>
-                    <td>
-                        <div class="d-flex align-items-center">
-                            <div class="coin-icon me-2" style="color: ${coinDisplay.color};">
-                                <i class="${coinDisplay.icon}"></i>
-                            </div>
-                            <div>
-                                <strong>${symbol}</strong>
-                                <br><small class="text-muted">${coinDisplay.name}</small>
-                            </div>
-                        </div>
-                    </td>
-                    <td>${formatNumber(currentBalance)}</td>
-                    <td>${formatCurrency(currentPrice)}</td>
-                    <td class="fw-bold text-primary">${formatCurrency(targetBuyPrice)}</td>
-                    <td class="${priceDiffClass}">${priceDiffPercent >= 0 ? '+' : ''}${priceDiffPercent.toFixed(1)}%</td>
-                    <td class="${getConfidenceClass(confidenceScore)}">
-                        <div class="d-flex align-items-center">
-                            <span class="fw-bold me-1">${confidenceScore.toFixed(1)}</span>
-                            <small class="text-muted">/ 100</small>
-                        </div>
-                        <small class="${getConfidenceClass(confidenceScore)}">${confidenceLevel}</small>
-                    </td>
-                    <td class="${getTimingSignalClass(timingSignal)}">${timingSignal.replace('_', ' ')}</td>
-                    <td class="${getRiskLevelClass(entryConfidence.risk_level || 'MODERATE')}">${entryConfidence.risk_level || 'MODERATE'}</td>
-                    <td class="${buySignalClass}">${buySignal}</td>
-                    <td>
-                        <div class="btn-group btn-group-sm" role="group">
-                            ${confidenceScore >= 75 && timingSignal !== "WAIT" ? 
-                                `<button class="btn btn-success btn-xs" onclick="buyBackPosition('${symbol}')" title="High Confidence Entry">Buy</button>` :
-                                confidenceScore >= 60 ? 
-                                    `<button class="btn btn-warning btn-xs" onclick="buyBackPosition('${symbol}')" title="Cautious Entry">Cautious</button>` :
-                                    `<button class="btn btn-outline-secondary btn-xs" disabled title="Low confidence - wait for better setup">Wait</button>`
-                            }
-                            <button class="btn btn-outline-info btn-xs" onclick="showConfidenceDetails('${symbol}')" title="View Detailed Analysis">Details</button>
-                        </div>
-                    </td>
-                </tr>
-            `;
-        }).join("");
         
-        availableTableBody.innerHTML = tableHtml;
+        // Clear existing content safely
+        availableTableBody.textContent = '';
+        
+        // Safely append rows using DOM methods instead of innerHTML
+        availablePositions.forEach(position => {
+            const row = createAvailablePositionRow(position);
+            availableTableBody.appendChild(row);
+        });
         console.debug("Available positions table updated successfully");
         
     } catch (error) {
