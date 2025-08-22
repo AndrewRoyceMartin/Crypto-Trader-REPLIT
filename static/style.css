@@ -189,6 +189,27 @@ a:hover { text-decoration: underline; }
 /* For wide data tables */
 #positions-table { min-width: 960px; }
 
+/* Open Positions table optimization for better page fitting */
+#open-positions-table { 
+  min-width: 1200px; 
+  table-layout: fixed;
+}
+
+/* Open Positions column width optimization */
+#open-positions-table th:nth-child(1) { width: 8%; }  /* Symbol */
+#open-positions-table th:nth-child(2) { width: 10%; } /* Current Balance */
+#open-positions-table th:nth-child(3) { width: 10%; } /* Current Value */
+#open-positions-table th:nth-child(4) { width: 10%; } /* Cost Basis */
+#open-positions-table th:nth-child(5) { width: 8%; }  /* Price Per Unit */
+#open-positions-table th:nth-child(6) { width: 10%; } /* Market Value */
+#open-positions-table th:nth-child(7) { width: 8%; }  /* P&L $ */
+#open-positions-table th:nth-child(8) { width: 8%; }  /* P&L % */
+#open-positions-table th:nth-child(9) { width: 10%; } /* Target Value */
+#open-positions-table th:nth-child(10) { width: 8%; } /* Target P&L $ */
+#open-positions-table th:nth-child(11) { width: 6%; } /* Target P&L % */
+#open-positions-table th:nth-child(12) { width: 6%; } /* Days */
+#open-positions-table th:nth-child(13) { width: 8%; } /* Actions */
+
 /* Numeric alignment helpers */
 .numeric, .price, .amount, .text-end { text-align: right; }
 .text-center { text-align: center; }
@@ -521,6 +542,51 @@ section[id] {
 .navbar .navbar-toggler .icon {
   color: #ffffff !important;
   font-size: 1.25rem;
+}
+
+/* ==========================================================================
+   Open Positions Table Responsive Optimization
+   ========================================================================== */
+
+/* Open Positions table responsive improvements - hide columns progressively */
+@media (max-width: 992px) {
+  /* Hide less critical columns on medium screens */
+  #open-positions-table th:nth-child(9),  /* Target Value */
+  #open-positions-table td:nth-child(9),
+  #open-positions-table th:nth-child(10), /* Target P&L $ */
+  #open-positions-table td:nth-child(10),
+  #open-positions-table th:nth-child(11), /* Target P&L % */
+  #open-positions-table td:nth-child(11) {
+    display: none;
+  }
+  #open-positions-table { min-width: 900px; }
+}
+
+@media (max-width: 768px) {
+  /* Hide even more columns on smaller screens */
+  #open-positions-table th:nth-child(6),  /* Market Value */
+  #open-positions-table td:nth-child(6),
+  #open-positions-table th:nth-child(12), /* Days */
+  #open-positions-table td:nth-child(12) {
+    display: none;
+  }
+  #open-positions-table { min-width: 600px; }
+}
+
+@media (max-width: 576px) {
+  /* Compact view for mobile */
+  #open-positions-table th:nth-child(4),  /* Cost Basis */
+  #open-positions-table td:nth-child(4),
+  #open-positions-table th:nth-child(13), /* Actions */
+  #open-positions-table td:nth-child(13) {
+    display: none;
+  }
+  #open-positions-table { min-width: 480px; }
+  #open-positions-table th, 
+  #open-positions-table td { 
+    padding: 0.25rem 0.3rem; 
+    font-size: 0.75rem; 
+  }
 }
 
 .navbar .navbar-toggler:focus {
