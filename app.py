@@ -205,7 +205,7 @@ def cache_get(sym: str, tf: str) -> Any:
     return None  # Always force live data fetch
 
 # Forwarder to the PortfolioService singleton in the service module
-def get_portfolio_service():
+def get_portfolio_service() -> Any:
     """Get the global PortfolioService singleton from the service module."""
     return _get_ps()
 
@@ -302,7 +302,7 @@ def create_initial_purchase_trades(mode: str, trade_type: str) -> dict[str, Any]
         logger.error(f"Error creating initial purchase trades: {e}")
         return []
 
-def background_warmup():
+def background_warmup() -> None:
     global warmup
     if warmup["started"]:
         return
@@ -326,7 +326,7 @@ def background_warmup():
             ', '.join(warmup['loaded'])
         )
 
-def get_df(symbol: str, timeframe: str):
+def get_df(symbol: str, timeframe: str) -> Any:
     """Get OHLCV data with on-demand fetch."""
     df = cache_get(symbol, timeframe)
     if df is not None:
@@ -373,7 +373,7 @@ def get_df(symbol: str, timeframe: str):
         logger.error(f"Failed to fetch data for {symbol}: {e}")
         return None
 
-def initialize_system():
+def initialize_system() -> bool:
     """Initialize only essential components - no network I/O."""
     try:
         logger.info("Ultra-lightweight initialization")
@@ -403,7 +403,7 @@ def api_status() -> Any:
         "timestamp": iso_utc()
     })
 @app.route("/api/crypto-portfolio")
-def crypto_portfolio_okx():
+def crypto_portfolio_okx() -> Any:
     """Get real OKX portfolio data using PortfolioService."""
     try:
         # Get selected currency from request (default to USD)
@@ -448,7 +448,7 @@ def crypto_portfolio_okx():
 
 # Kick off warmup immediately when Flask starts
 warmup_thread = None
-def start_warmup():
+def start_warmup() -> None:
     global warmup_thread
     if warmup_thread is None:
         warmup_thread = threading.Thread(target=background_warmup, daemon=True)
@@ -563,7 +563,7 @@ def render_portfolio_page() -> str:
         return render_loading_skeleton(f"Portfolio Error: {e}", error=True)
 
 @app.route('/performance')
-def performance():
+def performance() -> str:
     """Dedicated performance analytics page with comprehensive charts and metrics"""
     start_warmup()
 
@@ -574,7 +574,7 @@ def performance():
     else:
         return render_loading_skeleton()
 
-def render_performance_page():
+def render_performance_page() -> str:
     """Render the dedicated performance analytics page."""
     try:
         from flask import render_template
@@ -586,7 +586,7 @@ def render_performance_page():
         return render_loading_skeleton(f"Performance Error: {e}", error=True)
 
 @app.route('/holdings')
-def holdings():
+def holdings() -> str:
     """Dedicated holdings page showing current positions and portfolio analytics"""
     start_warmup()
 
@@ -597,7 +597,7 @@ def holdings():
     else:
         return render_loading_skeleton()
 
-def render_holdings_page():
+def render_holdings_page() -> str:
     """Render the dedicated holdings page."""
     try:
         from flask import render_template
@@ -609,7 +609,7 @@ def render_holdings_page():
         return render_loading_skeleton(f"Holdings Error: {e}", error=True)
 
 @app.route('/trades')
-def trades():
+def trades() -> str:
     """Dedicated trades page showing trading history with analytics"""
     start_warmup()
 
@@ -620,7 +620,7 @@ def trades():
     else:
         return render_loading_skeleton()
 
-def render_trades_page():
+def render_trades_page() -> str:
     """Render the dedicated trades page."""
     try:
         from flask import render_template
@@ -658,7 +658,7 @@ def render_full_dashboard() -> str:
 # COMPLETELY REMOVED: Old simulation endpoint that was overriding real OKX cost basis
 # This function was calculating real OKX data but then overriding it with $10 simulation values
 # Now using only the real OKX endpoint from web_interface.py
-def DISABLED_api_crypto_portfolio():
+def DISABLED_api_crypto_portfolio() -> tuple[Any, int]:
     """Get portfolio data - respects reset state."""
     if not warmup["done"]:
         return jsonify({"error": "System still initializing"}), 503
@@ -732,7 +732,7 @@ bot_state = {
 multi_currency_trader = None
 
 @app.route("/api/bot/status")
-def bot_status():
+def bot_status() -> Any:
     """Get current bot trading status with multi-currency details."""
     status = {
         "success": True,
@@ -762,7 +762,7 @@ def bot_status():
 
 @app.route("/api/bot/start", methods=["POST"])
 @require_admin
-def bot_start():
+def bot_start() -> Any:
     """Start the multi-currency trading bot with universal rebuy mechanism."""
     try:
         if bot_state["running"]:
@@ -881,7 +881,7 @@ def bot_start():
 
 @app.route("/api/bot/stop", methods=["POST"])
 @require_admin  
-def bot_stop():
+def bot_stop() -> Any:
     """Stop the trading bot."""
     try:
         if not bot_state["running"]:
@@ -921,12 +921,12 @@ def bot_stop():
 
 @app.route("/api/start_trading", methods=["POST"])
 @require_admin
-def start_trading():
+def start_trading() -> Any:
     """Legacy endpoint - redirect to bot start."""
     return jsonify({"error": "Use /api/bot/start endpoint instead"}), 301
 
 @app.route("/api/trade-history")
-def api_trade_history():
+def api_trade_history() -> Any:
     """Get trade history records from OKX exchange only."""
     try:
         initialize_system()
@@ -1288,7 +1288,7 @@ def api_trade_history():
         }), 500
 
 
-def filter_trades_by_timeframe(trades, timeframe):
+def filter_trades_by_timeframe(trades: list[dict[str, Any]], timeframe: str) -> list[dict[str, Any]]:
     """Filter trades by timeframe."""
     if not trades or timeframe == 'all':
         return trades
@@ -1354,7 +1354,7 @@ def filter_trades_by_timeframe(trades, timeframe):
     return filtered_trades
 
 @app.route("/api/recent-trades")  
-def api_recent_trades():
+def api_recent_trades() -> Any:
     """Get recent trades - redirect to working trade-history endpoint with limit."""
     try:
         # Validate timeframe parameter against allowed values
@@ -1380,7 +1380,7 @@ def api_recent_trades():
         return jsonify({"success": False, "error": str(e)}), 500
 
 @app.route("/api/best-performer")
-def api_best_performer():
+def api_best_performer() -> Any:
     """Get best performing asset for the dashboard."""
     try:
         from src.utils.okx_native import OKXNative
@@ -1456,7 +1456,7 @@ def api_best_performer():
         return jsonify({"success": False, "error": str(e)}), 500
 
 @app.route("/api/worst-performer")
-def api_worst_performer():
+def api_worst_performer() -> Any:
     try:
         service = get_portfolio_service()
         pf = service.get_portfolio_data()
@@ -1516,7 +1516,7 @@ def api_worst_performer():
         return jsonify({"success": False, "error": str(e)}), 500
 
 @app.route("/api/equity-curve")
-def api_equity_curve():
+def api_equity_curve() -> Any:
     """Equity curve from OKX: prefer account bills + historical candles; fallback to current balances + candles."""
     try:
         timeframe = request.args.get('timeframe', '30d')
@@ -1708,7 +1708,7 @@ def api_equity_curve():
         return jsonify({"success": False, "error": str(e), "equity_curve": [], "timeframe": request.args.get('timeframe','30d')}), 500
 
 @app.route("/api/drawdown-analysis")
-def api_drawdown_analysis():
+def api_drawdown_analysis() -> Any:
     """Get drawdown analysis using direct OKX native APIs."""
     try:
         timeframe = request.args.get('timeframe', '30d')
@@ -2012,7 +2012,7 @@ def api_drawdown_analysis():
         }), 500
 
 @app.route("/api/performance-analytics")
-def api_performance_analytics():
+def api_performance_analytics() -> Any:
     """Get performance analytics using direct OKX native APIs only."""
     try:
         timeframe = request.args.get('timeframe', '30d')
@@ -2302,7 +2302,7 @@ def api_performance_analytics():
 server_start_time = datetime.now(LOCAL_TZ)
 
 @app.route("/api/live-prices")
-def api_live_prices():
+def api_live_prices() -> Any:
     """Get live cryptocurrency prices from OKX simulation."""
     if not warmup["done"]:
         return jsonify({"error": "System still initializing"}), 503
@@ -2347,7 +2347,7 @@ def api_live_prices():
         return jsonify({"error": str(e)}), 500
 
 @app.route("/api/exchange-rates")
-def api_exchange_rates():
+def api_exchange_rates() -> Any:
     """Get current exchange rates from USD to other currencies."""
     try:
         exchange_rates = {
@@ -2366,7 +2366,7 @@ def api_exchange_rates():
         return jsonify({"error": str(e)}), 500
 
 @app.route("/api/export/ato")
-def api_export_ato():
+def api_export_ato() -> Any:
     """Export cryptocurrency trading data for Australian Tax Office (ATO) reporting."""
     try:
         logger.info("Generating ATO export with current portfolio data")
@@ -2438,7 +2438,7 @@ def api_export_ato():
         logger.error(f"ATO export error: {e}")
         return jsonify({"error": str(e)}), 500
 
-def create_sample_portfolio_for_export():
+def create_sample_portfolio_for_export() -> dict[str, Any]:
     """Create sample portfolio data for ATO export using OKX simulation."""
     try:
         initialize_system()
@@ -2463,7 +2463,7 @@ def create_sample_portfolio_for_export():
 
 # Add missing API routes that the original dashboard expects
 @app.route("/api/config")
-def api_config():
+def api_config() -> Any:
     """Get system configuration."""
     if not warmup["done"]:
         return jsonify({"error": "System still initializing"}), 503
@@ -2476,7 +2476,7 @@ def api_config():
     })
 
 @app.route("/api/price-source-status")
-def api_price_source_status():
+def api_price_source_status() -> Any:
     """Get OKX API status instead of CoinGecko."""
     if not warmup["done"]:
         return jsonify({"status": "initializing"}), 503
@@ -2524,7 +2524,7 @@ def api_price_source_status():
         }), 500
 
 @app.route("/api/portfolio-summary")
-def api_portfolio_summary():
+def api_portfolio_summary() -> Any:
     """Get portfolio summary."""
     if not warmup["done"]:
         return jsonify({"error": "System still initializing"}), 503
@@ -2549,14 +2549,14 @@ def api_portfolio_summary():
 
 # Add static file serving
 @app.route("/static/<path:filename>")
-def static_files(filename):
+def static_files(filename: str) -> Any:
     """Serve static files."""
     from flask import send_from_directory
     return send_from_directory("static", filename)
 
 # Add more portfolio endpoints expected by dashboard
 @app.route("/api/portfolio-performance")
-def api_portfolio_performance():
+def api_portfolio_performance() -> Any:
     """Get portfolio performance data."""
     if not warmup["done"]:
         return jsonify({"error": "System still initializing"}), 503
@@ -2587,7 +2587,7 @@ def api_portfolio_performance():
         }), 500
 
 @app.route("/api/current-holdings")
-def api_current_holdings():
+def api_current_holdings() -> Any:
     if not warmup["done"]:
         return jsonify({"error": "System still initializing"}), 503
     try:
@@ -2688,7 +2688,7 @@ def api_current_holdings():
         return jsonify({"success": False, "error": str(e)}), 500
 
 @app.route('/api/target-price-status')
-def target_price_status():
+def target_price_status() -> Any:
     """Get status of all locked target prices."""
     try:
         from src.utils.target_price_manager import get_target_price_manager
@@ -2712,7 +2712,7 @@ def target_price_status():
 
 @app.route('/api/reset-target-price/<symbol>', methods=['POST'])
 @require_admin
-def reset_target_price(symbol: str):
+def reset_target_price(symbol: str) -> Any:
     """Manually reset a target price for recalculation."""
     try:
         from src.utils.target_price_manager import get_target_price_manager
@@ -2730,7 +2730,7 @@ def reset_target_price(symbol: str):
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
 @app.route('/api/entry-confidence/<symbol>')
-def api_entry_confidence(symbol: str):
+def api_entry_confidence(symbol: str) -> Any:
     """Get entry point confidence analysis for a specific symbol."""
     try:
         from src.utils.entry_confidence import get_confidence_analyzer
@@ -2759,7 +2759,7 @@ def api_entry_confidence(symbol: str):
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
 @app.route('/api/entry-confidence-batch')
-def api_entry_confidence_batch():
+def api_entry_confidence_batch() -> Any:
     """Get entry confidence for multiple symbols."""
     try:
         # Get symbols from query parameter or use defaults
@@ -2811,7 +2811,7 @@ def api_entry_confidence_batch():
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
 @app.route('/api/available-positions')
-def api_available_positions():
+def api_available_positions() -> Any:
     """Get all available OKX assets that can be traded, including zero balances."""
     try:
         currency = request.args.get('currency', 'USD')
@@ -2964,7 +2964,7 @@ def api_available_positions():
             'success': False
         }), 500
 
-def get_all_positions_including_sold(portfolio_service):
+def get_all_positions_including_sold(portfolio_service: Any) -> list[dict[str, Any]]:
     """Get all positions including those that have been sold/reduced to zero"""
     try:
         # Get current holdings from portfolio service
@@ -2998,7 +2998,7 @@ def get_all_positions_including_sold(portfolio_service):
 
 @app.route("/api/paper-trade/buy", methods=["POST"])
 @require_admin
-def paper_trade_buy():
+def paper_trade_buy() -> Any:
     """Execute a paper buy trade."""
     if not warmup["done"]:
         return jsonify({"error": "System still initializing"}), 503
@@ -3037,7 +3037,7 @@ def paper_trade_buy():
         logger.error(f"Error in paper buy trade: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
 
-def create_initial_portfolio_data():
+def create_initial_portfolio_data() -> dict[str, Any]:
     """Create initial portfolio data using OKX simulation."""
     try:
         initialize_system()
@@ -3059,7 +3059,7 @@ def create_initial_portfolio_data():
 
 @app.route("/api/paper-trade/sell", methods=["POST"])
 @require_admin
-def paper_trade_sell():
+def paper_trade_sell() -> Any:
     """Execute a paper sell trade."""
     if not warmup["done"]:
         return jsonify({"error": "System still initializing"}), 503
@@ -3100,7 +3100,7 @@ def paper_trade_sell():
 
 @app.route("/api/buy", methods=["POST"])
 @require_admin
-def live_buy():
+def live_buy() -> Any:
     """Execute a live buy trade on OKX."""
     if not warmup["done"]:
         return jsonify({"error": "System still initializing"}), 503
@@ -3175,7 +3175,7 @@ def live_buy():
 
 @app.route("/api/sell", methods=["POST"])
 @require_admin
-def live_sell():
+def live_sell() -> Any:
     """Execute a live sell trade on OKX."""
     if not warmup["done"]:
         return jsonify({"error": "System still initializing"}), 503
@@ -3273,7 +3273,7 @@ def live_sell():
 
 @app.route("/api/reset-entire-program", methods=["POST"])
 @require_admin
-def api_reset_entire_program():
+def api_reset_entire_program() -> Any:
     """Reset the entire trading system to initial state."""
     if not warmup["done"]:
         return jsonify({"error": "System still initializing"}), 503
@@ -3333,7 +3333,7 @@ def api_reset_entire_program():
         }), 500
 
 @app.route("/api/portfolio-analytics")
-def api_portfolio_analytics():
+def api_portfolio_analytics() -> Any:
     """Portfolio analytics endpoint that redirects to performance analytics."""
     try:
         timeframe = request.args.get('timeframe', '30d')
@@ -3365,7 +3365,7 @@ def api_portfolio_analytics():
         return jsonify({"success": False, "error": str(e)}), 500
 
 @app.route("/api/asset-allocation")
-def api_asset_allocation():
+def api_asset_allocation() -> Any:
     """Asset allocation endpoint showing portfolio breakdown by asset."""
     try:
         currency = request.args.get('currency', 'USD')
@@ -3422,7 +3422,7 @@ def api_asset_allocation():
         return jsonify({"success": False, "error": str(e)}), 500
 
 @app.route("/api/portfolio-history")
-def api_portfolio_history():
+def api_portfolio_history() -> Any:
     """Portfolio history endpoint showing value over time."""
     try:
         timeframe = request.args.get('timeframe', '30d')
@@ -3499,7 +3499,7 @@ def api_portfolio_history():
 
 # Catch-all for other routes - serve loading screen if not ready
 @app.route("/<path:path>")
-def catch_all_routes(path):
+def catch_all_routes(path: str) -> tuple[Any, int] | str:
     """Handle remaining routes."""
     if warmup["done"] and not warmup["error"]:
         if path.startswith("api/"):
@@ -3586,7 +3586,7 @@ def render_loading_skeleton(message: str = "Loading live cryptocurrency data..."
 
 # OKX Exchange Status Endpoint
 @app.route("/api/okx-status")
-def api_okx_status():
+def api_okx_status() -> Any:
     """Get OKX exchange connection status with clear simulation/live distinction."""
     try:
         # Use real OKX connection for status check
@@ -3656,7 +3656,7 @@ def api_okx_status():
 
 @app.route("/api/execute-take-profit", methods=["POST"])
 @require_admin
-def execute_take_profit():
+def execute_take_profit() -> Any:
     """Execute take profit trades and automatically reinvest in buy targets."""
     try:
         from src.utils.bot_pricing import BotPricingCalculator, BotParams
@@ -3874,7 +3874,7 @@ def execute_take_profit():
         }), 500
 
 @app.route("/api/performance")
-def api_performance():
+def api_performance() -> Any:
     """API endpoint for performance analytics data supporting comprehensive dashboard."""
     try:
         
@@ -4116,12 +4116,12 @@ def api_performance():
         }), 500
 
 @app.route('/test-sync-data')
-def test_sync_data():
+def test_sync_data() -> str:
     """View OKX Live Sync Test Data"""
     return render_template('test_sync_data.html')
 
 @app.route('/api/test-sync-data')
-def api_test_sync_data():
+def api_test_sync_data() -> Any:
     """Get comprehensive test sync data for display"""
     try:
         # Collect test data
@@ -4302,7 +4302,7 @@ def api_test_sync_data():
 
 # ===== OKX Native Dashboard API =====
 @app.route('/api/okx-dashboard')
-def okx_dashboard():
+def okx_dashboard() -> str:
     """Native OKX Dashboard API - Direct integration with OKX native APIs for overview data."""
     try:
         from src.utils.okx_native import OKXNative
@@ -4392,7 +4392,7 @@ def okx_dashboard():
         }), 500
 
 @app.after_request
-def add_security_headers(resp):
+def add_security_headers(resp: Any) -> Any:
     resp.headers["Content-Security-Policy"] = (
         "default-src 'self'; "
         "script-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com 'unsafe-inline'; "
