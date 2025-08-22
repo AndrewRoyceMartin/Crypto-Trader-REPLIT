@@ -4122,7 +4122,8 @@ function updateOpenPositionsTable(positions, totalValue = 0) {
             // Check if this is from the new all_positions format
             const isNewFormat = position.status !== undefined;
             const symbol = position.symbol || position.name || "Unknown";
-            const quantity = parseFloat(position.quantity || position.available_quantity || position.balance || 0);
+            // Prioritize available_quantity (current OKX balance) over quantity (which may contain historical data)
+            const quantity = parseFloat(position.available_quantity || position.quantity || 0);
             
             // Handle purchase price - estimate from cost basis if available
             let purchasePrice = parseFloat(position.avg_entry_price || position.entry_price || position.purchase_price || 0);
