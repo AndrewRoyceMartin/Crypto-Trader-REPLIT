@@ -125,6 +125,9 @@
                 <button class="btn btn-danger btn-sm" onclick="showSellDialog()" aria-label="Show sell order dialog" title="Place a manual sell order for any of your holdings">
                     <span class="icon icon-down me-1" aria-hidden="true"></span>Sell
                 </button>
+                <button class="btn btn-warning btn-sm" onclick="toggleBot()" aria-label="Toggle trading bot" title="Start or stop the automated trading bot">
+                    <span class="icon icon-robot me-1" aria-hidden="true"></span><span id="bot-status-top">START BOT</span>
+                </button>
             </div>
         </div>
     </div>
@@ -215,48 +218,6 @@
                 </div>
             </div>
 
-            <!-- Quick Trading Controls -->
-            <div class="card">
-                <div class="card-header">
-                    <h6 class="card-title mb-0">
-                        <span class="icon icon-exchange me-2"></span>Quick Trading
-                    </h6>
-                </div>
-                <div class="card-body">
-                    <div class="row g-2">
-                        <div class="col-6 col-md-3">
-                            <button class="btn btn-success fw-bold w-100" onclick="showBuyDialog()">
-                                <span class="icon icon-up me-2"></span> BUY
-                            </button>
-                        </div>
-                        <div class="col-6 col-md-3">
-                            <button class="btn btn-danger fw-bold w-100" onclick="showSellDialog()">
-                                <span class="icon icon-down me-2"></span> SELL
-                            </button>
-                        </div>
-                        <div class="col-6 col-md-3">
-                            <button class="btn btn-warning fw-bold w-100" onclick="toggleBot()">
-                                <span class="icon icon-robot me-2"></span> <span id="bot-status">START BOT</span>
-                            </button>
-                        </div>
-                    </div>
-                    <div class="mt-3 text-center">
-                        <small class="text-warning">
-                            <span class="icon icon-fire me-1"></span><strong>Live Trading Enabled</strong>
-                        </small>
-                        <div class="mt-1">
-                            <small class="text-muted">
-                                <span class="icon icon-shield me-1"></span>OKX API Connected
-                            </small>
-                        </div>
-                        <div class="mt-2">
-                            <small class="text-info">
-                                <span class="icon icon-info me-1"></span>Note: Small positions may not meet OKX minimum order size requirements
-                            </small>
-                        </div>
-                    </div>
-                </div>
-            </div>
         </section>
 
         <hr class="section-divider my-5">

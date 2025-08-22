@@ -3840,16 +3840,16 @@ async function updateBotStatusDisplay() {
         const response = await fetch('/api/bot/status');
         const data = await response.json();
         
-        const botStatusElement = document.getElementById('bot-status');
+        const botStatusElement = document.getElementById('bot-status-top');
         const botCardElement = document.getElementById('okx-bot-status');
         
         if (botStatusElement) {
             if (data.running) {
                 botStatusElement.textContent = 'STOP BOT';
-                botStatusElement.parentElement.className = 'btn btn-danger fw-bold w-100';
+                botStatusElement.parentElement.className = 'btn btn-danger btn-sm';
             } else {
                 botStatusElement.textContent = 'START BOT';
-                botStatusElement.parentElement.className = 'btn btn-warning fw-bold w-100';
+                botStatusElement.parentElement.className = 'btn btn-warning btn-sm';
             }
         }
         
