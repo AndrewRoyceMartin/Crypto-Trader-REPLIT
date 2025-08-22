@@ -43,6 +43,8 @@ The system utilizes a modular Flask-based web interface for live OKX trading, st
 -   **Missing API Endpoints Fix:** Implemented `/api/portfolio-analytics`, `/api/asset-allocation`, and `/api/portfolio-history` to resolve console 404 errors.
 -   **Recent Trades Data Fix:** Ensured `/api/recent-trades` aligns with the trade-history endpoint for consistent data display.
 -   **Available Positions Enhancement:** Displays a comprehensive list of 68+ major tradeable cryptocurrencies.
+-   **Stable Target Price System:** Implements locked target buy prices that prevent exponential recalculation, ensuring orders can actually be executed. Target prices lock for 24 hours and only recalculate if market drops >5% from original price.
+-   **Target Price Manager:** SQLite-based persistence for target prices with tier-based discounting (Large cap: 3-8%, Mid cap: 5-12%, Gaming/Meta: 8-15%, Meme coins: 10-20%).
 
 ## External Dependencies
 

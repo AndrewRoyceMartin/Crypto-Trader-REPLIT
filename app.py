@@ -94,57 +94,32 @@ def get_okx_native_client():
         _okx_client_cache = OKXNative.from_env()
     return _okx_client_cache
 
-def calculate_profitable_target_price(symbol: str, current_price: float) -> float:
+def get_stable_target_price(symbol: str, current_price: float) -> float:
     """
-    Calculate an intelligent target buy price for profitable entries.
+    Get a stable, locked target buy price that won't change with every market update.
     
-    Uses a combination of:
-    - Market cap and volatility tier analysis
-    - Technical support levels (5-15% below current price)
-    - Risk-adjusted profit margins
-    - Market conditions consideration
+    Uses TargetPriceManager to:
+    - Lock target prices for 24 hours once calculated
+    - Only recalculate if market drops >5% from original calculation
+    - Prevent exponential target price movement that makes orders impossible to fill
     """
     try:
         if current_price <= 0:
             return current_price
         
-        # Tier-based discount strategy for different asset classes
-        if symbol in ['BTC', 'ETH']:
-            # Large cap: conservative 3-8% discount
-            discount_range = (0.03, 0.08)
-        elif symbol in ['SOL', 'ADA', 'DOT', 'MATIC', 'AVAX', 'LINK']:
-            # Mid cap: moderate 5-12% discount  
-            discount_range = (0.05, 0.12)
-        elif symbol in ['GALA', 'SAND', 'MANA', 'CHZ', 'ENJ']:
-            # Gaming/metaverse: higher 8-15% discount for volatility
-            discount_range = (0.08, 0.15)
-        elif symbol in ['PEPE', 'SHIB', 'DOGE']:
-            # Meme coins: aggressive 10-20% discount for high volatility
-            discount_range = (0.10, 0.20)
-        elif current_price < 0.01:
-            # Micro-cap/penny cryptos: 12-18% discount
-            discount_range = (0.12, 0.18)
-        else:
-            # General altcoins: standard 6-12% discount
-            discount_range = (0.06, 0.12)
+        # Skip target calculation for fiat and stablecoins
+        if symbol in ['AUD', 'USD', 'EUR', 'GBP', 'USDT', 'USDC', 'DAI', 'BUSD']:
+            return current_price
         
-        # Use middle of range for consistent profitable entries
-        base_discount = (discount_range[0] + discount_range[1]) / 2
+        from src.utils.target_price_manager import get_target_price_manager
+        target_manager = get_target_price_manager()
         
-        # Additional market condition adjustments (can be enhanced with real market data)
-        # For now, use a slight randomization to simulate market timing
-        import random
-        random.seed(hash(symbol) % 1000)  # Deterministic per symbol
-        market_adjustment = random.uniform(-0.02, 0.02)  # ±2% market timing
+        target_price, is_locked = target_manager.get_locked_target_price(symbol, current_price)
         
-        final_discount = max(0.03, min(0.25, base_discount + market_adjustment))
-        target_price = current_price * (1 - final_discount)
-        
-        logger.info(f"Target price for {symbol}: ${current_price:.8f} → ${target_price:.8f} ({final_discount*100:.1f}% discount)")
         return target_price
         
     except Exception as e:
-        logger.error(f"Error calculating target price for {symbol}: {e}")
+        logger.error(f"Error getting stable target price for {symbol}: {e}")
         # Fallback: 8% discount for safe profitable entry
         return current_price * 0.92
 
@@ -2392,6 +2367,48 @@ def api_current_holdings():
         logger.error(f"Error getting current holdings: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
 
+@app.route('/api/target-price-status')
+def target_price_status():
+    """Get status of all locked target prices."""
+    try:
+        from src.utils.target_price_manager import get_target_price_manager
+        target_manager = get_target_price_manager()
+        
+        # Cleanup expired targets first
+        target_manager.cleanup_expired_targets()
+        
+        locked_targets = target_manager.get_all_locked_targets()
+        
+        return jsonify({
+            'status': 'success',
+            'locked_targets': locked_targets,
+            'total_locked': len(locked_targets),
+            'message': f"Found {len(locked_targets)} locked target prices"
+        })
+        
+    except Exception as e:
+        logger.error(f"Error getting target price status: {e}")
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+@app.route('/api/reset-target-price/<symbol>', methods=['POST'])
+@require_admin
+def reset_target_price(symbol: str):
+    """Manually reset a target price for recalculation."""
+    try:
+        from src.utils.target_price_manager import get_target_price_manager
+        target_manager = get_target_price_manager()
+        
+        target_manager.reset_target_price(symbol.upper())
+        
+        return jsonify({
+            'status': 'success',
+            'message': f"Target price for {symbol} has been reset and will be recalculated"
+        })
+        
+    except Exception as e:
+        logger.error(f"Error resetting target price for {symbol}: {e}")
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
 @app.route('/api/available-positions')
 def api_available_positions():
     """Get all available OKX assets that can be traded, including zero balances."""
@@ -2482,9 +2499,9 @@ def api_available_positions():
                         'buy_signal': buy_signal,
                         'calculation_method': 'comprehensive_asset_list',
                         'last_exit_price': 0,
-                        'target_buy_price': calculate_profitable_target_price(symbol, current_price),
-                        'price_difference': current_price - calculate_profitable_target_price(symbol, current_price),
-                        'price_diff_percent': ((current_price - calculate_profitable_target_price(symbol, current_price)) / current_price * 100),
+                        'target_buy_price': get_stable_target_price(symbol, current_price),
+                        'price_difference': current_price - get_stable_target_price(symbol, current_price),
+                        'price_diff_percent': ((current_price - get_stable_target_price(symbol, current_price)) / current_price * 100),
                         'price_drop_from_exit': 0,
                         'last_trade_date': '',
                         'days_since_exit': 0
