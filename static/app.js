@@ -4136,16 +4136,17 @@ function updateOpenPositionsTable(positions, totalValue = 0) {
             
             console.debug(`Field values - Symbol: ${symbol}, Quantity: ${quantity}, Purchase: ${purchasePrice}, Current: ${currentPrice}, Market: ${marketValue}`);
             
-            // Current P&L calculations
-            const costBasis = quantity * purchasePrice;
-            const currentPnlDollar = marketValue - costBasis;
-            const currentPnlPercent = costBasis > 0 ? (currentPnlDollar / costBasis) * 100 : 0;
+            // Total portfolio calculations
+            const totalCostBasis = quantity * purchasePrice;
+            const totalMarketValue = marketValue;
+            const currentPnlDollar = totalMarketValue - totalCostBasis;
+            const currentPnlPercent = totalCostBasis > 0 ? (currentPnlDollar / totalCostBasis) * 100 : 0;
             
-            // Target price calculations (20% profit target as default)
-            const targetPrice = purchasePrice * 1.20;
-            const targetValue = quantity * targetPrice;
-            const targetPnlDollar = targetValue - costBasis;
-            const targetPnlPercent = costBasis > 0 ? (targetPnlDollar / costBasis) * 100 : 0;
+            // Target calculations (20% profit target as default)
+            const targetPricePerUnit = purchasePrice * 1.20;
+            const targetTotalValue = quantity * targetPricePerUnit;
+            const targetPnlDollar = targetTotalValue - totalCostBasis;
+            const targetPnlPercent = totalCostBasis > 0 ? (targetPnlDollar / totalCostBasis) * 100 : 0;
             
             // Days held calculation (default to 30 days for demo)
             let daysHeld = 30;
@@ -4188,13 +4189,13 @@ function updateOpenPositionsTable(positions, totalValue = 0) {
                 <tr>
                     <td class="fw-bold">${symbol}</td>
                     <td>${formatNumber(quantity)}</td>
-                    <td>${formatCurrency(marketValue)}</td>
-                    <td>${formatCurrency(purchasePrice)}</td>
+                    <td>${formatCurrency(totalMarketValue)}</td>
+                    <td>${formatCurrency(totalCostBasis)}</td>
                     <td>${formatCurrency(currentPrice)}</td>
-                    <td>${formatCurrency(marketValue)}</td>
+                    <td>${formatCurrency(totalMarketValue)}</td>
                     <td class="${currentPnlClass}">${formatCurrency(currentPnlDollar)}</td>
                     <td class="${currentPnlClass}">${currentPnlPercent >= 0 ? "+" : ""}${currentPnlPercent.toFixed(2)}%</td>
-                    <td>${formatCurrency(targetPrice)}</td>
+                    <td>${formatCurrency(targetTotalValue)}</td>
                     <td class="${targetPnlClass}">${formatCurrency(targetPnlDollar)}</td>
                     <td class="${targetPnlClass}">+${targetPnlPercent.toFixed(2)}%</td>
                     <td>${daysHeld} days</td>
