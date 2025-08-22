@@ -16,8 +16,8 @@ import hashlib
 import base64
 import warnings
 
-# Suppress pkg_resources deprecation warning
-warnings.filterwarnings('ignore', message='pkg_resources is deprecated as an API.*')
+# Only suppress specific pkg_resources deprecation warning - all other warnings will show
+warnings.filterwarnings('ignore', message='pkg_resources is deprecated as an API.*', category=DeprecationWarning)
 from datetime import datetime, timezone, timedelta
 from typing import Any
 from functools import wraps
@@ -1799,7 +1799,8 @@ def api_drawdown_analysis():
                                         price = get_public_price(f"{currency}/USDT")
                                         if price:
                                             total_equity += balance * price
-                                    except:
+                                    except Exception as price_error:
+                                        logger.debug(f"Could not get price for {currency}: {price_error}")
                                         continue
                             
                             if total_equity > 0:
@@ -2619,7 +2620,8 @@ def api_current_holdings():
                     price = tk["last"]
                     if price <= 0:
                         price = float(h.get('current_price', 0) or 0)
-                except:
+                except Exception as ticker_error:
+                    logger.debug(f"Could not get ticker for {symbol}: {ticker_error}")
                     price = float(h.get('current_price', 0) or 0)
 
             cost_basis = float(h.get('cost_basis', 0) or 0)
@@ -2867,7 +2869,8 @@ def api_available_positions():
                     if symbol not in ['AUD', 'USD', 'EUR', 'GBP', 'USDT', 'USDC', 'DAI', 'BUSD']:  # Skip fiat and stablecoins
                         try:
                             current_price = portfolio_service._get_live_okx_price(symbol, currency)
-                        except:
+                        except Exception as price_error:
+                            logger.debug(f"Could not get live price for {symbol}: {price_error}")
                             current_price = 0.0
                     elif symbol in ['USDT', 'USDC', 'DAI', 'BUSD']:
                         current_price = 1.0  # Stablecoins pegged to USD
@@ -3952,7 +3955,8 @@ def api_performance():
                 db = DatabaseManager()
                 symbol_trades = db.get_trades(symbol=holding['symbol'])
                 trade_count = len(symbol_trades) if not symbol_trades.empty else 1
-            except:
+            except Exception as db_error:
+                logger.debug(f"Could not get trade count for {holding['symbol']}: {db_error}")
                 # Fallback: estimate based on position size (larger positions likely more trades)
                 trade_count = max(1, min(10, int(holding.get('quantity', 1) / 1000)))
                 
@@ -3992,7 +3996,8 @@ def api_performance():
                 if year_month not in monthly_data:
                     monthly_data[year_month] = []
                 monthly_data[year_month].append(point['value'])
-            except:
+            except (ValueError, AttributeError) as date_error:
+                logger.debug(f"Could not parse date {point.get('date', 'unknown')}: {date_error}")
                 continue
                 
         yearly_returns = {}
@@ -4186,7 +4191,8 @@ def api_test_sync_data():
                 try:
                     update_time = datetime.fromisoformat(last_update.replace('Z', '+00:00'))
                     is_recent = (datetime.now(update_time.tzinfo) - update_time) < timedelta(minutes=5)
-                except:
+                except (ValueError, TypeError) as time_error:
+                    logger.debug(f"Could not parse timestamp {last_update}: {time_error}")
                     is_recent = False
             
             test_data['test_results']['price_freshness'] = {
