@@ -4184,6 +4184,11 @@ function updateOpenPositionsTable(positions, totalValue = 0) {
         positionsTableBody.innerHTML = tableHtml;
         console.debug("Table updated successfully");
         
+        // Update refresh time tracking
+        if (window.updatePositionsRefreshTime) {
+            window.updatePositionsRefreshTime();
+        }
+        
     } catch (error) {
         console.error("Open positions table update failed:", error);
         console.error("Error details:", error.stack);
@@ -4453,6 +4458,11 @@ async function refreshHoldingsData() {
             const positions = data.holdings || data.all_positions || [];
             console.debug('Holdings data received:', positions);
             updateOpenPositionsTable(positions, data.total_value);
+            
+            // Update refresh time tracking
+            if (window.updatePositionsRefreshTime) {
+                window.updatePositionsRefreshTime();
+            }
             
             // Also update available positions table 
             fetchAndUpdateAvailablePositions();
