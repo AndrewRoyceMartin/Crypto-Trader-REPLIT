@@ -281,13 +281,16 @@ class TradingApp {
         if (!this.chartUpdateInterval) {
             this.chartUpdateInterval = setInterval(() => {
                 this.updatePerformanceCharts();
-            }, 30000);
+            }, 120000); // Reduced to 2 minutes for OKX API compliance
         }
         if (!this.updateInterval) {
             this.updateInterval = setInterval(() => {
+                // Stagger API calls to avoid hitting rate limits
                 this.debouncedUpdateDashboard();
-                this.updateCryptoPortfolio();
-            }, 60000);
+                setTimeout(() => {
+                    this.updateCryptoPortfolio();
+                }, 5000); // 5 second delay between dashboard and portfolio updates
+            }, 90000); // Reduced to 1.5 minutes for OKX API compliance
         }
     }
     stopAutoUpdate() {

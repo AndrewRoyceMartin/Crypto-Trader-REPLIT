@@ -29,7 +29,8 @@ class OKXAdapter(BaseExchange):
             try:
                 return fn(*args, **kwargs)
             except (RateLimitExceeded, NetworkError) as e:
-                wait = base_delay * (2 ** i)
+                # Increase delay for rate limit errors to reduce API pressure
+                wait = base_delay * (3 ** i)  # More aggressive backoff for OKX rate limits
                 self.logger.warning(f"{fn.__name__} retry {i+1}/{max_attempts} after {e}, sleeping {wait:.2f}s")
                 time.sleep(wait)
             except (ExchangeError, BaseError):

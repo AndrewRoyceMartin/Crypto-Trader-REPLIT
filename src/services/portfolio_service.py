@@ -24,6 +24,16 @@ class PortfolioService:
     def __init__(self) -> None:
         """Initialize portfolio service with OKX exchange."""
         self.logger = logging.getLogger(__name__)
+        
+        # Add caching to reduce OKX API pressure
+        self._cache = {}
+        self._cache_ttl = {
+            'balance': 30,    # 30 seconds for balance data
+            'price': 15,      # 15 seconds for price data
+            'trades': 60,     # 60 seconds for trade data
+        }
+        self._last_request_time = 0
+        self._min_request_interval = 2  # Minimum 2 seconds between API calls
 
         # Initialize OKX exchange with credentials
         import os
@@ -52,6 +62,38 @@ class PortfolioService:
         # Track initialization state
         self.is_initialized: bool = True
         self._last_sync: datetime = datetime.now(timezone.utc)
+        
+    def _is_cached(self, key: str, cache_type: str = 'price') -> bool:
+        """Check if data is cached and still valid."""
+        if key not in self._cache:
+            return False
+        
+        cached_time = self._cache[key].get('timestamp', 0)
+        ttl = self._cache_ttl.get(cache_type, 15)
+        return (datetime.now().timestamp() - cached_time) < ttl
+    
+    def _get_cached(self, key: str) -> Any:
+        """Get cached data if available and valid."""
+        return self._cache.get(key, {}).get('data')
+    
+    def _set_cache(self, key: str, data: Any) -> None:
+        """Set data in cache with timestamp."""
+        self._cache[key] = {
+            'data': data,
+            'timestamp': datetime.now().timestamp()
+        }
+    
+    def _throttle_request(self) -> None:
+        """Throttle API requests to comply with OKX rate limits."""
+        import time
+        current_time = time.time()
+        time_since_last = current_time - self._last_request_time
+        
+        if time_since_last < self._min_request_interval:
+            sleep_time = self._min_request_interval - time_since_last
+            time.sleep(sleep_time)
+        
+        self._last_request_time = time.time()
 
         # Live exchange will provide real trade history - no simulation needed
 
