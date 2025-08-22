@@ -4422,7 +4422,7 @@ function renderDashboardOverview(portfolioData, recentTrades = []) {
     updateRecentTradesPreview(recentTrades.slice(0, 5));
 }
 
-// Recent Trades quick preview (used if some pages still call it)
+// Trade History quick preview (used if some pages still call it)
 function updateRecentTradesPreview(trades) {
     const previewBody = document.getElementById("recent-trades-preview-body");
     if (!previewBody) return;
