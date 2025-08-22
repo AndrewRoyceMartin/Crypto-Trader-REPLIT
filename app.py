@@ -91,7 +91,11 @@ def okx_sign(secret_key: str, timestamp: str, method: str, path: str, body: str 
     mac = hmac.new(secret_key.encode('utf-8'), msg.encode('utf-8'), hashlib.sha256)
     return base64.b64encode(mac.digest()).decode('utf-8')
 
+# Global HTTP session for connection reuse
+_requests_session = requests.Session()
+
 def _okx_base_url() -> str:
+    # Prefer www.okx.com over app.okx.com unless explicitly overridden
     raw = os.getenv("OKX_HOSTNAME") or os.getenv("OKX_REGION") or "www.okx.com"
     base = raw.rstrip("/")
     if not base.startswith("http"):
@@ -131,9 +135,9 @@ def okx_request(
     headers['OK-ACCESS-SIGN'] = sig
 
     if method == 'GET':
-        resp = requests.get(base_url + path, headers=headers, timeout=timeout)
+        resp = _requests_session.get(base_url + path, headers=headers, timeout=timeout)
     else:
-        resp = requests.post(base_url + path, headers=headers, data=body_str, timeout=timeout)
+        resp = _requests_session.post(base_url + path, headers=headers, data=body_str, timeout=timeout)
     resp.raise_for_status()
     return resp.json()
 
