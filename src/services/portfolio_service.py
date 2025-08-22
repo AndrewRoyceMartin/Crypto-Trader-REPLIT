@@ -228,11 +228,12 @@ class PortfolioService:
             # Only process actual cryptocurrency symbols from the balance data
             crypto_symbols = []
             if isinstance(account_balances, dict):
-                # Filter out system keys and only keep real cryptocurrency symbols
+                # Filter out system keys, fiat currencies, and stablecoins that shouldn't be price-checked
+                excluded_keys = ['info', 'timestamp', 'datetime', 'free', 'used', 'total', 'AUD', 'USD', 'EUR', 'GBP', 'USDT', 'USDC']
                 for key, value in account_balances.items():
                     if (isinstance(value, dict) and 
                         'free' in value and 
-                        key not in ['info', 'timestamp', 'datetime', 'free', 'used', 'total']):
+                        key not in excluded_keys):
                         crypto_symbols.append(key)
             
             for symbol in crypto_symbols:
@@ -242,7 +243,10 @@ class PortfolioService:
                 # Get live price directly from OKX exchange with currency support
                 current_price = self._get_live_okx_price(symbol, currency)
                 if current_price <= 0.0:
-                    self.logger.error(f"Failed to get live OKX price for {symbol} in {currency}, skipping asset")
+                    # Skip error logging for known fiat currencies and stablecoins
+                    known_non_tradeable = ['AUD', 'USD', 'EUR', 'GBP', 'USDT', 'USDC']
+                    if symbol not in known_non_tradeable:
+                        self.logger.error(f"Failed to get live OKX price for {symbol} in {currency}, skipping asset")
                     continue  # Skip this asset if we can't get live OKX price
 
                 # Since we can't get trade history, calculate cost basis from current holdings and market data
@@ -559,7 +563,10 @@ class PortfolioService:
                 return 0.0
                 
         except Exception as e:
-            self.logger.error(f"Error fetching live OKX price for {symbol}: {e}")
+            # Skip error logging for known fiat currencies and stablecoins that don't have direct trading pairs
+            known_non_tradeable = ['AUD', 'USD', 'EUR', 'GBP', 'USDT', 'USDC']
+            if symbol not in known_non_tradeable:
+                self.logger.error(f"Error fetching live OKX price for {symbol}: {e}")
             return 0.0
     
     def _calculate_real_cost_basis(self, symbol: str, trade_history: List[Dict]) -> tuple[float, float]:
