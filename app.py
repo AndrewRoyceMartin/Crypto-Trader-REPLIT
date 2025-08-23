@@ -363,14 +363,15 @@ def _set_warmup(**kv) -> None:
         warmup.update(kv)
 
 def _set_bot_state(**kv) -> None:
-    """Thread-safe bot state update."""
+    """Thread-safe bot state update that keeps legacy trading_state in sync."""
     with _state_lock:
         bot_state.update(kv)
-        # keep legacy trading_state in sync for UIs that read it
-        trading_state["active"] = bool(bot_state.get("running", False))
-        trading_state["mode"] = bot_state.get("mode") or ("live" if bot_state.get("running") else "stopped")
-        if bot_state.get("started_at"):
-            trading_state["start_time"] = bot_state["started_at"]
+        # keep legacy/other readers in sync
+        running = bool(bot_state.get("running", False))
+        trading_state["active"] = running
+        # if mode not set, fall back to 'stopped' when not running
+        trading_state["mode"] = bot_state.get("mode") or ("stopped" if not running else trading_state.get("mode"))
+        trading_state["start_time"] = bot_state.get("started_at") if running else None
 
 def _get_bot_running() -> bool:
     """Thread-safe bot running state read."""
