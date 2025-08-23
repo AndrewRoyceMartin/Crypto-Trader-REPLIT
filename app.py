@@ -222,7 +222,7 @@ def okx_ticker_pct_change_24h(inst_id: str, api_key: str = "", secret_key: str =
     """Get accurate 24h percentage change from OKX ticker data using native client."""
     try:
         client = get_okx_native_client()
-        return client.ticker(inst_id)
+        return with_throttle(client.ticker, inst_id)
     except Exception as e:
         logger.error(f"Failed to get OKX ticker for {inst_id}: {e}")
         return {'last': 0.0, 'open24h': 0.0, 'vol24h': 0.0, 'pct_24h': 0.0}
@@ -252,6 +252,19 @@ CACHE_MAX_KEYS      = int(os.getenv("CACHE_MAX_KEYS", "200"))  # prevent unbound
 
 WARMUP_SLEEP_SEC      = int(os.getenv("WARMUP_SLEEP_SEC", "1"))       # pause between fetches
 CACHE_FILE            = "warmup_cache.parquet"                        # persistent cache file
+
+# limit concurrent outbound API calls (env overrideable)
+_MAX_OUTBOUND = int(os.getenv("MAX_OUTBOUND_CALLS", "6"))
+_ext_sem = threading.Semaphore(_MAX_OUTBOUND)
+
+def with_throttle(fn, *a, **kw):
+    acquired = _ext_sem.acquire(timeout=10)
+    if not acquired:
+        raise RuntimeError("busy: too many outbound calls")
+    try:
+        return fn(*a, **kw)
+    finally:
+        _ext_sem.release()
 
 # === Real TTL'd LRU Cache Implementation ===
 # (key) -> {"data": Any, "ts": float}
@@ -510,7 +523,7 @@ def background_warmup() -> None:
         # ping OKX quickly
         from src.utils.okx_native import OKXNative
         client = OKXNative.from_env()
-        _ = client.ticker("BTC-USDT")  # connectivity check
+        _ = with_throttle(client.ticker, "BTC-USDT")  # connectivity check
         _set_warmup(loaded=WATCHLIST[:MAX_STARTUP_SYMBOLS])
         _set_warmup(done=True)
         logger.info("Warmup complete (OKX reachable)")
@@ -531,7 +544,7 @@ def get_df(symbol: str, timeframe: str) -> Optional[list[dict[str, float]]]:
         return df
     try:
         ex = get_reusable_exchange()
-        ohlcv = ex.fetch_ohlcv(symbol, timeframe=timeframe, limit=200)
+        ohlcv = with_throttle(ex.fetch_ohlcv, symbol, timeframe=timeframe, limit=200)
         processed = [{"ts": c[0], "open": c[1], "high": c[2], "low": c[3], "close": c[4], "volume": c[5]} for c in ohlcv]
         cache_put_ohlcv(symbol, timeframe, processed)
         return processed
@@ -1559,11 +1572,11 @@ def api_best_performer() -> ResponseReturnValue:
                     continue
                     
                 # Get price data from OKX native
-                ticker = client.ticker(f"{symbol}-USDT")
+                ticker = with_throttle(client.ticker, f"{symbol}-USDT")
                 price_24h = float(ticker.get("pct_24h", 0) or 0)
                 
                 # Get 7d price data
-                candles = client.candles(f"{symbol}-USDT", bar="1D", limit=7) or []
+                candles = with_throttle(client.candles, f"{symbol}-USDT", bar="1D", limit=7) or []
                 price_7d = 0
                 if len(candles) >= 2:
                     newest_close = float(candles[0][4])  # most recent close (assuming newest first)
@@ -1629,12 +1642,12 @@ def api_worst_performer() -> ResponseReturnValue:
                 continue
 
             inst = f"{symbol}-USDT"
-            tk = client.ticker(inst)
+            tk = with_throttle(client.ticker, inst)
             price_change_24h = float(tk.get('pct_24h', 0) or 0)
             volume_24h = float(tk.get('vol24h', 0) or 0)
             current_price = float(tk.get('last', 0) or h.get('current_price', 0) or 0)
 
-            candles = client.candles(inst, bar="1D", limit=7) or []
+            candles = with_throttle(client.candles, inst, bar="1D", limit=7) or []
             price_change_7d = 0.0
             if len(candles) >= 2:
                 newest_close = float(candles[0][4])
@@ -1711,7 +1724,7 @@ def api_equity_curve() -> ResponseReturnValue:
         if symbols:
             limit_needed = days + 2
             for inst in symbols:
-                candles = client.candles(inst, bar="1D", limit=limit_needed)
+                candles = with_throttle(client.candles, inst, bar="1D", limit=limit_needed)
                 # OKX returns newest first
                 dmap = {}
                 for row in candles:
@@ -1776,7 +1789,7 @@ def api_equity_curve() -> ResponseReturnValue:
                 limit_needed = days + 2
                 for inst in sym_set:
                     try:
-                        c = client.candles(inst, bar="1D", limit=limit_needed)
+                        c = with_throttle(client.candles, inst, bar="1D", limit=limit_needed)
                         dmap = {}
                         for row in c:
                             ts_ms = int(row[0])
@@ -2773,7 +2786,7 @@ def api_current_holdings() -> ResponseReturnValue:
                 price = 1.0
             else:
                 try:
-                    tk = client.ticker(f"{symbol}-USDT")
+                    tk = with_throttle(client.ticker, f"{symbol}-USDT")
                     price = float(tk.get("last", 0) or 0)
                     if price <= 0:
                         price = float(h.get('current_price', 0) or 0)
@@ -3293,7 +3306,7 @@ def live_buy() -> ResponseReturnValue:
         try:
             from src.utils.okx_native import OKXNative
             okx_client = OKXNative.from_env()
-            ticker_response = okx_client.ticker(symbol)
+            ticker_response = with_throttle(okx_client.ticker, symbol)
             
             if not ticker_response or 'last' not in ticker_response:
                 return jsonify({"success": False, "error": f"Unable to get current price for {symbol}"}), 400
@@ -3392,7 +3405,7 @@ def live_sell() -> ResponseReturnValue:
             quantity_to_sell = available_balance * (percentage / 100)
             
             # Get current price
-            ticker_response = okx_client.ticker(symbol)
+            ticker_response = with_throttle(okx_client.ticker, symbol)
             if not ticker_response or 'last' not in ticker_response:
                 return jsonify({"success": False, "error": f"Unable to get current price for {symbol}"}), 400
             
@@ -3608,7 +3621,7 @@ def api_portfolio_history() -> ResponseReturnValue:
             
             # Get historical candles for BTC as baseline (this is a simplified approach)
             # In a real implementation, this would use actual portfolio history
-            candles = okx_client.candles('BTC-USDT', '1D', limit=days)
+            candles = with_throttle(okx_client.candles, 'BTC-USDT', '1D', limit=days)
             
             history_data = []
             for i, candle in enumerate(reversed(candles)):

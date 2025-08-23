@@ -61,7 +61,8 @@ class KrakenAdapter(BaseExchange):
             if not self.is_connected():
                 raise Exception("Not connected to exchange")
             
-            ohlcv = self.exchange.fetch_ohlcv(symbol, timeframe, limit=limit)
+            from app import with_throttle
+            ohlcv = with_throttle(self.exchange.fetch_ohlcv, symbol, timeframe, limit=limit)
             
             df = pd.DataFrame(ohlcv, columns=['timestamp', 'open', 'high', 'low', 'close', 'volume'])
             df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')

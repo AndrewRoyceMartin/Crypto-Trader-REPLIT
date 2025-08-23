@@ -748,7 +748,8 @@ class OKXAdapter(BaseExchange):
             raise RuntimeError("Not connected to exchange")
         
         try:
-            ohlcv = self._retry(self.exchange.fetch_ohlcv, symbol, timeframe, limit=limit)
+            from app import with_throttle
+            ohlcv = self._retry(with_throttle, self.exchange.fetch_ohlcv, symbol, timeframe, limit=limit)
             df = pd.DataFrame(ohlcv)
             if len(df.columns) >= 6:
                 df.columns = ['timestamp', 'open', 'high', 'low', 'close', 'volume']

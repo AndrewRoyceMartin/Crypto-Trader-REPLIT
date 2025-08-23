@@ -52,6 +52,7 @@ class OKXNative:
         }
 
     def _request(self, path: str, method: str = "GET", body: Optional[Dict[str, Any]] = None, timeout: Optional[int] = None) -> Dict[str, Any]:
+        from app import with_throttle
         tmo = timeout or self.timeout
         ts = utc_iso()
         body_str = json.dumps(body) if (body and method != "GET") else ""
@@ -59,9 +60,9 @@ class OKXNative:
         headers = self._headers(ts, sig)
         url = self.base_url + path
         if method == "GET":
-            resp = self.session.get(url, headers=headers, timeout=tmo)
+            resp = with_throttle(self.session.get, url, headers=headers, timeout=tmo)
         else:
-            resp = self.session.post(url, headers=headers, data=body_str, timeout=tmo)
+            resp = with_throttle(self.session.post, url, headers=headers, data=body_str, timeout=tmo)
         resp.raise_for_status()
         return resp.json()
 
