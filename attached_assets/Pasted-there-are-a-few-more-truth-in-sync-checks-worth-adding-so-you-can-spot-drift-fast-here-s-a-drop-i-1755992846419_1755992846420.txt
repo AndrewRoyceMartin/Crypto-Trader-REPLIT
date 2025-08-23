@@ -1,0 +1,224 @@
+there are a few more “truth-in-sync” checks worth adding so you can spot drift fast. here’s a drop-in patch to extend your existing /api/test-sync-data endpoint with additional sync tests. paste this inside the function (after your current 4 tests) and it’ll append more sections to test_results.
+
+        # --- EXTRA SYNC TESTS ---
+
+        # Test 5: Bot/Trading state sync (running vs active, thread vs instance)
+        try:
+            with _state_lock:
+                running = bool(bot_state.get('running', False))
+                active = bool(trading_state.get('active', False))
+                mode = bot_state.get('mode')
+
+            mc_running = None
+            try:
+                global multi_currency_trader
+                if multi_currency_trader and hasattr(multi_currency_trader, 'get_status'):
+                    mc_status = multi_currency_trader.get_status()
+                    # consider it running if any pair is running or the object says it is
+                    pair_running = any(s.get("running", False) for s in mc_status.get("pairs", {}).values())
+                    mc_running = bool(pair_running or mc_status.get('running', False))
+            except Exception as _mc_err:
+                mc_running = None
+
+            pass_cond = (running == active) and (mc_running is None or running == mc_running)
+            test_data['test_results']['bot_state_sync'] = {
+                'status': 'pass' if pass_cond else 'fail',
+                'bot_running': running,
+                'trading_active': active,
+                'multi_trader_running': mc_running,
+                'mode': mode
+            }
+        except Exception as e:
+            test_data['test_results']['bot_state_sync'] = {'status': 'error', 'error': str(e)}
+
+        # Test 6: Mode ↔️ exchange sandbox/simulated headers
+        try:
+            service = get_portfolio_service()
+            ex = getattr(service.exchange, 'exchange', None) if service and hasattr(service, 'exchange') else None
+
+            sandbox_flag = None
+            header_sim = None
+            hostname = None
+            if ex:
+                sandbox_flag = getattr(ex, 'sandbox', None)
+                headers = getattr(ex, 'headers', {}) or {}
+                header_sim = str(headers.get('x-simulated-trading', '')).strip() if isinstance(headers, dict) else None
+                hostname = getattr(ex, 'hostname', None)
+
+            expected_paper = (bot_state.get('mode') == 'paper')
+            # In paper mode we expect sandbox True or x-simulated-trading=1. In live, sandbox False and header not set.
+            looks_paper = (sandbox_flag is True) or (header_sim == '1')
+            looks_live  = (sandbox_flag is False) and (not header_sim or header_sim == '0')
+
+            pass_cond = (expected_paper and looks_paper) or ((not expected_paper) and looks_live)
+            test_data['test_results']['mode_sandbox_sync'] = {
+                'status': 'pass' if pass_cond else 'fail',
+                'mode': bot_state.get('mode'),
+                'sandbox': sandbox_flag,
+                'x-simulated-trading': header_sim,
+                'hostname': hostname
+            }
+        except Exception as e:
+            test_data['test_results']['mode_sandbox_sync'] = {'status': 'error', 'error': str(e)}
+
+        # Test 7: Portfolio totals consistency
+        try:
+            pf = portfolio_service.get_portfolio_data()
+            holdings = pf.get('holdings', [])
+            total_current_value = float(pf.get('total_current_value', 0) or 0)
+            sum_current_value = sum(float(h.get('current_value', 0) or 0) for h in holdings)
+
+            # Check each holding math too: current_value ≈ quantity * current_price
+            bad_rows = []
+            for h in holdings:
+                try:
+                    q = float(h.get('quantity', 0) or 0)
+                    p = float(h.get('current_price', 0) or 0)
+                    v = float(h.get('current_value', 0) or 0)
+                    expected = q * p
+                    if expected > 0:
+                        err = abs(v - expected) / expected * 100
+                        if err > 1.0:  # >1% mismatch
+                            bad_rows.append({'symbol': h.get('symbol'), 'expected': expected, 'actual': v, 'error_pct': round(err, 3)})
+                except Exception:
+                    continue
+
+            tot_err_pct = (abs(total_current_value - sum_current_value) / sum_current_value * 100) if sum_current_value > 0 else 0
+            ok = (tot_err_pct <= 1.0) and (len(bad_rows) == 0)
+
+            test_data['test_results']['portfolio_totals'] = {
+                'status': 'pass' if ok else 'fail',
+                'total_current_value': round(total_current_value, 8),
+                'sum_holdings_value': round(sum_current_value, 8),
+                'total_error_pct': round(tot_err_pct, 4),
+                'holding_value_mismatches': bad_rows
+            }
+        except Exception as e:
+            test_data['test_results']['portfolio_totals'] = {'status': 'error', 'error': str(e)}
+
+        # Test 8: Price consistency (native vs ccxt)
+        try:
+            symbols = []
+            # prefer a few actual holdings with value; otherwise fall back to WATCHLIST
+            rich = [h.get('symbol') for h in holdings if float(h.get('current_value', 0) or 0) > 0]
+            if rich:
+                symbols = [f"{s}/USDT" for s in list(dict.fromkeys(rich))[:3]]
+            if not symbols:
+                symbols = WATCHLIST[:3]
+
+            diffs = []
+            from src.utils.okx_native import OKXNative
+            okx_native = OKXNative.from_env()
+            ccxt_ex = getattr(service.exchange, 'exchange', None)
+
+            for pair in symbols:
+                try:
+                    okx_inst = to_okx_inst(pair)
+                    p_native = float(okx_native.price(okx_inst) or 0)
+                    p_ccxt = 0.0
+                    if ccxt_ex:
+                        t = ccxt_ex.fetch_ticker(pair)
+                        p_ccxt = float(t.get('last', 0) or 0)
+                    if p_native > 0 and p_ccxt > 0:
+                        diff_pct = abs(p_native - p_ccxt) / p_native * 100
+                        diffs.append({'pair': pair, 'native': p_native, 'ccxt': p_ccxt, 'diff_pct': round(diff_pct, 4)})
+                except Exception:
+                    continue
+
+            max_diff = max((d['diff_pct'] for d in diffs), default=0.0)
+            avg_diff = sum((d['diff_pct'] for d in diffs), 0.0) / len(diffs) if diffs else 0.0
+            ok = (len(diffs) >= 1) and (max_diff <= 1.5)  # allow small skew
+
+            test_data['test_results']['price_consistency'] = {
+                'status': 'pass' if ok else 'fail',
+                'pairs_tested': len(diffs),
+                'max_diff_pct': round(max_diff, 4),
+                'avg_diff_pct': round(avg_diff, 4),
+                'samples': diffs
+            }
+        except Exception as e:
+            test_data['test_results']['price_consistency'] = {'status': 'error', 'error': str(e)}
+
+        # Test 9: Symbol normalization round-trip
+        try:
+            samples = ['btc-usdt', 'BTC/USDT', 'eth-usdt', 'SOL/USDT']
+            issues = []
+            for s in samples:
+                n = normalize_pair(s)
+                inst = to_okx_inst(n)
+                # round-trip back to normalized pair
+                back = normalize_pair(inst)
+                if back != n:
+                    issues.append({'input': s, 'normalized': n, 'inst': inst, 'roundtrip': back})
+            test_data['test_results']['symbol_roundtrip'] = {
+                'status': 'pass' if not issues else 'fail',
+                'issues': issues
+            }
+        except Exception as e:
+            test_data['test_results']['symbol_roundtrip'] = {'status': 'error', 'error': str(e)}
+
+        # Test 10: Timestamp integrity (parseable, recent)
+        try:
+            pf = portfolio_service.get_portfolio_data()
+            last_update = pf.get('last_update')
+            parse_ok = True
+            is_recent = True
+            if last_update:
+                try:
+                    ts = datetime.fromisoformat(str(last_update).replace('Z', '+00:00'))
+                    is_recent = (datetime.now(ts.tzinfo) - ts) < timedelta(minutes=10)
+                except Exception:
+                    parse_ok = False
+            test_data['test_results']['timestamp_integrity'] = {
+                'status': 'pass' if (parse_ok and is_recent) else 'fail',
+                'last_update': last_update,
+                'parse_ok': parse_ok,
+                'is_recent': is_recent
+            }
+        except Exception as e:
+            test_data['test_results']['timestamp_integrity'] = {'status': 'error', 'error': str(e)}
+
+        # Test 11: Target price manager invariants (stable lock)
+        try:
+            from src.utils.target_price_manager import get_target_price_manager
+            tpm = get_target_price_manager()
+            # choose a symbol we likely have a price for
+            sym = (rich[0] if rich else 'BTC')
+            curr = portfolio_service._get_live_okx_price(sym) or get_public_price(f"{sym}/USDT")
+            tp1, locked1 = tpm.get_locked_target_price(sym, curr)
+            tp2, locked2 = tpm.get_locked_target_price(sym, curr * 1.01)  # small price wiggle
+            stable = (tp1 == tp2)  # should not change with small moves while locked
+            test_data['test_results']['target_price_lock'] = {
+                'status': 'pass' if (locked1 and locked2 and stable) else 'fail',
+                'symbol': sym, 'tp1': tp1, 'tp2': tp2, 'locked1': locked1, 'locked2': locked2
+            }
+        except Exception as e:
+            test_data['test_results']['target_price_lock'] = {'status': 'error', 'error': str(e)}
+
+        # Test 12: Cache is disabled (always live)
+        try:
+            cg = cache_get('BTC/USDT', '1h')
+            test_data['test_results']['cache_disabled'] = {
+                'status': 'pass' if cg is None else 'fail',
+                'value': cg
+            }
+        except Exception as e:
+            test_data['test_results']['cache_disabled'] = {'status': 'error', 'error': str(e)}
+
+what these add
+
+bot_state_sync: bot_state.running ↔ trading_state.active ↔ multi_currency_trader.get_status() agree.
+
+mode_sandbox_sync: mode (paper/live) matches OKX client (sandbox/x-simulated-trading header).
+
+portfolio_totals: sum of holdings ≈ total; and current_value ≈ quantity × current_price per holding.
+
+price_consistency: OKX native vs CCXT prices within ~1–1.5% for a few pairs.
+
+symbol_roundtrip: normalize_pair/to_okx_inst transformations are invertible.
+
+timestamp_integrity: last_update parses & is recent.
+
+target_price_lock: target remains locked/stable on small price wiggles.
+
+cache_disabled: confirms no stale cache is serving prices.
