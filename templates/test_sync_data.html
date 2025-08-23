@@ -327,7 +327,15 @@
                 'price_freshness': 'Price Data Freshness',
                 'strategy_pnl': 'Strategy P&L Testing',
                 'unrealized_pnl': 'Unrealized P&L Accuracy',
-                'futures_margin': 'Futures/Margin Access'
+                'futures_margin': 'Futures/Margin Access',
+                'bot_state_sync': 'Bot State Synchronization',
+                'cache_disabled': 'Cache Bypass Validation',
+                'mode_sandbox_sync': 'Live Mode Verification',
+                'portfolio_totals': 'Portfolio Totals Accuracy',
+                'price_consistency': 'Price Data Consistency',
+                'symbol_roundtrip': 'Symbol Mapping Integrity',
+                'target_price_lock': 'Target Price Stability',
+                'timestamp_integrity': 'Data Timestamp Validation'
             };
             return names[testName] || testName.replace('_', ' ').toUpperCase();
         }
@@ -402,7 +410,15 @@
                 'price_freshness': 'Ensures market prices are fetched live from OKX and not served from cache.',
                 'strategy_pnl': 'Validates that trading strategy profit/loss calculations are mathematically accurate.',
                 'unrealized_pnl': 'Checks that unrealized P&L calculations match OKX account data.',
-                'futures_margin': 'Verifies access to futures and margin trading account information.'
+                'futures_margin': 'Verifies access to futures and margin trading account information.',
+                'bot_state_sync': 'Confirms bot and trading state consistency across all system components.',
+                'cache_disabled': 'Validates that live data is fetched directly from OKX without cache interference.',
+                'mode_sandbox_sync': 'Ensures the system is correctly configured for live trading mode.',
+                'portfolio_totals': 'Verifies mathematical accuracy of portfolio value calculations.',
+                'price_consistency': 'Confirms price data alignment between native OKX API and CCXT interfaces.',
+                'symbol_roundtrip': 'Tests symbol conversion integrity for accurate market data retrieval.',
+                'target_price_lock': 'Validates target price stability to prevent exponential recalculation.',
+                'timestamp_integrity': 'Ensures data timestamps indicate recent market information.'
             };
             return descriptions[testName] || 'Test validation for OKX data synchronization.';
         }
