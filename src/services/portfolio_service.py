@@ -602,7 +602,7 @@ class PortfolioService:
                     ticker = self.exchange.exchange.fetch_ticker(currency_pair)
                     live_price = float(ticker.get('last', 0.0) or 0.0)
                     if live_price > 0:
-                        self.logger.info(f"Live OKX price for {symbol} in {currency}: {live_price:.8f}")
+                        self.logger.debug(f"Live OKX price for {symbol} in {currency}: {live_price:.8f}")
                         cache_put_price(cache_key, live_price)
                         return live_price
                 except:
@@ -618,10 +618,10 @@ class PortfolioService:
                 if currency != 'USD':
                     conversion_rate = self._get_okx_conversion_rate('USD', currency)
                     live_price = usd_price * conversion_rate
-                    self.logger.info(f"Live OKX price for {symbol}: ${usd_price:.8f} USD -> {live_price:.8f} {currency}")
+                    self.logger.debug(f"Live OKX price for {symbol}: ${usd_price:.8f} USD -> {live_price:.8f} {currency}")
                 else:
                     live_price = usd_price
-                    self.logger.info(f"Live OKX price for {symbol}: ${live_price:.8f}")
+                    self.logger.debug(f"Live OKX price for {symbol}: ${live_price:.8f}")
                 
                 cache_put_price(cache_key, live_price)
                 return live_price

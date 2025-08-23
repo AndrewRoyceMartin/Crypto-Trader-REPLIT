@@ -37,6 +37,11 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
+# Configure log level from environment
+LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
+logging.getLogger().setLevel(LOG_LEVEL)
+logger.setLevel(LOG_LEVEL)
+
 # For local timezone support
 try:
     import pytz
@@ -1203,7 +1208,7 @@ def api_trade_history() -> ResponseReturnValue:
                                 
                                 # Process ALL bill types to capture Simple trades, Converts, etc.
                                 bill_type = bill.get('type', '')
-                                logger.info(f"Processing bill type: {bill_type} for symbol: {bill.get('instId', '')}")
+                                logger.debug(f"Processing bill type: {bill_type} for symbol: {bill.get('instId', '')}")
                                 
                                 inst_id = bill.get('instId', '')
                                 
@@ -1420,7 +1425,7 @@ def api_trade_history() -> ResponseReturnValue:
             logger.error(f"OKX trade history using working exchange instance failed: {okx_error}")
 
         # Debug: Check what trades we got before filtering
-        logger.info(f"Before filtering: {len(all_trades)} trades collected")
+        logger.debug(f"Before filtering: {len(all_trades)} trades collected")
         if all_trades:
             for i, trade in enumerate(all_trades[:3]):  # Log first 3 trades
                 logger.info(f"Trade {i+1} sample: id={trade.get('id')}, symbol={trade.get('symbol')}, timestamp={trade.get('timestamp')}, source={trade.get('source')}")
@@ -2536,7 +2541,7 @@ def api_export_ato() -> ResponseReturnValue:
         logger.info("Generating ATO export with current portfolio data")
 
         cryptocurrencies = create_sample_portfolio_for_export()
-        logger.info(f"Creating ATO export for {len(cryptocurrencies)} cryptocurrency holdings")
+        logger.debug(f"Creating ATO export for {len(cryptocurrencies)} cryptocurrency holdings")
 
         import io
         import csv
@@ -4262,7 +4267,7 @@ def api_performance() -> ResponseReturnValue:
             'timestamp': iso_utc()
         }
 
-        logger.info(f"Generated performance data: {len(equity_curve)} equity points, {len(attribution)} assets, {len(trades_data)} trades")
+        logger.debug(f"Generated performance data: {len(equity_curve)} equity points, {len(attribution)} assets, {len(trades_data)} trades")
         return jsonify(response_data)
 
     except Exception as e:

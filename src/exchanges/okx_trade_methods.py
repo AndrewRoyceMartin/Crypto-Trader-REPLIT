@@ -103,7 +103,7 @@ class OKXTradeRetrieval:
         dedup_set = set()
         
         # Method 1: OKX Private Trade Fills API (most accurate)
-        self.logger.info("Retrieving trades via OKX fills API")
+        self.logger.debug("Retrieving trades via OKX fills API")
         try:
             trades = self._get_okx_trade_fills(symbol, limit, since)
             for trade in trades:
@@ -116,7 +116,7 @@ class OKXTradeRetrieval:
             self.logger.warning(f"OKX fills API failed: {e}")
         
         # Method 2: OKX Orders History API
-        self.logger.info("Retrieving trades via OKX orders API")
+        self.logger.debug("Retrieving trades via OKX orders API")
         try:
             trades = self._get_okx_orders_history(symbol, limit, since)
             for trade in trades:
@@ -129,7 +129,7 @@ class OKXTradeRetrieval:
             self.logger.warning(f"OKX orders history API failed: {e}")
         
         # Method 3: Standard CCXT methods as fallback
-        self.logger.info("Retrieving trades via CCXT fallback")
+        self.logger.debug("Retrieving trades via CCXT fallback")
         try:
             trades = self._get_ccxt_trades(symbol, limit, since)
             for trade in trades:
@@ -144,7 +144,7 @@ class OKXTradeRetrieval:
         # Final sort by timestamp (most recent first)
         all_trades.sort(key=lambda x: x.get('timestamp', 0), reverse=True)
         
-        self.logger.info(f"Trade retrieval complete: {len(all_trades)} unique trades")
+        self.logger.debug(f"Trade retrieval complete: {len(all_trades)} unique trades")
         return all_trades[:limit]
     
     def _get_okx_trade_fills(self, symbol: Optional[str], limit: int, since: Optional[int] = None) -> List[Dict[str, Any]]:
