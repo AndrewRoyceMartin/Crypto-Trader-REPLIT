@@ -271,6 +271,27 @@ def with_throttle(fn, *a, **kw):
     finally:
         _ext_sem.release()
 
+# Rate limiting for heavy endpoints
+_rate_lock = threading.RLock()
+_hits: dict[tuple[str, str], list[float]] = {}
+
+def rate_limit(max_hits: int, per_seconds: int):
+    def deco(f):
+        @wraps(f)
+        def _w(*a, **kw):
+            key = (request.remote_addr or "?", request.path)
+            now = time.time()
+            with _rate_lock:
+                arr = _hits.get(key, [])
+                arr = [t for t in arr if now - t < per_seconds]
+                if len(arr) >= max_hits:
+                    return jsonify({"error": "rate_limited"}), 429
+                arr.append(now)
+                _hits[key] = arr
+            return f(*a, **kw)
+        return _w
+    return deco
+
 # === Real TTL'd LRU Cache Implementation ===
 # (key) -> {"data": Any, "ts": float}
 _cache_lock = threading.RLock()
@@ -1075,6 +1096,7 @@ def start_trading() -> ResponseReturnValue:
     return jsonify({"error": "Use /api/bot/start endpoint instead"}), 301
 
 @app.route("/api/trade-history")
+@rate_limit(4, 5)   # max 4 calls per 5 seconds per IP
 def api_trade_history() -> ResponseReturnValue:
     """Get trade history records from OKX exchange only."""
     try:
@@ -1556,6 +1578,7 @@ def api_recent_trades() -> ResponseReturnValue:
         return jsonify({"success": False, "error": str(e)}), 500
 
 @app.route("/api/best-performer")
+@rate_limit(6, 10)   # max 6 calls per 10 seconds per IP
 def api_best_performer() -> ResponseReturnValue:
     """Get best performing asset for the dashboard."""
     try:
@@ -1632,6 +1655,7 @@ def api_best_performer() -> ResponseReturnValue:
         return jsonify({"success": False, "error": str(e)}), 500
 
 @app.route("/api/worst-performer")
+@rate_limit(6, 10)   # max 6 calls per 10 seconds per IP
 def api_worst_performer() -> ResponseReturnValue:
     try:
         service = get_portfolio_service()
@@ -1692,6 +1716,7 @@ def api_worst_performer() -> ResponseReturnValue:
         return jsonify({"success": False, "error": str(e)}), 500
 
 @app.route("/api/equity-curve")
+@rate_limit(4, 5)   # max 4 calls per 5 seconds per IP
 def api_equity_curve() -> ResponseReturnValue:
     """Equity curve from OKX: prefer account bills + historical candles; fallback to current balances + candles."""
     try:
@@ -2188,6 +2213,7 @@ def api_drawdown_analysis() -> ResponseReturnValue:
         }), 500
 
 @app.route("/api/performance-analytics")
+@rate_limit(4, 5)   # max 4 calls per 5 seconds per IP
 def api_performance_analytics() -> ResponseReturnValue:
     """Get performance analytics using direct OKX native APIs only."""
     try:
@@ -3612,6 +3638,7 @@ def api_asset_allocation() -> ResponseReturnValue:
         return jsonify({"success": False, "error": str(e)}), 500
 
 @app.route("/api/portfolio-history")
+@rate_limit(4, 5)   # max 4 calls per 5 seconds per IP
 def api_portfolio_history() -> ResponseReturnValue:
     """Portfolio history endpoint showing value over time."""
     try:
