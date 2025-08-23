@@ -667,6 +667,9 @@ def start_warmup() -> None:
             warmup_thread = threading.Thread(target=background_warmup, daemon=True)
             warmup_thread.start()
 
+# Call start_warmup() once at import time so first hit isn't doing it
+start_warmup()
+
 # Ultra-fast health endpoints
 @app.route("/health")
 def health() -> ResponseReturnValue:
@@ -4623,7 +4626,7 @@ def add_security_headers(resp: Any) -> Any:
         "script-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com 'unsafe-inline'; "
         "style-src 'self' https://fonts.googleapis.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com 'unsafe-inline'; "
         "font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; "
-        "img-src 'self' data: https://cryptoicons.org https://cryptologos.cc https://raw.githubusercontent.com https://assets.coingecko.com https://s2.coinmarketcap.com https://static.okx.com; "
+        "img-src 'self' data: https://cryptologos.cc https://raw.githubusercontent.com https://assets.coingecko.com https://s2.coinmarketcap.com https://static.okx.com; "
         f"connect-src {connect_src}; "
         "frame-ancestors 'none'; "
         "base-uri 'self'; "
@@ -4643,7 +4646,7 @@ application = app
 
 if __name__ == "__main__":
     # PRODUCTION NOTE: Use gunicorn instead of app.run() for production:
-    # gunicorn -w 4 -k gthread -t 60 app:application
+    # gunicorn app:application -w 2 -k gthread --threads 8 --timeout 60 --keep-alive 30
     
     # Deployment stability optimizations - Reduced overhead version
     gc.set_threshold(700, 10, 10)  # Less aggressive GC to reduce CPU overhead

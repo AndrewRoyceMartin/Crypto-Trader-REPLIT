@@ -6,12 +6,12 @@ bind = f"0.0.0.0:{os.environ.get('PORT', '5000')}"
 backlog = 2048
 
 # Worker processes
-workers = 4
+workers = 2
 worker_class = "gthread"
-threads = 2
+threads = 8
 worker_connections = 1000
 timeout = 60
-keepalive = 5
+keepalive = 30
 
 # Restart workers after this many requests
 max_requests = 1000
