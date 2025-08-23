@@ -967,39 +967,40 @@ def bot_start() -> ResponseReturnValue:
         def start_background_trading():
             retry_count = 0
             max_retries = 3
-            
-            while _get_bot_running() and retry_count < max_retries:
-                try:
-                    trader_instance.start_trading(timeframe)
-                    break  # Success, exit retry loop
-                    
-                except Exception as e:
-                    error_msg = str(e).lower()
-                    
-                    # Check if this is a recoverable error
-                    is_recoverable = (
-                        'too many requests' in error_msg or
-                        '50011' in error_msg or  # OKX rate limit code
-                        'rate limit' in error_msg or
-                        'timeout' in error_msg or
-                        'connection' in error_msg or
-                        'network' in error_msg
-                    )
-                    
-                    if is_recoverable and retry_count < max_retries - 1:
-                        retry_count += 1
-                        wait_time = min(60, 10 * retry_count)  # Exponential backoff: 10s, 20s, 30s max
-                        logger.warning(f"Recoverable error in trading bot (attempt {retry_count}/{max_retries}): {e}")
-                        logger.info(f"Retrying in {wait_time} seconds...")
+            try:
+                while _get_bot_running() and retry_count < max_retries:
+                    try:
+                        trader_instance.start_trading(timeframe)
+                        break  # Success, exit retry loop
+                    except Exception as e:
+                        error_msg = str(e).lower()
                         
-                        import time
-                        time.sleep(wait_time)
-                        continue
-                    else:
-                        # Fatal error or max retries exceeded
-                        logger.error(f"Fatal error in multi-currency trading bot: {e}")
-                        _set_bot_state(running=False)
-                        break
+                        # Check if this is a recoverable error
+                        is_recoverable = (
+                            'too many requests' in error_msg or
+                            '50011' in error_msg or  # OKX rate limit code
+                            'rate limit' in error_msg or
+                            'timeout' in error_msg or
+                            'connection' in error_msg or
+                            'network' in error_msg
+                        )
+                        
+                        if is_recoverable and retry_count < max_retries - 1:
+                            retry_count += 1
+                            wait_time = min(60, 10 * retry_count)  # Exponential backoff: 10s, 20s, 30s max
+                            logger.warning(f"Recoverable error in trading bot (attempt {retry_count}/{max_retries}): {e}")
+                            logger.info(f"Retrying in {wait_time} seconds...")
+                            
+                            import time
+                            time.sleep(wait_time)
+                            continue
+                        else:
+                            # Fatal error or max retries exceeded
+                            logger.error(f"Fatal error in multi-currency trading bot: {e}")
+                            break
+            finally:
+                # no matter how we exit, reflect truth: not running
+                _set_bot_state(running=False)
         
         trading_thread = threading.Thread(target=start_background_trading, daemon=True)
         trading_thread.start()
