@@ -256,8 +256,8 @@ CACHE_FILE            = "warmup_cache.parquet"                        # persiste
 # === Real TTL'd LRU Cache Implementation ===
 # (key) -> {"data": Any, "ts": float}
 _cache_lock = threading.RLock()
-_price_cache: "OrderedDict[str, dict[str, Any]]" = OrderedDict()
-_ohlcv_cache: "OrderedDict[str, dict[str, Any]]" = OrderedDict()
+_price_cache = OrderedDict()
+_ohlcv_cache = OrderedDict()
 
 def _cache_prune(od: OrderedDict) -> None:
     while len(od) > CACHE_MAX_KEYS:
@@ -429,35 +429,34 @@ def validate_symbol(pair: str) -> bool:
         return False
 
 def get_public_price(pair: str) -> float:
-    """Get current price for a trading pair using the native OKX client.
-    
-    Args:
-        pair: Trading pair in format "SYMBOL/USDT" (e.g., "BTC/USDT")
-        
-    Returns:
-        Current price as float, 0.0 if error
-    """
-    # Validate symbol before making API call
+    """Get current price for a trading pair using the native OKX client with short TTL cache."""
+    pair = normalize_pair(pair)
+    cached = cache_get_price(pair)
+    if cached is not None:
+        return float(cached)
+
     if not validate_symbol(pair):
         logger.debug(f"Symbol {pair} not in WATCHLIST or exchange markets")
         return 0.0
-        
+
     try:
-        # Use native OKX client for better performance
         client = get_okx_native_client()
-        # Convert SYMBOL/USDT to SYMBOL-USDT for OKX API
         okx_symbol = to_okx_inst(pair)
-        return client.price(okx_symbol)
+        price = float(client.price(okx_symbol))
+        if price > 0:
+            cache_put_price(pair, price)
+        return price
     except Exception as e:
         logger.debug(f"Native price fetch failed for {pair}: {e}")
-        # Fallback to CCXT if native client fails
         try:
             service = get_portfolio_service()
-            if (hasattr(service, 'exchange') and hasattr(service.exchange, 'exchange') and 
-                service.exchange.exchange is not None):
-                service.exchange.exchange.timeout = 10000  # 10 seconds
+            if (hasattr(service, 'exchange') and hasattr(service.exchange, 'exchange') and service.exchange.exchange):
+                service.exchange.exchange.timeout = 8000
                 ticker = service.exchange.exchange.fetch_ticker(pair)
-                return float(ticker.get('last', 0) or 0)
+                price = float(ticker.get('last') or 0)
+                if price > 0:
+                    cache_put_price(pair, price)
+                return price
             return 0.0
         except Exception as fallback_error:
             logger.error(f"Both native and CCXT price fetch failed for {pair}: {fallback_error}")
