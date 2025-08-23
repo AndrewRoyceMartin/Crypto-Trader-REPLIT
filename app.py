@@ -526,29 +526,15 @@ def background_warmup() -> None:
         )
 
 def get_df(symbol: str, timeframe: str) -> Optional[list[dict[str, float]]]:
-    """Get OHLCV data with on-demand fetch, preferring existing exchange instance."""
-    df = cache_get(symbol, timeframe)
+    df = cache_get_ohlcv(symbol, timeframe)
     if df is not None:
         return df
-
     try:
         ex = get_reusable_exchange()
-
         ohlcv = ex.fetch_ohlcv(symbol, timeframe=timeframe, limit=200)
-        # Convert to basic structure without pandas dependency
-        processed_data = []
-        for candle in ohlcv:
-            processed_data.append({
-                "ts": candle[0],
-                "open": candle[1],
-                "high": candle[2], 
-                "low": candle[3],
-                "close": candle[4],
-                "volume": candle[5]
-            })
-        cache_put(symbol, timeframe, processed_data)
-        return processed_data
-
+        processed = [{"ts": c[0], "open": c[1], "high": c[2], "low": c[3], "close": c[4], "volume": c[5]} for c in ohlcv]
+        cache_put_ohlcv(symbol, timeframe, processed)
+        return processed
     except Exception as e:
         logger.error(f"Failed to fetch data for {symbol}: {e}")
         return None
@@ -659,7 +645,7 @@ def api_price() -> ResponseReturnValue:
         tf = request.args.get("timeframe", "1h")
         lim = int(request.args.get("limit", 200))
 
-        df = cache_get(sym, tf)
+        df = cache_get_ohlcv(sym, tf)
         if df is None or len(df) < lim:
             ex = get_reusable_exchange()
                 
@@ -676,7 +662,7 @@ def api_price() -> ResponseReturnValue:
                     "volume": candle[5]
                 })
             df = processed_data
-            cache_put(sym, tf, df)
+            cache_put_ohlcv(sym, tf, df)
 
         # Convert to simple list format for API response
         out = df[-lim:] if len(df) >= lim else df
