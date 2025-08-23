@@ -645,28 +645,10 @@ def api_price() -> ResponseReturnValue:
         tf = request.args.get("timeframe", "1h")
         lim = int(request.args.get("limit", 200))
 
-        df = cache_get_ohlcv(sym, tf)
-        if df is None or len(df) < lim:
-            ex = get_reusable_exchange()
-                
-            ohlcv = ex.fetch_ohlcv(sym, timeframe=tf, limit=lim)
-            # Convert to basic structure without pandas dependency
-            processed_data = []
-            for candle in ohlcv:
-                processed_data.append({
-                    "ts": candle[0],
-                    "open": candle[1],
-                    "high": candle[2],
-                    "low": candle[3], 
-                    "close": candle[4],
-                    "volume": candle[5]
-                })
-            df = processed_data
-            cache_put_ohlcv(sym, tf, df)
-
-        # Convert to simple list format for API response
+        df = get_df(sym, tf)
+        if not df:
+            return jsonify({"error": "no data"}), 502
         out = df[-lim:] if len(df) >= lim else df
-        # Convert timestamp to string for JSON serialization
         for item in out:
             item["ts"] = str(item["ts"])
         return jsonify(out)
