@@ -348,6 +348,11 @@ def _set_bot_state(**kv) -> None:
     """Thread-safe bot state update."""
     with _state_lock:
         bot_state.update(kv)
+        # keep legacy trading_state in sync for UIs that read it
+        trading_state["active"] = bool(bot_state.get("running", False))
+        trading_state["mode"] = bot_state.get("mode") or ("live" if bot_state.get("running") else "stopped")
+        if bot_state.get("started_at"):
+            trading_state["start_time"] = bot_state["started_at"]
 
 def _get_bot_running() -> bool:
     """Thread-safe bot running state read."""
@@ -580,12 +585,14 @@ app = Flask(__name__)
 @app.route("/api/status")
 def api_status() -> ResponseReturnValue:
     """Simple status endpoint to check warmup and system health."""
-    return jsonify({
-        "status": "running",
-        "warmup": warmup,
-        "trading_state": trading_state,
-        "timestamp": iso_utc()
-    })
+    with _state_lock:
+        return jsonify({
+            "status": "running",
+            "warmup": warmup,
+            "bot": bot_state,                  # add this
+            "trading_state": trading_state,    # legacy, now synced
+            "timestamp": iso_utc()
+        })
 @app.route("/api/crypto-portfolio")
 def crypto_portfolio_okx() -> ResponseReturnValue:
     """Get real OKX portfolio data using PortfolioService."""
