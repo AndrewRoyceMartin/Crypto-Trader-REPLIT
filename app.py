@@ -608,8 +608,9 @@ def api_status() -> ResponseReturnValue:
         return jsonify({
             "status": "running",
             "warmup": warmup,
-            "bot": bot_state,                  # add this
-            "trading_state": trading_state,    # legacy, now synced
+            "bot": bot_state,
+            "trading_state": trading_state,
+            "active": bool(bot_state.get("running", False)) if bot_state.get("running") is not None else False,
             "timestamp": iso_utc()
         })
 @app.route("/api/crypto-portfolio")
@@ -907,6 +908,7 @@ def bot_status() -> ResponseReturnValue:
         status = {
             "success": True,
             "running": bot_state["running"],
+            "active": bool(bot_state.get("running", False)),
             "mode": bot_state["mode"],
             "symbol": bot_state["symbol"], 
             "timeframe": bot_state["timeframe"],
