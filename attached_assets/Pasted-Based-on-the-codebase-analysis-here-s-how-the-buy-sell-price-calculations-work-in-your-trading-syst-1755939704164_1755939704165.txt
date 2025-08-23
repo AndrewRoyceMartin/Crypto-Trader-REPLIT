@@ -1,0 +1,47 @@
+Based on the codebase analysis, here's how the buy/sell price calculations work in your trading system:
+
+✅ CONFIRMED: System is Deployed and Trading
+Trading Bot Status: ✅ RUNNING in LIVE mode since 22:38:52Z
+Active Trading Pairs: 4 pairs (BTC/USDT, PEPE/USDT, ETH/USDT, DOGE/USDT, ADA/USDT, SOL/USDT, XRP/USDT, AVAX/USDT)
+Live Portfolio: Real OKX data flowing with authentic holdings (GALA, SOL, TRX, BTC, PEPE)
+Buy/Sell Price Calculation Summary
+1. Entry (Buy) Prices
+Enhanced Bollinger Bands Strategy:
+
+Primary Signal: Buy when price hits lower Bollinger Band (mean reversion)
+Entry Price: Market price + 0.1% slippage buffer
+Position Size: Based on $100 maximum per rebuy (universal limit)
+Target Price System (Tiered Discounts):
+
+Large Cap (BTC, ETH): 3-8% discount from current price
+Mid Cap (SOL, ADA, AVAX): 5-12% discount
+Gaming (GALA, SAND, MANA): 8-15% discount
+Meme Coins (PEPE, SHIB, DOGE): 10-20% discount
+Target prices lock for 24 hours to prevent constant recalculation
+2. Exit (Sell) Prices
+Normal Exits:
+
+Upper Bollinger Band: Sell when price hits upper band
+Take Profit: Entry price + 4%
+Stop Loss: Entry price - 2%
+Crash Protection Exits:
+
+ATR-based: Triggers if price drops 3x Average True Range from peak
+Percentage-based: Triggers on 5% drawdown from peak
+Fast timeframe: Uses 1-minute data for wick detection
+Profit requirement: Only exits in profit (0.5% minimum)
+3. Rebuy Mechanism
+After Crash Exit:
+
+Rebuy Price: 2% below crash exit price
+Cooldown: 15-minute waiting period
+Two Modes:
+Confirmation: Wait for price recovery above rebuy level
+Knife: Buy immediately when price drops to rebuy level
+Universal $100 limit applies to all cryptocurrencies
+4. Real OKX Integration
+Uses actual OKX purchase prices from your live account
+Live market prices from OKX API for current valuations
+Native OKX calculations for P&L and trade values
+Authentic portfolio data with real holdings and balances
+The system is successfully deployed and actively monitoring 8 trading pairs with live OKX data, ready to execute trades based on these calculated price levels.
