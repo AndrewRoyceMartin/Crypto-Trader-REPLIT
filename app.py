@@ -4384,7 +4384,6 @@ def api_test_sync_data() -> ResponseReturnValue:
     """Get comprehensive test sync data for display"""
     try:
         # Collect test data
-        from datetime import datetime as dt
         test_data = {
             'timestamp': iso_utc(),
             'okx_endpoint': 'app.okx.com',
@@ -4439,26 +4438,34 @@ def api_test_sync_data() -> ResponseReturnValue:
         
         # Test 2: Price Freshness
         try:
-            # Test live data freshness by checking portfolio timestamps
+            import datetime as _dt  # <-- namespaced to avoid shadowing issues
+
             portfolio_service = get_portfolio_service()
             portfolio_data = portfolio_service.get_portfolio_data()
-            
-            # Check if we have live data indicators
+
             holdings = portfolio_data.get('holdings', [])
             all_holdings_live = all(h.get('is_live', False) for h in holdings) if holdings else False
-            
-            # Check for recent timestamp
+
             last_update = portfolio_data.get('last_update', '')
             is_recent = True
             if last_update:
-                
                 try:
-                    update_time = datetime.fromisoformat(last_update.replace('Z', '+00:00'))
-                    is_recent = (datetime.now(update_time.tzinfo) - update_time) < timedelta(minutes=5)
-                except (ValueError, TypeError) as time_error:
+                    ts_str = str(last_update)
+                    # Normalize common formats
+                    if ts_str.endswith('Z'):
+                        ts_str = ts_str.replace('Z', '+00:00')
+                    update_time = _dt.datetime.fromisoformat(ts_str)
+
+                    # Make timezone-aware if it isn't
+                    if update_time.tzinfo is None:
+                        update_time = update_time.replace(tzinfo=_dt.timezone.utc)
+
+                    now_here = _dt.datetime.now(update_time.tzinfo)
+                    is_recent = (now_here - update_time) < _dt.timedelta(minutes=5)
+                except Exception as time_error:
                     logger.debug(f"Could not parse timestamp {last_update}: {time_error}")
                     is_recent = False
-            
+
             test_data['test_results']['price_freshness'] = {
                 'status': 'pass' if all_holdings_live and is_recent else 'fail',
                 'last_update': last_update,
@@ -4466,7 +4473,7 @@ def api_test_sync_data() -> ResponseReturnValue:
                 'data_is_recent': is_recent,
                 'total_holdings': len(holdings)
             }
-            
+
         except Exception as e:
             test_data['test_results']['price_freshness'] = {
                 'status': 'error',
