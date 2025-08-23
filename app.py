@@ -602,6 +602,7 @@ app = Flask(__name__)
 @app.route("/api/status")
 def api_status() -> ResponseReturnValue:
     """Simple status endpoint to check warmup and system health."""
+    up = get_uptime_seconds()
     with _state_lock:
         return jsonify({
             "status": "running",
@@ -609,7 +610,10 @@ def api_status() -> ResponseReturnValue:
             "bot": bot_state,
             "trading_state": trading_state,
             "active": bool(bot_state.get("running", False)) if bot_state.get("running") is not None else False,
-            "timestamp": iso_utc()
+            "timestamp": iso_utc(),
+            "server_started_at": iso_utc(server_start_time),
+            "uptime_seconds": up,
+            "uptime_human": humanize_seconds(up)
         })
 @app.route("/api/crypto-portfolio")
 def crypto_portfolio_okx() -> ResponseReturnValue:
@@ -678,7 +682,10 @@ def ready() -> ResponseReturnValue:
     """UI can poll this and show a spinner until ready."""
     with _state_lock:
         warmup_copy = warmup.copy()
-    return (jsonify({"ready": True, **warmup_copy}), 200) if warmup_copy["done"] else (jsonify({"ready": False, **warmup_copy}), 503)
+    up = get_uptime_seconds()
+    payload = {"ready": warmup_copy["done"], **warmup_copy,
+               "uptime_seconds": up, "uptime_human": humanize_seconds(up)}
+    return (jsonify(payload), 200) if warmup_copy["done"] else (jsonify(payload), 503)
 
 @app.route("/api/price")
 def api_price() -> ResponseReturnValue:
@@ -2502,8 +2509,37 @@ def api_performance_analytics() -> ResponseReturnValue:
             "data_source": "error"
         }), 500
 
-# Global server start time for uptime calculation (use LOCAL_TZ for consistency)
+# Global server start time (monotonic + wall clock) for reliable uptime
 server_start_time = datetime.now(LOCAL_TZ)
+try:
+    server_start_monotonic = time.monotonic()
+except Exception:
+    server_start_monotonic = None
+
+def get_uptime_seconds() -> int:
+    """Process uptime in seconds; prefer monotonic clock."""
+    if 'server_start_monotonic' in globals() and server_start_monotonic is not None:
+        try:
+            return max(0, int(time.monotonic() - server_start_monotonic))
+        except Exception:
+            pass
+    # Fallback to wall-clock delta
+    try:
+        return max(0, int((datetime.now(LOCAL_TZ) - server_start_time).total_seconds()))
+    except Exception:
+        return 0
+
+def humanize_seconds(total: int) -> str:
+    """Turn seconds into 'Xd Yh Zm Ws' compact string."""
+    d, r = divmod(total, 86400)
+    h, r = divmod(r, 3600)
+    m, s = divmod(r, 60)
+    parts = []
+    if d: parts.append(f"{d}d")
+    if h or d: parts.append(f"{h}h")
+    if m or h or d: parts.append(f"{m}m")
+    parts.append(f"{s}s")
+    return " ".join(parts)
 
 @app.route("/api/live-prices")
 def api_live_prices() -> ResponseReturnValue:
@@ -3511,8 +3547,12 @@ def api_reset_entire_program() -> ResponseReturnValue:
             _price_cache.clear()
             logger.info("Cleared in-memory price cache")
 
-        global server_start_time
+        global server_start_time, server_start_monotonic
         server_start_time = datetime.now(LOCAL_TZ)
+        try:
+            server_start_monotonic = time.monotonic()
+        except Exception:
+            server_start_monotonic = None
 
         trading_state.update({
             "mode": "stopped",

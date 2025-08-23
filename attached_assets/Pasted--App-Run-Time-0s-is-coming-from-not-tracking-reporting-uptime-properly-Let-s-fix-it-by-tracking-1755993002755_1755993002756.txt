@@ -1,0 +1,88 @@
+“App Run Time: 0s” is coming from not tracking/reporting uptime properly. Let’s fix it by:
+
+tracking a monotonic start time (doesn’t jump if system clock changes),
+
+exposing uptime in /api/status (and /ready), and
+
+resetting the uptime clock on /api/reset-entire-program.
+
+Patch (drop-in changes)
+
+A. Replace the existing “Global server start time…” block with this:
+
+# Global server start time (monotonic + wall clock) for reliable uptime
+server_start_time = datetime.now(LOCAL_TZ)
+try:
+    server_start_monotonic = time.monotonic()
+except Exception:
+    server_start_monotonic = None
+
+def get_uptime_seconds() -> int:
+    """Process uptime in seconds; prefer monotonic clock."""
+    if 'server_start_monotonic' in globals() and server_start_monotonic is not None:
+        try:
+            return max(0, int(time.monotonic() - server_start_monotonic))
+        except Exception:
+            pass
+    # Fallback to wall-clock delta
+    try:
+        return max(0, int((datetime.now(LOCAL_TZ) - server_start_time).total_seconds()))
+    except Exception:
+        return 0
+
+def humanize_seconds(total: int) -> str:
+    """Turn seconds into 'Xd Yh Zm Ws' compact string."""
+    d, r = divmod(total, 86400)
+    h, r = divmod(r, 3600)
+    m, s = divmod(r, 60)
+    parts = []
+    if d: parts.append(f"{d}d")
+    if h or d: parts.append(f"{h}h")
+    if m or h or d: parts.append(f"{m}m")
+    parts.append(f"{s}s")
+    return " ".join(parts)
+
+
+B. Add uptime fields to /api/status:
+
+@app.route("/api/status")
+def api_status() -> ResponseReturnValue:
+    """Simple status endpoint to check warmup and system health."""
+    up = get_uptime_seconds()
+    return jsonify({
+        "status": "running",
+        "warmup": warmup,
+        "trading_state": trading_state,
+        "timestamp": iso_utc(),
+        "server_started_at": iso_utc(server_start_time),
+        "uptime_seconds": up,
+        "uptime_human": humanize_seconds(up),
+    })
+
+
+C. Add uptime fields to /ready (helps any UI polling that route):
+
+@app.route("/ready")
+def ready() -> ResponseReturnValue:
+    """UI can poll this and show a spinner until ready."""
+    with _state_lock:
+        warmup_copy = warmup.copy()
+    up = get_uptime_seconds()
+    payload = {"ready": warmup_copy["done"], **warmup_copy,
+               "uptime_seconds": up, "uptime_human": humanize_seconds(up)}
+    return (jsonify(payload), 200) if warmup_copy["done"] else (jsonify(payload), 503)
+
+
+D. Reset the uptime clock in /api/reset-entire-program:
+
+Find where you reset server_start_time and extend it:
+
+global server_start_time, server_start_monotonic
+server_start_time = datetime.now(LOCAL_TZ)
+try:
+    server_start_monotonic = time.monotonic()
+except Exception:
+    server_start_monotonic = None
+
+
+After this, your “System Status & Info” widget can read uptime_human (e.g., 3h 12m 5s) or uptime_seconds from /api/status (or /ready). That will eliminate the perpetual “0s” and keep things accurate even if the system clock changes.

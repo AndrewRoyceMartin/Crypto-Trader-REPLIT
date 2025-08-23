@@ -1,0 +1,61 @@
+on new sync test : Price Data Freshness
+ERROR
+Error: cannot access local variable 'timedelta' where it is not associated with a value
+Code said:
+Thought for 29s
+
+Good catch—that error happens because timedelta is being treated as a local name inside the function, so Python thinks you’re using it before it’s assigned. Easiest, bullet-proof fix: don’t rely on the bare timedelta name in that function; use a namespaced import so there’s no shadowing.
+
+Minimal patch to api_test_sync_data (Price Data Freshness block)
+
+Replace the “Price Freshness” parsing chunk with this:
+
+# Test 2: Price Freshness
+try:
+    import datetime as _dt  # <-- namespaced to avoid shadowing issues
+
+    portfolio_service = get_portfolio_service()
+    portfolio_data = portfolio_service.get_portfolio_data()
+
+    holdings = portfolio_data.get('holdings', [])
+    all_holdings_live = all(h.get('is_live', False) for h in holdings) if holdings else False
+
+    last_update = portfolio_data.get('last_update', '')
+    is_recent = True
+    if last_update:
+        try:
+            ts_str = str(last_update)
+            # Normalize common formats
+            if ts_str.endswith('Z'):
+                ts_str = ts_str.replace('Z', '+00:00')
+            update_time = _dt.datetime.fromisoformat(ts_str)
+
+            # Make timezone-aware if it isn't
+            if update_time.tzinfo is None:
+                update_time = update_time.replace(tzinfo=_dt.timezone.utc)
+
+            now_here = _dt.datetime.now(update_time.tzinfo)
+            is_recent = (now_here - update_time) < _dt.timedelta(minutes=5)
+        except Exception as time_error:
+            logger.debug(f"Could not parse timestamp {last_update}: {time_error}")
+            is_recent = False
+
+    test_data['test_results']['price_freshness'] = {
+        'status': 'pass' if all_holdings_live and is_recent else 'fail',
+        'last_update': last_update,
+        'holdings_marked_live': all_holdings_live,
+        'data_is_recent': is_recent,
+        'total_holdings': len(holdings)
+    }
+
+except Exception as e:
+    test_data['test_results']['price_freshness'] = {
+        'status': 'error',
+        'error': str(e)
+    }
+
+Also remove this line (it’s unused and can cause shadowing weirdness):
+from datetime import datetime as dt
+
+
+Using import datetime as _dt inside the test avoids any local name conflicts with timedelta, datetime, etc., and fixes the “cannot access local variable 'timedelta'” error.
