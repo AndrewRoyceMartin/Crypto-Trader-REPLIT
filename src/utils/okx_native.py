@@ -71,7 +71,16 @@ class OKXNative:
         return cls(OKXCreds.from_env())
 
     def ticker(self, inst_id: str) -> Dict[str, float]:
-        """Return last, open24h, vol24h, pct_24h."""
+        """Return last, open24h, vol24h, pct_24h with caching."""
+        try:
+            # Try cache first
+            from app import cache_get_price, cache_put_price
+            cached_ticker = cache_get_price(f"ticker_{inst_id}")
+            if cached_ticker is not None:
+                return cached_ticker
+        except ImportError:
+            pass
+            
         data = self._request(f"/api/v5/market/ticker?instId={inst_id}")
         if data.get("code") == "0" and data.get("data"):
             t = data["data"][0]
@@ -79,7 +88,16 @@ class OKXNative:
             open24h = float(t.get("open24h") or 0)
             vol24h = float(t.get("vol24h") or 0)
             pct_24h = ((last - open24h) / open24h * 100) if open24h > 0 else 0.0
-            return {"last": last, "open24h": open24h, "vol24h": vol24h, "pct_24h": pct_24h}
+            ticker_data = {"last": last, "open24h": open24h, "vol24h": vol24h, "pct_24h": pct_24h}
+            
+            # Cache the result
+            try:
+                from app import cache_put_price
+                cache_put_price(f"ticker_{inst_id}", ticker_data)
+            except ImportError:
+                pass
+                
+            return ticker_data
         return {"last": 0.0, "open24h": 0.0, "vol24h": 0.0, "pct_24h": 0.0}
 
     def candles(self, inst_id: str, bar: str = "1D", limit: int = 7, before_ms: Optional[int] = None) -> List[List[str]]:

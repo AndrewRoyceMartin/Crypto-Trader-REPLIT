@@ -574,7 +574,7 @@ class PortfolioService:
 
     def _get_live_okx_price(self, symbol: str, currency: str = 'USD') -> float:
         """
-        Get live price directly from OKX exchange with currency support.
+        Get live price directly from OKX exchange with currency support and caching.
         Instead of local conversion, fetches price in the target currency directly from OKX.
         
         Args:
@@ -585,6 +585,13 @@ class PortfolioService:
             float: Current live price from OKX in the specified currency, or 0.0 if failed
         """
         try:
+            # Check cache first
+            from app import cache_get_price, cache_put_price
+            cache_key = f"{symbol}_{currency}"
+            cached_price = cache_get_price(cache_key)
+            if cached_price is not None:
+                return float(cached_price)
+            
             if not self.exchange or not self.exchange.is_connected():
                 return 0.0
                 
@@ -596,6 +603,7 @@ class PortfolioService:
                     live_price = float(ticker.get('last', 0.0) or 0.0)
                     if live_price > 0:
                         self.logger.info(f"Live OKX price for {symbol} in {currency}: {live_price:.8f}")
+                        cache_put_price(cache_key, live_price)
                         return live_price
                 except:
                     # Fallback to USD conversion
@@ -614,6 +622,8 @@ class PortfolioService:
                 else:
                     live_price = usd_price
                     self.logger.info(f"Live OKX price for {symbol}: ${live_price:.8f}")
+                
+                cache_put_price(cache_key, live_price)
                 return live_price
             else:
                 self.logger.warning(f"Invalid live price for {symbol}: {live_price}")

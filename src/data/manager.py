@@ -47,9 +47,28 @@ class DataManager:
             DataFrame indexed by UTC DatetimeIndex with columns:
             ["open","high","low","close","volume"]
         """
+        # Try new LRU cache first
+        try:
+            from app import cache_get_ohlcv, cache_put_ohlcv
+            cached_df = cache_get_ohlcv(symbol, timeframe)
+            if cached_df is not None:
+                cached_df = cast(pd.DataFrame, self._ensure_dt_index(self._coerce_df(cached_df)))
+                if not cached_df.empty:
+                    # Apply time filters to cached data
+                    if start_time is not None:
+                        st = self._to_utc_ts(start_time)
+                        cached_df = cached_df[cached_df.index >= st]
+                    if end_time is not None:
+                        et = self._to_utc_ts(end_time)
+                        cached_df = cached_df[cached_df.index <= et]
+                    return cached_df
+        except ImportError:
+            # Fallback to old cache if new cache not available
+            pass
+
         cache_key = self._cache_key(symbol, timeframe, limit, start_time, end_time)
 
-        # Try cache
+        # Try old cache
         if self.cache is not None:
             cached_any: Any = self.cache.get(cache_key)
             cached_df = cast(pd.DataFrame, self._coerce_df(cached_any))
@@ -70,7 +89,13 @@ class DataManager:
                 et = self._to_utc_ts(end_time)
                 df = df[df.index <= et]
 
-            # Cache
+            # Cache in both systems
+            try:
+                from app import cache_put_ohlcv
+                cache_put_ohlcv(symbol, timeframe, df)
+            except ImportError:
+                pass
+                
             if self.cache is not None:
                 self.cache.set(cache_key, cast(pd.DataFrame, df))
 

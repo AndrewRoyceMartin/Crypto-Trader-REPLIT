@@ -16,6 +16,7 @@ import base64
 import warnings
 import gc
 from datetime import datetime, timedelta, timezone
+from collections import OrderedDict
 
 # Only suppress specific pkg_resources deprecation warning - all other warnings will show
 warnings.filterwarnings('ignore', message='pkg_resources is deprecated as an API.*', category=DeprecationWarning)
@@ -251,6 +252,57 @@ CACHE_MAX_KEYS      = int(os.getenv("CACHE_MAX_KEYS", "200"))  # prevent unbound
 
 WARMUP_SLEEP_SEC      = int(os.getenv("WARMUP_SLEEP_SEC", "1"))       # pause between fetches
 CACHE_FILE            = "warmup_cache.parquet"                        # persistent cache file
+
+# === Real TTL'd LRU Cache Implementation ===
+# (key) -> {"data": Any, "ts": float}
+_cache_lock = threading.RLock()
+_price_cache: "OrderedDict[str, dict[str, Any]]" = OrderedDict()
+_ohlcv_cache: "OrderedDict[str, dict[str, Any]]" = OrderedDict()
+
+def _cache_prune(od: OrderedDict) -> None:
+    while len(od) > CACHE_MAX_KEYS:
+        od.popitem(last=False)  # drop oldest
+
+def _cache_key(*parts: str) -> str:
+    return "|".join(parts)
+
+def cache_put_price(sym: str, value: Any) -> None:
+    with _cache_lock:
+        k = _cache_key("price", sym)
+        _price_cache[k] = {"data": value, "ts": time.time()}
+        _price_cache.move_to_end(k)
+        _cache_prune(_price_cache)
+
+def cache_get_price(sym: str) -> Optional[Any]:
+    with _cache_lock:
+        k = _cache_key("price", sym)
+        item = _price_cache.get(k)
+        if not item:
+            return None
+        if time.time() - item["ts"] > PRICE_TTL_SEC:
+            _price_cache.pop(k, None)
+            return None
+        _price_cache.move_to_end(k)
+        return item["data"]
+
+def cache_put_ohlcv(sym: str, tf: str, data: Any) -> None:
+    with _cache_lock:
+        k = _cache_key("ohlcv", sym, tf)
+        _ohlcv_cache[k] = {"data": data, "ts": time.time()}
+        _ohlcv_cache.move_to_end(k)
+        _cache_prune(_ohlcv_cache)
+
+def cache_get_ohlcv(sym: str, tf: str) -> Optional[Any]:
+    with _cache_lock:
+        k = _cache_key("ohlcv", sym, tf)
+        item = _ohlcv_cache.get(k)
+        if not item:
+            return None
+        if time.time() - item["ts"] > OHLCV_TTL_SEC:
+            _ohlcv_cache.pop(k, None)
+            return None
+        _ohlcv_cache.move_to_end(k)
+        return item["data"]
 
 # Warm-up state & TTL cache
 warmup: WarmupState = {"started": False, "done": False, "error": "", "loaded": []}
