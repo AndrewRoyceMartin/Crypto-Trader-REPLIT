@@ -391,9 +391,7 @@ def _get_warmup_error() -> str:
 portfolio_initialized = False
 # Recent initial trades for display
 recent_initial_trades = []
-# (symbol, timeframe) -> {"data": list, "ts": datetime}
-_price_cache: dict[tuple[str, str], dict[str, Any]] = {}
-_cache_lock = threading.RLock()
+# Legacy cache removed - using TTL'd LRU cache above
 
 def cache_put(sym: str, tf: str, df: Any) -> None:
     """DISABLED - No caching, always fetch live OKX data."""
