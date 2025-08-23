@@ -354,9 +354,6 @@ trading_state = {
     "type": None
 }
 
-# Bot state for compatibility
-bot_state: BotState = {"running": False}
-
 # Thread safety for shared state
 _state_lock = threading.RLock()
 
