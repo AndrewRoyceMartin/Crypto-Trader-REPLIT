@@ -4635,11 +4635,10 @@ def api_test_sync_data() -> ResponseReturnValue:
         holdings = []
         rich = []
         
-        # Collect test data
+        # Collect test data with dynamic endpoint
         test_data = {
             'timestamp': iso_utc(),
-            'okx_endpoint': 'live.okx.com',
-            'tests_available': 13,  # Set correct count upfront
+            'okx_endpoint': _okx_base_url().replace('https://', ''),
             'test_results': {}
         }
         
@@ -4709,14 +4708,14 @@ def api_test_sync_data() -> ResponseReturnValue:
                     # Normalize common formats
                     if ts_str.endswith('Z'):
                         ts_str = ts_str.replace('Z', '+00:00')
-                    update_time = _dt.datetime.fromisoformat(ts_str)
+                    update_time = datetime.fromisoformat(ts_str)
 
                     # Make timezone-aware if it isn't
                     if update_time.tzinfo is None:
-                        update_time = update_time.replace(tzinfo=_dt.timezone.utc)
+                        update_time = update_time.replace(tzinfo=timezone.utc)
 
-                    now_here = _dt.datetime.now(update_time.tzinfo)
-                    is_recent = (now_here - update_time) < _dt.timedelta(minutes=5)
+                    now_here = datetime.now(update_time.tzinfo)
+                    is_recent = (now_here - update_time) < timedelta(minutes=5)
                 except Exception as time_error:
                     logger.debug(f"Could not parse timestamp {last_update}: {time_error}")
                     is_recent = False
@@ -4814,6 +4813,9 @@ def api_test_sync_data() -> ResponseReturnValue:
 
         # Test 5: Bot/Trading state sync (running vs active, thread vs instance)
         try:
+            if portfolio_service is None:
+                portfolio_service = get_portfolio_service()
+                
             with _state_lock:
                 running = bool(bot_state.get('running', False))
                 active = bool(trading_state.get('active', False))
@@ -4843,7 +4845,9 @@ def api_test_sync_data() -> ResponseReturnValue:
 
         # Test 6: Mode ↔️ exchange sandbox/simulated headers
         try:
-            service = get_portfolio_service()
+            if portfolio_service is None:
+                portfolio_service = get_portfolio_service()
+            service = portfolio_service
             ex = getattr(service.exchange, 'exchange', None) if service and hasattr(service, 'exchange') else None
 
             sandbox_flag = None
@@ -4875,8 +4879,10 @@ def api_test_sync_data() -> ResponseReturnValue:
         try:
             if portfolio_service is None:
                 portfolio_service = get_portfolio_service()
-            pf = portfolio_service.get_portfolio_data()
-            holdings = pf.get('holdings', [])
+            if portfolio_data is None:
+                portfolio_data = portfolio_service.get_portfolio_data()
+            pf = portfolio_data
+            holdings = pf.get('holdings', []) if pf else []
             total_current_value = float(pf.get('total_current_value', 0) or 0)
             sum_current_value = sum(float(h.get('current_value', 0) or 0) for h in holdings)
 
@@ -5066,7 +5072,7 @@ def api_test_sync_data() -> ResponseReturnValue:
                 status_details.append("⛔ Bot STOPPED - No active trading")
                 status_details.append("💤 Use START BOT button to activate")
             
-            test_data['test_results']['bot_state_sync'] = {
+            test_data['test_results']['bot_runtime_status'] = {
                 'status': 'pass' if state_consistent else 'warning',
                 'bot_running': bot_running,
                 'bot_mode': bot_mode,
@@ -5078,7 +5084,7 @@ def api_test_sync_data() -> ResponseReturnValue:
                 'issues': issues
             }
         except Exception as e:
-            test_data['test_results']['bot_state_sync'] = {'status': 'error', 'error': str(e)}
+            test_data['test_results']['bot_runtime_status'] = {'status': 'error', 'error': str(e)}
 
         # Test 13: Cache is disabled (always live)
         try:
@@ -5090,9 +5096,10 @@ def api_test_sync_data() -> ResponseReturnValue:
         except Exception as e:
             test_data['test_results']['cache_disabled'] = {'status': 'error', 'error': str(e)}
 
-        # Test count is already set correctly at the top
+        # Add dynamic test count and use no-cache response
+        test_data['tests_available'] = len(test_data['test_results'])
         
-        return jsonify(test_data)
+        return _no_cache_json(test_data)
         
     except Exception as e:
         logger.error(f"Error generating test sync data: {e}")
