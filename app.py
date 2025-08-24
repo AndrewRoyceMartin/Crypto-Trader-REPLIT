@@ -4625,22 +4625,34 @@ def test_sync_data() -> str:
 def api_test_sync_data() -> ResponseReturnValue:
     """Get comprehensive test sync data for display"""
     try:
+        # Import all dependencies at the top to avoid local variable issues
+        from datetime import timedelta
+        from src.utils.okx_native import OKXNative
+        
+        # Initialize all variables to prevent state leakage
+        portfolio_service = None
+        portfolio_data = None
+        holdings = []
+        rich = []
+        
         # Collect test data
         test_data = {
             'timestamp': iso_utc(),
-            'okx_endpoint': 'app.okx.com',
-            'tests_available': 4,
+            'okx_endpoint': 'live.okx.com',
+            'tests_available': 13,  # Set correct count upfront
             'test_results': {}
         }
         
         # Test 1: Holdings Synchronization
         try:
-            # Get portfolio data directly from service
-            portfolio_service = get_portfolio_service()
-            portfolio_data = portfolio_service.get_portfolio_data()
+            # Get portfolio data safely with proper initialization
+            if portfolio_service is None:
+                portfolio_service = get_portfolio_service()
+            if portfolio_data is None:
+                portfolio_data = portfolio_service.get_portfolio_data()
             
             # Analyze holdings synchronization
-            holdings = portfolio_data.get('holdings', [])
+            holdings = portfolio_data.get('holdings', []) if portfolio_data else []
             matches = []
             mismatches = []
             
@@ -4678,14 +4690,15 @@ def api_test_sync_data() -> ResponseReturnValue:
                 'error': str(e)
             }
         
-        # Test 2: Price Freshness
+        # Test 2: Price Freshness  
         try:
-            import datetime as _dt  # <-- namespaced to avoid shadowing issues
-
-            portfolio_service = get_portfolio_service()
-            portfolio_data = portfolio_service.get_portfolio_data()
-
-            holdings = portfolio_data.get('holdings', [])
+            # Use safe portfolio data (already initialized)
+            if portfolio_service is None:
+                portfolio_service = get_portfolio_service()
+            if portfolio_data is None:
+                portfolio_data = portfolio_service.get_portfolio_data()
+            
+            holdings = portfolio_data.get('holdings', []) if portfolio_data else []
             all_holdings_live = all(h.get('is_live', False) for h in holdings) if holdings else False
 
             last_update = portfolio_data.get('last_update', '')
@@ -4900,21 +4913,20 @@ def api_test_sync_data() -> ResponseReturnValue:
         # Test 8: Price consistency (native vs ccxt)
         try:
             symbols = []
-            # prefer a few actual holdings with value; otherwise fall back to WATCHLIST
-            if holdings is None:
-                holdings = []
-            rich = [h.get('symbol') for h in holdings if float(h.get('current_value', 0) or 0) > 0]
+            # Safely get holdings and rich symbols with fallback
+            safe_holdings = holdings if holdings else []
+            rich = [h.get('symbol') for h in safe_holdings if float(h.get('current_value', 0) or 0) > 0]
             if rich:
                 symbols = [f"{s}/USDT" for s in list(dict.fromkeys(rich))[:3]]
             if not symbols:
                 symbols = WATCHLIST[:3]
 
             diffs = []
-            from src.utils.okx_native import OKXNative
+            # Use already imported OKXNative
             okx_native = OKXNative.from_env()
             if portfolio_service is None:
                 portfolio_service = get_portfolio_service()
-            ccxt_ex = getattr(portfolio_service.exchange, 'exchange', None)
+            ccxt_ex = getattr(portfolio_service.exchange, 'exchange', None) if portfolio_service else None
 
             for pair in symbols:
                 try:
@@ -4970,7 +4982,7 @@ def api_test_sync_data() -> ResponseReturnValue:
             is_recent = True
             if last_update:
                 try:
-                    from datetime import timedelta
+                    # Use already imported timedelta to avoid local variable issues
                     ts = datetime.fromisoformat(str(last_update).replace('Z', '+00:00'))
                     is_recent = (datetime.now(ts.tzinfo) - ts) < timedelta(minutes=10)
                 except Exception:
@@ -5078,8 +5090,7 @@ def api_test_sync_data() -> ResponseReturnValue:
         except Exception as e:
             test_data['test_results']['cache_disabled'] = {'status': 'error', 'error': str(e)}
 
-        # Update total test count
-        test_data['tests_available'] = 13
+        # Test count is already set correctly at the top
         
         return jsonify(test_data)
         
