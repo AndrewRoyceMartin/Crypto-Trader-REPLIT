@@ -4388,6 +4388,35 @@ function fmtFixed(value, decimals = 2) {
     return Number(value).toFixed(decimals);
 }
 
+function writeOverviewCards(pf) {
+  const N = (v)=> typeof v==='number' ? v : parseFloat(v||0);
+  const holdings = Array.isArray(pf.holdings) ? pf.holdings : [];
+  const total = N(pf.total_estimated_value ?? pf.total_current_value ?? 0);
+  const pnl = N(pf.total_pnl ?? 0), pnlPct = N(pf.total_pnl_percent ?? 0);
+
+  const e = id => document.getElementById(id);
+  if (e('okx-estimated-total')) e('okx-estimated-total').textContent = formatCurrency(total);
+  if (e('okx-day-pnl')) {
+    e('okx-day-pnl').textContent = formatCurrency(pnl);
+    e('okx-day-pnl').className = `value ${pnl>=0?'text-success':'text-danger'}`;
+  }
+  if (e('okx-day-pnl-percent')) {
+    e('okx-day-pnl-percent').textContent = `${pnlPct>=0?'+':''}${pnlPct.toFixed(2)}%`;
+    e('okx-day-pnl-percent').className = `change-indicator ${pnlPct>=0?'text-success':'text-danger'}`;
+  }
+  if (e('okx-active-positions')) e('okx-active-positions').textContent = holdings.length.toString();
+  if (e('okx-positions-detail')) {
+    const cryptoCount = holdings.filter(h=>!['USD','USDT','USDC','AUD','EUR','GBP'].includes(h.symbol)).length;
+    e('okx-positions-detail').textContent = `${cryptoCount} crypto`;
+  }
+  const best = holdings.filter(h=>N(h.pnl_percent)>0).sort((a,b)=>N(b.pnl_percent)-N(a.pnl_percent))[0];
+  if (best) {
+    if (e('okx-best-performer')) e('okx-best-performer').textContent = best.symbol;
+    if (e('okx-best-gain')) { e('okx-best-gain').textContent = `+${N(best.pnl_percent).toFixed(2)}%`; e('okx-best-gain').classList.add('text-success'); }
+  }
+  if (e('overview-last-update')) e('overview-last-update').textContent = window.tradingApp?.formatTimeOnly?.(Date.now()) || new Date().toLocaleTimeString();
+}
+
 // RENAMED: Big UI updater
 function updatePortfolioSummaryUI(portfolioData) {
     // Use the new overview object as primary data source
@@ -4584,30 +4613,18 @@ function updateQuickOverview(portfolioData) {
         percentElement.classList.add(totalPnlPercent >= 0 ? 'positive' : 'negative');
     }
 
-    // Update all OKX Portfolio Overview KPI cards with proper values
-    updateElementSafely("okx-estimated-total", formatCurrency(totalValue));
-    updateElementSafely("okx-estimated-total-graph", formatCurrency(totalValue));
-    updateElementSafely("okx-estimated-total-detailed", formatCurrency(totalValue));
-    updateElementSafely("okx-estimated-total-compact", formatCurrency(totalValue));
+    // Centralized OKX Portfolio Overview card updates
+    writeOverviewCards({
+        holdings,
+        total_estimated_value: totalValue,
+        total_current_value: totalValue,
+        total_pnl: totalPnl,
+        total_pnl_percent: totalPnlPercent
+    });
     
-    updateElementSafely("okx-day-pnl", formatCurrency(dailyPnl));
-    updateElementSafely("okx-day-pnl-graph", formatCurrency(dailyPnl));
-    updateElementSafely("okx-day-pnl-detailed", formatCurrency(dailyPnl));
-    updateElementSafely("okx-day-pnl-compact", formatCurrency(dailyPnl));
-    
-    updateElementSafely("okx-day-pnl-percent", `${dailyPnl >= 0 ? '+' : ''}${dailyPnlPercent.toFixed(2)}%`);
-    
-    updateElementSafely("okx-active-positions", activePositions);
-    updateElementSafely("okx-active-positions-graph", activePositions);
-    updateElementSafely("okx-active-positions-detailed", activePositions);
+    // Additional non-OKX card updates
     updateElementSafely("positions-crypto", holdings.filter(h => h.symbol !== 'AUD' && h.symbol !== 'USD').length);
     updateElementSafely("positions-fiat", holdings.filter(h => h.symbol === 'AUD' || h.symbol === 'USD').length);
-    
-    updateElementSafely("okx-best-performer", bestPerformer ? bestPerformer.symbol : "—");
-    updateElementSafely("okx-best-performer-graph", bestPerformer ? bestPerformer.symbol : "—");
-    updateElementSafely("okx-best-performer-detailed", bestPerformer ? bestPerformer.symbol : "—");
-    updateElementSafely("okx-best-performer-compact", bestPerformer ? bestPerformer.symbol : "—");
-    updateElementSafely("best-gain-percent", bestPerformer ? `${bestPerformer.pnl_percent >= 0 ? '+' : ''}${bestPerformer.pnl_percent.toFixed(2)}%` : "—");
     
     // Update progress bar for best performer
     const fillElement = document.getElementById("best-performer-fill");
@@ -4617,7 +4634,6 @@ function updateQuickOverview(portfolioData) {
     }
     
     updateElementSafely("okx-positions-detail", `${profitablePositions}↗ ${losingPositions}↘`);
-    updateElementSafely("overview-last-update", new Date().toLocaleTimeString());
 
     // Update detailed breakdowns for portfolio card
     updateElementSafely("portfolio-crypto", formatCurrency(totalValue - (overview.cash_balance || 0)));
@@ -4628,16 +4644,6 @@ function updateQuickOverview(portfolioData) {
     updateElementSafely("pnl-realized", formatCurrency(0)); // No realized P&L data available
     updateElementSafely("pnl-unrealized", formatCurrency(totalPnl));
     updateElementSafely("pnl-best", bestPerformer ? bestPerformer.symbol : "—");
-
-    // Update P&L color classes
-    const dailyPnlEl = document.getElementById("okx-day-pnl");
-    const pnlPercentEl = document.getElementById("okx-day-pnl-percent");
-    if (dailyPnlEl) {
-        dailyPnlEl.className = dailyPnl >= 0 ? "value text-success" : "value text-danger";
-    }
-    if (pnlPercentEl) {
-        pnlPercentEl.className = dailyPnl >= 0 ? "change-indicator text-success" : "change-indicator text-danger";
-    }
 
     // Update best performer gain color
     const bestGainEl = document.getElementById("best-gain-percent");
