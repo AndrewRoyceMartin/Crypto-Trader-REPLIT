@@ -4204,7 +4204,7 @@ function updateElementSafely(elementId, value) {
     } else {
         const currentPage = window.location.pathname;
         const expectedElements = {
-            '/': ['okx-total-balance', 'okx-day-pnl', 'okx-day-pnl-percent', 'okx-estimated-total', 'okx-active-positions', 'okx-best-performer'],
+            '/': ['portfolio-current-value', 'okx-day-pnl', 'okx-day-pnl-percent', 'okx-estimated-total', 'okx-active-positions', 'okx-best-performer'],
             '/portfolio': ['summary-total-value', 'summary-total-change', 'summary-total-assets', 'summary-cash-balance'],
             '/holdings': ['holdings-total-assets', 'holdings-active-count', 'holdings-zero-count']
         };
@@ -4409,8 +4409,8 @@ function updateQuickOverview(portfolioData) {
 
     // Update Portfolio Timeline chart and display elements
     updatePortfolioTimelineChart(totalValue, totalPnlPercent);
-    updateElement('portfolio-current-value', window.tradingApp.formatCurrency(totalValue));
-    updateElement('portfolio-growth-percent', `${totalPnlPercent >= 0 ? '+' : ''}${totalPnlPercent.toFixed(2)}%`);
+    updateElementSafely('portfolio-current-value', window.tradingApp.formatCurrency(totalValue));
+    updateElementSafely('portfolio-growth-percent', `${totalPnlPercent >= 0 ? '+' : ''}${totalPnlPercent.toFixed(2)}%`);
     
     // Update percentage styling
     const percentElement = document.getElementById('portfolio-growth-percent');
@@ -4442,7 +4442,14 @@ function updateQuickOverview(portfolioData) {
     updateElementSafely("okx-best-performer-graph", bestPerformer ? bestPerformer.symbol : "—");
     updateElementSafely("okx-best-performer-detailed", bestPerformer ? bestPerformer.symbol : "—");
     updateElementSafely("okx-best-performer-compact", bestPerformer ? bestPerformer.symbol : "—");
-    updateElementSafely("okx-best-gain", bestPerformer ? `+${bestPerformer.pnl_percent.toFixed(2)}%` : "—");
+    updateElementSafely("best-gain-percent", bestPerformer ? `${bestPerformer.pnl_percent >= 0 ? '+' : ''}${bestPerformer.pnl_percent.toFixed(2)}%` : "—");
+    
+    // Update progress bar for best performer
+    const fillElement = document.getElementById("best-performer-fill");
+    if (fillElement && bestPerformer) {
+        const progressWidth = Math.min(Math.abs(bestPerformer.pnl_percent * 10), 100);
+        fillElement.style.width = `${progressWidth}%`;
+    }
     
     updateElementSafely("okx-positions-detail", `${profitablePositions}↗ ${losingPositions}↘`);
     updateElementSafely("overview-last-update", new Date().toLocaleTimeString());
@@ -4468,9 +4475,11 @@ function updateQuickOverview(portfolioData) {
     }
 
     // Update best performer gain color
-    const bestGainEl = document.getElementById("okx-best-gain");
+    const bestGainEl = document.getElementById("best-gain-percent");
     if (bestGainEl && bestPerformer) {
-        bestGainEl.className = bestPerformer.pnl_percent >= 0 ? "change-indicator text-success" : "change-indicator text-danger";
+        bestGainEl.classList.remove('text-success', 'text-danger', 'positive', 'negative');
+        bestGainEl.classList.add(bestPerformer.pnl_percent >= 0 ? 'text-success' : 'text-danger');
+        bestGainEl.classList.add(bestPerformer.pnl_percent >= 0 ? 'positive' : 'negative');
     }
 
     if (holdings.length) updateTopMovers(holdings);
