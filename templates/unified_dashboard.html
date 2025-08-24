@@ -1390,24 +1390,43 @@
         
         // Set up other button handlers
         document.getElementById('btn-ato-export')?.addEventListener('click', function() {
-            window.open('/api/ato-export', '_blank');
+            window.open('/api/export/ato', '_blank');
         });
         
         document.getElementById('btn-take-profit')?.addEventListener('click', async function() {
             if (confirm('Execute take profit for all positions above 2% profit?')) {
                 try {
                     const token = getAdminToken();
-                    const response = await fetch('/api/take-profit', {
+                    const response = await fetch('/api/execute-take-profit', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
                             'X-Admin-Token': token
                         }
                     });
+                    
+                    if (response.status === 401) {
+                        alert('Admin authentication required for take profit execution.');
+                        return;
+                    }
+                    
                     const data = await response.json();
-                    alert(data.message || 'Take profit executed');
+                    if (data.success) {
+                        const sells = data.executed_trades?.length || 0;
+                        const buys = data.buy_trades?.length || 0;
+                        const profit = data.total_profit || 0;
+                        const message = `Take profit executed: ${sells} sells, ${buys} buys, $${profit.toFixed(2)} total profit`;
+                        alert(message);
+                        
+                        // Refresh portfolio data
+                        if (window.tradingApp && typeof window.tradingApp.updateCryptoPortfolio === 'function') {
+                            window.tradingApp.updateCryptoPortfolio();
+                        }
+                    } else {
+                        alert(data.error || data.message || 'Take profit execution failed');
+                    }
                 } catch (error) {
-                    alert(`Error: ${error.message}`);
+                    alert(`Take profit error: ${error.message}`);
                 }
             }
         });
