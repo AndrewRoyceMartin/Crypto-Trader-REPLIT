@@ -624,11 +624,18 @@
             <div class="card card--hover">
                 <div class="card-header">
                     <h3 class="mb-0"><span class="icon icon-wallet me-2"></span>Available Positions</h3>
-                    <div class="meta">
-                        <span class="icon icon-clock me-1"></span>
-                        Last updated: <span id="available-last-update" aria-live="polite">—</span> | 
-                        <span class="icon icon-timer me-1"></span>
-                        Next refresh: <span id="available-next-refresh" aria-live="polite">—</span>
+                    <div class="d-flex align-items-center">
+                        <div class="meta me-3">
+                            <span class="icon icon-clock me-1"></span>
+                            Last updated: <span id="available-last-update" aria-live="polite">—</span> | 
+                            <span class="icon icon-timer me-1"></span>
+                            Next refresh: <span id="available-next-refresh" aria-live="polite">—</span>
+                        </div>
+                        <button id="recalculate-btn" class="btn btn-outline-primary btn-sm" 
+                                onclick="recalculatePositions()" 
+                                title="Force recalculation of all positions with fresh market data">
+                            <i class="fas fa-calculator me-1"></i>Recalculate
+                        </button>
                     </div>
                 </div>
                 <div class="card-body p-0">
@@ -1457,6 +1464,64 @@
             }
         }, 1000);
     });
+    
+    // Recalculate positions function
+    async function recalculatePositions() {
+        const btn = document.getElementById('recalculate-btn');
+        const originalText = btn.innerHTML;
+        
+        try {
+            // Show loading state
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Recalculating...';
+            
+            // Get admin token
+            const adminToken = document.querySelector('meta[name="admin-token"]')?.getAttribute('content');
+            if (!adminToken) {
+                throw new Error('Admin token not found');
+            }
+            
+            // Call recalculation API
+            const response = await fetch('/api/recalculate-positions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${adminToken}`
+                },
+                cache: 'no-cache'
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                // Show success message
+                if (window.tradingApp) {
+                    window.tradingApp.showToast(result.message, 'success');
+                }
+                
+                // Wait a moment for backend processing, then refresh
+                setTimeout(async () => {
+                    await fetchAndUpdateAvailablePositions();
+                    console.log('Available positions refreshed after recalculation');
+                }, 1500);
+                
+            } else {
+                throw new Error(result.message || 'Recalculation failed');
+            }
+            
+        } catch (error) {
+            console.error('Error recalculating positions:', error);
+            if (window.tradingApp) {
+                window.tradingApp.showToast(`Recalculation failed: ${error.message}`, 'error');
+            }
+        } finally {
+            // Restore button state
+            setTimeout(() => {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }, 2000);
+        }
+    }
     </script>
 </body>
 </html>

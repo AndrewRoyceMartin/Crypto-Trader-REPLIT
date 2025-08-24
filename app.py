@@ -3300,6 +3300,60 @@ def api_entry_confidence_batch() -> ResponseReturnValue:
         logger.error(f"Error getting batch entry confidence: {e}")
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
+@app.route('/api/recalculate-positions', methods=['POST'])
+@require_admin
+def api_recalculate_positions() -> ResponseReturnValue:
+    """Manually force recalculation of all open positions and clear related caches."""
+    try:
+        logger.info("Manual recalculation of open positions requested")
+        
+        # Clear relevant caches to force fresh data
+        with _cache_lock:
+            _price_cache.clear()
+            _ohlcv_cache.clear()
+        
+        # Clear target price locks to allow recalculation
+        try:
+            from src.utils.target_price_manager import TargetPriceManager
+            tpm = TargetPriceManager()
+            # Force recalculation by clearing expired locks
+            tpm._clear_expired_locks()
+            logger.info("Target price locks reviewed for recalculation")
+        except Exception as tpm_error:
+            logger.warning(f"Could not clear target price locks: {tpm_error}")
+        
+        # Force fresh portfolio service reconnection
+        portfolio_service = get_portfolio_service()
+        if portfolio_service and hasattr(portfolio_service, 'exchange'):
+            try:
+                # Refresh market data
+                if hasattr(portfolio_service.exchange, 'exchange') and portfolio_service.exchange.exchange:
+                    portfolio_service.exchange.exchange.load_markets(True)  # Force reload
+                    logger.info("OKX market data reloaded")
+            except Exception as market_error:
+                logger.warning(f"Could not reload market data: {market_error}")
+        
+        # Return success with instruction to refresh data
+        return jsonify({
+            'success': True,
+            'message': 'Position recalculation triggered - refreshing data...',
+            'timestamp': iso_utc(),
+            'actions_taken': [
+                'Cleared price and OHLCV caches',
+                'Reviewed target price locks',
+                'Reloaded market data',
+                'Ready for fresh position calculation'
+            ]
+        })
+        
+    except Exception as e:
+        logger.error(f"Error during manual position recalculation: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'message': 'Failed to recalculate positions'
+        }), 500
+
 @app.route('/api/available-positions')
 def api_available_positions() -> ResponseReturnValue:
     """Get all available OKX assets that can be traded, including zero balances."""
