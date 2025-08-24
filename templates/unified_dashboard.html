@@ -214,18 +214,24 @@
             <!-- KPI Cards Row -->
             <div class="row text-center mb-4 g-2">
                 <div class="col-6 col-md-2">
-                    <div class="kpi-card view-text" data-card="total-balance">
+                    <div class="portfolio-card kpi-card view-text" data-card="total-balance">
                         <button class="view-toggle-btn" onclick="toggleCardView('total-balance')" title="Switch view">
                             <i class="fa-solid fa-eye"></i>
                         </button>
                         
                         <!-- Text View -->
                         <div class="view-content view-text-content active">
-                            <div class="label">
-                                <span class="icon icon-balance me-1"></span>Total Balance
+                            <div class="title">
+                                <span><i class="fa-solid fa-wallet"></i></span>
+                                <div class="title-text">Total Balance</div>
+                                <div class="percent" id="total-balance-percent">0%</div>
                             </div>
-                            <div id="okx-total-balance" class="value">$0.00</div>
-                            <div id="okx-balance-change" class="change-indicator"></div>
+                            <div class="data">
+                                <div id="okx-total-balance" class="value">$0.00</div>
+                                <div class="range">
+                                    <div class="fill" id="total-balance-fill" style="width: 50%"></div>
+                                </div>
+                            </div>
                         </div>
                         
                         <!-- Graph View -->
@@ -258,19 +264,23 @@
                     </div>
                 </div>
                 <div class="col-6 col-md-2">
-                    <div class="kpi-card view-text" data-card="estimated-total">
+                    <div class="portfolio-card kpi-card view-text" data-card="estimated-total">
                         <button class="view-toggle-btn" onclick="toggleCardView('estimated-total')" title="Switch view">
                             <i class="fa-solid fa-chart-line"></i>
                         </button>
                         
                         <!-- Text View -->
                         <div class="view-content view-text-content active">
-                            <div class="label">
-                                <span class="icon icon-wallet me-1"></span>Estimated Total Value
+                            <div class="title">
+                                <span><i class="fa-solid fa-chart-pie"></i></span>
+                                <div class="title-text">Portfolio Value</div>
+                                <div class="percent" id="portfolio-percent">0%</div>
                             </div>
-                            <div id="okx-estimated-total" class="value">$0.00</div>
-                            <div class="change-indicator">
-                                <canvas id="mini-portfolio-chart" width="120" height="40" style="width: 100%; height: 40px; margin-top: 8px;"></canvas>
+                            <div class="data">
+                                <div id="okx-estimated-total" class="value">$0.00</div>
+                                <div class="range">
+                                    <div class="fill" id="portfolio-fill" style="width: 65%"></div>
+                                </div>
                             </div>
                         </div>
                         
@@ -304,18 +314,24 @@
                     </div>
                 </div>
                 <div class="col-6 col-md-2">
-                    <div class="kpi-card view-text" data-card="day-pnl">
+                    <div class="portfolio-card kpi-card view-text" data-card="day-pnl">
                         <button class="view-toggle-btn" onclick="toggleCardView('day-pnl')" title="Switch view">
                             <i class="fa-solid fa-trending-up"></i>
                         </button>
                         
                         <!-- Text View -->
                         <div class="view-content view-text-content active">
-                            <div class="label">
-                                <span class="icon icon-pnl me-1"></span>24h P&L
+                            <div class="title">
+                                <span><i class="fa-solid fa-chart-line"></i></span>
+                                <div class="title-text">24h P&L</div>
+                                <div class="percent" id="day-pnl-percent">0%</div>
                             </div>
-                            <div id="okx-day-pnl" class="value">$0.00</div>
-                            <div id="okx-day-pnl-percent" class="change-indicator"></div>
+                            <div class="data">
+                                <div id="okx-day-pnl" class="value">$0.00</div>
+                                <div class="range">
+                                    <div class="fill" id="day-pnl-fill" style="width: 30%"></div>
+                                </div>
+                            </div>
                         </div>
                         
                         <!-- Graph View -->
@@ -348,18 +364,24 @@
                     </div>
                 </div>
                 <div class="col-6 col-md-2">
-                    <div class="kpi-card view-text" data-card="best-performer">
+                    <div class="portfolio-card kpi-card view-text" data-card="best-performer">
                         <button class="view-toggle-btn" onclick="toggleCardView('best-performer')" title="Switch view">
                             <i class="fa-solid fa-trophy"></i>
                         </button>
                         
                         <!-- Text View -->
                         <div class="view-content view-text-content active">
-                            <div class="label">
-                                <span class="icon icon-trophy me-1"></span>Best Performer
+                            <div class="title">
+                                <span><i class="fa-solid fa-trophy"></i></span>
+                                <div class="title-text">Best Performer</div>
+                                <div class="percent" id="best-gain-percent">0%</div>
                             </div>
-                            <div id="okx-best-performer" class="value">—</div>
-                            <div id="okx-best-gain" class="change-indicator text-success"></div>
+                            <div class="data">
+                                <div id="okx-best-performer" class="value">—</div>
+                                <div class="range">
+                                    <div class="fill" id="best-performer-fill" style="width: 90%"></div>
+                                </div>
+                            </div>
                         </div>
                         
                         <!-- Graph View -->
@@ -392,18 +414,24 @@
                     </div>
                 </div>
                 <div class="col-6 col-md-2">
-                    <div class="kpi-card view-text" data-card="active-positions">
+                    <div class="portfolio-card kpi-card view-text" data-card="active-positions">
                         <button class="view-toggle-btn" onclick="toggleCardView('active-positions')" title="Switch view">
                             <i class="fa-solid fa-coins"></i>
                         </button>
                         
                         <!-- Text View -->
                         <div class="view-content view-text-content active">
-                            <div class="label">
-                                <span class="icon icon-positions me-1"></span>Active Positions
+                            <div class="title">
+                                <span><i class="fa-solid fa-coins"></i></span>
+                                <div class="title-text">Active Positions</div>
+                                <div class="percent" id="positions-percent">100%</div>
                             </div>
-                            <div id="okx-active-positions" class="value">0</div>
-                            <div id="okx-positions-detail" class="change-indicator"></div>
+                            <div class="data">
+                                <div id="okx-active-positions" class="value">0</div>
+                                <div class="range">
+                                    <div class="fill" id="positions-fill" style="width: 85%"></div>
+                                </div>
+                            </div>
                         </div>
                         
                         <!-- Graph View -->
