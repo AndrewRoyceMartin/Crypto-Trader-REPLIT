@@ -631,7 +631,8 @@ class TradingApp {
                 this.riskChart.destroy();
             }
             
-            // Create analytics chart with real OKX data
+            // Create analytics chart with real OKX data - defensive loading
+            if (!window.Chart) return;
             this.riskChart = new Chart(riskCanvas, {
                 type: 'doughnut',
                 data: {
@@ -752,7 +753,8 @@ class TradingApp {
             const lineColor = isPositive ? '#28a745' : '#dc3545';
             const fillColor = isPositive ? 'rgba(40, 167, 69, 0.1)' : 'rgba(220, 53, 69, 0.1)';
             
-            // Create chart with real OKX data
+            // Create chart with real OKX data - defensive loading
+            if (!window.Chart) return;
             this.portfolioChart = new Chart(portfolioCanvas, {
                 type: 'line',
                 data: {
@@ -865,7 +867,8 @@ class TradingApp {
                 '#fd7e14', '#20c997', '#6c757d', '#e83e8c', '#17a2b8'
             ];
             
-            // Create asset allocation pie chart with real OKX data
+            // Create asset allocation pie chart with real OKX data - defensive loading
+            if (!window.Chart) return;
             this.allocationChart = new Chart(allocationCanvas, {
                 type: 'doughnut',
                 data: {
@@ -1113,7 +1116,8 @@ class TradingApp {
             const lineColor = metrics.total_return_percent >= 0 ? '#28a745' : '#dc3545';
             const fillColor = metrics.total_return_percent >= 0 ? 'rgba(40, 167, 69, 0.1)' : 'rgba(220, 53, 69, 0.1)';
             
-            // Create equity curve line chart
+            // Create equity curve line chart - defensive loading
+            if (!window.Chart) return;
             this.equityChart = new Chart(equityCanvas, {
                 type: 'line',
                 data: {
@@ -1278,7 +1282,8 @@ class TradingApp {
             const peakValues = drawdownData.map(point => point.peak_equity);
             const drawdownPercents = drawdownData.map(point => -point.drawdown_percent); // Negative for underwater display
             
-            // Create dual-axis drawdown chart
+            // Create dual-axis drawdown chart - defensive loading
+            if (!window.Chart) return;
             this.drawdownChart = new Chart(drawdownCanvas, {
                 type: 'line',
                 data: {
@@ -2123,7 +2128,11 @@ class TradingApp {
     }
 
     updateMiniPortfolioChart(portfolioData) {
-        // Safely update mini portfolio chart - guarded to prevent console noise on pages without canvas
+        // Defensive Chart.js loading - only render if Chart is ready and DOM element exists
+        if (!window.Chart || !document.getElementById('mini-portfolio-chart')) {
+            return; // Silent return if Chart.js not loaded or element doesn't exist
+        }
+        
         const miniChartCanvas = document.getElementById('mini-portfolio-chart');
         if (!miniChartCanvas || !portfolioData) {
             return; // Silent return if element doesn't exist or no data
@@ -3248,6 +3257,7 @@ class TradingApp {
         try {
             // Test Chart.js availability and compatibility
             const testCanvas = document.createElement('canvas');
+            if (!window.Chart) throw new Error('Chart.js not available');
             const testChart = new Chart(testCanvas, {
                 type: 'line',
                 data: { labels: [], datasets: [] },
@@ -3270,6 +3280,7 @@ class TradingApp {
             const portfolioCtx = document.getElementById('portfolioChart');
             if (portfolioCtx && portfolioCtx.getContext) {
                 try {
+                    if (!window.Chart) return;
                     this.portfolioChart = new Chart(portfolioCtx, {
                         type: 'line',
                         data: { 
@@ -3308,6 +3319,7 @@ class TradingApp {
             const pnlCtx = document.getElementById('pnlChart');
             if (pnlCtx && pnlCtx.getContext) {
                 try {
+                    if (!window.Chart) return;
                     this.pnlChart = new Chart(pnlCtx, {
                         type: 'doughnut',
                         data: {
@@ -3336,6 +3348,7 @@ class TradingApp {
             const performersCtx = document.getElementById('performersChart');
             if (performersCtx && performersCtx.getContext) {
                 try {
+                    if (!window.Chart) return;
                     this.performersChart = new Chart(performersCtx, {
                         type: 'bar',
                         data: { 
@@ -5027,7 +5040,8 @@ function updatePortfolioChart(canvas, equityData, currentValue, pnlPercent) {
         }
     }
 
-    // Create the chart
+    // Create the chart - defensive loading
+    if (!window.Chart) return;
     window.portfolioTimelineChart = new Chart(ctx, {
         type: 'line',
         data: {
@@ -5139,6 +5153,7 @@ function renderAllocationChart(holdings) {
     const data = sorted.map(h => h.current_value || 0);
     const colors = ['#FF6384','#36A2EB','#FFCE56','#4BC0C0','#9966FF','#FF9F40','#FF6384','#C9CBCF','#4BC0C0','#FF6384'];
 
+    if (!window.Chart) return;
     window.allocationChart = new Chart(canvas.getContext('2d'), {
         type: 'doughnut',
         data: { labels, datasets: [{ data, backgroundColor: colors, borderWidth: 1 }] },
