@@ -1073,3 +1073,129 @@ td .d-flex.align-items-center > div:last-child small {
 #holdings-table .status-indicator.breakeven {
   background: var(--muted);
 }
+
+/* ========================================================
+   COLORLIB RESPONSIVE TABLE V2 MODERN STYLING OVERRIDE
+   ======================================================== */
+
+/* Enhanced Table Styling - Colorlib V2 Inspired */
+.table {
+  width: 100% !important;
+  table-layout: auto !important;
+  margin: 0 !important;
+  font-size: 0.875rem !important;
+  border-collapse: collapse !important;
+  background: #ffffff !important;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
+}
+
+.table th, .table td {
+  padding: 12px 15px !important;
+  text-align: left !important;
+  vertical-align: middle !important;
+  border-bottom: 1px solid #e0e6ed !important;
+  border-right: none !important;
+  word-wrap: break-word !important;
+  white-space: normal !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+}
+
+.table thead th {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  color: #ffffff !important;
+  font-weight: 600 !important;
+  font-size: 0.8rem !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+  border-bottom: 3px solid #495057 !important;
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 10 !important;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.1) !important;
+}
+
+.table tbody tr {
+  transition: all 0.3s ease !important;
+  border-bottom: 1px solid #e9ecef !important;
+}
+
+.table tbody tr:nth-child(even) {
+  background-color: #f8f9fa !important;
+}
+
+.table tbody tr:hover {
+  background-color: #e3f2fd !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
+  border-left: 4px solid #007bff !important;
+}
+
+/* Improved container styling */
+.table-responsive {
+  border: 1px solid #dee2e6 !important;
+  border-radius: 10px !important;
+  overflow: hidden !important;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1) !important;
+  background: #ffffff !important;
+}
+
+/* Better alignment for different content types */
+.table .numeric, 
+.table .price, 
+.table .amount,
+.table .text-end {
+  text-align: right !important;
+  font-family: 'Courier New', monospace !important;
+  font-weight: 600 !important;
+}
+
+.table .text-center {
+  text-align: center !important;
+}
+
+/* Status badges improvements */
+.table .badge {
+  padding: 4px 8px !important;
+  border-radius: 6px !important;
+  font-size: 0.75rem !important;
+  font-weight: 600 !important;
+}
+
+/* P&L styling improvements */
+.table .text-success {
+  color: #28a745 !important;
+  font-weight: 600 !important;
+}
+
+.table .text-danger {
+  color: #dc3545 !important;
+  font-weight: 600 !important;
+}
+
+/* Symbol column styling */
+.table .symbol-cell {
+  font-weight: 600 !important;
+  color: #495057 !important;
+}
+
+/* Remove fixed widths for better responsive behavior */
+#open-positions-table {
+  min-width: 1200px !important;
+  table-layout: auto !important;
+}
+
+/* Better column width distribution */
+#open-positions-table th:nth-child(1) { width: auto !important; min-width: 80px; }
+#open-positions-table th:nth-child(2) { width: auto !important; min-width: 100px; }
+#open-positions-table th:nth-child(3) { width: auto !important; min-width: 100px; }
+#open-positions-table th:nth-child(4) { width: auto !important; min-width: 100px; }
+#open-positions-table th:nth-child(5) { width: auto !important; min-width: 90px; }
+#open-positions-table th:nth-child(6) { width: auto !important; min-width: 100px; }
+#open-positions-table th:nth-child(7) { width: auto !important; min-width: 90px; }
+#open-positions-table th:nth-child(8) { width: auto !important; min-width: 90px; }
+#open-positions-table th:nth-child(9) { width: auto !important; min-width: 100px; }
+#open-positions-table th:nth-child(10) { width: auto !important; min-width: 90px; }
+#open-positions-table th:nth-child(11) { width: auto !important; min-width: 80px; }
+#open-positions-table th:nth-child(12) { width: auto !important; min-width: 70px; }
+#open-positions-table th:nth-child(13) { width: auto !important; min-width: 90px; }
