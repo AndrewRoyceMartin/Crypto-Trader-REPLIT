@@ -53,11 +53,11 @@ class MultiCurrencyTrader:
         self.running = True
         self.logger.info("Starting multi-currency trading with universal rebuy mechanism")
         
-        # Start a thread for each trading pair
-        for pair in self.trading_pairs:
+        # Start a thread for each trading pair with staggered delays to prevent OKX rate limiting
+        for i, pair in enumerate(self.trading_pairs):
             thread = threading.Thread(
                 target=self._trade_pair,
-                args=(pair, timeframe),
+                args=(pair, timeframe, i * 2),  # Add delay parameter 
                 name=f"Trader-{pair.replace('/', '-')}"
             )
             thread.daemon = True
@@ -66,8 +66,12 @@ class MultiCurrencyTrader:
             
         self.logger.info(f"Started {len(self.threads)} trading threads")
     
-    def _trade_pair(self, pair: str, timeframe: str) -> None:
+    def _trade_pair(self, pair: str, timeframe: str, delay: int = 0) -> None:
         """Trade a specific cryptocurrency pair."""
+        if delay > 0:
+            self.logger.info(f"Delaying {pair} startup by {delay} seconds to prevent API rate limiting")
+            time.sleep(delay)
+            
         trader = self.traders[pair]
         try:
             self.logger.info(f"Starting trading for {pair}")
