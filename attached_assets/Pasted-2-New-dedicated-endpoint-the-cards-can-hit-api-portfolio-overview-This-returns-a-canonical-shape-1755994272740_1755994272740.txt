@@ -1,0 +1,65 @@
+2) New dedicated endpoint the cards can hit: /api/portfolio-overview
+
+This returns a canonical shape that the cards can depend on (numeric fields guaranteed, currency-aware, and uncached).
+
+@app.route("/api/portfolio-overview")
+def api_portfolio_overview() -> ResponseReturnValue:
+    """A small, reliable payload tailor-made for the Overview cards."""
+    try:
+        selected_currency = request.args.get('currency', 'USD').upper()
+        portfolio_service = get_portfolio_service()
+
+        # Force a fresh pull on currency change
+        try:
+            data = portfolio_service.get_portfolio_data(currency=selected_currency, force_refresh=True)
+        except TypeError:
+            try:
+                if hasattr(portfolio_service, "invalidate_cache"):
+                    portfolio_service.invalidate_cache()
+                elif hasattr(portfolio_service, "clear_cache"):
+                    portfolio_service.clear_cache()
+            except Exception:
+                pass
+            data = portfolio_service.get_portfolio_data(currency=selected_currency)
+
+        holdings = data.get('holdings', []) or []
+        total_current_value = float(data.get('total_current_value', 0) or 0)
+        total_pnl = float(data.get('total_pnl', 0) or 0)
+        total_pnl_percent = float(data.get('total_pnl_percent', 0) or 0)
+        daily_pnl = float(data.get('daily_pnl', 0) or 0)
+        daily_pnl_percent = float(data.get('daily_pnl_percent', 0) or 0)
+        cash_balance = float(data.get('cash_balance', 0) or 0)
+        aud_balance = float(data.get('aud_balance', 0) or 0)
+
+        profitable = sum(1 for h in holdings if float(h.get('pnl_percent', 0) or 0) > 0)
+        losing = sum(1 for h in holdings if float(h.get('pnl_percent', 0) or 0) < 0)
+        total_assets = len(holdings)
+
+        last_update = data.get('last_update') or iso_utc()
+
+        payload = {
+            "success": True,
+            "overview": {
+                "currency": selected_currency,
+                "total_value": total_current_value,
+                "cash_balance": cash_balance,
+                "aud_balance": aud_balance,
+                "total_pnl": total_pnl,
+                "total_pnl_percent": total_pnl_percent,
+                "daily_pnl": daily_pnl,
+                "daily_pnl_percent": daily_pnl_percent,
+                "total_assets": total_assets,
+                "profitable_positions": profitable,
+                "losing_positions": losing,
+                "breakeven_positions": max(0, total_assets - profitable - losing),
+                "last_update": last_update,
+                "is_live": True,
+                "connected": True
+            },
+            "timestamp": iso_utc()
+        }
+        return _no_cache_json(payload)
+
+    except Exception as e:
+        logger.error(f"portfolio-overview error: {e}")
+        return _no_cache_json({"success": False, "error": str(e)}, 500)

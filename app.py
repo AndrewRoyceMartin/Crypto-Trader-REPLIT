@@ -974,16 +974,36 @@ multi_currency_trader = None
 def bot_status() -> ResponseReturnValue:
     """Get current bot trading status with multi-currency details."""
     with _state_lock:
-        status = {
-            "success": True,
-            "running": bot_state["running"],
-            "active": bool(bot_state.get("running", False)),
-            "mode": bot_state["mode"],
-            "symbol": bot_state["symbol"], 
-            "timeframe": bot_state["timeframe"],
-            "started_at": bot_state["started_at"]
-        }
-    
+        running = bool(bot_state.get("running", False))
+        started_at = bot_state.get("started_at")
+        mode = bot_state.get("mode")
+        symbol = bot_state.get("symbol")
+        timeframe = bot_state.get("timeframe")
+
+    # derive runtime
+    runtime_sec = 0
+    if running and started_at:
+        try:
+            ts = str(started_at).replace('Z', '+00:00')
+            dt = datetime.fromisoformat(ts)
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=timezone.utc)
+            runtime_sec = max(0, int((datetime.now(dt.tzinfo) - dt).total_seconds()))
+        except Exception:
+            runtime_sec = 0
+
+    status = {
+        "success": True,
+        "running": running,
+        "active": running,
+        "mode": mode,
+        "symbol": symbol,
+        "timeframe": timeframe,
+        "started_at": started_at,
+        "runtime_seconds": runtime_sec,
+        "runtime_human": humanize_seconds(runtime_sec),
+    }
+
     # Add multi-currency details if available
     global multi_currency_trader
     if multi_currency_trader and hasattr(multi_currency_trader, 'get_status'):
@@ -998,8 +1018,8 @@ def bot_status() -> ResponseReturnValue:
             })
         except Exception as e:
             logger.error(f"Error getting multi-currency status: {e}")
-    
-    return jsonify(status)
+
+    return _no_cache_json(status)
 
 @app.route("/api/bot/start", methods=["POST"])
 @require_admin
