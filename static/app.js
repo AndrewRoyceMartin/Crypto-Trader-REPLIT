@@ -2019,6 +2019,23 @@ class TradingApp {
         }
     }
 
+    updateMiniPortfolioChart(portfolioData) {
+        // Safely update mini portfolio chart - guarded to prevent console noise on pages without canvas
+        const miniChartCanvas = document.getElementById('mini-portfolio-chart');
+        if (!miniChartCanvas || !portfolioData) {
+            return; // Silent return if element doesn't exist or no data
+        }
+
+        try {
+            // Basic sparkline chart update logic would go here
+            // For now, this prevents the console error from calling a non-existent function
+            console.debug('Mini portfolio chart update called but not fully implemented');
+        } catch (error) {
+            // Silent catch - no console noise on chart update failures
+            console.debug('Mini portfolio chart update failed:', error.message);
+        }
+    }
+
     async loadConfig() {
         const config = await this.fetchWithCache('/api/config', 'config', this.bypassCache);
         if (!config) return;
