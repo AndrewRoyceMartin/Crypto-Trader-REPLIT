@@ -3975,7 +3975,8 @@ let tableSortState = {
     portfolio: { column: null, direction: 'asc' },
     positions: { column: null, direction: 'asc' },
     trades: { column: null, direction: 'asc' },
-    performance: { column: null, direction: 'asc' }
+    performance: { column: null, direction: 'asc' },
+    available: { column: null, direction: 'asc' }
 };
 
 function sortPortfolio(column) {
@@ -4028,6 +4029,19 @@ function sortTradesTable(columnIndex) {
     
     sortTableByColumnIndex(table, columnIndex, 'trades');
     if (window.tradingApp) window.tradingApp.showToast('Trades table sorted', 'success');
+}
+
+function sortAvailableTable(columnIndex) {
+    console.log(`Sorting available positions table by column ${columnIndex}`);
+    
+    const table = document.querySelector('#available-tbody');
+    if (!table) {
+        console.debug('Available positions table not found');
+        return;
+    }
+    
+    sortTableByColumnIndex(table, columnIndex, 'available');
+    if (window.tradingApp) window.tradingApp.showToast('Available positions sorted', 'success');
 }
 
 function sortTableByColumn(tableBody, column, tableType) {
