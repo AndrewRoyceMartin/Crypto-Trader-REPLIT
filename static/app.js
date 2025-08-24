@@ -96,19 +96,22 @@ function setConn(connected){
   el.closest('.badge')?.classList.toggle('bg-danger', !connected);
 }
 
+// V02 table mobile labels helper
+function v02ApplyDataLabels(table) {
+  const theadCells = Array.from(table.querySelectorAll('thead th'));
+  if (!theadCells.length) return;
+  const headers = theadCells.map(th => (th.innerText || th.textContent).trim());
+  table.querySelectorAll('tbody tr').forEach(row => {
+    Array.from(row.children).forEach((td, i) => {
+      if (td && headers[i]) td.setAttribute('data-label', headers[i]);
+    });
+  });
+}
+
 // Event delegation for card view toggle buttons
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize V02 table mobile labels
-    document.querySelectorAll('.table-v02').forEach(table => {
-        const theadCells = Array.from(table.querySelectorAll('thead th'));
-        if (!theadCells.length) return;
-        const headers = theadCells.map(th => (th.innerText || th.textContent).trim());
-        table.querySelectorAll('tbody tr').forEach(row => {
-            Array.from(row.children).forEach((td, i) => {
-                if (td && headers[i]) td.setAttribute('data-label', headers[i]);
-            });
-        });
-    });
+    document.querySelectorAll('.table-v02').forEach(v02ApplyDataLabels);
 
     document.addEventListener('click', function(e) {
         if (e.target.classList.contains('view-toggle-btn') || e.target.parentNode.classList.contains('view-toggle-btn')) {
@@ -1749,7 +1752,8 @@ class TradingApp {
             }
 
             // Update mobile data labels
-            this.updateTableDataLabels();
+            const table = document.getElementById('holdings-table');
+            if (table) v02ApplyDataLabels(table);
             
         } catch (error) {
             console.debug('Holdings table update failed:', error);
@@ -1785,31 +1789,14 @@ class TradingApp {
             this.updateTradesTable(data.trades, data.summary);
 
             // Update mobile data labels
-            this.updateTableDataLabels();
+            const table = document.getElementById('trades-table');
+            if (table) v02ApplyDataLabels(table);
             
         } catch (error) {
             console.debug('Recent trades update failed:', error);
         }
     }
     
-    // V02 Data labels helper for mobile cards
-    v02ApplyDataLabels(table) {
-        const theadCells = Array.from(table.querySelectorAll('thead th'));
-        if (!theadCells.length) return;
-        const headers = theadCells.map(th => (th.innerText || th.textContent).trim());
-        table.querySelectorAll('tbody tr').forEach(row => {
-            Array.from(row.children).forEach((td, i) => {
-                if (td && headers[i]) td.setAttribute('data-label', headers[i]);
-            });
-        });
-    }
-    
-    // Update table data labels for mobile display
-    updateTableDataLabels() {
-        document.querySelectorAll('.table-v02').forEach(table => {
-            this.v02ApplyDataLabels(table);
-        });
-    }
     
     updateTradesTable(trades, summary) {
         const tradesTableBody = document.getElementById('trades-table');
@@ -5729,6 +5716,10 @@ async function fetchAndUpdateAvailablePositions() {
                 window.renderAvailableTable(data.available_positions || []);
             }
             updateAvailablePositionsTable(data.available_positions || []);
+            
+            // Update mobile data labels
+            const table = document.getElementById('available-table');
+            if (table) v02ApplyDataLabels(table);
         } else {
             console.error("Available positions API error:", data.error);
             updateAvailablePositionsTable([]);
