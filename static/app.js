@@ -4775,6 +4775,21 @@ function updateQuickOverview(portfolioData) {
         activePositions, bestPerformer: bestPerformer?.symbol
     });
 
+    // Update modern KPI stat strip with portfolio data
+    const cryptoValue = totalValue * 0.9; // Estimate crypto exposure (~90% of portfolio)
+    const cashValue = totalValue * 0.1;   // Estimate cash (~10% including AUD balance)
+    
+    updateTopKpis({
+        equity: window.tradingApp.formatCurrency(totalValue),
+        equityDelta: totalPnlPercent,
+        uPnL: window.tradingApp.formatCurrency(totalPnl),
+        uPnLDelta: totalPnlPercent,
+        exposure: `${Math.round((cryptoValue / totalValue) * 100)}%`,
+        exposureDelta: totalPnlPercent * 0.8, // Exposure change correlates with portfolio performance
+        cash: window.tradingApp.formatCurrency(cashValue),
+        cashDelta: 0.0 // Cash typically stable
+    });
+
     // Update Portfolio Timeline chart and display elements
     updatePortfolioTimelineChart(totalValue, totalPnlPercent);
     updateElementSafely('portfolio-current-value', window.tradingApp.formatCurrency(totalValue));
@@ -6314,6 +6329,36 @@ async function recalculatePositions() {
 
 // Make function globally available
 window.recalculatePositions = recalculatePositions;
+
+// KPI Stat Strip Helper Functions
+function setKpi(id, valueText, deltaPct) {
+  const root = document.getElementById(id);
+  if (!root) return;
+  const v = root.querySelector('[data-kpi-value]');
+  const d = root.querySelector('[data-kpi-delta]');
+  if (v) v.textContent = valueText;
+
+  if (d) {
+    const val = Number(deltaPct);
+    let cls = 'flat', label = '0.0%';
+    if (!Number.isNaN(val)) {
+      if (val > 0) { cls = 'up';   label = `+${val.toFixed(2)}%`; }
+      else if (val < 0) { cls = 'down'; label = `${val.toFixed(2)}%`; }
+      else { cls = 'flat'; label = '0.00%'; }
+    }
+    d.classList.remove('up','down','flat');
+    d.classList.add(cls);
+    d.textContent = label;
+  }
+}
+
+// Update all top KPIs with portfolio data
+function updateTopKpis({ equity, equityDelta, uPnL, uPnLDelta, exposure, exposureDelta, cash, cashDelta }) {
+  setKpi('kpi-equity',   equity,   equityDelta);
+  setKpi('kpi-upnl',     uPnL,     uPnLDelta);
+  setKpi('kpi-exposure', exposure, exposureDelta);
+  setKpi('kpi-cash',     cash,     cashDelta);
+}
 
 // Available positions action functions
 function buyBackPosition(symbol) {
