@@ -1401,10 +1401,8 @@
         updateFooterStatus();
         updateTimingDisplays();
         
-        // Set up periodic updates
-        setInterval(updateFooterStatus, 10000); // Every 10 seconds
-        setInterval(updateTimingDisplays, 5000); // Every 5 seconds
-        setInterval(fetchAndUpdateBotStatus, 30000); // Every 30 seconds
+        // Periodic updates now handled by TradingApp.startAutoUpdate()
+        // Legacy intervals removed - all updates consolidated
         
         // Initialize the main trading app if available
         if (window.tradingApp && typeof window.tradingApp.init === 'function') {

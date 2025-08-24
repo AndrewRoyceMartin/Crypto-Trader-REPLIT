@@ -400,8 +400,9 @@ class TradingApp {
         this.startAutoUpdate();
         this.loadConfig();
 
-        // Initial fetches
+        // Initial fetches (handled by startAutoUpdate)
         this.debouncedUpdateDashboard();
+        setTimeout(() => this.updateCryptoPortfolio(), 5000);
 
         this.updateCryptoPortfolio();
         
@@ -428,8 +429,7 @@ class TradingApp {
             } else {
                 this.startAutoUpdate();
                 this.startCountdown();
-                this.debouncedUpdateDashboard();
-                this.updateCryptoPortfolio();
+                // Initial refresh handled by startAutoUpdate
             }
         });
 
@@ -437,22 +437,57 @@ class TradingApp {
     }
 
     startAutoUpdate() {
-        if (!this.chartUpdateInterval) {
-            this.chartUpdateInterval = setInterval(() => {
+        // Clear any existing intervals first
+        this.stopAutoUpdate();
+        
+        // Single master update interval (90 seconds)
+        this.masterUpdateInterval = setInterval(() => {
+            // Main data refresh cycle
+            this.debouncedUpdateDashboard(); // Overview refresh (/api/crypto-portfolio)
+            this.startPositionsCountdown(90); // Reset positions countdown
+            setTimeout(() => {
+                this.updateCryptoPortfolio(); // Holdings refresh
+                this.startAvailableCountdown(5); // Reset available countdown
+            }, 5000);
+            
+            // Update performance charts every 2 cycles (3 minutes)
+            this.updateCycleCount = (this.updateCycleCount || 0) + 1;
+            if (this.updateCycleCount % 2 === 0) {
                 this.updatePerformanceCharts();
-            }, 120000); // Reduced to 2 minutes for OKX API compliance
-        }
-        if (!this.updateInterval) {
-            this.updateInterval = setInterval(() => {
-                // Stagger API calls to avoid hitting rate limits
-                this.debouncedUpdateDashboard();
-                setTimeout(() => {
-                    this.updateCryptoPortfolio();
-                }, 5000); // 5 second delay between dashboard and portfolio updates
-            }, 90000); // Reduced to 1.5 minutes for OKX API compliance
-        }
+            }
+        }, 90000);
+        
+        // Start initial countdowns
+        this.startPositionsCountdown(90);
+        this.startAvailableCountdown(5);
+        
+        // Countdown updates (every second)
+        this.countdownUpdateInterval = setInterval(() => {
+            this.updateAllCountdowns();
+        }, 1000);
+        
+        // Footer status updates (every 10 seconds)
+        this.statusUpdateInterval = setInterval(() => {
+            if (typeof updateFooterStatus === 'function') updateFooterStatus();
+            if (typeof fetchAndUpdateBotStatus === 'function') fetchAndUpdateBotStatus();
+        }, 10000);
     }
     stopAutoUpdate() {
+        // Clear all master intervals
+        if (this.masterUpdateInterval) {
+            clearInterval(this.masterUpdateInterval);
+            this.masterUpdateInterval = null;
+        }
+        if (this.countdownUpdateInterval) {
+            clearInterval(this.countdownUpdateInterval);
+            this.countdownUpdateInterval = null;
+        }
+        if (this.statusUpdateInterval) {
+            clearInterval(this.statusUpdateInterval);
+            this.statusUpdateInterval = null;
+        }
+        
+        // Clear legacy intervals
         if (this.updateInterval) {
             clearInterval(this.updateInterval);
             this.updateInterval = null;
@@ -465,16 +500,19 @@ class TradingApp {
             clearInterval(window.__posCnt);
             window.__posCnt = null;
         }
+        if (window.positionsRefreshInterval) {
+            clearInterval(window.positionsRefreshInterval);
+            window.positionsRefreshInterval = null;
+        }
     }
     stopCountdown() {
         if (this.countdownInterval) {
             clearInterval(this.countdownInterval);
             this.countdownInterval = null;
         }
-        if (window.__posCnt) {
-            clearInterval(window.__posCnt);
-            window.__posCnt = null;
-        }
+        // Position countdowns now handled by consolidated system
+        this.positionsCountdownEnd = null;
+        this.availableCountdownEnd = null;
     }
     cleanup() {
         this.stopAutoUpdate();
@@ -482,10 +520,6 @@ class TradingApp {
         if (this.pendingDashboardUpdate) {
             clearTimeout(this.pendingDashboardUpdate);
             this.pendingDashboardUpdate = null;
-        }
-        if (this.chartUpdateInterval) {
-            clearInterval(this.chartUpdateInterval);
-            this.chartUpdateInterval = null;
         }
     }
 
@@ -2214,15 +2248,38 @@ class TradingApp {
     }
     
     startPositionsCountdown(seconds = 90) {
-        const el = document.getElementById('positions-next-refresh');
-        if (!el) return;
-        clearInterval(window.__posCnt);
-        const end = Date.now() + seconds * 1000;
-        window.__posCnt = setInterval(() => {
-            const left = Math.max(0, Math.ceil((end - Date.now()) / 1000));
-            el.textContent = `${left}s`;
-            if (left === 0) clearInterval(window.__posCnt);
-        }, 1000);
+        this.positionsCountdownEnd = Date.now() + seconds * 1000;
+    }
+    
+    updateAllCountdowns() {
+        // Update positions countdown
+        if (this.positionsCountdownEnd) {
+            const el = document.getElementById('positions-next-refresh');
+            if (el) {
+                const left = Math.max(0, Math.ceil((this.positionsCountdownEnd - Date.now()) / 1000));
+                el.textContent = `${left}s`;
+                if (left === 0) this.positionsCountdownEnd = null;
+            }
+        }
+        
+        // Update available positions countdown  
+        if (this.availableCountdownEnd) {
+            const el = document.getElementById('available-next-refresh');
+            if (el) {
+                const left = Math.max(0, Math.ceil((this.availableCountdownEnd - Date.now()) / 1000));
+                el.textContent = `${left}s`;
+                if (left === 0) this.availableCountdownEnd = null;
+            }
+        }
+        
+        // Update timing displays
+        if (typeof updateTimingDisplays === 'function') {
+            updateTimingDisplays();
+        }
+    }
+    
+    startAvailableCountdown(seconds = 5) {
+        this.availableCountdownEnd = Date.now() + seconds * 1000;
     }
 
     showToast(message, type = 'info') {
@@ -2494,8 +2551,7 @@ class TradingApp {
             this.isUpdatingPortfolio = false;
             this.isUpdatingTables = false;
             
-            // Start positions countdown after successful update
-            this.startPositionsCountdown();
+            // Position countdown managed by consolidated startAutoUpdate()
         }
     }
     
