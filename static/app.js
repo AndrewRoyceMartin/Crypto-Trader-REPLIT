@@ -2114,7 +2114,7 @@ class TradingApp {
 
     // ---------- Portfolio / Tables ----------
     displayEmptyPortfolioMessage() {
-        const tableIds = ['crypto-tracked-table', 'performance-page-table-body', 'positions-table-body'];
+        const tableIds = ['crypto-tracked-table', 'performance-page-table-body', 'holdings-tbody'];
         tableIds.forEach(tableId => {
             const tableBody = document.getElementById(tableId);
             if (!tableBody) return;
@@ -2124,7 +2124,7 @@ class TradingApp {
 
             if (tableId === 'crypto-tracked-table')      cell.colSpan = 13;
             else if (tableId === 'performance-page-table-body') cell.colSpan = 12;
-            else if (tableId === 'positions-table-body') cell.colSpan = 11;
+            else if (tableId === 'holdings-tbody') cell.colSpan = 13;
             else cell.colSpan = 10;
 
             cell.className = 'text-center text-warning p-4';
@@ -2327,7 +2327,7 @@ class TradingApp {
         }
         
         // Update positions table body  
-        if (document.getElementById('positions-table-body')) {
+        if (document.getElementById('holdings-tbody')) {
             this.updateHoldingsTable(holdings);
         }
         
@@ -2753,7 +2753,7 @@ class TradingApp {
     }
 
     updateHoldingsTable(cryptos) {
-        const tableBody = document.getElementById('positions-table-body');
+        const tableBody = document.getElementById('holdings-tbody');
         if (!tableBody) return;
 
         // Prevent multiple rapid updates
@@ -3758,7 +3758,7 @@ let tableSortState = {
 function sortPortfolio(column) {
     console.log(`Sorting portfolio by ${column}`);
     
-    const table = document.querySelector('#positions-table-body');
+    const table = document.querySelector('#holdings-tbody');
     if (!table) {
         console.debug('Portfolio table not found');
         return;
@@ -3784,7 +3784,7 @@ function sortPerformanceTable(columnIndex) {
 function sortPositionsTable(columnIndex) {
     console.log(`Sorting positions table by column ${columnIndex}`);
     
-    const table = document.querySelector('#positions-table-body');
+    const table = document.querySelector('#holdings-tbody');
     if (!table) {
         console.debug('Positions table not found');
         return;
@@ -5011,7 +5011,7 @@ function updateExposureMetrics(holdings) {
     // Stable/ Largest bars require matching IDs in the page to have effect.
 }
 function updatePositionTable(holdings) {
-    const tableBody = document.getElementById('positions-table-body');
+    const tableBody = document.getElementById('holdings-tbody');
     if (!tableBody) return;
     const filtered = holdings.filter(h => h.has_position);
     tableBody.innerHTML = '';
@@ -6306,7 +6306,7 @@ async function refreshHoldingsData() {
             window.tradingApp.showToast('Failed to refresh holdings data', 'error');
         }
         // Show error in table
-        const tableBody = document.getElementById('open-positions-table-body');
+        const tableBody = document.getElementById('holdings-tbody');
         if (tableBody) {
             // Safe DOM creation instead of innerHTML
             tableBody.textContent = '';
