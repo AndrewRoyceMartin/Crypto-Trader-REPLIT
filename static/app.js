@@ -4805,9 +4805,9 @@ function updatePositionTable(holdings) {
 // Open positions table function
 function updateOpenPositionsTable(positions, totalValue = 0) {
     try {
-        const positionsTableBody = document.getElementById("open-positions-table-body");
+        const positionsTableBody = document.getElementById("holdings-tbody");
         if (!positionsTableBody) {
-            console.debug("Positions table body element not found");
+            console.debug("Holdings table body element not found - looking for 'holdings-tbody'");
             return;
         }
         
