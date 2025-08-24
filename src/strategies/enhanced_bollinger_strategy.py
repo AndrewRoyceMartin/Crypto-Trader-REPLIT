@@ -19,7 +19,7 @@ class EnhancedBollingerBandsStrategy(BaseStrategy):
         super().__init__(config)
         
         # Basic Bollinger Bands parameters
-        self.bb_period = config.get_int('strategy', 'bb_period', 20)
+        self.bb_period = config.get_int('strategy', 'bb_period', 50)
         self.bb_std_dev = config.get_float('strategy', 'bb_std_dev', 2.0)
         self.atr_period = config.get_int('strategy', 'atr_period', 14)
         
