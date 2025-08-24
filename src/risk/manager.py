@@ -37,7 +37,7 @@ class RiskManager:
         # Daily tracking and adaptive limits
         self.daily_pnl = 0.0
         self.daily_reset_time = None
-        self.max_positions = config.get_int('trading', 'max_positions', 5)  # Allow more positions
+        self.max_positions = config.get_int('trading', 'max_positions', 15)  # Allow more positions
         self.consecutive_losses = 0
         self.recent_trades = []  # Track recent trade performance
         self.current_drawdown = 0.0
