@@ -98,6 +98,18 @@ function setConn(connected){
 
 // Event delegation for card view toggle buttons
 document.addEventListener('DOMContentLoaded', function() {
+    // Initialize V02 table mobile labels
+    document.querySelectorAll('.table.table-v02').forEach(table => {
+        const theadCells = Array.from(table.querySelectorAll('thead th'));
+        if (!theadCells.length) return;
+        const headers = theadCells.map(th => (th.innerText || th.textContent).trim());
+        table.querySelectorAll('tbody tr').forEach(row => {
+            Array.from(row.children).forEach((td, i) => {
+                if (td && headers[i]) td.setAttribute('data-label', headers[i]);
+            });
+        });
+    });
+
     document.addEventListener('click', function(e) {
         if (e.target.classList.contains('view-toggle-btn') || e.target.parentNode.classList.contains('view-toggle-btn')) {
             const button = e.target.classList.contains('view-toggle-btn') ? e.target : e.target.parentNode;
@@ -1735,6 +1747,9 @@ class TradingApp {
             if (holdingsCountElement) {
                 holdingsCountElement.textContent = significantHoldings.length;
             }
+
+            // Update mobile data labels
+            this.updateTableDataLabels();
             
         } catch (error) {
             console.debug('Holdings table update failed:', error);
@@ -1768,10 +1783,32 @@ class TradingApp {
             
             // Update trades table
             this.updateTradesTable(data.trades, data.summary);
+
+            // Update mobile data labels
+            this.updateTableDataLabels();
             
         } catch (error) {
             console.debug('Recent trades update failed:', error);
         }
+    }
+    
+    // V02 Data labels helper for mobile cards
+    v02ApplyDataLabels(table) {
+        const theadCells = Array.from(table.querySelectorAll('thead th'));
+        if (!theadCells.length) return;
+        const headers = theadCells.map(th => (th.innerText || th.textContent).trim());
+        table.querySelectorAll('tbody tr').forEach(row => {
+            Array.from(row.children).forEach((td, i) => {
+                if (td && headers[i]) td.setAttribute('data-label', headers[i]);
+            });
+        });
+    }
+    
+    // Update table data labels for mobile display
+    updateTableDataLabels() {
+        document.querySelectorAll('.table.table-v02').forEach(table => {
+            this.v02ApplyDataLabels(table);
+        });
     }
     
     updateTradesTable(trades, summary) {

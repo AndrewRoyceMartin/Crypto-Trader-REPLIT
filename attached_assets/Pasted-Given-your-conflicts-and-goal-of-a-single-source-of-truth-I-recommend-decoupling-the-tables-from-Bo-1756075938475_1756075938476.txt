@@ -1,0 +1,126 @@
+Given your conflicts and goal of a single source of truth, I recommend decoupling the tables from Bootstrap entirely and making .table-v02 fully standalone. Keep Bootstrap for grid/buttons/utilities, but don’t use Bootstrap’s table, table-sm, table-hover on these tables. This eliminates cascade fights and makes the table skin predictable.
+
+What to change
+1) HTML (drop Bootstrap table classes)
+<!-- before -->
+<table class="table table-sm table-hover table-v02" id="holdings-table">
+
+<!-- after -->
+<table class="table-v02" id="holdings-table">
+
+
+Do the same for available-table and trades-table.
+You can keep Bootstrap utility classes on cells/headers (e.g., .text-end, .text-center)—they won’t conflict.
+
+2) CSS (make selectors standalone)
+
+In static/style.css, replace every selector starting with .table.table-v02 to just .table-v02. Here’s the patched block:
+
+/* Standalone Table V02 */
+.table-v02 {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  background: var(--v02-bg);
+  border-radius: var(--v02-radius);
+  box-shadow: var(--v02-shadow);
+  overflow: hidden;
+  font-family: var(--font-ui);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
+.table-v02 thead th {
+  background: var(--v02-head-bg);
+  color: var(--v02-head-color);
+  border: 0;
+  font-weight: var(--fw-semibold);
+  letter-spacing: .01em;
+  white-space: nowrap;
+  padding: calc(var(--v02-cell-py) + .1rem) var(--v02-cell-px);
+}
+
+.table-v02 tbody td,
+.table-v02 tbody th {
+  background: var(--v02-bg);
+  border-top: 1px solid var(--v02-border);
+  padding: var(--v02-cell-py) var(--v02-cell-px);
+  vertical-align: middle;
+  font-weight: var(--fw-regular);
+}
+
+/* Optional compact mode — keep if you liked the smaller padding */
+.table-v02--compact tbody td,
+.table-v02--compact tbody th {
+  padding-top: .45rem;
+  padding-bottom: .45rem;
+}
+
+/* Hover */
+.table-v02 tbody tr:hover > * {
+  background-color: var(--v02-row-hover);
+}
+
+/* Rounded corners */
+.table-v02 thead tr:first-child th:first-child { border-top-left-radius: var(--v02-radius); }
+.table-v02 thead tr:first-child th:last-child  { border-top-right-radius: var(--v02-radius); }
+.table-v02 tbody tr:last-child td:first-child  { border-bottom-left-radius: var(--v02-radius); }
+.table-v02 tbody tr:last-child td:last-child   { border-bottom-right-radius: var(--v02-radius); }
+
+/* Sortable headers (works with your .table-sortable / .icon) */
+.table-v02 th.table-sortable { cursor: pointer; position: relative; user-select: none; }
+.table-v02 th.table-sortable .icon { margin-left: .35rem; opacity: .9; vertical-align: baseline; top: -.02em; position: relative; }
+
+/* Numeric emphasis */
+.table-v02 td.numeric, 
+.table-v02 th.numeric,
+.table-v02 .text-end { text-align: right; font-weight: var(--fw-medium); }
+
+/* Mobile stacking */
+@media (max-width: 768px) {
+  .table-v02 thead { display: none; }
+  .table-v02, .table-v02 tbody, .table-v02 tr, .table-v02 td, .table-v02 th {
+    display: block; width: 100%;
+  }
+  .table-v02 tbody tr {
+    background: #fff;
+    border: 1px solid var(--v02-border);
+    border-radius: var(--v02-radius);
+    box-shadow: var(--v02-shadow);
+    margin-bottom: 12px;
+    overflow: hidden;
+  }
+  .table-v02 tbody td {
+    border: 0;
+    border-bottom: 1px dashed var(--v02-border);
+    display: flex;
+    align-items: baseline;
+    gap: .75rem;
+    padding: .85rem 1rem;
+  }
+  .table-v02 tbody td:last-child { border-bottom: 0; }
+  .table-v02 tbody td::before {
+    content: attr(data-label);
+    flex: 0 0 40%;
+    min-width: 140px;
+    font-weight: var(--fw-medium);
+    color: #6c7ae0;
+  }
+}
+
+
+If you want a compact variant, add class="table-v02 table-v02--compact".
+
+3) JS helper (unchanged)
+
+Keep v02ApplyDataLabels(table) and call it after each table update; it’s agnostic to classes.
+
+Why this is my recommendation
+
+Zero cascade conflicts: your tables no longer inherit Bootstrap’s table rules.
+
+Single source of truth: all typography + table styles live in style.css.
+
+Predictable theming: per-table accents via style="--v02-head-bg:#…" work cleanly.
+
+Keeps Bootstrap utilities where they help (.text-end, grid, buttons) without touching table styling.

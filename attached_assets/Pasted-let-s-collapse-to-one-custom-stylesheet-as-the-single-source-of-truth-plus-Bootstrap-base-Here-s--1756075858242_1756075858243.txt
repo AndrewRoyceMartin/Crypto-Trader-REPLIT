@@ -1,3 +1,22 @@
+let’s collapse to one custom stylesheet as the single source of truth (plus Bootstrap base). Here’s the clean plan and the exact code you need.
+
+1) Keep only these two CSS links (remove all others)
+
+In templates/unified_dashboard.html <head>:
+
+<!-- Keep Bootstrap base -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+
+<!-- Your ONLY custom stylesheet -->
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+
+Delete any other CSS links you had before (e.g., util.css, main.css, Colorlib files, duplicate theme files).
+
+2) Put everything below into static/style.css
+
+This file now owns: font import, global typography, table theme, and mobile stacking. It overrides Bootstrap safely and avoids conflicts.
+
 /* ===== 0) Font (one place) ===== */
 @import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap");
 
@@ -102,7 +121,7 @@ h4, h5, h6, .h4, .h5, .h6 { font-weight: var(--fw-medium); }
 .table.table-v02 th.numeric,
 .table.table-v02 .text-end { text-align: right; font-weight: var(--fw-medium); }
 
-/* ===== 3) Mobile "card" stacking (≤ 768px) ===== */
+/* ===== 3) Mobile “card” stacking (≤ 768px) ===== */
 @media (max-width: 768px) {
   .table.table-v02 thead { display: none; }
   .table.table-v02, 
@@ -145,123 +164,47 @@ h4, h5, h6, .h4, .h5, .h6 { font-weight: var(--fw-medium); }
    Example: <table class="table table-sm table-hover table-v02" style="--v02-head-bg:#1f9d55;">
 */
 
-/* ===== 5) Dashboard Component Styles ===== */
-.kpi-card {
-    background: #fff;
-    border: 1px solid #e9ecef;
-    border-radius: 8px;
-    padding: 12px;
-    height: 100%;
-    position: relative;
-    min-height: 120px;
-    transition: all 0.3s ease;
-}
-.kpi-card .label { font-size: 12px; color: #6c757d; }
-.kpi-card .value { font-size: 20px; font-weight: 600; margin-top: 2px; }
-.kpi-card .change-indicator { font-size: 12px; margin-top: 4px; }
+3) JS: keep just one helper (unchanged)
 
-/* View Toggle Button */
-.view-toggle-btn {
-    position: absolute;
-    top: 8px;
-    right: 8px;
-    background: rgba(0,0,0,0.1);
-    border: none;
-    border-radius: 50%;
-    width: 24px;
-    height: 24px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 12px;
-    color: #6c757d;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-.view-toggle-btn:hover {
-    background: rgba(0,0,0,0.2);
-    color: #000;
+This mirrors header text into each cell’s data-label for mobile cards. Call it once after each table update.
+
+function v02ApplyDataLabels(table) {
+  const theadCells = Array.from(table.querySelectorAll('thead th'));
+  if (!theadCells.length) return;
+  const headers = theadCells.map(th => (th.innerText || th.textContent).trim());
+  table.querySelectorAll('tbody tr').forEach(row => {
+    Array.from(row.children).forEach((td, i) => {
+      if (td && headers[i]) td.setAttribute('data-label', headers[i]);
+    });
+  });
 }
 
-/* Different Card View Styles */
-.kpi-card.view-text { background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); }
-.kpi-card.view-graph { background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%); }
-.kpi-card.view-detailed { background: linear-gradient(135deg, #f3e5f5 0%, #e1bee7 100%); }
-.kpi-card.view-compact { background: linear-gradient(135deg, #e8f5e8 0%, #c8e6c9 100%); }
+// Run once on DOM ready, and after each of your existing table update functions
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('.table.table-v02').forEach(v02ApplyDataLabels);
+});
 
-/* Content visibility for different views */
-.kpi-card .view-content { display: none; }
-.kpi-card .view-content.active { display: block; }
 
-/* Graph view specific styles */
-.view-graph .mini-chart-container {
-    height: 60px;
-    margin: 8px 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
+Call v02ApplyDataLabels at the end of:
 
-/* Detailed view styles */
-.view-detailed .detailed-stats {
-    font-size: 10px;
-    margin-top: 8px;
-}
-.view-detailed .detailed-stats .stat-item {
-    display: flex;
-    justify-content: space-between;
-    margin: 2px 0;
-}
+updateHoldingsTable()
 
-/* Compact view styles */
-.view-compact .compact-layout {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    height: 100%;
-}
-.view-compact .compact-value {
-    font-size: 16px;
-    font-weight: 600;
-}
+updateTradesTable()
 
-.card--hover { border: 1px solid #e9ecef; border-radius: 8px; }
-.card--hover:hover { box-shadow: 0 6px 18px rgba(0,0,0,0.06); transition: box-shadow .2s ease; }
-.card-header { background: #fff; border-bottom: 1px solid #e9ecef; display:flex; justify-content: space-between; align-items:center; }
-.card-header .meta { color:#6c757d; font-size: 12px; }
+fetchAndUpdateAvailablePositions()
 
-.table-sm th, .table-sm td { white-space: nowrap; }
-.table-sortable { cursor: pointer; user-select: none; }
-.muted { color: #6c757d; }
+4) What changed (and why conflicts stop)
 
-.control-bar { position: sticky; top: 56px; background: #fff; z-index: 1010; }
-.text-xs { font-size: 12px; }
+There is now one custom CSS file (style.css) that:
 
-/* Toast notifications */
-.toast-container {
-    position: fixed;
-    top: 120px;
-    right: 20px;
-    z-index: 2000;
-    max-width: 350px;
-}
-.toast-message {
-    background: rgba(0,0,0,0.85);
-    color: white;
-    padding: 12px 16px;
-    border-radius: 6px;
-    margin-bottom: 8px;
-    font-size: 14px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    transform: translateX(100%);
-    opacity: 0;
-    transition: all 0.3s ease;
-    border-left: 4px solid #28a745;
-}
-.toast-message.show {
-    transform: translateX(0);
-    opacity: 1;
-}
-.toast-message.error { border-left-color: #dc3545; }
-.toast-message.warning { border-left-color: #fd7e14; }
-.toast-message.info { border-left-color: #0dcaf0; }
+Imports the font,
+
+Sets global typography,
+
+Owns the table theme,
+
+Handles mobile stacking.
+
+All previous extra stylesheets (Colorlib util.css, main.css, etc.) are removed, eliminating cascade conflicts.
+
+Specificity is scoped to .table.table-v02, so Bootstrap remains for everything else without fighting your table theme.
