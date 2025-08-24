@@ -1915,7 +1915,7 @@ class TradingApp {
                 serverConnectionText.textContent = 'Error';
                 serverConnectionText.className = 'text-warning ms-1';
             }
-            if (statusIcon) statusIcon.className = 'fas fa-wifi text-warning me-1';
+            if (statusIcon) statusIcon.className = 'fa-solid fa-wifi text-warning me-1';
         }
     }
 
@@ -1936,12 +1936,12 @@ class TradingApp {
                 if (isConnected) {
                     okxConnectionText.textContent = connectionType;
                     okxConnectionText.className = 'text-success ms-1';
-                    if (statusIcon) statusIcon.className = 'fas fa-server text-success me-1';
+                    if (statusIcon) statusIcon.className = 'fa-solid fa-server text-success me-1';
                 } else {
                     const lastSync = data.status.last_sync ? this.formatTimeOnly(data.status.last_sync) : 'never';
                     okxConnectionText.textContent = `Offline (${lastSync})`;
                     okxConnectionText.className = 'text-danger ms-1';
-                    if (statusIcon) statusIcon.className = 'fas fa-server text-danger me-1';
+                    if (statusIcon) statusIcon.className = 'fa-solid fa-server text-danger me-1';
                 }
 
                 const statusElement = document.getElementById('okx-connection-status');
@@ -1957,7 +1957,7 @@ class TradingApp {
                 okxConnectionText.textContent = 'Error';
                 okxConnectionText.className = 'text-warning ms-1';
             }
-            if (statusIcon) statusIcon.className = 'fas fa-server text-warning me-1';
+            if (statusIcon) statusIcon.className = 'fa-solid fa-server text-warning me-1';
         }
     }
 
@@ -2163,7 +2163,7 @@ class TradingApp {
             const iconDiv = document.createElement('div');
             iconDiv.className = 'mb-2';
             const icon = document.createElement('i');
-            icon.className = 'fas fa-exclamation-triangle fa-2x text-warning';
+            icon.className = 'fa-solid fa-triangle-exclamation fa-2x text-warning';
             iconDiv.appendChild(icon);
             cell.appendChild(iconDiv);
             
@@ -2180,7 +2180,7 @@ class TradingApp {
             button.className = 'btn btn-success';
             button.onclick = () => startTrading('paper', 'portfolio');
             const playIcon = document.createElement('i');
-            playIcon.className = 'fas fa-play';
+            playIcon.className = 'fa-solid fa-play';
             button.appendChild(playIcon);
             button.appendChild(document.createTextNode(' Start Paper Trading'));
             cell.appendChild(button);
@@ -3098,7 +3098,7 @@ class TradingApp {
         
         // Create elements safely
         const icon = document.createElement('i');
-        icon.className = 'fas fa-exclamation-triangle me-2';
+        icon.className = 'fa-solid fa-triangle-exclamation me-2';
         warningBanner.appendChild(icon);
         
         const strong = document.createElement('strong');
@@ -3306,7 +3306,7 @@ class TradingApp {
                 element.style.minHeight = '200px';
                 const messageDiv = document.createElement('div');
                 const icon = document.createElement('i');
-                icon.className = 'fas fa-chart-area me-2';
+                icon.className = 'fa-solid fa-chart-area me-2';
                 messageDiv.appendChild(icon);
                 messageDiv.appendChild(document.createTextNode(message));
                 element.appendChild(messageDiv);
@@ -3430,7 +3430,7 @@ class TradingApp {
         const recent = normalized.slice(0, 5);
 
         if (recent.length === 0) {
-            tableBody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-3"><i class="fas fa-info-circle me-2"></i>No trades executed yet - Start trading to see recent transactions</td></tr>';
+            tableBody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-3"><i class="fa-solid fa-circle-info me-2"></i>No trades executed yet - Start trading to see recent transactions</td></tr>';
             return;
         }
 
@@ -3940,14 +3940,14 @@ function updateSortIndicators(tableType, column, ascending) {
     // Reset all sort icons for this table type
     const allIcons = document.querySelectorAll(`[id*="sort-${column}"], [id*="sort-${tableType}"]`);
     allIcons.forEach(icon => {
-        icon.className = 'fas fa-sort text-white';
+        icon.className = 'fa-solid fa-sort text-white';
     });
     
     // Set active sort icon
     const activeIcon = document.getElementById(`sort-${column}`) || 
                       document.getElementById(`sort-${tableType}-${column}`);
     if (activeIcon) {
-        activeIcon.className = ascending ? 'fas fa-sort-up text-warning' : 'fas fa-sort-down text-warning';
+        activeIcon.className = ascending ? 'fa-solid fa-sort-up text-warning' : 'fa-solid fa-sort-down text-warning';
     }
 }
 
@@ -3955,13 +3955,13 @@ function updateSortIndicatorsByIndex(tableType, columnIndex, ascending) {
     // Reset all sort icons for this table type
     const allIcons = document.querySelectorAll(`[id*="${tableType}-sort-"]`);
     allIcons.forEach(icon => {
-        icon.className = 'fas fa-sort ms-1';
+        icon.className = 'fa-solid fa-sort ms-1';
     });
     
     // Set active sort icon
     const activeIcon = document.getElementById(`${tableType}-sort-${columnIndex}`);
     if (activeIcon) {
-        activeIcon.className = ascending ? 'fas fa-sort-up text-warning ms-1' : 'fas fa-sort-down text-warning ms-1';
+        activeIcon.className = ascending ? 'fa-solid fa-sort-up text-warning ms-1' : 'fa-solid fa-sort-down text-warning ms-1';
     }
 }
 async function updatePerformanceData() {
@@ -4135,7 +4135,7 @@ async function executeTakeProfit() {
     // Safe DOM creation instead of innerHTML
     button.textContent = '';
     const spinner = document.createElement('i');
-    spinner.className = 'fas fa-spinner fa-spin me-1';
+    spinner.className = 'fa-solid fa-spinner fa-spin me-1';
     button.appendChild(spinner);
     button.appendChild(document.createTextNode('Processing...'));
     
@@ -5142,7 +5142,7 @@ function updateOpenPositionsTable(positions, totalValue = 0) {
             cell.className = 'text-center py-4';
             
             const icon = document.createElement('i');
-            icon.className = 'fas fa-info-circle me-2';
+            icon.className = 'fa-solid fa-circle-info me-2';
             cell.appendChild(icon);
             cell.appendChild(document.createTextNode('No open positions'));
             
@@ -5178,7 +5178,7 @@ function updateOpenPositionsTable(positions, totalValue = 0) {
             cell.className = 'text-center py-4';
             
             const icon = document.createElement('i');
-            icon.className = 'fas fa-info-circle me-2';
+            icon.className = 'fa-solid fa-circle-info me-2';
             cell.appendChild(icon);
             cell.appendChild(document.createTextNode('No positions above $0.01 threshold'));
             
@@ -5355,7 +5355,7 @@ function updateOpenPositionsTable(positions, totalValue = 0) {
                 icon.onerror = function() {
                     // Fallback to FontAwesome icon if image fails to load
                     const fallbackIcon = document.createElement('i');
-                    fallbackIcon.className = 'fas fa-coins';
+                    fallbackIcon.className = 'fa-solid fa-coins';
                     fallbackIcon.style.color = coinDisplay.color;
                     iconDiv.replaceChild(fallbackIcon, icon);
                 };
@@ -5593,7 +5593,7 @@ function createAvailablePositionRow(position) {
         icon.onerror = function() {
             // Fallback to FontAwesome icon if image fails to load
             const fallbackIcon = document.createElement('i');
-            fallbackIcon.className = 'fas fa-coins';
+            fallbackIcon.className = 'fa-solid fa-coins';
             fallbackIcon.style.color = coinDisplay.color;
             iconDiv.replaceChild(fallbackIcon, icon);
         };
@@ -5863,7 +5863,7 @@ function updateAvailablePositionsTable(availablePositions) {
             cell.className = 'text-center py-4';
             
             const icon = document.createElement('i');
-            icon.className = 'fas fa-info-circle me-2';
+            icon.className = 'fa-solid fa-circle-info me-2';
             cell.appendChild(icon);
             cell.appendChild(document.createTextNode('No available positions for buy-back'));
             
@@ -6350,7 +6350,7 @@ async function refreshHoldingsData() {
             cell.className = 'text-center text-danger py-4';
             
             const icon = document.createElement('i');
-            icon.className = 'fas fa-exclamation-triangle me-2';
+            icon.className = 'fa-solid fa-triangle-exclamation me-2';
             cell.appendChild(icon);
             cell.appendChild(document.createTextNode('Failed to load positions data'));
             
