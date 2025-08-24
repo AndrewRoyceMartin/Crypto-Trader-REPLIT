@@ -792,12 +792,21 @@
 
     // === BOT CONTROL ===
     async function toggleBot() {
+        const botButton = document.getElementById('bot-status-top');
+        if (!botButton) return;
+        
+        const old = botButton.textContent;
+        
         try {
             // Get current bot status first
             const statusResponse = await fetch('/api/bot/status');
             const statusData = await statusResponse.json();
             
             const isCurrentlyRunning = statusData.running || false;
+            
+            // Optimistically update button text
+            botButton.textContent = isCurrentlyRunning ? 'START BOT' : 'STOP BOT';
+            
             const endpoint = isCurrentlyRunning ? '/api/bot/stop' : '/api/bot/start';
             const method = 'POST';
             
@@ -824,6 +833,7 @@
             
             if (response.status === 401) {
                 clearAdminToken();
+                botButton.textContent = old; // Rollback on auth failure
                 alert('Invalid admin token. Please try again.');
                 return;
             }
@@ -831,7 +841,7 @@
             const data = await response.json();
             
             if (response.ok && (data.success !== false)) {
-                // Update UI immediately
+                // Update UI to confirm the change
                 updateBotStatusUI(!isCurrentlyRunning);
                 
                 const action = !isCurrentlyRunning ? 'started' : 'stopped';
@@ -844,8 +854,14 @@
             }
             
         } catch (error) {
+            // Rollback button text on error
+            botButton.textContent = old;
+            if (typeof showToast === 'function') {
+                showToast(`Bot toggle failed: ${error.message}`, 'error');
+            } else {
+                alert(`Bot toggle failed: ${error.message}`);
+            }
             console.error('Bot toggle error:', error);
-            alert(`Error toggling bot: ${error.message}`);
         }
     }
 
