@@ -247,17 +247,17 @@ WATCHLIST = [s.strip() for s in os.getenv(
 ).split(",") if s.strip()]
 
 MAX_STARTUP_SYMBOLS   = int(os.getenv("MAX_STARTUP_SYMBOLS", "3"))     # minimal: only 3 symbols
-STARTUP_OHLCV_LIMIT   = int(os.getenv("STARTUP_OHLCV_LIMIT", "120"))  # minimal: 120 bars per symbol
+# STARTUP_OHLCV_LIMIT   = int(os.getenv("STARTUP_OHLCV_LIMIT", "120"))  # unused variable
 STARTUP_TIMEOUT_SEC   = int(os.getenv("STARTUP_TIMEOUT_SEC", "8"))    # deployment timeout limit
 
 # --- caching knobs (safe defaults) ---
 PRICE_TTL_SEC       = int(os.getenv("PRICE_TTL_SEC", "3"))     # small TTL for live feel
-TICKER_TTL_SEC      = int(os.getenv("TICKER_TTL_SEC", "5"))
+# TICKER_TTL_SEC      = int(os.getenv("TICKER_TTL_SEC", "5"))  # unused variable
 OHLCV_TTL_SEC       = int(os.getenv("OHLCV_TTL_SEC", "60"))    # candles can be cached longer
 CACHE_MAX_KEYS      = int(os.getenv("CACHE_MAX_KEYS", "200"))  # prevent unbounded growth
 
-WARMUP_SLEEP_SEC      = int(os.getenv("WARMUP_SLEEP_SEC", "1"))       # pause between fetches
-CACHE_FILE            = "warmup_cache.parquet"                        # persistent cache file
+# WARMUP_SLEEP_SEC      = int(os.getenv("WARMUP_SLEEP_SEC", "1"))       # unused variable
+# CACHE_FILE            = "warmup_cache.parquet"                        # unused variable
 
 # limit concurrent outbound API calls (env overrideable)
 _MAX_OUTBOUND = int(os.getenv("MAX_OUTBOUND_CALLS", "6"))
@@ -579,7 +579,10 @@ def get_df(symbol: str, timeframe: str) -> Optional[list[dict[str, float]]]:
     try:
         ex = get_reusable_exchange()
         ohlcv = with_throttle(ex.fetch_ohlcv, symbol, timeframe=timeframe, limit=200)
-        processed = [{"ts": c[0], "open": c[1], "high": c[2], "low": c[3], "close": c[4], "volume": c[5]} for c in ohlcv]
+        processed = [
+            {"ts": c[0], "open": c[1], "high": c[2], "low": c[3], "close": c[4], "volume": c[5]}
+            for c in ohlcv
+        ]
         cache_put_ohlcv(symbol, timeframe, processed)
         return processed
     except Exception as e:
@@ -709,7 +712,12 @@ def crypto_portfolio_okx() -> ResponseReturnValue:
             "total_assets": len(holdings_list),
             "profitable_positions": sum(1 for h in holdings_list if float(h.get('pnl_percent', 0) or 0) > 0),
             "losing_positions": sum(1 for h in holdings_list if float(h.get('pnl_percent', 0) or 0) < 0),
-            "breakeven_positions": max(0, len(holdings_list) - sum(1 for h in holdings_list if float(h.get('pnl_percent', 0) or 0) != 0)),
+            "breakeven_positions": max(
+                0, 
+                len(holdings_list) - sum(
+                    1 for h in holdings_list if float(h.get('pnl_percent', 0) or 0) != 0
+                )
+            ),
             "last_update": okx_portfolio_data['last_update'],
             "is_live": True,
             "connected": True
@@ -721,7 +729,9 @@ def crypto_portfolio_okx() -> ResponseReturnValue:
             "summary": {
                 "total_cryptos": len(holdings_list),
                 "total_current_value": overview["total_value"],
-                "total_estimated_value": float(okx_portfolio_data.get('total_estimated_value', overview["total_value"])),
+                "total_estimated_value": float(
+                    okx_portfolio_data.get('total_estimated_value', overview["total_value"])
+                ),
                 "total_pnl": overview["total_pnl"],
                 "total_pnl_percent": overview["total_pnl_percent"],
                 "cash_balance": overview["cash_balance"],
@@ -731,7 +741,9 @@ def crypto_portfolio_okx() -> ResponseReturnValue:
             "total_pnl": overview["total_pnl"],
             "total_pnl_percent": overview["total_pnl_percent"],
             "total_current_value": overview["total_value"],
-            "total_estimated_value": float(okx_portfolio_data.get('total_estimated_value', overview["total_value"])),
+            "total_estimated_value": float(
+                okx_portfolio_data.get('total_estimated_value', overview["total_value"])
+            ),
             "cash_balance": overview["cash_balance"],
             "aud_balance": overview["aud_balance"],
             "currency": selected_currency,
@@ -1023,11 +1035,17 @@ def DISABLED_api_crypto_portfolio() -> ResponseReturnValue:
 
             total_value = sum(h.get('current_value', 0) for h in holdings)
             for holding in holdings:
-                holding['allocation_percent'] = (holding.get('current_value', 0) / total_value * 100) if total_value > 0 else 0
+                allocation_pct = (
+                    holding.get('current_value', 0) / total_value * 100
+                ) if total_value > 0 else 0
+                holding['allocation_percent'] = allocation_pct
                 initial_investment = 10.0
                 holding['cost_basis'] = initial_investment
                 holding['unrealized_pnl'] = holding.get('current_value', 0) - initial_investment
-                holding['avg_entry_price'] = (initial_investment / holding.get('quantity', 1)) if holding.get('quantity', 0) > 0 else 0
+                quantity = holding.get('quantity', 0)
+                holding['avg_entry_price'] = (
+                    initial_investment / holding.get('quantity', 1)
+                ) if quantity > 0 else 0
 
             if 'summary' not in portfolio_data:
                 portfolio_data['summary'] = {}
@@ -1036,7 +1054,9 @@ def DISABLED_api_crypto_portfolio() -> ResponseReturnValue:
                 'total_assets_tracked': len(holdings),
                 'profitable_positions': len(profitable),
                 'losing_positions': len(losing),
-                'breakeven_positions': len(holdings) - len(profitable) - len(losing),
+                'breakeven_positions': (
+                    len(holdings) - len(profitable) - len(losing)
+                ),
                 'best_performer': {
                     'symbol': best_performer.get('symbol', 'N/A'),
                     'name': best_performer.get('name', 'N/A'),
@@ -1179,7 +1199,9 @@ def bot_start() -> ResponseReturnValue:
                         if is_recoverable and retry_count < max_retries - 1:
                             retry_count += 1
                             wait_time = min(60, 10 * retry_count)  # Exponential backoff: 10s, 20s, 30s max
-                            logger.warning(f"Recoverable error in trading bot (attempt {retry_count}/{max_retries}): {e}")
+                            logger.warning(
+                f"Recoverable error in trading bot (attempt {retry_count}/{max_retries}): {e}"
+            )
                             logger.info(f"Retrying in {wait_time} seconds...")
                             
                             import time
@@ -1209,7 +1231,10 @@ def bot_start() -> ResponseReturnValue:
             trader_instance=None  # Don't store in JSON-serializable state
         )
         
-        logger.info(f"Multi-currency bot started in {mode} mode with ${config.get_float('strategy', 'rebuy_max_usd', 100.0):.2f} rebuy limit")
+        logger.info(
+            f"Multi-currency bot started in {mode} mode with "
+            f"${config.get_float('strategy', 'rebuy_max_usd', 100.0):.2f} rebuy limit"
+        )
         
         # Create a safe copy of bot_state without any non-serializable objects
         with _state_lock:
