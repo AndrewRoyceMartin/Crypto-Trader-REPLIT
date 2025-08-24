@@ -624,10 +624,13 @@
     // === TABLE RENDERERS ===
     function renderHoldingsTable(holdings) {
         const tbody = document.getElementById('holdings-tbody');
-        if (!tbody || !holdings || holdings.length === 0) {
-            if (tbody) {
-                tbody.innerHTML = '<tr><td colspan="6" class="text-center py-3 text-muted">No open positions</td></tr>';
-            }
+        if (!tbody) {
+            console.debug("Holdings table body element not found - looking for 'holdings-tbody'");
+            return;
+        }
+        
+        if (!holdings || holdings.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center py-3 text-muted">No open positions</td></tr>';
             return;
         }
         

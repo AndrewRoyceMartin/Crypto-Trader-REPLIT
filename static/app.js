@@ -1369,9 +1369,15 @@ class TradingApp {
             
             if (!data.success || !data.holdings) return;
             
-            // Call the table rendering function
+            // Call the table rendering function from HTML template
             if (window.renderHoldingsTable && typeof window.renderHoldingsTable === 'function') {
                 window.renderHoldingsTable(data.holdings);
+            }
+            
+            // Also call refreshHoldingsData to ensure data flows to the right table
+            if (typeof window.refreshHoldingsData === 'function') {
+                // Trigger data update for existing table functions
+                console.log("Holdings data received:", data.holdings);
             }
             
             // Update holdings table

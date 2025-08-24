@@ -4925,7 +4925,45 @@ def api_test_sync_data() -> ResponseReturnValue:
         except Exception as e:
             test_data['test_results']['target_price_lock'] = {'status': 'error', 'error': str(e)}
 
-        # Test 12: Cache is disabled (always live)
+        # Test 12: Bot State Synchronization  
+        try:
+            with _state_lock:
+                current_bot_state = bot_state.copy()
+            
+            # Check bot state consistency
+            bot_running = current_bot_state.get('running', False)
+            bot_mode = current_bot_state.get('mode')
+            started_at = current_bot_state.get('started_at')
+            
+            # Verify state consistency
+            state_consistent = True
+            issues = []
+            
+            if bot_running and not started_at:
+                state_consistent = False
+                issues.append("Bot running but no start time")
+                
+            if bot_running and not bot_mode:
+                state_consistent = False 
+                issues.append("Bot running but no mode set")
+                
+            # Check if trading state matches bot state
+            if trading_state.get('active') != bot_running:
+                state_consistent = False
+                issues.append("Bot state and trading state mismatch")
+            
+            test_data['test_results']['bot_state_sync'] = {
+                'status': 'pass' if state_consistent else 'warning',
+                'bot_running': bot_running,
+                'bot_mode': bot_mode,
+                'started_at': started_at,
+                'trading_active': trading_state.get('active'),
+                'issues': issues
+            }
+        except Exception as e:
+            test_data['test_results']['bot_state_sync'] = {'status': 'error', 'error': str(e)}
+
+        # Test 13: Cache is disabled (always live)
         try:
             cg = cache_get('BTC/USDT', '1h')
             test_data['test_results']['cache_disabled'] = {
@@ -4936,7 +4974,7 @@ def api_test_sync_data() -> ResponseReturnValue:
             test_data['test_results']['cache_disabled'] = {'status': 'error', 'error': str(e)}
 
         # Update total test count
-        test_data['tests_available'] = 12
+        test_data['tests_available'] = 13
         
         return jsonify(test_data)
         
