@@ -5150,7 +5150,6 @@ def api_test_sync_data() -> ResponseReturnValue:
 
         # Test 13: Cache is disabled (always live)
         try:
-            from src.utils.cache import cache_get
             cg = cache_get('BTC/USDT', '1h')
             test_data['test_results']['cache_disabled'] = {
                 'status': 'pass' if cg is None else 'fail',
