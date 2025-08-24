@@ -23,11 +23,16 @@ class MultiCurrencyTrader:
         self.exchange = exchange
         self.logger = logging.getLogger(__name__)
         
-        # Supported trading pairs
-        self.trading_pairs = [
-            'BTC/USDT', 'PEPE/USDT', 'ETH/USDT', 'DOGE/USDT', 
-            'ADA/USDT', 'SOL/USDT', 'XRP/USDT', 'AVAX/USDT'
-        ]
+        # Get dynamic trading pairs from available positions
+        self.trading_pairs = self._get_available_trading_pairs()
+        
+        # Fallback to core pairs if API fails
+        if not self.trading_pairs:
+            self.trading_pairs = [
+                'BTC/USDT', 'ETH/USDT', 'SOL/USDT', 'ADA/USDT', 
+                'DOGE/USDT', 'XRP/USDT', 'AVAX/USDT', 'PEPE/USDT'
+            ]
+            self.logger.warning("Using fallback trading pairs due to API error")
         
         # Individual traders for each pair
         self.traders: Dict[str, EnhancedTrader] = {}
@@ -41,8 +46,72 @@ class MultiCurrencyTrader:
             trader.strategy.rebuy_max_usd = config.get_float('strategy', 'rebuy_max_usd', 100.0)
             self.traders[pair] = trader
             
-        self.logger.info(f"Multi-currency trader initialized for {len(self.trading_pairs)} pairs")
+        self.logger.info(f"Multi-currency trader initialized for {len(self.trading_pairs)} pairs: {', '.join(self.trading_pairs)}")
         self.logger.info(f"Universal rebuy limit: ${config.get_float('strategy', 'rebuy_max_usd', 100.0):.2f}")
+    
+    def _get_available_trading_pairs(self) -> List[str]:
+        """Get trading pairs dynamically from available positions with tradeable assets."""
+        try:
+            # Import here to avoid circular imports
+            from ..services.portfolio_service import PortfolioService
+            
+            # Create portfolio service to get available assets
+            portfolio_service = PortfolioService(self.exchange)
+            
+            # Get all available cryptocurrencies (excluding fiat/stablecoins)
+            available_pairs = []
+            
+            # Major cryptocurrencies that are typically tradeable on OKX
+            crypto_assets = [
+                'BTC', 'ETH', 'SOL', 'ADA', 'DOT', 'AVAX', 'MATIC', 'LINK', 'UNI', 'LTC',
+                'BCH', 'XLM', 'ALGO', 'ATOM', 'ICP', 'FTM', 'NEAR', 'SAND', 'MANA', 'CRO',
+                'APE', 'GALA', 'TRX', 'PEPE', 'SHIB', 'DOGE', 'XRP', 'BNB', 'FTT', 'AXS',
+                'ENJ', 'CHZ', 'BAT', 'ZEC', 'ETC', 'DASH', 'THETA', 'VET', 'HOT', 'OMG',
+                'ZIL', 'ICX', 'REP', 'KNC', 'REN', 'LRC', 'STORJ', 'GRT', 'COMP', 'MKR',
+                'YFI', 'SUSHI', 'SNX', 'AAVE', 'CRV', 'BAL', '1INCH', 'RUNE', 'ALPHA',
+                'PERP', 'DYDX', 'IMX', 'API3', 'AUDIO', 'CTX'
+            ]
+            
+            # Create trading pairs for available cryptocurrencies
+            for asset in crypto_assets:
+                pair = f"{asset}/USDT"
+                try:
+                    # Verify pair exists on exchange and has recent trading volume
+                    if self.exchange and hasattr(self.exchange, 'exchange'):
+                        markets = self.exchange.exchange.load_markets()
+                        if pair in markets:
+                            market_info = markets[pair]
+                            # Check if market is active and has reasonable volume
+                            if market_info.get('active', True):
+                                available_pairs.append(pair)
+                except Exception as pair_error:
+                    self.logger.debug(f"Skipping {pair}: {pair_error}")
+                    continue
+            
+            # Prioritize major coins first, then others
+            major_coins = ['BTC/USDT', 'ETH/USDT', 'SOL/USDT', 'ADA/USDT', 'DOGE/USDT', 'XRP/USDT', 'AVAX/USDT', 'PEPE/USDT']
+            prioritized_pairs = []
+            
+            # Add major coins first
+            for major in major_coins:
+                if major in available_pairs:
+                    prioritized_pairs.append(major)
+            
+            # Add remaining pairs
+            for pair in available_pairs:
+                if pair not in prioritized_pairs:
+                    prioritized_pairs.append(pair)
+            
+            # Limit to reasonable number for performance
+            max_pairs = self.config.get_int('trading', 'max_trading_pairs', 20)
+            final_pairs = prioritized_pairs[:max_pairs]
+            
+            self.logger.info(f"Dynamically found {len(final_pairs)} trading pairs from {len(crypto_assets)} possible assets")
+            return final_pairs
+            
+        except Exception as e:
+            self.logger.error(f"Error getting dynamic trading pairs: {e}")
+            return []  # Return empty list to trigger fallback
     
     def start_trading(self, timeframe: str = '1h') -> None:
         """Start trading across all supported cryptocurrencies."""
