@@ -45,7 +45,6 @@ class TradingApp {
 
         // Currency
         this.selectedCurrency = 'USD';
-        this.exchangeRates = { USD: 1 };
 
         // scratch
         this.currentCryptoData = null;
@@ -273,9 +272,7 @@ class TradingApp {
         // Initial fetches
         this.debouncedUpdateDashboard();
 
-        this.fetchExchangeRates().then(() => {
-            this.updateCryptoPortfolio();
-        });
+        this.updateCryptoPortfolio();
     }
 
     setupEventListeners() {
@@ -2026,18 +2023,7 @@ class TradingApp {
         setTimeout(() => toast.parentElement && toast.remove(), 5000);
     }
 
-    async fetchExchangeRates() {
-        try {
-            const response = await fetch('/api/exchange-rates', { cache: 'no-cache' });
-            if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-            const data = await response.json();
-            this.exchangeRates = data.rates || { USD: 1 };
-        } catch (error) {
-            console.debug('Failed to fetch exchange rates:', error);
-            // Sensible fallbacks
-            this.exchangeRates = { USD: 1, EUR: 0.92, GBP: 0.79, AUD: 1.52 };
-        }
-    }
+    // Removed fetchExchangeRates - backend handles all currency conversion via OKX
 
     async setSelectedCurrency(currency) {
         console.log(`Currency changed to: ${currency}. Clearing cache and fetching fresh OKX data...`);
@@ -2045,14 +2031,6 @@ class TradingApp {
         
         // Clear ALL cached data to force fresh OKX API calls
         this.clearCache();
-        
-        // Fetch fresh exchange rates from OKX
-        await this.fetchExchangeRates();
-        if (!this.exchangeRates[currency]) {
-            this.showToast(`No exchange rate for ${currency}. Using USD.`, 'warning');
-            this.selectedCurrency = 'USD';
-            return;
-        }
         
         // Force complete data refresh from OKX APIs with new currency parameter
         this.showToast(`Refreshing all data with ${currency} from OKX native APIs...`, 'info');
