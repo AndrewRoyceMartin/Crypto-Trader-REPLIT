@@ -37,6 +37,13 @@ function fmtCurrency(n){
     }).format(Number(n||0));
 }
 
+// Robust number parsing for table sorting
+function toNum(x){
+    if (x==null) return 0;
+    const s = String(x).replace(/[\$,]/g,'').replace('%','').trim();
+    const n = parseFloat(s); return isNaN(n)?0:n;
+}
+
 class TradingApp {
     constructor() {
         this.updateInterval = null;
@@ -3935,11 +3942,15 @@ function sortTableByColumn(tableBody, column, tableType) {
         const aVal = getCellValue(a, columnIndex);
         const bVal = getCellValue(b, columnIndex);
         
-        // Handle numeric vs string comparison
-        const aNum = parseFloat(aVal.replace(/[$,%]/g, ''));
-        const bNum = parseFloat(bVal.replace(/[$,%]/g, ''));
+        // Handle numeric vs string comparison using robust parsing
+        const aNum = toNum(aVal);
+        const bNum = toNum(bVal);
         
-        if (!isNaN(aNum) && !isNaN(bNum)) {
+        // Check if both values are numeric (non-zero or if original contained numbers)
+        const aIsNumeric = aNum !== 0 || /[\d\$,%]/.test(aVal);
+        const bIsNumeric = bNum !== 0 || /[\d\$,%]/.test(bVal);
+        
+        if (aIsNumeric && bIsNumeric) {
             return ascending ? aNum - bNum : bNum - aNum;
         } else {
             return ascending ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
@@ -3969,11 +3980,15 @@ function sortTableByColumnIndex(tableBody, columnIndex, tableType) {
         const aVal = getCellValue(a, columnIndex);
         const bVal = getCellValue(b, columnIndex);
         
-        // Handle numeric vs string comparison
-        const aNum = parseFloat(aVal.replace(/[$,%]/g, ''));
-        const bNum = parseFloat(bVal.replace(/[$,%]/g, ''));
+        // Handle numeric vs string comparison using robust parsing
+        const aNum = toNum(aVal);
+        const bNum = toNum(bVal);
         
-        if (!isNaN(aNum) && !isNaN(bNum)) {
+        // Check if both values are numeric (non-zero or if original contained numbers)
+        const aIsNumeric = aNum !== 0 || /[\d\$,%]/.test(aVal);
+        const bIsNumeric = bNum !== 0 || /[\d\$,%]/.test(bVal);
+        
+        if (aIsNumeric && bIsNumeric) {
             return ascending ? aNum - bNum : bNum - aNum;
         } else {
             return ascending ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
