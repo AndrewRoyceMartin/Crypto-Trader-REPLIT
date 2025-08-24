@@ -74,6 +74,9 @@ class TradingApp {
         // Currency
         this.selectedCurrency = 'USD';
 
+        // Abort controller for in-flight requests
+        this.portfolioAbortController = null;
+
         // scratch
         this.currentCryptoData = null;
 
@@ -2158,6 +2161,12 @@ class TradingApp {
         console.log(`Currency changed to: ${currency}. Clearing cache and fetching fresh OKX data...`);
         this.selectedCurrency = currency;
         
+        // Abort any in-flight portfolio requests
+        if (this.portfolioAbortController) {
+            this.portfolioAbortController.abort();
+            this.portfolioAbortController = null;
+        }
+        
         // Clear ALL cached data to force fresh OKX API calls
         this.clearCache();
         
@@ -2259,10 +2268,18 @@ class TradingApp {
 
         try {
             this.updateLoadingProgress(20, 'Fetching cryptocurrency data...');
+            
+            // Abort any existing request
+            if (this.portfolioAbortController) {
+                this.portfolioAbortController.abort();
+            }
+            this.portfolioAbortController = new AbortController();
+            
             const ts = Date.now();
             const response = await fetch(`/api/crypto-portfolio?_bypass_cache=${ts}&debug=1&currency=${this.selectedCurrency}`, {
                 cache: 'no-cache',
-                headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
+                headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' },
+                signal: this.portfolioAbortController.signal
             });
 
             if (!response.ok) {
@@ -2367,15 +2384,20 @@ class TradingApp {
             });
 
         } catch (error) {
-            console.debug('Error updating crypto portfolio:', error);
-            console.debug('Full error details:', {
-                name: error.name,
-                message: error.message,
-                stack: error.stack
-            });
+            if (error.name === 'AbortError') {
+                console.log('Portfolio request aborted (likely due to currency change)');
+            } else {
+                console.debug('Error updating crypto portfolio:', error);
+                console.debug('Full error details:', {
+                    name: error.name,
+                    message: error.message,
+                    stack: error.stack
+                });
+            }
             this.updateLoadingProgress(0, 'Error loading data');
             this.hideLoadingProgress();
         } finally {
+            this.portfolioAbortController = null;
             this.isUpdatingPortfolio = false;
             this.isUpdatingTables = false;
             
@@ -3356,7 +3378,10 @@ class TradingApp {
     async updatePerformanceCharts() {
         try {
             const ts = Date.now();
-            const response = await fetch(`/api/crypto-portfolio?currency=${this.selectedCurrency}&ts=${ts}`, { cache: 'no-cache' });
+            const response = await fetch(`/api/crypto-portfolio?currency=${this.selectedCurrency}&ts=${ts}`, { 
+                cache: 'no-cache',
+                signal: this.portfolioAbortController?.signal
+            });
             if (!response.ok) return;
 
             const data = await response.json();
@@ -4007,7 +4032,10 @@ async function updatePerformanceData() {
     try {
         const ts = Date.now();
         const currency = window.tradingApp?.selectedCurrency || 'USD';
-        const response = await fetch(`/api/crypto-portfolio?currency=${currency}&ts=${ts}`, { cache: 'no-cache' });
+        const response = await fetch(`/api/crypto-portfolio?currency=${currency}&ts=${ts}`, {
+            cache: 'no-cache',
+            signal: window.tradingApp?.portfolioAbortController?.signal
+        });
         const data = await response.json();
         const cryptos = data.holdings || data.cryptocurrencies || [];
         if (cryptos.length > 0) window.tradingApp.updatePerformancePageTable(cryptos);
@@ -4024,7 +4052,10 @@ async function updatePositionsData() {
     try {
         const ts = Date.now();
         const currency = window.tradingApp?.selectedCurrency || 'USD';
-        const response = await fetch(`/api/crypto-portfolio?currency=${currency}&ts=${ts}`, { cache: 'no-cache' });
+        const response = await fetch(`/api/crypto-portfolio?currency=${currency}&ts=${ts}`, {
+            cache: 'no-cache',
+            signal: window.tradingApp?.portfolioAbortController?.signal
+        });
         const data = await response.json();
         const cryptos = data.holdings || data.cryptocurrencies || [];
         if (cryptos.length > 0) {
