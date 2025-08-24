@@ -171,10 +171,12 @@
                 <div class="col-6 col-md-2">
                     <div class="kpi-card">
                         <div class="label">
-                            <span class="icon icon-wallet me-1"></span>Estimated Total
+                            <span class="icon icon-wallet me-1"></span>Estimated Total Value
                         </div>
                         <div id="okx-estimated-total" class="value">$0.00</div>
-                        <div id="okx-estimated-change" class="change-indicator"></div>
+                        <div class="change-indicator">
+                            <canvas id="mini-portfolio-chart" width="120" height="40" style="width: 100%; height: 40px; margin-top: 8px;"></canvas>
+                        </div>
                     </div>
                 </div>
                 <div class="col-6 col-md-2">
@@ -207,10 +209,13 @@
                 <div class="col-6 col-md-2">
                     <div class="kpi-card">
                         <div class="label">
-                            <span class="icon icon-tier me-1"></span>Account Level
+                            <span class="icon icon-positions me-1"></span>Position Status
                         </div>
-                        <div id="okx-account-tier" class="value">Standard</div>
-                        <div id="okx-account-features" class="change-indicator"></div>
+                        <div id="position-summary" class="value">4 Active</div>
+                        <div id="position-breakdown" class="change-indicator">
+                            <span id="profitable-count" class="text-success">0 profitable</span> · 
+                            <span id="losing-count" class="text-danger">0 losing</span>
+                        </div>
                     </div>
                 </div>
             </div>

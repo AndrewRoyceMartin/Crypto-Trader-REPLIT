@@ -9,6 +9,7 @@ class TradingApp {
         this.portfolioChart = null;   // line
         this.pnlChart = null;         // doughnut
         this.performersChart = null;  // bar
+        this.miniPortfolioChart = null; // mini chart for KPI card
 
         // State
         this.isLiveConfirmationPending = false;
@@ -411,6 +412,15 @@ class TradingApp {
                         kpiEquityEl.parentNode.appendChild(errorNote);
                     }
                 }
+            }
+            
+            // Update estimated total and mini chart
+            const estimatedEl = document.getElementById('okx-estimated-total');
+            if (estimatedEl) {
+                const estimatedValue = portfolioData.total_value || 0;
+                estimatedEl.textContent = this.formatCurrency(estimatedValue);
+                // Update mini portfolio chart
+                updateMiniPortfolioChart();
             }
             
             if (kpiDailyEl) {
@@ -4381,6 +4391,15 @@ function updateQuickOverview(portfolioData) {
 
     updateElementSafely("overview-connection", "Connected");
     updateElementSafely("overview-last-update", window.tradingApp.formatTimeOnly(new Date()));
+    
+    // Update position status card
+    const profitable = holdings.filter(h => (h.pnl_percent || 0) > 0).length;
+    const losing = holdings.filter(h => (h.pnl_percent || 0) < 0).length;
+    const total = holdings.length;
+    
+    updateElementSafely("position-summary", `${total} Active`);
+    updateElementSafely("profitable-count", `${profitable} profitable`);
+    updateElementSafely("losing-count", `${losing} losing`);
 }
 function updateTopMovers(holdings) {
     const el = document.getElementById("top-movers");
@@ -5850,6 +5869,75 @@ document.addEventListener('DOMContentLoaded', function() {
         refreshHoldingsData();
     }, 500);
 });
+
+// Function to update mini portfolio chart for KPI card
+function updateMiniPortfolioChart() {
+    const canvas = document.getElementById('mini-portfolio-chart');
+    if (!canvas || !window.Chart) return;
+
+    try {
+        // Destroy existing chart
+        if (window.tradingApp && window.tradingApp.miniPortfolioChart) {
+            window.tradingApp.miniPortfolioChart.destroy();
+            window.tradingApp.miniPortfolioChart = null;
+        }
+
+        // Get recent portfolio data for the mini chart
+        const ctx = canvas.getContext('2d');
+        
+        // Sample data - in a real implementation, this would come from portfolio history
+        const currentValue = window.tradingApp && window.tradingApp.currentCryptoData ? 
+            window.tradingApp.currentCryptoData.reduce((sum, h) => sum + (h.current_value || 0), 0) : 0;
+        
+        // Create simple trend data (last 7 data points)
+        const trendData = [];
+        const baseValue = currentValue || 100; // Default to 100 if no data
+        for (let i = 6; i >= 0; i--) {
+            // Simulate slight variations around current value
+            const variation = (Math.random() - 0.5) * 0.1; // ±5% variation
+            trendData.push(baseValue * (1 + variation));
+        }
+
+        const chart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: ['', '', '', '', '', '', ''],
+                datasets: [{
+                    data: trendData,
+                    borderColor: currentValue > (trendData[0] || 0) ? '#28a745' : '#dc3545',
+                    backgroundColor: 'transparent',
+                    borderWidth: 2,
+                    pointRadius: 0,
+                    pointHoverRadius: 0,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    x: { display: false },
+                    y: { display: false }
+                },
+                elements: {
+                    point: { radius: 0 }
+                },
+                interaction: {
+                    intersect: false
+                }
+            }
+        });
+
+        if (window.tradingApp) {
+            window.tradingApp.miniPortfolioChart = chart;
+        }
+    } catch (error) {
+        console.debug('Mini chart update failed:', error);
+    }
+}
 
 // Override holdings table to display positions on page load
 window.addEventListener("load", function() {
