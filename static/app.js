@@ -50,6 +50,37 @@ function toOkxInst(s){
     return t.includes('-')?t.replace('/','-'): (t.includes('/')?t.replace('/','-'): `${t}-USDT`);
 }
 
+// Non-blocking toast notifications
+function toast(msg, type='info'){
+    console[type==='error'?'error':'log'](msg);
+    
+    // Create toast element
+    const toastEl = document.createElement('div');
+    toastEl.className = `toast-message ${type}`;
+    toastEl.textContent = msg;
+    
+    // Add to container
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+    
+    container.appendChild(toastEl);
+    
+    // Show animation
+    requestAnimationFrame(() => {
+        toastEl.classList.add('show');
+    });
+    
+    // Auto-remove after 4 seconds
+    setTimeout(() => {
+        toastEl.classList.remove('show');
+        setTimeout(() => {
+            if (toastEl.parentNode) {
+                toastEl.parentNode.removeChild(toastEl);
+            }
+        }, 300);
+    }, 4000);
+}
+
 class TradingApp {
     constructor() {
         this.updateInterval = null;
@@ -2968,7 +2999,7 @@ class TradingApp {
                 buttonTd.className = 'text-center text-nowrap';
                 const viewButton = document.createElement('button');
                 viewButton.className = 'btn btn-xs btn-outline-primary px-2 py-1 small';
-                viewButton.onclick = () => alert('PEPE position details');
+                viewButton.onclick = () => toast('PEPE position details', 'info');
                 viewButton.textContent = 'View';
                 buttonTd.appendChild(viewButton);
                 row.appendChild(buttonTd);
@@ -6118,11 +6149,11 @@ async function showConfidenceDetails(symbol) {
             });
             
         } else {
-            alert(`Error getting confidence data: ${data.message}`);
+            toast(`Error getting confidence data: ${data.message}`, 'error');
         }
     } catch (error) {
         console.error('Error showing confidence details:', error);
-        alert('Failed to load confidence analysis');
+        toast('Failed to load confidence analysis', 'error');
     }
 }
 
@@ -6149,7 +6180,7 @@ function buyBackPosition(symbol) {
 function setCustomBuyPrice(symbol) {
     const price = prompt(`Enter custom buy trigger price for ${symbol}:`);
     if (price && !isNaN(price) && parseFloat(price) > 0) {
-        alert(`Custom buy price of $${price} set for ${symbol} (feature coming soon)`);
+        toast(`Custom buy price of $${price} set for ${symbol} (feature coming soon)`, 'info');
         // TODO: Implement custom price alerts in backend
     }
 }
@@ -6177,7 +6208,7 @@ async function stopAllTrading() {
             botStatusElement.textContent = 'Start Bot';
         }
         
-        alert('All trading activity has been stopped successfully.\n\n• Trading bot stopped\n• Automated strategies paused\n• Manual trading still available');
+        toast('Trading stopped successfully - Bot paused, manual trading available', 'info');
         
         // Refresh dashboard data
         if (typeof loadDashboardData === 'function') {
@@ -6186,7 +6217,7 @@ async function stopAllTrading() {
         
     } catch (error) {
         console.error('Error stopping trading:', error);
-        alert('Error stopping trading: ' + error.message);
+        toast('Error stopping trading: ' + error.message, 'error');
     }
 }
 
@@ -6202,17 +6233,17 @@ async function executeSellOrder(symbol, percentage) {
         const data = await response.json();
         
         if (data.success) {
-            alert(`Sell order successful: ${data.message}`);
+            toast(`Sell order successful: ${data.message}`, 'success');
             if (window.dashboardManager) {
                 window.dashboardManager.updateCryptoPortfolio();
                 window.dashboardManager.updateCurrentHoldings();
             }
         } else {
-            alert(`Sell order failed: ${data.error}`);
+            toast(`Sell order failed: ${data.error}`, 'error');
         }
     } catch (error) {
         console.debug("Sell order error:", error);
-        alert("Sell order failed: Network error");
+        toast("Sell order failed: Network error", 'error');
     }
 }
 
@@ -6228,17 +6259,17 @@ async function executeBuyOrder(symbol, amount) {
         const data = await response.json();
         
         if (data.success) {
-            alert(`Buy order successful: ${data.message}`);
+            toast(`Buy order successful: ${data.message}`, 'success');
             if (window.dashboardManager) {
                 window.dashboardManager.updateCryptoPortfolio();
                 window.dashboardManager.updateCurrentHoldings();
             }
         } else {
-            alert(`Buy order failed: ${data.error}`);
+            toast(`Buy order failed: ${data.error}`, 'error');
         }
     } catch (error) {
         console.debug("Buy order error:", error);
-        alert("Buy order failed: Network error");
+        toast("Buy order failed: Network error", 'error');
     }
 }
 
