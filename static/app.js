@@ -1369,11 +1369,10 @@ class TradingApp {
             
             if (!data.success || !data.holdings) return;
             
-            // Call the table rendering function from HTML template
-            if (window.renderHoldingsTable && typeof window.renderHoldingsTable === 'function') {
-                console.log("Holdings data received:", data.holdings);
-                window.renderHoldingsTable(data.holdings);
-            }
+            console.log("Holdings data received:", data.holdings);
+            
+            // Use the same technique as Available Positions table
+            updateHoldingsTable(data.holdings || []);
             
         } catch (error) {
             console.debug('Current holdings update failed:', error);
@@ -5396,6 +5395,164 @@ function createAvailablePositionRow(position) {
     return row;
 }
 
+// Holdings table function (mirrors Available Positions pattern)
+function updateHoldingsTable(holdings) {
+    try {
+        const holdingsTableBody = document.getElementById("holdings-tbody");
+        if (!holdingsTableBody) {
+            console.debug("Holdings table body element not found");
+            return;
+        }
+        
+        console.debug("Updating holdings table with:", holdings);
+        
+        if (!holdings || holdings.length === 0) {
+            holdingsTableBody.textContent = '';
+            const row = document.createElement('tr');
+            const cell = document.createElement('td');
+            cell.colSpan = 13;
+            cell.className = 'text-center py-3 text-muted';
+            cell.textContent = 'No open positions';
+            row.appendChild(cell);
+            holdingsTableBody.appendChild(row);
+            return;
+        }
+        
+        // Clear existing rows
+        holdingsTableBody.textContent = '';
+        
+        holdings.forEach(holding => {
+            const row = createHoldingRow(holding);
+            if (row) holdingsTableBody.appendChild(row);
+        });
+        
+        console.debug("Holdings table updated successfully");
+        
+    } catch (error) {
+        console.error("Error updating holdings table:", error);
+    }
+}
+
+// Helper function to create holding row with crypto icons
+function createHoldingRow(holding) {
+    try {
+        const row = document.createElement('tr');
+        const symbol = holding.symbol || holding.name || 'N/A';
+        const pnlClass = (holding.pnl || 0) >= 0 ? 'text-success' : 'text-danger';
+        const pnlSign = (holding.pnl || 0) >= 0 ? '+' : '';
+        
+        // Get crypto icon using the same function as Available Positions
+        const cryptoIcon = getCryptoIcon(symbol);
+        
+        // Calculate values
+        const quantity = holding.quantity || holding.available_quantity || 0;
+        const costBasis = holding.cost_basis || 0;
+        const currentValue = holding.current_value || holding.value || 0;
+        const currentPrice = holding.current_price || 0;
+        const pnl = holding.pnl || 0;
+        const pnlPercent = holding.pnl_percent || 0;
+        
+        // Asset cell with crypto icon
+        const assetCell = document.createElement('td');
+        assetCell.innerHTML = `
+            <div class="d-flex align-items-center">
+                ${cryptoIcon}
+                <div class="ms-2">
+                    <div class="fw-bold">${symbol}</div>
+                    <small class="text-muted">${holding.name || symbol}</small>
+                </div>
+            </div>
+        `;
+        row.appendChild(assetCell);
+        
+        // Add other cells...
+        const cells = [
+            { content: quantity.toFixed(6), class: '' },
+            { content: currentPrice.toLocaleString('en-US', {style: 'currency', currency: 'USD'}), class: '' },
+            { content: currentValue.toLocaleString('en-US', {style: 'currency', currency: 'USD'}), class: '' },
+            { content: costBasis.toLocaleString('en-US', {style: 'currency', currency: 'USD'}), class: '' },
+            { content: `${pnlSign}${pnl.toLocaleString('en-US', {style: 'currency', currency: 'USD'})}`, class: pnlClass },
+            { content: `${pnlSign}${pnlPercent.toFixed(2)}%`, class: pnlClass },
+            { content: `${(currentValue / (holding.total_portfolio_value || 1) * 100).toFixed(1)}%`, class: 'text-muted' },
+            { content: 'N/A', class: 'text-muted' }, // TARGET VALUE
+            { content: 'N/A', class: 'text-muted' }, // TARGET P&L $
+            { content: 'N/A', class: 'text-muted' }, // TARGET P&L %
+            { content: '0', class: 'text-muted' }, // DAYS
+            { content: '<span class="badge bg-secondary">HOLD</span>', class: '' } // ACTIONS
+        ];
+        
+        cells.forEach(cellData => {
+            const cell = document.createElement('td');
+            cell.className = cellData.class;
+            cell.innerHTML = cellData.content;
+            row.appendChild(cell);
+        });
+        
+        return row;
+        
+    } catch (error) {
+        console.error("Error creating holding row:", error);
+        return null;
+    }
+}
+
+/** Get cryptocurrency icon - uses CoinGecko API for authentic logos */
+function getCryptoIcon(symbol) {
+    if (!symbol || symbol === 'N/A') {
+        return '<i class="fa-solid fa-coins text-muted" style="width: 24px; height: 24px; font-size: 18px;"></i>';
+    }
+    
+    // Map symbol to CoinGecko ID for accurate logos
+    const coinGeckoIds = {
+        'BTC': 'bitcoin', 'ETH': 'ethereum', 'BNB': 'binancecoin', 'SOL': 'solana',
+        'XRP': 'ripple', 'USDC': 'usd-coin', 'ADA': 'cardano', 'AVAX': 'avalanche-2',
+        'DOGE': 'dogecoin', 'TRX': 'tron', 'DOT': 'polkadot', 'MATIC': 'matic-network',
+        'LTC': 'litecoin', 'ATOM': 'cosmos', 'UNI': 'uniswap', 'LINK': 'chainlink',
+        'NEAR': 'near', 'XLM': 'stellar', 'ALGO': 'algorand', 'VET': 'vechain',
+        'ICP': 'internet-computer', 'FIL': 'filecoin', 'AAVE': 'aave', 'MKR': 'maker',
+        'THETA': 'theta-token', 'AXS': 'axie-infinity', 'SAND': 'the-sandbox',
+        'MANA': 'decentraland', 'CRV': 'curve-dao-token', 'COMP': 'compound-governance-token',
+        'SUSHI': 'sushi', 'YFI': 'yearn-finance', 'SNX': 'havven', '1INCH': '1inch',
+        'ENJ': 'enjincoin', 'BAT': 'basic-attention-token', 'ZRX': '0x',
+        'OMG': 'omisego', 'REN': 'republic-protocol', 'LRC': 'loopring',
+        'KNC': 'kyber-network-crystal', 'STORJ': 'storj', 'BAND': 'band-protocol',
+        'RSR': 'reserve-rights-token', 'NMR': 'numeraire', 'RLC': 'iexec-rlc',
+        'USDT': 'tether', 'FTM': 'fantom', 'GALA': 'gala', 'APE': 'apecoin',
+        'SHIB': 'shiba-inu', 'PEPE': 'pepe', 'WLD': 'worldcoin-wld'
+    };
+    
+    const coinId = coinGeckoIds[symbol.toUpperCase()] || symbol.toLowerCase();
+    
+    return `<img src="https://assets.coingecko.com/coins/images/${getCoinGeckoImageId(coinId)}/small/${coinId}.png" 
+                 alt="${symbol}" 
+                 class="crypto-icon" 
+                 style="width: 24px; height: 24px; border-radius: 50%;"
+                 onerror="this.outerHTML='<i class=\\'fa-solid fa-coins text-warning\\' style=\\'width: 24px; height: 24px; font-size: 18px;\\'></i>'">`;
+}
+
+/** Get CoinGecko image IDs for major cryptocurrencies */
+function getCoinGeckoImageId(coinId) {
+    const imageIds = {
+        'bitcoin': '1', 'ethereum': '279', 'binancecoin': '825', 'solana': '4128',
+        'ripple': '44', 'usd-coin': '6319', 'cardano': '975', 'avalanche-2': '12559',
+        'dogecoin': '5', 'tron': '1094', 'polkadot': '12171', 'matic-network': '4713',
+        'litecoin': '2', 'cosmos': '5866', 'uniswap': '12504', 'chainlink': '877',
+        'near': '10365', 'stellar': '100', 'algorand': '4030', 'vechain': '1042',
+        'internet-computer': '14495', 'filecoin': '12817', 'aave': '12645', 'maker': '1518',
+        'theta-token': '2416', 'axie-infinity': '13029', 'the-sandbox': '12493',
+        'decentraland': '878', 'curve-dao-token': '12124', 'compound-governance-token': '10347',
+        'sushi': '12271', 'yearn-finance': '11849', 'havven': '5013', '1inch': '13469',
+        'enjincoin': '1027', 'basic-attention-token': '677', '0x': '863',
+        'omisego': '1808', 'republic-protocol': '3212', 'loopring': '1934',
+        'kyber-network-crystal': '9444', 'storj': '5446', 'band-protocol': '9545',
+        'reserve-rights-token': '8365', 'numeraire': '1732', 'iexec-rlc': '1637',
+        'tether': '325', 'fantom': '3513', 'gala': '12493', 'apecoin': '18876',
+        'shiba-inu': '11939', 'pepe': '29850', 'worldcoin-wld': '31069'
+    };
+    
+    return imageIds[coinId] || '1'; // Default to Bitcoin ID if not found
+}
+
 // Available positions table function
 function updateAvailablePositionsTable(availablePositions) {
     try {
@@ -5978,14 +6135,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }, 500);
 });
 
-// Override holdings table to display positions on page load
+// Also refresh holdings on load as backup
 window.addEventListener("load", function() {
-    if (window.dashboardManager && window.dashboardManager.updateHoldingsTable) {
-        window.dashboardManager.updateHoldingsTable = function(holdings) {
-            updateOpenPositionsTable(holdings);
-        };
-    }
-    
-    // Also refresh holdings on load as backup
     setTimeout(refreshHoldingsData, 1000);
 });
