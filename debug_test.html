@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Button Debug Test</title>
+</head>
+<body>
+    <h1>Minimal Button Test</h1>
+    <button id="test-btn">Test Button</button>
+    <div id="result">No result yet</div>
+    
+    <script>
+        console.log('Script loading...');
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM loaded');
+            const btn = document.getElementById('test-btn');
+            const result = document.getElementById('result');
+            
+            console.log('Button found:', !!btn);
+            
+            if (btn) {
+                btn.addEventListener('click', function() {
+                    console.log('Button clicked!');
+                    result.innerHTML = 'Button clicked successfully!';
+                    
+                    // Test API call
+                    fetch('/api/test-sync-data')
+                        .then(response => response.json())
+                        .then(data => {
+                            result.innerHTML += '<br>API response: ' + data.tests_available + ' tests available';
+                        })
+                        .catch(error => {
+                            result.innerHTML += '<br>API error: ' + error.message;
+                        });
+                });
+                console.log('Event listener attached');
+            }
+        });
+    </script>
+</body>
+</html>

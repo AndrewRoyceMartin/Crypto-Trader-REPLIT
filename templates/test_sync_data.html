@@ -89,9 +89,10 @@
             <div class="col-12">
                 <div class="d-flex justify-content-between align-items-center mb-4">
                     <h1><i class="fas fa-sync-alt me-2"></i>OKX Live Sync Test Suite</h1>
-                    <button class="btn btn-primary" id="run-tests-btn">
+                    <button class="btn btn-primary" id="run-tests-btn" style="padding: 12px 24px; font-weight: bold;">
                         <i class="fas fa-play me-2"></i>Run All Tests
                     </button>
+                    <div id="button-debug" style="font-size: 12px; color: #666; margin-top: 10px;"></div>
                 </div>
 
                 <!-- Test Status Overview -->
@@ -164,14 +165,23 @@
         
 
         function runSyncTests() {
-            console.log('runSyncTests() called');
+            console.log('🔥 runSyncTests() called!');
+            
+            // Update debug display
+            const debugDiv = document.getElementById('button-debug');
+            if (debugDiv) {
+                debugDiv.innerHTML = '🔥 runSyncTests() called at ' + new Date().toLocaleTimeString();
+            }
+            
             const button = document.getElementById('run-tests-btn') || document.querySelector('.btn-primary');
             if (!button) {
-                console.error('Button not found');
+                console.error('❌ Button not found in runSyncTests');
+                if (debugDiv) debugDiv.innerHTML += '<br>❌ Button not found';
                 return;
             }
             
-            console.log('Button found, starting tests...');
+            console.log('✅ Button found, starting tests...');
+            if (debugDiv) debugDiv.innerHTML += '<br>✅ Button found, starting API call...';
             button.disabled = true;
             button.innerHTML = '<i class="fas fa-spinner refresh-icon me-2"></i>Running Tests...';
 
@@ -507,32 +517,54 @@
             }
         }
 
-        // Auto-run tests on page load and initialize tooltips
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('Page loaded, initializing tooltips...');
-            initializeTooltips();
+        // IMMEDIATE button binding - try multiple approaches
+        function bindButton() {
+            console.log('🔍 Attempting to bind button...');
+            const btn = document.getElementById('run-tests-btn');
+            console.log('🔍 Button element:', btn);
             
-            // CLEAN event listener approach (CSP-compliant)
-            const runTestsBtn = document.getElementById('run-tests-btn');
-            
-            console.log('Looking for run tests button:', runTestsBtn);
-            
-            if (runTestsBtn) {
-                runTestsBtn.addEventListener('click', function(e) {
-                    console.log('Run tests button clicked via event listener!');
+            if (btn) {
+                // Remove any existing listeners
+                btn.replaceWith(btn.cloneNode(true));
+                const newBtn = document.getElementById('run-tests-btn');
+                
+                newBtn.addEventListener('click', function(e) {
+                    console.log('🚀 BUTTON CLICKED!');
                     e.preventDefault();
+                    e.stopPropagation();
                     runSyncTests();
                 });
-                console.log('✅ Run tests button event listener attached');
-            } else {
-                console.error('❌ Run tests button not found!');
+                
+                // Also try mousedown for mobile
+                newBtn.addEventListener('mousedown', function(e) {
+                    console.log('🚀 BUTTON MOUSEDOWN!');
+                });
+                
+                console.log('✅ Button bound successfully');
+                return true;
+            }
+            console.log('❌ Button not found');
+            return false;
+        }
+
+        // Try multiple binding attempts
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🔄 DOM loaded, initializing...');
+            initializeTooltips();
+            
+            // Try binding immediately
+            if (!bindButton()) {
+                // Try again after short delay
+                setTimeout(bindButton, 100);
+                setTimeout(bindButton, 500);
+                setTimeout(bindButton, 1000);
             }
             
-            // Auto-run tests after 2 seconds
+            // Auto-run tests after 3 seconds
             setTimeout(() => {
-                console.log('Auto-running tests in 2 seconds...');
+                console.log('🔄 Auto-running tests...');
                 runSyncTests();
-            }, 2000);
+            }, 3000);
         });
         
         // Also initialize tooltips when Bootstrap is ready
