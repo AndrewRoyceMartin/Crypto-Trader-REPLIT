@@ -683,41 +683,55 @@ def crypto_portfolio_okx() -> ResponseReturnValue:
         holdings_list = okx_portfolio_data['holdings']
         recent_trades = portfolio_service.get_trade_history(limit=50)
 
-        from flask import make_response
+        overview = {
+            "currency": selected_currency,
+            "total_value": float(okx_portfolio_data['total_current_value']),
+            "cash_balance": float(okx_portfolio_data['cash_balance']),
+            "aud_balance": float(okx_portfolio_data.get('aud_balance', 0.0)),
+            "total_pnl": float(okx_portfolio_data['total_pnl']),
+            "total_pnl_percent": float(okx_portfolio_data['total_pnl_percent']),
+            "daily_pnl": float(okx_portfolio_data.get('daily_pnl', 0.0)),
+            "daily_pnl_percent": float(okx_portfolio_data.get('daily_pnl_percent', 0.0)),
+            "total_assets": len(holdings_list),
+            "profitable_positions": sum(1 for h in holdings_list if float(h.get('pnl_percent', 0) or 0) > 0),
+            "losing_positions": sum(1 for h in holdings_list if float(h.get('pnl_percent', 0) or 0) < 0),
+            "breakeven_positions": max(0, len(holdings_list) - sum(1 for h in holdings_list if float(h.get('pnl_percent', 0) or 0) != 0)),
+            "last_update": okx_portfolio_data['last_update'],
+            "is_live": True,
+            "connected": True
+        }
+
         payload = {
             "holdings": holdings_list,
             "recent_trades": recent_trades,
             "summary": {
                 "total_cryptos": len(holdings_list),
-                "total_current_value": okx_portfolio_data['total_current_value'],
-                "total_estimated_value": okx_portfolio_data.get('total_estimated_value', okx_portfolio_data['total_current_value']),
-                "total_pnl": okx_portfolio_data['total_pnl'],
-                "total_pnl_percent": okx_portfolio_data['total_pnl_percent'],
-                "cash_balance": okx_portfolio_data['cash_balance'],
-                "aud_balance": okx_portfolio_data.get('aud_balance', 0.0),
+                "total_current_value": overview["total_value"],
+                "total_estimated_value": float(okx_portfolio_data.get('total_estimated_value', overview["total_value"])),
+                "total_pnl": overview["total_pnl"],
+                "total_pnl_percent": overview["total_pnl_percent"],
+                "cash_balance": overview["cash_balance"],
+                "aud_balance": overview["aud_balance"],
                 "currency": selected_currency
             },
-            "total_pnl": okx_portfolio_data['total_pnl'],
-            "total_pnl_percent": okx_portfolio_data['total_pnl_percent'],
-            "total_current_value": okx_portfolio_data['total_current_value'],
-            "total_estimated_value": okx_portfolio_data.get('total_estimated_value', okx_portfolio_data['total_current_value']),
-            "cash_balance": okx_portfolio_data['cash_balance'],
-            "aud_balance": okx_portfolio_data.get('aud_balance', 0.0),
+            "total_pnl": overview["total_pnl"],
+            "total_pnl_percent": overview["total_pnl_percent"],
+            "total_current_value": overview["total_value"],
+            "total_estimated_value": float(okx_portfolio_data.get('total_estimated_value', overview["total_value"])),
+            "cash_balance": overview["cash_balance"],
+            "aud_balance": overview["aud_balance"],
             "currency": selected_currency,
             "last_update": okx_portfolio_data['last_update'],
             "exchange_info": {
                 "exchange": "Live OKX",
                 "last_update": okx_portfolio_data['last_update'],
-                "cash_balance": okx_portfolio_data['cash_balance'],
+                "cash_balance": overview["cash_balance"],
                 "currency": selected_currency
-            }
+            },
+            # 👇 add this for UI cards
+            "overview": overview
         }
-        resp = make_response(jsonify(payload))
-        # Make sure every currency toggle bypasses any caches
-        resp.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0, private"
-        resp.headers["Pragma"] = "no-cache"
-        resp.headers["Expires"] = "0"
-        return resp
+        return _no_cache_json(payload)
 
     except Exception as e:
         logger.error(f"Error getting OKX portfolio: {e}")
