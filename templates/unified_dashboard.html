@@ -27,10 +27,78 @@
             border-radius: 8px;
             padding: 12px;
             height: 100%;
+            position: relative;
+            min-height: 120px;
+            transition: all 0.3s ease;
         }
         .kpi-card .label { font-size: 12px; color: #6c757d; }
         .kpi-card .value { font-size: 20px; font-weight: 600; margin-top: 2px; }
         .kpi-card .change-indicator { font-size: 12px; margin-top: 4px; }
+        
+        /* View Toggle Button */
+        .view-toggle-btn {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: rgba(0,0,0,0.1);
+            border: none;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            color: #6c757d;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .view-toggle-btn:hover {
+            background: rgba(0,0,0,0.2);
+            color: #000;
+        }
+        
+        /* Different Card View Styles */
+        .kpi-card.view-text { background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); }
+        .kpi-card.view-graph { background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%); }
+        .kpi-card.view-detailed { background: linear-gradient(135deg, #f3e5f5 0%, #e1bee7 100%); }
+        .kpi-card.view-compact { background: linear-gradient(135deg, #e8f5e8 0%, #c8e6c9 100%); }
+        
+        /* Content visibility for different views */
+        .kpi-card .view-content { display: none; }
+        .kpi-card .view-content.active { display: block; }
+        
+        /* Graph view specific styles */
+        .view-graph .mini-chart-container {
+            height: 60px;
+            margin: 8px 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        /* Detailed view styles */
+        .view-detailed .detailed-stats {
+            font-size: 10px;
+            margin-top: 8px;
+        }
+        .view-detailed .detailed-stats .stat-item {
+            display: flex;
+            justify-content: space-between;
+            margin: 2px 0;
+        }
+        
+        /* Compact view styles */
+        .view-compact .compact-layout {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 100%;
+        }
+        .view-compact .compact-value {
+            font-size: 16px;
+            font-weight: 600;
+        }
 
         .card--hover { border: 1px solid #e9ecef; border-radius: 8px; }
         .card--hover:hover { box-shadow: 0 6px 18px rgba(0,0,0,0.06); transition: box-shadow .2s ease; }
@@ -146,61 +214,271 @@
             <!-- KPI Cards Row -->
             <div class="row text-center mb-4 g-2">
                 <div class="col-6 col-md-2">
-                    <div class="kpi-card">
-                        <div class="label">
-                            <span class="icon icon-balance me-1"></span>Total Balance
+                    <div class="kpi-card view-text" data-card="total-balance">
+                        <button class="view-toggle-btn" onclick="toggleCardView('total-balance')" title="Switch view">
+                            <i class="fa-solid fa-eye"></i>
+                        </button>
+                        
+                        <!-- Text View -->
+                        <div class="view-content view-text-content active">
+                            <div class="label">
+                                <span class="icon icon-balance me-1"></span>Total Balance
+                            </div>
+                            <div id="okx-total-balance" class="value">$0.00</div>
+                            <div id="okx-balance-change" class="change-indicator"></div>
                         </div>
-                        <div id="okx-total-balance" class="value">$0.00</div>
-                        <div id="okx-balance-change" class="change-indicator"></div>
+                        
+                        <!-- Graph View -->
+                        <div class="view-content view-graph-content">
+                            <div class="label">Total Balance Trend</div>
+                            <div class="mini-chart-container">
+                                <canvas id="total-balance-chart" width="100" height="50"></canvas>
+                            </div>
+                            <div id="okx-total-balance-graph" class="value small">$0.00</div>
+                        </div>
+                        
+                        <!-- Detailed View -->
+                        <div class="view-content view-detailed-content">
+                            <div class="label">Balance Details</div>
+                            <div id="okx-total-balance-detailed" class="value">$0.00</div>
+                            <div class="detailed-stats">
+                                <div class="stat-item"><span>Available:</span><span id="balance-available">$0.00</span></div>
+                                <div class="stat-item"><span>In Orders:</span><span id="balance-orders">$0.00</span></div>
+                                <div class="stat-item"><span>Change 24h:</span><span id="balance-24h">0%</span></div>
+                            </div>
+                        </div>
+                        
+                        <!-- Compact View -->
+                        <div class="view-content view-compact-content">
+                            <div class="compact-layout">
+                                <div class="compact-value" id="okx-total-balance-compact">$0.00</div>
+                                <i class="fa-solid fa-wallet text-muted"></i>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <div class="col-6 col-md-2">
-                    <div class="kpi-card">
-                        <div class="label">
-                            <span class="icon icon-wallet me-1"></span>Estimated Total Value
+                    <div class="kpi-card view-text" data-card="estimated-total">
+                        <button class="view-toggle-btn" onclick="toggleCardView('estimated-total')" title="Switch view">
+                            <i class="fa-solid fa-chart-line"></i>
+                        </button>
+                        
+                        <!-- Text View -->
+                        <div class="view-content view-text-content active">
+                            <div class="label">
+                                <span class="icon icon-wallet me-1"></span>Estimated Total Value
+                            </div>
+                            <div id="okx-estimated-total" class="value">$0.00</div>
+                            <div class="change-indicator">
+                                <canvas id="mini-portfolio-chart" width="120" height="40" style="width: 100%; height: 40px; margin-top: 8px;"></canvas>
+                            </div>
                         </div>
-                        <div id="okx-estimated-total" class="value">$0.00</div>
-                        <div class="change-indicator">
-                            <canvas id="mini-portfolio-chart" width="120" height="40" style="width: 100%; height: 40px; margin-top: 8px;"></canvas>
+                        
+                        <!-- Graph View -->
+                        <div class="view-content view-graph-content">
+                            <div class="label">Portfolio Growth</div>
+                            <div class="mini-chart-container">
+                                <canvas id="portfolio-growth-chart" width="100" height="50"></canvas>
+                            </div>
+                            <div id="okx-estimated-total-graph" class="value small">$0.00</div>
+                        </div>
+                        
+                        <!-- Detailed View -->
+                        <div class="view-content view-detailed-content">
+                            <div class="label">Portfolio Breakdown</div>
+                            <div id="okx-estimated-total-detailed" class="value">$0.00</div>
+                            <div class="detailed-stats">
+                                <div class="stat-item"><span>Crypto:</span><span id="portfolio-crypto">$0.00</span></div>
+                                <div class="stat-item"><span>Fiat:</span><span id="portfolio-fiat">$0.00</span></div>
+                                <div class="stat-item"><span>Profit/Loss:</span><span id="portfolio-pnl">$0.00</span></div>
+                            </div>
+                        </div>
+                        
+                        <!-- Compact View -->
+                        <div class="view-content view-compact-content">
+                            <div class="compact-layout">
+                                <div class="compact-value" id="okx-estimated-total-compact">$0.00</div>
+                                <i class="fa-solid fa-chart-pie text-muted"></i>
+                            </div>
                         </div>
                     </div>
                 </div>
                 <div class="col-6 col-md-2">
-                    <div class="kpi-card">
-                        <div class="label">
-                            <span class="icon icon-pnl me-1"></span>24h P&L
+                    <div class="kpi-card view-text" data-card="day-pnl">
+                        <button class="view-toggle-btn" onclick="toggleCardView('day-pnl')" title="Switch view">
+                            <i class="fa-solid fa-trending-up"></i>
+                        </button>
+                        
+                        <!-- Text View -->
+                        <div class="view-content view-text-content active">
+                            <div class="label">
+                                <span class="icon icon-pnl me-1"></span>24h P&L
+                            </div>
+                            <div id="okx-day-pnl" class="value">$0.00</div>
+                            <div id="okx-day-pnl-percent" class="change-indicator"></div>
                         </div>
-                        <div id="okx-day-pnl" class="value">$0.00</div>
-                        <div id="okx-day-pnl-percent" class="change-indicator"></div>
+                        
+                        <!-- Graph View -->
+                        <div class="view-content view-graph-content">
+                            <div class="label">Daily P&L Trend</div>
+                            <div class="mini-chart-container">
+                                <canvas id="daily-pnl-chart" width="100" height="50"></canvas>
+                            </div>
+                            <div id="okx-day-pnl-graph" class="value small">$0.00</div>
+                        </div>
+                        
+                        <!-- Detailed View -->
+                        <div class="view-content view-detailed-content">
+                            <div class="label">P&L Analysis</div>
+                            <div id="okx-day-pnl-detailed" class="value">$0.00</div>
+                            <div class="detailed-stats">
+                                <div class="stat-item"><span>Realized:</span><span id="pnl-realized">$0.00</span></div>
+                                <div class="stat-item"><span>Unrealized:</span><span id="pnl-unrealized">$0.00</span></div>
+                                <div class="stat-item"><span>Best Asset:</span><span id="pnl-best">—</span></div>
+                            </div>
+                        </div>
+                        
+                        <!-- Compact View -->
+                        <div class="view-content view-compact-content">
+                            <div class="compact-layout">
+                                <div class="compact-value" id="okx-day-pnl-compact">$0.00</div>
+                                <i class="fa-solid fa-arrow-trend-up text-muted"></i>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <div class="col-6 col-md-2">
-                    <div class="kpi-card">
-                        <div class="label">
-                            <span class="icon icon-trophy me-1"></span>Best Performer
+                    <div class="kpi-card view-text" data-card="best-performer">
+                        <button class="view-toggle-btn" onclick="toggleCardView('best-performer')" title="Switch view">
+                            <i class="fa-solid fa-trophy"></i>
+                        </button>
+                        
+                        <!-- Text View -->
+                        <div class="view-content view-text-content active">
+                            <div class="label">
+                                <span class="icon icon-trophy me-1"></span>Best Performer
+                            </div>
+                            <div id="okx-best-performer" class="value">—</div>
+                            <div id="okx-best-gain" class="change-indicator text-success"></div>
                         </div>
-                        <div id="okx-best-performer" class="value">—</div>
-                        <div id="okx-best-gain" class="change-indicator text-success"></div>
+                        
+                        <!-- Graph View -->
+                        <div class="view-content view-graph-content">
+                            <div class="label">Performance Chart</div>
+                            <div class="mini-chart-container">
+                                <canvas id="best-performer-chart" width="100" height="50"></canvas>
+                            </div>
+                            <div id="okx-best-performer-graph" class="value small">—</div>
+                        </div>
+                        
+                        <!-- Detailed View -->
+                        <div class="view-content view-detailed-content">
+                            <div class="label">Top Performers</div>
+                            <div id="okx-best-performer-detailed" class="value">—</div>
+                            <div class="detailed-stats">
+                                <div class="stat-item"><span>1st:</span><span id="top-1st">—</span></div>
+                                <div class="stat-item"><span>2nd:</span><span id="top-2nd">—</span></div>
+                                <div class="stat-item"><span>3rd:</span><span id="top-3rd">—</span></div>
+                            </div>
+                        </div>
+                        
+                        <!-- Compact View -->
+                        <div class="view-content view-compact-content">
+                            <div class="compact-layout">
+                                <div class="compact-value" id="okx-best-performer-compact">—</div>
+                                <i class="fa-solid fa-star text-muted"></i>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <div class="col-6 col-md-2">
-                    <div class="kpi-card">
-                        <div class="label">
-                            <span class="icon icon-positions me-1"></span>Active Positions
+                    <div class="kpi-card view-text" data-card="active-positions">
+                        <button class="view-toggle-btn" onclick="toggleCardView('active-positions')" title="Switch view">
+                            <i class="fa-solid fa-coins"></i>
+                        </button>
+                        
+                        <!-- Text View -->
+                        <div class="view-content view-text-content active">
+                            <div class="label">
+                                <span class="icon icon-positions me-1"></span>Active Positions
+                            </div>
+                            <div id="okx-active-positions" class="value">0</div>
+                            <div id="okx-positions-detail" class="change-indicator"></div>
                         </div>
-                        <div id="okx-active-positions" class="value">0</div>
-                        <div id="okx-positions-detail" class="change-indicator"></div>
+                        
+                        <!-- Graph View -->
+                        <div class="view-content view-graph-content">
+                            <div class="label">Position Distribution</div>
+                            <div class="mini-chart-container">
+                                <canvas id="active-positions-chart" width="100" height="50"></canvas>
+                            </div>
+                            <div id="okx-active-positions-graph" class="value small">0</div>
+                        </div>
+                        
+                        <!-- Detailed View -->
+                        <div class="view-content view-detailed-content">
+                            <div class="label">Position Breakdown</div>
+                            <div id="okx-active-positions-detailed" class="value">0</div>
+                            <div class="detailed-stats">
+                                <div class="stat-item"><span>Crypto:</span><span id="positions-crypto">0</span></div>
+                                <div class="stat-item"><span>Fiat:</span><span id="positions-fiat">0</span></div>
+                                <div class="stat-item"><span>Total Value:</span><span id="positions-value">$0.00</span></div>
+                            </div>
+                        </div>
+                        
+                        <!-- Compact View -->
+                        <div class="view-content view-compact-content">
+                            <div class="compact-layout">
+                                <div class="compact-value" id="okx-active-positions-compact">0</div>
+                                <i class="fa-solid fa-layer-group text-muted"></i>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <div class="col-6 col-md-2">
-                    <div class="kpi-card">
-                        <div class="label">
-                            <span class="icon icon-positions me-1"></span>Position Status
+                    <div class="kpi-card view-text" data-card="position-status">
+                        <button class="view-toggle-btn" onclick="toggleCardView('position-status')" title="Switch view">
+                            <i class="fa-solid fa-chart-simple"></i>
+                        </button>
+                        
+                        <!-- Text View -->
+                        <div class="view-content view-text-content active">
+                            <div class="label">
+                                <span class="icon icon-positions me-1"></span>Position Status
+                            </div>
+                            <div id="position-summary" class="value">—</div>
+                            <div id="position-breakdown" class="change-indicator">
+                                <span id="profitable-count" class="text-success">0 profitable</span> · 
+                                <span id="losing-count" class="text-danger">0 losing</span>
+                            </div>
                         </div>
-                        <div id="position-summary" class="value">—</div>
-                        <div id="position-breakdown" class="change-indicator">
-                            <span id="profitable-count" class="text-success">0 profitable</span> · 
-                            <span id="losing-count" class="text-danger">0 losing</span>
+                        
+                        <!-- Graph View -->
+                        <div class="view-content view-graph-content">
+                            <div class="label">Profit/Loss Chart</div>
+                            <div class="mini-chart-container">
+                                <canvas id="position-status-chart" width="100" height="50"></canvas>
+                            </div>
+                            <div id="position-summary-graph" class="value small">—</div>
+                        </div>
+                        
+                        <!-- Detailed View -->
+                        <div class="view-content view-detailed-content">
+                            <div class="label">Status Details</div>
+                            <div id="position-summary-detailed" class="value">—</div>
+                            <div class="detailed-stats">
+                                <div class="stat-item"><span>Profitable:</span><span id="profitable-detailed">0</span></div>
+                                <div class="stat-item"><span>Break Even:</span><span id="breakeven-count">0</span></div>
+                                <div class="stat-item"><span>Losing:</span><span id="losing-detailed">0</span></div>
+                            </div>
+                        </div>
+                        
+                        <!-- Compact View -->
+                        <div class="view-content view-compact-content">
+                            <div class="compact-layout">
+                                <div class="compact-value" id="position-summary-compact">—</div>
+                                <i class="fa-solid fa-scale-balanced text-muted"></i>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -855,6 +1133,100 @@
         };
         
         return imageIds[coinId] || '1'; // Default to Bitcoin ID if not found
+    }
+
+    // === CARD VIEW TOGGLE FUNCTIONALITY ===
+    const cardViews = ['text', 'graph', 'detailed', 'compact'];
+    const cardViewState = {};
+    
+    function toggleCardView(cardId) {
+        // Initialize card state if not exists
+        if (!cardViewState[cardId]) {
+            cardViewState[cardId] = 0;
+        }
+        
+        // Cycle to next view
+        cardViewState[cardId] = (cardViewState[cardId] + 1) % cardViews.length;
+        const newView = cardViews[cardViewState[cardId]];
+        
+        const card = document.querySelector(`[data-card="${cardId}"]`);
+        if (!card) return;
+        
+        // Update card class
+        card.className = `kpi-card view-${newView}`;
+        
+        // Hide all view contents
+        const viewContents = card.querySelectorAll('.view-content');
+        viewContents.forEach(content => content.classList.remove('active'));
+        
+        // Show active view content
+        const activeContent = card.querySelector(`.view-${newView}-content`);
+        if (activeContent) {
+            activeContent.classList.add('active');
+        }
+        
+        // Update button icon based on view
+        const button = card.querySelector('.view-toggle-btn i');
+        if (button) {
+            const icons = {
+                'text': 'fa-font',
+                'graph': 'fa-chart-line', 
+                'detailed': 'fa-list-ul',
+                'compact': 'fa-compress'
+            };
+            button.className = `fa-solid ${icons[newView]}`;
+        }
+        
+        // Initialize mini charts for graph views
+        if (newView === 'graph') {
+            initializeMiniChart(cardId);
+        }
+        
+        console.log(`Card ${cardId} switched to ${newView} view`);
+    }
+    
+    function initializeMiniChart(cardId) {
+        const canvas = document.querySelector(`#${cardId.replace('-', '')}-chart`);
+        if (!canvas) return;
+        
+        const ctx = canvas.getContext('2d');
+        const width = canvas.width;
+        const height = canvas.height;
+        
+        // Clear canvas
+        ctx.clearRect(0, 0, width, height);
+        
+        // Generate sample data
+        const data = Array.from({length: 20}, (_, i) => Math.random() * 100 + 50);
+        
+        // Draw simple line chart
+        ctx.strokeStyle = '#007bff';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        
+        data.forEach((value, index) => {
+            const x = (index / (data.length - 1)) * width;
+            const y = height - ((value - 50) / 100 * height);
+            
+            if (index === 0) {
+                ctx.moveTo(x, y);
+            } else {
+                ctx.lineTo(x, y);
+            }
+        });
+        
+        ctx.stroke();
+        
+        // Add gradient fill
+        const gradient = ctx.createLinearGradient(0, 0, 0, height);
+        gradient.addColorStop(0, 'rgba(0, 123, 255, 0.2)');
+        gradient.addColorStop(1, 'rgba(0, 123, 255, 0.05)');
+        
+        ctx.fillStyle = gradient;
+        ctx.lineTo(width, height);
+        ctx.lineTo(0, height);
+        ctx.closePath();
+        ctx.fill();
     }
 
     // === INITIALIZATION ===
