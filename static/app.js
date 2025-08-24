@@ -425,10 +425,10 @@ class TradingApp {
             // Update estimated total and mini chart
             const estimatedEl = document.getElementById('okx-estimated-total');
             if (estimatedEl) {
-                const estimatedValue = portfolioData.total_value || 0;
+                const estimatedValue = portfolioData.total_estimated_value || portfolioData.total_value || 0;
                 estimatedEl.textContent = this.formatCurrency(estimatedValue);
-                // Update mini portfolio chart
-                updateMiniPortfolioChart();
+                // Update mini portfolio chart with actual portfolio data
+                this.updateMiniPortfolioChart(portfolioData);
             }
             
             if (kpiDailyEl) {
@@ -5971,74 +5971,104 @@ document.addEventListener('DOMContentLoaded', function() {
     }, 500);
 });
 
-// Function to update mini portfolio chart for KPI card
-function updateMiniPortfolioChart() {
-    const canvas = document.getElementById('mini-portfolio-chart');
-    if (!canvas || !window.Chart) return;
+    // Method to update mini portfolio chart for KPI card with real OKX data
+    updateMiniPortfolioChart(portfolioData = null) {
+        const canvas = document.getElementById('mini-portfolio-chart');
+        if (!canvas || !window.Chart) return;
 
-    try {
-        // Destroy existing chart
-        if (window.tradingApp && window.tradingApp.miniPortfolioChart) {
-            window.tradingApp.miniPortfolioChart.destroy();
-            window.tradingApp.miniPortfolioChart = null;
-        }
-
-        // Get recent portfolio data for the mini chart
-        const ctx = canvas.getContext('2d');
-        
-        // Sample data - in a real implementation, this would come from portfolio history
-        const currentValue = window.tradingApp && window.tradingApp.currentCryptoData ? 
-            window.tradingApp.currentCryptoData.reduce((sum, h) => sum + (h.current_value || 0), 0) : 0;
-        
-        // Create simple trend data (last 7 data points)
-        const trendData = [];
-        const baseValue = currentValue || 100; // Default to 100 if no data
-        for (let i = 6; i >= 0; i--) {
-            // Simulate slight variations around current value
-            const variation = (Math.random() - 0.5) * 0.1; // ±5% variation
-            trendData.push(baseValue * (1 + variation));
-        }
-
-        const chart = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: ['', '', '', '', '', '', ''],
-                datasets: [{
-                    data: trendData,
-                    borderColor: currentValue > (trendData[0] || 0) ? '#28a745' : '#dc3545',
-                    backgroundColor: 'transparent',
-                    borderWidth: 2,
-                    pointRadius: 0,
-                    pointHoverRadius: 0,
-                    tension: 0.4
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { display: false }
-                },
-                scales: {
-                    x: { display: false },
-                    y: { display: false }
-                },
-                elements: {
-                    point: { radius: 0 }
-                },
-                interaction: {
-                    intersect: false
-                }
+        try {
+            // Destroy existing chart
+            if (this.miniPortfolioChart) {
+                this.miniPortfolioChart.destroy();
+                this.miniPortfolioChart = null;
             }
-        });
 
-        if (window.tradingApp) {
-            window.tradingApp.miniPortfolioChart = chart;
+            // Use real OKX portfolio data for mini chart
+            if (!portfolioData) {
+                portfolioData = JSON.parse(localStorage.getItem('portfolioData') || '{}');
+            }
+            
+            const holdings = portfolioData.holdings || [];
+            
+            if (holdings.length === 0) {
+                // Show loading placeholder
+                const ctx = canvas.getContext('2d');
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = '#6c757d';
+                ctx.font = '10px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('Loading...', canvas.width / 2, canvas.height / 2);
+                return;
+            }
+
+            // Generate chart data from actual OKX holdings
+            const chartData = holdings.slice(0, 10).map((holding, index) => {
+                const value = holding.current_value || holding.value || 0;
+                return {
+                    x: index,
+                    y: Math.max(0.1, value)
+                };
+            });
+
+            // Calculate overall trend color based on total P&L
+            const totalPnl = portfolioData.total_pnl || 0;
+            const isPositive = totalPnl >= 0;
+
+            // Create mini chart with real OKX data
+            this.miniPortfolioChart = new Chart(canvas, {
+                type: 'line',
+                data: {
+                    datasets: [{
+                        data: chartData,
+                        borderColor: isPositive ? '#28a745' : '#dc3545',
+                        backgroundColor: isPositive ? 'rgba(40, 167, 69, 0.1)' : 'rgba(220, 53, 69, 0.1)',
+                        borderWidth: 2,
+                        pointRadius: 1,
+                        pointHoverRadius: 3,
+                        tension: 0.3,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { 
+                            enabled: true,
+                            backgroundColor: 'rgba(0,0,0,0.8)',
+                            titleColor: '#fff',
+                            bodyColor: '#fff',
+                            borderColor: '#333',
+                            borderWidth: 1,
+                            callbacks: {
+                                title: () => 'Position Value',
+                                label: (context) => `$${context.parsed.y.toFixed(2)}`
+                            }
+                        }
+                    },
+                    scales: {
+                        x: { display: false },
+                        y: { display: false }
+                    },
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
+                    }
+                }
+            });
+
+        } catch (error) {
+            console.debug('Mini portfolio chart creation failed:', error);
+            // Fallback: show error message
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#6c757d';
+            ctx.font = '10px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('Chart Error', canvas.width / 2, canvas.height / 2);
         }
-    } catch (error) {
-        console.debug('Mini chart update failed:', error);
     }
-}
 
 // Override holdings table to display positions on page load
 window.addEventListener("load", function() {
