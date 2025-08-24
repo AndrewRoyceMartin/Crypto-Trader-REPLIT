@@ -37,71 +37,74 @@ def test_okx_connection():
     
     try:
         exchange = ccxt.okx({
-                'apiKey': api_key,
-                'secret': secret_key,
-                'password': passphrase,
-                'sandbox': sandbox_mode,
-                'enableRateLimit': True,
-                'timeout': 15000
-            })
-            
-            # Ensure no simulated trading headers
-            if exchange.headers:
-                exchange.headers.pop('x-simulated-trading', None)
-            
-            print(f"Exchange initialized: ✓")
-            print(f"Sandbox mode: {sandbox_mode}")
-            print(f"Base URL: {exchange.urls.get('api', 'Unknown')}")
-            
-            # Test basic connection
-            print("Testing connection...")
-            markets = exchange.load_markets()
-            print(f"✓ Connected successfully")
-            print(f"✓ Markets loaded: {len(markets)} trading pairs")
-            
-            # Test account access
-            print("Testing account access...")
-            balance = exchange.fetch_balance()
-            print(f"✓ Account access successful")
-            
-            # Show some balance info (without exposing amounts)
-            currencies = list(balance.get('total', {}).keys())
-            print(f"✓ Found balances for {len(currencies)} currencies")
-            
-            # Test positions (spot trading)
-            try:
-                positions = exchange.fetch_positions()
-                print(f"✓ Positions query successful: {len(positions)} positions")
-            except Exception as pos_error:
-                print(f"⚠ Positions query failed: {pos_error}")
-            
-            print(f"🎉 {mode_name} connection successful!")
-            
-        except Exception as e:
-            error_msg = str(e)
-            print(f"❌ {mode_name} connection failed: {error_msg}")
-            
-            # Analyze error
-            if "50119" in error_msg:
-                print("💡 Analysis: API key doesn't exist in this environment")
-                if not sandbox_mode:
-                    print("   → Your API key was likely created for Demo/Testnet, not Live Trading")
-                    print("   → Create new API keys specifically for Live Trading in OKX")
-                else:
-                    print("   → Your API key was likely created for Live Trading, not Demo")
-            elif "50113" in error_msg:
-                print("💡 Analysis: Invalid API key format or credentials")
-            elif "50102" in error_msg:
-                print("💡 Analysis: Timestamp error - check system time")
-            elif "50103" in error_msg:
-                print("💡 Analysis: Invalid signature - check secret key")
-            elif "50111" in error_msg:
-                print("💡 Analysis: Invalid passphrase")
-            elif "50112" in error_msg:
-                print("💡 Analysis: IP not whitelisted")
-                print("   → Add this IP to your OKX API whitelist: 35.229.97.108")
-            
+            'apiKey': api_key,
+            'secret': secret_key,
+            'password': passphrase,
+            'sandbox': sandbox_mode,
+            'enableRateLimit': True,
+            'timeout': 15000
+        })
+        
+        # Ensure no simulated trading headers
+        if exchange.headers:
+            exchange.headers.pop('x-simulated-trading', None)
+        
+        print(f"Exchange initialized: ✓")
+        print(f"Sandbox mode: {sandbox_mode}")
+        base_url = exchange.urls.get('api', 'Unknown') if exchange.urls else 'Unknown'
+        print(f"Base URL: {base_url}")
+        
+        # Test basic connection
+        print("Testing connection...")
+        markets = exchange.load_markets()
+        print(f"✓ Connected successfully")
+        print(f"✓ Markets loaded: {len(markets)} trading pairs")
+        
+        # Test account access
+        print("Testing account access...")
+        balance = exchange.fetch_balance()
+        print(f"✓ Account access successful")
+        
+        # Show some balance info (without exposing amounts)
+        currencies = list(balance.get('total', {}).keys())
+        print(f"✓ Found balances for {len(currencies)} currencies")
+        
+        # Test positions (spot trading)
+        try:
+            positions = exchange.fetch_positions()
+            print(f"✓ Positions query successful: {len(positions)} positions")
+        except Exception as pos_error:
+            print(f"⚠ Positions query failed: {pos_error}")
+        
+        print(f"🎉 {mode_name} connection successful!")
+        return True
+    
+    except Exception as e:
+        error_msg = str(e)
+        print(f"❌ {mode_name} connection failed: {error_msg}")
+        
+        # Analyze error
+        if "50119" in error_msg:
+            print("💡 Analysis: API key doesn't exist in this environment")
+            if not sandbox_mode:
+                print("   → Your API key was likely created for Demo/Testnet, not Live Trading")
+                print("   → Create new API keys specifically for Live Trading in OKX")
+            else:
+                print("   → Your API key was likely created for Live Trading, not Demo")
+        elif "50113" in error_msg:
+            print("💡 Analysis: Invalid API key format or credentials")
+        elif "50102" in error_msg:
+            print("💡 Analysis: Timestamp error - check system time")
+        elif "50103" in error_msg:
+            print("💡 Analysis: Invalid signature - check secret key")
+        elif "50111" in error_msg:
+            print("💡 Analysis: Invalid passphrase")
+        elif "50112" in error_msg:
+            print("💡 Analysis: IP not whitelisted")
+            print("   → Add this IP to your OKX API whitelist: 35.229.97.108")
+        
         print()
+        return False
     
     print("=== Next Steps ===")
     print("If Live Trading failed but Demo worked:")
