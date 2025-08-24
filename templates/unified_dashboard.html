@@ -503,7 +503,7 @@
         }
         
         if (badge) {
-            badge.innerHTML = `<span class="icon icon-circle me-1"></span>${isRunning ? 'Active' : 'Inactive'}`;
+            badge.innerHTML = `<i class="fa-solid fa-circle me-1" aria-hidden="true"></i>${isRunning ? 'Active' : 'Inactive'}`;
             badge.className = `badge ${isRunning ? 'bg-success' : 'bg-secondary'} ms-2`;
         }
     }
