@@ -1,5 +1,28 @@
 // Trading System Web Interface JavaScript - Cleaned & Harmonized
 
+// Admin token helper functions
+function getAdminToken() {
+  const m = document.querySelector('meta[name="admin-token"]');
+  return m ? m.content : '';
+}
+
+async function fetchJSON(url, { method='GET', body, timeout=10000, headers={}, noStore=true } = {}) {
+  const ctl = new AbortController();
+  const t = setTimeout(()=>ctl.abort(), timeout);
+  const h = {
+    'Content-Type': 'application/json',
+    ...(noStore ? {'Cache-Control': 'no-store'} : {}),
+    ...(getAdminToken() ? {'X-Admin-Token': getAdminToken()} : {}),
+    ...headers
+  };
+  try {
+    const res = await fetch(url, { method, headers:h, body: body?JSON.stringify(body):undefined, signal: ctl.signal, cache: 'no-store' });
+    const data = await res.json().catch(()=> ({}));
+    if (!res.ok) throw new Error(data?.error || res.statusText);
+    return data;
+  } finally { clearTimeout(t); }
+}
+
 class TradingApp {
     constructor() {
         this.updateInterval = null;
@@ -1987,7 +2010,7 @@ class TradingApp {
     
     async fetchAndUpdateBotStatus() {
         try {
-            const botStatus = await this.fetchWithCache('/api/bot/status', 'bot_status', false);
+            const botStatus = await fetchJSON('/api/bot/status');
             if (botStatus) {
                 this.updateBotStatus(botStatus);
                 this.updateActiveStatus(botStatus.running || false);
@@ -4019,19 +4042,14 @@ async function startTrading(mode, type) {
     }
     window.tradingApp.showToast(`Starting ${mode} trading in ${type} mode...`, 'info');
     try {
-        const response = await fetch('/api/bot/start', {
+        const data = await fetchJSON('/api/bot/start', {
             method: 'POST',
-            headers: { 
-                'Content-Type': 'application/json',
-                'X-Admin-Token': 'trading-system-2024'
-            },
-            body: JSON.stringify({
+            body: {
                 mode,
                 symbol: 'BTC-USDT',
                 timeframe: '1h'
-            })
+            }
         });
-        const data = await response.json();
         if (data.success) {
             window.tradingApp.showToast(`${mode} trading started successfully (${type})`, 'success');
             window.tradingApp.updateDashboard();
@@ -4049,14 +4067,9 @@ async function startTrading(mode, type) {
 async function stopTrading() {
     try {
         window.tradingApp.showToast('Stopping trading...', 'info');
-        const response = await fetch('/api/bot/stop', {
-            method: 'POST',
-            headers: { 
-                'Content-Type': 'application/json',
-                'X-Admin-Token': 'trading-system-2024'
-            }
+        const data = await fetchJSON('/api/bot/stop', {
+            method: 'POST'
         });
-        const data = await response.json();
         if (data.success) {
             window.tradingApp.showToast('Trading stopped successfully', 'success');
             window.tradingApp.updateDashboard();
@@ -4079,8 +4092,7 @@ async function stopTrading() {
 async function toggleBot() {
     try {
         // Check current bot status
-        const statusResponse = await fetch('/api/bot/status');
-        const statusData = await statusResponse.json();
+        const statusData = await fetchJSON('/api/bot/status');
         
         if (statusData.running) {
             await stopTrading();
@@ -4099,8 +4111,7 @@ async function toggleBot() {
 
 async function updateBotStatusDisplay() {
     try {
-        const response = await fetch('/api/bot/status');
-        const data = await response.json();
+        const data = await fetchJSON('/api/bot/status');
         
         const botStatusElement = document.getElementById('bot-status-top');
         
@@ -4148,12 +4159,9 @@ async function executeTakeProfit() {
     window.tradingApp.showToast('Executing take profit trades...', 'info');
     
     try {
-        const response = await fetch('/api/execute-take-profit', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' }
+        const data = await fetchJSON('/api/execute-take-profit', {
+            method: 'POST'
         });
-        
-        const data = await response.json();
         
         if (data.success) {
             const trades = data.executed_trades || [];
@@ -6081,14 +6089,12 @@ async function stopAllTrading() {
     
     try {
         // Stop the bot if it's running
-        const botResponse = await fetch('/api/bot/stop', {
+        const botData = await fetchJSON('/api/bot/stop', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             cache: 'no-store'
         });
         
-        if (botResponse.ok) {
-            const botData = await botResponse.json();
+        if (botData.success) {
             console.log('Bot stopped:', botData.message);
         }
         
