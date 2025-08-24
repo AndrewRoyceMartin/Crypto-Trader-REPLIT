@@ -4970,30 +4970,25 @@ if __name__ == "__main__":
         try:
             time.sleep(10)  # Give system time to fully initialize
             logger.info("Auto-starting trading bot on deployment...")
-            
-            # Import required components
+
             from src.trading.multi_currency_trader import MultiCurrencyTrader
             from src.config import Config
             from src.exchanges.okx_adapter import OKXAdapter
-            
+
             config = Config()
-            # Convert Config object to dict for OKXAdapter
             config_dict = {
                 'strategy': {
                     'rebuy_max_usd': config.get_float('strategy', 'rebuy_max_usd', 100.0)
                 }
             }
             exchange = OKXAdapter(config_dict)
-            
-            # Create and start multi-currency trader instance
+
+            # Create and expose the instance
             global multi_currency_trader
             trader_instance = MultiCurrencyTrader(config, exchange)
             multi_currency_trader = trader_instance
-            
-            # Start trading using the correct method
-            trader_instance.start_trading("1h")
-            
-            # Update bot state
+
+            # 👇 Mark running immediately so the UI can flip to "Stop Bot"
             _set_bot_state(
                 running=True,
                 mode="live",
@@ -5001,12 +4996,21 @@ if __name__ == "__main__":
                 timeframe="1h",
                 started_at=iso_utc()
             )
-            
-            logger.info("✅ Trading bot auto-started successfully in LIVE mode")
-            
+
+            # Run trading loop in a child thread; ensure we flip back to stopped on exit
+            def _run():
+                try:
+                    trader_instance.start_trading("1h")
+                except Exception as e:
+                    logger.error(f"Auto-start trading loop errored: {e}")
+                finally:
+                    _set_bot_state(running=False)
+
+            threading.Thread(target=_run, daemon=True).start()
+            logger.info("✅ Trading bot auto-started (LIVE) and state exposed")
         except Exception as e:
             logger.error(f"❌ Failed to auto-start trading bot: {e}")
-            # Don't crash the app if auto-start fails
+            # don't crash the app
     
     # Start auto-trading in background thread
     auto_trade_thread = threading.Thread(target=auto_start_trading, daemon=True)

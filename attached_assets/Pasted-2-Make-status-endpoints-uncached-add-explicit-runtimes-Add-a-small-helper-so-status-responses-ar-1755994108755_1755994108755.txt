@@ -1,0 +1,59 @@
+2) Make status endpoints uncached + add explicit runtimes
+
+Add a small helper so status responses are never cached:
+
+from flask import make_response
+
+def _no_cache_json(payload: dict, code: int = 200):
+    resp = make_response(jsonify(payload), code)
+    resp.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0, private"
+    resp.headers["Pragma"] = "no-cache"
+    resp.headers["Expires"] = "0"
+    return resp
+
+Update /api/status to include app runtime aliases and disable caching
+
+Replace the body of api_status() with:
+
+@app.route("/api/status")
+def api_status() -> ResponseReturnValue:
+    """Simple status endpoint to check warmup and system health."""
+    up = get_uptime_seconds()
+
+    # Bot runtime (seconds/human) derived from bot_state.started_at
+    with _state_lock:
+        bs = bot_state.copy()
+    bot_running = bool(bs.get("running", False))
+    bot_runtime_sec = 0
+    if bot_running and bs.get("started_at"):
+        try:
+            ts = str(bs["started_at"]).replace('Z', '+00:00')
+            dt = datetime.fromisoformat(ts)
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=timezone.utc)
+            bot_runtime_sec = max(0, int((datetime.now(dt.tzinfo) - dt).total_seconds()))
+        except Exception:
+            bot_runtime_sec = 0
+
+    payload = {
+        "status": "running",
+        "warmup": warmup,
+        "bot": bs,
+        "trading_state": trading_state,
+        "active": bot_running,
+        "timestamp": iso_utc(),
+        "server_started_at": iso_utc(server_start_time),
+        "uptime_seconds": up,
+        "uptime_human": humanize_seconds(up),
+        # 👇 aliases some UIs expect
+        "app_runtime_seconds": up,
+        "app_runtime_human": humanize_seconds(up),
+        # 👇 bot runtime included explicitly
+        "bot_runtime_seconds": bot_runtime_sec,
+        "bot_runtime_human": humanize_seconds(bot_runtime_sec),
+    }
+    return _no_cache_json(payload)
+
+Update /ready to also no-cache
+
+Change its return lines to use _no_cache_json(payload, 200) / _no_cache_json(payload, 503).
