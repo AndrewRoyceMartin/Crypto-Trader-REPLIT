@@ -1121,8 +1121,10 @@ def bot_start() -> ResponseReturnValue:
                 "started_at": bot_state["started_at"]
             }
         
-        return jsonify({
+        resp_payload = {
             "success": True,
+            "running": True,          # 👈 convenience flags
+            "active": True,           # 👈 convenience flags
             "message": f"Multi-currency bot started in {mode} mode with universal ${config.get_float('strategy', 'rebuy_max_usd', 100.0):.0f} rebuy limit",
             "status": safe_status,
             "rebuy_max_usd": config.get_float('strategy', 'rebuy_max_usd', 100.0),
@@ -1135,7 +1137,8 @@ def bot_start() -> ResponseReturnValue:
                 "Multi-currency support for 8 major crypto pairs",
                 "Real-time position monitoring and risk management"
             ]
-        })
+        }
+        return _no_cache_json(resp_payload)
         
     except Exception as e:
         logger.error(f"Failed to start multi-currency bot: {e}")
@@ -1173,8 +1176,10 @@ def bot_stop() -> ResponseReturnValue:
         
         logger.info("Bot stopped")
         
-        return jsonify({
+        return _no_cache_json({
             "success": True,
+            "running": False,
+            "active": False,
             "message": "Bot stopped successfully"
         })
         
