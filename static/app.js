@@ -2327,6 +2327,12 @@ class TradingApp {
             this.updateLoadingProgress(100, 'Complete!');
             setTimeout(() => this.hideLoadingProgress(), 1000);
 
+            // Update timestamp after successful holdings refresh
+            const stamp = this.formatTimeOnly(Date.now());
+            ['positions-last-refresh','positions-last-update'].forEach(id=>{
+                const el=document.getElementById(id); if(el) el.textContent = stamp;
+            });
+
         } catch (error) {
             console.debug('Error updating crypto portfolio:', error);
             console.debug('Full error details:', {
