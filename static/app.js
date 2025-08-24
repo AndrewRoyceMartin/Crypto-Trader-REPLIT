@@ -23,9 +23,15 @@ async function fetchJSON(url, { method='GET', body, timeout=10000, headers={}, n
   } finally { clearTimeout(t); }
 }
 
-// Global currency helper functions
+// Global currency and number helper functions
 function currentCurrency(){
     return document.getElementById('currency-selector')?.value || 'USD';
+}
+
+// Resilient number parsing with fallback to prevent string errors
+function safeNum(value, fallback = 0) {
+    const num = Number(value);
+    return isNaN(num) ? fallback : num;
 }
 
 function fmtCurrency(n){
@@ -377,9 +383,9 @@ class TradingApp {
         return (trades || []).map((t, i) => {
             const ts = t.timestamp || t.ts || t.time || t.date;
             const side = (t.side || t.action || '').toString().toUpperCase(); // BUY/SELL
-            const qty = this.num(t.quantity ?? t.qty ?? t.amount ?? t.size, 0);
-            const price = this.num(t.price ?? t.avg_price ?? t.fill_price ?? t.execution_price, 0);
-            const pnl = this.num(t.pnl ?? t.realized_pnl ?? t.profit, 0);
+            const qty = safeNum(t.quantity ?? t.qty ?? t.amount ?? t.size, 0);
+            const price = safeNum(t.price ?? t.avg_price ?? t.fill_price ?? t.execution_price, 0);
+            const pnl = safeNum(t.pnl ?? t.realized_pnl ?? t.profit, 0);
             const id = t.trade_id || t.id || t.order_id || t.clientOrderId || (i + 1);
             return {
                 trade_id: id,
@@ -807,7 +813,7 @@ class TradingApp {
                 return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
             });
             
-            const values = historyData.map(point => point.value);
+            const values = historyData.map(point => safeNum(point.value, 0));
             
             // Determine line color based on performance
             const firstValue = values[0] || 0;
@@ -881,7 +887,7 @@ class TradingApp {
                 fallback.appendChild(title);
                 fallback.appendChild(document.createElement('br'));
                 
-                const currentValue = this.formatCurrency(historyData[historyData.length - 1]?.value || 0);
+                const currentValue = this.formatCurrency(safeNum(historyData[historyData.length - 1]?.value, 0));
                 const valueText = document.createTextNode(`Current Value: ${currentValue}`);
                 fallback.appendChild(valueText);
                 fallback.appendChild(document.createElement('br'));
@@ -982,7 +988,7 @@ class TradingApp {
                                     return [
                                         `${item.symbol}: ${item.allocation_percent.toFixed(1)}%`,
                                         `Value: ${window.tradingApp ? window.tradingApp.formatCurrency(item.current_value) : '$' + item.current_value.toFixed(2)}`,
-                                        `P&L: ${item.pnl_percent >= 0 ? '+' : ''}${item.pnl_percent.toFixed(2)}%`
+                                        `P&L: ${safeNum(item.pnl_percent, 0) >= 0 ? '+' : ''}${safeNum(item.pnl_percent, 0).toFixed(2)}%`
                                     ];
                                 }
                             }
@@ -1059,13 +1065,13 @@ class TradingApp {
         const elements = {
             'best-performer-symbol': performer.symbol,
             'best-performer-name': performer.name,
-            'best-performer-price': this.formatCurrency(performer.current_price),
-            'best-performer-24h': `${performer.price_change_24h >= 0 ? '+' : ''}${performer.price_change_24h.toFixed(2)}%`,
-            'best-performer-7d': `${performer.price_change_7d >= 0 ? '+' : ''}${performer.price_change_7d.toFixed(2)}%`,
-            'best-performer-pnl': `${performer.pnl_percent >= 0 ? '+' : ''}${performer.pnl_percent.toFixed(2)}%`,
-            'best-performer-allocation': `${performer.allocation_percent.toFixed(1)}%`,
-            'best-performer-value': this.formatCurrency(performer.current_value),
-            'best-performer-volume': this.formatNumber(performer.volume_24h)
+            'best-performer-price': this.formatCurrency(safeNum(performer.current_price, 0)),
+            'best-performer-24h': `${safeNum(performer.price_change_24h, 0) >= 0 ? '+' : ''}${safeNum(performer.price_change_24h, 0).toFixed(2)}%`,
+            'best-performer-7d': `${safeNum(performer.price_change_7d, 0) >= 0 ? '+' : ''}${safeNum(performer.price_change_7d, 0).toFixed(2)}%`,
+            'best-performer-pnl': `${safeNum(performer.pnl_percent, 0) >= 0 ? '+' : ''}${safeNum(performer.pnl_percent, 0).toFixed(2)}%`,
+            'best-performer-allocation': `${safeNum(performer.allocation_percent, 0).toFixed(1)}%`,
+            'best-performer-value': this.formatCurrency(safeNum(performer.current_value, 0)),
+            'best-performer-volume': this.formatNumber(safeNum(performer.volume_24h, 0))
         };
         
         Object.entries(elements).forEach(([id, value]) => {
@@ -2617,10 +2623,10 @@ class TradingApp {
                                        onerror="this.onerror=null; this.src='data:image/svg+xml,<svg xmlns=&quot;http://www.w3.org/2000/svg&quot; width=&quot;24&quot; height=&quot;24&quot; viewBox=&quot;0 0 24 24&quot; fill=&quot;%236c757d&quot;><circle cx=&quot;12&quot; cy=&quot;12&quot; r=&quot;10&quot;/><text x=&quot;12&quot; y=&quot;16&quot; font-size=&quot;8&quot; text-anchor=&quot;middle&quot; fill=&quot;white&quot;>${symbol.charAt(0)}</text></svg>';">`;
                 
                 // Calculate values safely
-                const quantity = this.num(holding.quantity || holding.available_quantity, 0);
-                const costBasis = this.num(holding.cost_basis, 0);
-                const currentValue = this.num(holding.current_value || holding.value, 0);
-                const currentPrice = this.num(holding.current_price, 0);
+                const quantity = safeNum(holding.quantity || holding.available_quantity, 0);
+                const costBasis = safeNum(holding.cost_basis, 0);
+                const currentValue = safeNum(holding.current_value || holding.value, 0);
+                const currentPrice = safeNum(holding.current_price, 0);
                 const avgPurchasePrice = quantity > 0 ? (costBasis / quantity) : 0;
                 const pnlDollar = this.num(holding.pnl, 0);
                 const pnlPercent = this.num(holding.pnl_percent, 0);
@@ -2695,9 +2701,9 @@ class TradingApp {
             const badge = document.createElement('span');
             const pnlClass = (crypto.pnl || 0) >= 0 ? 'bg-success' : 'bg-danger';
             badge.className = `badge ${pnlClass} me-1 mb-1`;
-            const priceText = this.formatCurrency(this.num(crypto.current_price));
-            const pp = this.num(crypto.pnl_percent).toFixed(2);
-            const pnlText = (crypto.pnl || 0) >= 0 ? `+${pp}%` : `${pp}%`;
+            const priceText = this.formatCurrency(safeNum(crypto.current_price, 0));
+            const pp = safeNum(crypto.pnl_percent, 0).toFixed(2);
+            const pnlText = safeNum(crypto.pnl, 0) >= 0 ? `+${pp}%` : `${pp}%`;
             badge.textContent = `${crypto.symbol} ${priceText} (${pnlText})`;
             badge.setAttribute('title', `${crypto.name}: ${priceText}, P&L: ${pnlText}`);
             symbolsContainer.appendChild(badge);
@@ -2722,10 +2728,10 @@ class TradingApp {
         sortedCryptos.forEach(crypto => {
             const row = document.createElement('tr');
 
-            const price = this.num(crypto.current_price);
-            const quantity = this.num(crypto.quantity);
-            const value = this.num(crypto.current_value);
-            const pnlPercent = this.num(crypto.pnl_percent);
+            const price = safeNum(crypto.current_price, 0);
+            const quantity = safeNum(crypto.quantity, 0);
+            const value = safeNum(crypto.current_value, 0);
+            const pnlPercent = safeNum(crypto.pnl_percent, 0);
 
             const rankCell = document.createElement('td');
             rankCell.className = 'text-center';
@@ -2746,7 +2752,7 @@ class TradingApp {
             const quantityCell = document.createElement('td');
             quantityCell.className = 'text-end';
             const isSoldOut = value <= 0.01 || crypto.has_position === false || quantity <= 0;
-            quantityCell.textContent = this.num(isSoldOut ? 0 : quantity).toFixed(6);
+            quantityCell.textContent = safeNum(isSoldOut ? 0 : quantity, 0).toFixed(6);
             if (isSoldOut) {
                 quantityCell.classList.add('text-warning');
                 quantityCell.style.fontWeight = 'bold';
@@ -2888,9 +2894,9 @@ class TradingApp {
             const rank = crypto.rank || (index + 1);
             const symbol = crypto.symbol || 'UNKNOWN';
             const name = crypto.name || symbol;
-            const currentPrice = this.num(crypto.current_price);
-            const quantity = this.num(crypto.quantity);
-            const value = this.num(crypto.value || crypto.current_value);
+            const currentPrice = safeNum(crypto.current_price, 0);
+            const quantity = safeNum(crypto.quantity, 0);
+            const value = safeNum(crypto.value || crypto.current_value, 0);
             const isLive = crypto.is_live !== false;
 
             const purchasePrice = quantity > 0 ? 10 / quantity : 0; // $10 initial investment
@@ -5952,8 +5958,8 @@ function createHoldingRow(holding) {
     try {
         const row = document.createElement('tr');
         const symbol = holding.symbol || holding.name || 'N/A';
-        const pnlClass = (holding.pnl || 0) >= 0 ? 'text-success' : 'text-danger';
-        const pnlSign = (holding.pnl || 0) >= 0 ? '+' : '';
+        const pnlClass = safeNum(holding.pnl, 0) >= 0 ? 'text-success' : 'text-danger';
+        const pnlSign = safeNum(holding.pnl, 0) >= 0 ? '+' : '';
         
         // Get crypto icon using the same function as Available Positions
         const cryptoIcon = getCryptoIcon(symbol);
@@ -6465,18 +6471,18 @@ function updateTradesTableFromOKX(trades) {
         const symbol = (trade.symbol || '').replace('/USDT', '');
         const side = trade.side || trade.action || '';
         const sideClass = side === 'BUY' ? 'badge bg-success' : 'badge bg-danger';
-        const quantity = parseFloat(trade.quantity || 0).toFixed(6);
-        const price = parseFloat(trade.price || 0).toLocaleString('en-US', {
+        const quantity = safeNum(trade.quantity, 0).toFixed(6);
+        const price = safeNum(trade.price, 0).toLocaleString('en-US', {
             style: 'currency',
             currency: 'USD',
             minimumFractionDigits: 2
         });
-        const pnl = parseFloat(trade.pnl || 0).toLocaleString('en-US', {
+        const pnl = safeNum(trade.pnl, 0).toLocaleString('en-US', {
             style: 'currency',
             currency: 'USD',
             minimumFractionDigits: 2
         });
-        const pnlClass = (parseFloat(trade.pnl || 0)) >= 0 ? 'text-success' : 'text-danger';
+        const pnlClass = safeNum(trade.pnl, 0) >= 0 ? 'text-success' : 'text-danger';
         
         // Determine transaction type based on trade data
         const transactionType = trade.type || trade.transaction_type || 'Trade';

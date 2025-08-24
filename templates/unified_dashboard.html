@@ -991,20 +991,20 @@
         return;
         
         tbody.innerHTML = holdings.map(holding => {
-            const pnlClass = (holding.pnl || 0) >= 0 ? 'text-success' : 'text-danger';
-            const pnlSign = (holding.pnl || 0) >= 0 ? '+' : '';
+            const pnlClass = safeNum(holding.pnl, 0) >= 0 ? 'text-success' : 'text-danger';
+            const pnlSign = safeNum(holding.pnl, 0) >= 0 ? '+' : '';
             const symbol = holding.symbol || holding.name || 'N/A';
             
             // Get crypto icon
             const cryptoIcon = getCryptoIcon(symbol);
             
             // Calculate values
-            const quantity = holding.quantity || holding.available_quantity || 0;
-            const costBasis = holding.cost_basis || 0;
-            const currentValue = holding.current_value || holding.value || 0;
-            const currentPrice = holding.current_price || 0;
-            const pnlDollar = holding.pnl || 0;
-            const pnlPercent = holding.pnl_percent || 0;
+            const quantity = safeNum(holding.quantity || holding.available_quantity, 0);
+            const costBasis = safeNum(holding.cost_basis, 0);
+            const currentValue = safeNum(holding.current_value || holding.value, 0);
+            const currentPrice = safeNum(holding.current_price, 0);
+            const pnlDollar = safeNum(holding.pnl, 0);
+            const pnlPercent = safeNum(holding.pnl_percent, 0);
             
             // Calculate target values (15% profit target)
             const profitTarget = 0.15; // 15% target
@@ -1081,10 +1081,10 @@
                             <strong class="ms-2">${symbol}</strong>
                         </div>
                     </td>
-                    <td class="text-end">$${(pos.current_price || 0).toFixed(4)}</td>
-                    <td class="text-end">$${(pos.target_buy_price || 0).toFixed(4)}</td>
+                    <td class="text-end">$${safeNum(pos.current_price, 0).toFixed(4)}</td>
+                    <td class="text-end">$${safeNum(pos.target_buy_price, 0).toFixed(4)}</td>
                     <td class="text-end ${diffClass}">
-                        ${(pos.price_difference || 0) < 0 ? '' : '+'}${(pos.price_difference || 0).toFixed(2)}%
+                        ${safeNum(pos.price_difference, 0) < 0 ? '' : '+'}${safeNum(pos.price_difference, 0).toFixed(2)}%
                     </td>
                     <td>${pos.buy_signal || 'N/A'}</td>
                     <td class="text-center">
@@ -1107,8 +1107,8 @@
         }
         
         tbody.innerHTML = trades.slice(0, 20).map(trade => {
-            const pnlClass = (trade.pnl || 0) >= 0 ? 'text-success' : 'text-danger';
-            const pnlSign = (trade.pnl || 0) >= 0 ? '+' : '';
+            const pnlClass = safeNum(trade.pnl, 0) >= 0 ? 'text-success' : 'text-danger';
+            const pnlSign = safeNum(trade.pnl, 0) >= 0 ? '+' : '';
             const sideClass = trade.side === 'BUY' ? 'text-success' : 'text-danger';
             
             const date = trade.timestamp ? new Date(trade.timestamp).toLocaleDateString() : 'N/A';
@@ -1118,10 +1118,10 @@
                     <td class="text-white">${date}</td>
                     <td class="text-white"><strong>${trade.symbol || 'N/A'}</strong></td>
                     <td class="${sideClass}">${trade.side || 'N/A'}</td>
-                    <td class="text-end">${(trade.quantity || 0).toFixed(6)}</td>
-                    <td class="text-end">$${(trade.price || 0).toFixed(4)}</td>
+                    <td class="text-end">${safeNum(trade.quantity, 0).toFixed(6)}</td>
+                    <td class="text-end">$${safeNum(trade.price, 0).toFixed(4)}</td>
                     <td class="text-end ${pnlClass}">
-                        ${pnlSign}$${Math.abs(trade.pnl || 0).toFixed(2)}
+                        ${pnlSign}$${Math.abs(safeNum(trade.pnl, 0)).toFixed(2)}
                     </td>
                 </tr>
             `;
