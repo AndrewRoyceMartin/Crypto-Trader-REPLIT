@@ -16,3 +16,5 @@ tarsafe
 jsonschema
 rich
 psutil
+flake8
+pylint
