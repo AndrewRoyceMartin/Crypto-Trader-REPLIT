@@ -44,6 +44,12 @@ function toNum(x){
     const n = parseFloat(s); return isNaN(n)?0:n;
 }
 
+// Symbol normalization for OKX instruments
+function toOkxInst(s){
+    const t=s.trim().toUpperCase();
+    return t.includes('-')?t.replace('/','-'): (t.includes('/')?t.replace('/','-'): `${t}-USDT`);
+}
+
 class TradingApp {
     constructor() {
         this.updateInterval = null;
@@ -4292,7 +4298,7 @@ async function buyCrypto(symbol) {
         const response = await fetch('/api/paper-trade/buy', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ symbol, amount: parseFloat(amount) })
+            body: JSON.stringify({ symbol: toOkxInst(symbol), amount: parseFloat(amount) })
         });
         const data = await response.json();
         if (data.success) {
@@ -4313,7 +4319,7 @@ async function sellCrypto(symbol) {
         const response = await fetch('/api/paper-trade/sell', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ symbol, quantity: parseFloat(quantity) })
+            body: JSON.stringify({ symbol: toOkxInst(symbol), quantity: parseFloat(quantity) })
         });
         const data = await response.json();
         if (data.success) {
@@ -6186,10 +6192,11 @@ async function stopAllTrading() {
 
 async function executeSellOrder(symbol, percentage) {
     try {
+        const normalizedSymbol = toOkxInst(symbol);
         const response = await fetch("/api/sell", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ symbol: symbol, percentage: percentage }),
+            body: JSON.stringify({ symbol: normalizedSymbol, percentage: percentage }),
             cache: "no-store"
         });
         const data = await response.json();
@@ -6211,10 +6218,11 @@ async function executeSellOrder(symbol, percentage) {
 
 async function executeBuyOrder(symbol, amount) {
     try {
+        const normalizedSymbol = toOkxInst(symbol);
         const response = await fetch("/api/buy", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ symbol: symbol, amount: amount }),
+            body: JSON.stringify({ symbol: normalizedSymbol, amount: amount }),
             cache: "no-store"
         });
         const data = await response.json();
