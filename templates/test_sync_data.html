@@ -12,25 +12,26 @@
     
     <style>
         body {
-            background-color: #0f1419;
-            color: #ffffff;
+            background-color: #1a1a1a;
+            color: #f8f9fa;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
         
         .navbar {
-            background: linear-gradient(135deg, #1e2329 0%, #2c3e50 100%);
-            border-bottom: 1px solid #34495e;
+            background: linear-gradient(135deg, #2d3748 0%, #4a5568 100%);
+            border-bottom: 1px solid #4a5568;
         }
         
         .navbar-brand {
             font-weight: 700;
-            color: #ffd700 !important;
+            color: #fbbf24 !important;
         }
         
         .card {
-            background: linear-gradient(135deg, #1e2329 0%, #2c3e50 100%);
-            border: 1px solid #34495e;
+            background: linear-gradient(135deg, #2d3748 0%, #4a5568 100%);
+            border: 1px solid #6b7280;
             border-radius: 12px;
+            color: #f8f9fa;
         }
         
         .test-card.pass {
@@ -46,24 +47,27 @@
         }
         
         .sync-status.pass {
-            color: #28a745;
+            color: #10b981;
+            font-weight: 600;
         }
         
         .sync-status.fail {
-            color: #dc3545;
+            color: #ef4444;
+            font-weight: 600;
         }
         
         .sync-status.warning {
-            color: #ffc107;
+            color: #f59e0b;
+            font-weight: 600;
         }
         
         .live-indicator {
-            color: #28a745;
+            color: #10b981;
             font-weight: bold;
         }
         
         .cached-indicator {
-            color: #ffc107;
+            color: #f59e0b;
             font-weight: bold;
         }
         
@@ -91,8 +95,8 @@
         }
         
         .code-block {
-            background-color: #1a1a1a;
-            border: 1px solid #333;
+            background-color: #111827;
+            border: 1px solid #4b5563;
             border-radius: 8px;
             padding: 20px;
             font-family: 'Courier New', monospace;
@@ -102,21 +106,47 @@
             overflow-x: auto;
             max-height: 400px;
             overflow-y: auto;
+            color: #e5e7eb;
         }
         
         .alert {
             border: none;
             border-radius: 8px;
+            color: #1f2937;
+        }
+        
+        .alert-success {
+            background-color: #d1fae5;
+            color: #065f46;
+        }
+        
+        .alert-warning {
+            background-color: #fef3c7;
+            color: #92400e;
+        }
+        
+        .alert-danger {
+            background-color: #fee2e2;
+            color: #991b1b;
         }
         
         .card-header {
-            background: rgba(52, 73, 94, 0.3);
-            border-bottom: 1px solid #34495e;
+            background: rgba(75, 85, 99, 0.5);
+            border-bottom: 1px solid #6b7280;
             border-radius: 12px 12px 0 0 !important;
+            color: #f8f9fa;
         }
         
         .text-muted {
-            color: #95a5a6 !important;
+            color: #d1d5db !important;
+        }
+        
+        .card-title {
+            color: #f8f9fa;
+        }
+        
+        .card-body {
+            color: #e5e7eb;
         }
     </style>
 </head>
