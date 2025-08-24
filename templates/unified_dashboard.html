@@ -642,6 +642,11 @@
             // Get crypto icon
             const cryptoIcon = getCryptoIcon(symbol);
             
+            // Calculate accurate purchase price from cost_basis and quantity
+            const quantity = holding.quantity || holding.available_quantity || 0;
+            const costBasis = holding.cost_basis || 0;
+            const avgPurchasePrice = quantity > 0 ? costBasis / quantity : 0;
+            
             return `
                 <tr>
                     <td>
@@ -650,8 +655,8 @@
                             <strong class="ms-2">${symbol}</strong>
                         </div>
                     </td>
-                    <td class="text-end">${(holding.quantity || holding.available_quantity || 0).toFixed(6)}</td>
-                    <td class="text-end">$${(holding.purchase_price || holding.avg_price || 0).toFixed(2)}</td>
+                    <td class="text-end">${quantity.toFixed(6)}</td>
+                    <td class="text-end">$${avgPurchasePrice.toFixed(2)}</td>
                     <td class="text-end">$${(holding.current_price || 0).toFixed(2)}</td>
                     <td class="text-end">$${(holding.current_value || holding.value || 0).toFixed(2)}</td>
                     <td class="text-end ${pnlClass}">
