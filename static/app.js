@@ -411,14 +411,12 @@ class TradingApp {
             }
         }
 
-        // Update quick KPIs if status has portfolio summary
+        // Update mini chart only - OKX cards are handled by updatePortfolioSummaryUI()
         if (data.portfolio || data.overview) {
-            // Use overview as primary source, fallback to portfolio
             const portfolioData = data.overview || data.portfolio || {};
             
+            // Only update portfolio-current-value (not an OKX card) and mini chart
             const kpiEquityEl = document.getElementById('portfolio-current-value');
-            const kpiDailyEl  = document.getElementById('okx-day-pnl');
-            
             if (kpiEquityEl) {
                 const totalValue = portfolioData.total_value || 0;
                 kpiEquityEl.textContent = this.formatCurrency(totalValue);
@@ -434,30 +432,8 @@ class TradingApp {
                 }
             }
             
-            // Update estimated total and mini chart
-            const estimatedEl = document.getElementById('okx-estimated-total');
-            if (estimatedEl) {
-                const estimatedValue = portfolioData.total_estimated_value || portfolioData.total_value || 0;
-                estimatedEl.textContent = this.formatCurrency(estimatedValue);
-                // Update mini portfolio chart with actual portfolio data
-                this.updateMiniPortfolioChart(portfolioData);
-            }
-            
-            if (kpiDailyEl) {
-                const v = this.num(portfolioData.daily_pnl);
-                kpiDailyEl.textContent = this.formatCurrency(v);
-                kpiDailyEl.className = v >= 0 ? 'h5 mb-0 text-success' : 'h5 mb-0 text-danger';
-                // Add error indicator if needed
-                if (data.portfolio.error && v === 0) {
-                    const errorNote = document.getElementById('okx-daily-error') || document.createElement('small');
-                    errorNote.id = 'okx-daily-error';
-                    errorNote.className = 'text-warning d-block';
-                    errorNote.textContent = data.portfolio.error;
-                    if (!document.getElementById('okx-daily-error')) {
-                        kpiDailyEl.parentNode.appendChild(errorNote);
-                    }
-                }
-            }
+            // Update mini portfolio chart with actual portfolio data
+            this.updateMiniPortfolioChart(portfolioData);
         }
 
         // Trading status and bot state
