@@ -3820,14 +3820,16 @@ def api_asset_allocation() -> ResponseReturnValue:
                 "success": True,
                 "allocation": [],
                 "total_value": 0,
-                "currency": currency
+                "currency": currency,
+                "debug": "No holdings found",
+                "portfolio_keys": list(portfolio_data.keys())
             })
         
         total_value = sum(float(pos.get('market_value', 0) or pos.get('current_value', 0)) for pos in holdings)
         
         allocation_data = []
         for position in holdings:
-            market_value = float(position.get('market_value', 0))
+            market_value = float(position.get('market_value', 0) or position.get('current_value', 0))
             if market_value > 0:
                 allocation_percent = (market_value / total_value) * 100 if total_value > 0 else 0
                 allocation_data.append({

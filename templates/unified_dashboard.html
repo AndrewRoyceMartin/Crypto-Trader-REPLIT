@@ -1233,6 +1233,9 @@
             initializeMiniChart(cardId);
         }
         
+        // Update data for new view mode
+        updateCardDataForView(cardId, newView);
+        
         console.log(`Card ${cardId} switched to ${newView} view`);
     }
     
@@ -1278,6 +1281,26 @@
         ctx.lineTo(0, height);
         ctx.closePath();
         ctx.fill();
+    }
+    
+    function updateCardDataForView(cardId, viewType) {
+        // Get current data from text view elements
+        const textValue = document.querySelector(`#okx-${cardId.replace('-', '')}`);
+        if (!textValue) return;
+        
+        const value = textValue.textContent;
+        
+        // Update corresponding view elements
+        if (viewType === 'graph') {
+            const graphValue = document.querySelector(`#okx-${cardId.replace('-', '')}-graph`);
+            if (graphValue) graphValue.textContent = value;
+        } else if (viewType === 'detailed') {
+            const detailedValue = document.querySelector(`#okx-${cardId.replace('-', '')}-detailed`);
+            if (detailedValue) detailedValue.textContent = value;
+        } else if (viewType === 'compact') {
+            const compactValue = document.querySelector(`#okx-${cardId.replace('-', '')}-compact`);
+            if (compactValue) compactValue.textContent = value;
+        }
     }
 
     // === INITIALIZATION ===
