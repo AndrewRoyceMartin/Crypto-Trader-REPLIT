@@ -22,7 +22,7 @@ from collections import OrderedDict
 warnings.filterwarnings('ignore', message='pkg_resources is deprecated as an API.*', category=DeprecationWarning)
 from typing import Any, Optional, Iterator, TypedDict
 from functools import wraps
-from flask import Flask, jsonify, request, render_template
+from flask import Flask, jsonify, request, render_template, make_response
 from flask.typing import ResponseReturnValue
 
 # Top-level imports only (satisfies linter)

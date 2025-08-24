@@ -391,19 +391,22 @@ class TradingApp {
         }
 
         // Update quick KPIs if status has portfolio summary
-        if (data.portfolio) {
+        if (data.portfolio || data.overview) {
+            // Use overview as primary source, fallback to portfolio
+            const portfolioData = data.overview || data.portfolio || {};
+            
             const kpiEquityEl = document.getElementById('okx-total-balance');
             const kpiDailyEl  = document.getElementById('okx-day-pnl');
             
             if (kpiEquityEl) {
-                const totalValue = data.portfolio.total_value || 0;
+                const totalValue = portfolioData.total_value || 0;
                 kpiEquityEl.textContent = this.formatCurrency(totalValue);
                 // Add error indicator if needed
-                if (data.portfolio.error && totalValue === 0) {
+                if (portfolioData.error && totalValue === 0) {
                     const errorNote = document.getElementById('okx-equity-error') || document.createElement('small');
                     errorNote.id = 'okx-equity-error';
                     errorNote.className = 'text-warning d-block';
-                    errorNote.textContent = data.portfolio.error;
+                    errorNote.textContent = portfolioData.error;
                     if (!document.getElementById('okx-equity-error')) {
                         kpiEquityEl.parentNode.appendChild(errorNote);
                     }
@@ -411,7 +414,7 @@ class TradingApp {
             }
             
             if (kpiDailyEl) {
-                const v = this.num(data.portfolio.daily_pnl);
+                const v = this.num(portfolioData.daily_pnl);
                 kpiDailyEl.textContent = this.formatCurrency(v);
                 kpiDailyEl.className = v >= 0 ? 'h5 mb-0 text-success' : 'h5 mb-0 text-danger';
                 // Add error indicator if needed
@@ -2155,11 +2158,15 @@ class TradingApp {
                 this.displayPriceDataWarning(data.price_validation.failed_symbols);
             }
 
-            const totalValue = (data.summary?.total_current_value)
+            // Use the new overview object for consistent data access
+            const overview = data.overview || {};
+            const totalValue = overview.total_value 
+                            ?? data.summary?.total_current_value
                             ?? data.total_value
                             ?? holdings.reduce((s, c) => s + (c.current_value || c.value || 0), 0);
 
-            const totalPnl = (data.summary?.total_pnl)
+            const totalPnl = overview.total_pnl
+                           ?? data.summary?.total_pnl
                            ?? data.total_pnl
                            ?? holdings.reduce((s, c) => s + (c.pnl || 0), 0);
 
@@ -2193,12 +2200,12 @@ class TradingApp {
                 }
             }
 
-            // Small summary widget method (class-local)
+            // Small summary widget method (class-local) - use overview data
             this.updatePortfolioSummary({
-                total_cryptos: holdings.length,
+                total_cryptos: overview.total_assets || holdings.length,
                 total_current_value: totalValue,
                 total_pnl: totalPnl,
-                total_pnl_percent: data.total_pnl_percent || 0
+                total_pnl_percent: overview.total_pnl_percent || data.total_pnl_percent || 0
             }, holdings);
 
             // Big UI aggregation update (global function, renamed)
@@ -4160,28 +4167,23 @@ function fmtFixed(value, decimals = 2) {
 
 // RENAMED: Big UI updater
 function updatePortfolioSummaryUI(portfolioData) {
+    // Use the new overview object as primary data source
+    const overview = portfolioData.overview || {};
     const summary = portfolioData.summary || {};
     const holdings = portfolioData.holdings || [];
 
     window.lastPortfolioData = portfolioData;
 
-    let totalValue = 0, totalUnrealizedPnl = 0, totalCostBasis = 0;
-    holdings.forEach(h => {
-        if (h.has_position) {
-            totalValue += h.current_value || 0;
-            totalUnrealizedPnl += h.unrealized_pnl || 0;
-            totalCostBasis += h.cost_basis || 0;
-        }
-    });
-
-    const cashBalance = portfolioData.cash_balance || 0;
-    // FIXED: Check if backend provides calculated total portfolio value
-    const totalPortfolioValue = portfolioData.total_portfolio_value || (totalValue + cashBalance);
-    const totalPnlPercent = totalCostBasis > 0 ? ((totalUnrealizedPnl / totalCostBasis) * 100) : 0;
+    // Use overview data first, fallback to calculations
+    const totalValue = overview.total_value || 0;
+    const totalUnrealizedPnl = overview.total_pnl || 0;
+    const cashBalance = overview.cash_balance || portfolioData.cash_balance || 0;
+    const totalPortfolioValue = totalValue; // Overview already includes total portfolio value
+    const totalPnlPercent = overview.total_pnl_percent || 0;
 
     updateElementSafely("summary-total-value", formatCurrency(totalPortfolioValue));
 
-    const change24h = summary.daily_pnl || 0;
+    const change24h = overview.daily_pnl || summary.daily_pnl || 0;
     const change24hElement = document.getElementById("summary-24h-change");
     if (change24hElement) {
         const changeClass = change24h >= 0 ? "text-success" : "text-danger";
@@ -4191,7 +4193,7 @@ function updatePortfolioSummaryUI(portfolioData) {
         change24hElement.className = `mb-0 fw-bold ${changeClass}`;
     }
 
-    updateElementSafely("summary-total-assets", summary.total_assets_tracked || holdings.length);
+    updateElementSafely("summary-total-assets", overview.total_assets || summary.total_assets_tracked || holdings.length);
     updateElementSafely("summary-cash-balance", formatCurrency(cashBalance));
     updateElementSafely("summary-win-rate", `${(summary.win_rate || 0).toFixed(1)}%`);
     updateElementSafely("summary-portfolio-value", formatCurrency(totalPortfolioValue));
