@@ -79,8 +79,14 @@ class TradingApp {
             const data = await response.json();
             
             // Update uptime display
-            if (data.uptime !== undefined) {
-                this.updateUptimeDisplay(data.uptime);
+            if (data.uptime_seconds !== undefined) {
+                this.updateUptimeDisplay(data.uptime_seconds);
+            } else if (data.uptime_human !== undefined) {
+                // If we have human-readable uptime, display it directly
+                const uptimeElement = document.getElementById('system-uptime');
+                if (uptimeElement) {
+                    uptimeElement.textContent = data.uptime_human;
+                }
             }
             
             // Update portfolio values from status endpoint
@@ -92,9 +98,19 @@ class TradingApp {
                 pnlElement.className = (data.portfolio.daily_pnl || 0) >= 0 ? 'text-success' : 'text-danger';
             }
             
-            // Update trading status
+            // Update trading status and bot state
             if (data.trading_status) {
                 this.updateTradingStatus(data.trading_status);
+            }
+            
+            // Update bot status from main status response
+            if (data.bot !== undefined) {
+                this.updateBotStatus(data.bot);
+            }
+            
+            // Update overall active status
+            if (data.active !== undefined) {
+                this.updateActiveStatus(data.active);
             }
             
         } catch (error) {
@@ -106,6 +122,9 @@ class TradingApp {
         
         // Update price source status
         this.updatePriceSourceStatus();
+        
+        // Poll bot status separately to ensure button state is current
+        this.pollBotStatus();
     }
     
     async updatePriceSourceStatus() {
@@ -137,6 +156,41 @@ class TradingApp {
         if (uptimeElement && serverUptimeSeconds !== undefined) {
             const uptimeText = this.formatUptime(serverUptimeSeconds);
             uptimeElement.textContent = uptimeText;
+        }
+    }
+    
+    updateBotStatus(botData) {
+        const botButton = document.getElementById('bot-status-top');
+        if (botButton && botData) {
+            const isRunning = botData.running === true;
+            botButton.textContent = isRunning ? 'STOP BOT' : 'START BOT';
+        }
+    }
+    
+    updateActiveStatus(isActive) {
+        const statusElement = document.getElementById('trading-status');
+        if (statusElement) {
+            statusElement.innerHTML = `<span class="icon icon-circle me-1" aria-hidden="true"></span>${isActive ? 'Active' : 'Inactive'}`;
+            statusElement.className = `badge ${isActive ? 'bg-success' : 'bg-secondary'} ms-2`;
+        }
+    }
+    
+    updateTradingStatus(tradingStatus) {
+        if (tradingStatus && tradingStatus.status) {
+            this.updateActiveStatus(tradingStatus.status === 'Active');
+        }
+    }
+    
+    async pollBotStatus() {
+        try {
+            const response = await fetch('/api/bot/status');
+            if (response.ok) {
+                const botData = await response.json();
+                this.updateBotStatus(botData);
+                this.updateActiveStatus(botData.active === true);
+            }
+        } catch (error) {
+            console.debug('Bot status polling failed:', error);
         }
     }
     

@@ -383,8 +383,14 @@ class TradingApp {
         const data = await this.fetchWithCache('/api/status', 'status', this.bypassCache);
         if (!data) return;
 
-        if (typeof data.uptime === 'number') {
-            this.updateUptimeDisplay(data.uptime);
+        if (typeof data.uptime_seconds === 'number') {
+            this.updateUptimeDisplay(data.uptime_seconds);
+        } else if (data.uptime_human) {
+            // If we have human-readable uptime, display it directly
+            const uptimeElement = document.getElementById('system-uptime');
+            if (uptimeElement) {
+                uptimeElement.textContent = data.uptime_human;
+            }
         }
 
         // Update quick KPIs if status has portfolio summary
@@ -424,8 +430,18 @@ class TradingApp {
             }
         }
 
-        // Trading status
+        // Trading status and bot state
         if (data.trading_status) this.updateTradingStatus(data.trading_status);
+        
+        // Update bot status from main status response
+        if (data.bot !== undefined) {
+            this.updateBotStatus(data.bot);
+        }
+        
+        // Update overall active status
+        if (data.active !== undefined) {
+            this.updateActiveStatus(data.active);
+        }
 
         // Recent trades
         const trades = data.recent_trades || data.trades || [];
@@ -1940,6 +1956,22 @@ class TradingApp {
             uptimeElement.textContent = this.formatUptime(serverUptimeSeconds);
         }
     }
+    
+    updateBotStatus(botData) {
+        const botButton = document.getElementById('bot-status-top');
+        if (botButton && botData) {
+            const isRunning = botData.running === true;
+            botButton.textContent = isRunning ? 'STOP BOT' : 'START BOT';
+        }
+    }
+    
+    updateActiveStatus(isActive) {
+        const statusElement = document.getElementById('trading-status');
+        if (statusElement) {
+            statusElement.innerHTML = `<span class="icon icon-circle me-1" aria-hidden="true"></span>${isActive ? 'Active' : 'Inactive'}`;
+            statusElement.className = `badge ${isActive ? 'bg-success' : 'bg-secondary'} ms-2`;
+        }
+    }
 
     async loadConfig() {
         const config = await this.fetchWithCache('/api/config', 'config', this.bypassCache);
@@ -3409,9 +3441,15 @@ class TradingApp {
             modeEl.className = `badge ${status.mode === 'paper' ? 'bg-success' : 'bg-warning'}`;
         }
         if (statusEl && status.status) {
-            statusEl.textContent = status.status;
-            statusEl.className = `badge ${status.status === 'Active' ? 'bg-success' : 'bg-secondary'}`;
+            statusEl.innerHTML = `<span class="icon icon-circle me-1" aria-hidden="true"></span>${status.status}`;
+            statusEl.className = `badge ${status.status === 'Active' ? 'bg-success' : 'bg-secondary'} ms-2`;
         }
+        
+        // Also update active status based on trading status
+        if (status.status) {
+            this.updateActiveStatus(status.status === 'Active');
+        }
+    }
 
         const startTimeEl = document.getElementById('trading-start-time');
         if (startTimeEl && status.started_at) {
