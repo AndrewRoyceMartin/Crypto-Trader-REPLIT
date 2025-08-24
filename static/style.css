@@ -1188,3 +1188,86 @@ td .d-flex.align-items-center > div:last-child small {
   /* Right-aligned numeric values stay right even in stacked rows */
   .table-v02 td.numeric { justify-content: space-between; }
 }
+
+/* ===== Global Typography: Poppins across the app ===== */
+:root{
+  --font-ui: "Poppins", -apple-system, BlinkMacSystemFont, "Segoe UI",
+             Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji",
+             "Segoe UI Emoji", "Segoe UI Symbol";
+  --fw-regular: 400;
+  --fw-medium: 500;
+  --fw-semibold: 600;
+}
+
+html { font-variant-ligatures: none; text-rendering: optimizeLegibility; }
+body {
+  font-family: var(--font-ui);
+  font-weight: var(--fw-regular);
+}
+
+/* Headings: slightly heavier but not bulky */
+h1, .h1 { font-weight: var(--fw-semibold); line-height: 1.2; }
+h2, .h2 { font-weight: var(--fw-semibold); line-height: 1.25; }
+h3, .h3 { font-weight: var(--fw-medium);   line-height: 1.3; }
+h4, h5, h6, .h4, .h5, .h6 { font-weight: var(--fw-medium); }
+
+/* Navigation, buttons, badges: medium weight for clarity */
+.navbar, .nav, .dropdown-menu, .btn, .badge, .breadcrumb {
+  font-family: var(--font-ui);
+  font-weight: var(--fw-medium);
+}
+
+/* Forms & small UI text keep regular weight for readability */
+.form-control, .form-select, .input-group-text, .form-text, small, .small {
+  font-family: var(--font-ui);
+  font-weight: var(--fw-regular);
+}
+
+/* ===== Tables (works with your existing .table-v02 skin) ===== */
+.table, .table-v02 {
+  font-family: var(--font-ui);
+  font-feature-settings: "tnum" 1, "cv01" 1; /* ensure clean numerals if supported */
+  font-variant-numeric: tabular-nums;        /* aligned numbers in columns */
+}
+
+/* Header cells: emphasize labels (pairs well with your sortable icons) */
+.table thead th,
+.table-v02 thead th,
+.table thead .table-sortable,
+.table-v02 thead .table-sortable {
+  font-weight: var(--fw-semibold);
+  letter-spacing: .01em;
+}
+
+/* Body cells: regular for readability; bump to medium for key numeric columns if desired */
+.table tbody td,
+.table-v02 tbody td {
+  font-weight: var(--fw-regular);
+}
+
+/* Optional: make right-aligned numeric columns slightly stronger */
+.table td.numeric, .table th.numeric,
+.table .text-end, .table-v02 .text-end {
+  font-weight: var(--fw-medium);
+}
+
+/* Sort icon alignment (works with your .icon class) */
+.table th.table-sortable .icon,
+.table-v02 th.table-sortable .icon {
+  vertical-align: baseline;
+  position: relative;
+  top: -.02em;
+  margin-left: .35rem;
+  opacity: .9;
+}
+
+/* Compact tables remain compact (Bootstrap .table-sm) */
+.table-sm > :not(caption) > * > * {
+  padding-top: .45rem;
+  padding-bottom: .45rem;
+}
+
+/* Mobile stacked card labels in your .table-v02 view: medium weight */
+@media (max-width: 768px) {
+  .table-v02 tbody td::before { font-weight: var(--fw-medium); }
+}
