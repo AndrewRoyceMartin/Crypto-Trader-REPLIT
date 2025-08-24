@@ -131,12 +131,13 @@ a:hover { text-decoration: underline; }
 }
 
 /* Badges (use color only for semantics) */
-.badge { border-radius: 999px; font-weight: 600; }
+.badge { border-radius: 999px; font-weight: 600; color: white; }
 
-.badge.bg-success { background: var(--up); }
-.badge.bg-danger  { background: var(--down); }
-.badge.bg-warning { background: var(--warn); color: #111; }
-.badge.bg-secondary { background: #d1d5db; color: #111; }
+.badge.bg-success { background: var(--up); color: white; }
+.badge.bg-danger  { background: var(--down); color: white; }
+.badge.bg-warning { background: var(--warn); color: white; }
+.badge.bg-secondary { background: #d1d5db; color: white; }
+.badge.bg-primary { background: var(--primary); color: white; }
 
 /* Tables */
 .table {
