@@ -726,3 +726,350 @@ td .d-flex.align-items-center > div:last-child small {
 .portfolio-card .data .range .fill.negative {
   background-color: #dc2626;
 }
+
+/* ==========================================================================
+   Modern Trading Tables - Professional Financial Design
+   ========================================================================== */
+
+/* Core table styling */
+.table {
+  --table-bg: #ffffff;
+  --table-border-color: #e5e7eb;
+  --table-header-bg: #f8fafc;
+  --table-header-color: #374151;
+  --table-row-hover-bg: #f9fafb;
+  --table-row-alt-bg: #fefefe;
+  
+  background: var(--table-bg);
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  width: 100%;
+}
+
+/* Modern table headers */
+.table thead th {
+  background: var(--table-header-bg);
+  border-bottom: 2px solid var(--table-border-color);
+  border-top: none;
+  color: var(--table-header-color);
+  font-weight: 600;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.875rem 0.75rem;
+  position: sticky;
+  top: 0;
+  vertical-align: middle;
+  z-index: 10;
+}
+
+/* First and last header cells */
+.table thead th:first-child {
+  border-top-left-radius: 8px;
+  padding-left: 1.5rem;
+}
+
+.table thead th:last-child {
+  border-top-right-radius: 8px;
+  padding-right: 1.5rem;
+}
+
+/* Table body styling */
+.table tbody td {
+  background: var(--table-bg);
+  border-bottom: 1px solid var(--table-border-color);
+  border-top: none;
+  padding: 0.875rem 0.75rem;
+  vertical-align: middle;
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+}
+
+/* First and last body cells */
+.table tbody td:first-child {
+  padding-left: 1.5rem;
+  font-family: var(--font-sans);
+  font-weight: 600;
+}
+
+.table tbody td:last-child {
+  padding-right: 1.5rem;
+}
+
+/* Alternating row colors */
+.table tbody tr:nth-child(even) {
+  background: var(--table-row-alt-bg);
+}
+
+.table tbody tr:nth-child(even) td {
+  background: var(--table-row-alt-bg);
+}
+
+/* Hover effects */
+.table-hover tbody tr:hover {
+  background: var(--table-row-hover-bg);
+  transition: background-color 0.15s ease-in-out;
+}
+
+.table-hover tbody tr:hover td {
+  background: var(--table-row-hover-bg);
+}
+
+/* Trading-specific styling */
+.table tbody td.symbol {
+  font-family: var(--font-sans);
+  font-weight: 700;
+  color: #111827;
+  font-size: 0.95rem;
+}
+
+.table tbody td.crypto-value {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  text-align: right;
+}
+
+.table tbody td.pnl-positive {
+  color: var(--up);
+  font-weight: 600;
+}
+
+.table tbody td.pnl-negative {
+  color: var(--down);
+  font-weight: 600;
+}
+
+.table tbody td.pnl-neutral {
+  color: var(--muted);
+  font-weight: 500;
+}
+
+/* Price and value styling */
+.table tbody td.price,
+.table tbody td.value {
+  font-family: var(--font-mono);
+  font-weight: 500;
+  text-align: right;
+  color: #374151;
+}
+
+/* Trading signals and badges */
+.table tbody td .trading-signal {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.375rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+
+.trading-signal.buy {
+  background: rgba(16, 163, 74, 0.1);
+  color: var(--up);
+  border: 1px solid rgba(16, 163, 74, 0.2);
+}
+
+.trading-signal.sell {
+  background: rgba(220, 38, 38, 0.1);
+  color: var(--down);
+  border: 1px solid rgba(220, 38, 38, 0.2);
+}
+
+.trading-signal.hold,
+.trading-signal.wait {
+  background: rgba(107, 114, 128, 0.1);
+  color: var(--muted);
+  border: 1px solid rgba(107, 114, 128, 0.2);
+}
+
+.trading-signal.caution {
+  background: rgba(245, 158, 11, 0.1);
+  color: var(--warn);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+}
+
+/* Sortable headers */
+.table-sortable {
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 0.15s ease-in-out;
+}
+
+.table-sortable:hover {
+  background: #f1f5f9;
+}
+
+.table-sortable .icon {
+  opacity: 0.5;
+  transition: opacity 0.15s ease-in-out;
+}
+
+.table-sortable:hover .icon {
+  opacity: 0.8;
+}
+
+.table-sortable.sorted .icon {
+  opacity: 1;
+  color: var(--text);
+}
+
+/* Responsive improvements */
+@media (max-width: 768px) {
+  .table thead th,
+  .table tbody td {
+    padding: 0.5rem 0.375rem;
+    font-size: 0.8125rem;
+  }
+  
+  .table thead th:first-child,
+  .table tbody td:first-child {
+    padding-left: 1rem;
+  }
+  
+  .table thead th:last-child,
+  .table tbody td:last-child {
+    padding-right: 1rem;
+  }
+}
+
+/* Dark theme support */
+@media (prefers-color-scheme: dark) {
+  .table {
+    --table-bg: #1f2937;
+    --table-border-color: #374151;
+    --table-header-bg: #111827;
+    --table-header-color: #d1d5db;
+    --table-row-hover-bg: #374151;
+    --table-row-alt-bg: #1f2937;
+  }
+  
+  .table tbody td {
+    color: #e5e7eb;
+  }
+  
+  .table tbody td.symbol {
+    color: #f9fafb;
+  }
+  
+  .table tbody td.price,
+  .table tbody td.value {
+    color: #d1d5db;
+  }
+}
+
+/* Loading states */
+.table tbody td.loading {
+  background: linear-gradient(90deg, transparent, rgba(107, 114, 128, 0.1), transparent);
+  background-size: 200px 100%;
+  animation: loading 1.5s infinite;
+}
+
+@keyframes loading {
+  0% {
+    background-position: -200px 0;
+  }
+  100% {
+    background-position: calc(200px + 100%) 0;
+  }
+}
+
+/* Action buttons in tables */
+.table tbody td .btn-group {
+  opacity: 0;
+  transition: opacity 0.15s ease-in-out;
+}
+
+.table tbody tr:hover .btn-group {
+  opacity: 1;
+}
+
+.table .btn-sm {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  border-radius: 0.375rem;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+}
+
+.table .btn-sm:hover {
+  background: var(--bg);
+}
+
+/* Enhanced spacing for financial data */
+.table tbody td.financial-amount {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  font-family: var(--font-mono);
+  font-weight: 500;
+}
+
+.table tbody td.percentage {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  min-width: 80px;
+}
+
+/* Symbol styling with crypto icons space */
+.table tbody td.symbol-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--font-sans);
+  font-weight: 700;
+}
+
+.table tbody td.symbol-cell .crypto-icon {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* Professional borders for sections */
+.table-responsive {
+  border: 1px solid var(--table-border-color);
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* Remove Bootstrap table borders that interfere */
+.table-responsive .table {
+  border: none;
+  margin-bottom: 0;
+}
+
+.table-responsive .table thead th:first-child {
+  border-left: none;
+}
+
+.table-responsive .table thead th:last-child {
+  border-right: none;
+}
+
+/* Status indicators for different table types */
+#holdings-table .status-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 0.5rem;
+}
+
+#holdings-table .status-indicator.profitable {
+  background: var(--up);
+}
+
+#holdings-table .status-indicator.losing {
+  background: var(--down);
+}
+
+#holdings-table .status-indicator.breakeven {
+  background: var(--muted);
+}
