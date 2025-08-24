@@ -81,6 +81,26 @@ function toast(msg, type='info'){
     }, 4000);
 }
 
+// Event delegation for card view toggle buttons
+document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('view-toggle-btn') || e.target.parentNode.classList.contains('view-toggle-btn')) {
+            const button = e.target.classList.contains('view-toggle-btn') ? e.target : e.target.parentNode;
+            const cardId = button.getAttribute('data-card');
+            if (cardId && typeof toggleCardView === 'function') {
+                toggleCardView(cardId);
+            }
+        }
+    });
+    
+    // Handle crypto icon load errors
+    document.addEventListener('error', function(e) {
+        if (e.target.classList.contains('crypto-icon-img')) {
+            e.target.outerHTML = '<i class="fa-solid fa-coins text-warning" style="width: 24px; height: 24px; font-size: 18px;"></i>';
+        }
+    }, true);
+});
+
 class TradingApp {
     constructor() {
         this.updateInterval = null;

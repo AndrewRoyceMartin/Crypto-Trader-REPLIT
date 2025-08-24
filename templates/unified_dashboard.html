@@ -248,7 +248,7 @@
             <div class="row text-center mb-4 g-2">
                 <div class="col-6 col-md-2">
                     <div class="portfolio-card kpi-card view-text" data-card="portfolio-graph">
-                        <button class="view-toggle-btn" onclick="toggleCardView('portfolio-graph')" title="Switch view">
+                        <button class="view-toggle-btn" data-card="portfolio-graph" title="Switch view">
                             <i class="fa-solid fa-chart-area"></i>
                         </button>
                         
@@ -295,7 +295,7 @@
                 </div>
                 <div class="col-6 col-md-2">
                     <div class="portfolio-card kpi-card view-text" data-card="estimated-total">
-                        <button class="view-toggle-btn" onclick="toggleCardView('estimated-total')" title="Switch view">
+                        <button class="view-toggle-btn" data-card="estimated-total" title="Switch view">
                             <i class="fa-solid fa-chart-line"></i>
                         </button>
                         
@@ -345,7 +345,7 @@
                 </div>
                 <div class="col-6 col-md-2">
                     <div class="portfolio-card kpi-card view-text" data-card="day-pnl">
-                        <button class="view-toggle-btn" onclick="toggleCardView('day-pnl')" title="Switch view">
+                        <button class="view-toggle-btn" data-card="day-pnl" title="Switch view">
                             <i class="fa-solid fa-trending-up"></i>
                         </button>
                         
@@ -395,7 +395,7 @@
                 </div>
                 <div class="col-6 col-md-2">
                     <div class="portfolio-card kpi-card view-text" data-card="best-performer">
-                        <button class="view-toggle-btn" onclick="toggleCardView('best-performer')" title="Switch view">
+                        <button class="view-toggle-btn" data-card="best-performer" title="Switch view">
                             <i class="fa-solid fa-trophy"></i>
                         </button>
                         
@@ -445,7 +445,7 @@
                 </div>
                 <div class="col-6 col-md-2">
                     <div class="portfolio-card kpi-card view-text" data-card="active-positions">
-                        <button class="view-toggle-btn" onclick="toggleCardView('active-positions')" title="Switch view">
+                        <button class="view-toggle-btn" data-card="active-positions" title="Switch view">
                             <i class="fa-solid fa-coins"></i>
                         </button>
                         
@@ -495,7 +495,7 @@
                 </div>
                 <div class="col-6 col-md-2">
                     <div class="kpi-card view-text" data-card="position-status">
-                        <button class="view-toggle-btn" onclick="toggleCardView('position-status')" title="Switch view">
+                        <button class="view-toggle-btn" data-card="position-status" title="Switch view">
                             <i class="fa-solid fa-chart-simple"></i>
                         </button>
                         
@@ -1206,9 +1206,8 @@
         
         return `<img src="https://assets.coingecko.com/coins/images/${getCoinGeckoImageId(coinId)}/small/${coinId}.png" 
                      alt="${symbol}" 
-                     class="crypto-icon" 
-                     style="width: 24px; height: 24px; border-radius: 50%;"
-                     onerror="this.outerHTML='<i class=\\'fa-solid fa-coins text-warning\\' style=\\'width: 24px; height: 24px; font-size: 18px;\\'></i>'">`;
+                     class="crypto-icon crypto-icon-img" 
+                     style="width: 24px; height: 24px; border-radius: 50%;"`;
     }
     
     /** Get CoinGecko image IDs for major cryptocurrencies */

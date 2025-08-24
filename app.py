@@ -5145,7 +5145,7 @@ def add_security_headers(resp: Any) -> Any:
     
     resp.headers["Content-Security-Policy"] = (
         "default-src 'self'; "
-        "script-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com 'unsafe-inline'; "
+        "script-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; "
         "style-src 'self' https://fonts.googleapis.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com 'unsafe-inline'; "
         "font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; "
         "img-src 'self' data: https://cryptologos.cc https://raw.githubusercontent.com https://assets.coingecko.com https://s2.coinmarketcap.com https://static.okx.com; "
