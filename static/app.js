@@ -140,7 +140,7 @@ class TradingApp {
             'TRX': { icon: 'https://assets.coingecko.com/coins/images/1094/standard/tron-logo.png', name: 'TRON', color: '#ff0013', type: 'image' },
             'GALA': { icon: 'https://assets.coingecko.com/coins/images/12493/standard/GALA-v2.png', name: 'Gala Games', color: '#ff6600', type: 'image' },
             'PEPE': { icon: 'https://assets.coingecko.com/coins/images/29850/standard/pepe-token.jpeg', name: 'Pepe', color: '#28a745', type: 'image' },
-            'AUD': { icon: 'fas fa-dollar-sign', name: 'Australian Dollar', color: '#007bff', type: 'font' },
+            'AUD': { icon: 'fa-solid fa-dollar-sign', name: 'Australian Dollar', color: '#007bff', type: 'font' },
             'USDT': { icon: 'https://assets.coingecko.com/coins/images/325/standard/Tether.png', name: 'Tether USDT', color: '#26a17b', type: 'image' },
             'USDC': { icon: 'https://assets.coingecko.com/coins/images/6319/standard/usdc.png', name: 'USD Coin', color: '#2775ca', type: 'image' },
             'DOGE': { icon: 'https://assets.coingecko.com/coins/images/5/standard/dogecoin.png', name: 'Dogecoin', color: '#c2a633', type: 'image' },
@@ -154,7 +154,7 @@ class TradingApp {
             'AAVE': { icon: 'https://assets.coingecko.com/coins/images/12645/standard/AAVE.png', name: 'Aave', color: '#b6509e', type: 'image' }
         };
         
-        return coinInfo[symbol] || { icon: 'fas fa-coins', name: symbol, color: '#6c757d', type: 'font' };
+        return coinInfo[symbol] || { icon: 'fa-solid fa-coins', name: symbol, color: '#6c757d', type: 'font' };
     }
 
     formatUptime(totalSeconds) {
@@ -1399,7 +1399,7 @@ class TradingApp {
                 emptyCell.className = 'text-center text-muted py-4';
                 
                 const icon = document.createElement('i');
-                icon.className = 'fas fa-coins me-2';
+                icon.className = 'fa-solid fa-coins me-2';
                 emptyCell.appendChild(icon);
                 emptyCell.appendChild(document.createTextNode('No holdings found'));
                 
@@ -1432,7 +1432,7 @@ class TradingApp {
                 infoCell.className = 'text-center text-muted py-4';
                 
                 const icon = document.createElement('i');
-                icon.className = 'fas fa-info-circle me-2';
+                icon.className = 'fa-solid fa-circle-info me-2';
                 infoCell.appendChild(icon);
                 infoCell.appendChild(document.createTextNode('No positions above $0.01 threshold'));
                 
@@ -1481,7 +1481,7 @@ class TradingApp {
                     icon.onerror = function() {
                         // Fallback to FontAwesome icon if image fails to load
                         const fallbackIcon = document.createElement('i');
-                        fallbackIcon.className = 'fas fa-coins';
+                        fallbackIcon.className = 'fa-solid fa-coins';
                         fallbackIcon.style.color = coinDisplay.color;
                         iconDiv.replaceChild(fallbackIcon, icon);
                     };
@@ -1554,7 +1554,7 @@ class TradingApp {
                 const sourceBadge = document.createElement('span');
                 sourceBadge.className = 'badge bg-light text-dark';
                 const sourceIcon = document.createElement('i');
-                sourceIcon.className = 'fas fa-link me-1';
+                sourceIcon.className = 'fa-solid fa-link me-1';
                 sourceBadge.appendChild(sourceIcon);
                 sourceBadge.appendChild(document.createTextNode('OKX'));
                 sourceCell.appendChild(sourceBadge);
@@ -1586,7 +1586,7 @@ class TradingApp {
             errorCell.className = 'text-center text-danger py-4';
             
             const errorIcon = document.createElement('i');
-            errorIcon.className = 'fas fa-exclamation-triangle me-2';
+            errorIcon.className = 'fa-solid fa-triangle-exclamation me-2';
             errorCell.appendChild(errorIcon);
             errorCell.appendChild(document.createTextNode('Error loading holdings'));
             
@@ -1629,7 +1629,7 @@ class TradingApp {
                 emptyCell.className = 'text-center text-muted py-4';
                 
                 const emptyIcon = document.createElement('i');
-                emptyIcon.className = 'fas fa-exchange-alt me-2';
+                emptyIcon.className = 'fa-solid fa-arrows-rotate me-2';
                 emptyCell.appendChild(emptyIcon);
                 emptyCell.appendChild(document.createTextNode('No recent trades found'));
                 
@@ -1726,7 +1726,7 @@ class TradingApp {
             errorCell.className = 'text-center text-danger py-4';
             
             const errorIcon = document.createElement('i');
-            errorIcon.className = 'fas fa-exclamation-triangle me-2';
+            errorIcon.className = 'fa-solid fa-triangle-exclamation me-2';
             errorCell.appendChild(errorIcon);
             errorCell.appendChild(document.createTextNode('Error loading trades'));
             
@@ -1915,12 +1915,12 @@ class TradingApp {
                 if (isConnected) {
                     serverConnectionText.textContent = 'Connected';
                     serverConnectionText.className = 'text-success ms-1';
-                    if (statusIcon) statusIcon.className = 'fas fa-wifi text-success me-1';
+                    if (statusIcon) statusIcon.className = 'fa-solid fa-wifi text-success me-1';
                 } else {
                     const lastUpdate = data.last_update ? this.formatTimeOnly(data.last_update) : 'unknown';
                     serverConnectionText.textContent = `Disconnected (${lastUpdate})`;
                     serverConnectionText.className = 'text-danger ms-1';
-                    if (statusIcon) statusIcon.className = 'fas fa-wifi text-danger me-1';
+                    if (statusIcon) statusIcon.className = 'fa-solid fa-wifi text-danger me-1';
                 }
             }
         } catch (error) {
@@ -5277,7 +5277,7 @@ function updateOpenPositionsTable(positions, totalValue = 0) {
                     'TRX': { icon: 'https://assets.coingecko.com/coins/images/1094/standard/tron-logo.png', name: 'TRON', color: '#ff0013', type: 'image' },
                     'GALA': { icon: 'https://assets.coingecko.com/coins/images/12493/standard/GALA-v2.png', name: 'Gala Games', color: '#ff6600', type: 'image' },
                     'PEPE': { icon: 'https://assets.coingecko.com/coins/images/29850/standard/pepe-token.jpeg', name: 'Pepe', color: '#28a745', type: 'image' },
-                    'AUD': { icon: 'fas fa-dollar-sign', name: 'Australian Dollar', color: '#007bff', type: 'font' },
+                    'AUD': { icon: 'fa-solid fa-dollar-sign', name: 'Australian Dollar', color: '#007bff', type: 'font' },
                     'USDT': { icon: 'https://assets.coingecko.com/coins/images/325/standard/Tether.png', name: 'Tether USDT', color: '#26a17b', type: 'image' },
                     'USDC': { icon: 'https://assets.coingecko.com/coins/images/6319/standard/usdc.png', name: 'USD Coin', color: '#2775ca', type: 'image' },
                     'DOGE': { icon: 'https://assets.coingecko.com/coins/images/5/standard/dogecoin.png', name: 'Dogecoin', color: '#c2a633', type: 'image' },
@@ -5291,7 +5291,7 @@ function updateOpenPositionsTable(positions, totalValue = 0) {
                     'AAVE': { icon: 'https://assets.coingecko.com/coins/images/12645/standard/AAVE.png', name: 'Aave', color: '#b6509e', type: 'image' }
                 };
                 
-                return coinInfo[symbol] || { icon: 'fas fa-coins', name: symbol, color: '#6c757d', type: 'font' };
+                return coinInfo[symbol] || { icon: 'fa-solid fa-coins', name: symbol, color: '#6c757d', type: 'font' };
             };
             
             const coinDisplay = getCoinDisplay(symbol);
@@ -5516,7 +5516,7 @@ function createAvailablePositionRow(position) {
             'TRX': { icon: 'https://assets.coingecko.com/coins/images/1094/standard/tron-logo.png', name: 'TRON', color: '#ff0013', type: 'image' },
             'GALA': { icon: 'https://assets.coingecko.com/coins/images/12493/standard/GALA-v2.png', name: 'Gala Games', color: '#ff6600', type: 'image' },
             'PEPE': { icon: 'https://assets.coingecko.com/coins/images/29850/standard/pepe-token.jpeg', name: 'Pepe', color: '#28a745', type: 'image' },
-            'AUD': { icon: 'fas fa-dollar-sign', name: 'Australian Dollar', color: '#007bff', type: 'font' },
+            'AUD': { icon: 'fa-solid fa-dollar-sign', name: 'Australian Dollar', color: '#007bff', type: 'font' },
             'USDT': { icon: 'https://assets.coingecko.com/coins/images/325/standard/Tether.png', name: 'Tether USDT', color: '#26a17b', type: 'image' },
             'USDC': { icon: 'https://assets.coingecko.com/coins/images/6319/standard/usdc.png', name: 'USD Coin', color: '#2775ca', type: 'image' },
             'DOGE': { icon: 'https://assets.coingecko.com/coins/images/5/standard/dogecoin.png', name: 'Dogecoin', color: '#c2a633', type: 'image' },
@@ -5529,7 +5529,7 @@ function createAvailablePositionRow(position) {
             'SHIB': { icon: 'https://assets.coingecko.com/coins/images/11939/standard/shiba.png', name: 'Shiba Inu', color: '#ff6600', type: 'image' },
             'AAVE': { icon: 'https://assets.coingecko.com/coins/images/12645/standard/AAVE.png', name: 'Aave', color: '#b6509e', type: 'image' }
         };
-        return coinInfo[symbol] || { icon: 'fas fa-coins', name: symbol, color: '#6c757d', type: 'font' };
+        return coinInfo[symbol] || { icon: 'fa-solid fa-coins', name: symbol, color: '#6c757d', type: 'font' };
     };
     
     const coinDisplay = getCoinDisplay(symbol);
