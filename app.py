@@ -5011,9 +5011,25 @@ def api_test_sync_data() -> ResponseReturnValue:
             bot_mode = current_bot_state.get('mode')
             started_at = current_bot_state.get('started_at')
             
+            # Calculate bot runtime if running
+            bot_runtime_seconds = 0
+            bot_runtime_human = "Not running"
+            if bot_running and started_at:
+                try:
+                    ts = str(started_at).replace('Z', '+00:00')
+                    dt = datetime.fromisoformat(ts)
+                    if dt.tzinfo is None:
+                        dt = dt.replace(tzinfo=timezone.utc)
+                    bot_runtime_seconds = max(0, int((datetime.now(dt.tzinfo) - dt).total_seconds()))
+                    bot_runtime_human = humanize_seconds(bot_runtime_seconds)
+                except Exception:
+                    bot_runtime_seconds = 0
+                    bot_runtime_human = "Runtime calculation error"
+            
             # Verify state consistency
             state_consistent = True
             issues = []
+            status_details = []
             
             if bot_running and not started_at:
                 state_consistent = False
@@ -5027,13 +5043,26 @@ def api_test_sync_data() -> ResponseReturnValue:
             if trading_state.get('active') != bot_running:
                 state_consistent = False
                 issues.append("Bot state and trading state mismatch")
+                
+            # Add status details for display
+            if bot_running:
+                status_details.append(f"✅ Bot ACTIVE in {bot_mode or 'unknown'} mode")
+                status_details.append(f"⏱️ Running for {bot_runtime_human}")
+                if bot_runtime_seconds > 300:  # 5 minutes
+                    status_details.append(f"🎯 Stable runtime ({bot_runtime_seconds}s)")
+            else:
+                status_details.append("⛔ Bot STOPPED - No active trading")
+                status_details.append("💤 Use START BOT button to activate")
             
             test_data['test_results']['bot_state_sync'] = {
                 'status': 'pass' if state_consistent else 'warning',
                 'bot_running': bot_running,
                 'bot_mode': bot_mode,
                 'started_at': started_at,
+                'bot_runtime_seconds': bot_runtime_seconds,
+                'bot_runtime_human': bot_runtime_human,
                 'trading_active': trading_state.get('active'),
+                'status_details': status_details,
                 'issues': issues
             }
         except Exception as e:
