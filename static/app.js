@@ -460,6 +460,9 @@ class TradingApp {
         if (data.active !== undefined) {
             this.updateActiveStatus(data.active);
         }
+        
+        // Force update bot status on dashboard load
+        this.fetchAndUpdateBotStatus();
 
         // Recent trades
         const trades = data.recent_trades || data.trades || [];
@@ -1989,6 +1992,18 @@ class TradingApp {
         if (botButton && botData) {
             const isRunning = botData.running === true;
             botButton.textContent = isRunning ? 'STOP BOT' : 'START BOT';
+        }
+    }
+    
+    async fetchAndUpdateBotStatus() {
+        try {
+            const botStatus = await this.fetchWithCache('/api/bot/status', 'bot_status', false);
+            if (botStatus) {
+                this.updateBotStatus(botStatus);
+                this.updateActiveStatus(botStatus.running || false);
+            }
+        } catch (error) {
+            console.debug('Bot status fetch failed:', error);
         }
     }
     
