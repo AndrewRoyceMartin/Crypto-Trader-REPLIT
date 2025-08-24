@@ -15,6 +15,10 @@ class TradingApp {
         this.isLiveConfirmationPending = false;
         this.countdownInterval = null;
         this.countdown = 5;
+        
+        // Positions refresh countdown
+        this.positionsCountdownInterval = null;
+        this.positionsCountdown = 95; // 90s main interval + 5s delay
 
         // store trades for filtering
         this.allTrades = [];
@@ -334,6 +338,10 @@ class TradingApp {
         if (this.countdownInterval) {
             clearInterval(this.countdownInterval);
             this.countdownInterval = null;
+        }
+        if (this.positionsCountdownInterval) {
+            clearInterval(this.positionsCountdownInterval);
+            this.positionsCountdownInterval = null;
         }
     }
     cleanup() {
@@ -2064,6 +2072,36 @@ class TradingApp {
             }
         }, 1000);
     }
+    
+    startPositionsCountdown() {
+        if (this.positionsCountdownInterval) {
+            clearInterval(this.positionsCountdownInterval);
+        }
+        
+        // Set countdown to 95 seconds (90s interval + 5s delay)
+        this.positionsCountdown = 95;
+        
+        this.positionsCountdownInterval = setInterval(() => {
+            const nextRefreshEl = document.getElementById('positions-next-refresh');
+            if (!nextRefreshEl) {
+                clearInterval(this.positionsCountdownInterval);
+                this.positionsCountdownInterval = null;
+                return;
+            }
+            
+            if (this.positionsCountdown > 0) {
+                const minutes = Math.floor(this.positionsCountdown / 60);
+                const seconds = this.positionsCountdown % 60;
+                const timeStr = minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`;
+                nextRefreshEl.textContent = timeStr;
+                this.positionsCountdown--;
+            } else {
+                nextRefreshEl.textContent = 'Refreshing...';
+                // Reset for next cycle
+                this.positionsCountdown = 95;
+            }
+        }, 1000);
+    }
 
     showToast(message, type = 'info') {
         const toast = document.createElement('div');
@@ -2308,6 +2346,9 @@ class TradingApp {
         } finally {
             this.isUpdatingPortfolio = false;
             this.isUpdatingTables = false;
+            
+            // Start positions countdown after successful update
+            this.startPositionsCountdown();
         }
     }
     
