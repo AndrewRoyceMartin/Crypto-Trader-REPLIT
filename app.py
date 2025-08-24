@@ -617,20 +617,45 @@ def api_status() -> ResponseReturnValue:
         })
 @app.route("/api/crypto-portfolio")
 def crypto_portfolio_okx() -> ResponseReturnValue:
-    """Get real OKX portfolio data using PortfolioService."""
+    """Get real OKX portfolio data using PortfolioService, forcing a re-pull on currency change."""
     try:
-        # Get selected currency from request (default to USD)
-        selected_currency = request.args.get('currency', 'USD')
-        logger.info(f"Fetching OKX portfolio data with currency: {selected_currency}")
-        
+        selected_currency = request.args.get('currency', 'USD').upper()
+        logger.info(f"Fetching OKX portfolio data (fresh) with currency: {selected_currency}")
+
         from src.services.portfolio_service import get_portfolio_service
         portfolio_service = get_portfolio_service()
-        okx_portfolio_data = portfolio_service.get_portfolio_data(currency=selected_currency)
-        
+
+        # Hard refresh semantics:
+        # - Prefer a dedicated force_refresh flag if the service supports it
+        # - Otherwise call any available cache invalidator
+        # - Finally, call get_portfolio_data with the requested currency
+        try:
+            okx_portfolio_data = portfolio_service.get_portfolio_data(
+                currency=selected_currency,
+                force_refresh=True   # <-- if supported
+            )
+        except TypeError:
+            # Fallback if force_refresh not supported on this install
+            try:
+                if hasattr(portfolio_service, "invalidate_cache") and callable(portfolio_service.invalidate_cache):
+                    portfolio_service.invalidate_cache()
+                elif hasattr(portfolio_service, "clear_cache") and callable(portfolio_service.clear_cache):
+                    portfolio_service.clear_cache()
+                elif hasattr(portfolio_service, "exchange") and hasattr(portfolio_service.exchange, "clear_cache"):
+                    # Last resort: clear adapter cache
+                    try:
+                        portfolio_service.exchange.clear_cache()
+                    except Exception:
+                        pass
+            except Exception as e:
+                logger.debug(f"Cache invalidation not available: {e}")
+            okx_portfolio_data = portfolio_service.get_portfolio_data(currency=selected_currency)
+
         holdings_list = okx_portfolio_data['holdings']
         recent_trades = portfolio_service.get_trade_history(limit=50)
-        
-        return jsonify({
+
+        from flask import make_response
+        payload = {
             "holdings": holdings_list,
             "recent_trades": recent_trades,
             "summary": {
@@ -640,7 +665,8 @@ def crypto_portfolio_okx() -> ResponseReturnValue:
                 "total_pnl": okx_portfolio_data['total_pnl'],
                 "total_pnl_percent": okx_portfolio_data['total_pnl_percent'],
                 "cash_balance": okx_portfolio_data['cash_balance'],
-                "aud_balance": okx_portfolio_data.get('aud_balance', 0.0)
+                "aud_balance": okx_portfolio_data.get('aud_balance', 0.0),
+                "currency": selected_currency
             },
             "total_pnl": okx_portfolio_data['total_pnl'],
             "total_pnl_percent": okx_portfolio_data['total_pnl_percent'],
@@ -648,13 +674,22 @@ def crypto_portfolio_okx() -> ResponseReturnValue:
             "total_estimated_value": okx_portfolio_data.get('total_estimated_value', okx_portfolio_data['total_current_value']),
             "cash_balance": okx_portfolio_data['cash_balance'],
             "aud_balance": okx_portfolio_data.get('aud_balance', 0.0),
+            "currency": selected_currency,
             "last_update": okx_portfolio_data['last_update'],
             "exchange_info": {
                 "exchange": "Live OKX",
                 "last_update": okx_portfolio_data['last_update'],
-                "cash_balance": okx_portfolio_data['cash_balance']
+                "cash_balance": okx_portfolio_data['cash_balance'],
+                "currency": selected_currency
             }
-        })
+        }
+        resp = make_response(jsonify(payload))
+        # Make sure every currency toggle bypasses any caches
+        resp.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0, private"
+        resp.headers["Pragma"] = "no-cache"
+        resp.headers["Expires"] = "0"
+        return resp
+
     except Exception as e:
         logger.error(f"Error getting OKX portfolio: {e}")
         return jsonify({"error": str(e)}), 500
