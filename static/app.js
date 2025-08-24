@@ -1571,7 +1571,7 @@ class TradingApp {
                 // Show empty state
                 const emptyRow = document.createElement('tr');
                 const emptyCell = document.createElement('td');
-                emptyCell.setAttribute('colspan', '7');
+                emptyCell.setAttribute('colspan', '13');
                 emptyCell.className = 'text-center text-muted py-4';
                 
                 const icon = document.createElement('i');
@@ -1604,7 +1604,7 @@ class TradingApp {
                 // Show message that small positions are moved to Available Positions
                 const infoRow = document.createElement('tr');
                 const infoCell = document.createElement('td');
-                infoCell.setAttribute('colspan', '7');
+                infoCell.setAttribute('colspan', '13');
                 infoCell.className = 'text-center text-muted py-4';
                 
                 const icon = document.createElement('i');
@@ -1683,58 +1683,91 @@ class TradingApp {
                 symbolCell.appendChild(flexDiv);
                 row.appendChild(symbolCell);
                 
-                // Quantity cell
+                // Quantity/Balance cell
                 const quantityCell = document.createElement('td');
+                quantityCell.className = 'text-end';
                 quantityCell.textContent = holding.quantity.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 8 });
                 row.appendChild(quantityCell);
                 
-                // Price cell
-                const priceCell = document.createElement('td');
-                priceCell.textContent = this.formatCurrency(holding.current_price);
-                row.appendChild(priceCell);
-                
                 // Value cell
                 const valueCell = document.createElement('td');
+                valueCell.className = 'text-end';
                 valueCell.textContent = this.formatCurrency(holding.current_value);
                 row.appendChild(valueCell);
                 
-                // PnL cell
-                const pnlCell = document.createElement('td');
-                pnlCell.className = pnlClass;
-                pnlCell.textContent = this.formatSmallCurrency(holding.pnl_amount);
-                pnlCell.appendChild(document.createElement('br'));
-                const pnlSmall = document.createElement('small');
-                pnlSmall.textContent = `(${pnlSign}${holding.pnl_percent.toFixed(2)}%)`;
-                pnlCell.appendChild(pnlSmall);
-                row.appendChild(pnlCell);
+                // Cost basis cell
+                const costBasisCell = document.createElement('td');
+                costBasisCell.className = 'text-end';
+                costBasisCell.textContent = this.formatCurrency(holding.cost_basis || 0);
+                row.appendChild(costBasisCell);
                 
-                // Allocation cell
-                const allocationCell = document.createElement('td');
-                const progressDiv = document.createElement('div');
-                progressDiv.className = 'progress';
-                progressDiv.style.height = '8px';
-                const progressBar = document.createElement('div');
-                progressBar.className = 'progress-bar bg-primary';
-                progressBar.style.width = `${Math.min(holding.allocation_percent, 100)}%`;
-                progressBar.setAttribute('title', `${holding.allocation_percent.toFixed(1)}%`);
-                progressDiv.appendChild(progressBar);
-                allocationCell.appendChild(progressDiv);
-                const allocationSmall = document.createElement('small');
-                allocationSmall.className = 'text-muted';
-                allocationSmall.textContent = `${holding.allocation_percent.toFixed(1)}%`;
-                allocationCell.appendChild(allocationSmall);
-                row.appendChild(allocationCell);
+                // Average purchase price cell (calculated from cost basis / quantity)
+                const avgPriceCell = document.createElement('td');
+                avgPriceCell.className = 'text-end';
+                const avgPrice = holding.quantity > 0 ? (holding.cost_basis || 0) / holding.quantity : 0;
+                avgPriceCell.textContent = this.formatCurrency(avgPrice);
+                row.appendChild(avgPriceCell);
                 
-                // Source cell
-                const sourceCell = document.createElement('td');
-                const sourceBadge = document.createElement('span');
-                sourceBadge.className = 'badge bg-light text-dark';
-                const sourceIcon = document.createElement('i');
-                sourceIcon.className = 'fa-solid fa-link me-1';
-                sourceBadge.appendChild(sourceIcon);
-                sourceBadge.appendChild(document.createTextNode('OKX'));
-                sourceCell.appendChild(sourceBadge);
-                row.appendChild(sourceCell);
+                // Current market price cell
+                const priceCell = document.createElement('td');
+                priceCell.className = 'text-end';
+                priceCell.textContent = this.formatCurrency(holding.current_price);
+                row.appendChild(priceCell);
+                
+                // PnL Dollar cell
+                const pnlDollarCell = document.createElement('td');
+                pnlDollarCell.className = `text-end ${pnlClass}`;
+                pnlDollarCell.textContent = this.formatSmallCurrency(holding.pnl_amount);
+                row.appendChild(pnlDollarCell);
+                
+                // PnL Percent cell
+                const pnlPercentCell = document.createElement('td');
+                pnlPercentCell.className = `text-end ${pnlClass}`;
+                pnlPercentCell.textContent = `${pnlSign}${holding.pnl_percent.toFixed(2)}%`;
+                row.appendChild(pnlPercentCell);
+                
+                // Target value cell (15% profit target)
+                const targetValueCell = document.createElement('td');
+                targetValueCell.className = 'text-end';
+                const targetValue = (holding.cost_basis || 0) * 1.15;
+                targetValueCell.textContent = this.formatCurrency(targetValue);
+                row.appendChild(targetValueCell);
+                
+                // Target PnL Dollar cell
+                const targetPnlDollarCell = document.createElement('td');
+                targetPnlDollarCell.className = 'text-end text-success';
+                const targetPnlDollar = targetValue - (holding.cost_basis || 0);
+                targetPnlDollarCell.textContent = `+${this.formatCurrency(targetPnlDollar)}`;
+                row.appendChild(targetPnlDollarCell);
+                
+                // Target PnL Percent cell
+                const targetPnlPercentCell = document.createElement('td');
+                targetPnlPercentCell.className = 'text-end text-success';
+                targetPnlPercentCell.textContent = '+15.00%';
+                row.appendChild(targetPnlPercentCell);
+                
+                // Days cell
+                const daysCell = document.createElement('td');
+                daysCell.className = 'text-center text-muted';
+                daysCell.textContent = '30d';
+                row.appendChild(daysCell);
+                
+                // Actions cell
+                const actionsCell = document.createElement('td');
+                actionsCell.className = 'text-center';
+                const btnGroup = document.createElement('div');
+                btnGroup.className = 'btn-group btn-group-sm';
+                btnGroup.setAttribute('role', 'group');
+                
+                ['25%', '50%', 'All'].forEach(percent => {
+                    const btn = document.createElement('button');
+                    btn.className = 'btn btn-outline-primary btn-xs px-2';
+                    btn.textContent = percent;
+                    btnGroup.appendChild(btn);
+                });
+                
+                actionsCell.appendChild(btnGroup);
+                row.appendChild(actionsCell);
                 
                 holdingsTableBody.appendChild(row);
             });
@@ -1762,7 +1795,7 @@ class TradingApp {
             holdingsTableBody.textContent = '';
             const errorRow = document.createElement('tr');
             const errorCell = document.createElement('td');
-            errorCell.setAttribute('colspan', '7');
+            errorCell.setAttribute('colspan', '13');
             errorCell.className = 'text-center text-danger py-4';
             
             const errorIcon = document.createElement('i');
