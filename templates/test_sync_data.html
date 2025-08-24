@@ -89,7 +89,7 @@
             <div class="col-12">
                 <div class="d-flex justify-content-between align-items-center mb-4">
                     <h1><i class="fas fa-sync-alt me-2"></i>OKX Live Sync Test Suite</h1>
-                    <button class="btn btn-primary" id="run-tests-btn">
+                    <button class="btn btn-primary" id="run-tests-btn" onclick="runSyncTests()">
                         <i class="fas fa-play me-2"></i>Run All Tests
                     </button>
                 </div>
@@ -163,9 +163,14 @@
         let testData = null;
 
         function runSyncTests() {
-            const button = document.getElementById('run-tests-btn');
-            if (!button) return;
+            console.log('runSyncTests() called');
+            const button = document.getElementById('run-tests-btn') || document.querySelector('.btn-primary');
+            if (!button) {
+                console.error('Button not found');
+                return;
+            }
             
+            console.log('Button found, starting tests...');
             button.disabled = true;
             button.innerHTML = '<i class="fas fa-spinner refresh-icon me-2"></i>Running Tests...';
 
@@ -456,14 +461,37 @@
             console.log('Page loaded, initializing tooltips...');
             initializeTooltips();
             
-            // Add click handler to run tests button
+            // Add click handler to run tests button with debugging
             const runTestsBtn = document.getElementById('run-tests-btn');
+            console.log('Looking for run tests button:', runTestsBtn);
+            
             if (runTestsBtn) {
-                runTestsBtn.addEventListener('click', runSyncTests);
-                console.log('Run tests button click handler attached');
+                runTestsBtn.addEventListener('click', function(e) {
+                    console.log('Run tests button clicked!');
+                    e.preventDefault();
+                    runSyncTests();
+                });
+                console.log('Run tests button click handler attached successfully');
+            } else {
+                console.error('Run tests button not found!');
             }
             
+            // Also try alternative approach
             setTimeout(() => {
+                const btn = document.querySelector('.btn-primary');
+                console.log('Alternative button search:', btn);
+                if (btn && !btn.hasAttribute('data-handler-added')) {
+                    btn.setAttribute('data-handler-added', 'true');
+                    btn.addEventListener('click', function(e) {
+                        console.log('Alternative button handler triggered');
+                        e.preventDefault();
+                        runSyncTests();
+                    });
+                }
+            }, 100);
+            
+            setTimeout(() => {
+                console.log('Auto-running tests...');
                 runSyncTests();
             }, 1000);
         });
