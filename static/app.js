@@ -1097,7 +1097,7 @@ class TradingApp {
                 // Add color coding for performance indicators
                 if (id.includes('24h') || id.includes('7d') || id.includes('pnl')) {
                     const numValue = parseFloat(value);
-                    element.className = numValue >= 0 ? 'pnl-up' : 'pnl-down';
+                    element.className = numValue >= 0 ? 'text-success' : 'text-danger';
                 }
             }
         });
@@ -1147,7 +1147,7 @@ class TradingApp {
                 // Add color coding for performance indicators
                 if (id.includes('24h') || id.includes('7d') || id.includes('pnl')) {
                     const numValue = parseFloat(value);
-                    element.className = numValue >= 0 ? 'pnl-up' : 'pnl-down';
+                    element.className = numValue >= 0 ? 'text-success' : 'text-danger';
                 }
             }
         });
@@ -1317,7 +1317,7 @@ class TradingApp {
                 // Add color coding for performance indicators
                 if (id === 'equity-total-return') {
                     const numValue = parseFloat(value);
-                    element.className = numValue >= 0 ? 'pnl-up' : 'pnl-down';
+                    element.className = numValue >= 0 ? 'text-success' : 'text-danger';
                 }
                 if (id === 'equity-max-drawdown') {
                     element.className = 'text-warn';
@@ -1629,7 +1629,7 @@ class TradingApp {
                 const row = document.createElement('tr');
                 
                 // PnL color class
-                const pnlClass = holding.pnl_percent >= 0 ? 'pnl-up' : 'pnl-down';
+                const pnlClass = holding.pnl_percent >= 0 ? 'text-success' : 'text-danger';
                 const pnlSign = holding.pnl_percent >= 0 ? '+' : '';
                 
                 // Get coin display info
@@ -1975,7 +1975,7 @@ class TradingApp {
                 // Add color coding for net volume
                 if (id === 'trades-net-volume') {
                     const numValue = summary.net_volume || 0;
-                    element.className = numValue >= 0 ? 'pnl-up' : 'pnl-down';
+                    element.className = numValue >= 0 ? 'text-success' : 'text-danger';
                 }
             }
         });
@@ -2031,11 +2031,11 @@ class TradingApp {
                     // Add color coding for performance indicators
                     if (id.includes('total-return')) {
                         const numValue = metrics.total_return_percent;
-                        element.className = numValue >= 0 ? 'pnl-up' : 'pnl-down';
+                        element.className = numValue >= 0 ? 'text-success' : 'text-danger';
                     }
                     if (id.includes('daily-change')) {
                         const numValue = metrics.daily_change_percent;
-                        element.className = numValue >= 0 ? 'pnl-up' : 'pnl-down';
+                        element.className = numValue >= 0 ? 'text-success' : 'text-danger';
                     }
                     if (id.includes('win-rate')) {
                         const numValue = metrics.win_rate;

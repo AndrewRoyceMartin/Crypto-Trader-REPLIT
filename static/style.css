@@ -20,6 +20,10 @@
   --v02-cell-py: 0.9rem;
   --v02-cell-px: 1.25rem;
   --v02-radius: 10px;
+  
+  /* P&L Financial Color Variables */
+  --pnl-positive: #28a745; /* Green for profits */
+  --pnl-negative: #dc3545; /* Red for losses */
 }
 
 html { text-rendering: optimizeLegibility; font-variant-ligatures: none; }
@@ -256,3 +260,23 @@ h4, h5, h6, .h4, .h5, .h6 { font-weight: var(--fw-medium); }
 .toast-message.error { border-left-color: #dc3545; }
 .toast-message.warning { border-left-color: #fd7e14; }
 .toast-message.info { border-left-color: #0dcaf0; }
+
+/* P&L Financial Color Classes */
+.pnl-up, .pnl-positive {
+    color: var(--pnl-positive) !important;
+    font-weight: 500;
+}
+
+.pnl-down, .pnl-negative {
+    color: var(--pnl-negative) !important;
+    font-weight: 500;
+}
+
+/* Override Bootstrap text colors for financial data consistency */
+.text-success {
+    color: var(--pnl-positive) !important;
+}
+
+.text-danger {
+    color: var(--pnl-negative) !important;
+}
