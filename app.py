@@ -599,22 +599,51 @@ app = Flask(__name__)
 
 # Register the real OKX endpoint directly without circular import
 
+def _no_cache_json(payload: dict, code: int = 200):
+    resp = make_response(jsonify(payload), code)
+    resp.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0, private"
+    resp.headers["Pragma"] = "no-cache"
+    resp.headers["Expires"] = "0"
+    return resp
+
 @app.route("/api/status")
 def api_status() -> ResponseReturnValue:
     """Simple status endpoint to check warmup and system health."""
     up = get_uptime_seconds()
+
+    # Bot runtime (seconds/human) derived from bot_state.started_at
     with _state_lock:
-        return jsonify({
-            "status": "running",
-            "warmup": warmup,
-            "bot": bot_state,
-            "trading_state": trading_state,
-            "active": bool(bot_state.get("running", False)) if bot_state.get("running") is not None else False,
-            "timestamp": iso_utc(),
-            "server_started_at": iso_utc(server_start_time),
-            "uptime_seconds": up,
-            "uptime_human": humanize_seconds(up)
-        })
+        bs = bot_state.copy()
+    bot_running = bool(bs.get("running", False))
+    bot_runtime_sec = 0
+    if bot_running and bs.get("started_at"):
+        try:
+            ts = str(bs["started_at"]).replace('Z', '+00:00')
+            dt = datetime.fromisoformat(ts)
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=timezone.utc)
+            bot_runtime_sec = max(0, int((datetime.now(dt.tzinfo) - dt).total_seconds()))
+        except Exception:
+            bot_runtime_sec = 0
+
+    payload = {
+        "status": "running",
+        "warmup": warmup,
+        "bot": bs,
+        "trading_state": trading_state,
+        "active": bot_running,
+        "timestamp": iso_utc(),
+        "server_started_at": iso_utc(server_start_time),
+        "uptime_seconds": up,
+        "uptime_human": humanize_seconds(up),
+        # 👇 aliases some UIs expect
+        "app_runtime_seconds": up,
+        "app_runtime_human": humanize_seconds(up),
+        # 👇 bot runtime included explicitly
+        "bot_runtime_seconds": bot_runtime_sec,
+        "bot_runtime_human": humanize_seconds(bot_runtime_sec),
+    }
+    return _no_cache_json(payload)
 @app.route("/api/crypto-portfolio")
 def crypto_portfolio_okx() -> ResponseReturnValue:
     """Get real OKX portfolio data using PortfolioService, forcing a re-pull on currency change."""
@@ -720,7 +749,7 @@ def ready() -> ResponseReturnValue:
     up = get_uptime_seconds()
     payload = {"ready": warmup_copy["done"], **warmup_copy,
                "uptime_seconds": up, "uptime_human": humanize_seconds(up)}
-    return (jsonify(payload), 200) if warmup_copy["done"] else (jsonify(payload), 503)
+    return _no_cache_json(payload, 200) if warmup_copy["done"] else _no_cache_json(payload, 503)
 
 @app.route("/api/price")
 def api_price() -> ResponseReturnValue:
