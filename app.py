@@ -3071,11 +3071,17 @@ def api_current_holdings() -> ResponseReturnValue:
         pf = service.get_portfolio_data()
         portfolio_holdings = pf.get('holdings', [])
         
+        # Debug: Log portfolio data to verify cash_balance
+        logger.info(f"Portfolio data keys: {list(pf.keys())}")
+        logger.info(f"Cash balance from portfolio service: {pf.get('cash_balance', 'NOT_FOUND')}")
+        
         if not portfolio_holdings:
             return jsonify({
                 "success": True,
                 "holdings": [],
                 "total_value": 0.0,
+                "cash_balance": 0.0,
+                "total_estimated_value": 0.0,
                 "total_holdings": 0,
                 "data_source": "okx_ccxt_fallback",
                 "last_update": iso_utc()
@@ -3168,6 +3174,8 @@ def api_current_holdings() -> ResponseReturnValue:
             "all_positions": positions,
             "position_summary": position_summary,
             "total_value": total_value,
+            "cash_balance": pf.get("cash_balance", 0.0),
+            "total_estimated_value": pf.get("total_estimated_value", 0.0),
             "total_holdings": len(holdings),
             "data_source": "okx_portfolio_service_with_native_prices",
             "last_update": pf.get('last_update', iso_utc()),

@@ -4615,11 +4615,11 @@ function updatePortfolioSummaryUI(portfolioData) {
     window.lastPortfolioData = portfolioData;
 
     // Use overview data first, fallback to calculations
-    const totalValue = overview.total_value || 0;
-    const totalUnrealizedPnl = overview.total_pnl || 0;
+    const totalValue = overview.total_value || portfolioData.total_value || 0;
+    const totalUnrealizedPnl = overview.total_pnl || portfolioData.total_pnl || 0;
     const cashBalance = overview.cash_balance || portfolioData.cash_balance || 0;
-    const totalPortfolioValue = totalValue; // Overview already includes total portfolio value
-    const totalPnlPercent = overview.total_pnl_percent || 0;
+    const totalPortfolioValue = overview.total_estimated_value || portfolioData.total_estimated_value || totalValue; // Total including cash
+    const totalPnlPercent = overview.total_pnl_percent || portfolioData.total_pnl_percent || 0;
 
     updateElementSafely("summary-total-value", formatCurrency(totalPortfolioValue));
 
@@ -4790,17 +4790,18 @@ function updateQuickOverview(portfolioData) {
     });
 
     // Update modern KPI stat strip with portfolio data
-    const cryptoValue = totalValue * 0.9; // Estimate crypto exposure (~90% of portfolio)
-    const cashValue = totalValue * 0.1;   // Estimate cash (~10% including AUD balance)
+    const realCashBalance = overview.cash_balance || portfolioData.cash_balance || 0;
+    const cryptoValue = totalValue - realCashBalance; // Actual crypto value
+    const exposurePercent = totalValue > 0 ? Math.round((cryptoValue / totalValue) * 100) : 0;
     
     updateTopKpis({
         equity: window.tradingApp.formatCurrency(totalValue),
         equityDelta: totalPnlPercent,
         uPnL: window.tradingApp.formatCurrency(totalPnl),
         uPnLDelta: totalPnlPercent,
-        exposure: `${Math.round((cryptoValue / totalValue) * 100)}%`,
+        exposure: `${exposurePercent}%`,
         exposureDelta: totalPnlPercent * 0.8, // Exposure change correlates with portfolio performance
-        cash: window.tradingApp.formatCurrency(cashValue),
+        cash: window.tradingApp.formatCurrency(realCashBalance),
         cashDelta: 0.0 // Cash typically stable
     });
 
