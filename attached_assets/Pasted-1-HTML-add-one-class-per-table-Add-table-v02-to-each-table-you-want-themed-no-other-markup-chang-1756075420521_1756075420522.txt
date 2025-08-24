@@ -1,0 +1,133 @@
+1) HTML: add one class per table
+
+Add table-v02 to each table you want themed (no other markup changes):
+
+<table class="table table-sm table-hover mb-0 table-v02" id="holdings-table"> … </table>
+<table class="table table-sm table-hover mb-0 table-v02" id="available-table"> … </table>
+<table class="table table-sm table-hover mb-0 table-v02" id="trades-table"> … </table>
+
+
+If your tables aren’t already wrapped, keep them inside Bootstrap’s .table-responsive as you have now.
+
+2) (Optional) Font: match the original “Poppins” look
+
+Add this to your base template <head>:
+
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+
+3) CSS: paste into static/style.css (append to the end)
+/* ===== Table V02 theme (non-destructive; opt-in via .table-v02) ===== */
+.table-v02 {
+  --v02-bg: #ffffff;
+  --v02-head-bg: #6c7ae0;
+  --v02-head-color: #ffffff;
+  --v02-border: rgba(0,0,0,.06);
+  --v02-shadow: 0 10px 30px rgba(0,0,0,.08);
+  --v02-row-hover: rgba(108,122,224,.08);
+  --v02-cell-padding-y: 0.9rem;
+  --v02-cell-padding-x: 1.25rem;
+  background: var(--v02-bg);
+  border-collapse: separate;
+  border-spacing: 0;
+  border-radius: 10px;
+  overflow: hidden;            /* rounds header corners in WebKit */
+  box-shadow: var(--v02-shadow);
+}
+
+/* Header */
+.table-v02 thead th {
+  background: var(--v02-head-bg);
+  color: var(--v02-head-color);
+  border: 0 !important;
+  font-weight: 600;
+  letter-spacing: .02em;
+  white-space: nowrap;
+  padding: calc(var(--v02-cell-padding-y) + .1rem) var(--v02-cell-padding-x);
+}
+
+/* Body cells */
+.table-v02 tbody td, 
+.table-v02 tbody th {
+  background: var(--v02-bg);
+  border-top: 1px solid var(--v02-border) !important;
+  padding: var(--v02-cell-padding-y) var(--v02-cell-padding-x);
+  vertical-align: middle;
+}
+
+/* Row hover */
+.table-v02.table-hover tbody tr:hover > * {
+  background-color: var(--v02-row-hover) !important;
+}
+
+/* Rounded corners */
+.table-v02 thead tr:first-child th:first-child { border-top-left-radius: 10px; }
+.table-v02 thead tr:first-child th:last-child  { border-top-right-radius: 10px; }
+.table-v02 tbody tr:last-child td:first-child  { border-bottom-left-radius: 10px; }
+.table-v02 tbody tr:last-child td:last-child   { border-bottom-right-radius: 10px; }
+
+/* Numeric alignment helpers (you already use .text-end/.numeric) */
+.table-v02 td.numeric, 
+.table-v02 th.numeric { text-align: right; }
+
+/* Sort icon alignment with your .table-sortable */
+.table-v02 th.table-sortable {
+  cursor: pointer;
+  position: relative;
+  user-select: none;
+}
+.table-v02 th.table-sortable .icon {
+  margin-left: .35rem;
+  opacity: .85;
+}
+
+/* Compact footer (if used) */
+.table-v02 tfoot td {
+  border-top: 1px solid var(--v02-border) !important;
+  background: #fafafe;
+}
+
+/* ===== Mobile “card” stacking (≤ 768px) ===== */
+@media (max-width: 768px) {
+  .table-v02 thead {
+    display: none;
+  }
+  .table-v02, 
+  .table-v02 tbody, 
+  .table-v02 tr, 
+  .table-v02 td, 
+  .table-v02 th {
+    display: block;
+    width: 100%;
+  }
+  .table-v02 tbody tr {
+    background: #fff;
+    border: 1px solid var(--v02-border);
+    border-radius: 10px;
+    box-shadow: var(--v02-shadow);
+    margin-bottom: 12px;
+    overflow: hidden;
+  }
+  .table-v02 tbody td {
+    border: 0 !important;
+    border-bottom: 1px dashed var(--v02-border) !important;
+    display: flex;
+    align-items: baseline;
+    gap: .75rem;
+    padding: .85rem 1rem;
+  }
+  .table-v02 tbody td:last-child {
+    border-bottom: 0 !important;
+  }
+  .table-v02 tbody td::before {
+    content: attr(data-label);
+    flex: 0 0 40%;
+    min-width: 140px;
+    font-weight: 600;
+    color: #6c7ae0;
+  }
+  /* Right-aligned numeric values stay right even in stacked rows */
+  .table-v02 td.numeric { justify-content: space-between; }
+}
+
+
+This keeps your Bootstrap behaviour (striping/hover/responsive) but visually matches the Colorlib V02 card-like aesthetic, including stacked “label: value” rows on mobile.
