@@ -6345,25 +6345,34 @@ function updatePositionsRefreshTime() {
 }
 
 function updatePositionsTimeDisplay() {
-    const refreshDisplay = document.getElementById('positions-last-refresh');
-    const nextRefreshDisplay = document.getElementById('positions-next-refresh');
-    if (!refreshDisplay || !positionsLastRefreshTime) return;
+    if (!positionsLastRefreshTime) return;
     
     const now = new Date();
     const diffMs = now - positionsLastRefreshTime;
     const diffMinutes = Math.floor(diffMs / 60000);
     const diffSeconds = Math.floor((diffMs % 60000) / 1000);
     
-    // Update "last refresh" display
+    // Prepare text and class for last refresh display
+    let refreshText, refreshClass;
     if (diffMinutes > 0) {
-        refreshDisplay.textContent = `${diffMinutes}m ${diffSeconds}s ago`;
-        refreshDisplay.className = diffMinutes > 2 ? 'text-warning' : 'text-muted';
+        refreshText = `${diffMinutes}m ${diffSeconds}s ago`;
+        refreshClass = diffMinutes > 2 ? 'text-warning' : 'text-muted';
     } else {
-        refreshDisplay.textContent = `${diffSeconds}s ago`;
-        refreshDisplay.className = 'text-success';
+        refreshText = `${diffSeconds}s ago`;
+        refreshClass = 'text-success';
     }
     
+    // Update BOTH possible last refresh elements (compatibility fix for ID mismatch)
+    ['positions-last-refresh', 'positions-last-update'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.textContent = refreshText;
+            el.className = refreshClass;
+        }
+    });
+    
     // Update "next refresh" countdown
+    const nextRefreshDisplay = document.getElementById('positions-next-refresh');
     if (nextRefreshDisplay) {
         const nextRefreshMs = REFRESH_INTERVAL_MS - diffMs;
         if (nextRefreshMs > 0) {
