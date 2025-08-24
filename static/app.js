@@ -365,9 +365,9 @@ class TradingApp {
             clearInterval(this.chartUpdateInterval);
             this.chartUpdateInterval = null;
         }
-        if (this.positionsCountdownInterval) {
-            clearInterval(this.positionsCountdownInterval);
-            this.positionsCountdownInterval = null;
+        if (window.__posCnt) {
+            clearInterval(window.__posCnt);
+            window.__posCnt = null;
         }
     }
     stopCountdown() {
@@ -375,9 +375,9 @@ class TradingApp {
             clearInterval(this.countdownInterval);
             this.countdownInterval = null;
         }
-        if (this.positionsCountdownInterval) {
-            clearInterval(this.positionsCountdownInterval);
-            this.positionsCountdownInterval = null;
+        if (window.__posCnt) {
+            clearInterval(window.__posCnt);
+            window.__posCnt = null;
         }
     }
     cleanup() {
@@ -2102,33 +2102,15 @@ class TradingApp {
         }, 1000);
     }
     
-    startPositionsCountdown() {
-        if (this.positionsCountdownInterval) {
-            clearInterval(this.positionsCountdownInterval);
-        }
-        
-        // Set countdown to 95 seconds (90s interval + 5s delay)
-        this.positionsCountdown = 95;
-        
-        this.positionsCountdownInterval = setInterval(() => {
-            const nextRefreshEl = document.getElementById('positions-next-refresh');
-            if (!nextRefreshEl) {
-                clearInterval(this.positionsCountdownInterval);
-                this.positionsCountdownInterval = null;
-                return;
-            }
-            
-            if (this.positionsCountdown > 0) {
-                const minutes = Math.floor(this.positionsCountdown / 60);
-                const seconds = this.positionsCountdown % 60;
-                const timeStr = minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`;
-                nextRefreshEl.textContent = timeStr;
-                this.positionsCountdown--;
-            } else {
-                nextRefreshEl.textContent = 'Refreshing...';
-                // Reset for next cycle
-                this.positionsCountdown = 95;
-            }
+    startPositionsCountdown(seconds = 90) {
+        const el = document.getElementById('positions-next-refresh');
+        if (!el) return;
+        clearInterval(window.__posCnt);
+        const end = Date.now() + seconds * 1000;
+        window.__posCnt = setInterval(() => {
+            const left = Math.max(0, Math.ceil((end - Date.now()) / 1000));
+            el.textContent = `${left}s`;
+            if (left === 0) clearInterval(window.__posCnt);
         }, 1000);
     }
 
