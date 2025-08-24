@@ -4382,45 +4382,84 @@ function updateHoldingsSummary(holdings) {
 
 // Dashboard KPIs + quick charts + preview
 function updateQuickOverview(portfolioData) {
+    const overview = portfolioData.overview || {};
     const summary = portfolioData.summary || {};
     const holdings = portfolioData.holdings || [];
 
-    let totalValue = 0, totalUnrealizedPnl = 0, totalCostBasis = 0;
-    holdings.forEach(h => {
-        if (h.has_position) {
-            totalValue += h.current_value || 0;
-            totalUnrealizedPnl += h.unrealized_pnl || 0;
-            totalCostBasis += h.cost_basis || 0;
-        }
+    // Use overview data first (most accurate), fallback to calculated values
+    const totalValue = overview.total_value || summary.total_current_value || 0;
+    const totalPnl = overview.total_pnl || summary.total_pnl || 0;
+    const totalPnlPercent = overview.total_pnl_percent || summary.total_pnl_percent || 0;
+    const dailyPnl = overview.daily_pnl || summary.daily_pnl || 0;
+    const dailyPnlPercent = overview.daily_pnl_percent || summary.daily_pnl_percent || 0;
+    const activePositions = overview.total_assets || holdings.filter(h => h.has_position).length;
+    const profitablePositions = overview.profitable_positions || 0;
+    const losingPositions = overview.losing_positions || 0;
+
+    // Find best and worst performers from holdings
+    const positionsWithPnl = holdings.filter(h => h.has_position && h.pnl_percent != null);
+    const bestPerformer = positionsWithPnl.length > 0 
+        ? positionsWithPnl.reduce((best, h) => (h.pnl_percent > best.pnl_percent) ? h : best)
+        : null;
+
+    console.log("Updating OKX Portfolio Overview cards with data:", {
+        totalValue, totalPnl, totalPnlPercent, dailyPnl, dailyPnlPercent, 
+        activePositions, bestPerformer: bestPerformer?.symbol
     });
 
-    const cashBalance = portfolioData.cash_balance || 0;
-    const totalEquity = totalValue + cashBalance;
-    const estimatedTotal = portfolioData.total_estimated_value || summary.total_estimated_value || totalEquity;
-    const dailyPnl = summary.daily_pnl || 0;
-    const exposure = totalEquity > 0 ? ((totalValue / totalEquity) * 100) : 0;
-    const winRate = summary.win_rate || 0;
-
-    // Update OKX Portfolio Overview KPI cards
-    updateElementSafely("okx-total-balance", formatCurrency(totalValue));
-    updateElementSafely("okx-estimated-total", formatCurrency(estimatedTotal));
-    updateElementSafely("okx-day-pnl", formatCurrency(dailyPnl));
-    updateElementSafely("okx-day-pnl-percent", `${dailyPnl >= 0 ? '+' : ''}${(summary.daily_pnl_percent || 0).toFixed(2)}%`);
-    updateElementSafely("okx-active-positions", holdings.filter(h => h.has_position).length);
-    updateElementSafely("overview-last-update", new Date().toLocaleTimeString());
+    // Update all OKX Portfolio Overview KPI cards with proper values
+    updateElementSafely("okx-estimated-total", formatCurrency(totalValue));
+    updateElementSafely("okx-estimated-total-graph", formatCurrency(totalValue));
+    updateElementSafely("okx-estimated-total-detailed", formatCurrency(totalValue));
+    updateElementSafely("okx-estimated-total-compact", formatCurrency(totalValue));
     
-    // Legacy KPI elements (if they exist)
-    updateElementSafely("okx-total-balance", formatCurrency(totalEquity));
     updateElementSafely("okx-day-pnl", formatCurrency(dailyPnl));
-    updateElementSafely("okx-day-pnl-percent", formatCurrency(totalUnrealizedPnl));
-    updateElementSafely("okx-estimated-total", formatCurrency(cashBalance));
-    updateElementSafely("okx-active-positions", `${exposure.toFixed(1)}%`);
-    updateElementSafely("okx-best-performer", `${winRate.toFixed(1)}%`);
+    updateElementSafely("okx-day-pnl-graph", formatCurrency(dailyPnl));
+    updateElementSafely("okx-day-pnl-detailed", formatCurrency(dailyPnl));
+    updateElementSafely("okx-day-pnl-compact", formatCurrency(dailyPnl));
+    
+    updateElementSafely("okx-day-pnl-percent", `${dailyPnl >= 0 ? '+' : ''}${dailyPnlPercent.toFixed(2)}%`);
+    
+    updateElementSafely("okx-active-positions", activePositions);
+    updateElementSafely("okx-active-positions-graph", activePositions);
+    updateElementSafely("okx-active-positions-detailed", activePositions);
+    updateElementSafely("positions-crypto", holdings.filter(h => h.symbol !== 'AUD' && h.symbol !== 'USD').length);
+    updateElementSafely("positions-fiat", holdings.filter(h => h.symbol === 'AUD' || h.symbol === 'USD').length);
+    
+    updateElementSafely("okx-best-performer", bestPerformer ? bestPerformer.symbol : "—");
+    updateElementSafely("okx-best-performer-graph", bestPerformer ? bestPerformer.symbol : "—");
+    updateElementSafely("okx-best-performer-detailed", bestPerformer ? bestPerformer.symbol : "—");
+    updateElementSafely("okx-best-performer-compact", bestPerformer ? bestPerformer.symbol : "—");
+    updateElementSafely("okx-best-gain", bestPerformer ? `+${bestPerformer.pnl_percent.toFixed(2)}%` : "—");
+    
+    updateElementSafely("okx-positions-detail", `${profitablePositions}↗ ${losingPositions}↘`);
+    updateElementSafely("overview-last-update", new Date().toLocaleTimeString());
 
+    // Update detailed breakdowns for portfolio card
+    updateElementSafely("portfolio-crypto", formatCurrency(totalValue - (overview.cash_balance || 0)));
+    updateElementSafely("portfolio-fiat", formatCurrency(overview.cash_balance || 0));
+    updateElementSafely("portfolio-pnl", formatCurrency(totalPnl));
+    
+    // Update detailed breakdowns for P&L card  
+    updateElementSafely("pnl-realized", formatCurrency(0)); // No realized P&L data available
+    updateElementSafely("pnl-unrealized", formatCurrency(totalPnl));
+    updateElementSafely("pnl-best", bestPerformer ? bestPerformer.symbol : "—");
+
+    // Update P&L color classes
     const dailyPnlEl = document.getElementById("okx-day-pnl");
-    const unrlEl = document.getElementById("okx-day-pnl-percent");
-    if (dailyPnlEl) dailyPnlEl.className = dailyPnl >= 0 ? "h5 mb-0 text-success" : "h5 mb-0 text-danger";
-    if (unrlEl)     unrlEl.className     = totalUnrealizedPnl >= 0 ? "h5 mb-0 text-success" : "h5 mb-0 text-danger";
+    const pnlPercentEl = document.getElementById("okx-day-pnl-percent");
+    if (dailyPnlEl) {
+        dailyPnlEl.className = dailyPnl >= 0 ? "value text-success" : "value text-danger";
+    }
+    if (pnlPercentEl) {
+        pnlPercentEl.className = dailyPnl >= 0 ? "change-indicator text-success" : "change-indicator text-danger";
+    }
+
+    // Update best performer gain color
+    const bestGainEl = document.getElementById("okx-best-gain");
+    if (bestGainEl && bestPerformer) {
+        bestGainEl.className = bestPerformer.pnl_percent >= 0 ? "change-indicator text-success" : "change-indicator text-danger";
+    }
 
     if (holdings.length) updateTopMovers(holdings);
 
