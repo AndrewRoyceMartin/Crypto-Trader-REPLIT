@@ -5297,13 +5297,16 @@ if __name__ == "__main__":
                 started_at=iso_utc()
             )
 
-            # Run trading loop in a child thread; ensure we flip back to stopped on exit
+            # Run trading loop in a child thread
             def _run():
                 try:
                     trader_instance.start_trading("1h")
+                    # MultiCurrencyTrader.start_trading() launches daemon threads and returns
+                    # The state should remain running=True while those threads operate
+                    logger.info("Auto-start trading threads launched successfully")
                 except Exception as e:
                     logger.error(f"Auto-start trading loop errored: {e}")
-                finally:
+                    # Only reset state on actual errors
                     _set_bot_state(running=False)
 
             threading.Thread(target=_run, daemon=True).start()
