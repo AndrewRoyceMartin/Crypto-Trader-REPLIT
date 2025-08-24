@@ -5824,9 +5824,7 @@ async function refreshHoldingsData() {
             updateOpenPositionsTable(positions, data.total_value);
             
             // Update refresh time tracking
-            if (window.updatePositionsRefreshTime) {
-                window.updatePositionsRefreshTime();
-            }
+            updatePositionsRefreshTime();
             
             // Also update available positions table 
             fetchAndUpdateAvailablePositions();
@@ -5858,6 +5856,63 @@ async function refreshHoldingsData() {
             
             row.appendChild(cell);
             tableBody.appendChild(row);
+        }
+    }
+}
+
+// Positions refresh tracking variables
+let positionsLastRefreshTime = null;
+let positionsRefreshInterval = null;
+const REFRESH_INTERVAL_MS = 6000; // Use 6 second refresh interval
+
+function updatePositionsRefreshTime() {
+    positionsLastRefreshTime = new Date();
+    updatePositionsTimeDisplay();
+    
+    // Clear existing interval if any
+    if (positionsRefreshInterval) {
+        clearInterval(positionsRefreshInterval);
+    }
+    
+    // Start new interval to update time display every 5 seconds for smooth countdown
+    positionsRefreshInterval = setInterval(updatePositionsTimeDisplay, 5000);
+}
+
+function updatePositionsTimeDisplay() {
+    const refreshDisplay = document.getElementById('positions-last-refresh');
+    const nextRefreshDisplay = document.getElementById('positions-next-refresh');
+    if (!refreshDisplay || !positionsLastRefreshTime) return;
+    
+    const now = new Date();
+    const diffMs = now - positionsLastRefreshTime;
+    const diffMinutes = Math.floor(diffMs / 60000);
+    const diffSeconds = Math.floor((diffMs % 60000) / 1000);
+    
+    // Update "last refresh" display
+    if (diffMinutes > 0) {
+        refreshDisplay.textContent = `${diffMinutes}m ${diffSeconds}s ago`;
+        refreshDisplay.className = diffMinutes > 2 ? 'text-warning' : 'text-muted';
+    } else {
+        refreshDisplay.textContent = `${diffSeconds}s ago`;
+        refreshDisplay.className = 'text-success';
+    }
+    
+    // Update "next refresh" countdown
+    if (nextRefreshDisplay) {
+        const nextRefreshMs = REFRESH_INTERVAL_MS - diffMs;
+        if (nextRefreshMs > 0) {
+            const nextMinutes = Math.floor(nextRefreshMs / 60000);
+            const nextSeconds = Math.floor((nextRefreshMs % 60000) / 1000);
+            
+            if (nextMinutes > 0) {
+                nextRefreshDisplay.textContent = `${nextMinutes}m ${nextSeconds}s`;
+            } else {
+                nextRefreshDisplay.textContent = `${nextSeconds}s`;
+            }
+            nextRefreshDisplay.className = nextRefreshMs < 15000 ? 'text-warning' : 'text-info';
+        } else {
+            nextRefreshDisplay.textContent = 'now';
+            nextRefreshDisplay.className = 'text-success';
         }
     }
 }
