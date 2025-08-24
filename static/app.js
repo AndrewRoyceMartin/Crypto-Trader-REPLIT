@@ -1371,17 +1371,9 @@ class TradingApp {
             
             // Call the table rendering function from HTML template
             if (window.renderHoldingsTable && typeof window.renderHoldingsTable === 'function') {
+                console.log("Holdings data received:", data.holdings);
                 window.renderHoldingsTable(data.holdings);
             }
-            
-            // Also call refreshHoldingsData to ensure data flows to the right table
-            if (typeof window.refreshHoldingsData === 'function') {
-                // Trigger data update for existing table functions
-                console.log("Holdings data received:", data.holdings);
-            }
-            
-            // Update holdings table
-            this.updateHoldingsTable(data.holdings, data.total_value);
             
         } catch (error) {
             console.debug('Current holdings update failed:', error);
@@ -1389,7 +1381,7 @@ class TradingApp {
     }
     
     updateHoldingsTable(holdings, totalValue) {
-        const holdingsTableBody = document.getElementById('holdings-table-body');
+        const holdingsTableBody = document.getElementById('holdings-tbody');
         if (!holdingsTableBody) return;
         
         try {
