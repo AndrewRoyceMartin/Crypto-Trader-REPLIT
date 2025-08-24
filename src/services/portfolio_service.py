@@ -83,6 +83,15 @@ class PortfolioService:
             'timestamp': datetime.now().timestamp()
         }
     
+    def invalidate_cache(self) -> None:
+        """Clear all cached data to force fresh fetches."""
+        self._cache.clear()
+        self.logger.info("Portfolio service cache invalidated")
+        
+    def clear_cache(self) -> None:
+        """Alias for invalidate_cache for compatibility."""
+        self.invalidate_cache()
+    
     def _throttle_request(self) -> None:
         """Throttle API requests to comply with OKX rate limits."""
         import time
@@ -164,18 +173,23 @@ class PortfolioService:
             self.logger.warning(f"Error getting OKX conversion rate: {e}")
             return 1.0
 
-    def get_portfolio_data(self, currency: str = 'USD') -> Dict[str, Any]:
+    def get_portfolio_data(self, currency: str = 'USD', force_refresh: bool = False) -> Dict[str, Any]:
         """
         Get complete portfolio data from OKX with the specified currency.
         Instead of doing local currency conversion, we refresh data from OKX directly.
         
         Args:
             currency: Target currency for portfolio data (USD, EUR, GBP, AUD, etc.)
+            force_refresh: If True, clear caches and force fresh data from OKX
         
         Returns a dict with keys: holdings, total_current_value, total_pnl, total_pnl_percent,
         cash_balance, last_update
         """
         try:
+            # Clear caches if force refresh is requested
+            if force_refresh:
+                self.invalidate_cache()
+                
             holdings: List[Dict[str, Any]] = []
             total_value = 0.0
             total_initial_value = 0.0

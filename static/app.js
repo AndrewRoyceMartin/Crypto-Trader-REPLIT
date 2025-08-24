@@ -3115,7 +3115,8 @@ class TradingApp {
 
     async updatePerformanceCharts() {
         try {
-            const response = await fetch('/api/crypto-portfolio', { cache: 'no-cache' });
+            const ts = Date.now();
+            const response = await fetch(`/api/crypto-portfolio?currency=${this.selectedCurrency}&ts=${ts}`, { cache: 'no-cache' });
             if (!response.ok) return;
 
             const data = await response.json();
@@ -3764,7 +3765,9 @@ function updateSortIndicatorsByIndex(tableType, columnIndex, ascending) {
 }
 async function updatePerformanceData() {
     try {
-        const response = await fetch('/api/crypto-portfolio', { cache: 'no-cache' });
+        const ts = Date.now();
+        const currency = window.tradingApp?.selectedCurrency || 'USD';
+        const response = await fetch(`/api/crypto-portfolio?currency=${currency}&ts=${ts}`, { cache: 'no-cache' });
         const data = await response.json();
         const cryptos = data.holdings || data.cryptocurrencies || [];
         if (cryptos.length > 0) window.tradingApp.updatePerformancePageTable(cryptos);
@@ -3774,7 +3777,9 @@ async function updatePerformanceData() {
 }
 async function updateHoldingsData() {
     try {
-        const response = await fetch('/api/crypto-portfolio', { cache: 'no-cache' });
+        const ts = Date.now();
+        const currency = window.tradingApp?.selectedCurrency || 'USD';
+        const response = await fetch(`/api/crypto-portfolio?currency=${currency}&ts=${ts}`, { cache: 'no-cache' });
         const data = await response.json();
         const cryptos = data.holdings || data.cryptocurrencies || [];
         if (cryptos.length > 0) window.tradingApp.updateHoldingsTable(cryptos);
@@ -3784,7 +3789,9 @@ async function updateHoldingsData() {
 }
 async function updatePositionsData() {
     try {
-        const response = await fetch('/api/crypto-portfolio', { cache: 'no-cache' });
+        const ts = Date.now();
+        const currency = window.tradingApp?.selectedCurrency || 'USD';
+        const response = await fetch(`/api/crypto-portfolio?currency=${currency}&ts=${ts}`, { cache: 'no-cache' });
         const data = await response.json();
         const cryptos = data.holdings || data.cryptocurrencies || [];
         if (cryptos.length > 0) {
