@@ -1,0 +1,64 @@
+let’s swap the old unicode glyphs for clean Font Awesome 6 icons without you having to rewrite all the HTML. Drop in the mapper below and it’ll convert every .icon icon-* to the right FA icon at runtime (and I also updated the few JS strings that inject icons).
+
+1) Remove the old unicode icon CSS
+
+Delete the whole block that defines .icon-dashboard::before { content: "◧"; } etc.
+
+2) Keep Font Awesome (already present)
+
+You already load FA 6.4.0 — perfect.
+
+3) Add this tiny “icon upgrader” (before your DOMContentLoaded init)
+<script>
+/** Modern icon mapping -> Font Awesome 6 (solid) **/
+const ICON_MAP = {
+  'icon-dashboard': 'fa-gauge',
+  'icon-chart': 'fa-chart-line',
+  'icon-wallet': 'fa-wallet',
+  'icon-coins': 'fa-coins',
+  'icon-exchange': 'fa-arrow-right-arrow-left',
+  'icon-refresh': 'fa-rotate',
+  'icon-up': 'fa-arrow-trend-up',
+  'icon-down': 'fa-arrow-trend-down',
+  'icon-robot': 'fa-robot',
+  'icon-shield': 'fa-shield-halved',
+  'icon-wifi': 'fa-wifi',
+  'icon-server': 'fa-server',
+  'icon-file': 'fa-file-lines',
+  'icon-dollar': 'fa-dollar-sign',
+  'icon-percent': 'fa-percent',
+  'icon-sort': 'fa-arrow-up-arrow-down',
+  'icon-close': 'fa-xmark',
+  'icon-trophy': 'fa-trophy',
+  'icon-code': 'fa-code',
+  'icon-menu': 'fa-bars',
+  'icon-fire': 'fa-fire',
+  'icon-balance': 'fa-scale-balanced',
+  'icon-pnl': 'fa-chart-line',
+  'icon-positions': 'fa-layer-group',
+  'icon-tier': 'fa-gem',
+  'icon-stop': 'fa-stop',
+  'icon-circle': 'fa-circle',
+  'icon-clock': 'fa-clock',
+  'icon-timer': 'fa-hourglass-half'
+};
+
+/** Replace <span class="icon icon-XYZ ..."> with <i class="fa-solid fa-... ..."> */
+function upgradeIcons(root = document) {
+  root.querySelectorAll('.icon').forEach(el => {
+    const classes = Array.from(el.classList);
+    const key = classes.find(c => c.startsWith('icon-') && c !== 'icon');
+    if (!key || !ICON_MAP[key]) return;
+    const i = document.createElement('i');
+    // preserve any spacing/utility classes (me-1, me-2, etc.)
+    const preserved = classes.filter(c => c !== 'icon' && c !== key).join(' ');
+    i.className = `fa-solid ${ICON_MAP[key]} ${preserved}`.trim();
+    i.setAttribute('aria-hidden', 'true');
+    el.replaceWith(i);
+  });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  upgradeIcons(); // convert all existing icons
+});
+</script>

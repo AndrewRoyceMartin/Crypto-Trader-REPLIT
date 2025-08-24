@@ -1,0 +1,968 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crypto Trading Dashboard - Unified View</title>
+    
+    <!-- Performance -->
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+    <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+    <link rel="dns-prefetch" href="https://cdnjs.cloudflare.com">
+    
+    <!-- FontAwesome (optional) -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- System fonts for reliability -->
+    <style>
+        :root {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+        
+        /* Simple black and white icon system using modern Unicode symbols */
+        .icon {
+            display: inline-block;
+            font-style: normal;
+            font-variant: normal;
+            text-rendering: auto;
+            line-height: 1;
+            color: currentColor;
+        }
+        .icon-dashboard::before { content: "◧"; }
+        .icon-chart::before { content: "▤"; }
+        .icon-wallet::before { content: "◈"; }
+        .icon-coins::before { content: "●"; }
+        .icon-exchange::before { content: "⇄"; }
+        .icon-refresh::before { content: "↻"; }
+        .icon-up::before { content: "▲"; }
+        .icon-down::before { content: "▼"; }
+        .icon-robot::before { content: "◉"; }
+        .icon-shield::before { content: "◈"; }
+        .icon-wifi::before { content: "◦"; }
+        .icon-server::before { content: "▣"; }
+        .icon-file::before { content: "◻"; }
+        .icon-dollar::before { content: "$"; }
+        .icon-percent::before { content: "%"; }
+        .icon-sort::before { content: "↕"; }
+        .icon-close::before { content: "✕"; }
+        .icon-trophy::before { content: "♦"; }
+        .icon-code::before { content: "◉"; }
+        .icon-menu::before { content: "☰"; }
+        .icon-fire::before { content: "▲"; }
+        .icon-balance::before { content: "◗"; }
+        .icon-pnl::before { content: "▲"; }
+        .icon-positions::before { content: "◩"; }
+        .icon-tier::before { content: "◈"; }
+        .icon-stop::before { content: "⬛"; }
+        /* Missing ones used in markup */
+        .icon-circle::before { content: "●"; }
+        .icon-clock::before { content: "⏰"; }
+        .icon-timer::before { content: "⏳"; }
+
+        .kpi-card {
+            background: #fff;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 12px;
+            height: 100%;
+        }
+        .kpi-card .label { font-size: 12px; color: #6c757d; }
+        .kpi-card .value { font-size: 20px; font-weight: 600; margin-top: 2px; }
+        .kpi-card .change-indicator { font-size: 12px; margin-top: 4px; }
+
+        .card--hover { border: 1px solid #e9ecef; border-radius: 8px; }
+        .card--hover:hover { box-shadow: 0 6px 18px rgba(0,0,0,0.06); transition: box-shadow .2s ease; }
+        .card-header { background: #fff; border-bottom: 1px solid #e9ecef; display:flex; justify-content: space-between; align-items:center; }
+        .card-header .meta { color:#6c757d; font-size: 12px; }
+
+        .table-sm th, .table-sm td { white-space: nowrap; }
+        .table-sortable { cursor: pointer; user-select: none; }
+        .muted { color: #6c757d; }
+
+        .control-bar { position: sticky; top: 56px; background: #fff; z-index: 1010; }
+        .text-xs { font-size: 12px; }
+    </style>
+    
+    <!-- Minimal CSS (preload for performance) -->
+    <link rel="preload" href="{{ url_for('static', filename='style.css') }}?v={{ cache_version|default(0) }}" as="style">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v={{ cache_version|default(0) }}">
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Color scheme and theme -->
+    <meta name="color-scheme" content="light dark">
+    <meta name="theme-color" content="#111315">
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
+</head>
+<body class="theme-min">
+    <!-- Navigation Bar with Mobile Toggle -->
+    <nav class="navbar navbar-expand-lg navbar-light sticky-top">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#overview">
+                <span class="icon icon-chart me-2"></span>Crypto Trading Dashboard
+            </a>
+
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav"
+                aria-controls="mainNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="icon icon-menu"></span>
+            </button>
+
+            <div id="mainNav" class="collapse navbar-collapse">
+                <div class="navbar-nav me-auto nav-pills-container d-flex">
+                    <a class="nav-link active" href="#overview">
+                        <span class="icon icon-dashboard me-1"></span>Overview
+                    </a>
+                    <a class="nav-link" href="#holdings">Holdings</a>
+                    <a class="nav-link" href="#trades">Trades</a>
+                </div>
+
+                <div class="navbar-nav ms-auto">
+                    <a class="btn btn-outline-secondary btn-sm me-2" href="{{ url_for('test_sync_data') }}" target="_blank" rel="noopener">Sync Test</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Control Bar -->
+    <div class="control-bar border-bottom">
+        <div class="container-fluid d-flex flex-wrap align-items-center gap-2 py-2">
+            <div class="d-flex align-items-center gap-2">
+                <label class="small muted mb-0">Currency</label>
+                <select id="currency-selector" class="form-select form-select-sm">
+                    <option value="USD" selected>USD</option>
+                    <option value="AUD">AUD</option>
+                    <option value="EUR">EUR</option>
+                    <option value="GBP">GBP</option>
+                </select>
+            </div>
+
+            <div class="ms-auto d-flex flex-wrap gap-2">
+                <button class="btn btn-outline-secondary btn-sm" id="btn-ato-export" aria-label="Export ATO tax data" title="Export your trading data for Australian Tax Office reporting">
+                    <span class="icon icon-file me-1" aria-hidden="true"></span>ATO Export
+                </button>
+                <button class="btn btn-outline-warning btn-sm" id="btn-take-profit" aria-label="Execute take profit strategy" title="Automatically sell all positions with 2%+ profit and reinvest proceeds">
+                    <span class="icon icon-dollar me-1" aria-hidden="true"></span>Take Profit
+                </button>
+                <button class="btn btn-success btn-sm" id="btn-buy" aria-label="Show buy order dialog" title="Place a manual buy order for any cryptocurrency">
+                    <span class="icon icon-up me-1" aria-hidden="true"></span>Buy
+                </button>
+                <button class="btn btn-danger btn-sm" id="btn-sell" aria-label="Show sell order dialog" title="Place a manual sell order for any of your holdings">
+                    <span class="icon icon-down me-1" aria-hidden="true"></span>Sell
+                </button>
+                <button class="btn btn-warning btn-sm" id="btn-bot-toggle" aria-label="Toggle trading bot" title="Start or stop the automated trading bot">
+                    <span class="icon icon-robot me-1" aria-hidden="true"></span><span id="bot-status-top">START BOT</span>
+                </button>
+                <span id="trading-status" class="badge bg-secondary ms-2" aria-live="polite">
+                    <span class="icon icon-circle me-1" aria-hidden="true"></span>Inactive
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Dashboard Content -->
+    <main class="container-fluid py-3">
+        
+        <!-- SECTION 1: OVERVIEW DASHBOARD -->
+        <section id="overview" class="mb-5">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h2><span class="icon icon-wallet me-2"></span>OKX Portfolio Overview</h2>
+                <div class="d-flex align-items-center gap-2">
+                    <span id="okx-account-level" class="badge bg-info">Standard</span>
+                    <span class="badge bg-success" id="okx-connection-badge">
+                        <span class="icon icon-wifi me-1"></span>
+                        <span id="overview-connection">Connected</span>
+                    </span>
+                    <small class="text-muted">
+                        Last Update: <span id="overview-last-update">—</span>
+                    </small>
+                </div>
+            </div>
+
+            <!-- KPI Cards Row -->
+            <div class="row text-center mb-4 g-2">
+                <div class="col-6 col-md-2">
+                    <div class="kpi-card">
+                        <div class="label">
+                            <span class="icon icon-balance me-1"></span>Total Balance
+                        </div>
+                        <div id="okx-total-balance" class="value">$0.00</div>
+                        <div id="okx-balance-change" class="change-indicator"></div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-2">
+                    <div class="kpi-card">
+                        <div class="label">
+                            <span class="icon icon-wallet me-1"></span>Estimated Total Value
+                        </div>
+                        <div id="okx-estimated-total" class="value">$0.00</div>
+                        <div class="change-indicator">
+                            <canvas id="mini-portfolio-chart" width="120" height="40" style="width: 100%; height: 40px; margin-top: 8px;"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-2">
+                    <div class="kpi-card">
+                        <div class="label">
+                            <span class="icon icon-pnl me-1"></span>24h P&L
+                        </div>
+                        <div id="okx-day-pnl" class="value">$0.00</div>
+                        <div id="okx-day-pnl-percent" class="change-indicator"></div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-2">
+                    <div class="kpi-card">
+                        <div class="label">
+                            <span class="icon icon-trophy me-1"></span>Best Performer
+                        </div>
+                        <div id="okx-best-performer" class="value">—</div>
+                        <div id="okx-best-gain" class="change-indicator text-success"></div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-2">
+                    <div class="kpi-card">
+                        <div class="label">
+                            <span class="icon icon-positions me-1"></span>Active Positions
+                        </div>
+                        <div id="okx-active-positions" class="value">0</div>
+                        <div id="okx-positions-detail" class="change-indicator"></div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-2">
+                    <div class="kpi-card">
+                        <div class="label">
+                            <span class="icon icon-positions me-1"></span>Position Status
+                        </div>
+                        <div id="position-summary" class="value">—</div>
+                        <div id="position-breakdown" class="change-indicator">
+                            <span id="profitable-count" class="text-success">0 profitable</span> · 
+                            <span id="losing-count" class="text-danger">0 losing</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+        <hr class="section-divider my-5">
+
+        <!-- SECTION 2: OPEN POSITIONS -->
+        <section id="holdings" class="mb-5">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div class="d-flex align-items-center gap-3">
+                    <h2><span class="icon icon-positions me-2"></span>Open Positions</h2>
+                    <small class="text-muted">
+                        <span class="icon icon-clock me-1"></span>
+                        Last updated: <span id="positions-last-refresh">—</span>
+                    </small>
+                    <small class="text-info">
+                        <span class="icon icon-timer me-1"></span>
+                        Next refresh: <span id="positions-next-refresh">—</span>
+                    </small>
+                </div>
+                <button class="btn btn-outline-primary btn-sm" id="btn-refresh-holdings" aria-label="Refresh positions data">
+                    <span class="icon icon-refresh me-1"></span> Refresh
+                </button>
+            </div>
+
+            <!-- Open Positions Table -->
+            <div class="card card--hover">
+                <div class="card-header">
+                    <h6 class="mb-0">Open Positions</h6>
+                    <span class="meta">Live OKX Portfolio Data</span>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover align-middle mb-0" id="open-positions-table">
+                            <thead>
+                                <tr>
+                                    <th class="table-sortable" onclick="sortPositionsTable(0)" aria-label="Sort by symbol">Symbol <span class="icon icon-sort ms-1" aria-hidden="true"></span></th>
+                                    <th class="table-sortable" onclick="sortPositionsTable(1)" aria-label="Sort by current balance">Balance <span class="icon icon-sort ms-1" aria-hidden="true"></span></th>
+                                    <th class="table-sortable" onclick="sortPositionsTable(2)" aria-label="Sort by current value">Value <span class="icon icon-sort ms-1" aria-hidden="true"></span></th>
+                                    <th class="table-sortable" onclick="sortPositionsTable(3)" aria-label="Sort by total cost basis">Cost Basis <span class="icon icon-sort ms-1" aria-hidden="true"></span></th>
+                                    <th class="table-sortable" onclick="sortPositionsTable(4)" aria-label="Sort by current price per unit">Price <span class="icon icon-sort ms-1" aria-hidden="true"></span></th>
+                                    <th class="table-sortable" onclick="sortPositionsTable(5)" aria-label="Sort by total market value">Market Value <span class="icon icon-sort ms-1" aria-hidden="true"></span></th>
+                                    <th class="table-sortable" onclick="sortPositionsTable(6)" aria-label="Sort by current P&L dollars">P&L $ <span class="icon icon-sort ms-1" aria-hidden="true"></span></th>
+                                    <th class="table-sortable" onclick="sortPositionsTable(7)" aria-label="Sort by current P&L percentage">P&L % <span class="icon icon-sort ms-1" aria-hidden="true"></span></th>
+                                    <th class="table-sortable" onclick="sortPositionsTable(8)" aria-label="Sort by target total value">Target Value <span class="icon icon-sort ms-1" aria-hidden="true"></span></th>
+                                    <th class="table-sortable" onclick="sortPositionsTable(9)" aria-label="Sort by target P&L dollars">Target P&L $ <span class="icon icon-sort ms-1" aria-hidden="true"></span></th>
+                                    <th class="table-sortable" onclick="sortPositionsTable(10)" aria-label="Sort by target P&L percentage">Target P&L % <span class="icon icon-sort ms-1" aria-hidden="true"></span></th>
+                                    <th class="table-sortable" onclick="sortPositionsTable(11)" aria-label="Sort by days held">Days <span class="icon icon-sort ms-1" aria-hidden="true"></span></th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="open-positions-table-body">
+                                <tr><td colspan="13" class="text-center">Loading open positions...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Available Positions Table -->
+            <div class="card card--hover mt-4">
+                <div class="card-header">
+                    <h6 class="mb-0">Available Positions</h6>
+                    <span class="meta">Cryptocurrencies Ready for Buy-Back</span>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover align-middle mb-0" id="available-positions-table">
+                            <thead>
+                                <tr>
+                                    <th>Symbol</th>
+                                    <th>Current Balance</th>
+                                    <th>Current Price</th>
+                                    <th>Target Buy Price</th>
+                                    <th>Discount %</th>
+                                    <th>Entry Confidence</th>
+                                    <th>Timing Signal</th>
+                                    <th>Risk Level</th>
+                                    <th>Buy Signal</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="available-positions-table-body">
+                                <tr><td colspan="10" class="text-center">Loading available positions...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <hr class="section-divider my-5">
+
+        <!-- SECTION 3: TRADES -->
+        <section id="trades" class="mb-5">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h2><span class="icon icon-exchange me-2"></span>Trade History</h2>
+                <div class="d-flex gap-2">
+                    <select id="trades-timeframe" class="form-select form-select-sm">
+                        <option value="7d" selected>Last 7 days</option>
+                        <option value="30d">Last 30 days</option>
+                        <option value="90d">Last 90 days</option>
+                        <option value="all">All trades</option>
+                    </select>
+                    <button class="btn btn-outline-primary btn-sm" id="btn-refresh-trades">
+                        <span class="icon icon-refresh me-1"></span> Refresh
+                    </button>
+                </div>
+            </div>
+
+            <!-- Trade Filters -->
+            <div class="row mb-3">
+                <div class="col-md-3">
+                    <input type="text" id="trades-filter" class="form-control form-control-sm" placeholder="Filter by symbol...">
+                </div>
+                <div class="col-md-3">
+                    <select id="trades-action-filter" class="form-select form-select-sm">
+                        <option value="">All Actions</option>
+                        <option value="BUY">Buy Only</option>
+                        <option value="SELL">Sell Only</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <select id="trades-pnl-filter" class="form-select form-select-sm">
+                        <option value="">All P&L</option>
+                        <option value="positive">Profitable</option>
+                        <option value="negative">Loss</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <button class="btn btn-outline-secondary btn-sm w-100" id="btn-clear-trades-filters">
+                        <span class="icon icon-close me-1"></span> Clear Filters
+                    </button>
+                </div>
+            </div>
+
+            <!-- Trades Table -->
+            <div class="card card--hover">
+                <div class="card-header">
+                    <h6 class="mb-0">Trade History</h6>
+                    <span class="meta">Authentic OKX History</span>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover align-middle mb-0" id="trades-table-main">
+                            <thead>
+                                <tr>
+                                    <th class="table-sortable" onclick="sortTradesTable(0)" aria-label="Sort by transaction type">Type <span class="icon icon-sort ms-1" aria-hidden="true"></span></th>
+                                    <th class="table-sortable" onclick="sortTradesTable(1)" aria-label="Sort by trade action">Action <span class="icon icon-sort ms-1" aria-hidden="true"></span></th>
+                                    <th class="table-sortable" onclick="sortTradesTable(2)" aria-label="Sort by symbol">Symbol <span class="icon icon-sort ms-1" aria-hidden="true"></span></th>
+                                    <th class="table-sortable" onclick="sortTradesTable(3)" aria-label="Sort by trade time">Time <span class="icon icon-sort ms-1" aria-hidden="true"></span></th>
+                                    <th class="table-sortable" onclick="sortTradesTable(4)" aria-label="Sort by trade size">Size <span class="icon icon-sort ms-1" aria-hidden="true"></span></th>
+                                    <th class="table-sortable" onclick="sortTradesTable(5)" aria-label="Sort by trade price">Price <span class="icon icon-sort ms-1" aria-hidden="true"></span></th>
+                                    <th class="table-sortable" onclick="sortTradesTable(6)" aria-label="Sort by profit and loss">P&L <span class="icon icon-sort ms-1" aria-hidden="true"></span></th>
+                                </tr>
+                            </thead>
+                            <tbody id="trades-table">
+                                <tr><td colspan="7" class="text-center">Loading recent trades...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-light py-3 mt-5">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-md-6">
+                    <p class="mb-1"><small><strong>System Status & Info</strong></small></p>
+                    <p class="mb-1 text-xs">
+                        <span class="icon icon-server me-1"></span>
+                        App Run Time: <span id="footer-system-uptime">0s</span> |
+                        <span class="icon icon-exchange me-1"></span>
+                        OKX: <span id="footer-okx-status">—</span> |
+                        <span class="icon icon-code me-1"></span>
+                        Version: {{ version|default('dev') }}
+                    </p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <p class="mb-1"><small><strong>Legal & Compliance</strong></small></p>
+                    <p class="mb-0 text-xs">
+                        © 2025 ARM Digital Enterprises. ATO compliant reporting system.
+                        <strong>Disclaimer:</strong> High-risk trading platform for informational purposes.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Custom JS (kept) -->
+    <script src="{{ url_for('static', filename='app.js') }}?v={{ cache_version|default(0) }}" defer></script>
+    
+    <!-- Unified Dashboard JS (fixed + improved) -->
+    <script>
+    // --- Utilities ---
+    const fmtCurrency = (v, ccy = "USD", max = 2) => {
+        if (typeof v !== 'number' || isNaN(v)) return '$0.00';
+        const opts = { style: "currency", currency: ccy };
+        if (v < 1 && v > 0) { opts.minimumFractionDigits = 4; opts.maximumFractionDigits = 8; }
+        else { opts.minimumFractionDigits = 2; opts.maximumFractionDigits = max; }
+        return new Intl.NumberFormat("en-US", opts).format(v);
+    };
+    const fmtPct = (v, digits = 2) => (isFinite(v) ? `${v >= 0 ? '+' : ''}${v.toFixed(digits)}%` : '—');
+    const qs = (sel) => document.querySelector(sel);
+    const qsa = (sel) => Array.from(document.querySelectorAll(sel));
+
+    // --- Global UI State ---
+    const UI = {
+        pollMs: 6000,                 // default; updated from /api/config
+        nextPositionsRefreshAt: null, // Date.now() + pollMs
+        lastPositionsUpdate: null,    // ISO string
+        adminToken: null,             // X-Admin-Token header
+        currency: 'USD'
+    };
+
+    function getAdminHeaders() {
+        const token = localStorage.getItem('ADMIN_TOKEN') || UI.adminToken;
+        const headers = { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' };
+        if (token) headers['X-Admin-Token'] = token;
+        return headers;
+    }
+
+    async function ensureAdminToken() {
+        let token = localStorage.getItem('ADMIN_TOKEN');
+        if (!token) {
+            token = prompt('Enter Admin Token (stored locally for bot actions):');
+            if (token && token.trim()) {
+                localStorage.setItem('ADMIN_TOKEN', token.trim());
+                UI.adminToken = token.trim();
+            }
+        } else {
+            UI.adminToken = token;
+        }
+        return !!UI.adminToken;
+    }
+
+    // --- Navigation helpers ---
+    function scrollToSection(sectionId) {
+        document.getElementById(sectionId).scrollIntoView({ behavior: 'smooth', block: 'start' });
+        qsa('.nav-link').forEach(link => link.classList.remove('active'));
+        const target = document.querySelector(\`[href="#\${sectionId}"]\`);
+        if (target) target.classList.add('active');
+    }
+
+    window.addEventListener('scroll', function() {
+        const sections = ['overview', 'holdings', 'trades'];
+        const scrollPos = window.scrollY + 100;
+        sections.forEach(section => {
+            const el = document.getElementById(section);
+            const navLink = document.querySelector(\`[href="#\${section}"]\`);
+            if (!el || !navLink) return;
+            if (el.offsetTop <= scrollPos && el.offsetTop + el.offsetHeight > scrollPos) {
+                qsa('.nav-link').forEach(l => l.classList.remove('active'));
+                navLink.classList.add('active');
+            }
+        });
+    });
+
+    // --- Controls (Buy/Sell/Export/TP) ---
+    function showBuyDialog() {
+        const symbol = prompt("Enter symbol to buy (e.g., BTC-USDT):");
+        if (!symbol) return;
+        const amount = prompt("Enter USD amount to invest:");
+        if (!amount || isNaN(amount)) return;
+        if (confirm(\`Buy $\${amount} worth of \${symbol}?\`)) {
+            executeBuyOrder(symbol, parseFloat(amount));
+        }
+    }
+    async function executeBuyOrder(symbol, amount) {
+        try {
+            const res = await fetch('/api/buy', {
+                method: 'POST',
+                headers: getAdminHeaders(),
+                body: JSON.stringify({ symbol, amount }),
+                cache: 'no-store'
+            });
+            const data = await res.json();
+            alert(data.success ? \`Buy order successful: \${data.message}\` : \`Buy order failed: \${data.error || 'Unknown error'}\`);
+            if (data.success) { await loadDashboardData(); await loadHoldingsData(); }
+        } catch (e) {
+            console.error('Buy error', e); alert('Buy order failed: Network error');
+        }
+    }
+
+    function showSellDialog() {
+        const symbol = prompt("Enter symbol to sell (e.g., BTC-USDT):");
+        if (!symbol) return;
+        const percentage = prompt("Enter percentage to sell (1-100):");
+        if (!percentage || isNaN(percentage) || percentage < 1 || percentage > 100) return;
+        if (confirm(\`Sell \${percentage}% of your \${symbol} position?\`)) {
+            executeSellOrder(symbol, parseFloat(percentage));
+        }
+    }
+    async function executeSellOrder(symbol, percentage) {
+        try {
+            const res = await fetch('/api/sell', {
+                method: 'POST',
+                headers: getAdminHeaders(),
+                body: JSON.stringify({ symbol, percentage }),
+                cache: 'no-store'
+            });
+            const data = await res.json();
+            alert(data.success ? \`Sell order successful: \${data.message}\` : \`Sell order failed: \${data.error || 'Unknown error'}\`);
+            if (data.success) { await loadDashboardData(); await loadHoldingsData(); }
+        } catch (e) {
+            console.error('Sell error', e); alert('Sell order failed: Network error');
+        }
+    }
+
+    async function exportATOTax() {
+        try {
+            const a = document.createElement('a');
+            a.href = '/api/export/ato';
+            a.setAttribute('download', '');
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+        } catch (e) {
+            alert('Export failed');
+        }
+    }
+
+    async function executeTakeProfit() {
+        if (!confirm('Execute Take-Profit + Reinvest now?')) return;
+        try {
+            const res = await fetch('/api/execute-take-profit', { method: 'POST', headers: getAdminHeaders(), cache: 'no-store' });
+            const data = await res.json();
+            alert(data.success ? data.message : (data.error || 'Action failed'));
+            if (data.success) { await loadDashboardData(); await loadHoldingsData(); }
+        } catch (e) {
+            console.error('TP error', e); alert('Take profit failed: Network error');
+        }
+    }
+
+    // --- Bot controls ---
+    async function syncBotControls() {
+        try {
+            const res = await fetch('/api/bot/status', { cache: 'no-store' });
+            const s = await res.json();
+            const running = !!s.running;
+            const btn = qs('#bot-status-top');
+            const badge = qs('#trading-status');
+            if (btn) btn.textContent = running ? 'STOP BOT' : 'START BOT';
+            if (badge) {
+                badge.innerHTML = \`<span class="icon icon-circle me-1" aria-hidden="true"></span>\${running ? 'Active' : 'Inactive'}\`;
+                badge.className = \`badge \${running ? 'bg-success' : 'bg-secondary'} ms-2\`;
+            }
+        } catch {}
+    }
+
+    async function toggleBot() {
+        try {
+            if (!await ensureAdminToken()) return;
+            const status = await fetch('/api/bot/status', { cache: 'no-store' }).then(r => r.json());
+            const running = !!status.running;
+            if (!running) {
+                const proceed = confirm('Start the trading bot in LIVE mode?\n\n• Begins automated trading\n• Uses multi-currency strategy\n• LIVE funds will be used');
+                if (!proceed) return;
+            }
+            const endpoint = running ? '/api/bot/stop' : '/api/bot/start';
+            const payload = running ? {} : { mode: 'live', timeframe: '1h' };
+            const res = await fetch(endpoint, {
+                method: 'POST',
+                headers: getAdminHeaders(),
+                cache: 'no-store',
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            if (res.ok && (data.success || data.message)) {
+                await syncBotControls();
+                setTimeout(async () => {
+                    await loadDashboardData();
+                    await loadHoldingsData();
+                }, 600);
+                alert(running ? 'Bot stopped.' : 'Bot started.');
+            } else {
+                alert(\`Bot toggle failed: \${data.error || 'Unknown error'}\`);
+            }
+        } catch (e) {
+            console.error('Bot toggle error:', e);
+            alert('Bot toggle failed: Network error');
+        }
+    }
+
+    // --- Currency handling ---
+    async function changeCurrency(curr) {
+        UI.currency = curr || qs('#currency-selector')?.value || 'USD';
+        localStorage.setItem('SELECTED_CURRENCY', UI.currency);
+        await loadDashboardData();
+        await loadHoldingsData();
+    }
+
+    // --- Overview (OKX Portfolio Overview cards) ---
+    async function loadDashboardData() {
+        try {
+            const params = new URLSearchParams({ currency: UI.currency });
+            const [portfolioResponse, bestPerformerResponse, okxStatus] = await Promise.all([
+                fetch('/api/crypto-portfolio?' + params.toString(), { cache: 'no-store' }),
+                fetch('/api/best-performer', { cache: 'no-store' }),
+                fetch('/api/okx-status', { cache: 'no-store' })
+            ]);
+
+            // OKX status badge
+            if (okxStatus.ok) {
+                const okx = await okxStatus.json();
+                const connected = okx?.status?.connected === true;
+                const badge = qs('#okx-connection-badge');
+                qs('#overview-connection').textContent = connected ? 'Connected' : 'Disconnected';
+                if (badge) badge.className = 'badge ' + (connected ? 'bg-success' : 'bg-danger');
+            }
+
+            if (!portfolioResponse.ok) return;
+
+            const portfolioData = await portfolioResponse.json();
+
+            // Last update
+            const last = portfolioData.overview?.last_update || portfolioData.last_update || null;
+            if (last) qs('#overview-last-update').textContent = new Date(last).toLocaleString();
+
+            // Totals
+            const balance = portfolioData.total_estimated_value ?? portfolioData.total_current_value ?? 0;
+            const pnl = portfolioData.total_pnl ?? 0;
+            const pnlPct = portfolioData.total_pnl_percent ?? 0;
+            const holdings = Array.isArray(portfolioData.holdings) ? portfolioData.holdings : [];
+
+            const elBalance = qs('#okx-total-balance');
+            if (elBalance) elBalance.textContent = fmtCurrency(balance, UI.currency);
+            const elEst = qs('#okx-estimated-total');
+            if (elEst) elEst.textContent = fmtCurrency(balance, UI.currency);
+            const elPnl = qs('#okx-day-pnl');
+            const elPnlPct = qs('#okx-day-pnl-percent');
+            if (elPnl) {
+                elPnl.textContent = fmtCurrency(pnl, UI.currency);
+                elPnl.className = 'value ' + (pnl >= 0 ? 'text-success' : 'text-danger');
+            }
+            if (elPnlPct) {
+                elPnlPct.textContent = fmtPct(pnlPct);
+                elPnlPct.className = 'change-indicator ' + (pnlPct >= 0 ? 'text-success' : 'text-danger');
+            }
+
+            const activePositions = holdings.length;
+            const elActive = qs('#okx-active-positions');
+            if (elActive) elActive.textContent = String(activePositions);
+
+            const cryptoCount = holdings.filter(p => !['USD','USDT','AUD','EUR','GBP'].includes(p.symbol)).length;
+            const elDetail = qs('#okx-positions-detail');
+            if (elDetail) elDetail.textContent = \`\${cryptoCount} crypto\`;
+
+            // Best performer
+            const profitable = holdings.filter(h => Number(h.pnl_percent) > 0);
+            if (profitable.length) {
+                const winner = profitable.sort((a,b)=> b.pnl_percent - a.pnl_percent)[0];
+                const bp = qs('#okx-best-performer'), bg = qs('#okx-best-gain');
+                if (bp) bp.textContent = winner.symbol;
+                if (bg) { bg.textContent = \`+\${winner.pnl_percent.toFixed(2)}%\`; bg.classList.add('text-success'); }
+            } else if (bestPerformerResponse.ok) {
+                const b = await bestPerformerResponse.json();
+                const data = b?.best_performer;
+                if (data) {
+                    const bp = qs('#okx-best-performer'), bg = qs('#okx-best-gain');
+                    if (bp) bp.textContent = data.symbol || '—';
+                    if (bg && typeof data.price_change_24h === 'number') bg.textContent = \`+\${data.price_change_24h.toFixed(2)}%\`;
+                }
+            }
+
+            // Position summary (profitable vs losing)
+            const gains = holdings.filter(h => Number(h.pnl) > 0 || Number(h.pnl_percent) > 0).length;
+            const losses = holdings.filter(h => Number(h.pnl) < 0 || Number(h.pnl_percent) < 0).length;
+            if (qs('#position-summary')) qs('#position-summary').textContent = \`\${activePositions} Active\`;
+            if (qs('#profitable-count')) qs('#profitable-count').textContent = \`\${gains} profitable\`;
+            if (qs('#losing-count')) qs('#losing-count').textContent = \`\${losses} losing\`;
+
+        } catch (e) {
+            console.warn('Failed to update Overview', e);
+        }
+    }
+
+    // --- Holdings (Open & Available Positions) + timing ---
+    async function loadHoldingsData() {
+        try {
+            const res = await fetch('/api/current-holdings', { cache: 'no-store' });
+            if (!res.ok) return;
+            const data = await res.json();
+
+            // Timing / refresh hints
+            const last = data.last_update || new Date().toISOString();
+            UI.lastPositionsUpdate = last;
+            qs('#positions-last-refresh').textContent = new Date(last).toLocaleString();
+
+            const hint = (typeof data.next_refresh_in_seconds === 'number' && data.next_refresh_in_seconds > 0)
+                ? data.next_refresh_in_seconds * 1000
+                : UI.pollMs;
+            UI.nextPositionsRefreshAt = Date.now() + hint;
+
+            // Populate Open Positions table (basic)
+            const body = qs('#open-positions-table-body');
+            const holdings = Array.isArray(data.holdings) ? data.holdings : [];
+            if (body) {
+                if (!holdings.length) {
+                    body.innerHTML = '<tr><td colspan="13" class="text-center">No positions</td></tr>';
+                } else {
+                    body.innerHTML = holdings.map(h => {
+                        const sym = h.symbol || '—';
+                        const qty = Number(h.quantity || h.current_balance || 0);
+                        const price = Number(h.current_price || 0);
+                        const val = Number(h.current_value || h.value || qty * price || 0);
+                        const cb = Number(h.cost_basis || 0);
+                        const pnl = Number(h.pnl || (val - cb));
+                        const pnlPct = Number(h.pnl_percent || (cb > 0 ? (pnl / cb * 100) : 0));
+                        // Target fields may not exist; show placeholders
+                        return `
+                        <tr>
+                            <td>${sym}</td>
+                            <td>${qty.toFixed(6)}</td>
+                            <td>${fmtCurrency(val, UI.currency)}</td>
+                            <td>${cb ? fmtCurrency(cb, UI.currency) : '—'}</td>
+                            <td>${price ? fmtCurrency(price, UI.currency, 6) : '—'}</td>
+                            <td>${fmtCurrency(val, UI.currency)}</td>
+                            <td class="${pnl >= 0 ? 'text-success' : 'text-danger'}">${fmtCurrency(pnl, UI.currency)}</td>
+                            <td class="${pnlPct >= 0 ? 'text-success' : 'text-danger'}">${fmtPct(pnlPct)}</td>
+                            <td>—</td>
+                            <td>—</td>
+                            <td>—</td>
+                            <td>—</td>
+                            <td>
+                                <button class="btn btn-sm btn-success" onclick="quickBuy('${sym}')">Buy</button>
+                                <button class="btn btn-sm btn-danger ms-1" onclick="quickSell('${sym}')">Sell</button>
+                            </td>
+                        </tr>`;
+                    }).join('');
+                }
+            }
+
+            // Available positions table
+            const availRes = await fetch('/api/available-positions', { cache: 'no-store' });
+            const availBody = qs('#available-positions-table-body');
+            if (availRes.ok && availBody) {
+                const ap = await availRes.json();
+                const list = Array.isArray(ap.available_positions) ? ap.available_positions : [];
+                if (!list.length) {
+                    availBody.innerHTML = '<tr><td colspan="10" class="text-center">No available positions</td></tr>';
+                } else {
+                    availBody.innerHTML = list.slice(0, 50).map(p => {
+                        const discPct = (typeof p.price_diff_percent === 'number') ? p.price_diff_percent : 0;
+                        const conf = p.entry_confidence?.score ?? 0;
+                        const timing = p.entry_confidence?.timing_signal ?? '—';
+                        return `
+                        <tr>
+                            <td>${p.symbol}</td>
+                            <td>${Number(p.current_balance || 0).toFixed(6)}</td>
+                            <td>${fmtCurrency(Number(p.current_price || 0), UI.currency, 8)}</td>
+                            <td>${fmtCurrency(Number(p.target_buy_price || p.targetPrice || 0), UI.currency, 8)}</td>
+                            <td class="${discPct <= -5 ? 'text-success' : ''}">${fmtPct(discPct)}</td>
+                            <td>${conf}</td>
+                            <td>${timing}</td>
+                            <td>${p.position_type || '—'}</td>
+                            <td>${p.buy_signal || '—'}</td>
+                            <td><button class="btn btn-sm btn-primary" onclick="quickBuy('${p.symbol}')">Buy</button></td>
+                        </tr>`;
+                    }).join('');
+                }
+            }
+
+        } catch (e) {
+            console.warn('Holdings refresh failed', e);
+        }
+    }
+
+    function tickPositionsCountdown() {
+        const el = qs('#positions-next-refresh');
+        if (!el || !UI.nextPositionsRefreshAt) return;
+        const ms = Math.max(0, UI.nextPositionsRefreshAt - Date.now());
+        const s = Math.ceil(ms / 1000);
+        el.textContent = s > 0 ? \`\${s}s\` : '0s';
+    }
+
+    // --- Trades (minimal) ---
+    async function loadTrades() {
+        try {
+            const tf = qs('#trades-timeframe')?.value || '7d';
+            const res = await fetch('/api/trade-history?timeframe=' + encodeURIComponent(tf), { cache: 'no-store' });
+            const body = qs('#trades-table');
+            if (!body) return;
+            if (!res.ok) { body.innerHTML = '<tr><td colspan="7" class="text-center">Failed to load trades</td></tr>'; return; }
+            const data = await res.json();
+            const trades = Array.isArray(data.trades) ? data.trades : [];
+            if (!trades.length) {
+                body.innerHTML = '<tr><td colspan="7" class="text-center">No trades</td></tr>';
+                return;
+            }
+            body.innerHTML = trades.map(t => {
+                const dt = t.timestamp ? new Date(t.timestamp.replace('Z','+00:00')) : null;
+                const pnl = Number(t.pnl || 0);
+                return `
+                <tr>
+                    <td>${t.type || t.transaction_type || 'Trade'}</td>
+                    <td>${t.side || t.action || '—'}</td>
+                    <td>${t.symbol || '—'}</td>
+                    <td>${dt ? dt.toLocaleString() : '—'}</td>
+                    <td>${Number(t.quantity || t.size || 0).toFixed(6)}</td>
+                    <td>${fmtCurrency(Number(t.price || 0), UI.currency, 8)}</td>
+                    <td class="${pnl >= 0 ? 'text-success' : 'text-danger'}">${fmtCurrency(pnl, UI.currency)}</td>
+                </tr>`;
+            }).join('');
+        } catch (e) {
+            console.warn('Trades load failed', e);
+        }
+    }
+
+    // --- Sorting helpers (simple) ---
+    function sortTableBy(tableId, col, numeric = false) {
+        const table = qs('#' + tableId);
+        if (!table) return;
+        const tbody = table.tBodies[0];
+        const rows = Array.from(tbody.rows);
+        const asc = table.dataset.sortCol == col ? !(table.dataset.sortAsc === 'true') : true;
+        rows.sort((a,b) => {
+            const A = a.cells[col]?.innerText?.replace(/[$,%]/g,'') || '';
+            const B = b.cells[col]?.innerText?.replace(/[$,%]/g,'') || '';
+            const aVal = numeric ? parseFloat(A) : A.toLowerCase();
+            const bVal = numeric ? parseFloat(B) : B.toLowerCase();
+            if (aVal < bVal) return asc ? -1 : 1;
+            if (aVal > bVal) return asc ? 1 : -1;
+            return 0;
+        });
+        rows.forEach(r => tbody.appendChild(r));
+        table.dataset.sortCol = col;
+        table.dataset.sortAsc = asc;
+    }
+    function sortPositionsTable(col) {
+        const numericCols = [1,2,3,4,5,6,7,8,9,10,11];
+        sortTableBy('open-positions-table', col, numericCols.includes(col));
+    }
+    function sortTradesTable(col) {
+        const numericCols = [4,5,6];
+        sortTableBy('trades-table-main', col, numericCols.includes(col));
+    }
+
+    // --- Quick actions from tables ---
+    function quickBuy(sym) { showBuyDialog(); }
+    function quickSell(sym) { showSellDialog(); }
+
+    // --- Footer system status (uptime + OKX status) ---
+    async function updateSystemStatus() {
+        try {
+            const res = await fetch('/api/status', { cache: 'no-store' });
+            if (res.ok) {
+                const s = await res.json();
+                qs('#footer-system-uptime').textContent = s.uptime_human || '—';
+                // Also keep bot badge in sync here just in case
+                if (typeof s.active === 'boolean') {
+                    const badge = qs('#trading-status');
+                    const running = !!s.active;
+                    if (badge) {
+                        badge.innerHTML = \`<span class="icon icon-circle me-1"></span>\${running ? 'Active' : 'Inactive'}\`;
+                        badge.className = \`badge \${running ? 'bg-success' : 'bg-secondary'} ms-2\`;
+                    }
+                    const btn = qs('#bot-status-top');
+                    if (btn) btn.textContent = running ? 'STOP BOT' : 'START BOT';
+                }
+            }
+            const okx = await fetch('/api/okx-status', { cache: 'no-store' });
+            if (okx.ok) {
+                const st = await okx.json();
+                const connected = st?.status?.connected ? 'Connected' : 'Disconnected';
+                qs('#footer-okx-status').textContent = connected;
+            }
+        } catch {}
+    }
+
+    // --- Wire events + init ---
+    document.addEventListener('DOMContentLoaded', async function() {
+        // Attach handlers
+        qs('#btn-ato-export')?.addEventListener('click', exportATOTax);
+        qs('#btn-take-profit')?.addEventListener('click', executeTakeProfit);
+        qs('#btn-buy')?.addEventListener('click', showBuyDialog);
+        qs('#btn-sell')?.addEventListener('click', showSellDialog);
+        qs('#btn-bot-toggle')?.addEventListener('click', toggleBot);
+        qs('#btn-refresh-holdings')?.addEventListener('click', loadHoldingsData);
+        qs('#btn-refresh-trades')?.addEventListener('click', loadTrades);
+        qs('#trades-timeframe')?.addEventListener('change', loadTrades);
+        qs('#currency-selector')?.addEventListener('change', (e) => changeCurrency(e.target.value));
+        qs('#btn-clear-trades-filters')?.addEventListener('click', () => {
+            qs('#trades-filter').value = '';
+            qs('#trades-action-filter').value = '';
+            qs('#trades-pnl-filter').value = '';
+            loadTrades();
+        });
+
+        // Load config refresh interval
+        try {
+            const cfg = await fetch('/api/config', { cache: 'no-store' }).then(r => r.json());
+            if (cfg?.update_interval) UI.pollMs = Number(cfg.update_interval) || 6000;
+        } catch {}
+
+        // Restore currency
+        const savedCcy = localStorage.getItem('SELECTED_CURRENCY');
+        if (savedCcy) {
+            UI.currency = savedCcy;
+            const sel = qs('#currency-selector');
+            if (sel) sel.value = savedCcy;
+        }
+
+        // First paint
+        await Promise.all([loadDashboardData(), loadHoldingsData(), loadTrades(), syncBotControls(), updateSystemStatus()]);
+
+        // Intervals
+        setInterval(loadDashboardData, 120000);        // overview (lighter)
+        setInterval(loadTrades, UI.pollMs * 4);        // trades (less frequent)
+        setInterval(loadHoldingsData, UI.pollMs);      // holdings (live-ish)
+        setInterval(tickPositionsCountdown, 1000);     // countdown
+        setInterval(updateSystemStatus, 5000);         // uptime + okx
+    });
+    </script>
+</body>
+</html>
