@@ -506,34 +506,49 @@
                             <thead class="table-light">
                                 <tr>
                                     <th class="table-sortable" data-sort="symbol">
-                                        Symbol <span class="icon icon-sort text-muted"></span>
+                                        SYMBOL <span class="icon icon-sort text-muted"></span>
                                     </th>
-                                    <th class="table-sortable text-end" data-sort="quantity">
-                                        Quantity <span class="icon icon-sort text-muted"></span>
+                                    <th class="table-sortable text-end" data-sort="balance">
+                                        BALANCE <span class="icon icon-sort text-muted"></span>
                                     </th>
-                                    <th class="table-sortable text-end" data-sort="purchase_price">
-                                        Purchase <span class="icon icon-sort text-muted"></span>
+                                    <th class="table-sortable text-end" data-sort="value">
+                                        VALUE <span class="icon icon-sort text-muted"></span>
                                     </th>
-                                    <th class="table-sortable text-end" data-sort="current_price">
-                                        Current <span class="icon icon-sort text-muted"></span>
+                                    <th class="table-sortable text-end" data-sort="cost_basis">
+                                        COST BASIS <span class="icon icon-sort text-muted"></span>
                                     </th>
-                                    <th class="table-sortable text-end" data-sort="target_sell">
-                                        Target Sell <span class="icon icon-sort text-muted"></span>
+                                    <th class="table-sortable text-end" data-sort="price">
+                                        PRICE <span class="icon icon-sort text-muted"></span>
                                     </th>
                                     <th class="table-sortable text-end" data-sort="market_value">
-                                        Market Value <span class="icon icon-sort text-muted"></span>
+                                        MARKET VALUE <span class="icon icon-sort text-muted"></span>
                                     </th>
-                                    <th class="table-sortable text-end" data-sort="pnl">
-                                        P&L <span class="icon icon-sort text-muted"></span>
+                                    <th class="table-sortable text-end" data-sort="pnl_dollar">
+                                        P&L $ <span class="icon icon-sort text-muted"></span>
                                     </th>
-                                    <th class="table-sortable text-end" data-sort="sell_signal">
-                                        Sell Signal <span class="icon icon-sort text-muted"></span>
+                                    <th class="table-sortable text-end" data-sort="pnl_percent">
+                                        P&L % <span class="icon icon-sort text-muted"></span>
+                                    </th>
+                                    <th class="table-sortable text-end" data-sort="target_value">
+                                        TARGET VALUE <span class="icon icon-sort text-muted"></span>
+                                    </th>
+                                    <th class="table-sortable text-end" data-sort="target_pnl_dollar">
+                                        TARGET P&L $ <span class="icon icon-sort text-muted"></span>
+                                    </th>
+                                    <th class="table-sortable text-end" data-sort="target_pnl_percent">
+                                        TARGET P&L % <span class="icon icon-sort text-muted"></span>
+                                    </th>
+                                    <th class="table-sortable text-center" data-sort="days">
+                                        DAYS <span class="icon icon-sort text-muted"></span>
+                                    </th>
+                                    <th class="text-center">
+                                        ACTIONS
                                     </th>
                                 </tr>
                             </thead>
                             <tbody id="holdings-tbody">
                                 <tr>
-                                    <td colspan="8" class="text-center py-3 text-muted">
+                                    <td colspan="13" class="text-center py-3 text-muted">
                                         <span class="icon icon-refresh me-2"></span>Loading positions...
                                     </td>
                                 </tr>
@@ -914,7 +929,7 @@
         }
         
         if (!holdings || holdings.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="8" class="text-center py-3 text-muted">No open positions</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="13" class="text-center py-3 text-muted">No open positions</td></tr>';
             return;
         }
         
@@ -926,38 +941,22 @@
             // Get crypto icon
             const cryptoIcon = getCryptoIcon(symbol);
             
-            // Calculate accurate purchase price from cost_basis and quantity
+            // Calculate values
             const quantity = holding.quantity || holding.available_quantity || 0;
             const costBasis = holding.cost_basis || 0;
-            const avgPurchasePrice = quantity > 0 ? costBasis / quantity : 0;
+            const currentValue = holding.current_value || holding.value || 0;
             const currentPrice = holding.current_price || 0;
+            const pnlDollar = holding.pnl || 0;
+            const pnlPercent = holding.pnl_percent || 0;
             
-            // Calculate target sell price (10-15% profit target based on asset type)
-            let profitTarget = 0.12; // 12% default
-            if (symbol === 'BTC' || symbol === 'ETH') {
-                profitTarget = 0.08; // 8% for major coins
-            } else if (symbol.includes('USDT') || symbol.includes('USDC') || symbol === 'AUD') {
-                profitTarget = 0.02; // 2% for stablecoins/fiat
-            } else {
-                profitTarget = 0.15; // 15% for altcoins
-            }
-            const targetSellPrice = avgPurchasePrice * (1 + profitTarget);
+            // Calculate target values (15% profit target)
+            const profitTarget = 0.15; // 15% target
+            const targetValue = costBasis * (1 + profitTarget);
+            const targetPnlDollar = targetValue - costBasis;
+            const targetPnlPercent = profitTarget * 100;
             
-            // Determine sell signal
-            let sellSignal = 'HOLD';
-            let sellSignalClass = 'badge bg-secondary';
-            const currentProfitPercent = (holding.pnl_percent || 0);
-            
-            if (currentProfitPercent >= profitTarget * 100) {
-                sellSignal = 'SELL NOW';
-                sellSignalClass = 'badge bg-success';
-            } else if (currentProfitPercent >= profitTarget * 50) {
-                sellSignal = 'NEAR TARGET';
-                sellSignalClass = 'badge bg-warning';
-            } else if (currentProfitPercent <= -10) {
-                sellSignal = 'STOP LOSS';
-                sellSignalClass = 'badge bg-danger';
-            }
+            // Calculate days (placeholder - would need real trade date)
+            const days = '30 days';
             
             return `
                 <tr>
@@ -968,18 +967,30 @@
                         </div>
                     </td>
                     <td class="text-end">${quantity.toFixed(6)}</td>
-                    <td class="text-end">$${avgPurchasePrice.toFixed(2)}</td>
-                    <td class="text-end">$${currentPrice.toFixed(2)}</td>
-                    <td class="text-end">$${targetSellPrice.toFixed(2)}</td>
-                    <td class="text-end">$${(holding.current_value || holding.value || 0).toFixed(2)}</td>
+                    <td class="text-end">$${currentValue.toFixed(6)}</td>
+                    <td class="text-end">$${costBasis.toFixed(6)}</td>
+                    <td class="text-end">$${currentPrice.toFixed(4)}</td>
+                    <td class="text-end">$${currentValue.toFixed(6)}</td>
                     <td class="text-end ${pnlClass}">
-                        ${pnlSign}$${Math.abs(holding.pnl || 0).toFixed(2)} 
-                        (${pnlSign}${((holding.pnl_percent || 0)).toFixed(2)}%)
+                        ${pnlSign}$${Math.abs(pnlDollar).toFixed(6)}
                     </td>
+                    <td class="text-end ${pnlClass}">
+                        ${pnlSign}${Math.abs(pnlPercent).toFixed(2)}%
+                    </td>
+                    <td class="text-end">$${targetValue.toFixed(6)}</td>
+                    <td class="text-end text-success">
+                        +$${targetPnlDollar.toFixed(6)}
+                    </td>
+                    <td class="text-end text-success">
+                        +${targetPnlPercent.toFixed(3)}%
+                    </td>
+                    <td class="text-center">${days}</td>
                     <td class="text-center">
-                        <span class="${sellSignalClass}">
-                            ${sellSignal}
-                        </span>
+                        <div class="btn-group btn-group-sm" role="group">
+                            <button class="btn btn-outline-primary btn-xs">25%</button>
+                            <button class="btn btn-outline-primary btn-xs">50%</button>
+                            <button class="btn btn-outline-primary btn-xs">All</button>
+                        </div>
                     </td>
                 </tr>
             `;
