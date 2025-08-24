@@ -5877,30 +5877,26 @@ function createAvailablePositionRow(position) {
     symbolCell.appendChild(symbolDiv);
     row.appendChild(symbolCell);
     
-    // Create remaining cells
+    // Create remaining cells with proper alignment
     const cells = [
-        formatNumber(currentBalance),
-        formatCurrency(currentPrice),
-        { text: formatCurrency(targetBuyPrice), className: 'fw-bold text-primary' },
-        { text: `${priceDiffPercent >= 0 ? '+' : ''}${priceDiffPercent.toFixed(1)}%`, className: priceDiffClass }
+        { text: formatNumber(currentBalance), className: 'text-end' },
+        { text: formatCurrency(currentPrice), className: 'text-end' },
+        { text: formatCurrency(targetBuyPrice), className: 'text-end fw-bold text-primary' },
+        { text: `${priceDiffPercent >= 0 ? '+' : ''}${priceDiffPercent.toFixed(1)}%`, className: `text-end ${priceDiffClass}` }
     ];
     
     cells.forEach(cellData => {
         const cell = document.createElement('td');
-        if (typeof cellData === 'object') {
-            cell.textContent = cellData.text;
-            if (cellData.className) cell.className = cellData.className;
-        } else {
-            cell.textContent = cellData;
-        }
+        cell.textContent = cellData.text;
+        cell.className = cellData.className;
         row.appendChild(cell);
     });
     
     // Confidence score cell
     const confidenceCell = document.createElement('td');
-    confidenceCell.className = getConfidenceClass(confidenceScore);
+    confidenceCell.className = `text-center ${getConfidenceClass(confidenceScore)}`;
     const confidenceDiv = document.createElement('div');
-    confidenceDiv.className = 'd-flex align-items-center';
+    confidenceDiv.className = 'd-flex align-items-center justify-content-center';
     const scoreSpan = document.createElement('span');
     scoreSpan.className = 'fw-bold me-1';
     scoreSpan.textContent = confidenceScore.toFixed(1);
@@ -5911,29 +5907,30 @@ function createAvailablePositionRow(position) {
     confidenceDiv.appendChild(maxSpan);
     confidenceCell.appendChild(confidenceDiv);
     const levelSmall = document.createElement('small');
-    levelSmall.className = getConfidenceClass(confidenceScore);
+    levelSmall.className = `text-center ${getConfidenceClass(confidenceScore)}`;
     levelSmall.textContent = confidenceLevel;
     confidenceCell.appendChild(levelSmall);
     row.appendChild(confidenceCell);
     
     // Timing, risk, and buy signal cells
     const timingCell = document.createElement('td');
-    timingCell.className = getTimingSignalClass(timingSignal);
+    timingCell.className = `text-center ${getTimingSignalClass(timingSignal)}`;
     timingCell.textContent = timingSignal.replace('_', ' ');
     row.appendChild(timingCell);
     
     const riskCell = document.createElement('td');
-    riskCell.className = getRiskLevelClass(entryConfidence.risk_level || 'MODERATE');
+    riskCell.className = `text-center ${getRiskLevelClass(entryConfidence.risk_level || 'MODERATE')}`;
     riskCell.textContent = entryConfidence.risk_level || 'MODERATE';
     row.appendChild(riskCell);
     
     const signalCell = document.createElement('td');
-    signalCell.className = buySignalClass;
+    signalCell.className = `text-center ${buySignalClass}`;
     signalCell.textContent = buySignal;
     row.appendChild(signalCell);
     
     // Action buttons cell
     const actionsCell = document.createElement('td');
+    actionsCell.className = 'text-center';
     const btnGroup = document.createElement('div');
     btnGroup.className = 'btn-group btn-group-sm';
     btnGroup.setAttribute('role', 'group');

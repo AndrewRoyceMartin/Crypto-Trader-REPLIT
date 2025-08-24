@@ -506,26 +506,38 @@
                                     <th class="table-sortable" data-sort="symbol">
                                         Symbol <span class="icon icon-sort text-muted"></span>
                                     </th>
+                                    <th class="table-sortable text-end" data-sort="current_balance">
+                                        Balance <span class="icon icon-sort text-muted"></span>
+                                    </th>
                                     <th class="table-sortable text-end" data-sort="current_price">
-                                        Current Price <span class="icon icon-sort text-muted"></span>
+                                        Price <span class="icon icon-sort text-muted"></span>
                                     </th>
                                     <th class="table-sortable text-end" data-sort="target_buy_price">
-                                        Target Buy <span class="icon icon-sort text-muted"></span>
+                                        Target <span class="icon icon-sort text-muted"></span>
                                     </th>
                                     <th class="table-sortable text-end" data-sort="price_difference">
-                                        Difference <span class="icon icon-sort text-muted"></span>
+                                        Diff % <span class="icon icon-sort text-muted"></span>
                                     </th>
-                                    <th class="table-sortable" data-sort="buy_signal">
-                                        Signal <span class="icon icon-sort text-muted"></span>
+                                    <th class="table-sortable text-center" data-sort="entry_confidence.score">
+                                        Confidence <span class="icon icon-sort text-muted"></span>
                                     </th>
                                     <th class="table-sortable text-center" data-sort="entry_confidence.timing_signal">
                                         Timing <span class="icon icon-sort text-muted"></span>
+                                    </th>
+                                    <th class="table-sortable text-center" data-sort="entry_confidence.risk_level">
+                                        Risk <span class="icon icon-sort text-muted"></span>
+                                    </th>
+                                    <th class="table-sortable text-center" data-sort="buy_signal">
+                                        Signal <span class="icon icon-sort text-muted"></span>
+                                    </th>
+                                    <th class="text-center">
+                                        Actions
                                     </th>
                                 </tr>
                             </thead>
                             <tbody id="available-tbody">
                                 <tr>
-                                    <td colspan="6" class="text-center py-3 text-muted">
+                                    <td colspan="10" class="text-center py-3 text-muted">
                                         <span class="icon icon-refresh me-2"></span>Loading available positions...
                                     </td>
                                 </tr>
