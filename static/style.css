@@ -229,6 +229,14 @@ h4, h5, h6, .h4, .h5, .h6 { font-weight: var(--fw-medium); }
 .table-sortable { cursor: pointer; user-select: none; }
 .muted { color: #6c757d; }
 
+/* Navbar z-index fix for Chrome scrolling overlap */
+.navbar.sticky-top {
+    z-index: 1020;
+    background: #ffffff !important;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    border-bottom: 1px solid #e9ecef;
+}
+
 .control-bar { position: sticky; top: 56px; background: #fff; z-index: 1010; }
 .text-xs { font-size: 12px; }
 
