@@ -731,6 +731,8 @@ def crypto_portfolio_okx() -> ResponseReturnValue:
             # 👇 add this for UI cards
             "overview": overview
         }
+        payload["overview"]["next_refresh_in_seconds"] = int(os.getenv("UI_REFRESH_MS", "6000")) // 1000
+        payload["next_refresh_in_seconds"] = payload["overview"]["next_refresh_in_seconds"]
         return _no_cache_json(payload)
 
     except Exception as e:
@@ -791,9 +793,11 @@ def api_portfolio_overview() -> ResponseReturnValue:
                 "breakeven_positions": max(0, total_assets - profitable - losing),
                 "last_update": last_update,
                 "is_live": True,
-                "connected": True
+                "connected": True,
+                "next_refresh_in_seconds": int(os.getenv("UI_REFRESH_MS", "6000")) // 1000
             },
-            "timestamp": iso_utc()
+            "timestamp": iso_utc(),
+            "next_refresh_in_seconds": int(os.getenv("UI_REFRESH_MS", "6000")) // 1000
         }
         return _no_cache_json(payload)
 
@@ -3102,7 +3106,8 @@ def api_current_holdings() -> ResponseReturnValue:
             "total_value": total_value,
             "total_holdings": len(holdings),
             "data_source": "okx_portfolio_service_with_native_prices",
-            "last_update": iso_utc()
+            "last_update": pf.get('last_update', iso_utc()),
+            "next_refresh_in_seconds": int(os.getenv("UI_REFRESH_MS", "6000")) // 1000,
         })
     except Exception as e:
         logger.error(f"Error getting current holdings: {e}")
@@ -3373,7 +3378,9 @@ def api_available_positions() -> ResponseReturnValue:
             'available_positions': available_positions,
             'count': len(available_positions),
             'success': True,
-            'message': f"Found {len(available_positions)} available assets from OKX account"
+            'message': f"Found {len(available_positions)} available assets from OKX account",
+            'last_update': iso_utc(),
+            'next_refresh_in_seconds': int(os.getenv("UI_REFRESH_MS", "6000")) // 1000,
         })
         
     except Exception as e:
