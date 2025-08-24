@@ -5150,6 +5150,7 @@ def api_test_sync_data() -> ResponseReturnValue:
 
         # Test 13: Cache is disabled (always live)
         try:
+            from src.utils.cache import cache_get
             cg = cache_get('BTC/USDT', '1h')
             test_data['test_results']['cache_disabled'] = {
                 'status': 'pass' if cg is None else 'fail',
@@ -5157,6 +5158,53 @@ def api_test_sync_data() -> ResponseReturnValue:
             }
         except Exception as e:
             test_data['test_results']['cache_disabled'] = {'status': 'error', 'error': str(e)}
+
+        # Test 14: KPI Card Data Sync
+        try:
+            if portfolio_service is None:
+                portfolio_service = get_portfolio_service()
+            if portfolio_data is None:
+                portfolio_data = portfolio_service.get_portfolio_data()
+            
+            # Test KPI card data integrity
+            portfolio_total = float(portfolio_data.get('total_current_value', 0) or 0)
+            cash_balance = float(portfolio_data.get('cash_balance', 0) or 0)
+            total_estimated = float(portfolio_data.get('total_estimated_value', 0) or 0)
+            total_pnl = float(portfolio_data.get('total_pnl', 0) or 0)
+            
+            # Verify cash balance is realistic (should be your actual USDT balance)
+            cash_realistic = cash_balance > 0 and cash_balance < 10000  # Between 0 and $10k
+            
+            # Verify total estimated includes cash
+            total_includes_cash = total_estimated >= portfolio_total
+            
+            # Verify portfolio values are consistent
+            values_consistent = portfolio_total >= 0 and total_estimated >= 0
+            
+            # Check if cash balance matches expected USDT amount (~642)
+            expected_usdt_range = 600 <= cash_balance <= 700
+            
+            card_tests_passed = sum([cash_realistic, total_includes_cash, values_consistent, expected_usdt_range])
+            card_tests_total = 4
+            
+            test_data['test_results']['card_data_sync'] = {
+                'status': 'pass' if card_tests_passed == card_tests_total else 'partial' if card_tests_passed > 0 else 'fail',
+                'tests_passed': card_tests_passed,
+                'tests_total': card_tests_total,
+                'portfolio_total': portfolio_total,
+                'cash_balance': cash_balance,
+                'total_estimated': total_estimated,
+                'total_pnl': total_pnl,
+                'cash_realistic': cash_realistic,
+                'total_includes_cash': total_includes_cash,
+                'values_consistent': values_consistent,
+                'usdt_in_expected_range': expected_usdt_range
+            }
+        except Exception as e:
+            test_data['test_results']['card_data_sync'] = {
+                'status': 'error',
+                'error': str(e)
+            }
 
         # Add dynamic test count and use no-cache response
         test_data['tests_available'] = len(test_data['test_results'])
