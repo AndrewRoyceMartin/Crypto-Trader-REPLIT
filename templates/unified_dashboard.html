@@ -515,24 +515,64 @@
 
     async function toggleBot() {
         try {
-            const ctl = new AbortController();
-            const data = await fetch('/api/toggle-bot', { 
+            // First check current bot status
+            const statusResponse = await fetch('/api/bot/status');
+            const statusData = await statusResponse.json();
+            
+            const isRunning = statusData.running === true;
+            const endpoint = isRunning ? '/api/bot/stop' : '/api/bot/start';
+            const action = isRunning ? 'stop' : 'start';
+            
+            // Show confirmation for starting
+            if (!isRunning) {
+                if (!confirm('Start the trading bot?\n\n• This will begin automated trading\n• The bot will use Enhanced Bollinger Bands strategy\n• Trading will be in LIVE mode with real money\n\nContinue?')) {
+                    return;
+                }
+            }
+            
+            const response = await fetch(endpoint, { 
                 method: 'POST',
                 cache: 'no-store',
-                signal: ctl.signal,
-                headers: { 'Cache-Control': 'no-store' }
-            }).then(res => res.json());
-            if (data.success) {
-                const botStatus = document.getElementById('bot-status');
-                const botToggleText = document.getElementById('bot-toggle-text');
-                if (botStatus) botStatus.textContent = data.status;
-                if (botToggleText) botToggleText.textContent = data.status;
-                alert(`Bot ${data.status}`);
+                headers: { 
+                    'Cache-Control': 'no-store',
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            const data = await response.json();
+            
+            if (response.ok && (data.success || data.message)) {
+                // Update button text immediately
+                const botButton = document.getElementById('bot-status-top');
+                if (botButton) {
+                    botButton.textContent = isRunning ? 'START BOT' : 'STOP BOT';
+                }
+                
+                // Update status badge
+                const statusElement = document.getElementById('trading-status');
+                if (statusElement) {
+                    const newStatus = isRunning ? 'Inactive' : 'Active';
+                    statusElement.innerHTML = `<span class="icon icon-circle me-1" aria-hidden="true"></span>${newStatus}`;
+                    statusElement.className = `badge ${isRunning ? 'bg-secondary' : 'bg-success'} ms-2`;
+                }
+                
+                alert(`Bot ${action}ed successfully!`);
+                
+                // Refresh dashboard data after a moment
+                setTimeout(() => {
+                    if (typeof loadDashboardData === 'function') {
+                        loadDashboardData();
+                    }
+                    location.reload();
+                }, 1000);
             } else {
-                alert(`Bot toggle failed: ${data.error}`);
+                alert(`Bot toggle failed: ${data.error || 'Unknown error'}`);
             }
         } catch (error) {
             console.error('Bot toggle error:', error);
+            alert('Bot toggle failed: Network error');
+        }
+    }
             alert('Bot toggle failed: Network error');
         }
     }

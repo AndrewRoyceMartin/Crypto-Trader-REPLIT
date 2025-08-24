@@ -3449,7 +3449,6 @@ class TradingApp {
         if (status.status) {
             this.updateActiveStatus(status.status === 'Active');
         }
-    }
 
         const startTimeEl = document.getElementById('trading-start-time');
         if (startTimeEl && status.started_at) {
