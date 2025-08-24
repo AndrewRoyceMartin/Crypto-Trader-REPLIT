@@ -6245,6 +6245,76 @@ function buyMorePosition(symbol) {
     }
 }
 
+// Recalculate positions function
+async function recalculatePositions() {
+    const btn = document.getElementById('recalculate-btn');
+    const originalText = btn.innerHTML;
+    
+    try {
+        // Show loading state
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Recalculating...';
+        
+        // Get admin token from window (set by app authentication)
+        const adminToken = window.ADMIN_TOKEN || localStorage.getItem('admin_token') || 'trading-admin-2024';
+        
+        // Call recalculation API
+        const response = await fetch('/api/recalculate-positions', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${adminToken}`
+            },
+            body: JSON.stringify({ force_refresh: true })
+        });
+        
+        if (!response.ok) {
+            throw new Error(`Recalculation failed: ${response.status}`);
+        }
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            // Force refresh available positions data
+            await refreshAvailablePositions();
+            
+            // Show success feedback
+            btn.innerHTML = '<i class="fas fa-check-circle me-1"></i>Complete!';
+            btn.className = 'btn btn-success btn-sm';
+            
+            // Reset after 2 seconds
+            setTimeout(() => {
+                btn.innerHTML = originalText;
+                btn.className = 'btn btn-outline-primary btn-sm';
+                btn.disabled = false;
+            }, 2000);
+            
+            console.log('Available positions recalculated successfully');
+        } else {
+            throw new Error(result.message || 'Recalculation failed');
+        }
+        
+    } catch (error) {
+        console.error('Recalculation error:', error);
+        
+        // Show error state
+        btn.innerHTML = '<i class="fas fa-exclamation-triangle me-1"></i>Error';
+        btn.className = 'btn btn-danger btn-sm';
+        
+        // Reset after 3 seconds
+        setTimeout(() => {
+            btn.innerHTML = originalText;
+            btn.className = 'btn btn-outline-primary btn-sm';
+            btn.disabled = false;
+        }, 3000);
+        
+        alert(`Recalculation failed: ${error.message}`);
+    }
+}
+
+// Make function globally available
+window.recalculatePositions = recalculatePositions;
+
 // Available positions action functions
 function buyBackPosition(symbol) {
     const defaultAmount = 100; // Default $100 rebuy limit from system preferences
