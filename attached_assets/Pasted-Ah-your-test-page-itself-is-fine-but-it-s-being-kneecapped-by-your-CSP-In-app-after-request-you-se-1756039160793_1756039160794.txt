@@ -1,0 +1,76 @@
+Ah—your test page itself is fine, but it’s being kneecapped by your CSP. In app.after_request you set:
+
+script-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com;
+
+
+…and you do inline JS in the page. With that CSP, browsers block inline scripts, so your big <script>…</script> never runs. That’s why “Run All Tests” looks dead.
+
+Here are two clean ways to fix it (pick one).
+
+Option A (recommended): externalize the JS
+
+Put the whole <script> … </script> block into a file at static/js/test_sync_data.js.
+
+Replace the inline block with a normal script tag (defer so it runs after DOM is parsed):
+
+<!-- at the bottom, before </body> -->
+<script src="/static/js/test_sync_data.js" defer></script>
+
+
+No CSP changes needed because script-src 'self' allows your own static JS.
+
+Also tweak your fetch to defeat any caching:
+
+- fetch('/api/test-sync-data', {
+-     method: 'GET',
+-     headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
+- })
++ fetch('/api/test-sync-data', {
++     method: 'GET',
++     cache: 'no-store',
++     headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
++ })
+
+
+Nice-to-have polish (pure front-end):
+
+Make unknown test names read nicer:
+
+- return names[testName] || testName.replace('_', ' ').toUpperCase();
++ return names[testName] || testName.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+
+
+You already handle tooltips and rebinding well; keep that.
+
+Option B: allow inline script only on this page
+
+If you really want to keep the inline <script>, selectively relax CSP just for /test-sync-data:
+
+@app.after_request
+def add_security_headers(resp):
+    is_development = os.getenv("FLASK_ENV") == "development" or os.getenv("NODE_ENV") == "development"
+
+    script_src = ["'self'", "https://cdn.jsdelivr.net", "https://cdnjs.cloudflare.com"]
+    # allow inline only for the test page (or in dev)
+    if request.path == "/test-sync-data" or is_development:
+        script_src.append("'unsafe-inline'")
+
+    style_src = ["'self'", "https://fonts.googleapis.com", "https://cdn.jsdelivr.net", "https://cdnjs.cloudflare.com", "'unsafe-inline'"]
+
+    resp.headers["Content-Security-Policy"] = (
+        "default-src 'self'; "
+        f"script-src {' '.join(script_src)}; "
+        f"style-src {' '.join(style_src)}; "
+        "font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; "
+        "img-src 'self' data: https://cryptologos.cc https://raw.githubusercontent.com https://assets.coingecko.com https://s2.coinmarketcap.com https://static.okx.com; "
+        f"connect-src 'self' wss: ws: {'http://localhost:* https://localhost:* ws://localhost:* wss://localhost:*' if is_development else ''}; "
+        "frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+    )
+    # (rest of headers unchanged)
+    return resp
+
+One more server-side alignment
+
+Your test UI is good with the server response I shared earlier. If you haven’t already, update /api/test-sync-data to the version I provided (it fixes _dt NameErrors and duplicate keys), and your dashboard cards will render consistently.
+
+Once you either (A) externalize the JS or (B) relax CSP for that page, the “Run All Tests” button and auto-run should snap to life.
