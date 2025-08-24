@@ -1788,6 +1788,8 @@ class TradingApp {
             const table = document.getElementById('holdings-table');
             if (table) v02ApplyDataLabels(table);
             
+            console.log('Table updated successfully');
+            
         } catch (error) {
             console.debug('Holdings table update failed:', error);
             
@@ -2628,12 +2630,7 @@ class TradingApp {
         }
         this.lastTableUpdate = now;
         
-        // Update holdings table (Open Positions)
-        if (document.getElementById('holdings-tbody')) {
-            this.updateHoldingsTableSafe(holdings);
-        }
-        
-        // Update positions table body  
+        // Update holdings table (Open Positions) - Use only ONE method to prevent conflicts
         if (document.getElementById('holdings-tbody')) {
             this.updateHoldingsTable(holdings);
         }
@@ -2644,97 +2641,9 @@ class TradingApp {
         }
     }
     
-    // Safe holdings table update (prevents conflicts with HTML template function)
-    updateHoldingsTableSafe(holdings) {
-        const tbody = document.getElementById('holdings-tbody');
-        if (!tbody) return;
-        
-        // Skip if another update is in progress
-        if (tbody.dataset.updating === 'true') {
-            console.log('Holdings table update in progress, skipping...');
-            return;
-        }
-        
-        tbody.dataset.updating = 'true';
-        
-        try {
-            if (!holdings || holdings.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="13" class="text-center py-3 text-muted">No open positions</td></tr>';
-                return;
-            }
-            
-            // Filter out positions with very small values to match server-side filtering
-            const significantHoldings = holdings.filter(h => {
-                const value = h.current_value || h.value || 0;
-                return value > 0.001; // Only show positions worth more than $0.001
-            });
-            
-            tbody.innerHTML = significantHoldings.map(holding => {
-                const pnlClass = (holding.pnl || 0) >= 0 ? 'text-success' : 'text-danger';
-                const pnlSign = (holding.pnl || 0) >= 0 ? '+' : '';
-                const symbol = holding.symbol || holding.name || 'N/A';
-                
-                // Get crypto icon
-                const cryptoIcon = `<img src="https://cryptoicons.org/api/icon/${symbol.toLowerCase()}/32" 
-                                       alt="${symbol}" class="crypto-icon me-2" width="24" height="24"
-                                       onerror="this.onerror=null; this.src='data:image/svg+xml,<svg xmlns=&quot;http://www.w3.org/2000/svg&quot; width=&quot;24&quot; height=&quot;24&quot; viewBox=&quot;0 0 24 24&quot; fill=&quot;%236c757d&quot;><circle cx=&quot;12&quot; cy=&quot;12&quot; r=&quot;10&quot;/><text x=&quot;12&quot; y=&quot;16&quot; font-size=&quot;8&quot; text-anchor=&quot;middle&quot; fill=&quot;white&quot;>${symbol.charAt(0)}</text></svg>';">`;
-                
-                // Calculate values safely
-                const quantity = safeNum(holding.quantity || holding.available_quantity, 0);
-                const costBasis = safeNum(holding.cost_basis, 0);
-                const currentValue = safeNum(holding.current_value || holding.value, 0);
-                const currentPrice = safeNum(holding.current_price, 0);
-                const avgPurchasePrice = quantity > 0 ? (costBasis / quantity) : 0;
-                const pnlDollar = this.num(holding.pnl, 0);
-                const pnlPercent = this.num(holding.pnl_percent, 0);
-                
-                // Target calculations (15% profit target)
-                const profitTarget = 0.15;
-                const targetValue = costBasis * (1 + profitTarget);
-                const targetPnlDollar = targetValue - costBasis;
-                const targetPnlPercent = profitTarget * 100;
-                
-                return `
-                    <tr>
-                        <td>
-                            <div class="d-flex align-items-center">
-                                ${cryptoIcon}
-                                <strong class="ms-2">${symbol}</strong>
-                            </div>
-                        </td>
-                        <td class="text-end font-monospace">${quantity.toFixed(6)}</td>
-                        <td class="text-end font-monospace">${this.formatCurrency(currentValue)}</td>
-                        <td class="text-end font-monospace">${this.formatCurrency(costBasis)}</td>
-                        <td class="text-end font-monospace">${this.formatCurrency(avgPurchasePrice)}</td>
-                        <td class="text-end font-monospace">${this.formatCurrency(currentPrice)}</td>
-                        <td class="text-end font-monospace ${pnlClass}">
-                            ${pnlSign}${this.formatCurrency(Math.abs(pnlDollar))}
-                        </td>
-                        <td class="text-end font-monospace ${pnlClass}">
-                            ${pnlSign}${Math.abs(pnlPercent).toFixed(2)}%
-                        </td>
-                        <td class="text-end font-monospace">${this.formatCurrency(targetValue)}</td>
-                        <td class="text-end font-monospace text-success">
-                            +${this.formatCurrency(targetPnlDollar)}
-                        </td>
-                        <td class="text-end font-monospace text-success">
-                            +${targetPnlPercent.toFixed(2)}%
-                        </td>
-                        <td class="text-center text-muted">30d</td>
-                        <td class="text-center">
-                            <div class="btn-group btn-group-sm" role="group">
-                                <button class="btn btn-outline-primary btn-xs px-2">25%</button>
-                                <button class="btn btn-outline-primary btn-xs px-2">50%</button>
-                                <button class="btn btn-outline-primary btn-xs px-2">All</button>
-                            </div>
-                        </td>
-                    </tr>
-                `;
-            }).join('');
-        } finally {
-            tbody.dataset.updating = 'false';
-        }
-    }
+    // REMOVED: updateHoldingsTableSafe - was causing conflicts with updateHoldingsTable
+    // This function was creating flickering by competing with updateHoldingsTable()
+    // Using only one update method now for consistency
 
     updateCryptoSymbols(cryptos) {
         const symbolsContainer = document.getElementById('crypto-symbols');
