@@ -903,16 +903,21 @@
                 }
             }
             
-            // Update overview section OKX status
-            const overviewConnectionEl = document.getElementById('overview-connection');
-            const connectionBadgeEl = document.getElementById('okx-connection-badge');
-            if (overviewConnectionEl && connectionBadgeEl) {
-                if (okxData.status && okxData.status.connected) {
-                    overviewConnectionEl.textContent = okxData.status.connection_type || 'Connected';
-                    connectionBadgeEl.className = 'badge bg-success';
-                } else {
-                    overviewConnectionEl.textContent = 'Disconnected';
-                    connectionBadgeEl.className = 'badge bg-danger';
+            // Update overview section OKX status using setConn function
+            if (typeof setConn === 'function') {
+                setConn(okxData.status && okxData.status.connected);
+            } else {
+                // Fallback for compatibility
+                const overviewConnectionEl = document.getElementById('overview-connection');
+                const connectionBadgeEl = document.getElementById('okx-connection-badge');
+                if (overviewConnectionEl && connectionBadgeEl) {
+                    if (okxData.status && okxData.status.connected) {
+                        overviewConnectionEl.textContent = okxData.status.connection_type || 'Connected';
+                        connectionBadgeEl.className = 'badge bg-success';
+                    } else {
+                        overviewConnectionEl.textContent = 'Disconnected';
+                        connectionBadgeEl.className = 'badge bg-danger';
+                    }
                 }
             }
             

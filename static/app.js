@@ -81,6 +81,15 @@ function toast(msg, type='info'){
     }, 4000);
 }
 
+// Connection badge state management
+function setConn(connected){
+  const el = document.getElementById('overview-connection');
+  if (!el) return;
+  el.textContent = connected ? 'Connected' : 'Disconnected';
+  el.closest('.badge')?.classList.toggle('bg-success', connected);
+  el.closest('.badge')?.classList.toggle('bg-danger', !connected);
+}
+
 // Event delegation for card view toggle buttons
 document.addEventListener('DOMContentLoaded', function() {
     document.addEventListener('click', function(e) {
@@ -2020,6 +2029,9 @@ class TradingApp {
 
             const serverConnectionText = document.getElementById('server-connection-text');
             const statusIcon = document.querySelector('#server-connection-status i.fas'); // generic icon under this container
+            
+            // Update connection badge
+            setConn(data.status && data.status.connected);
 
             const isConnected = data.status === 'connected' || data.connected === true;
 
@@ -2055,6 +2067,9 @@ class TradingApp {
             const data = await response.json();
             const okxConnectionText = document.getElementById('okx-connection-text');
             const statusIcon = document.querySelector('#okx-connection-status .fas.fa-server');
+            
+            // Update connection badge
+            setConn(data.status && data.status.connected);
 
             if (okxConnectionText && data.status) {
                 const isConnected  = data.status.connected === true;
