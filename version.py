@@ -3,7 +3,7 @@ Version configuration for the trading system.
 """
 
 # Application version - update this for each deployment
-APP_VERSION = "2.1.1"
+APP_VERSION = "2.1.2"
 
 # Version history:
 # 2.1.1 - 2025-08-22: Enhanced trade history to use OKX trading history (executed trades) instead of order history
