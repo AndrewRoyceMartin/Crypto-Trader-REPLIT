@@ -214,51 +214,48 @@
             <!-- KPI Cards Row -->
             <div class="row text-center mb-4 g-2">
                 <div class="col-6 col-md-2">
-                    <div class="portfolio-card kpi-card view-text" data-card="total-balance">
-                        <button class="view-toggle-btn" onclick="toggleCardView('total-balance')" title="Switch view">
-                            <i class="fa-solid fa-eye"></i>
+                    <div class="portfolio-card kpi-card view-text" data-card="portfolio-graph">
+                        <button class="view-toggle-btn" onclick="toggleCardView('portfolio-graph')" title="Switch view">
+                            <i class="fa-solid fa-chart-area"></i>
                         </button>
                         
-                        <!-- Text View -->
+                        <!-- Graph View -->
                         <div class="view-content view-text-content active">
                             <div class="title">
-                                <span><i class="fa-solid fa-wallet"></i></span>
-                                <div class="title-text">Total Balance</div>
-                                <div class="percent" id="total-balance-percent">0%</div>
+                                <span><i class="fa-solid fa-chart-area"></i></span>
+                                <div class="title-text">Portfolio Timeline</div>
+                                <div class="percent" id="portfolio-growth-percent">0%</div>
                             </div>
                             <div class="data">
-                                <div id="okx-total-balance" class="value">$0.00</div>
-                                <div class="range">
-                                    <div class="fill" id="total-balance-fill" style="width: 50%"></div>
+                                <div class="mini-chart-container" style="height: 80px; margin: 0.5rem 0;">
+                                    <canvas id="portfolio-timeline-chart" width="280" height="80"></canvas>
                                 </div>
+                                <div id="portfolio-current-value" class="value" style="font-size: 1.5rem; margin-top: 0.5rem;">$0.00</div>
                             </div>
-                        </div>
-                        
-                        <!-- Graph View -->
-                        <div class="view-content view-graph-content">
-                            <div class="label">Total Balance Trend</div>
-                            <div class="mini-chart-container">
-                                <canvas id="total-balance-chart" width="100" height="50"></canvas>
-                            </div>
-                            <div id="okx-total-balance-graph" class="value small">$0.00</div>
                         </div>
                         
                         <!-- Detailed View -->
                         <div class="view-content view-detailed-content">
-                            <div class="label">Balance Details</div>
-                            <div id="okx-total-balance-detailed" class="value">$0.00</div>
-                            <div class="detailed-stats">
-                                <div class="stat-item"><span>Available:</span><span id="balance-available">$0.00</span></div>
-                                <div class="stat-item"><span>In Orders:</span><span id="balance-orders">$0.00</span></div>
-                                <div class="stat-item"><span>Change 24h:</span><span id="balance-24h">0%</span></div>
+                            <div class="title">
+                                <span><i class="fa-solid fa-chart-line"></i></span>
+                                <div class="title-text">Portfolio Details</div>
+                                <div class="percent" id="portfolio-detail-percent">0%</div>
+                            </div>
+                            <div class="data">
+                                <div id="portfolio-detailed-value" class="value">$0.00</div>
+                                <div class="detailed-stats">
+                                    <div class="stat-item"><span>7d Change:</span><span id="portfolio-7d">0%</span></div>
+                                    <div class="stat-item"><span>30d Change:</span><span id="portfolio-30d">0%</span></div>
+                                    <div class="stat-item"><span>All Time:</span><span id="portfolio-all-time">0%</span></div>
+                                </div>
                             </div>
                         </div>
                         
                         <!-- Compact View -->
                         <div class="view-content view-compact-content">
                             <div class="compact-layout">
-                                <div class="compact-value" id="okx-total-balance-compact">$0.00</div>
-                                <i class="fa-solid fa-wallet text-muted"></i>
+                                <div class="compact-value" id="portfolio-compact-value">$0.00</div>
+                                <i class="fa-solid fa-chart-area text-muted"></i>
                             </div>
                         </div>
                     </div>
