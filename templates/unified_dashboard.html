@@ -327,7 +327,7 @@
                 <div class="card-body p-0">
                     <div class="table-responsive">
                         <table class="table table-sm table-hover mb-0" id="trades-table">
-                            <thead class="table-light">
+                            <thead class="table-dark sticky-top">
                                 <tr>
                                     <th class="table-sortable" data-sort="timestamp">
                                         Date <span class="icon icon-sort text-muted"></span>
@@ -729,8 +729,8 @@
             
             return `
                 <tr>
-                    <td>${date}</td>
-                    <td><strong>${trade.symbol || 'N/A'}</strong></td>
+                    <td class="text-white">${date}</td>
+                    <td class="text-white"><strong>${trade.symbol || 'N/A'}</strong></td>
                     <td class="${sideClass}">${trade.side || 'N/A'}</td>
                     <td class="text-end">${(trade.quantity || 0).toFixed(6)}</td>
                     <td class="text-end">$${(trade.price || 0).toFixed(4)}</td>
