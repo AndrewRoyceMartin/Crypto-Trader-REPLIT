@@ -1369,6 +1369,11 @@ class TradingApp {
             
             if (!data.success || !data.holdings) return;
             
+            // Call the table rendering function
+            if (window.renderHoldingsTable && typeof window.renderHoldingsTable === 'function') {
+                window.renderHoldingsTable(data.holdings);
+            }
+            
             // Update holdings table
             this.updateHoldingsTable(data.holdings, data.total_value);
             
@@ -5135,6 +5140,10 @@ async function fetchAndUpdateAvailablePositions() {
         console.debug("Available positions API response:", data);
         
         if (data.success) {
+            // Call the table rendering function
+            if (window.renderAvailableTable && typeof window.renderAvailableTable === 'function') {
+                window.renderAvailableTable(data.available_positions || []);
+            }
             updateAvailablePositionsTable(data.available_positions || []);
         } else {
             console.error("Available positions API error:", data.error);
@@ -5392,7 +5401,7 @@ function createAvailablePositionRow(position) {
 // Available positions table function
 function updateAvailablePositionsTable(availablePositions) {
     try {
-        const availableTableBody = document.getElementById("available-positions-table-body");
+        const availableTableBody = document.getElementById("available-tbody");
         if (!availableTableBody) {
             console.debug("Available positions table body element not found");
             return;

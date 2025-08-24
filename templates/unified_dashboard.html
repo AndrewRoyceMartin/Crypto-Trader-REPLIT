@@ -816,6 +816,19 @@
         if (window.tradingApp && typeof window.tradingApp.init === 'function') {
             window.tradingApp.init();
         }
+        
+        // Load initial data for tables
+        setTimeout(() => {
+            if (window.tradingApp && typeof window.tradingApp.updateCurrentHoldings === 'function') {
+                window.tradingApp.updateCurrentHoldings();
+            }
+            if (typeof refreshHoldingsData === 'function') {
+                refreshHoldingsData();
+            }
+            if (typeof fetchAndUpdateAvailablePositions === 'function') {
+                fetchAndUpdateAvailablePositions();
+            }
+        }, 1000);
     });
     </script>
 </body>
