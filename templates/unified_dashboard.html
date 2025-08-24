@@ -534,6 +534,7 @@
             const okxResponse = await fetch('/api/okx-status');
             const okxData = await okxResponse.json();
             
+            // Update footer OKX status
             const okxEl = document.getElementById('footer-okx-status');
             if (okxEl) {
                 if (okxData.status && okxData.status.connected) {
@@ -542,6 +543,19 @@
                 } else {
                     okxEl.textContent = 'Disconnected';
                     okxEl.className = 'text-danger';
+                }
+            }
+            
+            // Update overview section OKX status
+            const overviewConnectionEl = document.getElementById('overview-connection');
+            const connectionBadgeEl = document.getElementById('okx-connection-badge');
+            if (overviewConnectionEl && connectionBadgeEl) {
+                if (okxData.status && okxData.status.connected) {
+                    overviewConnectionEl.textContent = okxData.status.connection_type || 'Connected';
+                    connectionBadgeEl.className = 'badge bg-success';
+                } else {
+                    overviewConnectionEl.textContent = 'Disconnected';
+                    connectionBadgeEl.className = 'badge bg-danger';
                 }
             }
             
