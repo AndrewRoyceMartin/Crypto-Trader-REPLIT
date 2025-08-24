@@ -17,16 +17,17 @@ import warnings
 import gc
 from datetime import datetime, timedelta, timezone
 from collections import OrderedDict
+from typing import Any, Optional, Iterator, TypedDict
+from functools import wraps
 
 # Only suppress specific pkg_resources deprecation warning - all other warnings will show
 warnings.filterwarnings('ignore', message='pkg_resources is deprecated as an API.*', category=DeprecationWarning)
-from typing import Any, Optional, Iterator, TypedDict
-from functools import wraps
+
 from flask import Flask, jsonify, request, render_template, make_response
 from flask.typing import ResponseReturnValue
 
 # Top-level imports only (satisfies linter)
-from src.services.portfolio_service import get_portfolio_service as _get_ps  # noqa: E402
+from src.services.portfolio_service import get_portfolio_service as _get_ps
 
 # Set up logging for deployment - MOVED TO TOP to avoid NameError
 logging.basicConfig(
@@ -52,6 +53,7 @@ except ImportError:
 # Admin authentication
 ADMIN_TOKEN = os.getenv("ADMIN_TOKEN", "")
 
+
 def require_admin(f: Any) -> Any:
     @wraps(f)
     def _w(*args: Any, **kwargs: Any) -> Any:
@@ -60,7 +62,10 @@ def require_admin(f: Any) -> Any:
         return f(*args, **kwargs)
     return _w
 
+
 # === Type Definitions ===
+
+
 class WarmupState(TypedDict, total=False):
     started: bool
     done: bool
@@ -69,6 +74,7 @@ class WarmupState(TypedDict, total=False):
     start_time: str
     start_ts: float
 
+
 class BotState(TypedDict, total=False):
     running: bool
     mode: Optional[str]
@@ -76,10 +82,14 @@ class BotState(TypedDict, total=False):
     timeframe: Optional[str]
     started_at: Optional[str]
 
+
 # === UTC DateTime Helpers ===
+
+
 def utcnow() -> datetime:
     from datetime import datetime, timezone
     return datetime.now(timezone.utc)
+
 
 def iso_utc(dt: Optional[datetime] = None) -> str:
     """Canonical RFC3339 timestamp formatter with Z suffix."""
@@ -87,10 +97,14 @@ def iso_utc(dt: Optional[datetime] = None) -> str:
     # RFC3339 with Z
     return d.replace(microsecond=0).isoformat().replace("+00:00", "Z")
 
+
 # === OKX Native API Helpers ===
+
+
 def now_utc_iso() -> str:
     """Generate UTC ISO timestamp for OKX API requests."""
     return utcnow().strftime('%Y-%m-%dT%H:%M:%S.%fZ')
+
 
 def okx_sign(secret_key: str, timestamp: str, method: str, path: str, body: str = '') -> str:
     """Generate OKX API signature using HMAC-SHA256."""
@@ -101,26 +115,27 @@ def okx_sign(secret_key: str, timestamp: str, method: str, path: str, body: str 
 # Global HTTP session for connection reuse
 _requests_session = requests.Session()
 
+
 def get_reusable_exchange():
     """Get centralized CCXT exchange instance to avoid re-auth and load_markets() calls."""
     try:
         service = get_portfolio_service()
-        if (hasattr(service, 'exchange') and hasattr(service.exchange, 'exchange') and 
-            service.exchange.exchange is not None):
+        if (hasattr(service, 'exchange') and hasattr(service.exchange, 'exchange') and
+                service.exchange.exchange is not None):
             logger.debug("Reusing existing portfolio service exchange instance")
             return service.exchange.exchange
     except Exception as e:
         logger.debug(f"Could not reuse portfolio service exchange: {e}")
-    
+
     # Fallback to creating new instance (should be rare)
     logger.warning("Creating new ccxt exchange instance - portfolio service unavailable")
     okx_api_key = os.getenv("OKX_API_KEY")
     okx_secret = os.getenv("OKX_SECRET_KEY")
     okx_passphrase = os.getenv("OKX_PASSPHRASE")
-    
+
     if not all([okx_api_key, okx_secret, okx_passphrase]):
         raise RuntimeError("OKX API credentials required")
-    
+
     import ccxt
     # Ensure all credentials are strings for CCXT
     exchange = ccxt.okx({
@@ -137,6 +152,7 @@ def get_reusable_exchange():
     exchange.load_markets()
     return exchange
 
+
 def _okx_base_url() -> str:
     # Prefer www.okx.com over app.okx.com unless explicitly overridden
     raw = os.getenv("OKX_HOSTNAME") or os.getenv("OKX_REGION") or "www.okx.com"
@@ -144,6 +160,7 @@ def _okx_base_url() -> str:
     if not base.startswith("http"):
         base = f"https://{base}"
     return base
+
 
 def okx_request(
     path: str,
@@ -187,6 +204,7 @@ def okx_request(
 # Global client cache
 _okx_client_cache = None
 
+
 def get_okx_native_client() -> Any:
     """Get cached OKX native client instance."""
     global _okx_client_cache
@@ -195,10 +213,11 @@ def get_okx_native_client() -> Any:
         _okx_client_cache = OKXNative.from_env()
     return _okx_client_cache
 
+
 def get_stable_target_price(symbol: str, current_price: float) -> float:
     """
     Get a stable, locked target buy price that won't change with every market update.
-    
+
     Uses TargetPriceManager to:
     - Lock target prices for 24 hours once calculated
     - Only recalculate if market drops >5% from original calculation
@@ -207,22 +226,22 @@ def get_stable_target_price(symbol: str, current_price: float) -> float:
     try:
         if current_price <= 0:
             return current_price
-        
+
         # Skip target calculation for fiat and stablecoins
         if symbol in ['AUD', 'USD', 'EUR', 'GBP', 'USDT', 'USDC', 'DAI', 'BUSD']:
             return current_price
-        
+
         from src.utils.target_price_manager import get_target_price_manager
         target_manager = get_target_price_manager()
-        
+
         target_price, is_locked = target_manager.get_locked_target_price(symbol, current_price)
-        
+
         return target_price
-        
     except Exception as e:
         logger.error(f"Error getting stable target price for {symbol}: {e}")
         # Fallback: 8% discount for safe profitable entry
         return current_price * 0.92
+
 
 def okx_ticker_pct_change_24h(inst_id: str, api_key: str = "", secret_key: str = "", passphrase: str = "") -> dict:
     """Get accurate 24h percentage change from OKX ticker data using native client."""
@@ -232,6 +251,7 @@ def okx_ticker_pct_change_24h(inst_id: str, api_key: str = "", secret_key: str =
     except Exception as e:
         logger.error(f"Failed to get OKX ticker for {inst_id}: {e}")
         return {'last': 0.0, 'open24h': 0.0, 'vol24h': 0.0, 'pct_24h': 0.0}
+
 
 def _date_range(start: datetime, end: datetime) -> Iterator[datetime]:
     d = start
@@ -246,15 +266,15 @@ WATCHLIST = [s.strip() for s in os.getenv(
     "BTC/USDT,ETH/USDT,SOL/USDT,XRP/USDT,DOGE/USDT,BNB/USDT,ADA/USDT,AVAX/USDT,LINK/USDT,UNI/USDT"
 ).split(",") if s.strip()]
 
-MAX_STARTUP_SYMBOLS   = int(os.getenv("MAX_STARTUP_SYMBOLS", "3"))     # minimal: only 3 symbols
-# STARTUP_OHLCV_LIMIT   = int(os.getenv("STARTUP_OHLCV_LIMIT", "120"))  # unused variable
-STARTUP_TIMEOUT_SEC   = int(os.getenv("STARTUP_TIMEOUT_SEC", "8"))    # deployment timeout limit
+MAX_STARTUP_SYMBOLS = int(os.getenv("MAX_STARTUP_SYMBOLS", "3"))     # minimal: only 3 symbols
+# STARTUP_OHLCV_LIMIT = int(os.getenv("STARTUP_OHLCV_LIMIT", "120"))  # unused variable
+STARTUP_TIMEOUT_SEC = int(os.getenv("STARTUP_TIMEOUT_SEC", "8"))    # deployment timeout limit
 
 # --- caching knobs (safe defaults) ---
-PRICE_TTL_SEC       = int(os.getenv("PRICE_TTL_SEC", "3"))     # small TTL for live feel
-# TICKER_TTL_SEC      = int(os.getenv("TICKER_TTL_SEC", "5"))  # unused variable
-OHLCV_TTL_SEC       = int(os.getenv("OHLCV_TTL_SEC", "60"))    # candles can be cached longer
-CACHE_MAX_KEYS      = int(os.getenv("CACHE_MAX_KEYS", "200"))  # prevent unbounded growth
+PRICE_TTL_SEC = int(os.getenv("PRICE_TTL_SEC", "3"))     # small TTL for live feel
+# TICKER_TTL_SEC = int(os.getenv("TICKER_TTL_SEC", "5"))  # unused variable
+OHLCV_TTL_SEC = int(os.getenv("OHLCV_TTL_SEC", "60"))    # candles can be cached longer
+CACHE_MAX_KEYS = int(os.getenv("CACHE_MAX_KEYS", "200"))  # prevent unbounded growth
 
 # WARMUP_SLEEP_SEC      = int(os.getenv("WARMUP_SLEEP_SEC", "1"))       # unused variable
 # CACHE_FILE            = "warmup_cache.parquet"                        # unused variable
@@ -271,6 +291,7 @@ def with_throttle(fn, *a, **kw):
         return fn(*a, **kw)
     finally:
         _ext_sem.release()
+
 
 # Rate limiting for heavy endpoints
 _rate_lock = threading.RLock()
