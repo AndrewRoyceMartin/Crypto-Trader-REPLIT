@@ -280,3 +280,85 @@ h4, h5, h6, .h4, .h5, .h6 { font-weight: var(--fw-medium); }
 .text-danger {
     color: var(--pnl-negative) !important;
 }
+
+/* ===== Stat Strip (compact KPI pills) ===== */
+:root{
+  --kpi-bg: #ffffff;
+  --kpi-border: rgba(0,0,0,.08);
+  --kpi-shadow: 0 6px 18px rgba(0,0,0,.06);
+  --kpi-muted: #6b7280;        /* label */
+  --kpi-primary: #6c7ae0;      /* matches table-v02 head */
+  --kpi-success: #16a34a;
+  --kpi-danger:  #dc2626;
+  --kpi-warning:#d97706;
+}
+
+.stat-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+  margin: 10px 0 6px;
+}
+
+.kpi {
+  background: var(--kpi-bg);
+  border: 1px solid var(--kpi-border);
+  border-radius: 12px;
+  padding: 10px 12px;
+  box-shadow: var(--kpi-shadow);
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-areas:
+    "label  delta"
+    "value  spark";
+  align-items: center;
+}
+
+.kpi__label {
+  grid-area: label;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: .02em;
+  color: var(--kpi-muted);
+  text-transform: uppercase;
+}
+
+.kpi__value {
+  grid-area: value;
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1.1;
+}
+
+.kpi__delta {
+  grid-area: delta;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 999px;
+  border: 1px solid var(--kpi-border);
+  color: var(--kpi-primary);
+  background: rgba(108,122,224,.08);
+}
+.kpi__delta.up    { color: var(--kpi-success); background: rgba(22,163,74,.08); }
+.kpi__delta.down  { color: var(--kpi-danger);  background: rgba(220,38,38,.08); }
+.kpi__delta.flat  { color: var(--kpi-muted);   background: rgba(0,0,0,.04); }
+
+.kpi__spark {
+  grid-area: spark;
+  inline-size: 72px;
+  block-size: 18px;
+  opacity: .85;
+}
+
+/* Optional "status" tint if you want per-KPI emphasis */
+.kpi[data-tone="primary"] { border-color: rgba(108,122,224,.25); }
+.kpi[data-tone="success"] { border-color: rgba(22,163,74,.25); }
+.kpi[data-tone="danger"]  { border-color: rgba(220,38,38,.25); }
+.kpi[data-tone="warning"] { border-color: rgba(217,119,6,.25); }
+
+/* Small screens: keep it airy */
+@media (max-width: 576px) {
+  .kpi { border-radius: 10px; padding: 10px; }
+  .kpi__value { font-size: 18px; }
+}

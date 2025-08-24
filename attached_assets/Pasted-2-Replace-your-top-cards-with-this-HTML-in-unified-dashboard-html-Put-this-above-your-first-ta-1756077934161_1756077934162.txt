@@ -1,0 +1,45 @@
+2) Replace your top “cards” with this HTML (in unified_dashboard.html)
+
+Put this above your first table. You can keep or remove any KPIs you don’t need.
+
+<div class="stat-strip" id="top-kpis">
+  <div class="kpi" id="kpi-equity" data-tone="primary">
+    <div class="kpi__label">Equity</div>
+    <div class="kpi__value" data-kpi-value>—</div>
+    <div class="kpi__delta flat" data-kpi-delta>0.0%</div>
+    <!-- tiny inline sparkline (optional) -->
+    <svg class="kpi__spark" viewBox="0 0 100 24" preserveAspectRatio="none" aria-hidden="true">
+      <polyline points="0,12 20,10 40,14 60,9 80,13 100,8" fill="none" stroke="currentColor" stroke-width="2" opacity=".6"/>
+    </svg>
+  </div>
+
+  <div class="kpi" id="kpi-upnl">
+    <div class="kpi__label">Unrealised P&L</div>
+    <div class="kpi__value" data-kpi-value>—</div>
+    <div class="kpi__delta flat" data-kpi-delta>0.0%</div>
+    <svg class="kpi__spark" viewBox="0 0 100 24" preserveAspectRatio="none" aria-hidden="true">
+      <polyline points="0,14 20,12 40,10 60,11 80,9 100,12" fill="none" stroke="currentColor" stroke-width="2" opacity=".6"/>
+    </svg>
+  </div>
+
+  <div class="kpi" id="kpi-exposure">
+    <div class="kpi__label">Exposure</div>
+    <div class="kpi__value" data-kpi-value>—</div>
+    <div class="kpi__delta flat" data-kpi-delta>0.0%</div>
+    <svg class="kpi__spark" viewBox="0 0 100 24" preserveAspectRatio="none" aria-hidden="true">
+      <polyline points="0,16 20,15 40,14 60,15 80,16 100,15" fill="none" stroke="currentColor" stroke-width="2" opacity=".6"/>
+    </svg>
+  </div>
+
+  <div class="kpi" id="kpi-cash">
+    <div class="kpi__label">Cash</div>
+    <div class="kpi__value" data-kpi-value>—</div>
+    <div class="kpi__delta flat" data-kpi-delta>0.0%</div>
+    <svg class="kpi__spark" viewBox="0 0 100 24" preserveAspectRatio="none" aria-hidden="true">
+      <polyline points="0,8 20,9 40,8 60,9 80,8 100,9" fill="none" stroke="currentColor" stroke-width="2" opacity=".6"/>
+    </svg>
+  </div>
+</div>
+
+
+The sparks are optional, lightweight inline SVGs—no chart lib needed. Remove the <svg>s if you prefer ultra-minimal.
