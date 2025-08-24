@@ -23,6 +23,20 @@ async function fetchJSON(url, { method='GET', body, timeout=10000, headers={}, n
   } finally { clearTimeout(t); }
 }
 
+// Global currency helper functions
+function currentCurrency(){
+    return document.getElementById('currency-selector')?.value || 'USD';
+}
+
+function fmtCurrency(n){
+    return new Intl.NumberFormat('en-US', {
+        style:'currency',
+        currency: currentCurrency(),
+        minimumFractionDigits:2,
+        maximumFractionDigits:2
+    }).format(Number(n||0));
+}
+
 class TradingApp {
     constructor() {
         this.updateInterval = null;
@@ -97,30 +111,40 @@ class TradingApp {
         return n.toFixed(p);
     }
     formatCurrency(amount, currency = null) {
-        // FIXED: No local conversion - backend provides pre-converted amounts
-        // The backend already handles currency conversion via OKX rates
-        const targetCurrency = currency || this.selectedCurrency || 'USD';
         const numericAmount = Number(amount) || 0;
+        
+        // Handle very small amounts with extended decimal places
+        if (Math.abs(numericAmount) < 0.000001 && numericAmount !== 0) {
+            return new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: currentCurrency(),
+                minimumFractionDigits: 8,
+                maximumFractionDigits: 8
+            }).format(numericAmount);
+        }
 
-        return new Intl.NumberFormat('en-US', {
-            style: 'currency',
-            currency: targetCurrency,
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2
-        }).format(numericAmount);
+        // Handle small amounts (under $0.01) with more decimal places
+        if (Math.abs(numericAmount) < 0.01 && numericAmount !== 0) {
+            return new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: currentCurrency(),
+                minimumFractionDigits: 4,
+                maximumFractionDigits: 6
+            }).format(numericAmount);
+        }
+
+        // Use global fmtCurrency for standard amounts
+        return fmtCurrency(numericAmount);
     }
 
     // Special formatter for crypto prices with consistent precision
     formatCryptoPrice(amount, currency = null) {
-        // FIXED: No local conversion - backend provides pre-converted amounts
-        // The backend already handles currency conversion via OKX rates
-        const targetCurrency = currency || this.selectedCurrency || 'USD';
         const numericAmount = Number(amount) || 0;
 
         // Always use 8 decimal places for crypto to prevent bouncing
         return new Intl.NumberFormat('en-US', {
             style: 'currency',
-            currency: targetCurrency,
+            currency: currentCurrency(),
             minimumFractionDigits: 8,
             maximumFractionDigits: 8
         }).format(numericAmount);
@@ -128,21 +152,20 @@ class TradingApp {
 
     // Special formatter for very small P&L values to avoid scientific notation
     formatSmallCurrency(amount, currency = null) {
-        const targetCurrency = currency || this.selectedCurrency || 'USD';
         const numericAmount = Number(amount) || 0;
 
         // If amount is very small (like 2.24e-7), use more decimal places
         if (Math.abs(numericAmount) < 0.000001 && numericAmount !== 0) {
             return new Intl.NumberFormat('en-US', {
                 style: 'currency',
-                currency: targetCurrency,
+                currency: currentCurrency(),
                 minimumFractionDigits: 8,
                 maximumFractionDigits: 10
             }).format(numericAmount);
         }
 
         // Otherwise use regular currency formatting
-        return this.formatCurrency(amount, currency);
+        return this.formatCurrency(amount);
     }
 
     formatNumber(amount) {
@@ -5301,7 +5324,7 @@ function updateOpenPositionsTable(positions, totalValue = 0) {
                 if (Math.abs(numValue) < 0.000001 && numValue !== 0) {
                     return new Intl.NumberFormat("en-US", { 
                         style: "currency", 
-                        currency: "USD",
+                        currency: currentCurrency(),
                         minimumFractionDigits: 8,
                         maximumFractionDigits: 12
                     }).format(numValue);
