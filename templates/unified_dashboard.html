@@ -536,8 +536,8 @@
             
             const okxEl = document.getElementById('footer-okx-status');
             if (okxEl) {
-                if (okxData.connected) {
-                    okxEl.textContent = okxData.connection_type || 'Connected';
+                if (okxData.status && okxData.status.connected) {
+                    okxEl.textContent = okxData.status.connection_type || 'Connected';
                     okxEl.className = 'text-success';
                 } else {
                     okxEl.textContent = 'Disconnected';
