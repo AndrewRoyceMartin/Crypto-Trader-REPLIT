@@ -99,7 +99,7 @@ function setConn(connected){
 // Event delegation for card view toggle buttons
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize V02 table mobile labels
-    document.querySelectorAll('.table.table-v02').forEach(table => {
+    document.querySelectorAll('.table-v02').forEach(table => {
         const theadCells = Array.from(table.querySelectorAll('thead th'));
         if (!theadCells.length) return;
         const headers = theadCells.map(th => (th.innerText || th.textContent).trim());
@@ -1806,7 +1806,7 @@ class TradingApp {
     
     // Update table data labels for mobile display
     updateTableDataLabels() {
-        document.querySelectorAll('.table.table-v02').forEach(table => {
+        document.querySelectorAll('.table-v02').forEach(table => {
             this.v02ApplyDataLabels(table);
         });
     }

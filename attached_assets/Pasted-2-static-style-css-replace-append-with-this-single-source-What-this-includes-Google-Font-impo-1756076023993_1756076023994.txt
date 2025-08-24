@@ -1,0 +1,151 @@
+2) static/style.css — replace / append with this single source
+
+What this includes
+
+Google Font import (Poppins 400/500/600).
+
+Global typography (lightweight, compatible with Bootstrap).
+
+Standalone .table-v02 theme (no dependence on Bootstrap’s table styles).
+
+Mobile “card” stacking using data-label.
+
+Optional per-table accent color via CSS variable.
+
+/* ===== 0) Font: single import here ===== */
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap");
+
+/* ===== 1) Global Typography ===== */
+:root{
+  --font-ui: "Poppins", -apple-system, BlinkMacSystemFont, "Segoe UI",
+             Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji",
+             "Segoe UI Emoji", "Segoe UI Symbol";
+  --fw-regular: 400;
+  --fw-medium: 500;
+  --fw-semibold: 600;
+
+  /* Table V02 tokens */
+  --v02-bg: #ffffff;
+  --v02-head-bg: #6c7ae0;   /* override per table via inline style if desired */
+  --v02-head-color: #ffffff;
+  --v02-border: rgba(0,0,0,.06);
+  --v02-shadow: 0 10px 30px rgba(0,0,0,.08);
+  --v02-row-hover: rgba(108,122,224,.08);
+  --v02-cell-py: 0.9rem;
+  --v02-cell-px: 1.25rem;
+  --v02-radius: 10px;
+}
+
+html { text-rendering: optimizeLegibility; font-variant-ligatures: none; }
+body { font-family: var(--font-ui); font-weight: var(--fw-regular); }
+
+h1, .h1 { font-weight: var(--fw-semibold); line-height: 1.2; }
+h2, .h2 { font-weight: var(--fw-semibold); line-height: 1.25; }
+h3, .h3 { font-weight: var(--fw-medium);   line-height: 1.3; }
+h4, h5, h6, .h4, .h5, .h6 { font-weight: var(--fw-medium); }
+
+.navbar, .nav, .dropdown-menu, .btn, .badge, .breadcrumb {
+  font-family: var(--font-ui);
+  font-weight: var(--fw-medium);
+}
+.form-control, .form-select, .input-group-text, .form-text, small, .small {
+  font-family: var(--font-ui);
+  font-weight: var(--fw-regular);
+}
+
+/* ===== 2) Standalone Table V02 (no Bootstrap table dependency) ===== */
+.table-v02 {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  background: var(--v02-bg);
+  border-radius: var(--v02-radius);
+  box-shadow: var(--v02-shadow);
+  overflow: hidden; /* round header corners on WebKit */
+  font-family: var(--font-ui);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
+/* Header */
+.table-v02 thead th {
+  background: var(--v02-head-bg);
+  color: var(--v02-head-color);
+  border: 0;
+  font-weight: var(--fw-semibold);
+  letter-spacing: .01em;
+  white-space: nowrap;
+  padding: calc(var(--v02-cell-py) + .1rem) var(--v02-cell-px);
+}
+
+/* Body */
+.table-v02 tbody td,
+.table-v02 tbody th {
+  background: var(--v02-bg);
+  border-top: 1px solid var(--v02-border);
+  padding: var(--v02-cell-py) var(--v02-cell-px);
+  vertical-align: middle;
+  font-weight: var(--fw-regular);
+}
+
+/* Compact variant (optional) */
+.table-v02.table-v02--compact tbody td,
+.table-v02.table-v02--compact tbody th {
+  padding-top: .45rem;
+  padding-bottom: .45rem;
+}
+
+/* Hover */
+.table-v02 tbody tr:hover > * {
+  background-color: var(--v02-row-hover);
+}
+
+/* Rounded corners */
+.table-v02 thead tr:first-child th:first-child { border-top-left-radius: var(--v02-radius); }
+.table-v02 thead tr:first-child th:last-child  { border-top-right-radius: var(--v02-radius); }
+.table-v02 tbody tr:last-child td:first-child  { border-bottom-left-radius: var(--v02-radius); }
+.table-v02 tbody tr:last-child td:last-child   { border-bottom-right-radius: var(--v02-radius); }
+
+/* Sortable headers support (works with your .table-sortable/.icon) */
+.table-v02 th.table-sortable { cursor: pointer; position: relative; user-select: none; }
+.table-v02 th.table-sortable .icon { margin-left: .35rem; opacity: .9; vertical-align: baseline; top: -.02em; position: relative; }
+
+/* Numeric emphasis (Bootstrap utilities still fine to use) */
+.table-v02 td.numeric,
+.table-v02 th.numeric,
+.table-v02 .text-end { text-align: right; font-weight: var(--fw-medium); }
+
+/* ===== 3) Mobile “card” stacking ===== */
+@media (max-width: 768px) {
+  .table-v02 thead { display: none; }
+  .table-v02, .table-v02 tbody, .table-v02 tr, .table-v02 td, .table-v02 th {
+    display: block; width: 100%;
+  }
+  .table-v02 tbody tr {
+    background: #fff;
+    border: 1px solid var(--v02-border);
+    border-radius: var(--v02-radius);
+    box-shadow: var(--v02-shadow);
+    margin-bottom: 12px;
+    overflow: hidden;
+  }
+  .table-v02 tbody td {
+    border: 0;
+    border-bottom: 1px dashed var(--v02-border);
+    display: flex;
+    align-items: baseline;
+    gap: .75rem;
+    padding: .85rem 1rem;
+  }
+  .table-v02 tbody td:last-child { border-bottom: 0; }
+  .table-v02 tbody td::before {
+    content: attr(data-label);
+    flex: 0 0 40%;
+    min-width: 140px;
+    font-weight: var(--fw-medium);
+    color: #6c7ae0;
+  }
+}
+
+/* ===== 4) Per-table accent (optional) ===== */
+/* Example: <table class="table-v02" style="--v02-head-bg:#1f9d55;"> */
