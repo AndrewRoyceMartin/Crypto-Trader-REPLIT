@@ -325,8 +325,10 @@ class TradingApp {
         document.addEventListener('visibilitychange', () => {
             if (document.hidden) {
                 this.stopAutoUpdate();
+                this.stopCountdown();
             } else {
                 this.startAutoUpdate();
+                this.startCountdown();
                 this.debouncedUpdateDashboard();
                 this.updateCryptoPortfolio();
             }
@@ -355,6 +357,14 @@ class TradingApp {
         if (this.updateInterval) {
             clearInterval(this.updateInterval);
             this.updateInterval = null;
+        }
+        if (this.chartUpdateInterval) {
+            clearInterval(this.chartUpdateInterval);
+            this.chartUpdateInterval = null;
+        }
+        if (this.positionsCountdownInterval) {
+            clearInterval(this.positionsCountdownInterval);
+            this.positionsCountdownInterval = null;
         }
     }
     stopCountdown() {
