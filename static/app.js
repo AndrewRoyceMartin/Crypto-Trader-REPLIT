@@ -274,6 +274,9 @@ class TradingApp {
         this.debouncedUpdateDashboard();
 
         this.updateCryptoPortfolio();
+        
+        // Initialize footer uptime tracking
+        this.startUptimeTracking();
     }
 
     setupEventListeners() {
@@ -386,8 +389,13 @@ class TradingApp {
         } else if (data.uptime_human) {
             // If we have human-readable uptime, display it directly
             const uptimeElement = document.getElementById('system-uptime');
+            const footerUptimeElement = document.getElementById('footer-system-uptime');
+            
             if (uptimeElement) {
                 uptimeElement.textContent = data.uptime_human;
+            }
+            if (footerUptimeElement) {
+                footerUptimeElement.textContent = data.uptime_human;
             }
         }
 
@@ -1962,8 +1970,17 @@ class TradingApp {
 
     updateUptimeDisplay(serverUptimeSeconds) {
         const uptimeElement = document.getElementById('system-uptime');
-        if (uptimeElement && serverUptimeSeconds !== undefined) {
-            uptimeElement.textContent = this.formatUptime(serverUptimeSeconds);
+        const footerUptimeElement = document.getElementById('footer-system-uptime');
+        
+        if (serverUptimeSeconds !== undefined) {
+            const formattedUptime = this.formatUptime(serverUptimeSeconds);
+            
+            if (uptimeElement) {
+                uptimeElement.textContent = formattedUptime;
+            }
+            if (footerUptimeElement) {
+                footerUptimeElement.textContent = formattedUptime;
+            }
         }
     }
     
@@ -1973,6 +1990,20 @@ class TradingApp {
             const isRunning = botData.running === true;
             botButton.textContent = isRunning ? 'STOP BOT' : 'START BOT';
         }
+    }
+    
+    startUptimeTracking() {
+        // Track local uptime for footer display
+        this.startTime = Date.now();
+        
+        // Update footer uptime every second
+        setInterval(() => {
+            const uptimeSeconds = Math.floor((Date.now() - this.startTime) / 1000);
+            const footerUptimeElement = document.getElementById('footer-system-uptime');
+            if (footerUptimeElement) {
+                footerUptimeElement.textContent = this.formatUptime(uptimeSeconds);
+            }
+        }, 1000);
     }
     
     updateActiveStatus(isActive) {
