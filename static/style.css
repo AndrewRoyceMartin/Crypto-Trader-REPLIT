@@ -105,11 +105,58 @@ h4, h5, h6, .h4, .h5, .h6 { font-weight: var(--fw-medium); }
 .table-v02 th.numeric,
 .table-v02 .text-end { text-align: right; font-weight: var(--fw-medium); }
 
-/* ===== 3) Mobile "card" stacking ===== */
+/* ===== 3) Responsive table improvements ===== */
+
+/* Better table-responsive styling */
+.table-responsive {
+  border-radius: var(--v02-radius);
+  border: 1px solid var(--v02-border);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Fix table header alignment */
+.card-body.p-0 .table-responsive {
+  border: none;
+  border-radius: 0;
+}
+
+/* Large screens - hide less important columns */
+@media (max-width: 1200px) {
+  #holdings-table th:nth-child(9),  /* TARGET VALUE */
+  #holdings-table td:nth-child(9),
+  #holdings-table th:nth-child(10), /* TARGET P&L $ */
+  #holdings-table td:nth-child(10),
+  #holdings-table th:nth-child(11), /* TARGET P&L % */
+  #holdings-table td:nth-child(11) {
+    display: none;
+  }
+}
+
+/* Medium screens - hide more columns */
+@media (max-width: 992px) {
+  #holdings-table th:nth-child(4),  /* COST BASIS */
+  #holdings-table td:nth-child(4),
+  #holdings-table th:nth-child(12), /* DAYS */
+  #holdings-table td:nth-child(12) {
+    display: none;
+  }
+}
+
+/* Small screens - show only essential columns */
 @media (max-width: 768px) {
+  #holdings-table th:nth-child(3),  /* VALUE */
+  #holdings-table td:nth-child(3),
+  #holdings-table th:nth-child(6),  /* MARKET VALUE */
+  #holdings-table td:nth-child(6) {
+    display: none;
+  }
+  
+  /* Mobile card stacking for remaining columns */
   .table-v02 thead { display: none; }
   .table-v02, .table-v02 tbody, .table-v02 tr, .table-v02 td, .table-v02 th {
-    display: block; width: 100%;
+    display: block; 
+    width: 100%;
   }
   .table-v02 tbody tr {
     background: #fff;
@@ -134,6 +181,14 @@ h4, h5, h6, .h4, .h5, .h6 { font-weight: var(--fw-medium); }
     min-width: 140px;
     font-weight: var(--fw-medium);
     color: #6c7ae0;
+  }
+}
+
+/* Extra small screens - minimal columns only */
+@media (max-width: 576px) {
+  #holdings-table th:nth-child(2),  /* BALANCE */
+  #holdings-table td:nth-child(2) {
+    display: none;
   }
 }
 
