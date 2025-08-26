@@ -2494,8 +2494,10 @@ class TradingApp {
 
     async updateCryptoPortfolio() {
         if (this.isUpdatingPortfolio) {
-            console.log('Portfolio update already in progress, skipping...');
-            return;
+            console.debug('Portfolio update already in progress, queuing...');
+            // Wait briefly then try again instead of skipping entirely
+            await new Promise(resolve => setTimeout(resolve, 100));
+            if (this.isUpdatingPortfolio) return; // Still busy, skip this time
         }
         
         // Prevent multiple simultaneous table updates
@@ -5508,7 +5510,7 @@ function updateOpenPositionsTable(positions, totalValue = 0) {
             const currentPnlPercent = parseFloat(position.pnl_percent || 0);
             
             // Target calculations - Use ACTUAL algorithm profit target (4% from Enhanced Bollinger Bands)
-            let targetMultiplier = 1.04; // 4% profit target from algorithm config (take_profit_percent = 4.0)
+            let targetMultiplier = 1.04; // 4% profit target from Enhanced Bollinger Bands strategy
             
             // No hardcoded overrides - use the actual algorithm's take profit setting
             // This matches the Enhanced Bollinger Bands strategy in production
