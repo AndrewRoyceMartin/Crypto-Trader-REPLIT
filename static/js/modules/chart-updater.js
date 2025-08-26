@@ -289,7 +289,6 @@ export class ChartUpdater {
             this.charts.portfolioChart.data.datasets[0].data = values;
             this.charts.portfolioChart.update('none');
         } catch (error) {
-            console.debug('Portfolio chart update failed:', error);
             ChartUpdater.createChartFallback('portfolioChart', 'Failed to load portfolio data', 'warning');
         }
     }
@@ -313,7 +312,6 @@ export class ChartUpdater {
             this.charts.allocationChart.data.datasets[0].data = values;
             this.charts.allocationChart.update('none');
         } catch (error) {
-            console.debug('Allocation chart update failed:', error);
             ChartUpdater.createChartFallback('allocationChart', 'Failed to load allocation data', 'warning');
         }
     }
@@ -337,7 +335,6 @@ export class ChartUpdater {
             this.charts.equityChart.data.datasets[0].data = values;
             this.charts.equityChart.update('none');
         } catch (error) {
-            console.debug('Equity chart update failed:', error);
             ChartUpdater.createChartFallback('equityChart', 'Failed to load equity data', 'warning');
         }
     }
@@ -361,18 +358,21 @@ export class ChartUpdater {
             this.charts.riskChart.data.datasets[0].data = values;
             this.charts.riskChart.update('none');
         } catch (error) {
-            console.debug('Risk chart update failed:', error);
             ChartUpdater.createChartFallback('riskChart', 'Failed to load risk data', 'warning');
         }
     }
 
     async updateAllCharts() {
-        await Promise.all([
-            this.updatePortfolioChart(),
-            this.updateAllocationChart(),
-            this.updateEquityChart(),
-            this.updateRiskChart()
-        ]);
+        try {
+            await Promise.all([
+                this.updatePortfolioChart().catch(() => {}), // Silently handle failures
+                this.updateAllocationChart().catch(() => {}),
+                this.updateEquityChart().catch(() => {}),
+                this.updateRiskChart().catch(() => {})
+            ]);
+        } catch (error) {
+            // Handle any remaining promise rejection issues silently
+        }
     }
 
     startAutoUpdate() {

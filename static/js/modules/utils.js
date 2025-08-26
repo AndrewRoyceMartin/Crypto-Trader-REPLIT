@@ -26,21 +26,18 @@ export class AppUtils {
             
             // Check if response is OK first
             if (!res.ok) {
-                console.debug(`API ${url} returned ${res.status}: ${res.statusText}`);
                 return null;
             }
             
             // Check content type before parsing JSON
             const contentType = res.headers.get('content-type');
             if (!contentType || !contentType.includes('application/json')) {
-                console.debug(`API ${url} returned non-JSON content: ${contentType}`);
                 return null;
             }
             
             const data = await res.json();
             return data;
         } catch (error) {
-            console.debug(`Failed to fetch ${url}:`, error.message);
             return null;
         } finally { 
             clearTimeout(t); 

@@ -105,7 +105,6 @@ async function fetchJSON(url, { method='GET', body, timeout=10000, headers={}, n
     const data = await res.json();
     return data;
   } catch (error) {
-    console.debug(`Failed to fetch ${url}:`, error.message);
     return null;
   } finally { clearTimeout(t); }
 }
@@ -3754,7 +3753,6 @@ class TradingApp {
                 return;
             }
         } catch (e) {
-            console.debug('Failed to fetch trade history:', e);
         }
 
         // Only show empty state if trade-history fails - don't overwrite with status data
@@ -4736,7 +4734,7 @@ window.debugTrades = {
             console.log('Server trades data:', data.recent_trades);
             if (data.recent_trades?.length) console.log('First trade keys:', Object.keys(data.recent_trades[0]));
             return data.recent_trades;
-        } catch (e) { console.debug('Failed to fetch server data:', e); }
+        } catch (e) { /* Silently handle server data fetch errors */ }
     },
     testNormalizer() {
         const rawTrades = [
@@ -5313,7 +5311,6 @@ function updatePortfolioTimelineChart(currentValue, pnlPercent) {
                 updatePortfolioChart(canvas, null, currentValue, pnlPercent);
             }
         }).catch(error => {
-            console.debug('Failed to fetch equity curve, using fallback data:', error);
             updatePortfolioChart(canvas, null, currentValue, pnlPercent);
         });
     } catch (error) {
