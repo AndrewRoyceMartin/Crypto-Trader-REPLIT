@@ -5530,6 +5530,17 @@ def api_test_sync_data() -> ResponseReturnValue:
         # Add dynamic test count and use no-cache response
         test_data['tests_available'] = len(test_data['test_results'])
         
+        # Add Bollinger Bands calculation status info
+        test_data['bollinger_bands_info'] = {
+            'enabled_for_held_assets_only': True,
+            'held_assets_monitored': ['BTC', 'ETH', 'SOL', 'GALA', 'TRX', 'PEPE'],
+            'period': '20-day',
+            'std_deviation': '2.0',
+            'signals': ['BUY ZONE', 'VERY CLOSE', 'APPROACHING', 'MODERATE', 'FAR'],
+            'optimization_note': 'BB calculations limited to held assets to prevent API timeouts',
+            'calculation_count_per_refresh': 'Max 6 assets (current holdings only)'
+        }
+        
         return _no_cache_json(test_data)
         
     except Exception as e:
