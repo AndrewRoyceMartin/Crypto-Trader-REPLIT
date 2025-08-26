@@ -120,7 +120,8 @@ class ModularTradingApp {
     async refreshHoldingsData() {
         try {
             const data = await AppUtils.fetchJSON('/api/current-holdings', {
-                cache: 'no-store'
+                cache: 'no-store',
+                timeout: 45000  // Extended timeout for complex OKX calculations
             });
             
             if (data && data.holdings) {
@@ -179,6 +180,13 @@ class ModularTradingApp {
         const pnlClass = (holding.pnl_percent || 0) >= 0 ? 'text-success' : 'text-danger';
         const pnlSign = (holding.pnl_percent || 0) >= 0 ? '+' : '';
         
+        // Calculate additional fields for full 13-column table
+        const avgEntryPrice = (holding.cost_basis || 0) / (holding.quantity || 1);
+        const targetValue = (holding.current_value || 0) * 1.04; // 4% target
+        const targetProfit = targetValue - (holding.current_value || 0);
+        const targetProfitPercent = 4.0; // Enhanced Bollinger Bands 4% target
+        const holdPeriod = '—'; // Would need trade history data
+        
         row.innerHTML = `
             <td>
                 <div class="d-flex align-items-center">
@@ -191,14 +199,22 @@ class ModularTradingApp {
                     </div>
                 </div>
             </td>
-            <td>${AppUtils.safeNum(holding.quantity, 0).toFixed(8)}</td>
-            <td>${AppUtils.formatCurrency(holding.current_price)}</td>
-            <td>${AppUtils.formatCurrency(holding.current_value)}</td>
-            <td class="${pnlClass}">
-                ${pnlSign}${AppUtils.formatCurrency(holding.pnl_amount || 0)}<br>
-                <small>(${pnlSign}${((holding.pnl_percent || 0) * 100).toFixed(2)}%)</small>
+            <td class="text-end">${AppUtils.safeNum(holding.quantity, 0).toFixed(8)}</td>
+            <td class="text-end">${AppUtils.formatCurrency(avgEntryPrice)}</td>
+            <td class="text-end">${AppUtils.formatCurrency(holding.current_price)}</td>
+            <td class="text-end">${AppUtils.formatCurrency(holding.current_price)}</td>
+            <td class="text-end">${AppUtils.formatCurrency(holding.current_value)}</td>
+            <td class="text-end ${pnlClass}">
+                ${pnlSign}${AppUtils.formatCurrency(holding.pnl_amount || 0)}
             </td>
-            <td>
+            <td class="text-end ${pnlClass}">
+                ${pnlSign}${((holding.pnl_percent || 0)).toFixed(2)}%
+            </td>
+            <td class="text-end">${AppUtils.formatCurrency(targetValue)}</td>
+            <td class="text-end text-success">+${AppUtils.formatCurrency(targetProfit)}</td>
+            <td class="text-end text-success">+${targetProfitPercent.toFixed(1)}%</td>
+            <td class="text-center text-muted">${holdPeriod}</td>
+            <td class="text-center">
                 <button class="btn btn-sm btn-primary" onclick="tradeManager.showSellDialog('${holding.symbol}', ${holding.quantity}, ${holding.current_price})">
                     Sell
                 </button>

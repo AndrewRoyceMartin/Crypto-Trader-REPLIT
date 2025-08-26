@@ -5,7 +5,7 @@ export class AppUtils {
         return m ? m.content : '';
     }
 
-    static async fetchJSON(url, { method='GET', body, timeout=10000, headers={}, noStore=true } = {}) {
+    static async fetchJSON(url, { method='GET', body, timeout=30000, headers={}, noStore=true } = {}) {
         const ctl = new AbortController();
         const t = setTimeout(()=>ctl.abort(), timeout);
         const h = {
