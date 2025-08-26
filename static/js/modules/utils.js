@@ -7,7 +7,10 @@ export class AppUtils {
 
     static async fetchJSON(url, { method='GET', body, timeout=30000, headers={}, noStore=true } = {}) {
         const ctl = new AbortController();
-        const t = setTimeout(()=>ctl.abort(), timeout);
+        const t = setTimeout(() => {
+            ctl.abort('Request timeout');
+        }, timeout);
+        
         const h = {
             'Content-Type': 'application/json',
             ...(noStore ? {'Cache-Control': 'no-store'} : {}),
@@ -24,6 +27,8 @@ export class AppUtils {
                 cache: 'no-store' 
             });
             
+            clearTimeout(t);
+            
             // Check if response is OK first
             if (!res.ok) {
                 return null;
@@ -38,6 +43,12 @@ export class AppUtils {
             const data = await res.json();
             return data;
         } catch (error) {
+            // Properly handle abort errors and other fetch errors
+            if (error.name === 'AbortError') {
+                // Silently handle timeout/abort errors
+                return null;
+            }
+            // Handle other fetch errors silently
             return null;
         } finally { 
             clearTimeout(t); 
