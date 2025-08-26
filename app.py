@@ -20,14 +20,14 @@ from collections import OrderedDict
 from typing import Any, Optional, Iterator, TypedDict, List, Dict, Tuple
 from functools import wraps
 
-# Only suppress specific pkg_resources deprecation warning - all other warnings will show
-warnings.filterwarnings('ignore', message='pkg_resources is deprecated as an API.*', category=DeprecationWarning)
-
 from flask import Flask, jsonify, request, render_template, make_response
 from flask.typing import ResponseReturnValue
 
 # Top-level imports only (satisfies linter)
 from src.services.portfolio_service import get_portfolio_service as _get_ps
+
+# Only suppress specific pkg_resources deprecation warning - all other warnings will show
+warnings.filterwarnings('ignore', message='pkg_resources is deprecated as an API.*', category=DeprecationWarning)
 
 # Set up logging for deployment - MOVED TO TOP to avoid NameError
 logging.basicConfig(
@@ -119,8 +119,8 @@ def get_reusable_exchange():
     """Get centralized CCXT exchange instance to avoid re-auth and load_markets() calls."""
     try:
         service = get_portfolio_service()
-        if (hasattr(service, 'exchange') and hasattr(service.exchange, 'exchange') and
-                service.exchange.exchange is not None):
+        if (hasattr(service, 'exchange') and hasattr(service.exchange, 'exchange')
+                and service.exchange.exchange is not None):
             logger.debug("Reusing existing portfolio service exchange instance")
             return service.exchange.exchange
     except Exception as e:
@@ -278,6 +278,7 @@ _MAX_OUTBOUND = int(os.getenv("MAX_OUTBOUND_CALLS", "2"))  # Further reduced fro
 _ext_sem = threading.Semaphore(_MAX_OUTBOUND)
 _rate_limit_delay = float(os.getenv("API_RATE_DELAY", "0.5"))  # Increased to 500ms delay between requests
 
+
 def with_throttle(fn, *a, **kw):
     acquired = _ext_sem.acquire(timeout=15)  # Increased timeout
     if not acquired:
@@ -295,7 +296,7 @@ def with_throttle(fn, *a, **kw):
                     logger.warning("Rate limited, backing off for 1 second")
                     time.sleep(1.0)
                     raise RuntimeError("Rate limited - please retry")
-            except:
+            except Exception:
                 pass
         raise e
     finally:
@@ -305,6 +306,7 @@ def with_throttle(fn, *a, **kw):
 # Rate limiting for heavy endpoints
 _rate_lock = threading.RLock()
 _hits: Dict[Tuple[str, str], List[float]] = {}
+
 
 def rate_limit(max_hits: int, per_seconds: int):
     def deco(f):
@@ -333,6 +335,7 @@ def _cache_prune(od: OrderedDict) -> None:
     while len(od) > CACHE_MAX_KEYS:
         od.popitem(last=False)  # drop oldest
 
+
 def _cache_key(*parts: str) -> str:
     return "|".join(parts)
 
@@ -342,6 +345,7 @@ def cache_put_price(sym: str, value: Any) -> None:
         _price_cache[k] = {"data": value, "ts": time.time()}
         _price_cache.move_to_end(k)
         _cache_prune(_price_cache)
+
 
 def cache_get_price(sym: str) -> Optional[Any]:
     with _cache_lock:
@@ -355,12 +359,14 @@ def cache_get_price(sym: str) -> Optional[Any]:
         _price_cache.move_to_end(k)
         return item["data"]
 
+
 def cache_put_ohlcv(sym: str, tf: str, data: Any) -> None:
     with _cache_lock:
         k = _cache_key("ohlcv", sym, tf)
         _ohlcv_cache[k] = {"data": data, "ts": time.time()}
         _ohlcv_cache.move_to_end(k)
         _cache_prune(_ohlcv_cache)
+
 
 def cache_get_ohlcv(sym: str, tf: str) -> Optional[Any]:
     with _cache_lock:
