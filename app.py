@@ -820,7 +820,6 @@ def api_portfolio_overview() -> ResponseReturnValue:
     """A small, reliable payload tailor-made for the Overview cards."""
     try:
         selected_currency = request.args.get('currency', 'USD').upper()
-        
         from src.services.portfolio_service import get_portfolio_service
         portfolio_service = get_portfolio_service()
 
@@ -1114,7 +1113,7 @@ def DISABLED_api_crypto_portfolio() -> ResponseReturnValue:
                 } if worst_performer else {'symbol': 'N/A', 'name': 'N/A', 'pnl_percent': 0},
                 'top_allocations': sorted(holdings, key=lambda x: x.get('allocation_percent', 0), reverse=True)[:5],
                 'concentration_risk': round(
-                    sum(h.get('allocation_percent', 0) 
+                    sum(h.get('allocation_percent', 0)
                         for h in sorted(holdings, key=lambda x: x.get('allocation_percent', 0), reverse=True)[:3]
                     ), 2
                 ),
@@ -1298,10 +1297,16 @@ def bot_start() -> ResponseReturnValue:
             "success": True,
             "running": True,          # 👈 convenience flags
             "active": True,           # 👈 convenience flags
-            "message": f"Multi-currency bot started in {mode} mode with universal ${config.get_float('strategy', 'rebuy_max_usd', 100.0):.0f} rebuy limit",
+            "message": (
+                f"Multi-currency bot started in {mode} mode with "
+                f"universal ${config.get_float('strategy', 'rebuy_max_usd', 100.0):.0f} rebuy limit"
+            ),
             "status": safe_status,
             "rebuy_max_usd": config.get_float('strategy', 'rebuy_max_usd', 100.0),
-            "supported_pairs": ["BTC/USDT", "PEPE/USDT", "ETH/USDT", "DOGE/USDT", "ADA/USDT", "SOL/USDT", "XRP/USDT", "AVAX/USDT"],
+            "supported_pairs": [
+                "BTC/USDT", "PEPE/USDT", "ETH/USDT", "DOGE/USDT",
+                "ADA/USDT", "SOL/USDT", "XRP/USDT", "AVAX/USDT"
+            ],
             "features": [
                 "Automatic buy signals at Bollinger Band lower boundary",
                 "Universal rebuy mechanism after crash exits",
