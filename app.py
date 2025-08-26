@@ -5317,6 +5317,77 @@ def api_test_sync_data() -> ResponseReturnValue:
             # Test all critical dashboard buttons and their functionality
             button_tests = {}
             
+            # Test Recalculation Button (Interactive UI Workflow)
+            try:
+                # This tests the full interactive workflow that users actually use
+                recalc_test_results = {
+                    'button_exists': False,
+                    'onclick_function_exists': False,
+                    'api_endpoint_accessible': False,
+                    'javascript_function_defined': False,
+                    'workflow_complete': False,
+                    'errors': []
+                }
+                
+                # Test 1: Button exists in DOM
+                # This would be tested by frontend JS, but we can test the template
+                template_content = ""
+                try:
+                    with open('templates/unified_dashboard.html', 'r') as f:
+                        template_content = f.read()
+                    recalc_test_results['button_exists'] = 'recalculate-btn' in template_content and 'recalculatePositions()' in template_content
+                except Exception as template_error:
+                    recalc_test_results['errors'].append(f"Template read error: {template_error}")
+                
+                # Test 2: onclick function exists in JavaScript
+                try:
+                    with open('static/app.js', 'r') as f:
+                        js_content = f.read()
+                    recalc_test_results['onclick_function_exists'] = 'function recalculatePositions()' in js_content or 'recalculatePositions =' in js_content
+                    # Test for the missing function that caused the error
+                    recalc_test_results['javascript_function_defined'] = 'TradingApp.updateAvailablePositions' in js_content
+                except Exception as js_error:
+                    recalc_test_results['errors'].append(f"JavaScript read error: {js_error}")
+                
+                # Test 3: API endpoint is accessible
+                try:
+                    import requests
+                    # Test the recalculation API endpoint
+                    test_response = requests.post(
+                        'http://localhost:5000/api/recalculate-positions',
+                        headers={
+                            'Content-Type': 'application/json',
+                            'Authorization': 'Bearer trading-admin-2024'
+                        },
+                        json={'test_mode': True},
+                        timeout=5
+                    )
+                    recalc_test_results['api_endpoint_accessible'] = test_response.status_code == 200
+                except Exception as api_error:
+                    recalc_test_results['errors'].append(f"API test error: {api_error}")
+                
+                # Test 4: Complete workflow validation
+                workflow_checks = [
+                    recalc_test_results['button_exists'],
+                    recalc_test_results['onclick_function_exists'], 
+                    recalc_test_results['javascript_function_defined'],
+                    recalc_test_results['api_endpoint_accessible']
+                ]
+                recalc_test_results['workflow_complete'] = all(workflow_checks)
+                
+                button_tests['recalculation_button'] = {
+                    'status': 'pass' if recalc_test_results['workflow_complete'] else 'fail',
+                    'details': recalc_test_results,
+                    'description': 'Tests complete recalculation button workflow including UI, JS functions, and API'
+                }
+                
+            except Exception as recalc_error:
+                button_tests['recalculation_button'] = {
+                    'status': 'error',
+                    'error': str(recalc_error),
+                    'description': 'Error testing recalculation button functionality'
+                }
+            
             # Test ATO Export Button
             try:
                 # Check if the ATO export endpoint exists and works
