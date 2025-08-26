@@ -828,7 +828,14 @@ class TradingApp {
     
     updateRiskChart(analytics) {
         const riskCanvas = document.getElementById('riskChart');
-        if (!riskCanvas || !window.Chart) return;
+        if (!riskCanvas) {
+            console.debug('Risk chart element not found - skipping chart update');
+            return;
+        }
+        if (!window.Chart) {
+            console.debug('Chart.js not available - skipping risk chart');
+            return;
+        }
         
         try {
             // Destroy existing chart
@@ -935,7 +942,14 @@ class TradingApp {
     
     updatePortfolioValueChart(historyData) {
         const portfolioCanvas = document.getElementById('portfolioChart');
-        if (!portfolioCanvas || !window.Chart) return;
+        if (!portfolioCanvas) {
+            console.debug('Portfolio chart element not found - skipping chart update');
+            return;
+        }
+        if (!window.Chart) {
+            console.debug('Chart.js not available - skipping portfolio chart');
+            return;
+        }
         
         try {
             // Destroy existing chart
@@ -1056,7 +1070,14 @@ class TradingApp {
     
     updateAssetAllocationChart(allocationData) {
         const allocationCanvas = document.getElementById('allocationChart');
-        if (!allocationCanvas || !window.Chart) return;
+        if (!allocationCanvas) {
+            console.debug('Allocation chart element not found - skipping chart update');
+            return;
+        }
+        if (!window.Chart) {
+            console.debug('Chart.js not available - skipping allocation chart');
+            return;
+        }
         
         try {
             // Destroy existing chart
@@ -1227,6 +1248,8 @@ class TradingApp {
         const cardTitle = document.getElementById('best-performer-card-title');
         if (cardTitle) {
             cardTitle.textContent = `Best Performer: ${performer.symbol}`;
+        } else {
+            console.debug('Best performer card title element not found - skipping update');
         }
     }
     
@@ -1277,6 +1300,8 @@ class TradingApp {
         const cardTitle = document.getElementById('worst-performer-card-title');
         if (cardTitle) {
             cardTitle.textContent = `Worst Performer: ${performer.symbol}`;
+        } else {
+            console.debug('Worst performer card title element not found - skipping update');
         }
     }
     
@@ -1302,7 +1327,14 @@ class TradingApp {
     
     updateEquityCurveChart(equityData, metrics) {
         const equityCanvas = document.getElementById('equityChart');
-        if (!equityCanvas || !window.Chart) return;
+        if (!equityCanvas) {
+            console.debug('Equity chart element not found - skipping chart update');
+            return;
+        }
+        if (!window.Chart) {
+            console.debug('Chart.js not available - skipping equity chart');
+            return;
+        }
         
         try {
             // Destroy existing chart
@@ -1469,7 +1501,14 @@ class TradingApp {
     
     updateDrawdownChart(drawdownData, metrics) {
         const drawdownCanvas = document.getElementById('drawdownChart');
-        if (!drawdownCanvas || !window.Chart) return;
+        if (!drawdownCanvas) {
+            console.debug('Drawdown chart element not found - skipping chart update');
+            return;
+        }
+        if (!window.Chart) {
+            console.debug('Chart.js not available - skipping drawdown chart');
+            return;
+        }
         
         try {
             // Destroy existing chart
@@ -3682,7 +3721,10 @@ class TradingApp {
                 this.portfolioChart.update('none');
             }
         } catch (error) {
-            console.debug('Error updating performance charts:', error);
+            // Only log meaningful errors, not missing element issues
+            if (error.message && !error.message.includes('not found') && !error.message.includes('getElementById')) {
+                console.debug('Error updating performance charts:', error);
+            }
         }
     }
 
@@ -4727,15 +4769,11 @@ function updateElementSafely(elementId, value) {
     if (element) {
         element.textContent = value;
     } else {
-        const currentPage = window.location.pathname;
-        const expectedElements = {
-            '/': ['portfolio-current-value', 'okx-day-pnl', 'okx-day-pnl-percent', 'okx-estimated-total', 'okx-active-positions', 'okx-best-performer'],
-            '/portfolio': ['summary-total-value', 'summary-total-change', 'summary-total-assets', 'summary-cash-balance'],
-            '/holdings': ['holdings-total-assets', 'holdings-active-count', 'holdings-zero-count']
-        };
-        const pageElements = expectedElements[currentPage] || [];
-        if (pageElements.includes(elementId)) {
-            console.debug(`Element ${elementId} not found for update`);
+        // Silently ignore missing elements to reduce console noise
+        // Only log debug for critical elements
+        const criticalElements = ['okx-day-pnl', 'okx-day-pnl-percent', 'okx-estimated-total'];
+        if (criticalElements.includes(elementId)) {
+            console.debug(`Critical element ${elementId} not found for update`);
         }
     }
 }
@@ -5408,7 +5446,14 @@ function updatePortfolioChartsUI(portfolioData) {
 }
 function renderAllocationChart(holdings) {
     const canvas = document.getElementById('allocationChart');
-    if (!canvas || !window.Chart) return;
+    if (!canvas) {
+        console.debug('Allocation chart canvas not found - skipping chart render');
+        return;
+    }
+    if (!window.Chart) {
+        console.debug('Chart.js not available - skipping allocation chart');
+        return;
+    }
     if (window.allocationChart && typeof window.allocationChart.destroy === 'function') {
         window.allocationChart.destroy();
     }
