@@ -3421,7 +3421,12 @@ def api_available_positions() -> ResponseReturnValue:
         ]
         
         # Process ALL major assets (including zero balances from the comprehensive list)
+        # Add counter for staggered loading progress logging
+        total_assets = len(major_crypto_assets)
+        processed_count = 0
+        
         for symbol in major_crypto_assets:
+            processed_count += 1
             # Get balance from actual OKX data or default to zero
             balance_info = balance_data.get(symbol, {'total': 0, 'free': 0, 'used': 0})
             
@@ -3480,6 +3485,11 @@ def api_available_positions() -> ResponseReturnValue:
                                      'GALA', 'TRX', 'PEPE', 'DOGE', 'MATIC', 'ATOM']  # 15 major assets
                     if current_price > 0 and symbol in top_tier_assets:
                         logger.info(f"Calculating BB opportunity analysis for {symbol} at ${current_price}")
+                        
+                        # Add staggered delay to prevent API overload (200ms per calculation)
+                        import time
+                        time.sleep(0.2)  # 200ms delay between each BB calculation
+                        
                         try:
                             # Get historical price data for Bollinger Bands calculation
                             from src.utils.okx_native import OKXNative
@@ -3570,6 +3580,10 @@ def api_available_positions() -> ResponseReturnValue:
                     }
                     
                     available_positions.append(available_position)
+                    
+                    # Log progress every 10 assets processed
+                    if processed_count % 10 == 0 or processed_count == total_assets:
+                        logger.info(f"Available positions progress: {processed_count}/{total_assets} assets processed")
                     
                     if total_balance > 0:
                         logger.info(f"Added available position: {symbol} with balance {total_balance}")
