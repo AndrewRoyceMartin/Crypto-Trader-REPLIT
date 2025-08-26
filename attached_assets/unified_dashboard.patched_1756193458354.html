@@ -1,0 +1,1159 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<meta content="{{ ADMIN_TOKEN|default('') }}" name="admin-token"/>
+<title>Crypto Trading Dashboard - Unified View</title>
+<!-- Keep Bootstrap base -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"/>
+<!-- FontAwesome (optional) -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
+<link href="{{ url_for('static', filename='style.css') }}" rel="stylesheet"/>
+<!-- Chart.js -->
+
+<style>
+/* Fallbacks and responsive fixes for tables, headers, and toasts */
+.table-v02 thead th { background-color: var(--v02-head-bg, #343a40); color:#fff; position:sticky; top:0; z-index:1; }
+.table-v02 tbody td.text-end, .table-v02 thead th.text-end { text-align:right; }
+.table-v02 tbody td.text-center, .table-v02 thead th.text-center { text-align:center; }
+.table-v02 tbody tr:nth-child(even){ background-color:#f8f9fa; }
+.table-v02 tbody tr:hover{ background-color:#e9ecef; }
+
+@media (max-width: 768px) {
+  .table-responsive { overflow-x:auto; -webkit-overflow-scrolling:touch; }
+  .table-v02 thead { display:none; }
+  .table-v02 tr { display:block; border:1px solid #e9ecef; border-radius:.25rem; margin-bottom:.75rem; }
+  .table-v02 td { display:flex; justify-content:space-between; gap:.75rem; padding:.5rem .75rem; }
+  .table-v02 td::before { content: attr(data-label); font-weight:600; color:#6c757d; }
+}
+
+.toast-container { position:fixed; top:1rem; right:1rem; z-index:1080; }
+.toast-message { opacity:0; transform:translateY(-10px); transition:all .3s; background:rgba(0,0,0,.85); color:#fff; padding:.5rem .75rem; border-radius:.25rem; margin-bottom:.5rem; }
+.toast-message.show { opacity:1; transform:none; }
+</style></head>
+<body class="theme-min">
+<!-- Navigation Bar with Mobile Toggle -->
+<nav class="navbar navbar-expand-lg navbar-light sticky-top">
+<div class="container-fluid">
+<a class="navbar-brand" href="#overview">
+<span class="icon icon-chart me-2"></span>Crypto Trading Dashboard
+            </a>
+<button aria-controls="mainNav" aria-expanded="false" aria-label="Toggle navigation" class="navbar-toggler" data-bs-target="#mainNav" data-bs-toggle="collapse" type="button">
+<span class="icon icon-menu"></span>
+</button>
+<div class="collapse navbar-collapse" id="mainNav">
+<div class="navbar-nav me-auto nav-pills-container d-flex">
+<a class="nav-link active" href="#overview">
+<span class="icon icon-dashboard me-1"></span>Overview
+                    </a>
+<a class="nav-link" href="#holdings">Holdings</a>
+<a class="nav-link" href="#trades">Trades</a>
+</div>
+<div class="navbar-nav ms-auto">
+<a class="btn btn-outline-secondary btn-sm me-2" href="{{ url_for('test_sync_data') }}" rel="noopener" target="_blank">Sync Test</a>
+</div>
+</div>
+</div>
+</nav>
+<!-- Toast Container -->
+<div class="toast-container" id="toast-container"></div>
+<!-- Control Bar -->
+<div class="control-bar border-bottom">
+<div class="container-fluid d-flex flex-wrap align-items-center gap-2 py-2">
+<div class="d-flex align-items-center gap-2">
+<label class="small muted mb-0">Currency</label>
+<select class="form-select form-select-sm" id="currency-selector">
+<option selected="" value="USD">USD</option>
+<option value="AUD">AUD</option>
+<option value="EUR">EUR</option>
+<option value="GBP">GBP</option>
+</select>
+</div>
+<div class="ms-auto d-flex flex-wrap gap-2">
+<button aria-label="Export ATO tax data" class="btn btn-outline-secondary btn-sm" id="btn-ato-export" title="Export your trading data for Australian Tax Office reporting">
+<span aria-hidden="true" class="icon icon-file me-1"></span>ATO Export
+                </button>
+<button aria-label="Execute take profit strategy" class="btn btn-outline-warning btn-sm" id="btn-take-profit" title="Automatically sell all positions with 2%+ profit and reinvest proceeds">
+<span aria-hidden="true" class="icon icon-dollar me-1"></span>Take Profit
+                </button>
+<button aria-label="Show buy order dialog" class="btn btn-success btn-sm" id="btn-buy" title="Place a manual buy order for any cryptocurrency">
+<span aria-hidden="true" class="icon icon-up me-1"></span>Buy
+                </button>
+<button aria-label="Show sell order dialog" class="btn btn-danger btn-sm" id="btn-sell" title="Place a manual sell order for any of your holdings">
+<span aria-hidden="true" class="icon icon-down me-1"></span>Sell
+                </button>
+<button aria-label="Toggle trading bot" class="btn btn-warning btn-sm" id="btn-bot-toggle" title="Start or stop the automated trading bot">
+<span aria-hidden="true" class="icon icon-robot me-1"></span><span id="bot-status-top">START BOT</span>
+</button>
+<span aria-live="polite" class="badge bg-secondary ms-2" id="trading-status">
+<span aria-hidden="true" class="icon icon-circle me-1"></span>Inactive
+                </span>
+</div>
+</div>
+</div>
+<!-- Main Dashboard Content -->
+<main class="container-fluid py-3">
+<!-- SECTION 1: OVERVIEW DASHBOARD -->
+<section class="mb-5" id="overview">
+<div class="d-flex justify-content-between align-items-center mb-3">
+<h2><span class="icon icon-wallet me-2"></span>OKX Portfolio Overview</h2>
+<div class="d-flex align-items-center gap-2">
+<span class="badge bg-info" id="okx-account-level">Standard</span>
+<span class="badge bg-success" id="okx-connection-badge">
+<span class="icon icon-wifi me-1"></span>
+<span id="overview-connection">Connected</span>
+</span>
+<small class="text-muted">
+                        Last Update: <span aria-live="polite" id="overview-last-update">—</span>
+</small>
+</div>
+</div>
+<!-- Modern KPI Stat Strip -->
+<div class="stat-strip" id="top-kpis">
+<div class="kpi" data-tone="primary" id="kpi-equity">
+<div class="kpi__label">Equity</div>
+<div class="kpi__value" data-kpi-value="">—
+<span id="portfolio-current-value">—</span></div>
+<div class="kpi__delta flat" data-kpi-delta="">0.0%</div>
+<!-- tiny inline sparkline (optional) -->
+<svg aria-hidden="true" class="kpi__spark" preserveaspectratio="none" viewbox="0 0 100 24">
+<polyline fill="none" opacity=".6" points="0,12 20,10 40,14 60,9 80,13 100,8" stroke="currentColor" stroke-width="2"></polyline>
+</svg>
+</div>
+<div class="kpi" id="kpi-upnl">
+<div class="kpi__label">Unrealised P&amp;L</div>
+<div class="kpi__value" data-kpi-value="">—</div>
+<div class="kpi__delta flat" data-kpi-delta="">0.0%</div>
+<svg aria-hidden="true" class="kpi__spark" preserveaspectratio="none" viewbox="0 0 100 24">
+<polyline fill="none" opacity=".6" points="0,14 20,12 40,10 60,11 80,9 100,12" stroke="currentColor" stroke-width="2"></polyline>
+</svg>
+</div>
+<div class="kpi" id="kpi-exposure">
+<div class="kpi__label">Exposure</div>
+<div class="kpi__value" data-kpi-value="">—</div>
+<div class="kpi__delta flat" data-kpi-delta="">0.0%</div>
+<svg aria-hidden="true" class="kpi__spark" preserveaspectratio="none" viewbox="0 0 100 24">
+<polyline fill="none" opacity=".6" points="0,16 20,15 40,14 60,15 80,16 100,15" stroke="currentColor" stroke-width="2"></polyline>
+</svg>
+</div>
+<div class="kpi" id="kpi-cash">
+<div class="kpi__label">USDT (Tradable Balance)</div>
+<div class="kpi__value" data-kpi-value="">—</div>
+<div class="kpi__delta flat" data-kpi-delta="">0.0%</div>
+<svg aria-hidden="true" class="kpi__spark" preserveaspectratio="none" viewbox="0 0 100 24">
+<polyline fill="none" opacity=".6" points="0,8 20,9 40,8 60,9 80,8 100,9" stroke="currentColor" stroke-width="2"></polyline>
+</svg>
+</div>
+<canvas height="40" id="mini-portfolio-chart" style="display:none"></canvas></div>
+<div class="row g-3"><div class="col-lg-6"><div class="card card--hover mb-3"><div class="card-header"><h5 class="mb-0">Portfolio History</h5></div><div class="card-body"><canvas height="220" id="portfolioChart"></canvas></div></div></div><div class="col-lg-6"><div class="card card--hover mb-3"><div class="card-header"><h5 class="mb-0">Asset Allocation</h5></div><div class="card-body"><canvas height="220" id="allocationChart"></canvas></div></div></div><div class="col-lg-6"><div class="card card--hover mb-3"><div class="card-header d-flex align-items-center justify-content-between"><h5 class="mb-0">Equity Curve</h5><select class="form-select form-select-sm w-auto" id="equity-timeframe"><option value="7d">7D</option><option selected="True" value="30d">30D</option><option value="90d">90D</option><option value="1y">1Y</option></select></div><div class="card-body"><canvas height="220" id="equityChart"></canvas></div></div></div><div class="col-lg-6"><div class="card card--hover mb-3"><div class="card-header"><h5 class="mb-0">Portfolio Analytics</h5></div><div class="card-body"><canvas height="220" id="riskChart"></canvas></div></div></div></div><div class="row g-3 my-3"><div class="col-lg-6"><div class="card card--hover mb-3"><div class="card-header"><h5 class="mb-0" id="best-performer-card-title">—</h5></div><div class="card-body"><ul class="list-unstyled mb-0"><li><span class="text-muted me-2">SYMBOL:</span><span id="best-performer-symbol">—</span></li><li><span class="text-muted me-2">NAME:</span><span id="best-performer-name">—</span></li><li><span class="text-muted me-2">PRICE:</span><span id="best-performer-price">—</span></li><li><span class="text-muted me-2">24H:</span><span id="best-performer-24h">—</span></li><li><span class="text-muted me-2">7D:</span><span id="best-performer-7d">—</span></li><li><span class="text-muted me-2">PNL:</span><span id="best-performer-pnl">—</span></li><li><span class="text-muted me-2">ALLOCATION:</span><span id="best-performer-allocation">—</span></li><li><span class="text-muted me-2">VALUE:</span><span id="best-performer-value">—</span></li><li><span class="text-muted me-2">VOLUME:</span><span id="best-performer-volume">—</span></li></ul></div></div></div><div class="col-lg-6"><div class="card card--hover mb-3"><div class="card-header"><h5 class="mb-0" id="worst-performer-card-title">—</h5></div><div class="card-body"><ul class="list-unstyled mb-0"><li><span class="text-muted me-2">SYMBOL:</span><span id="worst-performer-symbol">—</span></li><li><span class="text-muted me-2">NAME:</span><span id="worst-performer-name">—</span></li><li><span class="text-muted me-2">PRICE:</span><span id="worst-performer-price">—</span></li><li><span class="text-muted me-2">24H:</span><span id="worst-performer-24h">—</span></li><li><span class="text-muted me-2">7D:</span><span id="worst-performer-7d">—</span></li><li><span class="text-muted me-2">PNL:</span><span id="worst-performer-pnl">—</span></li><li><span class="text-muted me-2">ALLOCATION:</span><span id="worst-performer-allocation">—</span></li><li><span class="text-muted me-2">VALUE:</span><span id="worst-performer-value">—</span></li><li><span class="text-muted me-2">VOLUME:</span><span id="worst-performer-volume">—</span></li></ul></div></div></div></div></section>
+<hr class="section-divider my-5"/>
+<!-- SECTION 2: OPEN POSITIONS -->
+<section class="mb-5" id="holdings">
+<div class="card card--hover">
+<div class="card-header">
+<h3 class="mb-0"><span class="icon icon-coins me-2"></span>Open Positions</h3>
+<div class="meta">
+<span class="icon icon-clock me-1"></span>
+                        Last updated: <span aria-live="polite" id="positions-last-update">—</span> | 
+                        <span class="icon icon-timer me-1"></span>
+                        Next refresh: <span aria-live="polite" id="positions-next-refresh">—</span>
+</div>
+</div>
+<div class="card-body p-0">
+<div class="table-responsive">
+<table class="table-v02 table-v02--compact" id="holdings-table" style="--v02-head-bg:#6c7ae0; min-width: 600px;">
+<thead>
+<tr>
+<th class="table-sortable" data-sort="symbol" style="min-width: 60px;" title="Cryptocurrency ticker symbol">
+                                        ASSET <span class="icon icon-sort text-muted"></span>
+</th>
+<th class="table-sortable text-end" data-sort="balance" style="min-width: 70px;" title="Total quantity of tokens/coins held">
+                                        QTY HELD <span class="icon icon-sort text-muted"></span>
+</th>
+<th class="table-sortable text-end" data-sort="value" style="min-width: 60px;" title="Average price paid per token/coin">
+                                        AVG ENTRY <span class="icon icon-sort text-muted"></span>
+</th>
+<th class="table-sortable text-end" data-sort="cost_basis" style="min-width: 70px;" title="Total amount invested in USD">
+                                        INVESTED <span class="icon icon-sort text-muted"></span>
+</th>
+<th class="table-sortable text-end" data-sort="price" style="min-width: 70px;" title="Current live market price from OKX">
+                                        LIVE PRICE <span class="icon icon-sort text-muted"></span>
+</th>
+<th class="table-sortable text-end" data-sort="market_value" style="min-width: 80px;" title="Current total value at market price">
+                                        POSITION VALUE <span class="icon icon-sort text-muted"></span>
+</th>
+<th class="table-sortable text-end" data-sort="pnl_dollar" style="min-width: 60px;" title="Unrealized profit/loss in USD">
+                                        UNREALIZED $ <span class="icon icon-sort text-muted"></span>
+</th>
+<th class="table-sortable text-end" data-sort="pnl_percent" style="min-width: 60px;" title="Unrealized profit/loss as percentage">
+                                        GAIN/LOSS % <span class="icon icon-sort text-muted"></span>
+</th>
+<th class="table-sortable text-end" data-sort="target_value" style="min-width: 80px;" title="Expected value if 4% profit target is reached">
+                                        4% TARGET VALUE <span class="icon icon-sort text-muted"></span>
+</th>
+<th class="table-sortable text-end" data-sort="target_pnl_dollar" style="min-width: 70px;" title="Expected profit at 4% target (Enhanced Bollinger Bands strategy)">
+                                        TARGET PROFIT $ <span class="icon icon-sort text-muted"></span>
+</th>
+<th class="table-sortable text-end" data-sort="target_pnl_percent" style="min-width: 70px;" title="Target profit percentage (4% take-profit from trading algorithm)">
+                                        TARGET PROFIT % <span class="icon icon-sort text-muted"></span>
+</th>
+<th class="table-sortable text-center" data-sort="days" style="min-width: 50px;" title="Days since first purchase (if available from trade history)">
+                                        HOLD PERIOD <span class="icon icon-sort text-muted"></span>
+</th>
+<th class="text-center" style="min-width: 60px;" title="Trading actions and position management">
+                                        ACTIONS
+                                    </th>
+</tr>
+</thead>
+<tbody id="holdings-tbody">
+<tr>
+<td class="text-center py-3 text-muted" colspan="13">
+<span class="icon icon-refresh me-2"></span>Loading positions...
+                                    </td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</section>
+<hr class="section-divider my-5"/>
+<!-- SECTION 3: AVAILABLE POSITIONS -->
+<section class="mb-5" id="available-positions">
+<div class="card card--hover">
+<div class="card-header">
+<h3 class="mb-0"><span class="icon icon-wallet me-2"></span>Available Positions</h3>
+<div class="d-flex align-items-center">
+<div class="meta me-3">
+<span class="icon icon-clock me-1"></span>
+                            Last updated: <span aria-live="polite" id="available-last-update">—</span> | 
+                            <span class="icon icon-timer me-1"></span>
+                            Next refresh: <span aria-live="polite" id="available-next-refresh">—</span>
+</div>
+<button class="btn btn-outline-primary btn-sm" id="recalculate-btn" onclick="recalculatePositions()" title="Force recalculation of all positions with fresh market data">
+<i class="fas fa-calculator me-1"></i>Recalculate
+                        </button>
+</div>
+</div>
+<div class="card-body p-0">
+<div class="table-responsive">
+<table class="table-v02 table-v02--compact" id="available-table" style="--v02-head-bg:#1f9d55;">
+<thead>
+<tr>
+<th class="table-sortable" data-sort="symbol" onclick="sortAvailableTable(0)">
+                                        Symbol <span class="icon icon-sort text-muted"></span>
+</th>
+<th class="table-sortable text-end" data-sort="current_balance" onclick="sortAvailableTable(1)">
+                                        Balance <span class="icon icon-sort text-muted"></span>
+</th>
+<th class="table-sortable text-end" data-sort="current_price" onclick="sortAvailableTable(2)">
+                                        Price <span class="icon icon-sort text-muted"></span>
+</th>
+<th class="table-sortable text-end" data-sort="target_buy_price" onclick="sortAvailableTable(3)" title="Target Buy Price: Calculated using tier-based discounting from current market price. Prices lock for 24 hours to prevent constant recalculation and ensure executable orders.">
+<i class="fas fa-crosshairs me-1 text-success"></i>Target <span class="icon icon-sort text-muted"></span>
+</th>
+<th class="table-sortable text-end" data-sort="price_difference" onclick="sortAvailableTable(4)" title="Price Difference: Shows how far current price is from target buy price. Negative values (green) mean price is below target = good buy opportunity.">
+<i class="fas fa-percentage me-1 text-info"></i>Diff % <span class="icon icon-sort text-muted"></span>
+</th>
+<th class="table-sortable text-center" data-sort="entry_confidence.score" onclick="sortAvailableTable(5)" title="Entry Confidence: AI-calculated score (0-100) based on technical analysis, momentum, and volatility. Higher scores indicate better entry opportunities. Note: This is for display only - automated trading uses Bollinger Bands.">
+<i class="fas fa-brain me-1 text-warning"></i>Confidence <span class="icon icon-sort text-muted"></span>
+</th>
+<th class="table-sortable text-center" data-sort="entry_confidence.timing_signal" onclick="sortAvailableTable(6)" title="Timing Signal: Recommendation for entry timing based on market conditions. STRONG_BUY = optimal entry, CAUTIOUS_BUY = moderate entry, WAIT = hold off. This is informational only.">
+<i class="fas fa-clock me-1 text-primary"></i>Timing <span class="icon icon-sort text-muted"></span>
+</th>
+<th class="table-sortable text-center" data-sort="entry_confidence.risk_level" onclick="sortAvailableTable(7)" title="Risk Assessment: Estimated risk level for this entry. LOW = stable/safer entry, MODERATE = balanced risk/reward, HIGH = volatile/riskier entry. Consider your risk tolerance.">
+<i class="fas fa-shield-alt me-1 text-danger"></i>Risk <span class="icon icon-sort text-muted"></span>
+</th>
+<th class="table-sortable text-center" data-sort="buy_signal" onclick="sortAvailableTable(8)">
+                                        Signal <span class="icon icon-sort text-muted"></span>
+</th>
+<th class="table-sortable text-center" data-sort="bollinger_analysis.signal" onclick="sortAvailableTable(9)" title="Enhanced Bollinger Bands Strategy: Shows how close each asset is to triggering automated buy conditions. The bot automatically buys when price touches the lower Bollinger Band (50-period, 2.0 standard deviation).">
+<i class="fas fa-chart-line me-1 text-primary"></i>BB Strategy <span class="icon icon-sort text-muted"></span>
+</th>
+<th class="text-center">
+                                        Actions
+                                    </th>
+</tr>
+</thead>
+<tbody id="available-tbody">
+<tr>
+<td class="text-center py-3 text-muted" colspan="11">
+<span class="icon icon-refresh me-2"></span>Loading available positions...
+                                    </td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</section>
+<hr class="section-divider my-5"/>
+<!-- SECTION 4: RECENT TRADES -->
+<section class="mb-5" id="trades">
+<div class="card card--hover">
+<div class="card-header">
+<h3 class="mb-0"><span class="icon icon-exchange me-2"></span>Recent Trades</h3>
+<div class="meta">
+<span class="icon icon-clock me-1"></span>
+                        Last 7 days
+                    </div>
+</div>
+<div class="card-body p-0">
+<div class="table-responsive">
+<table class="table-v02 table-v02--compact" id="trades-table" style="--v02-head-bg:#0ea5e9;">
+<thead class="sticky-top">
+<tr>
+<th class="table-sortable" data-sort="timestamp">
+                                        Date <span class="icon icon-sort text-muted"></span>
+</th>
+<th class="table-sortable" data-sort="symbol">
+                                        Symbol <span class="icon icon-sort text-muted"></span>
+</th>
+<th class="table-sortable" data-sort="side">
+                                        Side <span class="icon icon-sort text-muted"></span>
+</th>
+<th class="table-sortable text-end" data-sort="quantity">
+                                        Quantity <span class="icon icon-sort text-muted"></span>
+</th>
+<th class="table-sortable text-end" data-sort="price">
+                                        Price <span class="icon icon-sort text-muted"></span>
+</th>
+<th class="table-sortable text-end" data-sort="pnl">
+                                        P&amp;L <span class="icon icon-sort text-muted"></span>
+</th>
+</tr>
+</thead>
+<tbody id="trades-tbody">
+<tr>
+<td class="text-center py-3 text-muted" colspan="6">
+<span class="icon icon-refresh me-2"></span>Loading recent trades...
+                                    </td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- Footer -->
+<footer class="bg-dark text-light py-3 mt-5">
+<div class="container-fluid">
+<div class="row">
+<div class="col-md-6">
+<p class="mb-1"><small><strong>System Status &amp; Info</strong></small></p>
+<p class="mb-1 text-xs">
+<span class="icon icon-server me-1"></span>
+                        App Run Time: <span id="footer-system-uptime">0s</span> |
+                        <span class="icon icon-exchange me-1"></span>
+                        OKX: <span id="footer-okx-status">Connected</span> |
+                        <span class="icon icon-code me-1"></span>
+                        Version: {{ version|default('dev') }}
+                    </p>
+</div>
+<div class="col-md-6 text-md-end">
+<p class="mb-1"><small><strong>Legal &amp; Risk Notice</strong></small></p>
+<p class="mb-0 text-xs">
+<strong>Disclaimer:</strong> High-risk trading platform for informational purposes.
+                    </p>
+</div>
+</div>
+</div>
+</footer>
+<!-- Bootstrap JS -->
+
+<!-- Custom JS -->
+
+<script>
+    // === GLOBAL ADMIN TOKEN HANDLING ===
+    let adminToken = localStorage.getItem('admin-token') || null;
+
+    function getAdminToken() {
+        if (!adminToken) {
+            adminToken = prompt('Please enter admin token for bot control:');
+            if (adminToken) {
+                localStorage.setItem('admin-token', adminToken);
+            }
+        }
+        return adminToken;
+    }
+
+    function clearAdminToken() {
+        adminToken = null;
+        localStorage.removeItem('admin-token');
+    }
+
+    // === CURRENCY SWITCHING ===
+    function handleCurrencyChange() {
+        const selector = document.getElementById('currency-selector');
+        if (!selector) return;
+        
+        selector.addEventListener('change', function(e) {
+            const newCurrency = e.target.value;
+            console.log(`Currency changed to: ${newCurrency}. Clearing cache and fetching fresh OKX data...`);
+            
+            // Clear cache and force refresh
+            localStorage.removeItem('portfolioData');
+            
+            // Trigger fresh data load
+            if (window.tradingApp && typeof window.tradingApp.updateCryptoPortfolio === 'function') {
+                window.tradingApp.updateCryptoPortfolio();
+            }
+        });
+    }
+
+    // === BOT CONTROL ===
+    async function toggleBot() {
+        const botButton = document.getElementById('bot-status-top');
+        if (!botButton) return;
+        
+        const old = botButton.textContent;
+        
+        try {
+            // Get current bot status first
+            const statusResponse = await fetch('/api/bot/status');
+            const statusData = await statusResponse.json();
+            
+            const isCurrentlyRunning = statusData.running || false;
+            
+            // Optimistically update button text
+            botButton.textContent = isCurrentlyRunning ? 'START BOT' : 'STOP BOT';
+            
+            const endpoint = isCurrentlyRunning ? '/api/bot/stop' : '/api/bot/start';
+            const method = 'POST';
+            
+            const headers = {
+                'Content-Type': 'application/json'
+            };
+            
+            // Add admin token if required
+            const token = getAdminToken();
+            if (token) {
+                headers['X-Admin-Token'] = token;
+            }
+            
+            const body = isCurrentlyRunning ? null : JSON.stringify({
+                mode: 'live',
+                strategy: 'enhanced_bollinger'
+            });
+            
+            const response = await fetch(endpoint, {
+                method: method,
+                headers: headers,
+                body: body
+            });
+            
+            if (response.status === 401) {
+                clearAdminToken();
+                botButton.textContent = old; // Rollback on auth failure
+                alert('Invalid admin token. Please try again.');
+                return;
+            }
+            
+            const data = await response.json();
+            
+            if (response.ok && (data.success !== false)) {
+                // Update UI to confirm the change
+                updateBotStatusUI(!isCurrentlyRunning);
+                
+                const action = !isCurrentlyRunning ? 'started' : 'stopped';
+                console.log(`Bot ${action}:`, data.message || data);
+                
+                // Refresh status after a short delay
+                setTimeout(fetchAndUpdateBotStatus, 1000);
+            } else {
+                throw new Error(data.error || data.message || 'Unknown error');
+            }
+            
+        } catch (error) {
+            // Rollback button text on error
+            botButton.textContent = old;
+            if (typeof showToast === 'function') {
+                showToast(`Bot toggle failed: ${error.message}`, 'error');
+            } else {
+                alert(`Bot toggle failed: ${error.message}`);
+            }
+            console.error('Bot toggle error:', error);
+        }
+    }
+
+    function updateBotStatusUI(isRunning) {
+        const button = document.getElementById('bot-status-top');
+        const badge = document.getElementById('trading-status');
+        
+        if (button) {
+            button.textContent = isRunning ? 'STOP BOT' : 'START BOT';
+            button.parentElement.className = isRunning ? 
+                'btn btn-danger btn-sm' : 'btn btn-warning btn-sm';
+        }
+        
+        if (badge) {
+            badge.innerHTML = `<i class="fa-solid fa-circle me-1" aria-hidden="true"></i>${isRunning ? 'Active' : 'Inactive'}`;
+            badge.className = `badge ${isRunning ? 'bg-success' : 'bg-secondary'} ms-2`;
+        }
+    }
+
+    async function fetchAndUpdateBotStatus() {
+        try {
+            const response = await fetch('/api/bot/status');
+            const data = await response.json();
+            updateBotStatusUI(data.running || false);
+        } catch (error) {
+            console.debug('Failed to fetch bot status:', error);
+        }
+    }
+
+    // === FOOTER STATUS UPDATES ===
+    async function updateFooterStatus() {
+        try {
+            // Update app uptime
+            const statusResponse = await fetch('/api/status');
+            const statusData = await statusResponse.json();
+            
+            const uptimeEl = document.getElementById('footer-system-uptime');
+            if (uptimeEl && statusData.uptime_human) {
+                uptimeEl.textContent = statusData.uptime_human;
+            }
+            
+            // Update OKX status
+            const okxResponse = await fetch('/api/okx-status');
+            const okxData = await okxResponse.json();
+            
+            // Update footer OKX status
+            const okxEl = document.getElementById('footer-okx-status');
+            if (okxEl) {
+                if (okxData.status && okxData.status.connected) {
+                    okxEl.textContent = okxData.status.connection_type || 'Connected';
+                    okxEl.className = 'text-success';
+                } else {
+                    okxEl.textContent = 'Disconnected';
+                    okxEl.className = 'text-danger';
+                }
+            }
+            
+            // Update overview section OKX status using setConn function
+            if (typeof setConn === 'function') {
+                setConn(okxData.status && okxData.status.connected);
+            } else {
+                // Fallback for compatibility
+                const overviewConnectionEl = document.getElementById('overview-connection');
+                const connectionBadgeEl = document.getElementById('okx-connection-badge');
+                if (overviewConnectionEl && connectionBadgeEl) {
+                    if (okxData.status && okxData.status.connected) {
+                        overviewConnectionEl.textContent = okxData.status.connection_type || 'Connected';
+                        connectionBadgeEl.className = 'badge bg-success';
+                    } else {
+                        overviewConnectionEl.textContent = 'Disconnected';
+                        connectionBadgeEl.className = 'badge bg-danger';
+                    }
+                }
+            }
+            
+        } catch (error) {
+            console.debug('Footer status update failed:', error);
+        }
+    }
+
+    // === TABLE SORTING ===
+    function initTableSorting() {
+        document.addEventListener('click', function(e) {
+            if (e.target.closest('.table-sortable')) {
+                const th = e.target.closest('.table-sortable');
+                const table = th.closest('table');
+                const tbody = table.querySelector('tbody');
+                const rows = Array.from(tbody.querySelectorAll('tr'));
+                const index = Array.from(th.parentNode.children).indexOf(th);
+                const sortKey = th.getAttribute('data-sort');
+                
+                if (rows.length <= 1) return; // Skip if no data or loading
+                
+                // Simple sort (ascending)
+                rows.sort((a, b) => {
+                    const aVal = a.children[index]?.textContent.trim() || '';
+                    const bVal = b.children[index]?.textContent.trim() || '';
+                    
+                    // Try numeric sort first
+                    const aNum = parseFloat(aVal.replace(/[^0-9.-]/g, ''));
+                    const bNum = parseFloat(bVal.replace(/[^0-9.-]/g, ''));
+                    
+                    if (!isNaN(aNum) && !isNaN(bNum)) {
+                        return aNum - bNum;
+                    }
+                    
+                    // Fallback to string sort
+                    return aVal.localeCompare(bVal);
+                });
+                
+                // Re-append sorted rows
+                rows.forEach(row => tbody.appendChild(row));
+            }
+        });
+    }
+
+    // === TIMING UPDATES ===
+    function updateTimingDisplays() {
+        // Update positions timing
+        const positionsUpdate = document.getElementById('positions-last-update');
+        const positionsNext = document.getElementById('positions-next-refresh');
+        
+        if (positionsUpdate) positionsUpdate.textContent = new Date().toLocaleTimeString();
+        if (positionsNext) positionsNext.textContent = '5s';
+        
+        // Update available positions timing
+        const availableUpdate = document.getElementById('available-last-update');
+        const availableNext = document.getElementById('available-next-refresh');
+        
+        if (availableUpdate) availableUpdate.textContent = new Date().toLocaleTimeString();
+        if (availableNext) availableNext.textContent = '5s';
+        
+        // Update overview timing
+        const overviewUpdate = document.getElementById('overview-last-update');
+        if (overviewUpdate) overviewUpdate.textContent = new Date().toLocaleTimeString();
+    }
+
+    // === TABLE RENDERERS ===
+    function renderHoldingsTable(holdings) {
+        // DISABLED: This function conflicts with the main JavaScript update
+        // The main app.js updateAllTables() method handles all table updates
+        console.log('renderHoldingsTable() disabled to prevent table flashing - using consolidated update instead');
+        return;
+        
+        tbody.innerHTML = holdings.map(holding => {
+            const pnlClass = safeNum(holding.pnl, 0) >= 0 ? 'text-success' : 'text-danger';
+            const pnlSign = safeNum(holding.pnl, 0) >= 0 ? '+' : '';
+            const symbol = holding.symbol || holding.name || 'N/A';
+            
+            // Get crypto icon
+            const cryptoIcon = getCryptoIcon(symbol);
+            
+            // Calculate values
+            const quantity = safeNum(holding.quantity || holding.available_quantity, 0);
+            const costBasis = safeNum(holding.cost_basis, 0);
+            const currentValue = safeNum(holding.current_value || holding.value, 0);
+            const currentPrice = safeNum(holding.current_price, 0);
+            const pnlDollar = safeNum(holding.pnl, 0);
+            const pnlPercent = safeNum(holding.pnl_percent, 0);
+            
+            // Calculate target values (15% profit target)
+            const profitTarget = 0.15; // 15% target
+            const targetValue = costBasis * (1 + profitTarget);
+            const targetPnlDollar = targetValue - costBasis;
+            const targetPnlPercent = profitTarget * 100;
+            
+            // Calculate days (placeholder - would need real trade date)
+            const days = '30 days';
+            
+            return `
+                <tr>
+                    <td>
+                        <div class="d-flex align-items-center">
+                            ${cryptoIcon}
+                            <strong class="ms-2">${symbol}</strong>
+                        </div>
+                    </td>
+                    <td class="text-end">${quantity.toFixed(6)}</td>
+                    <td class="text-end">$${currentValue.toFixed(6)}</td>
+                    <td class="text-end">$${costBasis.toFixed(6)}</td>
+                    <td class="text-end">$${currentPrice.toFixed(4)}</td>
+                    <td class="text-end">$${currentValue.toFixed(6)}</td>
+                    <td class="text-end ${pnlClass}">
+                        ${pnlSign}$${Math.abs(pnlDollar).toFixed(6)}
+                    </td>
+                    <td class="text-end ${pnlClass}">
+                        ${pnlSign}${Math.abs(pnlPercent).toFixed(2)}%
+                    </td>
+                    <td class="text-end">$${targetValue.toFixed(6)}</td>
+                    <td class="text-end text-success">
+                        +$${targetPnlDollar.toFixed(6)}
+                    </td>
+                    <td class="text-end text-success">
+                        +${targetPnlPercent.toFixed(3)}%
+                    </td>
+                    <td class="text-center">${days}</td>
+                    <td class="text-center">
+                        <div class="btn-group btn-group-sm" role="group">
+                            <button class="btn btn-outline-primary btn-xs">25%</button>
+                            <button class="btn btn-outline-primary btn-xs">50%</button>
+                            <button class="btn btn-outline-primary btn-xs">All</button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    function renderAvailableTable(positions) {
+        console.debug("renderAvailableTable called with:", positions);
+        const tbody = document.getElementById('available-tbody');
+        if (!tbody) {
+            console.error("available-tbody element not found!");
+            return;
+        }
+        
+        if (!positions || positions.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="11" class="text-center py-3 text-muted">No available positions</td></tr>';
+            return;
+        }
+        
+        tbody.innerHTML = positions.slice(0, 50).map(pos => {
+            const diffClass = (pos.price_difference || 0) < 0 ? 'text-success' : 'text-muted';
+            const timingClass = 
+                pos.entry_confidence?.timing_signal === 'BUY_NOW' ? 'badge bg-success' :
+                pos.entry_confidence?.timing_signal === 'CAUTIOUS_BUY' ? 'badge bg-warning' :
+                'badge bg-secondary';
+                
+            const symbol = pos.symbol || 'N/A';
+            const cryptoIcon = getCryptoIcon(symbol);
+            
+            return `
+                <tr>
+                    <td>
+                        <div class="d-flex align-items-center">
+                            ${cryptoIcon}
+                            <strong class="ms-2">${symbol}</strong>
+                        </div>
+                    </td>
+                    <td class="text-end">$${safeNum(pos.current_price, 0).toFixed(4)}</td>
+                    <td class="text-end">$${safeNum(pos.target_buy_price, 0).toFixed(4)}</td>
+                    <td class="text-end ${diffClass}">
+                        ${safeNum(pos.price_difference, 0) < 0 ? '' : '+'}${safeNum(pos.price_difference, 0).toFixed(2)}%
+                    </td>
+                    <td>${pos.buy_signal || 'N/A'}</td>
+                    <td class="text-center">
+                        <span class="${timingClass}">
+                            ${pos.entry_confidence?.timing_signal || 'WAIT'}
+                        </span>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    function renderTradesTable(trades) {
+        const tbody = document.getElementById('trades-tbody');
+        if (!tbody || !trades || trades.length === 0) {
+            if (tbody) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center py-3 text-muted">No recent trades</td></tr>';
+            }
+            return;
+        }
+        
+        tbody.innerHTML = trades.slice(0, 20).map(trade => {
+            const pnlClass = safeNum(trade.pnl, 0) >= 0 ? 'text-success' : 'text-danger';
+            const pnlSign = safeNum(trade.pnl, 0) >= 0 ? '+' : '';
+            const sideClass = trade.side === 'BUY' ? 'text-success' : 'text-danger';
+            
+            const date = trade.timestamp ? new Date(trade.timestamp).toLocaleDateString() : 'N/A';
+            
+            return `
+                <tr>
+                    <td class="text-white">${date}</td>
+                    <td class="text-white"><strong>${trade.symbol || 'N/A'}</strong></td>
+                    <td class="${sideClass}">${trade.side || 'N/A'}</td>
+                    <td class="text-end">${safeNum(trade.quantity, 0).toFixed(6)}</td>
+                    <td class="text-end">$${safeNum(trade.price, 0).toFixed(4)}</td>
+                    <td class="text-end ${pnlClass}">
+                        ${pnlSign}$${Math.abs(safeNum(trade.pnl, 0)).toFixed(2)}
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    /** Modern icon mapping -> Font Awesome 6 (solid) **/
+    const ICON_MAP = {
+      'icon-dashboard': 'fa-gauge',
+      'icon-chart': 'fa-chart-line',
+      'icon-wallet': 'fa-wallet',
+      'icon-coins': 'fa-coins',
+      'icon-exchange': 'fa-arrow-right-arrow-left',
+      'icon-refresh': 'fa-rotate',
+      'icon-up': 'fa-arrow-trend-up',
+      'icon-down': 'fa-arrow-trend-down',
+      'icon-robot': 'fa-robot',
+      'icon-shield': 'fa-shield-halved',
+      'icon-wifi': 'fa-wifi',
+      'icon-server': 'fa-server',
+      'icon-file': 'fa-file-lines',
+      'icon-dollar': 'fa-dollar-sign',
+      'icon-percent': 'fa-percent',
+      'icon-sort': 'fa-arrow-up-arrow-down',
+      'icon-close': 'fa-xmark',
+      'icon-trophy': 'fa-trophy',
+      'icon-code': 'fa-code',
+      'icon-menu': 'fa-bars',
+      'icon-fire': 'fa-fire',
+      'icon-balance': 'fa-scale-balanced',
+      'icon-pnl': 'fa-chart-line',
+      'icon-positions': 'fa-layer-group',
+      'icon-tier': 'fa-gem',
+      'icon-stop': 'fa-stop',
+      'icon-circle': 'fa-circle',
+      'icon-clock': 'fa-clock',
+      'icon-timer': 'fa-hourglass-half'
+    };
+
+    /** Replace <span class="icon icon-XYZ ..."> with <i class="fa-solid fa-... ..."> */
+    function upgradeIcons(root = document) {
+      root.querySelectorAll('.icon').forEach(el => {
+        const classes = Array.from(el.classList);
+        const key = classes.find(c => c.startsWith('icon-') && c !== 'icon');
+        if (!key || !ICON_MAP[key]) return;
+        const i = document.createElement('i');
+        // preserve any spacing/utility classes (me-1, me-2, etc.)
+        const preserved = classes.filter(c => c !== 'icon' && c !== key).join(' ');
+        i.className = `fa-solid ${ICON_MAP[key]} ${preserved}`.trim();
+        i.setAttribute('aria-hidden', 'true');
+        el.replaceWith(i);
+      });
+    }
+
+    /** Get cryptocurrency icon - uses CoinGecko API for authentic logos */
+    function getCryptoIcon(symbol) {
+        if (!symbol || symbol === 'N/A') {
+            return '<i class="fa-solid fa-coins text-muted" style="width: 24px; height: 24px; font-size: 18px;"></i>';
+        }
+        
+        // Map symbol to CoinGecko ID for accurate logos
+        const coinGeckoIds = {
+            'BTC': 'bitcoin',
+            'ETH': 'ethereum', 
+            'SOL': 'solana',
+            'ADA': 'cardano',
+            'DOT': 'polkadot',
+            'AVAX': 'avalanche-2',
+            'MATIC': 'polygon',
+            'LINK': 'chainlink',
+            'UNI': 'uniswap',
+            'LTC': 'litecoin',
+            'XRP': 'ripple',
+            'DOGE': 'dogecoin',
+            'SHIB': 'shiba-inu',
+            'GALA': 'gala',
+            'TRX': 'tron',
+            'PEPE': 'pepe',
+            'USDT': 'tether',
+            'USDC': 'usd-coin',
+            'BNB': 'binancecoin',
+            'AUD': 'australian-dollar',
+            'USD': 'us-dollar'
+        };
+        
+        const coinId = coinGeckoIds[symbol.toUpperCase()] || symbol.toLowerCase();
+        
+        return `<img src="https://assets.coingecko.com/coins/images/${getCoinGeckoImageId(coinId)}/small/${coinId}.png" 
+                     alt="${symbol}" 
+                     class="crypto-icon crypto-icon-img" 
+                     style="width: 24px; height: 24px; border-radius: 50%;"`;
+    }
+    
+    /** Get CoinGecko image IDs for major cryptocurrencies */
+    function getCoinGeckoImageId(coinId) {
+        const imageIds = {
+            'bitcoin': '1',
+            'ethereum': '279', 
+            'solana': '4128',
+            'cardano': '975',
+            'polkadot': '12171',
+            'avalanche-2': '12559',
+            'polygon': '4713',
+            'chainlink': '877',
+            'uniswap': '12504',
+            'litecoin': '2',
+            'ripple': '44',
+            'dogecoin': '5',
+            'shiba-inu': '11939',
+            'gala': '12493',
+            'tron': '1094',
+            'pepe': '29850',
+            'tether': '325',
+            'usd-coin': '6319',
+            'binancecoin': '825'
+        };
+        
+        return imageIds[coinId] || '1'; // Default to Bitcoin ID if not found
+    }
+
+    // === CARD VIEW TOGGLE FUNCTIONALITY ===
+    const cardViews = ['text', 'graph', 'detailed', 'compact'];
+    const cardViewState = {};
+    
+    function toggleCardView(cardId) {
+        // Initialize card state if not exists
+        if (!cardViewState[cardId]) {
+            cardViewState[cardId] = 0;
+        }
+        
+        // Cycle to next view
+        cardViewState[cardId] = (cardViewState[cardId] + 1) % cardViews.length;
+        const newView = cardViews[cardViewState[cardId]];
+        
+        const card = document.querySelector(`[data-card="${cardId}"]`);
+        if (!card) return;
+        
+        // Update card class
+        card.className = `kpi-card view-${newView}`;
+        
+        // Hide all view contents
+        const viewContents = card.querySelectorAll('.view-content');
+        viewContents.forEach(content => content.classList.remove('active'));
+        
+        // Show active view content
+        const activeContent = card.querySelector(`.view-${newView}-content`);
+        if (activeContent) {
+            activeContent.classList.add('active');
+        }
+        
+        // Update button icon based on view
+        const button = card.querySelector('.view-toggle-btn i');
+        if (button) {
+            const icons = {
+                'text': 'fa-font',
+                'graph': 'fa-chart-line', 
+                'detailed': 'fa-list-ul',
+                'compact': 'fa-compress'
+            };
+            button.className = `fa-solid ${icons[newView]}`;
+        }
+        
+        // Initialize mini charts for graph views
+        if (newView === 'graph') {
+            initializeMiniChart(cardId);
+        }
+        
+        // Update data for new view mode
+        updateCardDataForView(cardId, newView);
+        
+        console.log(`Card ${cardId} switched to ${newView} view`);
+    }
+    
+    function initializeMiniChart(cardId) {
+        const canvas = document.querySelector(`#${cardId.replace('-', '')}-chart`);
+        if (!canvas) return;
+        
+        const ctx = canvas.getContext('2d');
+        const width = canvas.width;
+        const height = canvas.height;
+        
+        // Clear canvas
+        ctx.clearRect(0, 0, width, height);
+        
+        // Generate sample data
+        const data = Array.from({length: 20}, (_, i) => Math.random() * 100 + 50);
+        
+        // Draw simple line chart
+        ctx.strokeStyle = '#007bff';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        
+        data.forEach((value, index) => {
+            const x = (index / (data.length - 1)) * width;
+            const y = height - ((value - 50) / 100 * height);
+            
+            if (index === 0) {
+                ctx.moveTo(x, y);
+            } else {
+                ctx.lineTo(x, y);
+            }
+        });
+        
+        ctx.stroke();
+        
+        // Add gradient fill
+        const gradient = ctx.createLinearGradient(0, 0, 0, height);
+        gradient.addColorStop(0, 'rgba(0, 123, 255, 0.2)');
+        gradient.addColorStop(1, 'rgba(0, 123, 255, 0.05)');
+        
+        ctx.fillStyle = gradient;
+        ctx.lineTo(width, height);
+        ctx.lineTo(0, height);
+        ctx.closePath();
+        ctx.fill();
+    }
+    
+    function updateCardDataForView(cardId, viewType) {
+        // Get current data from text view elements
+        const textValue = document.querySelector(`#okx-${cardId.replace('-', '')}`);
+        if (!textValue) return;
+        
+        const value = textValue.textContent;
+        
+        // Update corresponding view elements
+        if (viewType === 'graph') {
+            const graphValue = document.querySelector(`#okx-${cardId.replace('-', '')}-graph`);
+            if (graphValue) graphValue.textContent = value;
+        } else if (viewType === 'detailed') {
+            const detailedValue = document.querySelector(`#okx-${cardId.replace('-', '')}-detailed`);
+            if (detailedValue) detailedValue.textContent = value;
+        } else if (viewType === 'compact') {
+            const compactValue = document.querySelector(`#okx-${cardId.replace('-', '')}-compact`);
+            if (compactValue) compactValue.textContent = value;
+        }
+    }
+
+    // === INITIALIZATION ===
+    document.addEventListener('DOMContentLoaded', function() {
+        upgradeIcons(); // convert all existing icons
+        // Set up event handlers
+        handleCurrencyChange();
+        initTableSorting();
+        
+        // Set up bot toggle button
+        const botButton = document.getElementById('btn-bot-toggle');
+        if (botButton) {
+            botButton.addEventListener('click', toggleBot);
+        }
+        
+        // Set up other button handlers
+        document.getElementById('btn-ato-export')?.addEventListener('click', function() {
+            window.open('/api/export/ato', '_blank');
+        });
+        
+        document.getElementById('btn-take-profit')?.addEventListener('click', async function() {
+            if (confirm('Execute take profit for all positions above 2% profit?')) {
+                try {
+                    const token = getAdminToken();
+                    const response = await fetch('/api/execute-take-profit', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Admin-Token': token
+                        }
+                    });
+                    
+                    if (response.status === 401) {
+                        alert('Admin authentication required for take profit execution.');
+                        return;
+                    }
+                    
+                    const data = await response.json();
+                    if (data.success) {
+                        const sells = data.executed_trades?.length || 0;
+                        const buys = data.buy_trades?.length || 0;
+                        const profit = data.total_profit || 0;
+                        const message = `Take profit executed: ${sells} sells, ${buys} buys, $${profit.toFixed(2)} total profit`;
+                        alert(message);
+                        
+                        // Refresh portfolio data
+                        if (window.tradingApp && typeof window.tradingApp.updateCryptoPortfolio === 'function') {
+                            window.tradingApp.updateCryptoPortfolio();
+                        }
+                    } else {
+                        alert(data.error || data.message || 'Take profit execution failed');
+                    }
+                } catch (error) {
+                    alert(`Take profit error: ${error.message}`);
+                }
+            }
+        });
+        
+        // Set up Buy/Sell button handlers
+        document.getElementById('btn-buy')?.addEventListener('click', function() {
+            const symbol = prompt("Enter symbol to buy (e.g., BTC-USDT):");
+            if (!symbol) return;
+            const amount = prompt("Enter USD amount to invest:");
+            if (!amount || isNaN(amount)) return;
+            
+            alert(`Buy order would be: $${amount} of ${symbol}`);
+            console.log('Buy dialog:', { symbol, amount });
+        });
+        
+        document.getElementById('btn-sell')?.addEventListener('click', function() {
+            const symbol = prompt("Enter symbol to sell (e.g., BTC-USDT):");
+            if (!symbol) return;
+            const percentage = prompt("Enter percentage to sell (1-100):");
+            if (!percentage || isNaN(percentage)) return;
+            
+            alert(`Sell order would be: ${percentage}% of ${symbol}`);
+            console.log('Sell dialog:', { symbol, percentage });
+        });
+        
+        // Initial status fetch
+        fetchAndUpdateBotStatus();
+        updateFooterStatus();
+        updateTimingDisplays();
+        
+        // Periodic updates now handled by TradingApp.startAutoUpdate()
+        // Legacy intervals removed - all updates consolidated
+        
+        // Initialize the main trading app if available
+        if (window.tradingApp && typeof window.tradingApp.init === 'function') {
+            window.tradingApp.init();
+        }
+        
+        // Load initial data for tables
+        setTimeout(() => {
+            if (window.tradingApp && typeof window.tradingApp.updateCurrentHoldings === 'function') {
+                window.tradingApp.updateCurrentHoldings();
+            }
+            if (typeof refreshHoldingsData === 'function') {
+                refreshHoldingsData();
+            }
+            if (typeof fetchAndUpdateAvailablePositions === 'function') {
+                fetchAndUpdateAvailablePositions();
+            }
+        }, 1000);
+    });
+    
+    // Recalculate positions function
+    async function recalculatePositions() {
+        const btn = document.getElementById('recalculate-btn');
+        const originalText = btn.innerHTML;
+        
+        try {
+            // Show loading state
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Recalculating...';
+            
+            // Get admin token
+            const adminToken = document.querySelector('meta[name="admin-token"]')?.getAttribute('content');
+            if (!adminToken) {
+                throw new Error('Admin token not found');
+            }
+            
+            // Call recalculation API
+            const response = await fetch('/api/recalculate-positions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${adminToken}`
+                },
+                cache: 'no-cache'
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                // Show success message
+                if (window.tradingApp) {
+                    window.tradingApp.showToast(result.message, 'success');
+                }
+                
+                // Wait a moment for backend processing, then refresh
+                setTimeout(async () => {
+                    await fetchAndUpdateAvailablePositions();
+                    console.log('Available positions refreshed after recalculation');
+                }, 1500);
+                
+            } else {
+                throw new Error(result.message || 'Recalculation failed');
+            }
+            
+        } catch (error) {
+            console.error('Error recalculating positions:', error);
+            if (window.tradingApp) {
+                window.tradingApp.showToast(`Recalculation failed: ${error.message}`, 'error');
+            }
+        } finally {
+            // Restore button state
+            setTimeout(() => {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }, 2000);
+        }
+    }
+    </script>
+<script defer="True" src="https://cdn.jsdelivr.net/npm/chart.js"></script><script defer="True" src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script><script defer="True" src="{{ url_for('static', filename='app.js') }}?v={{ cache_version|default(0) }}"></script></body>
+</html>

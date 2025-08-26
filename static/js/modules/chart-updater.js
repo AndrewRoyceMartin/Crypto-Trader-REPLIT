@@ -64,7 +64,7 @@ export class ChartUpdater {
             performersChart: null,
             miniPortfolioChart: null,
             equityChart: null,
-            drawdownChart: null,
+            riskChart: null,
             allocationChart: null
         };
         
@@ -232,7 +232,7 @@ export class ChartUpdater {
             return;
         }
 
-        this.charts.drawdownChart = new Chart(ctx, {
+        this.charts.riskChart = new Chart(ctx, {
             type: 'line',
             data: {
                 labels: [],
@@ -350,28 +350,28 @@ export class ChartUpdater {
         }
     }
 
-    async updateDrawdownChart() {
-        if (!this.charts.drawdownChart) {
-            console.debug('Drawdown chart element not found - skipping chart update');
+    async updateRiskChart() {
+        if (!this.charts.riskChart) {
+            console.debug('Risk chart element not found - skipping chart update');
             return;
         }
         
         try {
             const data = await AppUtils.fetchJSON('/api/drawdown-analysis?timeframe=30d');
             if (!data || !data.drawdown_history) {
-                this.handleChartUpdateError('drawdownChart', 'No drawdown data available');
+                this.handleChartUpdateError('riskChart', 'No risk data available');
                 return;
             }
             
             const labels = data.drawdown_history.map(item => AppUtils.formatDateTime(item.timestamp));
             const values = data.drawdown_history.map(item => AppUtils.safeNum(item.drawdown_percent));
             
-            this.charts.drawdownChart.data.labels = labels;
-            this.charts.drawdownChart.data.datasets[0].data = values;
-            this.charts.drawdownChart.update('none');
+            this.charts.riskChart.data.labels = labels;
+            this.charts.riskChart.data.datasets[0].data = values;
+            this.charts.riskChart.update('none');
         } catch (error) {
-            console.debug('Drawdown chart update failed:', error);
-            this.handleChartUpdateError('drawdownChart', 'Failed to load drawdown data');
+            console.debug('Risk chart update failed:', error);
+            this.handleChartUpdateError('riskChart', 'Failed to load risk data');
         }
     }
 
@@ -380,7 +380,7 @@ export class ChartUpdater {
             this.updatePortfolioChart(),
             this.updateAllocationChart(),
             this.updateEquityChart(),
-            this.updateDrawdownChart()
+            this.updateRiskChart()
         ]);
     }
 
@@ -414,7 +414,7 @@ export class ChartUpdater {
             performersChart: null,
             miniPortfolioChart: null,
             equityChart: null,
-            drawdownChart: null,
+            riskChart: null,
             allocationChart: null
         };
     }
