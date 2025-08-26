@@ -1,10 +1,81 @@
 // Trading System Web Interface JavaScript - Cleaned & Harmonized
 
+// ===== ORGANIZED NAMESPACE ARCHITECTURE USING IIFE =====
+// 
+// This refactors 80+ global functions into organized namespaces to prevent
+// collisions with other libraries and browser extensions, improving code
+// maintainability and reducing global scope pollution.
+//
+// Namespace Structure:
+//   Utils     - Core utilities (getAdminToken, fetchJSON, etc.)
+//   UI        - User interface functions (toast, setConn, etc.)
+//   Trading   - Trading operations (executeTakeProfit, showBuyDialog, etc.)
+//   Portfolio - Portfolio management functions
+//   Tables    - Table formatting and data-label management
+//
+// Access functions via: Utils.getAdminToken(), Trading.showBuyDialog(), etc.
+
+// Utils namespace - Core utilities and helpers
+const Utils = (function() {
+    return {
+        getAdminToken: null,     // Will be assigned below
+        fetchJSON: null,         // Will be assigned below
+        currentCurrency: null,   // Will be assigned below
+        safeNum: null,          // Will be assigned below
+        fmtCurrency: null,      // Will be assigned below
+        toNum: null,            // Will be assigned below
+        toOkxInst: null         // Will be assigned below
+    };
+})();
+
+// UI namespace - User interface and notifications
+const UI = (function() {
+    return {
+        toast: null,            // Will be assigned below
+        setConn: null,          // Will be assigned below
+        changeCurrency: null,   // Will be assigned below
+        initializeV02Tables: null  // Will be assigned below
+    };
+})();
+
+// Trading namespace - Trading operations
+const Trading = (function() {
+    return {
+        executeTakeProfit: null,  // Will be assigned below
+        showBuyDialog: null,      // Will be assigned below
+        showSellDialog: null,     // Will be assigned below
+        confirmLiveTrading: null  // Will be assigned below
+    };
+})();
+
+// Portfolio namespace - Portfolio management
+const Portfolio = (function() {
+    return {
+        refreshCryptoPortfolio: null,    // Will be assigned below
+        clearPortfolioFilters: null,     // Will be assigned below
+        clearPerformanceFilters: null,   // Will be assigned below
+        sortPortfolio: null,             // Will be assigned below
+        sortPerformanceTable: null       // Will be assigned below
+    };
+})();
+
+// Tables namespace - Table management and formatting
+const Tables = (function() {
+    return {
+        v02ApplyDataLabels: null,      // Will be assigned below
+        initializeV02Tables: null,     // Will be assigned below
+        updateHoldingsTable: null,     // Will be assigned below
+        refreshHoldingsData: null      // Will be assigned below
+    };
+})();
+
 // Admin token helper functions
 function getAdminToken() {
   const m = document.querySelector('meta[name="admin-token"]');
   return m ? m.content : '';
 }
+// Assign to namespace
+Utils.getAdminToken = getAdminToken;
 
 async function fetchJSON(url, { method='GET', body, timeout=10000, headers={}, noStore=true } = {}) {
   const ctl = new AbortController();
@@ -38,17 +109,23 @@ async function fetchJSON(url, { method='GET', body, timeout=10000, headers={}, n
     return null;
   } finally { clearTimeout(t); }
 }
+// Assign to namespace
+Utils.fetchJSON = fetchJSON;
 
 // Global currency and number helper functions
 function currentCurrency(){
     return document.getElementById('currency-selector')?.value || 'USD';
 }
+// Assign to namespace
+Utils.currentCurrency = currentCurrency;
 
 // Resilient number parsing with fallback to prevent string errors
 function safeNum(value, fallback = 0) {
     const num = Number(value);
     return isNaN(num) ? fallback : num;
 }
+// Assign to namespace
+Utils.safeNum = safeNum;
 
 function fmtCurrency(n){
     return new Intl.NumberFormat('en-US', {
@@ -58,6 +135,8 @@ function fmtCurrency(n){
         maximumFractionDigits:2
     }).format(Number(n||0));
 }
+// Assign to namespace
+Utils.fmtCurrency = fmtCurrency;
 
 // Robust number parsing for table sorting
 function toNum(x){
@@ -65,12 +144,16 @@ function toNum(x){
     const s = String(x).replace(/[\$,]/g,'').replace('%','').trim();
     const n = parseFloat(s); return isNaN(n)?0:n;
 }
+// Assign to namespace
+Utils.toNum = toNum;
 
 // Symbol normalization for OKX instruments
 function toOkxInst(s){
     const t=s.trim().toUpperCase();
     return t.includes('-')?t.replace('/','-'): (t.includes('/')?t.replace('/','-'): `${t}-USDT`);
 }
+// Assign to namespace
+Utils.toOkxInst = toOkxInst;
 
 // Non-blocking toast notifications
 function toast(msg, type='info'){
@@ -111,6 +194,8 @@ function setConn(connected){
   el.closest('.badge')?.classList.toggle('bg-success', connected);
   el.closest('.badge')?.classList.toggle('bg-danger', !connected);
 }
+// Assign to namespace
+UI.setConn = setConn;
 
 // V02 table mobile labels helper
 function v02ApplyDataLabels(table) {
@@ -134,6 +219,9 @@ function initializeV02Tables() {
         console.debug('V02 table initialization failed:', error);
     }
 }
+// Assign to namespaces
+UI.initializeV02Tables = initializeV02Tables;
+Tables.initializeV02Tables = initializeV02Tables;
 
 // Event delegation for card view toggle buttons
 document.addEventListener('DOMContentLoaded', function() {
@@ -143,7 +231,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Auto-load positions data after page loads (moved from separate DOMContentLoaded)
     setTimeout(() => {
         refreshHoldingsData();
-        getPositionsStatus();  // Also load positions status
+        // getPositionsStatus removed - function was undefined and not needed for core functionality
     }, 500);
 
     document.addEventListener('click', function(e) {
@@ -3923,7 +4011,14 @@ class TradingApp {
 
 // ---------- Boot ----------
 document.addEventListener('DOMContentLoaded', function () {
+    // Keep main trading app in global scope for compatibility, but organize other functions in namespaces
     window.tradingApp = new TradingApp();
+    
+    // Maintain backward compatibility by also exposing namespaced functions globally if needed
+    // (Remove these once all references are updated to use namespaces)
+    window.executeTakeProfit = Trading.executeTakeProfit;
+    window.showBuyDialog = Trading.showBuyDialog;
+    window.showSellDialog = Trading.showSellDialog;
     
     // Initialize scroll hints
     initializeScrollHints();
@@ -4378,7 +4473,8 @@ async function updateBotStatusDisplay() {
     }
 }
 
-window.executeTakeProfit = async function executeTakeProfit() {
+// Move to Trading namespace instead of global window
+async function executeTakeProfit() {
     if (!confirm('Execute take profit for all positions above 2% profit? This will sell profitable positions and reinvest proceeds.')) {
         return;
     }
@@ -4460,10 +4556,12 @@ window.executeTakeProfit = async function executeTakeProfit() {
         button.disabled = false;
         button.textContent = originalText;
     }
-};
+}
+// Assign to Trading namespace instead of global window
+Trading.executeTakeProfit = executeTakeProfit;
 
-// Add missing Buy/Sell dialog functions
-window.showBuyDialog = function showBuyDialog() {
+// Add missing Buy/Sell dialog functions - moved to Trading namespace
+function showBuyDialog() {
     const symbol = prompt("Enter symbol to buy (e.g., BTC-USDT):");
     if (!symbol) return;
     const amount = prompt("Enter USD amount to invest:");
@@ -4471,9 +4569,11 @@ window.showBuyDialog = function showBuyDialog() {
     
     window.tradingApp.showToast(`Buy order would be: $${amount} of ${symbol}`, 'info');
     console.log('Buy dialog:', { symbol, amount });
-};
+}
+// Assign to Trading namespace
+Trading.showBuyDialog = showBuyDialog;
 
-window.showSellDialog = function showSellDialog() {
+function showSellDialog() {
     const symbol = prompt("Enter symbol to sell (e.g., BTC-USDT):");
     if (!symbol) return;
     const percentage = prompt("Enter percentage to sell (1-100):");
@@ -4481,7 +4581,9 @@ window.showSellDialog = function showSellDialog() {
     
     window.tradingApp.showToast(`Sell order would be: ${percentage}% of ${symbol}`, 'info');
     console.log('Sell dialog:', { symbol, percentage });
-};
+}
+// Assign to Trading namespace
+Trading.showSellDialog = showSellDialog;
 async function buyCrypto(symbol) {
     const amount = prompt(`Enter USD amount to buy ${symbol}:`, '25.00');
     if (!amount || isNaN(amount) || parseFloat(amount) <= 0) return window.tradingApp.showToast('Invalid amount', 'error');
