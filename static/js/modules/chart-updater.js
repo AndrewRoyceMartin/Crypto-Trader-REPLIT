@@ -327,12 +327,22 @@ export class ChartUpdater {
 
     async updateEquityChart() {
         if (!this.charts.equityChart) {
+            console.debug('Equity chart not initialized, skipping update');
             return;
         }
         
         try {
             const data = await AppUtils.fetchJSON('/api/equity-curve?timeframe=30d');
-            if (!data || !data.equity_curve) {
+            console.debug('Equity chart data received:', data);
+            
+            if (!data || !data.equity_curve || !Array.isArray(data.equity_curve)) {
+                console.debug('Invalid equity data structure, creating fallback');
+                ChartUpdater.createChartFallback('equityChart', 'No equity data available', 'warning');
+                return;
+            }
+            
+            if (data.equity_curve.length === 0) {
+                console.debug('Empty equity data array, creating fallback');
                 ChartUpdater.createChartFallback('equityChart', 'No equity data available', 'warning');
                 return;
             }
@@ -340,33 +350,49 @@ export class ChartUpdater {
             const labels = data.equity_curve.map(item => AppUtils.formatDateTime(item.timestamp));
             const values = data.equity_curve.map(item => AppUtils.safeNum(item.equity));
             
+            console.debug(`Updating equity chart with ${labels.length} data points`);
+            
             this.charts.equityChart.data.labels = labels;
             this.charts.equityChart.data.datasets[0].data = values;
             this.charts.equityChart.update('none');
         } catch (error) {
+            console.error('Equity chart update error:', error);
             ChartUpdater.createChartFallback('equityChart', 'Failed to load equity data', 'warning');
         }
     }
 
     async updateRiskChart() {
         if (!this.charts.riskChart) {
+            console.debug('Risk chart not initialized, skipping update');
             return;
         }
         
         try {
             const data = await AppUtils.fetchJSON('/api/drawdown-analysis?timeframe=30d');
-            if (!data || !data.drawdown_history) {
+            console.debug('Risk chart data received:', data);
+            
+            if (!data || !data.drawdown_history || !Array.isArray(data.drawdown_history)) {
+                console.debug('Invalid risk data structure, creating fallback');
+                ChartUpdater.createChartFallback('riskChart', 'No risk data available', 'warning');
+                return;
+            }
+            
+            if (data.drawdown_history.length === 0) {
+                console.debug('Empty drawdown data array, creating fallback');
                 ChartUpdater.createChartFallback('riskChart', 'No risk data available', 'warning');
                 return;
             }
             
             const labels = data.drawdown_history.map(item => AppUtils.formatDateTime(item.timestamp));
-            const values = data.drawdown_history.map(item => AppUtils.safeNum(item.drawdown_percent));
+            const values = data.drawdown_history.map(item => Math.abs(AppUtils.safeNum(item.drawdown_percent, 0)));
+            
+            console.debug(`Updating risk chart with ${labels.length} data points`);
             
             this.charts.riskChart.data.labels = labels;
             this.charts.riskChart.data.datasets[0].data = values;
             this.charts.riskChart.update('none');
         } catch (error) {
+            console.error('Risk chart update error:', error);
             ChartUpdater.createChartFallback('riskChart', 'Failed to load risk data', 'warning');
         }
     }
