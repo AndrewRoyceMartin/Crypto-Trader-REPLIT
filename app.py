@@ -5902,6 +5902,7 @@ def add_security_headers(resp: Any) -> Any:
         "base-uri 'self'; "
         "form-action 'self'"
     )
+    resp.headers["Cross-Origin-Resource-Policy"] = "cross-origin"
     resp.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
     resp.headers["X-Content-Type-Options"] = "nosniff"
     resp.headers["X-Frame-Options"] = "DENY"

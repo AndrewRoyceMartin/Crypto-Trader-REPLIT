@@ -1,0 +1,108 @@
+themeContext-e2709bf1.js:1 Refused to load the font 'data:application/octet-stream;base64,d09GMgABAAAAAPUcABQAAAACTcwAAPSkAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGpQ+G4GCAByMSj9IVkFSlR8/TVZBUoE+BmA/U1RBVIIiJ0gAhQwvgSQRCAqBgSjmQwuEHgAwhrRmATYCJAOIOAQgBYd0B4k4W+08ciQaIvPIC7OSzq4RzVwSsKn8n7dC5rabJIGNMXkENwC1rm5SwY69CDgPIJHu/wqz////c5MNGetA/wA25zQzLa3XaaY5DBaEw2FZauTUSkXzzDLPM0ug9wRjdiW752JIXymC5CNdOIitiw76Joq056xOkqzstNwz+mtA2+SB9UxMXqoItcnEGzVQayY8FXO9Tyw9uO8FGTB4ER6W4Q3v3fyl+4wP5XEsJBiOfpUSmNWLDw5eqJHaTfXj4crGdmgdPtb5J77K740osow36et4vdxehS+CwmEi/uW1oakfTCjDKTaFUdGJS3...RCYiRBUjjqpVdehwWShTwUSFiGkpwFW3Z2oGzmYJMeK0gwFELJ7PM/4UTEMiwQIkyv0zrt1+WANu2OO4EmDFWoORKoV+crX/qayXz31DjmP0Jhat1Qps3TCnCMbHe2dhx3LinKqm7arh/GaV7Wbf/g8Oj45PTs/OLy6vrm9u7+4fHp+cVpUN+Ym3GGIE2B+VRtlfQr6QI6A9EC/dOvupLOctxQQns5jZLK+KnujLbsNKU6WRaxpQEcLWJFxmDIujEnqcRJQDhxyboDVhInrU6Lu82xQq9aAi3hk77wwZMoc4SMxd3zbEVvi9BlEWtNwoQYmXmJY/tDia9mU2DtK3MydhzqVTJDjlZHACNuR1YrYnyMzFcEmMg7YbDaQEmuGdk5fN2alKY9dhjT44n67nuNceEY7zqGwwHeXyoHr0A4eWqfmxweApr3zqxQx5sHWbEultwddsQ7gWDpUOmv8Aac8LoRJi5v392WymSrIA9fVxzjXy7wQHo/ZuwCHBIO' because it violates the following Content Security Policy directive: "font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com".
+
+(anonymous) @ themeContext-e2709bf1.js:1
+app.js?v=1756249138:29 Loading progress: 20% - Fetching cryptocurrency data...
+app.js?v=1756249138:42 Loading progress: 100% - Complete!
+(index):541 DOM ready, Bootstrap: true Chart.js: true
+app.js?v=1756249138:29 Loading progress: 20% - Fetching cryptocurrency data...
+app.js?v=1756249138:42 Loading progress: 100% - Complete!
+chart.js:13 Uncaught Error: Canvas is already in use. Chart with ID '0' must be destroyed before the canvas with ID 'portfolioChart' can be reused.
+app.js?v=1756249138:128 Holdings data received: (3) [{…}, {…}, {…}]
+cryptologos.cc/logos/sol-sol-logo.png:1  GET https://cryptologos.cc/logos/sol-sol-logo.png net::ERR_BLOCKED_BY_RESPONSE.NotSameOrigin 403 (Forbidden)
+cryptologos.cc/logos/gala-gala-logo.png:1  GET https://cryptologos.cc/logos/gala-gala-logo.png net::ERR_BLOCKED_BY_RESPONSE.NotSameOrigin 403 (Forbidden)
+cryptologos.cc/logos/trx-trx-logo.png:1  GET https://cryptologos.cc/logos/trx-trx-logo.png net::ERR_BLOCKED_BY_RESPONSE.NotSameOrigin 403 (Forbidden)
+app.js?v=1756249138:128 Holdings data received: (3) [{…}, {…}, {…}]
+cryptologos.cc/logos/trx-trx-logo.png:1  GET https://cryptologos.cc/logos/trx-trx-logo.png net::ERR_BLOCKED_BY_RESPONSE.NotSameOrigin 403 (Forbidden)
+cryptologos.cc/logos/gala-gala-logo.png:1  GET https://cryptologos.cc/logos/gala-gala-logo.png net::ERR_BLOCKED_BY_RESPONSE.NotSameOrigin 403 (Forbidden)
+cryptologos.cc/logos/sol-sol-logo.png:1  GET https://cryptologos.cc/logos/sol-sol-logo.png net::ERR_BLOCKED_BY_RESPONSE.NotSameOrigin 403 (Forbidden)
+app.js?v=1756249138:128 Holdings data received: (3) [{…}, {…}, {…}]
+cryptologos.cc/logos/gala-gala-logo.png:1  GET https://cryptologos.cc/logos/gala-gala-logo.png net::ERR_BLOCKED_BY_RESPONSE.NotSameOrigin 403 (Forbidden)
+cryptologos.cc/logos/trx-trx-logo.png:1  GET https://cryptologos.cc/logos/trx-trx-logo.png net::ERR_BLOCKED_BY_RESPONSE.NotSameOrigin 403 (Forbidden)
+cryptologos.cc/logos/sol-sol-logo.png:1  GET https://cryptologos.cc/logos/sol-sol-logo.png net::ERR_BLOCKED_BY_RESPONSE.NotSameOrigin 403 (Forbidden)
+app.js?v=1756249138:151 Available positions loaded: 69 positions
+app.js?v=1756249138:228 renderAvailableTable called with: (69) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+app.js?v=1756249138:151 Available positions loaded: 69 positions
+app.js?v=1756249138:228 renderAvailableTable called with: (69) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+cryptologos.cc/logos/aud-aud-logo.png:1  GET https://cryptologos.cc/logos/aud-aud-logo.png net::ERR_BLOCKED_BY_RESPONSE.NotSameOrigin 403 (Forbidden)
+cryptologos.cc/logos/btc-btc-logo.png:1  GET https://cryptologos.cc/logos/btc-btc-logo.png net::ERR_BLOCKED_BY_RESPONSE.NotSameOrigin 403 (Forbidden)
+cryptologos.cc/logos/gala-gala-logo.png:1  GET https://cryptologos.cc/logos/gala-gala-logo.png net::ERR_BLOCKED_BY_RESPONSE.NotSameOrigin 403 (Forbidden)
+cryptologos.cc/logos/pepe-pepe-logo.png:1  GET https://cryptologos.cc/logos/pepe-pepe-logo.png net::ERR_BLOCKED_BY_RESPONSE.NotSameOrigin 403 (Forbidden)
+cryptologos.cc/logos/sol-sol-logo.png:1  GET https://cryptologos.cc/logos/sol-sol-logo.png net::ERR_BLOCKED_BY_RESPONSE.NotSameOrigin 403 (Forbidden)
+cryptologos.cc/logos/trx-trx-logo.png:1  GET https://cryptologos.cc/logos/trx-trx-logo.png net::ERR_BLOCKED_BY_RESPONSE.NotSameOrigin 403 (Forbidden)
+cryptologos.cc/logos/usdt-usdt-logo.png:1  GET https://cryptologos.cc/logos/usdt-usdt-logo.png net::ERR_BLOCKED_BY_RESPONSE.NotSameOrigin 403 (Forbidden)
+cryptologos.cc/logos/1inch-1inch-logo.png:1  GET https://cryptologos.cc/logos/1inch-1inch-logo.png net::ERR_BLOCKED_BY_RESPONSE.NotSameOrigin 403 (Forbidden)
+cryptologos.cc/logos/algo-algo-logo.png:1  GET https://cryptologos.cc/logos/algo-algo-logo.png net::ERR_BLOCKED_BY_RESPONSE.NotSameOrigin 403 (Forbidden)
+cryptologos.cc/logos/aave-aave-logo.png:1  GET https://cryptologos.cc/logos/aave-aave-logo.png net::ERR_BLOCKED_BY_RESPONSE.NotSameOrigin 403 (Forbidden)
+cryptologos.cc/logos/ada-ada-logo.png:1  GET https://cryptologos.cc/logos/ada-ada-logo.png net::ERR_BLOCKED_BY_RESPONSE.NotSameOrigin 403 (Forbidden)
+cryptologos.cc/logos/alpha-alpha-logo.png:1  GET https://cryptologos.cc/logos/alpha-alpha-logo.png net::ERR_BLOCKED_BY_RESPONSE.NotSameOrigin 403 (Forbidden)
+cryptologos.cc/logos/ape-ape-logo.png:1  GET https://cryptologos.cc/logos/ape-ape-logo.png net::ERR_BLOCKED_BY_RESPONSE.NotSameOrigin 403 (Forbidden)
+cryptologos.cc/logos/api3-api3-logo.png:1  GET https://cryptologos.cc/logos/api3-api3-logo.png net::ERR_BLOCKED_BY_RESPONSE.NotSameOrigin 403 (Forbidden)
+cryptologos.cc/logos/arb-arb-logo.png:1  GET https://cryptologos.cc/logos/arb-arb-logo.png net::ERR_BLOCKED_BY_RESPONSE.NotSameOrigin 403 (Forbidden)
+cryptologos.cc/logos/atom-atom-logo.png:1  GET https://cryptologos.cc/logos/atom-atom-logo.png net::ERR_BLOCKED_BY_RESPONSE.NotSameOrigin 403 (Forbidden)
+cryptologos.cc/logos/avax-avax-logo.png:1  GET https://cryptologos.cc/logos/avax-avax-logo.png net::ERR_BLOCKED_BY_RESPONSE.NotSameOrigin 403 (Forbidden)
+cryptologos.cc/logos/axs-axs-logo.png:1  GET https://cryptologos.cc/logos/axs-axs-logo.png net::ERR_BLOCKED_BY_RESPONSE.NotSameOrigin 403 (Forbidden)
+cryptologos.cc/logos/bal-bal-logo.png:1  GET https://cryptologos.cc/logos/bal-bal-logo.png net::ERR_BLOCKED_BY_RESPONSE.NotSameOrigin 403 (Forbidden)
+cryptologos.cc/logos/bonk-bonk-logo.png:1  GET https://cryptologos.cc/logos/bonk-bonk-logo.png net::ERR_BLOCKED_BY_RESPONSE.NotSameOrigin 403 (Forbidden)
+cryptologos.cc/logos/bch-bch-logo.png:1  GET https://cryptologos.cc/logos/bch-bch-logo.png net::ERR_BLOCKED_BY_RESPONSE.NotSameOrigin 403 (Forbidden)
+cryptologos.cc/logos/bat-bat-logo.png:1  GET https://cryptologos.cc/logos/bat-bat-logo.png net::ERR_BLOCKED_BY_RESPONSE.NotSameOrigin 403 (Forbidden)
+cryptologos.cc/logos/bnb-bnb-logo.png:1  GET https://cryptologos.cc/logos/bnb-bnb-logo.png net::ERR_BLOCKED_BY_RESPONSE.NotSameOrigin 403 (Forbidden)
+cryptologos.cc/logos/comp-comp-logo.png:1  GET https://cryptologos.cc/logos/comp-comp-logo.png net::ERR_BLOCKED_BY_RESPONSE.NotSameOrigin 403 (Forbidden)
+cryptologos.cc/logos/busd-busd-logo.png:1  GET https://cryptologos.cc/logos/busd-busd-logo.png net::ERR_BLOCKED_BY_RESPONSE.NotSameOrigin 403 (Forbidden)
+cryptologos.cc/logos/cro-cro-logo.png:1  GET https://cryptologos.cc/logos/cro-cro-logo.png net::ERR_BLOCKED_BY_RESPONSE.NotSameOrigin 403 (Forbidden)
+cryptologos.cc/logos/crv-crv-logo.png:1  GET https://cryptologos.cc/logos/crv-crv-logo.png net::ERR_BLOCKED_BY_RESPONSE.NotSameOrigin 403 (Forbidden)
+cryptologos.cc/logos/chz-chz-logo.png:1  GET https://cryptologos.cc/logos/chz-chz-logo.png net::ERR_BLOCKED_BY_RESPONSE.NotSameOrigin 403 (Forbidden)
+cryptologos.cc/logos/dai-dai-logo.png:1  GET https://cryptologos.cc/logos/dai-dai-logo.png net::ERR_BLOCKED_BY_RESPONSE.NotSameOrigin 403 (Forbidden)
+cryptologos.cc/logos/dot-dot-logo.png:1  GET https://cryptologos.cc/logos/dot-dot-logo.png net::ERR_BLOCKED_BY_RESPONSE.NotSameOrigin 403 (Forbidden)
+cryptologos.cc/logos/doge-doge-logo.png:1  GET https://cryptologos.cc/logos/doge-doge-logo.png net::ERR_BLOCKED_BY_RESPONSE.NotSameOrigin 403 (Forbidden)
+cryptologos.cc/logos/dydx-dydx-logo.png:1  GET https://cryptologos.cc/logos/dydx-dydx-logo.png net::ERR_BLOCKED_BY_RESPONSE.NotSameOrigin 403 (Forbidden)
+cryptologos.cc/logos/etc-etc-logo.png:1  GET https://cryptologos.cc/logos/etc-etc-logo.png net::ERR_BLOCKED_BY_RESPONSE.NotSameOrigin 403 (Forbidden)
+cryptologos.cc/logos/eth-eth-logo.png:1  GET https://cryptologos.cc/logos/eth-eth-logo.png net::ERR_BLOCKED_BY_RESPONSE.NotSameOrigin 403 (Forbidden)
+cryptologos.cc/logos/fet-fet-logo.png:1  GET https://cryptologos.cc/logos/fet-fet-logo.png net::ERR_BLOCKED_BY_RESPONSE.NotSameOrigin 403 (Forbidden)
+cryptologos.cc/logos/icx-icx-logo.png:1  GET https://cryptologos.cc/logos/icx-icx-logo.png net::ERR_BLOCKED_BY_RESPONSE.NotSameOrigin 403 (Forbidden)
+cryptologos.cc/logos/icp-icp-logo.png:1  GET https://cryptologos.cc/logos/icp-icp-logo.png net::ERR_BLOCKED_BY_RESPONSE.NotSameOrigin 403 (Forbidden)
+cryptologos.cc/logos/floki-floki-logo.png:1  GET https://cryptologos.cc/logos/floki-floki-logo.png net::ERR_BLOCKED_BY_RESPONSE.NotSameOrigin 403 (Forbidden)
+cryptologos.cc/logos/imx-imx-logo.png:1  GET https://cryptologos.cc/logos/imx-imx-logo.png net::ERR_BLOCKED_BY_RESPONSE.NotSameOrigin 403 (Forbidden)
+cryptologos.cc/logos/fil-fil-logo.png:1  GET https://cryptologos.cc/logos/fil-fil-logo.png net::ERR_BLOCKED_BY_RESPONSE.NotSameOrigin 403 (Forbidden)
+cryptologos.cc/logos/grt-grt-logo.png:1  GET https://cryptologos.cc/logos/grt-grt-logo.png net::ERR_BLOCKED_BY_RESPONSE.NotSameOrigin 403 (Forbidden)
+cryptologos.cc/logos/link-link-logo.png:1  GET https://cryptologos.cc/logos/link-link-logo.png net::ERR_BLOCKED_BY_RESPONSE.NotSameOrigin 403 (Forbidden)
+cryptologos.cc/logos/jasmy-jasmy-logo.png:1  GET https://cryptologos.cc/logos/jasmy-jasmy-logo.png net::ERR_BLOCKED_BY_RESPONSE.NotSameOrigin 403 (Forbidden)
+cryptologos.cc/logos/ldo-ldo-logo.png:1  GET https://cryptologos.cc/logos/ldo-ldo-logo.png net::ERR_BLOCKED_BY_RESPONSE.NotSameOrigin 403 (Forbidden)
+cryptologos.cc/logos/knc-knc-logo.png:1  GET https://cryptologos.cc/logos/knc-knc-logo.png net::ERR_BLOCKED_BY_RESPONSE.NotSameOrigin 403 (Forbidden)
+cryptologos.cc/logos/inj-inj-logo.png:1  GET https://cryptologos.cc/logos/inj-inj-logo.png net::ERR_BLOCKED_BY_RESPONSE.NotSameOrigin 403 (Forbidden)
+cryptologos.cc/logos/mana-mana-logo.png:1  GET https://cryptologos.cc/logos/mana-mana-logo.png net::ERR_BLOCKED_BY_RESPONSE.NotSameOrigin 403 (Forbidden)
+cryptologos.cc/logos/ltc-ltc-logo.png:1  GET https://cryptologos.cc/logos/ltc-ltc-logo.png net::ERR_BLOCKED_BY_RESPONSE.NotSameOrigin 403 (Forbidden)
+cryptologos.cc/logos/lrc-lrc-logo.png:1  GET https://cryptologos.cc/logos/lrc-lrc-logo.png net::ERR_BLOCKED_BY_RESPONSE.NotSameOrigin 403 (Forbidden)
+cryptologos.cc/logos/matic-matic-logo.png:1  GET https://cryptologos.cc/logos/matic-matic-logo.png net::ERR_BLOCKED_BY_RESPONSE.NotSameOrigin 403 (Forbidden)
+cryptologos.cc/logos/near-near-logo.png:1  GET https://cryptologos.cc/logos/near-near-logo.png net::ERR_BLOCKED_BY_RESPONSE.NotSameOrigin 403 (Forbidden)
+cryptologos.cc/logos/theta-theta-logo.png:1  GET https://cryptologos.cc/logos/theta-theta-logo.png net::ERR_BLOCKED_BY_RESPONSE.NotSameOrigin 403 (Forbidden)
+cryptologos.cc/logos/sand-sand-logo.png:1  GET https://cryptologos.cc/logos/sand-sand-logo.png net::ERR_BLOCKED_BY_RESPONSE.NotSameOrigin 403 (Forbidden)
+cryptologos.cc/logos/op-op-logo.png:1  GET https://cryptologos.cc/logos/op-op-logo.png net::ERR_BLOCKED_BY_RESPONSE.NotSameOrigin 403 (Forbidden)
+cryptologos.cc/logos/zil-zil-logo.png:1  GET https://cryptologos.cc/logos/zil-zil-logo.png net::ERR_BLOCKED_BY_RESPONSE.NotSameOrigin 403 (Forbidden)
+cryptologos.cc/logos/snx-snx-logo.png:1  GET https://cryptologos.cc/logos/snx-snx-logo.png net::ERR_BLOCKED_BY_RESPONSE.NotSameOrigin 403 (Forbidden)
+cryptologos.cc/logos/mkr-mkr-logo.png:1  GET https://cryptologos.cc/logos/mkr-mkr-logo.png net::ERR_BLOCKED_BY_RESPONSE.NotSameOrigin 403 (Forbidden)
+cryptologos.cc/logos/perp-perp-logo.png:1  GET https://cryptologos.cc/logos/perp-perp-logo.png net::ERR_BLOCKED_BY_RESPONSE.NotSameOrigin 403 (Forbidden)
+cryptologos.cc/logos/usdc-usdc-logo.png:1  GET https://cryptologos.cc/logos/usdc-usdc-logo.png net::ERR_BLOCKED_BY_RESPONSE.NotSameOrigin 403 (Forbidden)
+cryptologos.cc/logos/rndr-rndr-logo.png:1  GET https://cryptologos.cc/logos/rndr-rndr-logo.png net::ERR_BLOCKED_BY_RESPONSE.NotSameOrigin 403 (Forbidden)
+cryptologos.cc/logos/uni-uni-logo.png:1  GET https://cryptologos.cc/logos/uni-uni-logo.png net::ERR_BLOCKED_BY_RESPONSE.NotSameOrigin 403 (Forbidden)
+cryptologos.cc/logos/ton-ton-logo.png:1  GET https://cryptologos.cc/logos/ton-ton-logo.png net::ERR_BLOCKED_BY_RESPONSE.NotSameOrigin 403 (Forbidden)
+cryptologos.cc/logos/xlm-xlm-logo.png:1  GET https://cryptologos.cc/logos/xlm-xlm-logo.png net::ERR_BLOCKED_BY_RESPONSE.NotSameOrigin 403 (Forbidden)
+cryptologos.cc/logos/xrp-xrp-logo.png:1  GET https://cryptologos.cc/logos/xrp-xrp-logo.png net::ERR_BLOCKED_BY_RESPONSE.NotSameOrigin 403 (Forbidden)
+cryptologos.cc/logos/sushi-sushi-logo.png:1  GET https://cryptologos.cc/logos/sushi-sushi-logo.png net::ERR_BLOCKED_BY_RESPONSE.NotSameOrigin 403 (Forbidden)
+cryptologos.cc/logos/wif-wif-logo.png:1  GET https://cryptologos.cc/logos/wif-wif-logo.png net::ERR_BLOCKED_BY_RESPONSE.NotSameOrigin 403 (Forbidden)
+cryptologos.cc/logos/storj-storj-logo.png:1  GET https://cryptologos.cc/logos/storj-storj-logo.png net::ERR_BLOCKED_BY_RESPONSE.NotSameOrigin 403 (Forbidden)
+cryptologos.cc/logos/yfi-yfi-logo.png:1  GET https://cryptologos.cc/logos/yfi-yfi-logo.png net::ERR_BLOCKED_BY_RESPONSE.NotSameOrigin 403 (Forbidden)
+cryptologos.cc/logos/shib-shib-logo.png:1  GET https://cryptologos.cc/logos/shib-shib-logo.png net::ERR_BLOCKED_BY_RESPONSE.NotSameOrigin 403 (Forbidden)
+drawdown-analysis:1  Failed to load resource: the server responded with a status of 502 (Bad Gateway)
+drawdown-analysis:1  Failed to load resource: the server responded with a status of 502 (Bad Gateway)
+dashboard-manager.js:215  GET https://47c9c798-b0c1-4791-9090-157d07a27bb9-00-3ij4m9iy3b22d.worf.replit.dev/api/okx-status 502 (Bad Gateway)
+updateOKXStatus @ dashboard-manager.js:215
+updateConnectionStatus @ dashboard-manager.js:181
+updatePortfolioOverview @ dashboard-manager.js:65
+await in updatePortfolioOverview
+(anonymous) @ dashboard-manager.js:284
+dashboard-manager.js:190  GET https://47c9c798-b0c1-4791-9090-157d07a27bb9-00-3ij4m9iy3b22d.worf.replit.dev/api/price-source-status 502 (Bad Gateway)
+updateServerStatus @ dashboard-manager.js:190
+updateConnectionStatus @ dashboard-manager.js:180
+updatePortfolioOverview @ dashboard-manager.js:65
+await in updatePortfolioOverview
+(anonymous) @ dashboard-manager.js:284
