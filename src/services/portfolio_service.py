@@ -34,6 +34,10 @@ class PortfolioService:
         }
         self._last_request_time = 0
         self._min_request_interval = 2  # Minimum 2 seconds between API calls
+        
+        # Invalid symbols that should be filtered out to prevent API errors
+        self._invalid_symbols = {'OKB'}  # OKB causes "Instrument ID doesn't exist" on OKX
+        self._failed_symbols = set()  # Track symbols that consistently fail
 
         # Initialize OKX exchange with credentials
         import os
@@ -599,6 +603,10 @@ class PortfolioService:
             float: Current live price from OKX in the specified currency, or 0.0 if failed
         """
         try:
+            # Skip known invalid symbols to prevent API errors
+            if symbol in self._invalid_symbols or symbol in self._failed_symbols:
+                return 0.0
+                
             # Check cache first
             from app import cache_get_price, cache_put_price
             cache_key = f"{symbol}_{currency}"
@@ -644,11 +652,21 @@ class PortfolioService:
                 return 0.0
                 
         except Exception as e:
+            error_msg = str(e).lower()
             # Skip error logging for known fiat currencies and stablecoins that don't have direct trading pairs
             known_non_tradeable = ['AUD', 'USD', 'EUR', 'GBP', 'USDT', 'USDC']
-            if symbol not in known_non_tradeable:
+            
+            # Check for specific OKX error codes and handle appropriately
+            if '51001' in error_msg or "doesn't exist" in error_msg:
+                if symbol not in known_non_tradeable:
+                    self.logger.warning(f"Symbol {symbol} not available on OKX, adding to failed symbols list")
+                    self._failed_symbols.add(symbol)
+            elif '50011' in error_msg or "too many requests" in error_msg:
+                # Rate limited - don't mark as failed, just log debug message
+                self.logger.debug(f"Rate limited for {symbol}, will retry later")
+            elif symbol not in known_non_tradeable:
                 # Reduce noise: missing market symbols are expected, not errors
-                if "does not have market symbol" in str(e):
+                if "does not have market symbol" in error_msg:
                     self.logger.debug(f"Market symbol not available for {symbol}: {e}")
                 else:
                     self.logger.error(f"Error fetching live OKX price for {symbol}: {e}")

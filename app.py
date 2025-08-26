@@ -273,16 +273,31 @@ PRICE_TTL_SEC = int(os.getenv("PRICE_TTL_SEC", "3"))     # small TTL for live fe
 OHLCV_TTL_SEC = int(os.getenv("OHLCV_TTL_SEC", "60"))    # candles can be cached longer
 CACHE_MAX_KEYS = int(os.getenv("CACHE_MAX_KEYS", "200"))  # prevent unbounded growth
 
-# limit concurrent outbound API calls (env overrideable)
-_MAX_OUTBOUND = int(os.getenv("MAX_OUTBOUND_CALLS", "6"))
+# limit concurrent outbound API calls (reduced to prevent rate limiting)
+_MAX_OUTBOUND = int(os.getenv("MAX_OUTBOUND_CALLS", "3"))  # Reduced from 6 to 3
 _ext_sem = threading.Semaphore(_MAX_OUTBOUND)
+_rate_limit_delay = float(os.getenv("API_RATE_DELAY", "0.2"))  # 200ms delay between requests
 
 def with_throttle(fn, *a, **kw):
-    acquired = _ext_sem.acquire(timeout=10)
+    acquired = _ext_sem.acquire(timeout=15)  # Increased timeout
     if not acquired:
         raise RuntimeError("busy: too many outbound calls")
     try:
+        # Add mandatory delay between API calls to prevent rate limiting
+        time.sleep(_rate_limit_delay)
         return fn(*a, **kw)
+    except Exception as e:
+        # Check for rate limiting and backoff
+        if hasattr(e, 'response') and hasattr(e.response, 'json'):
+            try:
+                error_data = e.response.json()
+                if error_data.get('code') == '50011':  # Too Many Requests
+                    logger.warning("Rate limited, backing off for 1 second")
+                    time.sleep(1.0)
+                    raise RuntimeError("Rate limited - please retry")
+            except:
+                pass
+        raise e
     finally:
         _ext_sem.release()
 
@@ -3400,7 +3415,7 @@ def api_available_positions() -> ResponseReturnValue:
             'STORJ', 'GRT', 'COMP', 'MKR', 'YFI', 'SUSHI', 'SNX', 'AAVE', 'CRV', 'BAL',
             '1INCH', 'ALPHA', 'PERP', 'DYDX', 'IMX', 'API3',
             # Major OKX currencies that were missing
-            'OKB', 'TON', 'FIL', 'OP', 'ARB', 'RNDR', 'LDO', 'FET', 'INJ', 
+            'TON', 'FIL', 'OP', 'ARB', 'RNDR', 'LDO', 'FET', 'INJ', 
             'BONK', 'WIF', 'FLOKI', 'JASMY',
             'AUD'  # Include AUD fiat
         ]
