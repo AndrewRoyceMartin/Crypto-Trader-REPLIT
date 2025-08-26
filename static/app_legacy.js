@@ -6274,7 +6274,7 @@ function updateHoldingsTable(holdings) {
         holdingsTableBody.innerHTML = '';
         
         if (!holdings || holdings.length === 0) {
-            holdingsTableBody.innerHTML = '<tr><td colspan="11" class="text-center text-muted">No positions found</td></tr>';
+            holdingsTableBody.innerHTML = '<tr><td colspan="12" class="text-center text-muted">No positions found</td></tr>';
             return;
         }
         
@@ -6319,19 +6319,19 @@ function createHoldingRow(holding) {
         `;
         row.appendChild(assetCell);
         
-        // Add other cells...
+        // Add other cells... (updated column structure: removed INVESTED, renamed AVG ENTRY to ENTRY PRICE, LIVE PRICE to CURRENT PRICE)
+        const avgEntryPrice = costBasis / (quantity || 1); // Calculate avg entry from cost basis
         const cells = [
-            { content: quantity.toFixed(6), class: '' },
-            { content: currentPrice.toLocaleString('en-US', {style: 'currency', currency: 'USD'}), class: '' },
-            { content: currentValue.toLocaleString('en-US', {style: 'currency', currency: 'USD'}), class: '' },
-            { content: costBasis.toLocaleString('en-US', {style: 'currency', currency: 'USD'}), class: '' },
-            { content: `${pnlSign}${pnl.toLocaleString('en-US', {style: 'currency', currency: 'USD'})}`, class: pnlClass },
-            { content: `${pnlSign}${pnlPercent.toFixed(2)}%`, class: pnlClass },
-            { content: `${(currentValue / (holding.total_portfolio_value || 1) * 100).toFixed(1)}%`, class: 'text-muted' },
-            { content: 'N/A', class: 'text-muted' }, // TARGET VALUE
-            { content: 'N/A', class: 'text-muted' }, // TARGET P&L $
-            { content: 'N/A', class: 'text-muted' }, // TARGET P&L %
-            { content: '0', class: 'text-muted' }, // DAYS
+            { content: quantity.toFixed(6), class: '' }, // QTY HELD
+            { content: avgEntryPrice.toLocaleString('en-US', {style: 'currency', currency: 'USD'}), class: '' }, // ENTRY PRICE (formerly AVG ENTRY)
+            { content: currentPrice.toLocaleString('en-US', {style: 'currency', currency: 'USD'}), class: '' }, // CURRENT PRICE (formerly LIVE PRICE)
+            { content: currentValue.toLocaleString('en-US', {style: 'currency', currency: 'USD'}), class: '' }, // POSITION VALUE
+            { content: `${pnlSign}${pnl.toLocaleString('en-US', {style: 'currency', currency: 'USD'})}`, class: pnlClass }, // UNREALIZED $
+            { content: `${pnlSign}${pnlPercent.toFixed(2)}%`, class: pnlClass }, // GAIN/LOSS %
+            { content: 'N/A', class: 'text-muted' }, // 4% TARGET VALUE
+            { content: 'N/A', class: 'text-muted' }, // TARGET PROFIT $
+            { content: 'N/A', class: 'text-muted' }, // TARGET PROFIT %
+            { content: '0', class: 'text-muted' }, // HOLD PERIOD
             { content: '<span class="badge bg-secondary">HOLD</span>', class: '' } // ACTIONS
         ];
         

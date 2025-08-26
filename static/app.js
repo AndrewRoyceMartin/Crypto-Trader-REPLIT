@@ -208,7 +208,6 @@ class ModularTradingApp {
             <td class="text-end">${AppUtils.safeNum(holding.quantity, 0).toFixed(8)}</td>
             <td class="text-end">${AppUtils.formatCurrency(avgEntryPrice)}</td>
             <td class="text-end">${AppUtils.formatCurrency(holding.current_price)}</td>
-            <td class="text-end">${AppUtils.formatCurrency(holding.current_price)}</td>
             <td class="text-end">${AppUtils.formatCurrency(holding.current_value)}</td>
             <td class="text-end ${pnlClass}">
                 ${pnlSign}${AppUtils.formatCurrency(holding.pnl_amount || 0)}
