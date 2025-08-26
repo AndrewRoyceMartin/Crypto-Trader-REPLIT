@@ -2305,7 +2305,9 @@ class TradingApp {
             const data = await response.json();
 
             const serverConnectionText = document.getElementById('server-connection-text');
-            const statusIcon = document.querySelector('#server-connection-status i.fas'); // generic icon under this container
+            // Safe selector - check if element exists before using
+            const serverStatusContainer = document.getElementById('server-connection-status');
+            const statusIcon = serverStatusContainer ? serverStatusContainer.querySelector('i.fas') : null;
             
             // Update connection badge
             setConn(data.status && data.status.connected);
@@ -2327,12 +2329,19 @@ class TradingApp {
         } catch (error) {
             console.debug('Price source status update failed:', error);
             const serverConnectionText = document.getElementById('server-connection-text');
-            const statusIcon = document.querySelector('#server-connection-status i.fas');
+            // Safe selector - check if element exists before using
+            const serverStatusContainer = document.getElementById('server-connection-status');
+            const statusIcon = serverStatusContainer ? serverStatusContainer.querySelector('i.fas') : null;
+            
             if (serverConnectionText) {
                 serverConnectionText.textContent = 'Error';
                 serverConnectionText.className = 'text-warning ms-1';
             }
-            if (statusIcon) statusIcon.className = 'fa-solid fa-wifi text-warning me-1';
+            if (statusIcon) {
+                statusIcon.className = 'fa-solid fa-wifi text-warning me-1';
+            } else {
+                console.debug('Server status icon element not found for error state');
+            }
         }
     }
 
@@ -2343,7 +2352,9 @@ class TradingApp {
 
             const data = await response.json();
             const okxConnectionText = document.getElementById('okx-connection-text');
-            const statusIcon = document.querySelector('#okx-connection-status .fas.fa-server');
+            // Safe selector - check if element exists before using
+            const okxStatusContainer = document.getElementById('okx-connection-status');
+            const statusIcon = okxStatusContainer ? okxStatusContainer.querySelector('.fas.fa-server') : null;
             
             // Update connection badge
             setConn(data.status && data.status.connected);
@@ -2372,12 +2383,19 @@ class TradingApp {
         } catch (error) {
             console.debug('OKX exchange status update failed:', error);
             const okxConnectionText = document.getElementById('okx-connection-text');
-            const statusIcon = document.querySelector('#okx-connection-status .fas.fa-server');
+            // Safe selector - check if element exists before using
+            const okxStatusContainer = document.getElementById('okx-connection-status');
+            const statusIcon = okxStatusContainer ? okxStatusContainer.querySelector('.fas.fa-server') : null;
+            
             if (okxConnectionText) {
                 okxConnectionText.textContent = 'Error';
                 okxConnectionText.className = 'text-warning ms-1';
             }
-            if (statusIcon) statusIcon.className = 'fa-solid fa-server text-warning me-1';
+            if (statusIcon) {
+                statusIcon.className = 'fa-solid fa-server text-warning me-1';
+            } else {
+                console.debug('OKX status icon element not found for error state');
+            }
         }
     }
 
@@ -4189,9 +4207,10 @@ function sortPortfolio(column) {
 function sortPerformanceTable(columnIndex) {
     console.log(`Sorting performance table by column ${columnIndex}`);
     
-    const table = document.querySelector('#attribution-table, #trades-table');
+    // Only query for tables that actually exist in the HTML
+    const table = document.querySelector('#trades-table');
     if (!table) {
-        console.debug('Performance table not found');
+        console.debug('Trades table not found for performance sorting');
         return;
     }
     
