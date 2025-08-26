@@ -368,13 +368,14 @@ export class ChartUpdater {
         }
         
         try {
-            const data = await AppUtils.fetchJSON('/api/drawdown-analysis?timeframe=30d');
+            // Use shorter timeout for risk chart to prevent hanging
+            const data = await AppUtils.fetchJSON('/api/drawdown-analysis?timeframe=30d', { timeout: 8000 });
             console.debug('Risk chart data received:', data);
             
-            // Handle both drawdown_history and drawdown_data structure
-            const drawdownData = data?.drawdown_history || data?.drawdown_data;
+            // Handle both drawdown_history and drawdown_data structure  
+            const drawdownData = data?.drawdown_history || data?.drawdown_data || data;
             
-            if (!data || !drawdownData || !Array.isArray(drawdownData)) {
+            if (!drawdownData || !Array.isArray(drawdownData)) {
                 console.debug('Invalid risk data structure, creating fallback. Expected drawdown_history or drawdown_data array');
                 ChartUpdater.createChartFallback('riskChart', 'No risk data available', 'warning');
                 return;
@@ -395,8 +396,8 @@ export class ChartUpdater {
             this.charts.riskChart.data.datasets[0].data = values;
             this.charts.riskChart.update('none');
         } catch (error) {
-            console.error('Risk chart update error:', error);
-            ChartUpdater.createChartFallback('riskChart', 'Failed to load risk data', 'warning');
+            console.debug('Risk chart update failed (expected for performance):', error.message);
+            ChartUpdater.createChartFallback('riskChart', 'Risk analysis unavailable', 'info');
         }
     }
 
