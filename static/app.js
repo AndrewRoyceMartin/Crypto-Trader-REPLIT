@@ -5450,17 +5450,11 @@ function updateOpenPositionsTable(positions, totalValue = 0) {
             const currentPnlDollar = parseFloat(position.pnl_amount || 0);
             const currentPnlPercent = parseFloat(position.pnl_percent || 0);
             
-            // Target calculations - Dynamic profit targets based on realistic trading strategy
-            let targetMultiplier = 1.20; // Default 20% profit target
+            // Target calculations - Use ACTUAL algorithm profit target (4% from Enhanced Bollinger Bands)
+            let targetMultiplier = 1.04; // 4% profit target from algorithm config (take_profit_percent = 4.0)
             
-            // Adjust target based on asset type and volatility
-            if (symbol === 'BTC' || symbol === 'ETH') {
-                targetMultiplier = 1.15; // 15% for major coins (more conservative)
-            } else if (symbol === 'PEPE' || symbol.includes('MEME')) {
-                targetMultiplier = 1.30; // 30% for meme coins (higher volatility)
-            } else if (['SOL', 'GALA', 'TRX', 'ADA', 'MATIC', 'DOT'].includes(symbol)) {
-                targetMultiplier = 1.25; // 25% for altcoins
-            }
+            // No hardcoded overrides - use the actual algorithm's take profit setting
+            // This matches the Enhanced Bollinger Bands strategy in production
             
             const targetTotalValue = totalCostBasis * targetMultiplier;
             const targetPnlDollar = targetTotalValue - totalCostBasis;
