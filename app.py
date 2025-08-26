@@ -3479,16 +3479,25 @@ def api_available_positions() -> ResponseReturnValue:
                     bb_distance_percent = 0.0
                     lower_band_price = 0.0
                     
-                    # Calculate BB for top-tier tradeable assets only (limited for API performance)
-                    # Focus on most liquid and important assets to prevent API timeouts
-                    top_tier_assets = ['BTC', 'ETH', 'SOL', 'ADA', 'AVAX', 'LINK', 'UNI', 'LTC', 'XRP', 
-                                     'GALA', 'TRX', 'PEPE', 'DOGE', 'MATIC', 'ATOM']  # 15 major assets
+                    # Calculate BB for expanded set of tradeable assets (optimized for performance)
+                    # Expanded to cover more popular assets while maintaining staggered loading
+                    top_tier_assets = [
+                        # Major cryptocurrencies (Tier 1)
+                        'BTC', 'ETH', 'SOL', 'ADA', 'AVAX', 'LINK', 'UNI', 'LTC', 'XRP', 
+                        'GALA', 'TRX', 'PEPE', 'DOGE', 'MATIC', 'ATOM',
+                        # Popular altcoins (Tier 2) 
+                        'BNB', 'USDC', 'XLM', 'DOT', 'ALGO', 'VET', 'ICP', 'FTM', 'SAND',
+                        'MANA', 'CRV', 'GRT', 'COMP', 'MKR', 'SUSHI', 'YFI', 'SNX',
+                        # Additional trending coins (Tier 3)
+                        'NEAR', 'FLOW', 'APT', 'OP', 'ARB', 'RNDR', 'LDO', 'STX', 'IMX'
+                    ]  # 42 assets with BB analysis
                     if current_price > 0 and symbol in top_tier_assets:
                         logger.info(f"Calculating BB opportunity analysis for {symbol} at ${current_price}")
                         
-                        # Add staggered delay to prevent API overload (200ms per calculation)
+                        # Add staggered delay to prevent API overload (150ms per calculation)
+                        # Reduced delay for faster loading while maintaining API stability
                         import time
-                        time.sleep(0.2)  # 200ms delay between each BB calculation
+                        time.sleep(0.15)  # 150ms delay between each BB calculation
                         
                         try:
                             # Get historical price data for Bollinger Bands calculation
