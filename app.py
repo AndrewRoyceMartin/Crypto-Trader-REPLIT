@@ -3474,17 +3474,18 @@ def api_available_positions() -> ResponseReturnValue:
                     bb_distance_percent = 0.0
                     lower_band_price = 0.0
                     
-                    # Only calculate for major tradeable assets with sufficient volume
-                    major_assets = ['BTC', 'ETH', 'SOL', 'ADA', 'DOT', 'AVAX', 'LINK', 'UNI', 'LTC', 'XRP']
-                    if current_price > 0 and symbol in major_assets:
+                    # Only calculate BB for assets with significant holdings (to avoid API timeouts)
+                    held_assets = ['BTC', 'ETH', 'SOL', 'GALA', 'TRX', 'PEPE']  # Assets you actually hold
+                    if current_price > 0 and symbol in held_assets and current_balance > 0:
+                        logger.info(f"Calculating BB for held asset {symbol} at ${current_price}")
                         try:
                             # Get historical price data for Bollinger Bands calculation
                             from src.utils.okx_native import OKXNative
                             okx_client = OKXNative.from_env()
                             
-                            # Get 50 daily candles for BB calculation (period=50)
+                            # Get 100 daily candles for BB calculation (need extra for 50-period rolling window)
                             symbol_pair = f"{symbol}-USDT"
-                            candles = okx_client.candles(symbol_pair, bar="1D", limit=50)
+                            candles = okx_client.candles(symbol_pair, bar="1D", limit=100)
                             
                             if candles and len(candles) >= 50:
                                 import pandas as pd
@@ -3492,14 +3493,21 @@ def api_available_positions() -> ResponseReturnValue:
                                 
                                 # Convert to DataFrame (OKX format: [timestamp, open, high, low, close, volume])
                                 df = pd.DataFrame(candles, columns=['timestamp', 'open', 'high', 'low', 'close', 'volume'])
-                                df['close'] = pd.to_numeric(df['close'])
+                                df['close'] = pd.to_numeric(df['close'], errors='coerce')
                                 
-                                # Calculate Bollinger Bands (50-period, 2.0 std dev - same as Enhanced Strategy)
+                                # Ensure we have valid close prices
+                                if df['close'].isna().all():
+                                    raise ValueError("No valid close price data")
+                                
+                                # Calculate Bollinger Bands (20-period, 2.0 std dev for faster signals)
                                 indicators = TechnicalIndicators()
-                                upper_band, middle_band, lower_band = indicators.bollinger_bands(df['close'], period=50, std_dev=2.0)
+                                upper_band, middle_band, lower_band = indicators.bollinger_bands(df['close'], period=20, std_dev=2.0)
                                 
-                                # Get the latest lower band value
-                                lower_band_price = float(lower_band.iloc[-1]) if not pd.isna(lower_band.iloc[-1]) else 0.0
+                                # Get the latest lower band value (must have valid data)
+                                if len(lower_band) > 0 and not pd.isna(lower_band.iloc[-1]):
+                                    lower_band_price = float(lower_band.iloc[-1])
+                                else:
+                                    raise ValueError("No valid Bollinger Band data calculated")
                                 
                                 if lower_band_price > 0:
                                     # Calculate distance from current price to lower band
@@ -3518,7 +3526,7 @@ def api_available_positions() -> ResponseReturnValue:
                                         bb_signal = "FAR"
                                         
                         except Exception as bb_error:
-                            logger.debug(f"Could not calculate Bollinger Bands for {symbol}: {bb_error}")
+                            logger.info(f"Could not calculate Bollinger Bands for {symbol}: {bb_error}")
                             # Ensure we don't break the API response if BB calculation fails
                             bb_signal = "NO DATA"
                             bb_distance_percent = 0.0
