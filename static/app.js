@@ -5460,12 +5460,15 @@ function updateOpenPositionsTable(positions, totalValue = 0) {
             const targetPnlDollar = targetTotalValue - totalCostBasis;
             const targetPnlPercent = totalCostBasis > 0 ? (targetPnlDollar / totalCostBasis) * 100 : 0;
             
-            // Days held calculation (default to 30 days for demo)
-            let daysHeld = 30;
-            if (position.entry_date) {
-                const entry = new Date(position.entry_date);
-                const now = new Date();
-                daysHeld = Math.floor((now - entry) / (1000 * 60 * 60 * 24));
+            // Days held calculation - use actual data or indicate unavailable
+            let daysHeld = "—";
+            if (position.entry_date || position.first_trade_date || position.created_at) {
+                const entryDateStr = position.entry_date || position.first_trade_date || position.created_at;
+                const entry = new Date(entryDateStr);
+                if (!isNaN(entry.getTime())) {
+                    const now = new Date();
+                    daysHeld = Math.floor((now - entry) / (1000 * 60 * 60 * 24));
+                }
             }
             
             const currentPnlClass = currentPnlDollar >= 0 ? "pnl-up" : "pnl-down";
@@ -5603,17 +5606,17 @@ function updateOpenPositionsTable(positions, totalValue = 0) {
             
             // Create all other cells safely
             const cells = [
-                formatNumber(quantity),
-                formatMeaningfulCurrency(displayCurrentValue),
-                formatMeaningfulCurrency(displayCostBasis),
-                formatCurrency(displayCurrentPrice),
-                formatMeaningfulCurrency(displayCurrentValue),
-                { text: formatMeaningfulCurrency(currentPnlDollar), className: currentPnlClass },
-                { text: `${currentPnlPercent >= 0 ? "+" : ""}${currentPnlPercent.toFixed(2)}%`, className: currentPnlClass },
-                formatMeaningfulCurrency(displayTargetValue),
-                { text: formatMeaningfulCurrency(targetPnlDollar), className: targetPnlClass },
-                { text: `+${targetPnlPercent.toFixed(2)}%`, className: targetPnlClass },
-                `${daysHeld} days`
+                formatNumber(quantity),                                    // BALANCE
+                formatMeaningfulCurrency(displayCurrentValue),             // VALUE  
+                formatMeaningfulCurrency(displayCostBasis),                // COST BASIS
+                formatCurrency(displayCurrentPrice),                       // PRICE (per unit)
+                formatMeaningfulCurrency(totalMarketValue),                // MARKET VALUE (use live market data)
+                { text: formatMeaningfulCurrency(currentPnlDollar), className: currentPnlClass },  // P&L $
+                { text: `${currentPnlPercent >= 0 ? "+" : ""}${currentPnlPercent.toFixed(2)}%`, className: currentPnlClass }, // P&L %
+                formatMeaningfulCurrency(displayTargetValue),              // TARGET VALUE
+                { text: formatMeaningfulCurrency(targetPnlDollar), className: targetPnlClass },   // TARGET P&L $
+                { text: `+${targetPnlPercent.toFixed(2)}%`, className: targetPnlClass },          // TARGET P&L %
+                typeof daysHeld === 'number' ? `${daysHeld} days` : daysHeld  // DAYS (show "—" if unknown)
             ];
             
             cells.forEach(cellData => {
