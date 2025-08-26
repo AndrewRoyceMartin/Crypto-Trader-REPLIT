@@ -3405,19 +3405,19 @@ def api_available_positions() -> ResponseReturnValue:
         available_positions = []
         
         # Define comprehensive list of major cryptocurrencies ACTUALLY AVAILABLE on OKX
-        # Updated with missing major OKX-supported currencies (Jan 2025)
+        # Prioritized list: most important assets first for faster loading
         major_crypto_assets = [
-            'BTC', 'ETH', 'SOL', 'ADA', 'DOT', 'AVAX', 'MATIC', 'LINK', 'UNI', 'LTC',
-            'BCH', 'XLM', 'ALGO', 'ATOM', 'ICP', 'NEAR', 'SAND', 'MANA', 'CRO',
-            'APE', 'GALA', 'TRX', 'PEPE', 'SHIB', 'DOGE', 'XRP', 'BNB', 'USDT', 'USDC',
-            'DAI', 'BUSD', 'AXS', 'CHZ', 'BAT', 'ETC', 
-            'THETA', 'ZIL', 'ICX', 'KNC', 'LRC',
-            'STORJ', 'GRT', 'COMP', 'MKR', 'YFI', 'SUSHI', 'SNX', 'AAVE', 'CRV', 'BAL',
-            '1INCH', 'ALPHA', 'PERP', 'DYDX', 'IMX', 'API3',
-            # Major OKX currencies that were missing
+            # Tier 1: Top market cap + currently held assets (load first)
+            'BTC', 'ETH', 'SOL', 'ADA', 'AVAX', 'LINK', 'UNI', 'LTC', 'XRP', 
+            'GALA', 'TRX', 'PEPE', 'DOGE', 'MATIC', 'ATOM', 'USDT', 'USDC', 'AUD',
+            
+            # Tier 2: Other major assets (load if time permits)
+            'DOT', 'NEAR', 'SHIB', 'BNB', 'BCH', 'XLM', 'ALGO', 'ICP', 'SAND', 'MANA', 
+            'CRO', 'APE', 'DAI', 'BUSD', 'AXS', 'CHZ', 'BAT', 'ETC', 'THETA', 'ZIL', 
+            'ICX', 'KNC', 'LRC', 'STORJ', 'GRT', 'COMP', 'MKR', 'YFI', 'SUSHI', 'SNX', 
+            'AAVE', 'CRV', 'BAL', '1INCH', 'ALPHA', 'PERP', 'DYDX', 'IMX', 'API3',
             'TON', 'FIL', 'OP', 'ARB', 'RNDR', 'LDO', 'FET', 'INJ', 
-            'BONK', 'WIF', 'FLOKI', 'JASMY',
-            'AUD'  # Include AUD fiat
+            'BONK', 'WIF', 'FLOKI', 'JASMY'
         ]
         
         # Process ALL major assets (including zero balances from the comprehensive list)
@@ -3474,10 +3474,11 @@ def api_available_positions() -> ResponseReturnValue:
                     bb_distance_percent = 0.0
                     lower_band_price = 0.0
                     
-                    # Calculate BB for major tradeable assets to identify opportunities (not just held assets)
-                    major_tradeable = ['BTC', 'ETH', 'SOL', 'ADA', 'DOT', 'AVAX', 'LINK', 'UNI', 'LTC', 'XRP', 
-                                     'GALA', 'TRX', 'PEPE', 'DOGE', 'SHIB', 'MATIC', 'ATOM', 'FTM', 'NEAR', 'APT']
-                    if current_price > 0 and symbol in major_tradeable:
+                    # Calculate BB for top-tier tradeable assets only (limited for API performance)
+                    # Focus on most liquid and important assets to prevent API timeouts
+                    top_tier_assets = ['BTC', 'ETH', 'SOL', 'ADA', 'AVAX', 'LINK', 'UNI', 'LTC', 'XRP', 
+                                     'GALA', 'TRX', 'PEPE', 'DOGE', 'MATIC', 'ATOM']  # 15 major assets
+                    if current_price > 0 and symbol in top_tier_assets:
                         logger.info(f"Calculating BB opportunity analysis for {symbol} at ${current_price}")
                         try:
                             # Get historical price data for Bollinger Bands calculation
@@ -5540,7 +5541,7 @@ def api_test_sync_data() -> ResponseReturnValue:
         test_data['bollinger_bands_info'] = {
             'analysis_type': 'Current Market Opportunity Analysis',
             'calculation_basis': 'Current price vs Bollinger Band levels (NOT exit prices)',
-            'major_assets_covered': ['BTC', 'ETH', 'SOL', 'ADA', 'DOT', 'AVAX', 'LINK', 'UNI', 'LTC', 'XRP', 'GALA', 'TRX', 'PEPE', 'DOGE', 'SHIB', 'MATIC', 'ATOM', 'FTM', 'NEAR', 'APT'],
+            'major_assets_covered': ['BTC', 'ETH', 'SOL', 'ADA', 'AVAX', 'LINK', 'UNI', 'LTC', 'XRP', 'GALA', 'TRX', 'PEPE', 'DOGE', 'MATIC', 'ATOM'],
             'period': '20-day',
             'std_deviation': '2.0',
             'signal_thresholds': {
@@ -5551,7 +5552,7 @@ def api_test_sync_data() -> ResponseReturnValue:
                 'FAR': 'More than 20% above lower Bollinger Band'
             },
             'purpose': 'Identifies buying opportunities based on technical oversold conditions',
-            'calculation_count_per_refresh': 'Up to 20 major cryptocurrencies'
+            'calculation_count_per_refresh': 'Top 15 liquid cryptocurrencies (optimized for performance)'
         }
         
         return _no_cache_json(test_data)
