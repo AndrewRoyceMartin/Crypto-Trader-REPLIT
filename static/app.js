@@ -6397,7 +6397,7 @@ function updateTopKpis({ equity, equityDelta, uPnL, uPnLDelta, exposure, exposur
 }
 
 // Available positions action functions
-function buyBackPosition(symbol) {
+window.buyBackPosition = function buyBackPosition(symbol) {
     const defaultAmount = 100; // Default $100 rebuy limit from system preferences
     const amount = prompt(`Enter USD amount to buy back ${symbol}:`, defaultAmount);
     if (amount && !isNaN(amount) && parseFloat(amount) > 0) {
@@ -6405,7 +6405,7 @@ function buyBackPosition(symbol) {
             executeBuyOrder(symbol, parseFloat(amount));
         }
     }
-}
+};
 
 function setCustomBuyPrice(symbol) {
     const price = prompt(`Enter custom buy trigger price for ${symbol}:`);
