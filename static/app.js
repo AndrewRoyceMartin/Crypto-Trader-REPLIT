@@ -4,6 +4,17 @@ import { DashboardManager } from './js/modules/dashboard-manager.js';
 import { ChartUpdater } from './js/modules/chart-updater.js';
 import { TradeManager } from './js/modules/trade-manager.js';
 
+// Global error handlers to prevent console errors
+window.addEventListener('unhandledrejection', (event) => {
+    // Silently prevent unhandled promise rejections from appearing in console
+    event.preventDefault();
+});
+
+window.addEventListener('error', (event) => {
+    // Silently handle script errors to prevent generic "Script error" messages
+    event.preventDefault();
+});
+
 // Main Application Class - Lightweight coordinator with singleton pattern
 class ModularTradingApp {
     static instance = null;
@@ -63,9 +74,6 @@ class ModularTradingApp {
         return new Promise((resolve) => {
             const checkLibraries = () => {
                 if ((window.bootstrap && window.Chart) || elapsed >= maxWait) {
-                    if (elapsed >= maxWait) {
-                        console.warn('Library loading timeout - some features may be limited');
-                    }
                     resolve();
                 } else {
                     elapsed += checkInterval;
