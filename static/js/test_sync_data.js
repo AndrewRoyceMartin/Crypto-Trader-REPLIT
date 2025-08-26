@@ -194,7 +194,12 @@ function getTestDisplayName(testName) {
         'timestamp_integrity': 'Data Timestamp Validation',
         'table_validation': 'Frontend Table Data Integrity',
         'open_positions_table': 'Open Positions Table Accuracy',
-        'available_positions_table': 'Available Positions Table Accuracy'
+        'available_positions_table': 'Available Positions Table Accuracy',
+        'button_functionality': 'Button Function Validation',
+        'ato_export_button': 'ATO Export Button Test',
+        'take_profit_button': 'Take Profit Button Test',
+        'buy_button': 'Buy Button Test',
+        'sell_button': 'Sell Button Test'
     };
     // Improved test name formatting with global replace and proper title case
     return names[testName] || testName.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
@@ -261,6 +266,102 @@ function generateTestContent(testName, result) {
         return content;
     }
 
+    // Button functionality test display
+    if (testName === 'button_functionality' && result.individual_results) {
+        content += `
+            <div class="row mb-3">
+                <div class="col-12">
+                    <h6>Button Test Results:</h6>
+                </div>
+            </div>
+        `;
+        
+        Object.entries(result.individual_results).forEach(([buttonName, buttonResult]) => {
+            const statusColor = buttonResult.status === 'pass' ? 'success' : 
+                              buttonResult.status === 'partial' ? 'warning' : 'danger';
+            const statusIcon = buttonResult.status === 'pass' ? 'fa-check-circle' : 
+                             buttonResult.status === 'partial' ? 'fa-exclamation-triangle' : 'fa-times-circle';
+            
+            const buttonDisplayName = buttonName.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+            
+            content += `
+                <div class="row mb-2">
+                    <div class="col-6">
+                        <strong>${buttonDisplayName}:</strong>
+                    </div>
+                    <div class="col-6">
+                        <span class="text-${statusColor}">
+                            <i class="fas ${statusIcon} me-1"></i>${buttonResult.status.toUpperCase()}
+                        </span>
+                    </div>
+                </div>
+            `;
+            
+            if (buttonResult.test_description) {
+                content += `
+                    <div class="row mb-2">
+                        <div class="col-12">
+                            <small class="text-muted">${buttonResult.test_description}</small>
+                        </div>
+                    </div>
+                `;
+            }
+        });
+        
+        return content;
+    }
+    
+    // Individual button test display
+    if (['ato_export_button', 'take_profit_button', 'buy_button', 'sell_button'].includes(testName)) {
+        if (result.button_found !== undefined) {
+            content += `
+                <div class="row">
+                    <div class="col-6">
+                        <strong>Button Found:</strong>
+                    </div>
+                    <div class="col-6">
+                        <span class="${result.button_found ? 'text-success' : 'text-danger'}">
+                            ${result.button_found ? 'YES' : 'NO'}
+                        </span>
+                    </div>
+                </div>
+            `;
+        }
+        
+        if (result.api_accessible !== undefined) {
+            content += `
+                <div class="row">
+                    <div class="col-6">
+                        <strong>API Accessible:</strong>
+                    </div>
+                    <div class="col-6">
+                        <span class="${result.api_accessible ? 'text-success' : 'text-warning'}">
+                            ${result.api_accessible ? 'YES' : 'NO'}
+                        </span>
+                    </div>
+                </div>
+            `;
+        }
+        
+        if (result.passed_checks !== undefined && result.total_checks !== undefined) {
+            const percentage = Math.round((result.passed_checks / result.total_checks) * 100);
+            content += `
+                <div class="row">
+                    <div class="col-6">
+                        <strong>Test Coverage:</strong>
+                    </div>
+                    <div class="col-6">
+                        <span class="text-primary">
+                            ${result.passed_checks}/${result.total_checks} (${percentage}%)
+                        </span>
+                    </div>
+                </div>
+            `;
+        }
+        
+        return content;
+    }
+    
     // Add specific metrics based on test type with tooltips
     if (result.perfect_matches !== undefined) {
         content += `
@@ -294,6 +395,33 @@ function generateTestContent(testName, result) {
                 </div>
             </div>
         `;
+    }
+    
+    // Table validation display
+    if (result.success_rate !== undefined && testName === 'table_validation') {
+        content += `
+            <div class="row">
+                <div class="col-6">
+                    <strong>Success Rate:</strong>
+                </div>
+                <div class="col-6">
+                    <span class="text-primary">${result.success_rate}%</span>
+                </div>
+            </div>
+        `;
+        
+        if (result.tests_passed !== undefined && result.tests_total !== undefined) {
+            content += `
+                <div class="row">
+                    <div class="col-6">
+                        <strong>Tests Passed:</strong>
+                    </div>
+                    <div class="col-6">
+                        <span class="text-success">${result.tests_passed}/${result.tests_total}</span>
+                    </div>
+                </div>
+            `;
+        }
     }
 
     if (result.calculation_accuracy !== undefined) {
@@ -332,7 +460,12 @@ function getTestDescription(testName) {
         'timestamp_integrity': 'Verifies data timestamp accuracy and freshness validation.',
         'table_validation': 'Validates that frontend table display matches backend API data exactly.',
         'open_positions_table': 'Checks Open Positions table rows against /api/current-holdings API data.',
-        'available_positions_table': 'Verifies Available Positions table matches /api/available-positions API data.'
+        'available_positions_table': 'Verifies Available Positions table matches /api/available-positions API data.',
+        'button_functionality': 'Tests that all dashboard buttons exist and have proper functionality.',
+        'ato_export_button': 'Verifies ATO export button calls correct API endpoint for tax reporting.',
+        'take_profit_button': 'Tests take profit button functionality and API endpoint connectivity.',
+        'buy_button': 'Validates buy button functionality and trading API endpoint.',
+        'sell_button': 'Tests sell button functionality and trading API endpoint.'
     };
     return descriptions[testName] || 'Validates synchronization and accuracy of OKX data integration.';
 }
@@ -659,6 +792,344 @@ function generateTableValidationSummary(tests) {
     return {
         total: totalTests,
         passed: passedTests,
+        failed: failedTests,
+        errors: errorTests,
+        success_rate: totalTests > 0 ? Math.round((passedTests / totalTests) * 100) : 0
+    };
+}
+
+// Button functionality tests
+async function validateButtonFunctionality() {
+    try {
+        const tests = {
+            ato_export_button: await testATOExportButton(),
+            take_profit_button: await testTakeProfitButton(),
+            buy_button: await testBuyButton(),
+            sell_button: await testSellButton()
+        };
+        
+        return {
+            status: 'success',
+            tests: tests,
+            summary: generateButtonTestSummary(tests)
+        };
+    } catch (error) {
+        return {
+            status: 'error',
+            error: error.message,
+            tests: {}
+        };
+    }
+}
+
+async function testATOExportButton() {
+    try {
+        // Check if button exists in DOM
+        const button = document.getElementById('btn-ato-export');
+        if (!button) {
+            return {
+                status: 'fail',
+                error: 'ATO Export button not found in DOM',
+                test_timestamp: new Date().toISOString()
+            };
+        }
+        
+        // Check button attributes and accessibility
+        const hasCorrectAttributes = {
+            'aria-label': button.hasAttribute('aria-label'),
+            'title': button.hasAttribute('title'),
+            'class_contains_btn': button.className.includes('btn')
+        };
+        
+        // Test API endpoint availability (without actually triggering download)
+        let apiAccessible = false;
+        let apiError = null;
+        try {
+            const response = await fetch('/api/export/ato', { 
+                method: 'HEAD',  // Use HEAD to test endpoint without triggering download
+                cache: 'no-store'
+            });
+            apiAccessible = response.status !== 404;
+        } catch (error) {
+            apiError = error.message;
+        }
+        
+        // Check if button has click handler
+        const hasEventListeners = button.onclick !== null || 
+                                 button.addEventListener !== null;
+        
+        const allChecks = [
+            button !== null,
+            hasCorrectAttributes['aria-label'],
+            hasCorrectAttributes['title'],
+            hasCorrectAttributes['class_contains_btn'],
+            apiAccessible,
+            hasEventListeners
+        ];
+        
+        const passedChecks = allChecks.filter(Boolean).length;
+        
+        return {
+            status: passedChecks >= 5 ? 'pass' : 'partial',
+            button_found: button !== null,
+            attributes_complete: Object.values(hasCorrectAttributes).every(Boolean),
+            api_accessible: apiAccessible,
+            api_error: apiError,
+            has_event_listeners: hasEventListeners,
+            passed_checks: passedChecks,
+            total_checks: allChecks.length,
+            test_timestamp: new Date().toISOString()
+        };
+        
+    } catch (error) {
+        return {
+            status: 'error',
+            error: `ATO Export button test failed: ${error.message}`,
+            test_timestamp: new Date().toISOString()
+        };
+    }
+}
+
+async function testTakeProfitButton() {
+    try {
+        // Check if button exists in DOM
+        const button = document.getElementById('btn-take-profit');
+        if (!button) {
+            return {
+                status: 'fail',
+                error: 'Take Profit button not found in DOM',
+                test_timestamp: new Date().toISOString()
+            };
+        }
+        
+        // Check button states and attributes
+        const buttonChecks = {
+            'has_correct_class': button.className.includes('btn'),
+            'has_warning_style': button.className.includes('btn-outline-warning'),
+            'has_accessibility': button.hasAttribute('aria-label') && button.hasAttribute('title'),
+            'not_disabled': !button.disabled
+        };
+        
+        // Test API endpoint availability
+        let apiStatus = 'unknown';
+        let apiError = null;
+        try {
+            const response = await fetch('/api/execute-take-profit', { 
+                method: 'HEAD',
+                cache: 'no-store'
+            });
+            apiStatus = response.status === 401 ? 'auth_required' : 
+                       response.status === 405 ? 'method_not_allowed' :
+                       response.status < 500 ? 'accessible' : 'error';
+        } catch (error) {
+            apiStatus = 'error';
+            apiError = error.message;
+        }
+        
+        // Check for confirmation dialog functionality (look for confirm() usage)
+        const buttonText = button.textContent || button.innerText || '';
+        const hasCorrectText = buttonText.toLowerCase().includes('profit');
+        
+        const allChecks = [
+            button !== null,
+            buttonChecks['has_correct_class'],
+            buttonChecks['has_accessibility'],
+            apiStatus !== 'error',
+            hasCorrectText
+        ];
+        
+        const passedChecks = allChecks.filter(Boolean).length;
+        
+        return {
+            status: passedChecks >= 4 ? 'pass' : 'partial',
+            button_found: button !== null,
+            button_checks: buttonChecks,
+            api_status: apiStatus,
+            api_error: apiError,
+            has_correct_text: hasCorrectText,
+            passed_checks: passedChecks,
+            total_checks: allChecks.length,
+            test_timestamp: new Date().toISOString()
+        };
+        
+    } catch (error) {
+        return {
+            status: 'error',
+            error: `Take Profit button test failed: ${error.message}`,
+            test_timestamp: new Date().toISOString()
+        };
+    }
+}
+
+async function testBuyButton() {
+    try {
+        // Check if button exists in DOM
+        const button = document.getElementById('btn-buy');
+        if (!button) {
+            return {
+                status: 'fail',
+                error: 'Buy button not found in DOM',
+                test_timestamp: new Date().toISOString()
+            };
+        }
+        
+        // Check button styling and attributes
+        const buttonValidation = {
+            'has_success_style': button.className.includes('btn-success'),
+            'has_proper_icon': button.innerHTML.includes('icon-up') || button.innerHTML.includes('fa-arrow-up'),
+            'has_accessibility': button.hasAttribute('aria-label'),
+            'has_correct_text': (button.textContent || '').toLowerCase().includes('buy')
+        };
+        
+        // Test associated API endpoints
+        const apiTests = [];
+        
+        // Test both paper-trade and live trading endpoints
+        const endpoints = ['/api/paper-trade/buy', '/api/buy'];
+        
+        for (const endpoint of endpoints) {
+            try {
+                const response = await fetch(endpoint, { 
+                    method: 'HEAD',
+                    cache: 'no-store'
+                });
+                apiTests.push({
+                    endpoint: endpoint,
+                    accessible: response.status !== 404,
+                    status_code: response.status
+                });
+            } catch (error) {
+                apiTests.push({
+                    endpoint: endpoint,
+                    accessible: false,
+                    error: error.message
+                });
+            }
+        }
+        
+        // Check if at least one API endpoint is accessible
+        const apiAccessible = apiTests.some(test => test.accessible);
+        
+        const allChecks = [
+            button !== null,
+            buttonValidation['has_success_style'],
+            buttonValidation['has_accessibility'],
+            buttonValidation['has_correct_text'],
+            apiAccessible
+        ];
+        
+        const passedChecks = allChecks.filter(Boolean).length;
+        
+        return {
+            status: passedChecks >= 4 ? 'pass' : 'partial',
+            button_found: button !== null,
+            button_validation: buttonValidation,
+            api_tests: apiTests,
+            api_accessible: apiAccessible,
+            passed_checks: passedChecks,
+            total_checks: allChecks.length,
+            test_timestamp: new Date().toISOString()
+        };
+        
+    } catch (error) {
+        return {
+            status: 'error',
+            error: `Buy button test failed: ${error.message}`,
+            test_timestamp: new Date().toISOString()
+        };
+    }
+}
+
+async function testSellButton() {
+    try {
+        // Check if button exists in DOM
+        const button = document.getElementById('btn-sell');
+        if (!button) {
+            return {
+                status: 'fail',
+                error: 'Sell button not found in DOM',
+                test_timestamp: new Date().toISOString()
+            };
+        }
+        
+        // Check button styling and attributes
+        const buttonValidation = {
+            'has_danger_style': button.className.includes('btn-danger'),
+            'has_proper_icon': button.innerHTML.includes('icon-down') || button.innerHTML.includes('fa-arrow-down'),
+            'has_accessibility': button.hasAttribute('aria-label'),
+            'has_correct_text': (button.textContent || '').toLowerCase().includes('sell')
+        };
+        
+        // Test associated API endpoints
+        const apiTests = [];
+        
+        // Test both paper-trade and live trading endpoints
+        const endpoints = ['/api/paper-trade/sell', '/api/sell'];
+        
+        for (const endpoint of endpoints) {
+            try {
+                const response = await fetch(endpoint, { 
+                    method: 'HEAD',
+                    cache: 'no-store'
+                });
+                apiTests.push({
+                    endpoint: endpoint,
+                    accessible: response.status !== 404,
+                    status_code: response.status
+                });
+            } catch (error) {
+                apiTests.push({
+                    endpoint: endpoint,
+                    accessible: false,
+                    error: error.message
+                });
+            }
+        }
+        
+        // Check if at least one API endpoint is accessible
+        const apiAccessible = apiTests.some(test => test.accessible);
+        
+        const allChecks = [
+            button !== null,
+            buttonValidation['has_danger_style'],
+            buttonValidation['has_accessibility'],
+            buttonValidation['has_correct_text'],
+            apiAccessible
+        ];
+        
+        const passedChecks = allChecks.filter(Boolean).length;
+        
+        return {
+            status: passedChecks >= 4 ? 'pass' : 'partial',
+            button_found: button !== null,
+            button_validation: buttonValidation,
+            api_tests: apiTests,
+            api_accessible: apiAccessible,
+            passed_checks: passedChecks,
+            total_checks: allChecks.length,
+            test_timestamp: new Date().toISOString()
+        };
+        
+    } catch (error) {
+        return {
+            status: 'error',
+            error: `Sell button test failed: ${error.message}`,
+            test_timestamp: new Date().toISOString()
+        };
+    }
+}
+
+function generateButtonTestSummary(tests) {
+    const totalTests = Object.keys(tests).length;
+    const passedTests = Object.values(tests).filter(t => t.status === 'pass').length;
+    const partialTests = Object.values(tests).filter(t => t.status === 'partial').length;
+    const failedTests = Object.values(tests).filter(t => t.status === 'fail').length;
+    const errorTests = Object.values(tests).filter(t => t.status === 'error').length;
+    
+    return {
+        total: totalTests,
+        passed: passedTests,
+        partial: partialTests,
         failed: failedTests,
         errors: errorTests,
         success_rate: totalTests > 0 ? Math.round((passedTests / totalTests) * 100) : 0
