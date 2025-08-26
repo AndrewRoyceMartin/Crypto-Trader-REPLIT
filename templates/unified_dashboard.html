@@ -387,8 +387,8 @@
         });
     </script>
     
-    <!-- Custom JS -->
-    <script defer src="{{ url_for('static', filename='app.js') }}?v={{ cache_version|default(0) }}"></script>
+    <!-- Custom JS - Load as ES6 modules -->
+    <script type="module" src="{{ url_for('static', filename='app.js') }}?v={{ cache_version|default(0) }}"></script>
 
     <script>
     // === GLOBAL ADMIN TOKEN HANDLING ===
