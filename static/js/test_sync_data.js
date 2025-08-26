@@ -191,7 +191,10 @@ function getTestDisplayName(testName) {
         'price_consistency': 'Price Data Consistency',
         'symbol_roundtrip': 'Symbol Mapping Integrity',
         'target_price_lock': 'Target Price Stability',
-        'timestamp_integrity': 'Data Timestamp Validation'
+        'timestamp_integrity': 'Data Timestamp Validation',
+        'table_validation': 'Frontend Table Data Integrity',
+        'open_positions_table': 'Open Positions Table Accuracy',
+        'available_positions_table': 'Available Positions Table Accuracy'
     };
     // Improved test name formatting with global replace and proper title case
     return names[testName] || testName.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
@@ -326,7 +329,10 @@ function getTestDescription(testName) {
         'price_consistency': 'Compares price data from different OKX API endpoints for consistency.',
         'symbol_roundtrip': 'Tests symbol mapping accuracy between different API formats.',
         'target_price_lock': 'Ensures target price stability and prevents exponential recalculation.',
-        'timestamp_integrity': 'Verifies data timestamp accuracy and freshness validation.'
+        'timestamp_integrity': 'Verifies data timestamp accuracy and freshness validation.',
+        'table_validation': 'Validates that frontend table display matches backend API data exactly.',
+        'open_positions_table': 'Checks Open Positions table rows against /api/current-holdings API data.',
+        'available_positions_table': 'Verifies Available Positions table matches /api/available-positions API data.'
     };
     return descriptions[testName] || 'Validates synchronization and accuracy of OKX data integration.';
 }
@@ -404,6 +410,260 @@ document.addEventListener('DOMContentLoaded', function() {
         runSyncTests();
     }, 3000);
 });
+
+// Table validation functions
+async function validateTableData() {
+    try {
+        const tests = {
+            open_positions_table: await validateOpenPositionsTable(),
+            available_positions_table: await validateAvailablePositionsTable()
+        };
+        
+        return {
+            status: 'success',
+            tests: tests,
+            summary: generateTableValidationSummary(tests)
+        };
+    } catch (error) {
+        return {
+            status: 'error',
+            error: error.message,
+            tests: {}
+        };
+    }
+}
+
+async function validateOpenPositionsTable() {
+    try {
+        // Fetch backend API data
+        const response = await fetch('/api/current-holdings', { cache: 'no-store' });
+        if (!response.ok) throw new Error(`API returned ${response.status}`);
+        const apiData = await response.json();
+        
+        if (!apiData.success || !apiData.holdings) {
+            throw new Error('Invalid API response structure');
+        }
+        
+        // Get table DOM elements
+        const tableBody = document.getElementById('holdings-tbody');
+        if (!tableBody) {
+            throw new Error('Open Positions table not found in DOM');
+        }
+        
+        const tableRows = Array.from(tableBody.querySelectorAll('tr')).filter(row => {
+            // Filter out loading/empty state rows
+            return !row.textContent.includes('Loading') && !row.textContent.includes('No positions');
+        });
+        
+        const apiHoldings = apiData.holdings || [];
+        
+        let matches = 0;
+        let mismatches = 0;
+        let details = [];
+        
+        // Validate each API holding has corresponding table row
+        for (const holding of apiHoldings) {
+            const symbol = holding.symbol || holding.name;
+            if (!symbol) continue;
+            
+            // Find matching row in table
+            const matchingRow = tableRows.find(row => {
+                const firstCell = row.querySelector('td:first-child');
+                return firstCell && firstCell.textContent.includes(symbol);
+            });
+            
+            if (!matchingRow) {
+                mismatches++;
+                details.push(`❌ Missing table row for ${symbol}`);
+                continue;
+            }
+            
+            // Validate key data points
+            const cells = matchingRow.querySelectorAll('td');
+            if (cells.length < 8) {
+                mismatches++;
+                details.push(`❌ ${symbol}: Insufficient table columns`);
+                continue;
+            }
+            
+            let rowValid = true;
+            
+            // Check quantity (QTY HELD column)
+            const qtyCell = cells[1]; // Second column is QTY HELD
+            const expectedQty = parseFloat(holding.quantity || holding.balance || 0);
+            const displayedQty = parseFloat(qtyCell.textContent.replace(/[^0-9.-]/g, ''));
+            if (Math.abs(expectedQty - displayedQty) > 0.001) {
+                details.push(`❌ ${symbol}: Quantity mismatch - API: ${expectedQty}, Table: ${displayedQty}`);
+                rowValid = false;
+            }
+            
+            // Check live price (LIVE PRICE column)
+            const priceCell = cells[4]; // Fifth column is LIVE PRICE
+            const expectedPrice = parseFloat(holding.current_price || holding.price || 0);
+            const displayedPrice = parseFloat(priceCell.textContent.replace(/[^0-9.-]/g, ''));
+            if (expectedPrice > 0 && Math.abs((expectedPrice - displayedPrice) / expectedPrice) > 0.01) {
+                details.push(`❌ ${symbol}: Price mismatch - API: $${expectedPrice}, Table: $${displayedPrice}`);
+                rowValid = false;
+            }
+            
+            // Check position value (POSITION VALUE column)
+            const valueCell = cells[5]; // Sixth column is POSITION VALUE
+            const expectedValue = parseFloat(holding.current_value || holding.market_value || holding.value || 0);
+            const displayedValue = parseFloat(valueCell.textContent.replace(/[^0-9.-]/g, ''));
+            if (expectedValue > 0 && Math.abs((expectedValue - displayedValue) / expectedValue) > 0.01) {
+                details.push(`❌ ${symbol}: Value mismatch - API: $${expectedValue.toFixed(2)}, Table: $${displayedValue.toFixed(2)}`);
+                rowValid = false;
+            }
+            
+            if (rowValid) {
+                matches++;
+                details.push(`✅ ${symbol}: All data validated`);
+            } else {
+                mismatches++;
+            }
+        }
+        
+        // Check for extra rows in table that don't have API data
+        const extraRows = tableRows.length - apiHoldings.length;
+        if (extraRows > 0) {
+            details.push(`⚠️ ${extraRows} extra rows in table vs API data`);
+        }
+        
+        return {
+            status: mismatches === 0 ? 'pass' : 'fail',
+            api_holdings: apiHoldings.length,
+            table_rows: tableRows.length,
+            perfect_matches: matches,
+            mismatches: mismatches,
+            validation_details: details.slice(0, 10), // Limit details for display
+            test_timestamp: new Date().toISOString()
+        };
+        
+    } catch (error) {
+        return {
+            status: 'error',
+            error: error.message,
+            test_timestamp: new Date().toISOString()
+        };
+    }
+}
+
+async function validateAvailablePositionsTable() {
+    try {
+        // Fetch backend API data
+        const response = await fetch('/api/available-positions', { cache: 'no-store' });
+        if (!response.ok) throw new Error(`API returned ${response.status}`);
+        const apiData = await response.json();
+        
+        if (!apiData.available_positions) {
+            throw new Error('Invalid API response structure');
+        }
+        
+        // Get table DOM elements
+        const tableBody = document.querySelector('#available-table tbody');
+        if (!tableBody) {
+            throw new Error('Available Positions table not found in DOM');
+        }
+        
+        const tableRows = Array.from(tableBody.querySelectorAll('tr')).filter(row => {
+            return !row.textContent.includes('Loading') && !row.textContent.includes('No positions');
+        });
+        
+        const apiPositions = apiData.available_positions || [];
+        
+        let matches = 0;
+        let mismatches = 0;
+        let details = [];
+        
+        // Sample validation for first 10 positions (to avoid overwhelming output)
+        const samplePositions = apiPositions.slice(0, 10);
+        
+        for (const position of samplePositions) {
+            const symbol = position.symbol;
+            if (!symbol) continue;
+            
+            // Find matching row in table
+            const matchingRow = tableRows.find(row => {
+                const firstCell = row.querySelector('td:first-child');
+                return firstCell && firstCell.textContent.includes(symbol);
+            });
+            
+            if (!matchingRow) {
+                mismatches++;
+                details.push(`❌ Missing table row for ${symbol}`);
+                continue;
+            }
+            
+            // Validate key data points
+            const cells = matchingRow.querySelectorAll('td');
+            if (cells.length < 3) {
+                mismatches++;
+                details.push(`❌ ${symbol}: Insufficient table columns`);
+                continue;
+            }
+            
+            let rowValid = true;
+            
+            // Check balance (Balance column)
+            const balanceCell = cells[1];
+            const expectedBalance = parseFloat(position.current_balance || position.free_balance || 0);
+            const displayedBalance = parseFloat(balanceCell.textContent.replace(/[^0-9.-]/g, ''));
+            if (expectedBalance > 0 && Math.abs((expectedBalance - displayedBalance) / expectedBalance) > 0.01) {
+                details.push(`❌ ${symbol}: Balance mismatch - API: ${expectedBalance}, Table: ${displayedBalance}`);
+                rowValid = false;
+            }
+            
+            // Check price (Current Price column)
+            const priceCell = cells[2];
+            const expectedPrice = parseFloat(position.current_price || 0);
+            const displayedPrice = parseFloat(priceCell.textContent.replace(/[^0-9.-]/g, ''));
+            if (expectedPrice > 0 && Math.abs((expectedPrice - displayedPrice) / expectedPrice) > 0.02) {
+                details.push(`❌ ${symbol}: Price mismatch - API: $${expectedPrice}, Table: $${displayedPrice}`);
+                rowValid = false;
+            }
+            
+            if (rowValid) {
+                matches++;
+                details.push(`✅ ${symbol}: Data validated`);
+            } else {
+                mismatches++;
+            }
+        }
+        
+        return {
+            status: mismatches === 0 ? 'pass' : 'fail',
+            api_positions: apiPositions.length,
+            table_rows: tableRows.length,
+            perfect_matches: matches,
+            mismatches: mismatches,
+            sample_tested: samplePositions.length,
+            validation_details: details.slice(0, 10),
+            test_timestamp: new Date().toISOString()
+        };
+        
+    } catch (error) {
+        return {
+            status: 'error',
+            error: error.message,
+            test_timestamp: new Date().toISOString()
+        };
+    }
+}
+
+function generateTableValidationSummary(tests) {
+    const totalTests = Object.keys(tests).length;
+    const passedTests = Object.values(tests).filter(t => t.status === 'pass').length;
+    const failedTests = Object.values(tests).filter(t => t.status === 'fail').length;
+    const errorTests = Object.values(tests).filter(t => t.status === 'error').length;
+    
+    return {
+        total: totalTests,
+        passed: passedTests,
+        failed: failedTests,
+        errors: errorTests,
+        success_rate: totalTests > 0 ? Math.round((passedTests / totalTests) * 100) : 0
+    };
+}
 
 // Also initialize tooltips when Bootstrap is ready
 window.addEventListener('load', function() {

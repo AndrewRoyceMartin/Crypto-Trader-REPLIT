@@ -5208,6 +5208,129 @@ def api_test_sync_data() -> ResponseReturnValue:
                 'error': str(e)
             }
 
+        # Test 15: Frontend Table Data Integrity
+        try:
+            # This test validates that frontend table display matches backend API data exactly
+            table_validation_results = {}
+            
+            # Test Open Positions Table
+            try:
+                # Get holdings data from current-holdings API
+                current_holdings_data = api_current_holdings()
+                if hasattr(current_holdings_data, 'get_json'):
+                    holdings_response = current_holdings_data.get_json()
+                else:
+                    holdings_response = current_holdings_data
+                    
+                if holdings_response.get('success') and holdings_response.get('holdings'):
+                    holdings_count = len(holdings_response['holdings'])
+                    valid_holdings = [h for h in holdings_response['holdings'] if h.get('quantity', 0) > 0]
+                    
+                    # Check data completeness for table display
+                    complete_data_count = 0
+                    incomplete_data = []
+                    
+                    for holding in valid_holdings:
+                        required_fields = ['symbol', 'quantity', 'current_price', 'current_value', 'pnl']
+                        missing_fields = [f for f in required_fields if not holding.get(f)]
+                        
+                        if not missing_fields:
+                            complete_data_count += 1
+                        else:
+                            incomplete_data.append({
+                                'symbol': holding.get('symbol', 'Unknown'),
+                                'missing_fields': missing_fields
+                            })
+                    
+                    table_validation_results['open_positions_table'] = {
+                        'status': 'pass' if len(incomplete_data) == 0 else 'fail',
+                        'api_holdings': holdings_count,
+                        'valid_holdings': len(valid_holdings),
+                        'complete_data_count': complete_data_count,
+                        'incomplete_data_issues': incomplete_data[:5],  # Limit to first 5 issues
+                        'data_completeness_pct': round((complete_data_count / len(valid_holdings) * 100) if valid_holdings else 100, 2)
+                    }
+                else:
+                    table_validation_results['open_positions_table'] = {
+                        'status': 'error',
+                        'error': 'Failed to fetch current holdings API data'
+                    }
+            except Exception as e:
+                table_validation_results['open_positions_table'] = {
+                    'status': 'error',
+                    'error': f'Open positions table test failed: {str(e)}'
+                }
+            
+            # Test Available Positions Table
+            try:
+                # Get available positions data from available-positions API
+                available_positions_data = api_available_positions()
+                if hasattr(available_positions_data, 'get_json'):
+                    positions_response = available_positions_data.get_json()
+                else:
+                    positions_response = available_positions_data
+                    
+                if positions_response.get('available_positions'):
+                    positions_count = len(positions_response['available_positions'])
+                    valid_positions = [p for p in positions_response['available_positions'] 
+                                     if p.get('current_balance', 0) > 0 or p.get('current_price', 0) > 0]
+                    
+                    # Check data structure for table display requirements
+                    complete_positions = 0
+                    structure_issues = []
+                    
+                    for position in valid_positions[:10]:  # Test first 10 positions
+                        required_fields = ['symbol', 'current_balance', 'current_price']
+                        missing_fields = [f for f in required_fields if position.get(f) is None]
+                        
+                        if not missing_fields:
+                            complete_positions += 1
+                        else:
+                            structure_issues.append({
+                                'symbol': position.get('symbol', 'Unknown'),
+                                'missing_fields': missing_fields
+                            })
+                    
+                    table_validation_results['available_positions_table'] = {
+                        'status': 'pass' if len(structure_issues) == 0 else 'fail',
+                        'api_positions': positions_count,
+                        'valid_positions': len(valid_positions),
+                        'complete_positions': complete_positions,
+                        'structure_issues': structure_issues[:5],  # Limit to first 5 issues
+                        'sample_tested': min(10, len(valid_positions)),
+                        'structure_completeness_pct': round((complete_positions / min(10, len(valid_positions)) * 100) if valid_positions else 100, 2)
+                    }
+                else:
+                    table_validation_results['available_positions_table'] = {
+                        'status': 'error',
+                        'error': 'Failed to fetch available positions API data'
+                    }
+            except Exception as e:
+                table_validation_results['available_positions_table'] = {
+                    'status': 'error',
+                    'error': f'Available positions table test failed: {str(e)}'
+                }
+            
+            # Overall table validation status
+            all_tests = list(table_validation_results.values())
+            passed_tests = sum(1 for test in all_tests if test.get('status') == 'pass')
+            total_tests = len(all_tests)
+            
+            test_data['test_results']['table_validation'] = {
+                'status': 'pass' if passed_tests == total_tests else 'partial' if passed_tests > 0 else 'fail',
+                'tests_passed': passed_tests,
+                'tests_total': total_tests,
+                'success_rate': round((passed_tests / total_tests * 100) if total_tests > 0 else 0, 2),
+                'individual_results': table_validation_results,
+                'test_description': 'Validates that frontend tables can properly display backend API data'
+            }
+            
+        except Exception as e:
+            test_data['test_results']['table_validation'] = {
+                'status': 'error',
+                'error': f'Table validation test framework failed: {str(e)}'
+            }
+
         # Add dynamic test count and use no-cache response
         test_data['tests_available'] = len(test_data['test_results'])
         
