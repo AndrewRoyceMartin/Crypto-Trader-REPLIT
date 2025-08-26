@@ -63,6 +63,7 @@ h4, h5, h6, .h4, .h5, .h6 { font-weight: var(--fw-medium); }
   color: var(--v02-head-color);
   border: 0;
   font-weight: var(--fw-semibold);
+  font-size: 12px; /* Smaller header text */
   letter-spacing: .01em;
   white-space: nowrap;
   padding: calc(var(--v02-cell-py) + .1rem) var(--v02-cell-px);
@@ -76,13 +77,21 @@ h4, h5, h6, .h4, .h5, .h6 { font-weight: var(--fw-medium); }
   padding: var(--v02-cell-py) var(--v02-cell-px);
   vertical-align: middle;
   font-weight: var(--fw-regular);
+  font-size: 12px; /* Smaller body text for better table fit */
 }
 
 /* Compact variant (optional) */
 .table-v02.table-v02--compact tbody td,
 .table-v02.table-v02--compact tbody th {
+  padding-top: .35rem; /* More compact padding */
+  padding-bottom: .35rem;
+  font-size: 11px; /* Even smaller text for compact tables */
+}
+
+.table-v02.table-v02--compact thead th {
   padding-top: .45rem;
   padding-bottom: .45rem;
+  font-size: 11px; /* Match compact body font size */
 }
 
 /* Hover */
@@ -113,6 +122,87 @@ h4, h5, h6, .h4, .h5, .h6 { font-weight: var(--fw-medium); }
   border: 1px solid var(--v02-border);
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
+  max-width: 100%; /* Ensure tables don't exceed container width */
+}
+
+/* Ensure tables fit within their containers */
+.table-v02 {
+  max-width: 100%;
+  table-layout: auto; /* Allow flexible column sizing */
+}
+
+/* Responsive table width adjustments */
+@media (max-width: 1400px) {
+  .table-v02 {
+    font-size: 11px; /* Even smaller text on smaller screens */
+  }
+  .table-v02 thead th {
+    font-size: 10px;
+    padding: 0.5rem 0.75rem; /* Reduce padding */
+  }
+  .table-v02 tbody td,
+  .table-v02 tbody th {
+    padding: 0.4rem 0.75rem; /* Reduce padding */
+  }
+}
+
+/* Additional responsive adjustments for all tables */
+@media (max-width: 1200px) {
+  .table-v02 {
+    font-size: 10px;
+  }
+  .table-v02 thead th {
+    font-size: 9px;
+    padding: 0.4rem 0.6rem;
+  }
+  .table-v02 tbody td,
+  .table-v02 tbody th {
+    padding: 0.35rem 0.6rem;
+  }
+  
+  /* Specific adjustments for holdings table */
+  #holdings-table {
+    min-width: 500px !important;
+  }
+  
+  /* Ensure available and trades tables are also responsive */
+  #available-table,
+  #trades-table {
+    min-width: 450px;
+  }
+}
+
+@media (max-width: 992px) {
+  .table-v02 {
+    font-size: 9px;
+  }
+  .table-v02 thead th {
+    font-size: 8px;
+    padding: 0.35rem 0.5rem;
+  }
+  .table-v02 tbody td,
+  .table-v02 tbody th {
+    padding: 0.3rem 0.5rem;
+  }
+  
+  #holdings-table {
+    min-width: 400px !important;
+  }
+  
+  #available-table,
+  #trades-table {
+    min-width: 350px;
+  }
+}
+
+/* Ensure text remains readable even at smallest sizes */
+@media (max-width: 768px) {
+  .table-v02 {
+    font-size: 10px; /* Slightly larger for mobile readability */
+  }
+  .table-v02 thead th {
+    font-size: 9px;
+  }
 }
 
 /* Fix table header alignment */
