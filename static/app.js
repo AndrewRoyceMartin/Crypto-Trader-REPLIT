@@ -372,6 +372,100 @@ class ModularTradingApp {
     }
 
     // Legacy function initialization for backward compatibility
+}
+
+// Show detailed confidence analysis - Global function for onclick handlers
+async function showConfidenceDetails(symbol) {
+    try {
+        const response = await fetch(`/api/entry-confidence/${symbol}`, { cache: 'no-cache' });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        
+        const data = await response.json();
+        if (data.status === 'success') {
+            const info = data.data;
+            const breakdown = info.breakdown;
+            
+            const modalHtml = `
+                <div class="modal fade" id="confidenceModal" tabindex="-1">
+                    <div class="modal-dialog modal-lg">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Entry Confidence Analysis - ${symbol}</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <h6>Overall Confidence</h6>
+                                        <div class="progress mb-2">
+                                            <div class="progress-bar bg-${info.score >= 70 ? 'success' : info.score >= 50 ? 'warning' : 'danger'}" 
+                                                 style="width: ${info.score}%">${info.score.toFixed(1)}%</div>
+                                        </div>
+                                        <p><strong>Level:</strong> ${info.level}</p>
+                                        <p><strong>Timing Signal:</strong> ${info.timing_signal}</p>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <h6>Current Market Data</h6>
+                                        <p><strong>Price:</strong> $${parseFloat(info.current_price || 0).toFixed(6)}</p>
+                                        <p><strong>Target:</strong> $${parseFloat(info.target_price || 0).toFixed(6)}</p>
+                                        <p><strong>Opportunity:</strong> ${parseFloat(info.price_opportunity || 0).toFixed(2)}%</p>
+                                    </div>
+                                </div>
+                                
+                                <h6>Confidence Breakdown</h6>
+                                <div class="list-group">
+                                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                                        <span>Technical Analysis</span>
+                                        <span class="badge bg-${breakdown.technical >= 60 ? 'success' : breakdown.technical >= 40 ? 'warning' : 'danger'}">${breakdown.technical.toFixed(1)}%</span>
+                                    </div>
+                                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                                        <span>Market Momentum</span>
+                                        <span class="badge bg-${breakdown.momentum >= 60 ? 'success' : breakdown.momentum >= 40 ? 'warning' : 'danger'}">${breakdown.momentum.toFixed(1)}%</span>
+                                    </div>
+                                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                                        <span>Risk Assessment</span>
+                                        <span class="badge bg-${breakdown.risk >= 60 ? 'success' : breakdown.risk >= 40 ? 'warning' : 'danger'}">${breakdown.risk.toFixed(1)}%</span>
+                                    </div>
+                                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                                        <span>Volume Profile</span>
+                                        <span class="badge bg-${breakdown.volume >= 60 ? 'success' : breakdown.volume >= 40 ? 'warning' : 'danger'}">${breakdown.volume.toFixed(1)}%</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Remove existing modal if present
+            const existingModal = document.getElementById('confidenceModal');
+            if (existingModal) {
+                existingModal.remove();
+            }
+            
+            // Add modal to page
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+            
+            // Show modal using Bootstrap
+            const modal = new bootstrap.Modal(document.getElementById('confidenceModal'));
+            modal.show();
+            
+        } else {
+            throw new Error(data.message || 'Analysis failed');
+        }
+    } catch (error) {
+        console.error('Confidence details error:', error);
+        alert(`Unable to load confidence details for ${symbol}: ${error.message}`);
+    }
+}
+
+// Make function globally available for onclick handlers
+window.showConfidenceDetails = showConfidenceDetails;
+
+class TradingApp {
     initLegacyTableFunctions() {
         // Maintain namespace compatibility with existing code
         window.Utils = this.utils;
