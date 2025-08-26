@@ -213,6 +213,39 @@ def get_okx_native_client() -> Any:
     return _okx_client_cache
 
 
+def get_bb_strategy_type(symbol: str, bb_signal: str, confidence_level: str) -> str:
+    """Determine the BB strategy variant based on asset characteristics and current analysis."""
+    # Large cap assets (conservative strategy)
+    if symbol in ['BTC', 'ETH', 'BNB', 'XRP', 'ADA', 'SOL', 'DOT', 'LTC']:
+        if bb_signal in ['BUY ZONE', 'VERY CLOSE']:
+            return 'Enhanced BB-Conservative'
+        return 'Enhanced BB-Stable'
+    
+    # Gaming/Metaverse tokens (moderate strategy)  
+    elif symbol in ['GALA', 'SAND', 'MANA', 'AXS', 'CHZ', 'APE']:
+        if confidence_level in ['STRONG', 'GOOD']:
+            return 'Enhanced BB-Gaming'
+        return 'Enhanced BB-Moderate'
+    
+    # Meme coins (aggressive strategy)
+    elif symbol in ['DOGE', 'SHIB', 'PEPE', 'BONK', 'WIF', 'FLOKI']:
+        if bb_signal in ['BUY ZONE']:
+            return 'Enhanced BB-Aggressive'
+        return 'Enhanced BB-Meme'
+    
+    # DeFi tokens (dynamic strategy)
+    elif symbol in ['UNI', 'SUSHI', 'AAVE', 'COMP', 'MKR', 'CRV', 'SNX', '1INCH']:
+        return 'Enhanced BB-DeFi'
+    
+    # Stablecoins and fiat
+    elif symbol in ['USDT', 'USDC', 'DAI', 'BUSD', 'AUD', 'USD', 'EUR', 'GBP']:
+        return 'N/A'
+    
+    # Default for other assets
+    else:
+        return 'Enhanced BB'
+
+
 def get_stable_target_price(symbol: str, current_price: float) -> float:
     """
     Get a stable, locked target buy price that won't change with every market update.
@@ -3682,7 +3715,8 @@ def api_available_positions() -> ResponseReturnValue:
                         'bollinger_analysis': {
                             'signal': bb_signal,
                             'distance_percent': round(bb_distance_percent, 2),
-                            'lower_band_price': round(lower_band_price, 6) if lower_band_price > 0 else 0
+                            'lower_band_price': round(lower_band_price, 6) if lower_band_price > 0 else 0,
+                            'strategy': get_bb_strategy_type(symbol, bb_signal, confidence_level)
                         }
                     }
 

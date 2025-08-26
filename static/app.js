@@ -291,7 +291,7 @@ class ModularTradingApp {
                 </span>
             </td>
             <td>${position.bollinger_analysis?.signal || 'NO DATA'}</td>
-            <td>Enhanced BB</td>
+            <td>${position.bollinger_analysis?.strategy || position.bb_strategy || 'Enhanced BB'}</td>
             <td>
                 ${hasBalance ? 
                     `<button class="btn btn-sm btn-success" onclick="tradeManager.showSellDialog('${position.symbol}', ${position.current_balance}, ${position.current_price})">Sell</button>` :
