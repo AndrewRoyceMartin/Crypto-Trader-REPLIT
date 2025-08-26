@@ -38,6 +38,7 @@ class PortfolioService:
         # Invalid symbols that should be filtered out to prevent API errors
         self._invalid_symbols = {'OKB'}  # OKB causes "Instrument ID doesn't exist" on OKX
         self._failed_symbols = set()  # Track symbols that consistently fail
+        self._failed_symbols_cache = {}  # Cache failed symbols with timestamps for temp blocking
 
         # Initialize OKX exchange with credentials
         import os
@@ -607,6 +608,13 @@ class PortfolioService:
             if symbol in self._invalid_symbols or symbol in self._failed_symbols:
                 return 0.0
                 
+            # Check if symbol is temporarily blocked due to recent failures
+            import time
+            if symbol in self._failed_symbols_cache:
+                last_fail_time = self._failed_symbols_cache[symbol]
+                if time.time() - last_fail_time < 300:  # Block for 5 minutes after failure
+                    return 0.0
+                
             # Check cache first
             from app import cache_get_price, cache_put_price
             cache_key = f"{symbol}_{currency}"
@@ -661,9 +669,14 @@ class PortfolioService:
                 if symbol not in known_non_tradeable:
                     self.logger.warning(f"Symbol {symbol} not available on OKX, adding to failed symbols list")
                     self._failed_symbols.add(symbol)
+                    # Also add to temporary cache to prevent repeated attempts
+                    import time
+                    self._failed_symbols_cache[symbol] = time.time()
             elif '50011' in error_msg or "too many requests" in error_msg:
-                # Rate limited - don't mark as failed, just log debug message
-                self.logger.debug(f"Rate limited for {symbol}, will retry later")
+                # Rate limited - temporarily block this symbol to reduce pressure
+                import time
+                self._failed_symbols_cache[symbol] = time.time()
+                self.logger.debug(f"Rate limited for {symbol}, temporarily blocking requests")
             elif symbol not in known_non_tradeable:
                 # Reduce noise: missing market symbols are expected, not errors
                 if "does not have market symbol" in error_msg:

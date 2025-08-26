@@ -274,9 +274,9 @@ OHLCV_TTL_SEC = int(os.getenv("OHLCV_TTL_SEC", "60"))    # candles can be cached
 CACHE_MAX_KEYS = int(os.getenv("CACHE_MAX_KEYS", "200"))  # prevent unbounded growth
 
 # limit concurrent outbound API calls (reduced to prevent rate limiting)
-_MAX_OUTBOUND = int(os.getenv("MAX_OUTBOUND_CALLS", "3"))  # Reduced from 6 to 3
+_MAX_OUTBOUND = int(os.getenv("MAX_OUTBOUND_CALLS", "2"))  # Further reduced from 3 to 2 for stability
 _ext_sem = threading.Semaphore(_MAX_OUTBOUND)
-_rate_limit_delay = float(os.getenv("API_RATE_DELAY", "0.2"))  # 200ms delay between requests
+_rate_limit_delay = float(os.getenv("API_RATE_DELAY", "0.5"))  # Increased to 500ms delay between requests
 
 def with_throttle(fn, *a, **kw):
     acquired = _ext_sem.acquire(timeout=15)  # Increased timeout
