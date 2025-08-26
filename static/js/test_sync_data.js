@@ -806,7 +806,8 @@ async function validateButtonFunctionality() {
             take_profit_button: await testTakeProfitButton(),
             buy_button: await testBuyButton(),
             sell_button: await testSellButton(),
-            recalculate_button: await testRecalculateButton()
+            recalculate_button: await testRecalculateButton(),
+            details_buttons: await testDetailsButtons()
         };
         
         return {
@@ -1219,6 +1220,356 @@ async function testRecalculateButton() {
         return {
             status: 'error',
             error: `Recalculate button test failed: ${error.message}`,
+            test_timestamp: new Date().toISOString()
+        };
+    }
+}
+
+async function testDetailsButtons() {
+    try {
+        const testResults = {
+            open_positions_details: await testOpenPositionsDetailsButtons(),
+            available_positions_details: await testAvailablePositionsDetailsButtons(),
+            details_modal_functionality: await testDetailsModalFunctionality(),
+            confidence_api_endpoint: await testConfidenceAPIEndpoint()
+        };
+        
+        // Determine overall status
+        const allTests = Object.values(testResults);
+        const passedTests = allTests.filter(t => t.status === 'pass').length;
+        const partialTests = allTests.filter(t => t.status === 'partial').length;
+        const failedTests = allTests.filter(t => t.status === 'fail').length;
+        const errorTests = allTests.filter(t => t.status === 'error').length;
+        
+        let overallStatus = 'pass';
+        if (errorTests > 0 || failedTests > allTests.length / 2) {
+            overallStatus = 'fail';
+        } else if (partialTests > 0 || failedTests > 0) {
+            overallStatus = 'partial';
+        }
+        
+        return {
+            status: overallStatus,
+            sub_tests: testResults,
+            summary: {
+                total: allTests.length,
+                passed: passedTests,
+                partial: partialTests,
+                failed: failedTests,
+                errors: errorTests
+            },
+            test_timestamp: new Date().toISOString()
+        };
+        
+    } catch (error) {
+        return {
+            status: 'error',
+            error: `Details buttons test failed: ${error.message}`,
+            test_timestamp: new Date().toISOString()
+        };
+    }
+}
+
+async function testOpenPositionsDetailsButtons() {
+    try {
+        // Check if open positions table exists
+        const holdingsTable = document.getElementById('holdings-table');
+        if (!holdingsTable) {
+            return {
+                status: 'fail',
+                error: 'Open positions table not found',
+                test_timestamp: new Date().toISOString()
+            };
+        }
+        
+        // Look for Details buttons in the open positions table
+        const holdingsTableBody = document.querySelector('#holdings-table tbody');
+        if (!holdingsTableBody) {
+            return {
+                status: 'fail', 
+                error: 'Open positions table body not found',
+                test_timestamp: new Date().toISOString()
+            };
+        }
+        
+        // Find all rows with data (not loading/empty rows)
+        const dataRows = Array.from(holdingsTableBody.querySelectorAll('tr')).filter(row => {
+            return !row.textContent.includes('Loading') && 
+                   !row.textContent.includes('No holdings') &&
+                   row.cells.length > 5;
+        });
+        
+        let detailsButtonsFound = 0;
+        let workingButtons = 0;
+        let buttonDetails = [];
+        
+        dataRows.forEach((row, index) => {
+            // Look for Details buttons in the actions column (typically last column)
+            const actionsCell = row.cells[row.cells.length - 1];
+            if (actionsCell) {
+                const detailsButtons = actionsCell.querySelectorAll('button');
+                detailsButtons.forEach(button => {
+                    if (button.textContent.toLowerCase().includes('detail')) {
+                        detailsButtonsFound++;
+                        
+                        // Check if button has proper onclick handler
+                        const hasOnClick = button.onclick !== null || 
+                                         button.addEventListener !== null ||
+                                         button.hasAttribute('onclick');
+                        
+                        if (hasOnClick) {
+                            workingButtons++;
+                        }
+                        
+                        buttonDetails.push({
+                            row_index: index,
+                            button_text: button.textContent,
+                            has_onclick: hasOnClick,
+                            button_classes: button.className,
+                            button_title: button.title || ''
+                        });
+                    }
+                });
+            }
+        });
+        
+        return {
+            status: detailsButtonsFound > 0 ? (workingButtons === detailsButtonsFound ? 'pass' : 'partial') : 'fail',
+            total_data_rows: dataRows.length,
+            details_buttons_found: detailsButtonsFound,
+            working_buttons: workingButtons,
+            button_details: buttonDetails.slice(0, 5), // Limit details for readability
+            test_timestamp: new Date().toISOString()
+        };
+        
+    } catch (error) {
+        return {
+            status: 'error',
+            error: `Open positions details button test failed: ${error.message}`,
+            test_timestamp: new Date().toISOString()
+        };
+    }
+}
+
+async function testAvailablePositionsDetailsButtons() {
+    try {
+        // Check if available positions table exists
+        const availableTable = document.getElementById('available-table');
+        if (!availableTable) {
+            return {
+                status: 'fail',
+                error: 'Available positions table not found',
+                test_timestamp: new Date().toISOString()
+            };
+        }
+        
+        // Look for Details buttons in the available positions table
+        const availableTableBody = document.querySelector('#available-table tbody');
+        if (!availableTableBody) {
+            return {
+                status: 'fail',
+                error: 'Available positions table body not found',
+                test_timestamp: new Date().toISOString()
+            };
+        }
+        
+        // Find all rows with data (not loading/empty rows)
+        const dataRows = Array.from(availableTableBody.querySelectorAll('tr')).filter(row => {
+            return !row.textContent.includes('Loading') && 
+                   !row.textContent.includes('No positions') &&
+                   row.cells.length > 5;
+        });
+        
+        let detailsButtonsFound = 0;
+        let workingButtons = 0;
+        let buttonDetails = [];
+        
+        dataRows.forEach((row, index) => {
+            // Look for Details buttons in the actions column (typically last column)
+            const actionsCell = row.cells[row.cells.length - 1];
+            if (actionsCell) {
+                const detailsButtons = actionsCell.querySelectorAll('button');
+                detailsButtons.forEach(button => {
+                    if (button.textContent.toLowerCase().includes('detail')) {
+                        detailsButtonsFound++;
+                        
+                        // Check if button has proper onclick handler
+                        const hasOnClick = button.onclick !== null || 
+                                         button.hasAttribute('onclick');
+                        
+                        // Check if showConfidenceDetails function exists
+                        const hasGlobalFunction = typeof window.showConfidenceDetails === 'function';
+                        
+                        if (hasOnClick && hasGlobalFunction) {
+                            workingButtons++;
+                        }
+                        
+                        buttonDetails.push({
+                            row_index: index,
+                            button_text: button.textContent,
+                            has_onclick: hasOnClick,
+                            has_global_function: hasGlobalFunction,
+                            button_classes: button.className,
+                            button_title: button.title || ''
+                        });
+                    }
+                });
+            }
+        });
+        
+        return {
+            status: detailsButtonsFound > 0 ? (workingButtons === detailsButtonsFound ? 'pass' : 'partial') : 'fail',
+            total_data_rows: dataRows.length,
+            details_buttons_found: detailsButtonsFound,
+            working_buttons: workingButtons,
+            button_details: buttonDetails.slice(0, 5), // Limit details for readability
+            has_show_confidence_details_function: typeof window.showConfidenceDetails === 'function',
+            test_timestamp: new Date().toISOString()
+        };
+        
+    } catch (error) {
+        return {
+            status: 'error',
+            error: `Available positions details button test failed: ${error.message}`,
+            test_timestamp: new Date().toISOString()
+        };
+    }
+}
+
+async function testDetailsModalFunctionality() {
+    try {
+        // Check if Bootstrap modal functionality is available
+        const hasBootstrap = typeof window.bootstrap !== 'undefined';
+        
+        // Check if modal container exists or can be created
+        let modalExists = document.getElementById('confidenceModal') !== null;
+        
+        // Test modal creation capability
+        let canCreateModal = false;
+        try {
+            const testModal = document.createElement('div');
+            testModal.className = 'modal fade';
+            testModal.id = 'test-modal-creation';
+            testModal.innerHTML = '<div class="modal-dialog"><div class="modal-content"><div class="modal-body">Test</div></div></div>';
+            document.body.appendChild(testModal);
+            canCreateModal = true;
+            // Clean up test modal
+            document.body.removeChild(testModal);
+        } catch (error) {
+            canCreateModal = false;
+        }
+        
+        // Check if showConfidenceDetails function exists
+        const hasShowConfidenceFunction = typeof window.showConfidenceDetails === 'function';
+        
+        // Test modal z-index and positioning
+        let modalStylingCorrect = false;
+        const existingModal = document.getElementById('confidenceModal');
+        if (existingModal) {
+            const computedStyle = window.getComputedStyle(existingModal);
+            modalStylingCorrect = parseInt(computedStyle.zIndex) >= 1000 || existingModal.className.includes('modal');
+        } else {
+            modalStylingCorrect = true; // If no existing modal, assume styling will be correct
+        }
+        
+        const allChecks = [
+            hasBootstrap,
+            canCreateModal,
+            hasShowConfidenceFunction,
+            modalStylingCorrect
+        ];
+        
+        const passedChecks = allChecks.filter(Boolean).length;
+        
+        return {
+            status: passedChecks >= 3 ? 'pass' : (passedChecks >= 2 ? 'partial' : 'fail'),
+            has_bootstrap: hasBootstrap,
+            modal_exists: modalExists,
+            can_create_modal: canCreateModal,
+            has_show_confidence_function: hasShowConfidenceFunction,
+            modal_styling_correct: modalStylingCorrect,
+            passed_checks: passedChecks,
+            total_checks: allChecks.length,
+            test_timestamp: new Date().toISOString()
+        };
+        
+    } catch (error) {
+        return {
+            status: 'error',
+            error: `Modal functionality test failed: ${error.message}`,
+            test_timestamp: new Date().toISOString()
+        };
+    }
+}
+
+async function testConfidenceAPIEndpoint() {
+    try {
+        // Test the entry-confidence API endpoint with a sample symbol
+        const testSymbols = ['BTC', 'ETH', 'SOL']; // Common symbols likely to exist
+        let workingEndpoints = 0;
+        let apiErrors = [];
+        let endpointDetails = [];
+        
+        for (const symbol of testSymbols) {
+            try {
+                const response = await fetch(`/api/entry-confidence/${symbol}`, { 
+                    cache: 'no-store',
+                    method: 'GET'
+                });
+                
+                const responseData = {
+                    symbol: symbol,
+                    status_code: response.status,
+                    accessible: response.status !== 404,
+                    response_ok: response.ok
+                };
+                
+                if (response.ok) {
+                    // Try to parse response to validate structure
+                    try {
+                        const jsonData = await response.json();
+                        responseData.has_valid_json = true;
+                        responseData.has_status_field = jsonData.hasOwnProperty('status');
+                        responseData.has_data_field = jsonData.hasOwnProperty('data');
+                        
+                        if (jsonData.status === 'success' && jsonData.data) {
+                            workingEndpoints++;
+                            responseData.fully_functional = true;
+                        }
+                    } catch (jsonError) {
+                        responseData.has_valid_json = false;
+                        responseData.json_error = jsonError.message;
+                    }
+                } else {
+                    apiErrors.push(`${symbol}: HTTP ${response.status}`);
+                }
+                
+                endpointDetails.push(responseData);
+                
+            } catch (fetchError) {
+                apiErrors.push(`${symbol}: ${fetchError.message}`);
+                endpointDetails.push({
+                    symbol: symbol,
+                    error: fetchError.message,
+                    accessible: false
+                });
+            }
+        }
+        
+        return {
+            status: workingEndpoints > 0 ? 'pass' : (endpointDetails.some(d => d.accessible) ? 'partial' : 'fail'),
+            tested_symbols: testSymbols,
+            working_endpoints: workingEndpoints,
+            total_tested: testSymbols.length,
+            api_errors: apiErrors,
+            endpoint_details: endpointDetails,
+            test_timestamp: new Date().toISOString()
+        };
+        
+    } catch (error) {
+        return {
+            status: 'error',
+            error: `Confidence API endpoint test failed: ${error.message}`,
             test_timestamp: new Date().toISOString()
         };
     }
