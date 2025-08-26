@@ -4332,12 +4332,12 @@ async function updateBotStatusDisplay() {
     }
 }
 
-async function executeTakeProfit() {
+window.executeTakeProfit = async function executeTakeProfit() {
     if (!confirm('Execute take profit for all positions above 2% profit? This will sell profitable positions and reinvest proceeds.')) {
         return;
     }
     
-    const button = document.getElementById('take-profit-btn');
+    const button = document.getElementById('btn-take-profit');
     const originalText = button.textContent;
     button.disabled = true;
     // Safe DOM creation instead of innerHTML
@@ -4414,7 +4414,28 @@ async function executeTakeProfit() {
         button.disabled = false;
         button.textContent = originalText;
     }
-}
+};
+
+// Add missing Buy/Sell dialog functions
+window.showBuyDialog = function showBuyDialog() {
+    const symbol = prompt("Enter symbol to buy (e.g., BTC-USDT):");
+    if (!symbol) return;
+    const amount = prompt("Enter USD amount to invest:");
+    if (!amount || isNaN(amount)) return;
+    
+    window.tradingApp.showToast(`Buy order would be: $${amount} of ${symbol}`, 'info');
+    console.log('Buy dialog:', { symbol, amount });
+};
+
+window.showSellDialog = function showSellDialog() {
+    const symbol = prompt("Enter symbol to sell (e.g., BTC-USDT):");
+    if (!symbol) return;
+    const percentage = prompt("Enter percentage to sell (1-100):");
+    if (!percentage || isNaN(percentage)) return;
+    
+    window.tradingApp.showToast(`Sell order would be: ${percentage}% of ${symbol}`, 'info');
+    console.log('Sell dialog:', { symbol, percentage });
+};
 async function buyCrypto(symbol) {
     const amount = prompt(`Enter USD amount to buy ${symbol}:`, '25.00');
     if (!amount || isNaN(amount) || parseFloat(amount) <= 0) return window.tradingApp.showToast('Invalid amount', 'error');

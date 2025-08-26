@@ -912,6 +912,38 @@ async function testTakeProfitButton() {
             'not_disabled': !button.disabled
         };
         
+        // Check JavaScript function availability
+        const hasExecuteTakeProfitFunction = typeof window.executeTakeProfit === 'function';
+        
+        // Check event listeners
+        let hasEventListener = false;
+        let eventListenerDetails = 'none';
+        
+        // Check onclick
+        if (button.onclick && typeof button.onclick === 'function') {
+            hasEventListener = true;
+            eventListenerDetails = 'onclick_handler';
+        }
+        
+        // Test click simulation (without executing)
+        let clickResponseDetected = false;
+        try {
+            const originalConfirm = window.confirm;
+            let confirmCalled = false;
+            
+            window.confirm = function(...args) {
+                confirmCalled = true;
+                return false; // Prevent actual execution
+            };
+            
+            button.click();
+            clickResponseDetected = confirmCalled;
+            
+            window.confirm = originalConfirm;
+        } catch (clickError) {
+            clickResponseDetected = false;
+        }
+        
         // Test API endpoint availability
         let apiStatus = 'unknown';
         let apiError = null;
@@ -936,6 +968,9 @@ async function testTakeProfitButton() {
             button !== null,
             buttonChecks['has_correct_class'],
             buttonChecks['has_accessibility'],
+            hasExecuteTakeProfitFunction,
+            hasEventListener,
+            clickResponseDetected,
             apiStatus !== 'error',
             hasCorrectText
         ];
@@ -943,9 +978,13 @@ async function testTakeProfitButton() {
         const passedChecks = allChecks.filter(Boolean).length;
         
         return {
-            status: passedChecks >= 4 ? 'pass' : 'partial',
+            status: passedChecks >= 6 ? 'pass' : (passedChecks >= 4 ? 'partial' : 'fail'),
             button_found: button !== null,
             button_checks: buttonChecks,
+            has_execute_takeprofit_function: hasExecuteTakeProfitFunction,
+            has_event_listener: hasEventListener,
+            event_listener_details: eventListenerDetails,
+            click_response_detected: clickResponseDetected,
             api_status: apiStatus,
             api_error: apiError,
             has_correct_text: hasCorrectText,
@@ -982,6 +1021,35 @@ async function testBuyButton() {
             'has_accessibility': button.hasAttribute('aria-label'),
             'has_correct_text': (button.textContent || '').toLowerCase().includes('buy')
         };
+        
+        // Check JavaScript function availability
+        const hasShowBuyDialogFunction = typeof window.showBuyDialog === 'function';
+        
+        // Test event listeners and click response
+        let hasEventListener = false;
+        let clickResponseDetected = false;
+        
+        // Test click simulation
+        try {
+            const originalPrompt = window.prompt;
+            let promptCalled = false;
+            
+            window.prompt = function(...args) {
+                promptCalled = true;
+                return null; // Cancel to prevent actual execution
+            };
+            
+            if (button.onclick) {
+                hasEventListener = true;
+            }
+            
+            button.click();
+            clickResponseDetected = promptCalled;
+            
+            window.prompt = originalPrompt;
+        } catch (clickError) {
+            clickResponseDetected = false;
+        }
         
         // Test associated API endpoints
         const apiTests = [];
