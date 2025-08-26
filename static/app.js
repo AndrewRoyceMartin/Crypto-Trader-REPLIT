@@ -3102,7 +3102,7 @@ class TradingApp {
                 buttonTd.className = 'text-center text-nowrap';
                 const viewButton = document.createElement('button');
                 viewButton.className = 'btn btn-xs btn-outline-primary px-2 py-1 small';
-                viewButton.onclick = () => toast('PEPE position details', 'info');
+                viewButton.onclick = () => toast(`${holding.symbol} position details`, 'info');
                 viewButton.textContent = 'View';
                 buttonTd.appendChild(viewButton);
                 row.appendChild(buttonTd);
