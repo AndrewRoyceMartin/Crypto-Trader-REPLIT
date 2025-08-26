@@ -3503,25 +3503,21 @@ def api_available_positions() -> ResponseReturnValue:
                     bb_distance_percent = 0.0
                     lower_band_price = 0.0
                     
-                    # Calculate BB for expanded set of tradeable assets (optimized for performance)
-                    # Expanded to cover more popular assets while maintaining staggered loading
-                    top_tier_assets = [
-                        # Major cryptocurrencies (Tier 1)
-                        'BTC', 'ETH', 'SOL', 'ADA', 'AVAX', 'LINK', 'UNI', 'LTC', 'XRP', 
-                        'GALA', 'TRX', 'PEPE', 'DOGE', 'MATIC', 'ATOM',
-                        # Popular altcoins (Tier 2) 
-                        'BNB', 'USDC', 'XLM', 'DOT', 'ALGO', 'VET', 'ICP', 'FTM', 'SAND',
-                        'MANA', 'CRV', 'GRT', 'COMP', 'MKR', 'SUSHI', 'YFI', 'SNX',
-                        # Additional trending coins (Tier 3)
-                        'NEAR', 'FLOW', 'APT', 'OP', 'ARB', 'RNDR', 'LDO', 'STX', 'IMX'
-                    ]  # 42 assets with BB analysis
-                    if current_price > 0 and symbol in top_tier_assets:
+                    # Optimized BB analysis for only current holdings + top 10 opportunities
+                    # This dramatically reduces API calls and improves performance
+                    priority_assets = [
+                        'BTC', 'ETH', 'SOL', 'GALA', 'TRX', 'PEPE',  # Current holdings
+                        'ADA', 'DOGE', 'MATIC', 'XRP'  # Top opportunities
+                    ]  # Only 10 assets with BB analysis for fast loading
+                    
+                    # Only calculate BB for priority assets and if we have current holdings
+                    if (current_price > 0 and symbol in priority_assets and 
+                        (total_balance > 0 or symbol in ['BTC', 'ETH', 'SOL', 'ADA'])):
                         logger.info(f"Calculating BB opportunity analysis for {symbol} at ${current_price}")
                         
-                        # Add staggered delay to prevent API overload (150ms per calculation)
-                        # Reduced delay for faster loading while maintaining API stability
+                        # Minimal delay for faster response (50ms)
                         import time
-                        time.sleep(0.15)  # 150ms delay between each BB calculation
+                        time.sleep(0.05)  # 50ms delay - 3x faster than before
                         
                         try:
                             # Get historical price data for Bollinger Bands calculation
