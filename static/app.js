@@ -198,7 +198,7 @@ class ModularTradingApp {
         row.innerHTML = `
             <td>
                 <div class="d-flex align-items-center">
-                    <i class="fa-solid fa-coins text-warning me-2" style="width: 24px; height: 24px; font-size: 18px;"></i>
+                    ${this.getCryptoIcon(holding.symbol)}
                     <div>
                         <strong>${holding.symbol}</strong>
                         <small class="text-muted d-block">${AppUtils.getCoinDisplay(holding.symbol)}</small>
@@ -266,7 +266,7 @@ class ModularTradingApp {
         row.innerHTML = `
             <td>
                 <div class="d-flex align-items-center">
-                    <i class="fa-solid fa-coins text-warning me-2" style="width: 24px; height: 24px; font-size: 18px;"></i>
+                    ${this.getCryptoIcon(position.symbol)}
                     <strong>${position.symbol}</strong>
                 </div>
             </td>
@@ -315,6 +315,76 @@ class ModularTradingApp {
             case 'WEAK': return 'danger';
             default: return 'secondary';
         }
+    }
+
+    // Get cryptocurrency icon - uses CoinGecko API for authentic logos
+    getCryptoIcon(symbol) {
+        if (!symbol || symbol === 'N/A') {
+            return '<i class="fa-solid fa-coins text-muted me-2" style="width: 24px; height: 24px; font-size: 18px;"></i>';
+        }
+        
+        // Map symbol to CoinGecko ID for accurate logos
+        const coinGeckoIds = {
+            'BTC': 'bitcoin',
+            'ETH': 'ethereum', 
+            'SOL': 'solana',
+            'ADA': 'cardano',
+            'DOT': 'polkadot',
+            'AVAX': 'avalanche-2',
+            'MATIC': 'polygon',
+            'LINK': 'chainlink',
+            'UNI': 'uniswap',
+            'LTC': 'litecoin',
+            'XRP': 'ripple',
+            'DOGE': 'dogecoin',
+            'SHIB': 'shiba-inu',
+            'GALA': 'gala',
+            'TRX': 'tron',
+            'PEPE': 'pepe',
+            'USDT': 'tether',
+            'USDC': 'usd-coin',
+            'BNB': 'binancecoin',
+            'AUD': 'australian-dollar',
+            'USD': 'us-dollar'
+        };
+        
+        const coinId = coinGeckoIds[symbol.toUpperCase()] || symbol.toLowerCase();
+        const imageId = this.getCoinGeckoImageId(coinId);
+        
+        return `<img src="https://assets.coingecko.com/coins/images/${imageId}/small/${coinId}.png" 
+                     alt="${symbol}" 
+                     class="crypto-icon crypto-icon-img me-2" 
+                     style="width: 24px; height: 24px; border-radius: 50%;"
+                     onerror="this.outerHTML='<i class=\\'fa-solid fa-coins text-warning me-2\\' style=\\'width: 24px; height: 24px; font-size: 18px;\\'></i>'">`;
+    }
+    
+    // Get CoinGecko image IDs for major cryptocurrencies
+    getCoinGeckoImageId(coinId) {
+        const imageIds = {
+            'bitcoin': '1',
+            'ethereum': '279', 
+            'solana': '4128',
+            'cardano': '975',
+            'polkadot': '12171',
+            'avalanche-2': '12559',
+            'polygon': '4713',
+            'chainlink': '877',
+            'uniswap': '12504',
+            'litecoin': '2',
+            'ripple': '44',
+            'dogecoin': '5',
+            'shiba-inu': '11939',
+            'gala': '12493',
+            'tron': '1094',
+            'pepe': '29850',
+            'tether': '325',
+            'usd-coin': '6319',
+            'binancecoin': '825',
+            'australian-dollar': '325',  // Fallback to Tether logo for AUD
+            'us-dollar': '325'           // Fallback to Tether logo for USD
+        };
+        
+        return imageIds[coinId] || '1'; // Default to Bitcoin ID if not found
     }
 
     getTimingClass(signal) {
