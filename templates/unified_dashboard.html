@@ -1287,10 +1287,14 @@
             btn.disabled = true;
             btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Recalculating...';
             
-            // Get admin token
-            const adminToken = document.querySelector('meta[name="admin-token"]')?.getAttribute('content');
+            // Get admin token from environment or prompt user
+            let adminToken = document.querySelector('meta[name="admin-token"]')?.getAttribute('content');
             if (!adminToken) {
-                throw new Error('Admin token not found');
+                // Fallback: get from user for this session
+                adminToken = prompt('Enter admin token for recalculation:');
+                if (!adminToken) {
+                    throw new Error('Admin token required for recalculation');
+                }
             }
             
             // Call recalculation API
@@ -1298,7 +1302,7 @@
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${adminToken}`
+                    'X-Admin-Token': adminToken
                 },
                 cache: 'no-cache'
             });
