@@ -1052,6 +1052,27 @@
             }
         });
         
+        // Set up Buy/Sell button handlers
+        document.getElementById('btn-buy')?.addEventListener('click', function() {
+            const symbol = prompt("Enter symbol to buy (e.g., BTC-USDT):");
+            if (!symbol) return;
+            const amount = prompt("Enter USD amount to invest:");
+            if (!amount || isNaN(amount)) return;
+            
+            alert(`Buy order would be: $${amount} of ${symbol}`);
+            console.log('Buy dialog:', { symbol, amount });
+        });
+        
+        document.getElementById('btn-sell')?.addEventListener('click', function() {
+            const symbol = prompt("Enter symbol to sell (e.g., BTC-USDT):");
+            if (!symbol) return;
+            const percentage = prompt("Enter percentage to sell (1-100):");
+            if (!percentage || isNaN(percentage)) return;
+            
+            alert(`Sell order would be: ${percentage}% of ${symbol}`);
+            console.log('Sell dialog:', { symbol, percentage });
+        });
+        
         // Initial status fetch
         fetchAndUpdateBotStatus();
         updateFooterStatus();
