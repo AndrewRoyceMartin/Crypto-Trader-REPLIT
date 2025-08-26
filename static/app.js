@@ -3052,11 +3052,11 @@ class TradingApp {
                 // Calculate stable display values
                 const side = 'LONG';
                 const weight = (100 / cryptos.length).toFixed(1);
-                const target = weight;
+                const target = '4.0';  // Enhanced Bollinger Bands 4% take profit target
                 const deviation = '0.0';
                 const change24h = pp > 0 ? `+${pp.toFixed(1)}%` : `${pp.toFixed(1)}%`;
-                const stopLoss = this.formatCryptoPrice(purchasePrice * 0.9);
-                const takeProfit = this.formatCryptoPrice(purchasePrice * 1.2);
+                const stopLoss = this.formatCryptoPrice(purchasePrice * 0.98);  // 2% stop loss (Enhanced Bollinger Bands)
+                const takeProfit = this.formatCryptoPrice(purchasePrice * 1.04);  // 4% take profit (Enhanced Bollinger Bands)
                 const daysHeld = '30';
 
                 // Safe DOM creation instead of innerHTML
