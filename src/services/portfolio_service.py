@@ -39,6 +39,13 @@ class PortfolioService:
         self._invalid_symbols = {'OKB'}  # OKB causes "Instrument ID doesn't exist" on OKX
         self._failed_symbols = set()  # Track symbols that consistently fail
         self._failed_symbols_cache = {}  # Cache failed symbols with timestamps for temp blocking
+        
+        # Symbol mapping for OKX trading pairs (some symbols have different names)
+        self._symbol_mapping = {
+            'MATIC': 'POL',  # MATIC is now POL on many exchanges
+            'JASMY': None,   # Not available on OKX
+            'RNDR': 'RENDER', # RNDR might be listed as RENDER
+        }
 
         # Initialize OKX exchange with credentials
         import os
@@ -614,6 +621,14 @@ class PortfolioService:
                 last_fail_time = self._failed_symbols_cache[symbol]
                 if time.time() - last_fail_time < 300:  # Block for 5 minutes after failure
                     return 0.0
+            
+            # Handle symbol mapping for OKX-specific names
+            mapped_symbol = self._symbol_mapping.get(symbol, symbol)
+            if mapped_symbol is None:
+                # Symbol is known to be unavailable on OKX
+                self._failed_symbols.add(symbol)
+                return 0.0
+            actual_symbol = mapped_symbol
                 
             # Check cache first
             from app import cache_get_price, cache_put_price
@@ -627,12 +642,12 @@ class PortfolioService:
                 
             # Try currency-specific trading pair first if not USD
             if currency != 'USD':
-                currency_pair = f"{symbol}/{currency}T"  # e.g., BTC/EURT, PEPE/AUDT
+                currency_pair = f"{actual_symbol}/{currency}T"  # e.g., BTC/EURT, PEPE/AUDT
                 try:
                     ticker = self.exchange.exchange.fetch_ticker(currency_pair)
                     live_price = float(ticker.get('last', 0.0) or 0.0)
                     if live_price > 0:
-                        self.logger.debug(f"Live OKX price for {symbol} in {currency}: {live_price:.8f}")
+                        self.logger.debug(f"Live OKX price for {symbol} ({actual_symbol}) in {currency}: {live_price:.8f}")
                         cache_put_price(cache_key, live_price)
                         return live_price
                 except:
@@ -640,7 +655,7 @@ class PortfolioService:
                     pass
             
             # Get USD price and convert if needed
-            pair = f"{symbol}/USDT"
+            pair = f"{actual_symbol}/USDT"
             ticker = self.exchange.exchange.fetch_ticker(pair)
             usd_price = float(ticker.get('last', 0.0) or 0.0)
             
