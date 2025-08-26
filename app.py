@@ -3469,6 +3469,55 @@ def api_available_positions() -> ResponseReturnValue:
                         except Exception as conf_error:
                             logger.debug(f"Could not calculate confidence for {symbol}: {conf_error}")
                     
+                    # Calculate Bollinger Bands proximity for Enhanced Strategy tracking
+                    bb_signal = "NO DATA"
+                    bb_distance_percent = 0.0
+                    lower_band_price = 0.0
+                    
+                    if current_price > 0 and symbol not in ['AUD', 'USD', 'EUR', 'GBP', 'USDT', 'USDC', 'DAI', 'BUSD']:
+                        try:
+                            # Get historical price data for Bollinger Bands calculation
+                            from src.utils.okx_native import OKXNative
+                            okx_client = OKXNative.from_env()
+                            
+                            # Get 50 daily candles for BB calculation (period=50)
+                            symbol_pair = f"{symbol}-USDT"
+                            candles = okx_client.candles(symbol_pair, bar="1D", limit=50)
+                            
+                            if candles and len(candles) >= 50:
+                                import pandas as pd
+                                from src.indicators.technical import TechnicalIndicators
+                                
+                                # Convert to DataFrame (OKX format: [timestamp, open, high, low, close, volume])
+                                df = pd.DataFrame(candles, columns=['timestamp', 'open', 'high', 'low', 'close', 'volume'])
+                                df['close'] = pd.to_numeric(df['close'])
+                                
+                                # Calculate Bollinger Bands (50-period, 2.0 std dev - same as Enhanced Strategy)
+                                indicators = TechnicalIndicators()
+                                upper_band, middle_band, lower_band = indicators.bollinger_bands(df['close'], period=50, std_dev=2.0)
+                                
+                                # Get the latest lower band value
+                                lower_band_price = float(lower_band.iloc[-1]) if not pd.isna(lower_band.iloc[-1]) else 0.0
+                                
+                                if lower_band_price > 0:
+                                    # Calculate distance from current price to lower band
+                                    bb_distance_percent = ((current_price - lower_band_price) / current_price) * 100
+                                    
+                                    # Determine signal based on proximity
+                                    if current_price <= lower_band_price:
+                                        bb_signal = "BUY ZONE"
+                                    elif bb_distance_percent <= 5:
+                                        bb_signal = "VERY CLOSE"
+                                    elif bb_distance_percent <= 10:
+                                        bb_signal = "APPROACHING"
+                                    elif bb_distance_percent <= 20:
+                                        bb_signal = "MODERATE"
+                                    else:
+                                        bb_signal = "FAR"
+                                        
+                        except Exception as bb_error:
+                            logger.debug(f"Could not calculate Bollinger Bands for {symbol}: {bb_error}")
+                    
                     target_price = get_stable_target_price(symbol, current_price)
                     
                     available_position = {
@@ -3491,6 +3540,11 @@ def api_available_positions() -> ResponseReturnValue:
                             'score': confidence_score,
                             'level': confidence_level,
                             'timing_signal': timing_signal
+                        },
+                        'bollinger_analysis': {
+                            'signal': bb_signal,
+                            'distance_percent': round(bb_distance_percent, 2),
+                            'lower_band_price': round(lower_band_price, 6) if lower_band_price > 0 else 0
                         }
                     }
                     

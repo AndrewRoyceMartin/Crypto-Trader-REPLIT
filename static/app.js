@@ -5923,6 +5923,42 @@ function createAvailablePositionRow(position) {
     signalCell.textContent = buySignal;
     row.appendChild(signalCell);
     
+    // Bollinger Bands Strategy Cell
+    const bbAnalysis = position.bollinger_analysis || { signal: "NO DATA", distance_percent: 0 };
+    const bbSignal = bbAnalysis.signal || "NO DATA";
+    const bbDistance = bbAnalysis.distance_percent || 0;
+    
+    const getBollingerSignalClass = (signal) => {
+        if (signal === "BUY ZONE") return "text-success fw-bold";
+        if (signal === "VERY CLOSE") return "text-warning fw-bold";
+        if (signal === "APPROACHING") return "text-info";
+        if (signal === "MODERATE") return "text-muted";
+        if (signal === "FAR") return "text-secondary";
+        return "text-muted";
+    };
+    
+    const bbCell = document.createElement('td');
+    bbCell.className = `text-center ${getBollingerSignalClass(bbSignal)}`;
+    const bbDiv = document.createElement('div');
+    bbDiv.className = 'd-flex flex-column align-items-center';
+    
+    // Signal badge
+    const signalSpan = document.createElement('span');
+    signalSpan.className = 'fw-bold';
+    signalSpan.textContent = bbSignal;
+    bbDiv.appendChild(signalSpan);
+    
+    // Distance text if available
+    if (bbDistance > 0 && bbSignal !== "NO DATA") {
+        const distanceSmall = document.createElement('small');
+        distanceSmall.className = 'text-muted';
+        distanceSmall.textContent = `${bbDistance.toFixed(1)}% away`;
+        bbDiv.appendChild(distanceSmall);
+    }
+    
+    bbCell.appendChild(bbDiv);
+    row.appendChild(bbCell);
+    
     // Action buttons cell
     const actionsCell = document.createElement('td');
     actionsCell.className = 'text-center';
