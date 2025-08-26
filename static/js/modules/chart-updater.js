@@ -401,26 +401,53 @@ export class ChartUpdater {
     }
 
     async updateAllCharts() {
+        // Prevent overlapping updates
+        if (this.isUpdating) {
+            console.debug('Chart update already in progress, skipping...');
+            return;
+        }
+        
+        this.isUpdating = true;
+        
         try {
-            await Promise.all([
-                this.updatePortfolioChart().catch(() => {}), // Silently handle failures
-                this.updateAllocationChart().catch(() => {}),
-                this.updateEquityChart().catch(() => {}),
-                this.updateRiskChart().catch(() => {})
-            ]);
+            console.debug('Starting chart updates...');
+            // Update charts sequentially to avoid API overload
+            await this.updatePortfolioChart().catch(e => console.debug('Portfolio chart update failed:', e));
+            await new Promise(resolve => setTimeout(resolve, 500)); // Small delay between requests
+            
+            await this.updateAllocationChart().catch(e => console.debug('Allocation chart update failed:', e));
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            await this.updateEquityChart().catch(e => console.debug('Equity chart update failed:', e));
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            await this.updateRiskChart().catch(e => console.debug('Risk chart update failed:', e));
+            
+            console.debug('Chart updates completed');
         } catch (error) {
-            // Handle any remaining promise rejection issues silently
+            console.debug('Chart update error:', error);
+        } finally {
+            this.isUpdating = false;
         }
     }
 
     startAutoUpdate() {
-        // Update charts every 60 seconds
-        this.chartUpdateInterval = setInterval(() => {
-            this.updateAllCharts();
-        }, 60000);
+        // Stop any existing interval first
+        if (this.chartUpdateInterval) {
+            clearInterval(this.chartUpdateInterval);
+        }
         
-        // Initial update
-        setTimeout(() => this.updateAllCharts(), 1000);
+        // Update charts every 2 minutes to avoid overwhelming API
+        this.chartUpdateInterval = setInterval(() => {
+            console.debug('Auto-updating charts...');
+            this.updateAllCharts();
+        }, 120000); // 2 minutes
+        
+        // Initial update with longer delay to avoid race conditions
+        setTimeout(() => {
+            console.debug('Initial chart update...');
+            this.updateAllCharts();
+        }, 3000); // 3 seconds delay
     }
 
     stopAutoUpdate() {
