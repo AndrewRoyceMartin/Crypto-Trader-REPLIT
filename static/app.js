@@ -410,6 +410,41 @@ function initializeScrollHints() {
     });
 }
 
+// Mobile data-labels helper function
+function v02ApplyDataLabels(table) {
+    const theadCells = Array.from(table.querySelectorAll('thead th'));
+    if (!theadCells.length) return;
+    
+    const headers = theadCells.map(th => (th.innerText || th.textContent).trim());
+    table.querySelectorAll('tbody tr').forEach(row => {
+        Array.from(row.children).forEach((td, i) => {
+            if (td && headers[i]) {
+                td.setAttribute('data-label', headers[i]);
+            }
+        });
+    });
+}
+
+// Robust mobile data-labels with MutationObserver
+(function(){
+    const apply = () => { 
+        document.querySelectorAll('.table-v02').forEach(v02ApplyDataLabels); 
+    };
+    
+    const targets = ['holdings-tbody', 'available-tbody', 'trades-tbody'];
+    const mo = new MutationObserver(apply);
+    
+    targets.forEach(id => { 
+        const el = document.getElementById(id); 
+        if (el) {
+            mo.observe(el, { childList: true }); 
+        }
+    });
+    
+    // Periodic fallback to catch any missed updates
+    setInterval(apply, 3000);
+})();
+
 // Global legacy functions for backward compatibility
 window.buyBackPosition = async function(symbol) {
     const tradeManager = window.tradeManager || window.tradingApp?.trades;
