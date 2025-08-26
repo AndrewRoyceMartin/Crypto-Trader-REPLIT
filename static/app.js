@@ -290,7 +290,7 @@ class ModularTradingApp {
                     ${this.getRiskLevel(position.entry_confidence?.score)}
                 </span>
             </td>
-            <td>${position.bollinger_analysis?.signal || 'NO DATA'}</td>
+            <td>${position.buy_signal || 'NO DATA'}</td>
             <td>${position.bollinger_analysis?.strategy || position.bb_strategy || 'Enhanced BB'}</td>
             <td>
                 ${hasBalance ? 
