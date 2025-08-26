@@ -136,12 +136,26 @@ class ModularTradingApp {
         try {
             const data = await AppUtils.fetchJSON('/api/available-positions');
             
-            if (data && data.available_positions) {
-                console.log('Available positions API response:', data);
-                this.renderAvailableTable(data.available_positions);
+            // Handle both direct array response and wrapped object response
+            let positions = null;
+            if (Array.isArray(data)) {
+                positions = data;
+            } else if (data && data.available_positions) {
+                positions = data.available_positions;
+            } else if (data && Array.isArray(data.positions)) {
+                positions = data.positions;
+            }
+            
+            if (positions && positions.length > 0) {
+                console.log('Available positions loaded:', positions.length, 'positions');
+                this.renderAvailableTable(positions);
+            } else {
+                console.debug('No available positions data found');
+                this.renderAvailableTable([]); // Render empty table to clear loading state
             }
         } catch (error) {
-            console.debug('Available positions load failed:', error);
+            console.error('Available positions load failed:', error);
+            this.renderAvailableTable([]); // Render empty table to clear loading state
         }
     }
 
@@ -204,6 +218,11 @@ class ModularTradingApp {
         }
 
         tbody.innerHTML = '';
+        
+        if (!positions || positions.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No positions available</td></tr>';
+            return;
+        }
         
         positions.forEach(position => {
             const row = this.createAvailableRow(position);
