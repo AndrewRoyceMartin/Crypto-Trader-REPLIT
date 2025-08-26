@@ -198,9 +198,7 @@ class ModularTradingApp {
         row.innerHTML = `
             <td>
                 <div class="d-flex align-items-center">
-                    <img src="https://cryptologos.cc/logos/${holding.symbol.toLowerCase()}-${holding.name?.toLowerCase() || holding.symbol.toLowerCase()}-logo.png" 
-                         alt="${holding.symbol}" class="crypto-icon-img me-2" width="24" height="24"
-                         onerror="this.outerHTML='<i class=&quot;fa-solid fa-coins text-warning me-2&quot; style=&quot;width: 24px; height: 24px; font-size: 18px;&quot;></i>'">
+                    <i class="fa-solid fa-coins text-warning me-2" style="width: 24px; height: 24px; font-size: 18px;"></i>
                     <div>
                         <strong>${holding.symbol}</strong>
                         <small class="text-muted d-block">${AppUtils.getCoinDisplay(holding.symbol)}</small>
@@ -262,9 +260,7 @@ class ModularTradingApp {
         row.innerHTML = `
             <td>
                 <div class="d-flex align-items-center">
-                    <img src="https://cryptologos.cc/logos/${position.symbol.toLowerCase()}-${position.symbol.toLowerCase()}-logo.png" 
-                         alt="${position.symbol}" class="crypto-icon-img me-2" width="24" height="24"
-                         onerror="this.outerHTML='<i class=&quot;fa-solid fa-coins text-warning me-2&quot; style=&quot;width: 24px; height: 24px; font-size: 18px;&quot;></i>'">
+                    <i class="fa-solid fa-coins text-warning me-2" style="width: 24px; height: 24px; font-size: 18px;"></i>
                     <strong>${position.symbol}</strong>
                 </div>
             </td>
