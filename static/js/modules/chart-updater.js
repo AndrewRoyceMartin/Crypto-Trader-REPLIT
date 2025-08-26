@@ -84,6 +84,9 @@ export class ChartUpdater {
         // Add longer delay to ensure DOM elements are ready with deferred loading and patched HTML structure
         setTimeout(() => {
             console.debug('Initializing charts after DOM ready delay...');
+            // Destroy any existing charts to prevent canvas reuse errors
+            this.destroyAllCharts();
+            
             this.initPortfolioChart();
             this.initAllocationChart();
             this.initEquityChart();
@@ -92,6 +95,12 @@ export class ChartUpdater {
     }
 
     initPortfolioChart() {
+        // Destroy existing chart before creating new one
+        if (this.charts.portfolioChart) {
+            this.charts.portfolioChart.destroy();
+            this.charts.portfolioChart = null;
+        }
+        
         const ctx = document.getElementById('portfolioChart');
         if (!ctx) {
             ChartUpdater.createChartFallback('portfolioChart', 'Portfolio History Chart', 'info');
@@ -394,8 +403,12 @@ export class ChartUpdater {
 
     destroyAllCharts() {
         Object.values(this.charts).forEach(chart => {
-            if (chart) {
-                chart.destroy();
+            if (chart && typeof chart.destroy === 'function') {
+                try {
+                    chart.destroy();
+                } catch (e) {
+                    // Silently handle chart destruction errors
+                }
             }
         });
         
