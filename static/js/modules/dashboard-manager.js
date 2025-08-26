@@ -82,7 +82,8 @@ export class DashboardManager {
             dailyPnl: 0, // Would need daily data
             dailyPnlPercent: 0,
             activePositions: this.extractActivePositions(data),
-            bestPerformer: this.extractBestPerformer(data)
+            bestPerformer: this.extractBestPerformer(data),
+            worstPerformer: this.extractWorstPerformer(data)
         };
 
         console.debug('Updating OKX Portfolio Overview cards with data:', overview);
@@ -111,13 +112,23 @@ export class DashboardManager {
             activePositionsEl.textContent = overview.activePositions.toString();
         }
 
-        // Update Best Performer
+        // Update Best and Worst Performers
         this.updatePerformerCard('best', overview.bestPerformer);
+        this.updatePerformerCard('worst', overview.worstPerformer);
     }
 
     updatePerformerCard(type, performer) {
-        const titleEl = document.querySelector(`#summary-${type}-performer .card-title`);
-        const valueEl = document.querySelector(`#summary-${type}-performer span`);
+        // Use the actual HTML element IDs from the patched template
+        const titleEl = document.getElementById(`${type}-performer-card-title`);
+        const symbolEl = document.getElementById(`${type}-performer-symbol`);
+        const nameEl = document.getElementById(`${type}-performer-name`);
+        const priceEl = document.getElementById(`${type}-performer-price`);
+        const pnlEl = document.getElementById(`${type}-performer-pnl`);
+        const allocationEl = document.getElementById(`${type}-performer-allocation`);
+        const valueEl = document.getElementById(`${type}-performer-value`);
+        const volumeEl = document.getElementById(`${type}-performer-volume`);
+        const h24El = document.getElementById(`${type}-performer-24h`);
+        const d7El = document.getElementById(`${type}-performer-7d`);
         
         if (!titleEl) {
             console.debug(`${type.charAt(0).toUpperCase() + type.slice(1)} performer card title element not found - skipping update`);
@@ -125,18 +136,40 @@ export class DashboardManager {
         }
 
         if (performer && typeof performer === 'object') {
-            titleEl.textContent = performer.symbol || 'N/A';
-            if (valueEl) {
+            // Update title with performer type
+            titleEl.textContent = `${type === 'best' ? 'Best' : 'Worst'} Performer: ${performer.symbol || 'N/A'}`;
+            
+            // Update all data fields
+            if (symbolEl) symbolEl.textContent = performer.symbol || '—';
+            if (nameEl) nameEl.textContent = performer.name || '—';
+            if (priceEl) priceEl.textContent = AppUtils.formatCurrency(performer.price || 0);
+            if (allocationEl) allocationEl.textContent = `${(performer.allocation || 0).toFixed(2)}%`;
+            if (valueEl) valueEl.textContent = AppUtils.formatCurrency(performer.value || 0);
+            if (volumeEl) volumeEl.textContent = AppUtils.formatCurrency(performer.volume || 0);
+            if (h24El) h24El.textContent = `${(performer.change24h || 0).toFixed(2)}%`;
+            if (d7El) d7El.textContent = `${(performer.change7d || 0).toFixed(2)}%`;
+            
+            // Update P&L with proper styling
+            if (pnlEl) {
                 const pnlClass = (performer.pnl || 0) >= 0 ? 'text-success' : 'text-danger';
                 const pnlSign = (performer.pnl || 0) >= 0 ? '+' : '';
-                valueEl.className = pnlClass;
-                valueEl.textContent = `${pnlSign}${((performer.pnl_percent || 0) * 100).toFixed(2)}%`;
+                pnlEl.className = pnlClass;
+                pnlEl.textContent = `${pnlSign}${AppUtils.formatCurrency(performer.pnl || 0)} (${((performer.pnl_percent || 0) * 100).toFixed(2)}%)`;
             }
         } else {
-            titleEl.textContent = 'N/A';
-            if (valueEl) {
-                valueEl.className = 'text-muted';
-                valueEl.textContent = '0.00%';
+            // Set defaults when no performer data
+            titleEl.textContent = `${type === 'best' ? 'Best' : 'Worst'} Performer`;
+            if (symbolEl) symbolEl.textContent = '—';
+            if (nameEl) nameEl.textContent = '—';
+            if (priceEl) priceEl.textContent = '—';
+            if (allocationEl) allocationEl.textContent = '—';
+            if (valueEl) valueEl.textContent = '—';
+            if (volumeEl) volumeEl.textContent = '—';
+            if (h24El) h24El.textContent = '—';
+            if (d7El) d7El.textContent = '—';
+            if (pnlEl) {
+                pnlEl.className = 'text-muted';
+                pnlEl.textContent = '—';
             }
         }
     }
@@ -227,6 +260,18 @@ export class DashboardManager {
             if (positive.length > 0) {
                 return positive.reduce((best, current) => 
                     AppUtils.safeNum(current.pnl_percent) > AppUtils.safeNum(best.pnl_percent) ? current : best
+                );
+            }
+        }
+        return null;
+    }
+
+    extractWorstPerformer(data) {
+        if (data.holdings && Array.isArray(data.holdings)) {
+            const negative = data.holdings.filter(h => AppUtils.safeNum(h.pnl_percent) < 0);
+            if (negative.length > 0) {
+                return negative.reduce((worst, current) => 
+                    AppUtils.safeNum(current.pnl_percent) < AppUtils.safeNum(worst.pnl_percent) ? current : worst
                 );
             }
         }

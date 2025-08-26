@@ -81,13 +81,14 @@ export class ChartUpdater {
             return;
         }
         
-        // Add small delay to ensure DOM elements are ready with deferred loading
+        // Add longer delay to ensure DOM elements are ready with deferred loading and patched HTML structure
         setTimeout(() => {
+            console.debug('Initializing charts after DOM ready delay...');
             this.initPortfolioChart();
             this.initAllocationChart();
             this.initEquityChart();
-            this.initDrawdownChart();
-        }, 100);
+            this.initRiskChart(); // Updated to match HTML (riskChart not drawdownChart)
+        }, 300);
     }
 
     initPortfolioChart() {
@@ -223,11 +224,11 @@ export class ChartUpdater {
         });
     }
 
-    initDrawdownChart() {
-        const ctx = document.getElementById('drawdownChart');
+    initRiskChart() {
+        const ctx = document.getElementById('riskChart');
         if (!ctx) {
-            console.debug('Drawdown chart element not found - creating fallback');
-            ChartUpdater.createChartFallback('drawdownChart', 'Drawdown Analysis Chart', 'info');
+            console.debug('Risk chart element not found - creating fallback');
+            ChartUpdater.createChartFallback('riskChart', 'Portfolio Analytics Chart', 'info');
             return;
         }
 
