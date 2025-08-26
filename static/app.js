@@ -6413,7 +6413,7 @@ async function recalculatePositions() {
         
         if (result.success) {
             // Force refresh available positions data
-            await refreshAvailablePositions();
+            await TradingApp.updateAvailablePositions();
             
             // Show success feedback
             btn.innerHTML = '<i class="fas fa-check-circle me-1"></i>Complete!';
