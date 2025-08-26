@@ -4,14 +4,23 @@ import { DashboardManager } from './js/modules/dashboard-manager.js';
 import { ChartUpdater } from './js/modules/chart-updater.js';
 import { TradeManager } from './js/modules/trade-manager.js';
 
-// Main Application Class - Lightweight coordinator 
+// Main Application Class - Lightweight coordinator with singleton pattern
 class ModularTradingApp {
+    static instance = null;
     constructor() {
+        // Prevent duplicate initialization
+        if (ModularTradingApp.instance) {
+            return ModularTradingApp.instance;
+        }
+        
         // Initialize modular components
         this.utils = AppUtils;
         this.dashboard = new DashboardManager();
         this.charts = new ChartUpdater();
         this.trades = new TradeManager();
+        
+        // Store singleton reference
+        ModularTradingApp.instance = this;
         
         this.init();
     }
@@ -361,22 +370,34 @@ class ModularTradingApp {
     }
 }
 
-// Initialize application when DOM is ready
-document.addEventListener('DOMContentLoaded', function () {
-    // Verify critical libraries loaded before initialization
-    if (!window.Chart) {
-        console.warn('Chart.js not available - charts will be disabled');
-    }
-    if (!window.bootstrap) {
-        console.warn('Bootstrap JS not available - modals may not work');
+// Safer singleton initialization with boot wrapper
+(function(){
+    function boot() { 
+        // Prevent double construction
+        if (!window.tradingApp) { 
+            // Verify critical libraries loaded before initialization
+            if (!window.Chart) {
+                console.warn('Chart.js not available - charts will be disabled');
+            }
+            if (!window.bootstrap) {
+                console.warn('Bootstrap JS not available - modals may not work');
+            }
+            
+            // Create main app instance (singleton)
+            window.tradingApp = new ModularTradingApp();
+            
+            // Initialize scroll hints and other UI enhancements
+            initializeScrollHints();
+        }
     }
     
-    // Create main app instance
-    window.tradingApp = new ModularTradingApp();
-    
-    // Initialize scroll hints and other UI enhancements
-    initializeScrollHints();
-});
+    // Boot when DOM is ready, handling both loading and loaded states
+    if (document.readyState === 'loading') { 
+        document.addEventListener('DOMContentLoaded', boot); 
+    } else { 
+        boot(); 
+    }
+})();
 
 // Scroll hints for table navigation
 function initializeScrollHints() {
