@@ -371,20 +371,23 @@ export class ChartUpdater {
             const data = await AppUtils.fetchJSON('/api/drawdown-analysis?timeframe=30d');
             console.debug('Risk chart data received:', data);
             
-            if (!data || !data.drawdown_history || !Array.isArray(data.drawdown_history)) {
-                console.debug('Invalid risk data structure, creating fallback');
+            // Handle both drawdown_history and drawdown_data structure
+            const drawdownData = data?.drawdown_history || data?.drawdown_data;
+            
+            if (!data || !drawdownData || !Array.isArray(drawdownData)) {
+                console.debug('Invalid risk data structure, creating fallback. Expected drawdown_history or drawdown_data array');
                 ChartUpdater.createChartFallback('riskChart', 'No risk data available', 'warning');
                 return;
             }
             
-            if (data.drawdown_history.length === 0) {
+            if (drawdownData.length === 0) {
                 console.debug('Empty drawdown data array, creating fallback');
                 ChartUpdater.createChartFallback('riskChart', 'No risk data available', 'warning');
                 return;
             }
             
-            const labels = data.drawdown_history.map(item => AppUtils.formatDateTime(item.timestamp));
-            const values = data.drawdown_history.map(item => Math.abs(AppUtils.safeNum(item.drawdown_percent, 0)));
+            const labels = drawdownData.map(item => AppUtils.formatDateTime(item.timestamp || item.date));
+            const values = drawdownData.map(item => Math.abs(AppUtils.safeNum(item.drawdown_percent, 0)));
             
             console.debug(`Updating risk chart with ${labels.length} data points`);
             
