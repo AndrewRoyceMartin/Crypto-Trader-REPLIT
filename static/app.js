@@ -2865,8 +2865,11 @@ class TradingApp {
             const value = safeNum(crypto.value || crypto.current_value, 0);
             const isLive = crypto.is_live !== false;
 
-            const purchasePrice = quantity > 0 ? 10 / quantity : 0; // $10 initial investment
-            const targetSellPrice = currentPrice * 1.1;
+            // Use actual cost basis for purchase price calculation, not fake $10 assumption
+            const purchasePrice = crypto.avg_entry_price || crypto.entry_price || crypto.purchase_price || 
+                                (crypto.cost_basis && quantity > 0 ? crypto.cost_basis / quantity : 0);
+            // Use actual algorithm take profit (4%) instead of hardcoded 10%
+            const targetSellPrice = currentPrice * 1.04;
 
             const backendPnl = this.num(crypto.pnl);
             const backendPnlPercent = this.num(crypto.pnl_percent);
