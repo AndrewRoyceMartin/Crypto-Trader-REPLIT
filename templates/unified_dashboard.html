@@ -144,6 +144,111 @@
               </div>
             </div>
 
+            <!-- Charts and Analytics Section -->
+            <div class="row mt-4">
+                <div class="col-md-6">
+                    <div class="card card--hover">
+                        <div class="card-header">
+                            <h4 class="mb-0"><span class="icon icon-chart me-2"></span>Portfolio History</h4>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="portfolioChart" width="400" height="200"></canvas>
+                            <div id="portfolio-current-value" class="mt-2 text-center text-muted">Loading...</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <div class="card card--hover">
+                        <div class="card-header">
+                            <h4 class="mb-0"><span class="icon icon-pie me-2"></span>Asset Allocation</h4>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="allocationChart" width="400" height="200"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row mt-4">
+                <div class="col-md-6">
+                    <div class="card card--hover">
+                        <div class="card-header">
+                            <h4 class="mb-0"><span class="icon icon-trending me-2"></span>Equity Curve</h4>
+                            <div class="card-actions">
+                                <select id="equity-timeframe" class="form-select form-select-sm">
+                                    <option value="7d">7 Days</option>
+                                    <option value="30d" selected>30 Days</option>
+                                    <option value="90d">90 Days</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="equityChart" width="400" height="200"></canvas>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <div class="card card--hover">
+                        <div class="card-header">
+                            <h4 class="mb-0"><span class="icon icon-analytics me-2"></span>Risk Analytics</h4>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="riskChart" width="400" height="200"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Performance Cards -->
+            <div class="row mt-4">
+                <div class="col-md-6">
+                    <div class="card card--hover">
+                        <div class="card-header">
+                            <h4 id="best-performer-card-title" class="mb-0 text-success">
+                                <span class="icon icon-trending-up me-2"></span>Best Performer
+                            </h4>
+                        </div>
+                        <div class="card-body">
+                            <div class="d-flex align-items-center">
+                                <div class="flex-grow-1">
+                                    <div class="h5 mb-1"><span id="best-performer-symbol">—</span></div>
+                                    <div class="text-muted"><span id="best-performer-name">Loading...</span></div>
+                                </div>
+                                <div class="text-end">
+                                    <div class="h5 mb-1 text-success"><span id="best-performer-pnl">—</span></div>
+                                    <div class="small text-muted"><span id="best-performer-percent">—</span></div>
+                                </div>
+                            </div>
+                            <canvas id="mini-portfolio-chart" width="100" height="30" class="mt-2"></canvas>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <div class="card card--hover">
+                        <div class="card-header">
+                            <h4 id="worst-performer-card-title" class="mb-0 text-danger">
+                                <span class="icon icon-trending-down me-2"></span>Worst Performer
+                            </h4>
+                        </div>
+                        <div class="card-body">
+                            <div class="d-flex align-items-center">
+                                <div class="flex-grow-1">
+                                    <div class="h5 mb-1"><span id="worst-performer-symbol">—</span></div>
+                                    <div class="text-muted"><span id="worst-performer-name">Loading...</span></div>
+                                </div>
+                                <div class="text-end">
+                                    <div class="h5 mb-1 text-danger"><span id="worst-performer-pnl">—</span></div>
+                                    <div class="small text-muted"><span id="worst-performer-percent">—</span></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
         </section>
 
         <hr class="section-divider my-5">
