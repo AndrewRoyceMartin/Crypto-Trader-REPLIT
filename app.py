@@ -3702,10 +3702,14 @@ def live_buy() -> ResponseReturnValue:
             current_price = float(ticker_response['last'])
             quantity = amount / current_price
             
-            # Execute market buy order
-            # For now, return success with mock response since actual trading methods need to be implemented
-            logger.info(f"Mock buy order: ${amount} worth of {symbol} at ${current_price:.4f}")
-            order_response = {"code": "0", "data": [{"ordId": f"mock_{int(time.time())}"}]}
+            # Execute market buy order on OKX
+            logger.info(f"Placing live buy order: ${amount} worth of {symbol} at ${current_price:.4f}")
+            order_response = okx_client.place_order(
+                inst_id=symbol,
+                side="buy",
+                ord_type="market",
+                sz=str(amount)  # For market buy, size is in quote currency (USDT)
+            )
             
             if order_response and order_response.get('code') == '0':
                 order_id = order_response['data'][0]['ordId']
@@ -3799,10 +3803,14 @@ def live_sell() -> ResponseReturnValue:
             
             current_price = float(ticker_response['last'])
             
-            # Execute market sell order  
-            # For now, return success with mock response since actual trading methods need to be implemented
-            logger.info(f"Mock sell order: {quantity_to_sell:.6f} {symbol} at ${current_price:.4f}")
-            order_response = {"code": "0", "data": [{"ordId": f"mock_sell_{int(time.time())}"}]}
+            # Execute market sell order on OKX
+            logger.info(f"Placing live sell order: {quantity_to_sell:.6f} {symbol} at ${current_price:.4f}")
+            order_response = okx_client.place_order(
+                inst_id=symbol,
+                side="sell", 
+                ord_type="market",
+                sz=str(quantity_to_sell)  # For market sell, size is in base currency
+            )
             
             if order_response and order_response.get('code') == '0':
                 order_id = order_response['data'][0]['ordId']

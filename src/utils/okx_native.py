@@ -126,3 +126,33 @@ class OKXNative:
 
     def price(self, inst_id: str) -> float:
         return self.ticker(inst_id).get("last", 0.0)
+
+    def place_order(self, inst_id: str, side: str, ord_type: str, sz: str, px: Optional[str] = None) -> Dict[str, Any]:
+        """Place an order on OKX.
+        
+        Args:
+            inst_id: Trading pair (e.g., BTC-USDT)
+            side: 'buy' or 'sell'
+            ord_type: 'market' or 'limit'
+            sz: Order size (for market buy: amount in quote currency, for market sell: amount in base currency)
+            px: Price (only for limit orders)
+        
+        Returns:
+            OKX API response
+        """
+        body = {
+            "instId": inst_id,
+            "tdMode": "cash",  # Cash trading mode (spot)
+            "side": side.lower(),
+            "ordType": ord_type.lower(),
+            "sz": str(sz)
+        }
+        
+        if ord_type.lower() == "limit" and px:
+            body["px"] = str(px)
+        
+        return self._request("/api/v5/trade/order", "POST", body)
+
+    def get_order(self, inst_id: str, ord_id: str) -> Dict[str, Any]:
+        """Get order details by order ID."""
+        return self._request(f"/api/v5/trade/order?instId={inst_id}&ordId={ord_id}", "GET")
