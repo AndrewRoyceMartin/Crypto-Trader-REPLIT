@@ -17,7 +17,7 @@ import warnings
 import gc
 from datetime import datetime, timedelta, timezone
 from collections import OrderedDict
-from typing import Any, Optional, Iterator, TypedDict
+from typing import Any, Optional, Iterator, TypedDict, List, Dict, Tuple
 from functools import wraps
 
 # Only suppress specific pkg_resources deprecation warning - all other warnings will show
@@ -70,7 +70,7 @@ class WarmupState(TypedDict, total=False):
     started: bool
     done: bool
     error: str
-    loaded: list[str]
+    loaded: List[str]
     start_time: str
     start_ts: float
 
@@ -87,7 +87,6 @@ class BotState(TypedDict, total=False):
 
 
 def utcnow() -> datetime:
-    from datetime import datetime, timezone
     return datetime.now(timezone.utc)
 
 
@@ -170,7 +169,7 @@ def okx_request(
     method: str = 'GET',
     body: Any = None,
     timeout: int = 10
-) -> dict[str, Any]:
+) -> Dict[str, Any]:
     """Make authenticated request to OKX API with proper signing and simulated trading support."""
     base_url = _okx_base_url()
     ts = now_utc_iso()
@@ -189,8 +188,8 @@ def okx_request(
         headers['x-simulated-trading'] = '1'
 
     if method == 'POST':
-        import json as _json
-        body_str = _json.dumps(body or {}, separators=(',', ':'))
+        import json
+        body_str = json.dumps(body or {}, separators=(',', ':'))
     sig = okx_sign(secret_key, ts, method, path, body_str)
     headers['OK-ACCESS-SIGN'] = sig
 
@@ -267,17 +266,12 @@ WATCHLIST = [s.strip() for s in os.getenv(
 ).split(",") if s.strip()]
 
 MAX_STARTUP_SYMBOLS = int(os.getenv("MAX_STARTUP_SYMBOLS", "3"))     # minimal: only 3 symbols
-# STARTUP_OHLCV_LIMIT = int(os.getenv("STARTUP_OHLCV_LIMIT", "120"))  # unused variable
 STARTUP_TIMEOUT_SEC = int(os.getenv("STARTUP_TIMEOUT_SEC", "8"))    # deployment timeout limit
 
 # --- caching knobs (safe defaults) ---
 PRICE_TTL_SEC = int(os.getenv("PRICE_TTL_SEC", "3"))     # small TTL for live feel
-# TICKER_TTL_SEC = int(os.getenv("TICKER_TTL_SEC", "5"))  # unused variable
 OHLCV_TTL_SEC = int(os.getenv("OHLCV_TTL_SEC", "60"))    # candles can be cached longer
 CACHE_MAX_KEYS = int(os.getenv("CACHE_MAX_KEYS", "200"))  # prevent unbounded growth
-
-# WARMUP_SLEEP_SEC      = int(os.getenv("WARMUP_SLEEP_SEC", "1"))       # unused variable
-# CACHE_FILE            = "warmup_cache.parquet"                        # unused variable
 
 # limit concurrent outbound API calls (env overrideable)
 _MAX_OUTBOUND = int(os.getenv("MAX_OUTBOUND_CALLS", "6"))
@@ -295,7 +289,7 @@ def with_throttle(fn, *a, **kw):
 
 # Rate limiting for heavy endpoints
 _rate_lock = threading.RLock()
-_hits: dict[tuple[str, str], list[float]] = {}
+_hits: Dict[Tuple[str, str], List[float]] = {}
 
 def rate_limit(max_hits: int, per_seconds: int):
     def deco(f):
@@ -367,6 +361,10 @@ def cache_get_ohlcv(sym: str, tf: str) -> Optional[Any]:
 
 # Warm-up state & TTL cache
 warmup: WarmupState = {"started": False, "done": False, "error": "", "loaded": []}
+
+# Global bot state - define before first use
+bot_state: BotState = {"running": False, "mode": None, "symbol": None, "timeframe": None, "started_at": None}
+
 # Global trading state
 trading_state = {
     "mode": "stopped",
@@ -425,7 +423,7 @@ def cache_put(sym: str, tf: str, df: Any) -> None:
     """DISABLED - No caching, always fetch live OKX data."""
     pass  # Disabled to ensure always live data
 
-def get_portfolio_summary() -> dict[str, Any]:
+def get_portfolio_summary() -> Dict[str, Any]:
     """Get portfolio summary for status endpoint."""
     try:
         portfolio_service = get_portfolio_service()
@@ -530,7 +528,7 @@ def get_public_price(pair: str) -> float:
             logger.error(f"Both native and CCXT price fetch failed for {pair}: {fallback_error}")
             return 0.0
 
-def create_initial_purchase_trades(mode: str, trade_type: str) -> list[dict[str, Any]]:
+def create_initial_purchase_trades(mode: str, trade_type: str) -> List[Dict[str, Any]]:
     """Create trade records using real OKX cost basis instead of $10 simulations."""
     try:
         initialize_system()
@@ -933,7 +931,6 @@ def portfolio() -> str:
 def render_portfolio_page() -> str:
     """Render the dedicated portfolio page."""
     try:
-        from flask import render_template
         from version import get_version
         cache_version = int(time.time())
         return render_template("portfolio.html", cache_version=cache_version, version=get_version())
@@ -956,7 +953,6 @@ def performance() -> str:
 def render_performance_page() -> str:
     """Render the dedicated performance analytics page."""
     try:
-        from flask import render_template
         from version import get_version
         cache_version = int(time.time())
         return render_template("performance.html", cache_version=cache_version, version=get_version())
@@ -979,7 +975,6 @@ def holdings() -> str:
 def render_holdings_page() -> str:
     """Render the dedicated holdings page."""
     try:
-        from flask import render_template
         from version import get_version
         cache_version = int(time.time())
         return render_template("holdings.html", cache_version=cache_version, version=get_version())
@@ -1002,7 +997,6 @@ def trades() -> str:
 def render_trades_page() -> str:
     """Render the dedicated trades page."""
     try:
-        from flask import render_template
         from version import get_version
         cache_version = int(time.time())
         return render_template("trades.html", cache_version=cache_version, version=get_version())
@@ -1013,7 +1007,6 @@ def render_trades_page() -> str:
 def render_full_dashboard() -> str:
     """Render the unified trading dashboard using templates."""
     try:
-        from flask import render_template
         from version import get_version
         cache_version = int(time.time())
         return render_template("unified_dashboard.html", cache_version=cache_version, version=get_version())
@@ -1105,8 +1098,7 @@ def DISABLED_api_crypto_portfolio() -> ResponseReturnValue:
         logger.error(f"Portfolio data error: {e}")
         return jsonify({"error": str(e)}), 500
 
-# Global bot state
-bot_state: BotState = {"running": False, "mode": None, "symbol": None, "timeframe": None, "started_at": None}
+# Global bot state moved to earlier in file to avoid forward reference
 
 # Global multi-currency trader instance (separate from JSON-serializable state)
 multi_currency_trader = None
