@@ -5298,10 +5298,13 @@ function updateExposureMetrics(holdings) {
     // Stable/ Largest bars require matching IDs in the page to have effect.
 }
 function updatePositionTable(holdings) {
-    const tableBody = document.getElementById('holdings-tbody');
-    if (!tableBody) return;
-    const filtered = holdings.filter(h => h.has_position);
-    tableBody.innerHTML = '';
+    // DISABLED: This function conflicts with TradingApp.updateHoldingsTable
+    console.log('updatePositionTable() disabled to prevent table conflicts - using TradingApp.updateAllTables() instead');
+    return;
+    
+    // Original code commented out to prevent conflicts:
+    // const tableBody = document.getElementById('holdings-tbody');
+    // if (!tableBody) return;
     if (!filtered.length) {
         tableBody.innerHTML = '<tr><td colspan="11" class="text-center text-muted">No positions found</td></tr>';
         return;
@@ -5708,21 +5711,29 @@ async function fetchAndUpdateAvailablePositions() {
         
         if (data.success) {
             // Call the table rendering function
+            // CONSOLIDATED: Use only one update method to prevent table flashing
             if (window.renderAvailableTable && typeof window.renderAvailableTable === 'function') {
                 window.renderAvailableTable(data.available_positions || []);
+            } else {
+                updateAvailablePositionsTable(data.available_positions || []);
             }
-            updateAvailablePositionsTable(data.available_positions || []);
             
             // Update mobile data labels
             const table = document.getElementById('available-table');
             if (table) v02ApplyDataLabels(table);
         } else {
             console.error("Available positions API error:", data.error);
-            updateAvailablePositionsTable([]);
+            // Only update if renderAvailableTable isn't available
+            if (!window.renderAvailableTable || typeof window.renderAvailableTable !== 'function') {
+                updateAvailablePositionsTable([]);
+            }
         }
     } catch (error) {
         console.error("Error fetching available positions:", error);
-        updateAvailablePositionsTable([]);
+        // Only update if renderAvailableTable isn't available
+        if (!window.renderAvailableTable || typeof window.renderAvailableTable !== 'function') {
+            updateAvailablePositionsTable([]);
+        }
     }
 }
 
@@ -6413,8 +6424,10 @@ async function recalculatePositions() {
         const result = await response.json();
         
         if (result.success) {
-            // Force refresh available positions data
-            await TradingApp.updateAvailablePositions();
+            // Force refresh available positions data (avoid conflicts during other updates)
+            if (window.tradingApp && !window.tradingApp.isUpdatingTables) {
+                await window.tradingApp.updateAvailablePositions();
+            }
             
             // Show success feedback
             btn.innerHTML = '<i class="fas fa-check-circle me-1"></i>Complete!';
