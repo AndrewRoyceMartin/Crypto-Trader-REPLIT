@@ -5891,7 +5891,7 @@ def add_security_headers(resp: Any) -> Any:
         "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com data: blob:; "
         "style-src 'self' https://fonts.googleapis.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com 'unsafe-inline' data: blob:; "
         "font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com data: blob:; "
-        "img-src 'self' data: blob: https://cryptologos.cc "
+        "img-src 'self' data: blob: "
         "https://raw.githubusercontent.com https://assets.coingecko.com "
         "https://s2.coinmarketcap.com https://static.okx.com; "
         f"connect-src {connect_src} data: blob:; "
