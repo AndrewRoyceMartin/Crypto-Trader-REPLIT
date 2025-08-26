@@ -4053,6 +4053,14 @@ class TradingApp {
 
 // ---------- Boot ----------
 document.addEventListener('DOMContentLoaded', function () {
+    // Verify critical libraries loaded before initialization
+    if (!window.Chart) {
+        console.warn('Chart.js not available - charts will be disabled');
+    }
+    if (!window.bootstrap) {
+        console.warn('Bootstrap JS not available - modals may not work');
+    }
+    
     // Keep main trading app in global scope for compatibility, but organize other functions in namespaces
     window.tradingApp = new TradingApp();
     
@@ -6566,7 +6574,12 @@ async function showConfidenceDetails(symbol) {
                             <div class="modal-footer">
                                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                                 ${info.confidence_score >= 60 ? 
-                                    `<button type="button" class="btn btn-primary" onclick="buyBackPosition('${symbol}'); bootstrap.Modal.getInstance(document.getElementById('confidenceModal')).hide();">Execute Trade</button>` : 
+                                    `<button type="button" class="btn btn-primary" onclick="buyBackPosition('${symbol}'); 
+                                        // Safe Bootstrap modal hide
+                                        if (window.bootstrap && window.bootstrap.Modal) {
+                                            bootstrap.Modal.getInstance(document.getElementById('confidenceModal'))?.hide();
+                                        }
+                                    ">Execute Trade</button>` : 
                                     ''
                                 }
                             </div>
@@ -6584,9 +6597,19 @@ async function showConfidenceDetails(symbol) {
             // Add modal to body
             document.body.insertAdjacentHTML('beforeend', modalHtml);
             
-            // Show modal
-            const modal = new bootstrap.Modal(document.getElementById('confidenceModal'));
-            modal.show();
+            // Show modal safely - wait for Bootstrap to be ready
+            if (window.bootstrap && window.bootstrap.Modal) {
+                const modal = new bootstrap.Modal(document.getElementById('confidenceModal'));
+                modal.show();
+            } else {
+                // Fallback - wait for Bootstrap to load
+                setTimeout(() => {
+                    if (window.bootstrap && window.bootstrap.Modal) {
+                        const modal = new bootstrap.Modal(document.getElementById('confidenceModal'));
+                        modal.show();
+                    }
+                }, 100);
+            }
             
             // Clean up when modal is hidden
             document.getElementById('confidenceModal').addEventListener('hidden.bs.modal', function() {
