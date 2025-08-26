@@ -124,10 +124,27 @@ function v02ApplyDataLabels(table) {
   });
 }
 
+// Enhanced table initialization - called after any dynamic table update
+function initializeV02Tables() {
+    try {
+        document.querySelectorAll('.table-v02').forEach(table => {
+            v02ApplyDataLabels(table);
+        });
+    } catch (error) {
+        console.debug('V02 table initialization failed:', error);
+    }
+}
+
 // Event delegation for card view toggle buttons
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialize V02 table mobile labels
-    document.querySelectorAll('.table-v02').forEach(v02ApplyDataLabels);
+    // Initialize V02 table mobile labels on first load
+    initializeV02Tables();
+    
+    // Auto-load positions data after page loads (moved from separate DOMContentLoaded)
+    setTimeout(() => {
+        refreshHoldingsData();
+        getPositionsStatus();  // Also load positions status
+    }, 500);
 
     document.addEventListener('click', function(e) {
         if (e.target.classList.contains('view-toggle-btn') || e.target.parentNode.classList.contains('view-toggle-btn')) {
@@ -1810,9 +1827,13 @@ class TradingApp {
                 holdingsCountElement.textContent = significantHoldings.length;
             }
 
-            // Update mobile data labels
+            // Update mobile data labels and ensure proper table formatting
             const table = document.getElementById('holdings-table');
-            if (table) v02ApplyDataLabels(table);
+            if (table) {
+                v02ApplyDataLabels(table);
+                // Ensure all v02 tables are properly initialized after dynamic updates
+                initializeV02Tables();
+            }
             
             console.log('Table updated successfully');
             
@@ -1849,9 +1870,13 @@ class TradingApp {
             // Update trades table
             this.updateTradesTable(data.trades, data.summary);
 
-            // Update mobile data labels
+            // Update mobile data labels and ensure proper table formatting
             const table = document.getElementById('trades-table');
-            if (table) v02ApplyDataLabels(table);
+            if (table) {
+                v02ApplyDataLabels(table);
+                // Ensure all v02 tables are properly initialized after dynamic updates
+                initializeV02Tables();
+            }
             
         } catch (error) {
             console.debug('Recent trades update failed:', error);
@@ -5736,9 +5761,13 @@ async function fetchAndUpdateAvailablePositions() {
                 updateAvailablePositionsTable(data.available_positions || []);
             }
             
-            // Update mobile data labels
+            // Update mobile data labels and ensure proper table formatting
             const table = document.getElementById('available-table');
-            if (table) v02ApplyDataLabels(table);
+            if (table) {
+                v02ApplyDataLabels(table);
+                // Ensure all v02 tables are properly initialized after dynamic updates
+                initializeV02Tables();
+            }
         } else {
             console.error("Available positions API error:", data.error);
             // Only update if renderAvailableTable isn't available
@@ -7125,13 +7154,8 @@ async function loadCryptoDetails(symbol) {
     }
 }
 
-// Auto-load positions on page load
-document.addEventListener('DOMContentLoaded', function() {
-    // Small delay to ensure page is fully loaded
-    setTimeout(() => {
-        refreshHoldingsData();
-    }, 500);
-});
+// Auto-load positions on page load - MERGED with main DOMContentLoaded to avoid conflicts
+// This is now handled in the main DOMContentLoaded event above to prevent conflicts
 
 // Also refresh holdings on load as backup
 window.addEventListener("load", function() {
