@@ -19,18 +19,21 @@ class ModularTradingApp {
     init() {
         console.log('Loading progress: 20% - Fetching cryptocurrency data...');
         
-        // Initialize charts if Chart.js is available
-        if (window.Chart) {
-            this.charts.initializeCharts();
-            this.charts.startAutoUpdate();
-        }
+        // Wait for all deferred libraries to be ready
+        this.waitForLibraries().then(() => {
+            // Initialize charts if Chart.js is available
+            if (window.Chart) {
+                this.charts.initializeCharts();
+                this.charts.startAutoUpdate();
+            }
+            
+            // Start dashboard updates
+            this.dashboard.startAutoUpdate();
+            
+            console.log('Loading progress: 100% - Complete!');
+        });
         
-        // Start dashboard updates
-        this.dashboard.startAutoUpdate();
-        
-        console.log('Loading progress: 100% - Complete!');
-        
-        // Setup event listeners
+        // Setup event listeners (can run immediately)
         this.setupEventListeners();
         
         // Initialize legacy table functions (maintain backward compatibility)
@@ -40,6 +43,28 @@ class ModularTradingApp {
         window.dashboardManager = this.dashboard;
         window.chartUpdater = this.charts;
         window.tradeManager = this.trades;
+    }
+
+    async waitForLibraries() {
+        // Wait for Bootstrap and Chart.js to load (both are deferred)
+        const maxWait = 5000; // 5 seconds max wait
+        const checkInterval = 50; // Check every 50ms
+        let elapsed = 0;
+        
+        return new Promise((resolve) => {
+            const checkLibraries = () => {
+                if ((window.bootstrap && window.Chart) || elapsed >= maxWait) {
+                    if (elapsed >= maxWait) {
+                        console.warn('Library loading timeout - some features may be limited');
+                    }
+                    resolve();
+                } else {
+                    elapsed += checkInterval;
+                    setTimeout(checkLibraries, checkInterval);
+                }
+            };
+            checkLibraries();
+        });
     }
 
     setupEventListeners() {

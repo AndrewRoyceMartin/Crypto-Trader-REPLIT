@@ -26,10 +26,13 @@ export class ChartUpdater {
             return;
         }
         
-        this.initPortfolioChart();
-        this.initAllocationChart();
-        this.initEquityChart();
-        this.initDrawdownChart();
+        // Add small delay to ensure DOM elements are ready with deferred loading
+        setTimeout(() => {
+            this.initPortfolioChart();
+            this.initAllocationChart();
+            this.initEquityChart();
+            this.initDrawdownChart();
+        }, 100);
     }
 
     initPortfolioChart() {

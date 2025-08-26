@@ -78,10 +78,17 @@ export class TradeManager {
     }
 
     showBuyDialog(symbol, price, targetBuyPrice) {
-        // Safe Bootstrap modal creation with library verification
+        // Safe Bootstrap modal creation with library verification (handles defer loading)
         if (!window.bootstrap || !window.bootstrap.Modal) {
             console.warn('Bootstrap not ready - cannot show buy dialog');
             AppUtils.showToast('UI components not ready, please try again', 'error');
+            
+            // Retry after a short delay for deferred loading
+            setTimeout(() => {
+                if (window.bootstrap && window.bootstrap.Modal) {
+                    this.showBuyDialog(symbol, price, targetBuyPrice);
+                }
+            }, 100);
             return;
         }
 
@@ -131,10 +138,17 @@ export class TradeManager {
     }
 
     showSellDialog(symbol, quantity, currentPrice) {
-        // Safe Bootstrap modal creation
+        // Safe Bootstrap modal creation (handles defer loading)
         if (!window.bootstrap || !window.bootstrap.Modal) {
             console.warn('Bootstrap not ready - cannot show sell dialog');
             AppUtils.showToast('UI components not ready, please try again', 'error');
+            
+            // Retry after a short delay for deferred loading
+            setTimeout(() => {
+                if (window.bootstrap && window.bootstrap.Modal) {
+                    this.showSellDialog(symbol, quantity, currentPrice);
+                }
+            }, 100);
             return;
         }
 
