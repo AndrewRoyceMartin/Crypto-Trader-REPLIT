@@ -144,59 +144,41 @@
               </div>
             </div>
 
-            <!-- Charts and Analytics Section -->
-            <div class="row mt-4">
-                <div class="col-md-6">
-                    <div class="card card--hover">
-                        <div class="card-header">
-                            <h4 class="mb-0"><span class="icon icon-chart me-2"></span>Portfolio History</h4>
-                        </div>
-                        <div class="card-body">
-                            <canvas id="portfolioChart" width="400" height="200"></canvas>
-                            <div id="portfolio-current-value" class="mt-2 text-center text-muted">Loading...</div>
-                        </div>
+            <!-- Overview Charts Section -->
+            <div class="row g-3">
+                <div class="col-lg-6">
+                    <div class="card card--hover mb-3">
+                        <div class="card-header"><h5 class="mb-0">Portfolio History</h5></div>
+                        <div class="card-body"><canvas id="portfolioChart" height="220"></canvas></div>
                     </div>
                 </div>
-                
-                <div class="col-md-6">
-                    <div class="card card--hover">
-                        <div class="card-header">
-                            <h4 class="mb-0"><span class="icon icon-pie me-2"></span>Asset Allocation</h4>
-                        </div>
-                        <div class="card-body">
-                            <canvas id="allocationChart" width="400" height="200"></canvas>
-                        </div>
-                    </div>
-                </div>
-            </div>
 
-            <div class="row mt-4">
-                <div class="col-md-6">
-                    <div class="card card--hover">
-                        <div class="card-header">
-                            <h4 class="mb-0"><span class="icon icon-trending me-2"></span>Equity Curve</h4>
-                            <div class="card-actions">
-                                <select id="equity-timeframe" class="form-select form-select-sm">
-                                    <option value="7d">7 Days</option>
-                                    <option value="30d" selected>30 Days</option>
-                                    <option value="90d">90 Days</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="card-body">
-                            <canvas id="equityChart" width="400" height="200"></canvas>
-                        </div>
+                <div class="col-lg-6">
+                    <div class="card card--hover mb-3">
+                        <div class="card-header"><h5 class="mb-0">Asset Allocation</h5></div>
+                        <div class="card-body"><canvas id="allocationChart" height="220"></canvas></div>
                     </div>
                 </div>
-                
-                <div class="col-md-6">
-                    <div class="card card--hover">
-                        <div class="card-header">
-                            <h4 class="mb-0"><span class="icon icon-analytics me-2"></span>Risk Analytics</h4>
+
+                <div class="col-lg-6">
+                    <div class="card card--hover mb-3">
+                        <div class="card-header d-flex align-items-center justify-content-between">
+                            <h5 class="mb-0">Equity Curve</h5>
+                            <select id="equity-timeframe" class="form-select form-select-sm w-auto">
+                                <option value="7d">7D</option>
+                                <option value="30d" selected>30D</option>
+                                <option value="90d">90D</option>
+                                <option value="1y">1Y</option>
+                            </select>
                         </div>
-                        <div class="card-body">
-                            <canvas id="riskChart" width="400" height="200"></canvas>
-                        </div>
+                        <div class="card-body"><canvas id="equityChart" height="220"></canvas></div>
+                    </div>
+                </div>
+
+                <div class="col-lg-6">
+                    <div class="card card--hover mb-3">
+                        <div class="card-header"><h5 class="mb-0">Portfolio Analytics</h5></div>
+                        <div class="card-body"><canvas id="riskChart" height="220"></canvas></div>
                     </div>
                 </div>
             </div>
@@ -221,7 +203,6 @@
                                     <div class="small text-muted"><span id="best-performer-percent">—</span></div>
                                 </div>
                             </div>
-                            <canvas id="mini-portfolio-chart" width="100" height="30" class="mt-2"></canvas>
                         </div>
                     </div>
                 </div>
