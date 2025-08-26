@@ -17,9 +17,25 @@ async function fetchJSON(url, { method='GET', body, timeout=10000, headers={}, n
   };
   try {
     const res = await fetch(url, { method, headers:h, body: body?JSON.stringify(body):undefined, signal: ctl.signal, cache: 'no-store' });
-    const data = await res.json().catch(()=> ({}));
-    if (!res.ok) throw new Error(data?.error || res.statusText);
+    
+    // Check if response is OK first
+    if (!res.ok) {
+      console.debug(`API ${url} returned ${res.status}: ${res.statusText}`);
+      return null;
+    }
+    
+    // Check content type before parsing JSON
+    const contentType = res.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      console.debug(`API ${url} returned non-JSON content: ${contentType}`);
+      return null;
+    }
+    
+    const data = await res.json();
     return data;
+  } catch (error) {
+    console.debug(`Failed to fetch ${url}:`, error.message);
+    return null;
   } finally { clearTimeout(t); }
 }
 
@@ -1551,9 +1567,15 @@ class TradingApp {
             
             console.log("Holdings data received:", data.holdings);
             
-            // REMOVED: Direct updateHoldingsTable call - causes flashing
-            // Let the main TradingApp.updateAllTables() handle this properly
-            // updateHoldingsTable(data.holdings || []);
+            // Update table via consolidated system to prevent flashing
+            if (window.tradingApp) {
+                window.tradingApp.currentCryptoData = data.holdings || [];
+                window.tradingApp.updateAllTables(data.holdings || []);
+            } else {
+                // Fallback for edge cases
+                console.log('TradingApp not ready, using fallback table update');
+                updateHoldingsTable(data.holdings || []);
+            }
             
         } catch (error) {
             console.debug('Current holdings update failed:', error);
@@ -1562,7 +1584,10 @@ class TradingApp {
     
     updateHoldingsTable(holdings, totalValue) {
         const holdingsTableBody = document.getElementById('holdings-tbody');
-        if (!holdingsTableBody) return;
+        if (!holdingsTableBody) {
+            console.debug('Holdings table body not found (holdings-tbody)');
+            return;
+        }
         
         try {
             // Clear existing rows safely
@@ -6063,10 +6088,33 @@ function createAvailablePositionRow(position) {
 
 // Holdings table function (mirrors Available Positions pattern)
 function updateHoldingsTable(holdings) {
-    // DISABLED: This function conflicts with the main JavaScript update system
-    // The main TradingApp.updateAllTables() method handles all table updates to prevent flashing
-    console.log('Global updateHoldingsTable() disabled to prevent table flashing - using TradingApp.updateAllTables() instead');
-    return;
+    // This function is only used as a fallback when TradingApp isn't available
+    if (window.tradingApp) {
+        console.log('TradingApp available - using updateAllTables() to prevent conflicts');
+        window.tradingApp.updateAllTables(holdings);
+        return;
+    }
+    
+    // Fallback table update for edge cases
+    const holdingsTableBody = document.getElementById('holdings-tbody');
+    if (!holdingsTableBody) return;
+    
+    try {
+        console.log('Using fallback updateHoldingsTable for', holdings.length, 'holdings');
+        holdingsTableBody.innerHTML = '';
+        
+        if (!holdings || holdings.length === 0) {
+            holdingsTableBody.innerHTML = '<tr><td colspan="11" class="text-center text-muted">No positions found</td></tr>';
+            return;
+        }
+        
+        holdings.forEach(holding => {
+            const row = createHoldingRow(holding);
+            if (row) holdingsTableBody.appendChild(row);
+        });
+    } catch (error) {
+        console.error('Fallback table update failed:', error);
+    }
 }
 
 // Helper function to create holding row with crypto icons
@@ -6769,9 +6817,14 @@ async function refreshHoldingsData() {
             // Use holdings first (more complete data), then fall back to all_positions
             const positions = data.holdings || data.all_positions || [];
             console.debug('Holdings data received:', positions);
-            // REMOVED: Direct updateOpenPositionsTable call - causes table flashing
-            // The main TradingApp system handles table updates properly
-            // updateOpenPositionsTable(positions, data.total_value);
+            // Update table via main TradingApp system to prevent flashing
+            if (window.tradingApp) {
+                window.tradingApp.currentCryptoData = positions;
+                window.tradingApp.updateAllTables(positions);
+            } else {
+                // Fallback update for edge cases
+                updateOpenPositionsTable(positions, data.total_value);
+            }
             
             // Update refresh time tracking
             updatePositionsRefreshTime();
