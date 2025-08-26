@@ -829,7 +829,6 @@ class TradingApp {
     updateRiskChart(analytics) {
         const riskCanvas = document.getElementById('riskChart');
         if (!riskCanvas) {
-            console.debug('Risk chart element not found - skipping chart update');
             return;
         }
         if (!window.Chart) {
@@ -943,7 +942,6 @@ class TradingApp {
     updatePortfolioValueChart(historyData) {
         const portfolioCanvas = document.getElementById('portfolioChart');
         if (!portfolioCanvas) {
-            console.debug('Portfolio chart element not found - skipping chart update');
             return;
         }
         if (!window.Chart) {
@@ -1064,18 +1062,15 @@ class TradingApp {
             this.updateAllocationDisplay(data);
             
         } catch (error) {
-            console.debug('Asset allocation update failed:', error);
         }
     }
     
     updateAssetAllocationChart(allocationData) {
         const allocationCanvas = document.getElementById('allocationChart');
         if (!allocationCanvas) {
-            console.debug('Allocation chart element not found - skipping chart update');
             return;
         }
         if (!window.Chart) {
-            console.debug('Chart.js not available - skipping allocation chart');
             return;
         }
         
@@ -1154,7 +1149,6 @@ class TradingApp {
                 }
             });
         } catch (error) {
-            console.debug('Asset allocation chart creation failed:', error);
             // Fallback display
             if (allocationCanvas) {
                 allocationCanvas.style.display = 'none';
@@ -1249,7 +1243,6 @@ class TradingApp {
         if (cardTitle) {
             cardTitle.textContent = `Best Performer: ${performer.symbol}`;
         } else {
-            console.debug('Best performer card title element not found - skipping update');
         }
     }
     
@@ -1301,7 +1294,6 @@ class TradingApp {
         if (cardTitle) {
             cardTitle.textContent = `Worst Performer: ${performer.symbol}`;
         } else {
-            console.debug('Worst performer card title element not found - skipping update');
         }
     }
     
@@ -1328,7 +1320,6 @@ class TradingApp {
     updateEquityCurveChart(equityData, metrics) {
         const equityCanvas = document.getElementById('equityChart');
         if (!equityCanvas) {
-            console.debug('Equity chart element not found - skipping chart update');
             return;
         }
         if (!window.Chart) {
@@ -1502,7 +1493,6 @@ class TradingApp {
     updateDrawdownChart(drawdownData, metrics) {
         const drawdownCanvas = document.getElementById('drawdownChart');
         if (!drawdownCanvas) {
-            console.debug('Drawdown chart element not found - skipping chart update');
             return;
         }
         if (!window.Chart) {
@@ -1729,7 +1719,6 @@ class TradingApp {
     updateHoldingsTable(holdings, totalValue) {
         const holdingsTableBody = document.getElementById('holdings-tbody');
         if (!holdingsTableBody) {
-            console.debug('Holdings table body not found (holdings-tbody)');
             return;
         }
         
@@ -2340,7 +2329,6 @@ class TradingApp {
             if (statusIcon) {
                 statusIcon.className = 'fa-solid fa-wifi text-warning me-1';
             } else {
-                console.debug('Server status icon element not found for error state');
             }
         }
     }
@@ -2394,7 +2382,6 @@ class TradingApp {
             if (statusIcon) {
                 statusIcon.className = 'fa-solid fa-server text-warning me-1';
             } else {
-                console.debug('OKX status icon element not found for error state');
             }
         }
     }
@@ -3506,7 +3493,6 @@ class TradingApp {
     initializeCharts() {
         // Enhanced chart initialization with development environment safety
         if (!window.Chart || typeof Chart === 'undefined') {
-            console.debug('Chart.js not found – skipping chart initialization.');
             this.showChartFallbacks();
             return;
         }
@@ -4196,7 +4182,6 @@ function sortPortfolio(column) {
     
     const table = document.querySelector('#holdings-tbody');
     if (!table) {
-        console.debug('Portfolio table not found');
         return;
     }
     
@@ -4210,7 +4195,6 @@ function sortPerformanceTable(columnIndex) {
     // Only query for tables that actually exist in the HTML
     const table = document.querySelector('#trades-table');
     if (!table) {
-        console.debug('Trades table not found for performance sorting');
         return;
     }
     
@@ -4223,7 +4207,6 @@ function sortPositionsTable(columnIndex) {
     
     const table = document.querySelector('#holdings-tbody');
     if (!table) {
-        console.debug('Positions table not found');
         return;
     }
     
@@ -4236,7 +4219,6 @@ function sortTradesTable(columnIndex) {
     
     const table = document.querySelector('#trades-table');
     if (!table) {
-        console.debug('Trades table not found');
         return;
     }
     
@@ -4249,7 +4231,6 @@ function sortAvailableTable(columnIndex) {
     
     const table = document.querySelector('#available-tbody');
     if (!table) {
-        console.debug('Available positions table not found');
         return;
     }
     
@@ -4800,7 +4781,6 @@ function updateElementSafely(elementId, value) {
         // Only log debug for critical elements
         const criticalElements = ['okx-day-pnl', 'okx-day-pnl-percent', 'okx-estimated-total'];
         if (criticalElements.includes(elementId)) {
-            console.debug(`Critical element ${elementId} not found for update`);
         }
     }
 }
@@ -5474,11 +5454,9 @@ function updatePortfolioChartsUI(portfolioData) {
 function renderAllocationChart(holdings) {
     const canvas = document.getElementById('allocationChart');
     if (!canvas) {
-        console.debug('Allocation chart canvas not found - skipping chart render');
         return;
     }
     if (!window.Chart) {
-        console.debug('Chart.js not available - skipping allocation chart');
         return;
     }
     if (window.allocationChart && typeof window.allocationChart.destroy === 'function') {
@@ -5600,7 +5578,6 @@ function updateOpenPositionsTable(positions, totalValue = 0) {
     try {
         const positionsTableBody = document.getElementById("holdings-tbody");
         if (!positionsTableBody) {
-            console.debug("Holdings table body element not found - looking for 'holdings-tbody'");
             return;
         }
         
@@ -6438,7 +6415,6 @@ function updateAvailablePositionsTable(availablePositions) {
     try {
         const availableTableBody = document.getElementById("available-tbody");
         if (!availableTableBody) {
-            console.debug("Available positions table body element not found");
             return;
         }
         

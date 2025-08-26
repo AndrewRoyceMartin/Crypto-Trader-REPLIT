@@ -7,7 +7,7 @@ export class ChartUpdater {
     static createChartFallback(elementId, fallbackText, fallbackType = 'info') {
         const canvas = document.getElementById(elementId);
         if (!canvas) {
-            console.debug(`Chart element ${elementId} not found - cannot create fallback`);
+            // Silently skip fallback creation if element doesn't exist
             return null;
         }
         
@@ -94,7 +94,6 @@ export class ChartUpdater {
     initPortfolioChart() {
         const ctx = document.getElementById('portfolioChart');
         if (!ctx) {
-            console.debug('Portfolio chart element not found - creating fallback');
             ChartUpdater.createChartFallback('portfolioChart', 'Portfolio History Chart', 'info');
             return;
         }
@@ -144,7 +143,6 @@ export class ChartUpdater {
     initAllocationChart() {
         const ctx = document.getElementById('allocationChart');
         if (!ctx) {
-            console.debug('Allocation chart element not found - creating fallback');
             ChartUpdater.createChartFallback('allocationChart', 'Asset Allocation Chart', 'info');
             return;
         }
@@ -177,7 +175,6 @@ export class ChartUpdater {
     initEquityChart() {
         const ctx = document.getElementById('equityChart');
         if (!ctx) {
-            console.debug('Equity chart element not found - creating fallback');
             ChartUpdater.createChartFallback('equityChart', 'Equity Curve Chart', 'info');
             return;
         }
@@ -227,7 +224,6 @@ export class ChartUpdater {
     initRiskChart() {
         const ctx = document.getElementById('riskChart');
         if (!ctx) {
-            console.debug('Risk chart element not found - creating fallback');
             ChartUpdater.createChartFallback('riskChart', 'Portfolio Analytics Chart', 'info');
             return;
         }
@@ -276,14 +272,13 @@ export class ChartUpdater {
 
     async updatePortfolioChart() {
         if (!this.charts.portfolioChart) {
-            console.debug('Portfolio chart element not found - skipping chart update');
             return;
         }
         
         try {
             const data = await AppUtils.fetchJSON('/api/portfolio-history?timeframe=7d');
             if (!data || !data.history) {
-                this.handleChartUpdateError('portfolioChart', 'No portfolio data available');
+                ChartUpdater.createChartFallback('portfolioChart', 'No portfolio data available', 'warning');
                 return;
             }
             
@@ -295,21 +290,19 @@ export class ChartUpdater {
             this.charts.portfolioChart.update('none');
         } catch (error) {
             console.debug('Portfolio chart update failed:', error);
-            this.handleChartUpdateError('portfolioChart', 'Failed to load portfolio data');
+            ChartUpdater.createChartFallback('portfolioChart', 'Failed to load portfolio data', 'warning');
         }
     }
 
     async updateAllocationChart() {
         if (!this.charts.allocationChart) {
-            console.debug('Allocation chart element not found - skipping chart update');
             return;
         }
         
         try {
             const data = await AppUtils.fetchJSON('/api/asset-allocation');
             if (!data || !data.allocations) {
-                console.debug('Asset allocation update failed:', data);
-                this.handleChartUpdateError('allocationChart', 'No allocation data available');
+                ChartUpdater.createChartFallback('allocationChart', 'No allocation data available', 'warning');
                 return;
             }
             
@@ -321,20 +314,19 @@ export class ChartUpdater {
             this.charts.allocationChart.update('none');
         } catch (error) {
             console.debug('Allocation chart update failed:', error);
-            this.handleChartUpdateError('allocationChart', 'Failed to load allocation data');
+            ChartUpdater.createChartFallback('allocationChart', 'Failed to load allocation data', 'warning');
         }
     }
 
     async updateEquityChart() {
         if (!this.charts.equityChart) {
-            console.debug('Equity chart element not found - skipping chart update');
             return;
         }
         
         try {
             const data = await AppUtils.fetchJSON('/api/equity-curve?timeframe=30d');
             if (!data || !data.equity_curve) {
-                this.handleChartUpdateError('equityChart', 'No equity data available');
+                ChartUpdater.createChartFallback('equityChart', 'No equity data available', 'warning');
                 return;
             }
             
@@ -346,20 +338,19 @@ export class ChartUpdater {
             this.charts.equityChart.update('none');
         } catch (error) {
             console.debug('Equity chart update failed:', error);
-            this.handleChartUpdateError('equityChart', 'Failed to load equity data');
+            ChartUpdater.createChartFallback('equityChart', 'Failed to load equity data', 'warning');
         }
     }
 
     async updateRiskChart() {
         if (!this.charts.riskChart) {
-            console.debug('Risk chart element not found - skipping chart update');
             return;
         }
         
         try {
             const data = await AppUtils.fetchJSON('/api/drawdown-analysis?timeframe=30d');
             if (!data || !data.drawdown_history) {
-                this.handleChartUpdateError('riskChart', 'No risk data available');
+                ChartUpdater.createChartFallback('riskChart', 'No risk data available', 'warning');
                 return;
             }
             
@@ -371,7 +362,7 @@ export class ChartUpdater {
             this.charts.riskChart.update('none');
         } catch (error) {
             console.debug('Risk chart update failed:', error);
-            this.handleChartUpdateError('riskChart', 'Failed to load risk data');
+            ChartUpdater.createChartFallback('riskChart', 'Failed to load risk data', 'warning');
         }
     }
 
@@ -419,16 +410,4 @@ export class ChartUpdater {
         };
     }
 
-    // Handle chart update errors with fallback display
-    handleChartUpdateError(chartId, errorMessage) {
-        // Destroy existing chart if present
-        const chartInstance = this.charts[chartId];
-        if (chartInstance) {
-            chartInstance.destroy();
-            this.charts[chartId] = null;
-        }
-        
-        // Create error fallback
-        ChartUpdater.createChartFallback(chartId, errorMessage, 'warning');
-    }
 }

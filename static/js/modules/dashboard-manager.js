@@ -131,7 +131,7 @@ export class DashboardManager {
         const d7El = document.getElementById(`${type}-performer-7d`);
         
         if (!titleEl) {
-            console.debug(`${type.charAt(0).toUpperCase() + type.slice(1)} performer card title element not found - skipping update`);
+            // Skip update if element not found
             return;
         }
 
