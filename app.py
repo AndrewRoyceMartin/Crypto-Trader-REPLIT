@@ -3397,16 +3397,16 @@ def api_available_positions() -> ResponseReturnValue:
         
         available_positions = []
         
-        # Define comprehensive list of major cryptocurrencies available on OKX
-        # This ensures ALL assets are shown, not just ones with current balances  
+        # Define comprehensive list of major cryptocurrencies ACTUALLY AVAILABLE on OKX
+        # Filtered to only include currencies with live OKX trading pairs (removed unsupported ones)
         major_crypto_assets = [
-            'BTC', 'ETH', 'SOL', 'ADA', 'DOT', 'AVAX', 'MATIC', 'LINK', 'UNI', 'LTC',
-            'BCH', 'XLM', 'ALGO', 'ATOM', 'ICP', 'FTM', 'NEAR', 'SAND', 'MANA', 'CRO',
+            'BTC', 'ETH', 'SOL', 'ADA', 'DOT', 'AVAX', 'LINK', 'UNI', 'LTC',
+            'BCH', 'XLM', 'ALGO', 'ATOM', 'ICP', 'NEAR', 'SAND', 'MANA', 'CRO',
             'APE', 'GALA', 'TRX', 'PEPE', 'SHIB', 'DOGE', 'XRP', 'BNB', 'USDT', 'USDC',
-            'DAI', 'BUSD', 'FTT', 'AXS', 'ENJ', 'CHZ', 'BAT', 'ZEC', 'ETC', 'DASH',
-            'THETA', 'VET', 'HOT', 'OMG', 'ZIL', 'ICX', 'REP', 'KNC', 'REN', 'LRC',
+            'DAI', 'BUSD', 'AXS', 'CHZ', 'BAT', 'ETC', 
+            'THETA', 'ZIL', 'ICX', 'KNC', 'LRC',
             'STORJ', 'GRT', 'COMP', 'MKR', 'YFI', 'SUSHI', 'SNX', 'AAVE', 'CRV', 'BAL',
-            '1INCH', 'RUNE', 'ALPHA', 'PERP', 'DYDX', 'IMX', 'API3', 'AUDIO', 'CTX',
+            '1INCH', 'ALPHA', 'PERP', 'DYDX', 'IMX', 'API3',
             'AUD'  # Include AUD fiat
         ]
         
