@@ -1834,7 +1834,7 @@ class TradingApp {
     
     
     updateTradesTable(trades, summary) {
-        const tradesTableBody = document.getElementById('trades-table');
+        const tradesTableBody = document.getElementById('trades-tbody');
         if (!tradesTableBody) return;
         
         try {
