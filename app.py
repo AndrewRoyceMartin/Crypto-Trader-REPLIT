@@ -5216,7 +5216,7 @@ def api_test_sync_data() -> ResponseReturnValue:
             # Test ATO Export Button
             try:
                 # Check if the ATO export endpoint exists and works
-                ato_response = api_export_ato_tax()
+                ato_response = api_export_ato()
                 if hasattr(ato_response, 'status_code'):
                     ato_accessible = ato_response.status_code == 200
                 else:
@@ -5225,7 +5225,7 @@ def api_test_sync_data() -> ResponseReturnValue:
                 button_tests['ato_export_button'] = {
                     'status': 'pass' if ato_accessible else 'fail',
                     'endpoint_accessible': ato_accessible,
-                    'test_description': 'Tests /api/export-ato-tax endpoint for tax reporting'
+                    'test_description': 'Tests /api/export/ato endpoint for tax reporting'
                 }
             except Exception as e:
                 button_tests['ato_export_button'] = {
