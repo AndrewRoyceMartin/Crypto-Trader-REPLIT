@@ -293,10 +293,15 @@ class ModularTradingApp {
             <td>${position.buy_signal || 'NO DATA'}</td>
             <td>${position.bollinger_analysis?.strategy || position.bb_strategy || 'Enhanced BB'}</td>
             <td>
-                ${hasBalance ? 
-                    `<button class="btn btn-sm btn-success" onclick="tradeManager.showSellDialog('${position.symbol}', ${position.current_balance}, ${position.current_price})">Sell</button>` :
-                    `<button class="btn btn-sm btn-primary" onclick="tradeManager.showBuyDialog('${position.symbol}', ${position.current_price}, ${position.target_buy_price})">Buy</button>`
-                }
+                <div class="d-flex gap-1">
+                    <button class="btn btn-sm btn-outline-info" onclick="showConfidenceDetails('${position.symbol}')" title="View Details">
+                        <i class="fa fa-info-circle"></i>
+                    </button>
+                    ${hasBalance ? 
+                        `<button class="btn btn-sm btn-success" onclick="tradeManager.showSellDialog('${position.symbol}', ${position.current_balance}, ${position.current_price})">Sell</button>` :
+                        `<button class="btn btn-sm btn-primary" onclick="tradeManager.showBuyDialog('${position.symbol}', ${position.current_price}, ${position.target_buy_price})">Buy</button>`
+                    }
+                </div>
             </td>
         `;
         
