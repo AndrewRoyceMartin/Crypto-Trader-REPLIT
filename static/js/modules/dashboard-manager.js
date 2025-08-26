@@ -285,7 +285,7 @@ export class DashboardManager {
 
     // Data extraction helpers
     extractTotalValue(data) {
-        return AppUtils.safeNum(data.total_current_value || data.totalValue || 0);
+        return AppUtils.safeNum(data.total_estimated_value || data.total_current_value || data.totalValue || 0);
     }
 
     extractTotalPnL(data) {
