@@ -256,6 +256,13 @@ class ModularTradingApp {
         const row = document.createElement('tr');
         const hasBalance = AppUtils.safeNum(position.current_balance) > 0;
         const confidenceClass = this.getConfidenceClass(position.entry_confidence?.level);
+        const timingClass = this.getTimingClass(position.entry_confidence?.timing_signal);
+        const riskClass = this.getRiskClass(position.entry_confidence?.score);
+        
+        // Calculate price difference percentage
+        const priceDiff = position.price_diff_percent || 0;
+        const priceDiffClass = priceDiff >= 0 ? 'text-success' : 'text-danger';
+        const priceDiffSign = priceDiff >= 0 ? '+' : '';
         
         row.innerHTML = `
             <td>
@@ -264,14 +271,27 @@ class ModularTradingApp {
                     <strong>${position.symbol}</strong>
                 </div>
             </td>
-            <td>${AppUtils.formatCurrency(position.current_price)}</td>
-            <td>${AppUtils.formatCurrency(position.target_buy_price)}</td>
+            <td class="text-end">${AppUtils.formatCurrency(position.current_balance || 0)}</td>
+            <td class="text-end">${AppUtils.formatCurrency(position.current_price)}</td>
+            <td class="text-end">${AppUtils.formatCurrency(position.target_buy_price)}</td>
+            <td class="text-end ${priceDiffClass}">${priceDiffSign}${priceDiff.toFixed(2)}%</td>
             <td>
                 <span class="badge bg-${confidenceClass}">
                     ${position.entry_confidence?.level || 'N/A'}
                 </span>
             </td>
+            <td>
+                <span class="badge bg-${timingClass}">
+                    ${position.entry_confidence?.timing_signal || 'WAIT'}
+                </span>
+            </td>
+            <td>
+                <span class="badge bg-${riskClass}">
+                    ${this.getRiskLevel(position.entry_confidence?.score)}
+                </span>
+            </td>
             <td>${position.bollinger_analysis?.signal || 'NO DATA'}</td>
+            <td>Enhanced BB</td>
             <td>
                 ${hasBalance ? 
                     `<button class="btn btn-sm btn-success" onclick="tradeManager.showSellDialog('${position.symbol}', ${position.current_balance}, ${position.current_price})">Sell</button>` :
@@ -291,6 +311,32 @@ class ModularTradingApp {
             case 'WEAK': return 'danger';
             default: return 'secondary';
         }
+    }
+
+    getTimingClass(signal) {
+        switch(signal?.toUpperCase()) {
+            case 'BUY': return 'success';
+            case 'CAUTIOUS_BUY': return 'info';
+            case 'SELL': return 'danger';
+            case 'WAIT': return 'warning';
+            default: return 'secondary';
+        }
+    }
+
+    getRiskClass(score) {
+        const numScore = AppUtils.safeNum(score, 0);
+        if (numScore >= 80) return 'success';
+        if (numScore >= 60) return 'warning';
+        if (numScore >= 40) return 'danger';
+        return 'secondary';
+    }
+
+    getRiskLevel(score) {
+        const numScore = AppUtils.safeNum(score, 0);
+        if (numScore >= 80) return 'LOW';
+        if (numScore >= 60) return 'MED';
+        if (numScore >= 40) return 'HIGH';
+        return 'N/A';
     }
 
     updateTradesTable(trades) {
