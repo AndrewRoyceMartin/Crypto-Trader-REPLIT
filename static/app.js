@@ -1551,8 +1551,9 @@ class TradingApp {
             
             console.log("Holdings data received:", data.holdings);
             
-            // Use the same technique as Available Positions table
-            updateHoldingsTable(data.holdings || []);
+            // REMOVED: Direct updateHoldingsTable call - causes flashing
+            // Let the main TradingApp.updateAllTables() handle this properly
+            // updateHoldingsTable(data.holdings || []);
             
         } catch (error) {
             console.debug('Current holdings update failed:', error);
@@ -4507,8 +4508,8 @@ function showCurrentPositions() {
     ids.forEach(id => { const el = document.getElementById(id); if (el) el.style.display = (id === 'current-holdings' ? 'block' : 'none'); });
     updateNavbarButtons('holdings');
     if (window.tradingApp?.currentCryptoData) {
-        window.tradingApp.updateHoldingsTable(window.tradingApp.currentCryptoData);
-        window.tradingApp.updatePositionsSummary(window.tradingApp.currentCryptoData);
+        // Use consolidated update to prevent table flashing
+        window.tradingApp.updateAllTables(window.tradingApp.currentCryptoData);
     }
     window.tradingApp?.updateCryptoPortfolio();
 }
@@ -6755,7 +6756,9 @@ async function refreshHoldingsData() {
             // Use holdings first (more complete data), then fall back to all_positions
             const positions = data.holdings || data.all_positions || [];
             console.debug('Holdings data received:', positions);
-            updateOpenPositionsTable(positions, data.total_value);
+            // REMOVED: Direct updateOpenPositionsTable call - causes table flashing
+            // The main TradingApp system handles table updates properly
+            // updateOpenPositionsTable(positions, data.total_value);
             
             // Update refresh time tracking
             updatePositionsRefreshTime();
