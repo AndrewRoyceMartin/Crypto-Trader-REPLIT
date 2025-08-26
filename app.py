@@ -3474,10 +3474,11 @@ def api_available_positions() -> ResponseReturnValue:
                     bb_distance_percent = 0.0
                     lower_band_price = 0.0
                     
-                    # Only calculate BB for assets with significant holdings (to avoid API timeouts)
-                    held_assets = ['BTC', 'ETH', 'SOL', 'GALA', 'TRX', 'PEPE']  # Assets you actually hold
-                    if current_price > 0 and symbol in held_assets and current_balance > 0:
-                        logger.info(f"Calculating BB for held asset {symbol} at ${current_price}")
+                    # Calculate BB for major tradeable assets to identify opportunities (not just held assets)
+                    major_tradeable = ['BTC', 'ETH', 'SOL', 'ADA', 'DOT', 'AVAX', 'LINK', 'UNI', 'LTC', 'XRP', 
+                                     'GALA', 'TRX', 'PEPE', 'DOGE', 'SHIB', 'MATIC', 'ATOM', 'FTM', 'NEAR', 'APT']
+                    if current_price > 0 and symbol in major_tradeable:
+                        logger.info(f"Calculating BB opportunity analysis for {symbol} at ${current_price}")
                         try:
                             # Get historical price data for Bollinger Bands calculation
                             from src.utils.okx_native import OKXNative
@@ -3510,17 +3511,17 @@ def api_available_positions() -> ResponseReturnValue:
                                     raise ValueError("No valid Bollinger Band data calculated")
                                 
                                 if lower_band_price > 0:
-                                    # Calculate distance from current price to lower band
+                                    # Calculate distance from current price to lower band (opportunity analysis)
                                     bb_distance_percent = ((current_price - lower_band_price) / current_price) * 100
                                     
-                                    # Determine signal based on proximity
-                                    if current_price <= lower_band_price:
+                                    # Enhanced signal logic based on current market position vs BB levels
+                                    if current_price <= lower_band_price * 1.005:  # Within 0.5% of lower band
                                         bb_signal = "BUY ZONE"
-                                    elif bb_distance_percent <= 5:
+                                    elif current_price <= lower_band_price * 1.03:   # Within 3% of lower band
                                         bb_signal = "VERY CLOSE"
-                                    elif bb_distance_percent <= 10:
-                                        bb_signal = "APPROACHING"
-                                    elif bb_distance_percent <= 20:
+                                    elif current_price <= lower_band_price * 1.08:   # Within 8% of lower band
+                                        bb_signal = "APPROACHING" 
+                                    elif current_price <= lower_band_price * 1.20:   # Within 20% of lower band
                                         bb_signal = "MODERATE"
                                     else:
                                         bb_signal = "FAR"
@@ -5532,13 +5533,20 @@ def api_test_sync_data() -> ResponseReturnValue:
         
         # Add Bollinger Bands calculation status info
         test_data['bollinger_bands_info'] = {
-            'enabled_for_held_assets_only': True,
-            'held_assets_monitored': ['BTC', 'ETH', 'SOL', 'GALA', 'TRX', 'PEPE'],
+            'analysis_type': 'Current Market Opportunity Analysis',
+            'calculation_basis': 'Current price vs Bollinger Band levels (NOT exit prices)',
+            'major_assets_covered': ['BTC', 'ETH', 'SOL', 'ADA', 'DOT', 'AVAX', 'LINK', 'UNI', 'LTC', 'XRP', 'GALA', 'TRX', 'PEPE', 'DOGE', 'SHIB', 'MATIC', 'ATOM', 'FTM', 'NEAR', 'APT'],
             'period': '20-day',
             'std_deviation': '2.0',
-            'signals': ['BUY ZONE', 'VERY CLOSE', 'APPROACHING', 'MODERATE', 'FAR'],
-            'optimization_note': 'BB calculations limited to held assets to prevent API timeouts',
-            'calculation_count_per_refresh': 'Max 6 assets (current holdings only)'
+            'signal_thresholds': {
+                'BUY_ZONE': 'Within 0.5% of lower Bollinger Band',
+                'VERY_CLOSE': 'Within 3% of lower Bollinger Band', 
+                'APPROACHING': 'Within 8% of lower Bollinger Band',
+                'MODERATE': 'Within 20% of lower Bollinger Band',
+                'FAR': 'More than 20% above lower Bollinger Band'
+            },
+            'purpose': 'Identifies buying opportunities based on technical oversold conditions',
+            'calculation_count_per_refresh': 'Up to 20 major cryptocurrencies'
         }
         
         return _no_cache_json(test_data)
