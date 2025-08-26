@@ -3492,8 +3492,13 @@ def api_available_positions() -> ResponseReturnValue:
                                 import pandas as pd
                                 from src.indicators.technical import TechnicalIndicators
                                 
-                                # Convert to DataFrame (OKX format: [timestamp, open, high, low, close, volume])
-                                df = pd.DataFrame(candles, columns=['timestamp', 'open', 'high', 'low', 'close', 'volume'])
+                                # Convert to DataFrame - OKX candles format varies, extract needed columns
+                                if not candles or len(candles[0]) < 5:
+                                    raise ValueError("Invalid candle data structure")
+                                
+                                # Extract just the price data we need: [timestamp, open, high, low, close]
+                                price_data = [[candle[0], candle[1], candle[2], candle[3], candle[4]] for candle in candles]
+                                df = pd.DataFrame(price_data, columns=['timestamp', 'open', 'high', 'low', 'close'])
                                 df['close'] = pd.to_numeric(df['close'], errors='coerce')
                                 
                                 # Ensure we have valid close prices
