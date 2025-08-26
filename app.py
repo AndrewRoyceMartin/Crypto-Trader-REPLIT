@@ -331,6 +331,7 @@ _cache_lock = threading.RLock()
 _price_cache = OrderedDict()
 _ohlcv_cache = OrderedDict()
 
+
 def _cache_prune(od: OrderedDict) -> None:
     while len(od) > CACHE_MAX_KEYS:
         od.popitem(last=False)  # drop oldest
@@ -338,6 +339,7 @@ def _cache_prune(od: OrderedDict) -> None:
 
 def _cache_key(*parts: str) -> str:
     return "|".join(parts)
+
 
 def cache_put_price(sym: str, value: Any) -> None:
     with _cache_lock:
@@ -398,6 +400,7 @@ trading_state = {
 # Thread safety for shared state
 _state_lock = threading.RLock()
 
+
 def _set_warmup(**kv: Any) -> None:
     """Thread-safe warmup state update."""
     with _state_lock:
@@ -420,29 +423,36 @@ def _set_bot_state(**kv: Any) -> None:
         trading_state["mode"] = bot_state.get("mode") or ("stopped" if not running else trading_state.get("mode"))
         trading_state["start_time"] = bot_state.get("started_at") if running else None
 
+
 def _get_bot_running() -> bool:
     """Thread-safe bot running state read."""
     with _state_lock:
         return bot_state.get("running", False)
+
 
 def _get_warmup_done() -> bool:
     """Thread-safe warmup done state read."""
     with _state_lock:
         return warmup.get("done", False)
 
+
 def _get_warmup_error() -> str:
     """Thread-safe warmup error state read."""
     with _state_lock:
         return warmup.get("error", "")
+
+
 # Portfolio state - starts empty, only populates when trading begins
 portfolio_initialized = False
 # Recent initial trades for display
 recent_initial_trades = []
 # Legacy cache removed - using TTL'd LRU cache above
 
+
 def cache_put(sym: str, tf: str, df: Any) -> None:
     """DISABLED - No caching, always fetch live OKX data."""
     pass  # Disabled to ensure always live data
+
 
 def get_portfolio_summary() -> Dict[str, Any]:
     """Get portfolio summary for status endpoint."""
@@ -450,7 +460,7 @@ def get_portfolio_summary() -> Dict[str, Any]:
         portfolio_service = get_portfolio_service()
         if not portfolio_service:
             return {"total_value": 0.0, "daily_pnl": 0.0, "daily_pnl_percent": 0.0, "error": "Service not available"}
-        
+
         portfolio_data = portfolio_service.get_portfolio_data()
         return {
             "total_value": portfolio_data.get('total_current_value', 0.0),
@@ -474,10 +484,10 @@ def get_portfolio_service() -> Any:
 
 def normalize_pair(pair: str) -> str:
     """Normalize trading pair to standard format (uppercase with forward slash).
-    
+
     Args:
         pair: Trading pair like 'btc-usdt', 'BTC/USDT', etc.
-        
+
     Returns:
         str: Normalized pair like 'BTC/USDT'
     """
@@ -485,10 +495,10 @@ def normalize_pair(pair: str) -> str:
 
 def to_okx_inst(pair: str) -> str:
     """Convert normalized pair to OKX instrument format.
-    
+
     Args:
         pair: Normalized pair like 'BTC/USDT'
-        
+
     Returns:
         str: OKX instrument format like 'BTC-USDT'
     """
@@ -501,15 +511,15 @@ def validate_symbol(pair: str) -> bool:
         # Check against WATCHLIST first
         if pair in WATCHLIST:
             return True
-        
+
         # Check against exchange markets
         service = get_portfolio_service()
-        if (hasattr(service, 'exchange') and hasattr(service.exchange, 'exchange') and 
-            hasattr(service.exchange.exchange, 'markets')):
+        if (hasattr(service, 'exchange') and hasattr(service.exchange, 'exchange')
+                and hasattr(service.exchange.exchange, 'markets')):
             markets = getattr(service.exchange.exchange, 'markets', None)
             if markets is not None:
                 return pair in markets
-        
+
         return False
     except Exception as e:
         logger.debug(f"Symbol validation failed for {pair}: {e}")
@@ -608,7 +618,7 @@ def background_warmup() -> None:
         _set_warmup(done=True)
         logger.info(
             "Warmup complete: connectivity=%s, symbols available: %s",
-            warmup.get("connectivity", "unknown"), 
+            warmup.get("connectivity", "unknown"),
             ', '.join(warmup.get('loaded', []))
         )
 
@@ -753,7 +763,7 @@ def crypto_portfolio_okx() -> ResponseReturnValue:
             "profitable_positions": sum(1 for h in holdings_list if float(h.get('pnl_percent', 0) or 0) > 0),
             "losing_positions": sum(1 for h in holdings_list if float(h.get('pnl_percent', 0) or 0) < 0),
             "breakeven_positions": max(
-                0, 
+                0,
                 len(holdings_list) - sum(
                     1 for h in holdings_list if float(h.get('pnl_percent', 0) or 0) != 0
                 )
@@ -1103,7 +1113,11 @@ def DISABLED_api_crypto_portfolio() -> ResponseReturnValue:
                     'pnl_percent': round(worst_performer.get('pnl_percent', 0), 2)
                 } if worst_performer else {'symbol': 'N/A', 'name': 'N/A', 'pnl_percent': 0},
                 'top_allocations': sorted(holdings, key=lambda x: x.get('allocation_percent', 0), reverse=True)[:5],
-                'concentration_risk': round(sum(h.get('allocation_percent', 0) for h in sorted(holdings, key=lambda x: x.get('allocation_percent', 0), reverse=True)[:3]), 2),
+                'concentration_risk': round(
+                    sum(h.get('allocation_percent', 0) 
+                        for h in sorted(holdings, key=lambda x: x.get('allocation_percent', 0), reverse=True)[:3]
+                    ), 2
+                ),
                 'win_rate': round((len(profitable) / len(holdings) * 100) if holdings else 0, 2),
                 'ytd_realized_pnl': 0.0,
                 'daily_pnl': round(sum(h.get('pnl', 0) for h in holdings), 2)
@@ -2585,7 +2599,7 @@ def api_performance_analytics() -> ResponseReturnValue:
                                         logger.debug(f"Error getting price for {symbol}: {price_error}")
                                         continue
                                         
-                            except Exception as currency_error:
+                            except Exception:
                                 continue
                 
                 # Get account bills for historical performance
@@ -2632,7 +2646,7 @@ def api_performance_analytics() -> ResponseReturnValue:
                                         'type': bill_type
                                     })
                                     
-                            except Exception as bill_error:
+                            except Exception:
                                 continue
                         
                         total_trades = len(trade_records)
@@ -2797,7 +2811,6 @@ def api_live_prices() -> ResponseReturnValue:
 
     try:
         initialize_system()
-        portfolio_service = get_portfolio_service()
 
         symbols = ["BTC", "ETH", "SOL", "XRP", "DOGE", "BNB", "ADA", "AVAX", "LINK", "UNI"]
         formatted_prices: dict[str, dict[str, Any]] = {}
@@ -3639,9 +3652,6 @@ def get_all_positions_including_sold(portfolio_service: Any) -> list[dict[str, A
         current_holdings = portfolio_service.get_portfolio_data().get('holdings', [])
         
         # Get historical trades from database to find sold positions
-        from src.utils.database import DatabaseManager
-        db = DatabaseManager()
-        
         # Simple implementation - return current holdings for now
         result = {
             'success': True,
@@ -3681,7 +3691,6 @@ def paper_trade_buy() -> ResponseReturnValue:
             return jsonify({"success": False, "error": "Invalid symbol or amount"}), 400
 
         initialize_system()
-        portfolio_service = get_portfolio_service()
         current_price = get_public_price(f"{symbol}/USDT")
 
         if not current_price or current_price <= 0:
@@ -3743,7 +3752,6 @@ def paper_trade_sell() -> ResponseReturnValue:
             return jsonify({"success": False, "error": "Invalid symbol or quantity"}), 400
 
         initialize_system()
-        portfolio_service = get_portfolio_service()
         current_price = get_public_price(f"{symbol}/USDT")
 
         if not current_price or current_price <= 0:
@@ -4562,12 +4570,8 @@ def execute_take_profit() -> ResponseReturnValue:
 def api_performance() -> ResponseReturnValue:
     """API endpoint for performance analytics data supporting comprehensive dashboard."""
     try:
-        
-
         start_date = request.args.get('start')
         _ = request.args.get('end')
-        _symbol = request.args.get('symbol', 'ALL')
-        _strategy = request.args.get('strategy', 'ALL')
 
         initialize_system()
         portfolio_service = get_portfolio_service()
@@ -5013,7 +5017,7 @@ def api_test_sync_data() -> ResponseReturnValue:
                     # consider it running if any pair is running or the object says it is
                     pair_running = any(s.get("running", False) for s in mc_status.get("pairs", {}).values())
                     mc_running = bool(pair_running or mc_status.get('running', False))
-            except Exception as _mc_err:
+            except Exception:
                 mc_running = None
 
             pass_cond = (running == active) and (mc_running is None or running == mc_running)
