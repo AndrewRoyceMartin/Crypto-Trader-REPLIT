@@ -254,26 +254,32 @@
                                     <th class="table-sortable text-end" data-sort="current_price" onclick="sortAvailableTable(2)">
                                         Price <span class="icon icon-sort text-muted"></span>
                                     </th>
-                                    <th class="table-sortable text-end" data-sort="target_buy_price" onclick="sortAvailableTable(3)">
-                                        Target <span class="icon icon-sort text-muted"></span>
+                                    <th class="table-sortable text-end" data-sort="target_buy_price" onclick="sortAvailableTable(3)"
+                                        title="Target Buy Price: Calculated using tier-based discounting from current market price. Prices lock for 24 hours to prevent constant recalculation and ensure executable orders.">
+                                        <i class="fas fa-crosshairs me-1 text-success"></i>Target <span class="icon icon-sort text-muted"></span>
                                     </th>
-                                    <th class="table-sortable text-end" data-sort="price_difference" onclick="sortAvailableTable(4)">
-                                        Diff % <span class="icon icon-sort text-muted"></span>
+                                    <th class="table-sortable text-end" data-sort="price_difference" onclick="sortAvailableTable(4)"
+                                        title="Price Difference: Shows how far current price is from target buy price. Negative values (green) mean price is below target = good buy opportunity.">
+                                        <i class="fas fa-percentage me-1 text-info"></i>Diff % <span class="icon icon-sort text-muted"></span>
                                     </th>
-                                    <th class="table-sortable text-center" data-sort="entry_confidence.score" onclick="sortAvailableTable(5)">
-                                        Confidence <span class="icon icon-sort text-muted"></span>
+                                    <th class="table-sortable text-center" data-sort="entry_confidence.score" onclick="sortAvailableTable(5)"
+                                        title="Entry Confidence: AI-calculated score (0-100) based on technical analysis, momentum, and volatility. Higher scores indicate better entry opportunities. Note: This is for display only - automated trading uses Bollinger Bands.">
+                                        <i class="fas fa-brain me-1 text-warning"></i>Confidence <span class="icon icon-sort text-muted"></span>
                                     </th>
-                                    <th class="table-sortable text-center" data-sort="entry_confidence.timing_signal" onclick="sortAvailableTable(6)">
-                                        Timing <span class="icon icon-sort text-muted"></span>
+                                    <th class="table-sortable text-center" data-sort="entry_confidence.timing_signal" onclick="sortAvailableTable(6)"
+                                        title="Timing Signal: Recommendation for entry timing based on market conditions. STRONG_BUY = optimal entry, CAUTIOUS_BUY = moderate entry, WAIT = hold off. This is informational only.">
+                                        <i class="fas fa-clock me-1 text-primary"></i>Timing <span class="icon icon-sort text-muted"></span>
                                     </th>
-                                    <th class="table-sortable text-center" data-sort="entry_confidence.risk_level" onclick="sortAvailableTable(7)">
-                                        Risk <span class="icon icon-sort text-muted"></span>
+                                    <th class="table-sortable text-center" data-sort="entry_confidence.risk_level" onclick="sortAvailableTable(7)"
+                                        title="Risk Assessment: Estimated risk level for this entry. LOW = stable/safer entry, MODERATE = balanced risk/reward, HIGH = volatile/riskier entry. Consider your risk tolerance.">
+                                        <i class="fas fa-shield-alt me-1 text-danger"></i>Risk <span class="icon icon-sort text-muted"></span>
                                     </th>
                                     <th class="table-sortable text-center" data-sort="buy_signal" onclick="sortAvailableTable(8)">
                                         Signal <span class="icon icon-sort text-muted"></span>
                                     </th>
-                                    <th class="table-sortable text-center" data-sort="bollinger_analysis.signal" onclick="sortAvailableTable(9)">
-                                        BB Strategy <span class="icon icon-sort text-muted"></span>
+                                    <th class="table-sortable text-center" data-sort="bollinger_analysis.signal" onclick="sortAvailableTable(9)" 
+                                        title="Enhanced Bollinger Bands Strategy: Shows how close each asset is to triggering automated buy conditions. The bot automatically buys when price touches the lower Bollinger Band (50-period, 2.0 standard deviation).">
+                                        <i class="fas fa-chart-line me-1 text-primary"></i>BB Strategy <span class="icon icon-sort text-muted"></span>
                                     </th>
                                     <th class="text-center">
                                         Actions

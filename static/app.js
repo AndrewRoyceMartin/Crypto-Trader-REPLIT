@@ -5927,6 +5927,7 @@ function createAvailablePositionRow(position) {
     const bbAnalysis = position.bollinger_analysis || { signal: "NO DATA", distance_percent: 0 };
     const bbSignal = bbAnalysis.signal || "NO DATA";
     const bbDistance = bbAnalysis.distance_percent || 0;
+    const lowerBandPrice = bbAnalysis.lower_band_price || 0;
     
     const getBollingerSignalClass = (signal) => {
         if (signal === "BUY ZONE") return "text-success fw-bold";
@@ -5937,15 +5938,61 @@ function createAvailablePositionRow(position) {
         return "text-muted";
     };
     
+    // Create tooltip text based on signal
+    const getTooltipText = (signal, distance, lowerBand, currentPrice) => {
+        const baseExplanation = "Enhanced Bollinger Bands Strategy: Automated buying triggers when price touches the lower Bollinger Band (50-period, 2.0 std dev). ";
+        
+        switch(signal) {
+            case "BUY ZONE":
+                return baseExplanation + `🎯 AUTOMATED BUY TRIGGERED! Price is at or below lower band (${formatCurrency(lowerBand)}). The trading bot will automatically place buy orders.`;
+            case "VERY CLOSE":
+                return baseExplanation + `⚠️ Very close to trigger! Only ${distance.toFixed(1)}% above lower band (${formatCurrency(lowerBand)}). Watch for potential automated buy signal.`;
+            case "APPROACHING":
+                return baseExplanation + `📈 Approaching trigger zone. ${distance.toFixed(1)}% above lower band (${formatCurrency(lowerBand)}). Getting closer to automated buy conditions.`;
+            case "MODERATE":
+                return baseExplanation + `📊 Moderate distance from trigger. ${distance.toFixed(1)}% above lower band (${formatCurrency(lowerBand)}). Not yet in buy zone.`;
+            case "FAR":
+                return baseExplanation + `📉 Far from trigger. ${distance.toFixed(1)}% above lower band (${formatCurrency(lowerBand)}). Unlikely to trigger soon.`;
+            default:
+                return baseExplanation + "No historical data available to calculate Bollinger Bands. Need 50+ daily candles for analysis.";
+        }
+    };
+    
     const bbCell = document.createElement('td');
     bbCell.className = `text-center ${getBollingerSignalClass(bbSignal)}`;
+    bbCell.style.cursor = 'help';
+    bbCell.title = getTooltipText(bbSignal, bbDistance, lowerBandPrice, currentPrice);
+    
     const bbDiv = document.createElement('div');
     bbDiv.className = 'd-flex flex-column align-items-center';
     
-    // Signal badge
+    // Signal badge with icon
     const signalSpan = document.createElement('span');
-    signalSpan.className = 'fw-bold';
-    signalSpan.textContent = bbSignal;
+    signalSpan.className = 'fw-bold d-flex align-items-center';
+    
+    // Add appropriate icon based on signal
+    let icon = '';
+    switch(bbSignal) {
+        case "BUY ZONE":
+            icon = '<i class="fas fa-bullseye me-1 text-success"></i>';
+            break;
+        case "VERY CLOSE":
+            icon = '<i class="fas fa-exclamation-triangle me-1 text-warning"></i>';
+            break;
+        case "APPROACHING":
+            icon = '<i class="fas fa-arrow-down me-1 text-info"></i>';
+            break;
+        case "MODERATE":
+            icon = '<i class="fas fa-minus me-1 text-muted"></i>';
+            break;
+        case "FAR":
+            icon = '<i class="fas fa-arrow-up me-1 text-secondary"></i>';
+            break;
+        default:
+            icon = '<i class="fas fa-question me-1 text-muted"></i>';
+    }
+    
+    signalSpan.innerHTML = icon + bbSignal;
     bbDiv.appendChild(signalSpan);
     
     // Distance text if available
@@ -5953,6 +6000,7 @@ function createAvailablePositionRow(position) {
         const distanceSmall = document.createElement('small');
         distanceSmall.className = 'text-muted';
         distanceSmall.textContent = `${bbDistance.toFixed(1)}% away`;
+        distanceSmall.title = `Current price is ${bbDistance.toFixed(1)}% above the lower Bollinger Band trigger price of ${formatCurrency(lowerBandPrice)}`;
         bbDiv.appendChild(distanceSmall);
     }
     
