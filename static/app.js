@@ -3033,18 +3033,7 @@ class TradingApp {
                 const purchasePrice = this.num(crypto.avg_entry_price || crypto.avg_buy_price) || 0.00000800;
                 const cv = this.num(crypto.current_value || crypto.value) || 60.16268093736791;
                 
-                // Debug log to see what data we're getting and check for bouncing
-                if (crypto.symbol === 'PEPE') {
-                    console.log('PEPE table data:', {
-                        current_price: crypto.current_price,
-                        avg_buy_price: crypto.avg_buy_price,
-                        avg_entry_price: crypto.avg_entry_price,
-                        cp: cp,
-                        purchasePrice: purchasePrice,
-                        formattedCP: this.formatCryptoPrice(cp),
-                        formattedPurchase: this.formatCryptoPrice(purchasePrice)
-                    });
-                }
+                // Data processed - debug logging cleaned up
                 const pnlNum = crypto.pnl || crypto.unrealized_pnl || 12.032536187473589;
                 const pp = crypto.pnl_percent || 25.000000000000018;
 
