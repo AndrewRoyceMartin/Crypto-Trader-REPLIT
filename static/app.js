@@ -2777,6 +2777,8 @@ class TradingApp {
             const viewButton = document.createElement('button');
             viewButton.className = 'btn btn-sm btn-outline-primary';
             viewButton.textContent = 'View';
+            viewButton.onclick = () => showCryptoChart(crypto.symbol);
+            viewButton.title = `View ${crypto.symbol} details`;
             actionsCell.appendChild(viewButton);
 
             const targetBuyCell = document.createElement('td');
@@ -6771,6 +6773,209 @@ function updatePositionsTimeDisplay() {
             nextRefreshDisplay.textContent = 'now';
             nextRefreshDisplay.className = 'text-success';
         }
+    }
+}
+
+// Function to show crypto chart in modal
+function showCryptoChart(symbol) {
+    console.log(`Showing details for ${symbol}`);
+    
+    // Create and show modal with crypto details
+    const modalHtml = `
+        <div class="modal fade" id="cryptoDetailsModal" tabindex="-1" aria-labelledby="cryptoDetailsModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="cryptoDetailsModalLabel">
+                            <i class="fas fa-chart-line me-2"></i>${symbol} Details
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6><i class="fas fa-info-circle me-2"></i>Position Info</h6>
+                                <div id="position-info-${symbol}" class="mb-3">
+                                    <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+                                    Loading position data...
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <h6><i class="fas fa-chart-bar me-2"></i>Market Data</h6>
+                                <div id="market-info-${symbol}" class="mb-3">
+                                    <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+                                    Loading market data...
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row mt-3">
+                            <div class="col-12">
+                                <h6><i class="fas fa-history me-2"></i>Recent Activity</h6>
+                                <div id="recent-activity-${symbol}">
+                                    <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+                                    Loading trading history...
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Remove existing modal if present
+    const existingModal = document.getElementById('cryptoDetailsModal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    // Add modal to DOM
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    
+    // Show modal using Bootstrap
+    if (window.bootstrap && window.bootstrap.Modal) {
+        const modal = new bootstrap.Modal(document.getElementById('cryptoDetailsModal'));
+        modal.show();
+        
+        // Load data after modal is shown
+        loadCryptoDetails(symbol);
+        
+        // Clean up modal when closed
+        document.getElementById('cryptoDetailsModal').addEventListener('hidden.bs.modal', function () {
+            this.remove();
+        });
+    } else {
+        // Fallback if Bootstrap is not available
+        document.getElementById('cryptoDetailsModal').style.display = 'block';
+        document.getElementById('cryptoDetailsModal').classList.add('show');
+        loadCryptoDetails(symbol);
+    }
+}
+
+// Function to load detailed crypto information
+async function loadCryptoDetails(symbol) {
+    try {
+        // Load position information
+        const positionResponse = await fetch(`/api/current-holdings`);
+        const positionData = await positionResponse.json();
+        const position = positionData.holdings?.find(h => h.symbol === symbol);
+        
+        if (position) {
+            const positionInfoEl = document.getElementById(`position-info-${symbol}`);
+            if (positionInfoEl) {
+                positionInfoEl.innerHTML = `
+                    <div class="card border-0 bg-light">
+                        <div class="card-body p-2">
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <small class="text-muted">Quantity:</small><br>
+                                    <strong>${position.quantity?.toFixed(6) || '0'}</strong>
+                                </div>
+                                <div class="col-6">
+                                    <small class="text-muted">Current Value:</small><br>
+                                    <strong>$${position.current_value?.toFixed(2) || '0.00'}</strong>
+                                </div>
+                                <div class="col-6">
+                                    <small class="text-muted">P&L:</small><br>
+                                    <strong class="${(position.pnl_percent || 0) >= 0 ? 'text-success' : 'text-danger'}">
+                                        ${(position.pnl_percent || 0).toFixed(2)}%
+                                    </strong>
+                                </div>
+                                <div class="col-6">
+                                    <small class="text-muted">Current Price:</small><br>
+                                    <strong>$${position.current_price?.toFixed(position.current_price > 1 ? 2 : 6) || '0.00'}</strong>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+        } else {
+            const positionInfoEl = document.getElementById(`position-info-${symbol}`);
+            if (positionInfoEl) {
+                positionInfoEl.innerHTML = '<div class="alert alert-info">No active position found for this asset.</div>';
+            }
+        }
+        
+        // Load market information (basic info from available positions)
+        const marketResponse = await fetch(`/api/available-positions`);
+        const marketData = await marketResponse.json();
+        const marketInfo = marketData.available_positions?.find(p => p.symbol === symbol);
+        
+        if (marketInfo) {
+            const marketInfoEl = document.getElementById(`market-info-${symbol}`);
+            if (marketInfoEl) {
+                marketInfoEl.innerHTML = `
+                    <div class="card border-0 bg-light">
+                        <div class="card-body p-2">
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <small class="text-muted">Market Price:</small><br>
+                                    <strong>$${marketInfo.current_price?.toFixed(marketInfo.current_price > 1 ? 2 : 6) || '0.00'}</strong>
+                                </div>
+                                <div class="col-6">
+                                    <small class="text-muted">Signal:</small><br>
+                                    <span class="badge ${marketInfo.buy_signal === 'READY TO BUY' ? 'bg-success' : 
+                                                       marketInfo.buy_signal === 'CURRENT HOLDING' ? 'bg-primary' : 'bg-secondary'}">
+                                        ${marketInfo.buy_signal || 'N/A'}
+                                    </span>
+                                </div>
+                                <div class="col-6">
+                                    <small class="text-muted">Target Price:</small><br>
+                                    <strong>$${marketInfo.target_buy_price?.toFixed(marketInfo.target_buy_price > 1 ? 2 : 6) || '0.00'}</strong>
+                                </div>
+                                <div class="col-6">
+                                    <small class="text-muted">Confidence:</small><br>
+                                    <span class="badge ${marketInfo.entry_confidence?.level === 'STRONG' ? 'bg-success' : 
+                                                       marketInfo.entry_confidence?.level === 'FAIR' ? 'bg-warning' : 'bg-secondary'}">
+                                        ${marketInfo.entry_confidence?.level || 'N/A'}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+        
+        // Load recent trading activity
+        const activityResponse = await fetch(`/api/recent-trades?timeframe=7d`);
+        const activityData = await activityResponse.json();
+        const recentTrades = activityData.trades?.filter(t => t.symbol === symbol).slice(0, 5) || [];
+        
+        const activityEl = document.getElementById(`recent-activity-${symbol}`);
+        if (activityEl) {
+            if (recentTrades.length > 0) {
+                const tradesHtml = recentTrades.map(trade => `
+                    <div class="d-flex justify-content-between align-items-center py-1 border-bottom">
+                        <div>
+                            <small class="text-muted">${new Date(trade.datetime).toLocaleDateString()}</small>
+                            <span class="badge ${trade.side === 'buy' ? 'bg-success' : 'bg-danger'} ms-2">${trade.side.toUpperCase()}</span>
+                        </div>
+                        <div class="text-end">
+                            <small>${trade.amount} @ $${trade.price?.toFixed(6) || '0.00'}</small>
+                        </div>
+                    </div>
+                `).join('');
+                activityEl.innerHTML = `<div class="small">${tradesHtml}</div>`;
+            } else {
+                activityEl.innerHTML = '<div class="alert alert-info">No recent trading activity found.</div>';
+            }
+        }
+        
+    } catch (error) {
+        console.error('Error loading crypto details:', error);
+        
+        // Show error in all sections
+        ['position-info', 'market-info', 'recent-activity'].forEach(prefix => {
+            const el = document.getElementById(`${prefix}-${symbol}`);
+            if (el) {
+                el.innerHTML = '<div class="alert alert-danger">Error loading data</div>';
+            }
+        });
     }
 }
 
