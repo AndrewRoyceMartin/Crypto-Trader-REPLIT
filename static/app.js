@@ -3015,7 +3015,7 @@ class TradingApp {
             if (!cryptos || cryptos.length === 0) {
                 const row = document.createElement('tr');
                 const cell = document.createElement('td');
-                cell.colSpan = 15;
+                cell.colSpan = 13; // Fixed: Current Positions table has 13 columns
                 cell.className = 'text-center text-muted';
                 cell.textContent = 'No holdings data available';
                 row.appendChild(cell);
@@ -3654,7 +3654,7 @@ class TradingApp {
         const recent = normalized.slice(0, 5);
 
         if (recent.length === 0) {
-            tableBody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-3"><i class="fa-solid fa-circle-info me-2"></i>No trades executed yet - Start trading to see recent transactions</td></tr>';
+            tableBody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-3"><i class="fa-solid fa-circle-info me-2"></i>No trades executed yet - Start trading to see recent transactions</td></tr>'; // Fixed: Recent Trades has 6 columns
             return;
         }
 
@@ -6664,7 +6664,7 @@ async function refreshTradesData() {
         // Show loading state
         const tableBody = document.getElementById('trades-table');
         if (tableBody) {
-            tableBody.innerHTML = '<tr><td colspan="7" class="text-center">Loading trades from OKX...</td></tr>';
+            tableBody.innerHTML = '<tr><td colspan="6" class="text-center">Loading trades from OKX...</td></tr>'; // Fixed: Recent Trades has 6 columns
         }
         
         // Fetch from the working trade-history endpoint
@@ -6695,14 +6695,14 @@ async function refreshTradesData() {
         } else {
             console.warn('No trades data in response:', data);
             if (tableBody) {
-                tableBody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">No recent trades found</td></tr>';
+                tableBody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No recent trades found</td></tr>'; // Fixed: Recent Trades has 6 columns
             }
         }
     } catch (error) {
         console.error('Failed to refresh trades data:', error);
         const tableBody = document.getElementById('trades-table');
         if (tableBody) {
-            tableBody.innerHTML = '<tr><td colspan="7" class="text-center text-danger">Failed to load trades</td></tr>';
+            tableBody.innerHTML = '<tr><td colspan="6" class="text-center text-danger">Failed to load trades</td></tr>'; // Fixed: Recent Trades has 6 columns
         }
     }
 }
@@ -6715,7 +6715,7 @@ function updateTradesTableFromOKX(trades) {
     tableBody.innerHTML = '';
     
     if (!trades.length) {
-        tableBody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">No trades found in OKX history</td></tr>';
+        tableBody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No trades found in OKX history</td></tr>'; // Fixed: Recent Trades has 6 columns
         return;
     }
     
