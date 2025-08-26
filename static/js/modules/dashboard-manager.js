@@ -91,30 +91,79 @@ export class DashboardManager {
     }
 
     updateKPICards(overview) {
-        // Update Total Value
-        const totalValueEl = document.getElementById('total-value');
-        if (totalValueEl) {
-            totalValueEl.textContent = AppUtils.formatCurrency(overview.totalValue);
+        // Update Equity (Total Value) - kpi-equity
+        const equityValueEl = document.querySelector('#kpi-equity [data-kpi-value]');
+        const equityDeltaEl = document.querySelector('#kpi-equity [data-kpi-delta]');
+        if (equityValueEl) {
+            equityValueEl.textContent = AppUtils.formatCurrency(overview.totalValue);
+        }
+        if (equityDeltaEl) {
+            const deltaClass = overview.totalPnlPercent >= 0 ? 'positive' : 'negative';
+            const deltaSign = overview.totalPnlPercent >= 0 ? '+' : '';
+            equityDeltaEl.className = `kpi__delta ${deltaClass}`;
+            equityDeltaEl.textContent = `${deltaSign}${overview.totalPnlPercent.toFixed(2)}%`;
         }
 
-        // Update Total P&L
-        const totalPnlEl = document.getElementById('total-pnl');
-        if (totalPnlEl) {
-            const pnlClass = overview.totalPnl >= 0 ? 'text-success' : 'text-danger';
+        // Update Unrealized P&L - kpi-upnl
+        const upnlValueEl = document.querySelector('#kpi-upnl [data-kpi-value]');
+        const upnlDeltaEl = document.querySelector('#kpi-upnl [data-kpi-delta]');
+        if (upnlValueEl) {
             const pnlSign = overview.totalPnl >= 0 ? '+' : '';
-            totalPnlEl.className = `h5 mb-0 ${pnlClass}`;
-            totalPnlEl.textContent = `${pnlSign}${AppUtils.formatCurrency(overview.totalPnl)} (${overview.totalPnlPercent.toFixed(2)}%)`;
+            upnlValueEl.textContent = `${pnlSign}${AppUtils.formatCurrency(overview.totalPnl)}`;
+        }
+        if (upnlDeltaEl) {
+            const deltaClass = overview.totalPnl >= 0 ? 'positive' : 'negative';
+            upnlDeltaEl.className = `kpi__delta ${deltaClass}`;
+            upnlDeltaEl.textContent = `${overview.activePositions} positions`;
         }
 
-        // Update Active Positions
-        const activePositionsEl = document.getElementById('active-positions');
-        if (activePositionsEl) {
-            activePositionsEl.textContent = overview.activePositions.toString();
+        // Update Exposure - kpi-exposure  
+        const exposureValueEl = document.querySelector('#kpi-exposure [data-kpi-value]');
+        const exposureDeltaEl = document.querySelector('#kpi-exposure [data-kpi-delta]');
+        if (exposureValueEl) {
+            // Exposure is total invested value (cost basis)
+            const totalCostBasis = overview.totalValue - overview.totalPnl;
+            exposureValueEl.textContent = AppUtils.formatCurrency(totalCostBasis);
         }
+        if (exposureDeltaEl) {
+            exposureDeltaEl.className = 'kpi__delta flat';
+            exposureDeltaEl.textContent = `${overview.activePositions} assets`;
+        }
+
+        // Update USDT Balance - kpi-cash
+        this.updateUSDTBalance();
 
         // Update Best and Worst Performers
         this.updatePerformerCard('best', overview.bestPerformer);
         this.updatePerformerCard('worst', overview.worstPerformer);
+    }
+
+    async updateUSDTBalance() {
+        try {
+            // Fetch USDT balance from portfolio data
+            const data = await AppUtils.fetchJSON(`/api/crypto-portfolio?currency=USD&_bypass_cache=${Date.now()}`);
+            let usdtBalance = 0;
+            
+            if (data && data.holdings) {
+                const usdtHolding = data.holdings.find(h => h.symbol === 'USDT');
+                if (usdtHolding) {
+                    usdtBalance = usdtHolding.quantity || 0;
+                }
+            }
+
+            const cashValueEl = document.querySelector('#kpi-cash [data-kpi-value]');
+            const cashDeltaEl = document.querySelector('#kpi-cash [data-kpi-delta]');
+            
+            if (cashValueEl) {
+                cashValueEl.textContent = AppUtils.formatCurrency(usdtBalance);
+            }
+            if (cashDeltaEl) {
+                cashDeltaEl.className = 'kpi__delta flat';
+                cashDeltaEl.textContent = 'Available';
+            }
+        } catch (error) {
+            console.warn('Could not fetch USDT balance:', error);
+        }
     }
 
     updatePerformerCard(type, performer) {
