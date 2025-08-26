@@ -98,6 +98,8 @@ class PortfolioService:
     def invalidate_cache(self) -> None:
         """Clear all cached data to force fresh fetches."""
         self._cache.clear()
+        # Clear failed symbols cache to allow retries
+        self._failed_symbols_cache.clear()
         self.logger.info("Portfolio service cache invalidated")
         
     def clear_cache(self) -> None:
@@ -654,10 +656,23 @@ class PortfolioService:
                     # Fallback to USD conversion
                     pass
             
-            # Get USD price and convert if needed
-            pair = f"{actual_symbol}/USDT"
-            ticker = self.exchange.exchange.fetch_ticker(pair)
-            usd_price = float(ticker.get('last', 0.0) or 0.0)
+            # Get USD price and convert if needed - try multiple pair formats
+            possible_pairs = [
+                f"{actual_symbol}/USDT",
+                f"{actual_symbol}/USD", 
+                f"{actual_symbol}USDT"
+            ]
+            
+            usd_price = 0.0
+            for pair in possible_pairs:
+                try:
+                    ticker = self.exchange.exchange.fetch_ticker(pair)
+                    usd_price = float(ticker.get('last', 0.0) or 0.0)
+                    if usd_price > 0:
+                        break
+                except Exception as pair_error:
+                    self.logger.debug(f"Failed to fetch {pair}: {pair_error}")
+                    continue
             
             if usd_price > 0:
                 if currency != 'USD':
