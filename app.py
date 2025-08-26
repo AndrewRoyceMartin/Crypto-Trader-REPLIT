@@ -214,36 +214,22 @@ def get_okx_native_client() -> Any:
 
 
 def get_bb_strategy_type(symbol: str, bb_signal: str, confidence_level: str) -> str:
-    """Determine the BB strategy variant based on asset characteristics and current analysis."""
-    # Large cap assets (conservative strategy)
+    """Determine the BB strategy variant based on asset characteristics."""
+    # Large cap assets (conservative approach)
     if symbol in ['BTC', 'ETH', 'BNB', 'XRP', 'ADA', 'SOL', 'DOT', 'LTC']:
-        if bb_signal in ['BUY ZONE', 'VERY CLOSE']:
-            return 'Enhanced BB-Conservative'
-        return 'Enhanced BB-Stable'
+        return 'Conservative'
     
-    # Gaming/Metaverse tokens (moderate strategy)  
-    elif symbol in ['GALA', 'SAND', 'MANA', 'AXS', 'CHZ', 'APE']:
-        if confidence_level in ['STRONG', 'GOOD']:
-            return 'Enhanced BB-Gaming'
-        return 'Enhanced BB-Moderate'
-    
-    # Meme coins (aggressive strategy)
+    # Meme coins (higher volatility strategy)
     elif symbol in ['DOGE', 'SHIB', 'PEPE', 'BONK', 'WIF', 'FLOKI']:
-        if bb_signal in ['BUY ZONE']:
-            return 'Enhanced BB-Aggressive'
-        return 'Enhanced BB-Meme'
+        return 'Aggressive'
     
-    # DeFi tokens (dynamic strategy)
-    elif symbol in ['UNI', 'SUSHI', 'AAVE', 'COMP', 'MKR', 'CRV', 'SNX', '1INCH']:
-        return 'Enhanced BB-DeFi'
-    
-    # Stablecoins and fiat
+    # Stablecoins and fiat (not applicable)
     elif symbol in ['USDT', 'USDC', 'DAI', 'BUSD', 'AUD', 'USD', 'EUR', 'GBP']:
         return 'N/A'
     
-    # Default for other assets
+    # All other tokens (standard approach)
     else:
-        return 'Enhanced BB'
+        return 'Standard'
 
 
 def get_stable_target_price(symbol: str, current_price: float) -> float:
