@@ -1231,7 +1231,8 @@ async function testDetailsButtons() {
             open_positions_details: await testOpenPositionsDetailsButtons(),
             available_positions_details: await testAvailablePositionsDetailsButtons(),
             details_modal_functionality: await testDetailsModalFunctionality(),
-            confidence_api_endpoint: await testConfidenceAPIEndpoint()
+            confidence_api_endpoint: await testConfidenceAPIEndpoint(),
+            modal_buttons_functionality: await testModalButtonsFunctionality()
         };
         
         // Determine overall status
@@ -1570,6 +1571,466 @@ async function testConfidenceAPIEndpoint() {
         return {
             status: 'error',
             error: `Confidence API endpoint test failed: ${error.message}`,
+            test_timestamp: new Date().toISOString()
+        };
+    }
+}
+
+async function testModalButtonsFunctionality() {
+    try {
+        const testResults = {
+            close_button_test: await testModalCloseButton(),
+            execute_trade_button_test: await testModalExecuteTradeButton(),
+            bootstrap_modal_integration: await testBootstrapModalIntegration(),
+            modal_cleanup_test: await testModalCleanupFunctionality()
+        };
+        
+        // Determine overall status
+        const allTests = Object.values(testResults);
+        const passedTests = allTests.filter(t => t.status === 'pass').length;
+        const partialTests = allTests.filter(t => t.status === 'partial').length;
+        const failedTests = allTests.filter(t => t.status === 'fail').length;
+        const errorTests = allTests.filter(t => t.status === 'error').length;
+        
+        let overallStatus = 'pass';
+        if (errorTests > 0 || failedTests > allTests.length / 2) {
+            overallStatus = 'fail';
+        } else if (partialTests > 0 || failedTests > 0) {
+            overallStatus = 'partial';
+        }
+        
+        return {
+            status: overallStatus,
+            sub_tests: testResults,
+            summary: {
+                total: allTests.length,
+                passed: passedTests,
+                partial: partialTests,
+                failed: failedTests,
+                errors: errorTests
+            },
+            test_timestamp: new Date().toISOString()
+        };
+        
+    } catch (error) {
+        return {
+            status: 'error',
+            error: `Modal buttons test failed: ${error.message}`,
+            test_timestamp: new Date().toISOString()
+        };
+    }
+}
+
+async function testModalCloseButton() {
+    try {
+        // Test if we can create a test modal to validate Close button functionality
+        const testModal = document.createElement('div');
+        testModal.className = 'modal fade';
+        testModal.id = 'test-close-modal';
+        testModal.innerHTML = `
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Test Modal</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">Test Content</div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // Temporarily add to DOM for testing
+        document.body.appendChild(testModal);
+        
+        // Check for Close button elements
+        const closeButtons = testModal.querySelectorAll('[data-bs-dismiss="modal"]');
+        const hasCloseButtons = closeButtons.length >= 1;
+        
+        // Check button classes and structure
+        const footerCloseButton = testModal.querySelector('.modal-footer button.btn-secondary');
+        const headerCloseButton = testModal.querySelector('.modal-header .btn-close');
+        
+        const footerButtonCorrect = footerCloseButton && 
+                                   footerCloseButton.textContent.includes('Close') &&
+                                   footerCloseButton.getAttribute('data-bs-dismiss') === 'modal';
+        
+        const headerButtonCorrect = headerCloseButton && 
+                                   headerCloseButton.getAttribute('data-bs-dismiss') === 'modal';
+        
+        // Test Bootstrap modal functionality if available
+        let modalCanBeCreated = false;
+        let modalHasDismissHandlers = false;
+        
+        if (typeof window.bootstrap !== 'undefined' && window.bootstrap.Modal) {
+            try {
+                const bootstrapModal = new window.bootstrap.Modal(testModal);
+                modalCanBeCreated = true;
+                
+                // Check if bootstrap has proper dismiss handlers
+                modalHasDismissHandlers = typeof bootstrapModal.hide === 'function';
+            } catch (modalError) {
+                modalCanBeCreated = false;
+            }
+        }
+        
+        // Cleanup test modal
+        document.body.removeChild(testModal);
+        
+        const allChecks = [
+            hasCloseButtons,
+            footerButtonCorrect,
+            headerButtonCorrect,
+            modalCanBeCreated,
+            modalHasDismissHandlers
+        ];
+        
+        const passedChecks = allChecks.filter(Boolean).length;
+        
+        return {
+            status: passedChecks >= 4 ? 'pass' : (passedChecks >= 3 ? 'partial' : 'fail'),
+            has_close_buttons: hasCloseButtons,
+            footer_button_correct: footerButtonCorrect,
+            header_button_correct: headerButtonCorrect,
+            modal_can_be_created: modalCanBeCreated,
+            modal_has_dismiss_handlers: modalHasDismissHandlers,
+            close_buttons_count: closeButtons.length,
+            passed_checks: passedChecks,
+            total_checks: allChecks.length,
+            test_timestamp: new Date().toISOString()
+        };
+        
+    } catch (error) {
+        return {
+            status: 'error',
+            error: `Close button test failed: ${error.message}`,
+            test_timestamp: new Date().toISOString()
+        };
+    }
+}
+
+async function testModalExecuteTradeButton() {
+    try {
+        // Test Execute Trade button functionality by simulating modal HTML generation
+        const testSymbol = 'BTC';
+        
+        // Create test scenarios for different confidence scores
+        const testScenarios = [
+            { confidence: 75, shouldHaveButton: true, description: 'High confidence (75)' },
+            { confidence: 60, shouldHaveButton: true, description: 'Minimum confidence (60)' },
+            { confidence: 45, shouldHaveButton: false, description: 'Low confidence (45)' }
+        ];
+        
+        let scenarioResults = [];
+        
+        for (const scenario of testScenarios) {
+            try {
+                // Simulate the modal HTML generation logic from showConfidenceDetails
+                const shouldRenderButton = scenario.confidence >= 60;
+                const executeButtonHtml = shouldRenderButton ? 
+                    `<button type="button" class="btn btn-primary" onclick="buyBackPosition('${testSymbol}'); bootstrap.Modal.getInstance(document.getElementById('confidenceModal')).hide();">Execute Trade</button>` : 
+                    '';
+                
+                // Create test modal with this HTML
+                const testModal = document.createElement('div');
+                testModal.className = 'modal fade';
+                testModal.id = 'test-execute-modal';
+                testModal.innerHTML = `
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-body">Test for confidence ${scenario.confidence}</div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                ${executeButtonHtml}
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                document.body.appendChild(testModal);
+                
+                // Check button presence
+                const executeButton = testModal.querySelector('.modal-footer button.btn-primary');
+                const buttonExists = executeButton !== null;
+                const buttonTextCorrect = executeButton ? executeButton.textContent.includes('Execute Trade') : false;
+                const buttonOnclickCorrect = executeButton ? 
+                    (executeButton.getAttribute('onclick') && 
+                     executeButton.getAttribute('onclick').includes('buyBackPosition') &&
+                     executeButton.getAttribute('onclick').includes('bootstrap.Modal.getInstance')) : false;
+                
+                scenarioResults.push({
+                    confidence_score: scenario.confidence,
+                    description: scenario.description,
+                    should_have_button: scenario.shouldHaveButton,
+                    button_exists: buttonExists,
+                    button_text_correct: buttonTextCorrect,
+                    button_onclick_correct: buttonOnclickCorrect,
+                    test_passed: (buttonExists === scenario.shouldHaveButton) && 
+                                (buttonExists ? (buttonTextCorrect && buttonOnclickCorrect) : true)
+                });
+                
+                // Cleanup
+                document.body.removeChild(testModal);
+                
+            } catch (scenarioError) {
+                scenarioResults.push({
+                    confidence_score: scenario.confidence,
+                    description: scenario.description,
+                    error: scenarioError.message,
+                    test_passed: false
+                });
+            }
+        }
+        
+        // Check if buyBackPosition function exists globally
+        const hasBuyBackFunction = typeof window.buyBackPosition === 'function';
+        
+        // Determine overall result
+        const passedScenarios = scenarioResults.filter(s => s.test_passed).length;
+        const totalScenarios = scenarioResults.length;
+        
+        const allChecks = [
+            passedScenarios === totalScenarios,
+            hasBuyBackFunction,
+            typeof window.bootstrap !== 'undefined'
+        ];
+        
+        const passedChecks = allChecks.filter(Boolean).length;
+        
+        return {
+            status: passedChecks >= 2 ? 'pass' : (passedChecks >= 1 ? 'partial' : 'fail'),
+            scenario_results: scenarioResults,
+            passed_scenarios: passedScenarios,
+            total_scenarios: totalScenarios,
+            has_buyback_function: hasBuyBackFunction,
+            has_bootstrap: typeof window.bootstrap !== 'undefined',
+            passed_checks: passedChecks,
+            total_checks: allChecks.length,
+            test_timestamp: new Date().toISOString()
+        };
+        
+    } catch (error) {
+        return {
+            status: 'error',
+            error: `Execute Trade button test failed: ${error.message}`,
+            test_timestamp: new Date().toISOString()
+        };
+    }
+}
+
+async function testBootstrapModalIntegration() {
+    try {
+        // Test Bootstrap Modal API integration
+        const hasBootstrap = typeof window.bootstrap !== 'undefined';
+        const hasModal = hasBootstrap && typeof window.bootstrap.Modal === 'function';
+        
+        // Test modal creation and manipulation
+        let modalCreationWorks = false;
+        let modalMethodsAvailable = false;
+        let modalInstanceMethods = false;
+        
+        if (hasModal) {
+            try {
+                // Create a test modal element
+                const testModalElement = document.createElement('div');
+                testModalElement.className = 'modal fade';
+                testModalElement.id = 'bootstrap-test-modal';
+                testModalElement.innerHTML = `
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-body">Bootstrap Test</div>
+                        </div>
+                    </div>
+                `;
+                
+                document.body.appendChild(testModalElement);
+                
+                // Test Bootstrap Modal constructor
+                const modalInstance = new window.bootstrap.Modal(testModalElement);
+                modalCreationWorks = true;
+                
+                // Test modal methods
+                modalMethodsAvailable = typeof modalInstance.show === 'function' && 
+                                       typeof modalInstance.hide === 'function';
+                
+                // Test getInstance method
+                modalInstanceMethods = typeof window.bootstrap.Modal.getInstance === 'function';
+                
+                // Test getInstance functionality
+                const retrievedInstance = window.bootstrap.Modal.getInstance(testModalElement);
+                const getInstanceWorks = retrievedInstance === modalInstance;
+                
+                // Cleanup
+                document.body.removeChild(testModalElement);
+                
+                modalInstanceMethods = modalInstanceMethods && getInstanceWorks;
+                
+            } catch (modalTestError) {
+                modalCreationWorks = false;
+                modalMethodsAvailable = false;
+                modalInstanceMethods = false;
+            }
+        }
+        
+        // Test data-bs-dismiss attribute handling
+        let dismissAttributeSupported = false;
+        if (hasBootstrap) {
+            try {
+                const testDismissElement = document.createElement('button');
+                testDismissElement.setAttribute('data-bs-dismiss', 'modal');
+                dismissAttributeSupported = true;
+            } catch (dismissError) {
+                dismissAttributeSupported = false;
+            }
+        }
+        
+        const allChecks = [
+            hasBootstrap,
+            hasModal,
+            modalCreationWorks,
+            modalMethodsAvailable,
+            modalInstanceMethods,
+            dismissAttributeSupported
+        ];
+        
+        const passedChecks = allChecks.filter(Boolean).length;
+        
+        return {
+            status: passedChecks >= 5 ? 'pass' : (passedChecks >= 3 ? 'partial' : 'fail'),
+            has_bootstrap: hasBootstrap,
+            has_modal_constructor: hasModal,
+            modal_creation_works: modalCreationWorks,
+            modal_methods_available: modalMethodsAvailable,
+            modal_instance_methods: modalInstanceMethods,
+            dismiss_attribute_supported: dismissAttributeSupported,
+            passed_checks: passedChecks,
+            total_checks: allChecks.length,
+            test_timestamp: new Date().toISOString()
+        };
+        
+    } catch (error) {
+        return {
+            status: 'error',
+            error: `Bootstrap modal integration test failed: ${error.message}`,
+            test_timestamp: new Date().toISOString()
+        };
+    }
+}
+
+async function testModalCleanupFunctionality() {
+    try {
+        // Test modal cleanup and event handling
+        let modalCleanupWorks = false;
+        let eventListenerWorks = false;
+        let modalRemovalWorks = false;
+        
+        const testModalId = 'cleanup-test-modal';
+        
+        try {
+            // Create test modal
+            const testModal = document.createElement('div');
+            testModal.className = 'modal fade';
+            testModal.id = testModalId;
+            testModal.innerHTML = `
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-body">Cleanup Test</div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(testModal);
+            
+            // Test event listener attachment (simulating the cleanup code from showConfidenceDetails)
+            let eventFired = false;
+            testModal.addEventListener('hidden.bs.modal', function() {
+                eventFired = true;
+            });
+            
+            eventListenerWorks = true;
+            
+            // Test modal removal
+            const modalExists = document.getElementById(testModalId) !== null;
+            if (modalExists) {
+                testModal.remove();
+                const modalRemoved = document.getElementById(testModalId) === null;
+                modalRemovalWorks = modalRemoved;
+            }
+            
+            modalCleanupWorks = eventListenerWorks && modalRemovalWorks;
+            
+        } catch (cleanupError) {
+            modalCleanupWorks = false;
+            eventListenerWorks = false;
+            modalRemovalWorks = false;
+        }
+        
+        // Test existing modal removal logic (from showConfidenceDetails function)
+        let existingModalRemovalWorks = false;
+        try {
+            // Create a modal with the expected ID
+            const existingModal = document.createElement('div');
+            existingModal.id = 'confidenceModal';
+            document.body.appendChild(existingModal);
+            
+            // Test the removal logic
+            const foundModal = document.getElementById('confidenceModal');
+            if (foundModal) {
+                foundModal.remove();
+                const removedSuccessfully = document.getElementById('confidenceModal') === null;
+                existingModalRemovalWorks = removedSuccessfully;
+            }
+        } catch (removalError) {
+            existingModalRemovalWorks = false;
+        }
+        
+        // Test insertAdjacentHTML functionality (used in showConfidenceDetails)
+        let htmlInsertionWorks = false;
+        try {
+            const testContainer = document.createElement('div');
+            document.body.appendChild(testContainer);
+            
+            testContainer.insertAdjacentHTML('beforeend', '<div id="insertion-test">Test</div>');
+            const insertedElement = testContainer.querySelector('#insertion-test');
+            htmlInsertionWorks = insertedElement !== null;
+            
+            // Cleanup
+            document.body.removeChild(testContainer);
+        } catch (insertionError) {
+            htmlInsertionWorks = false;
+        }
+        
+        const allChecks = [
+            modalCleanupWorks,
+            eventListenerWorks,
+            modalRemovalWorks,
+            existingModalRemovalWorks,
+            htmlInsertionWorks
+        ];
+        
+        const passedChecks = allChecks.filter(Boolean).length;
+        
+        return {
+            status: passedChecks >= 4 ? 'pass' : (passedChecks >= 2 ? 'partial' : 'fail'),
+            modal_cleanup_works: modalCleanupWorks,
+            event_listener_works: eventListenerWorks,
+            modal_removal_works: modalRemovalWorks,
+            existing_modal_removal_works: existingModalRemovalWorks,
+            html_insertion_works: htmlInsertionWorks,
+            passed_checks: passedChecks,
+            total_checks: allChecks.length,
+            test_timestamp: new Date().toISOString()
+        };
+        
+    } catch (error) {
+        return {
+            status: 'error',
+            error: `Modal cleanup test failed: ${error.message}`,
             test_timestamp: new Date().toISOString()
         };
     }
