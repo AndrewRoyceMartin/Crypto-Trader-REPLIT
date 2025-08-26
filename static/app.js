@@ -5923,11 +5923,11 @@ function createAvailablePositionRow(position) {
     signalCell.textContent = buySignal;
     row.appendChild(signalCell);
     
-    // Bollinger Bands Strategy Cell
-    const bbAnalysis = position.bollinger_analysis || { signal: "NO DATA", distance_percent: 0 };
+    // Bollinger Bands Strategy Cell - with safe fallbacks
+    const bbAnalysis = position.bollinger_analysis || { signal: "NO DATA", distance_percent: 0, lower_band_price: 0 };
     const bbSignal = bbAnalysis.signal || "NO DATA";
-    const bbDistance = bbAnalysis.distance_percent || 0;
-    const lowerBandPrice = bbAnalysis.lower_band_price || 0;
+    const bbDistance = parseFloat(bbAnalysis.distance_percent) || 0;
+    const lowerBandPrice = parseFloat(bbAnalysis.lower_band_price) || 0;
     
     const getBollingerSignalClass = (signal) => {
         if (signal === "BUY ZONE") return "text-success fw-bold";

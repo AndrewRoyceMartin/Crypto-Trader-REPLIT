@@ -3474,7 +3474,9 @@ def api_available_positions() -> ResponseReturnValue:
                     bb_distance_percent = 0.0
                     lower_band_price = 0.0
                     
-                    if current_price > 0 and symbol not in ['AUD', 'USD', 'EUR', 'GBP', 'USDT', 'USDC', 'DAI', 'BUSD']:
+                    # Only calculate for major tradeable assets with sufficient volume
+                    major_assets = ['BTC', 'ETH', 'SOL', 'ADA', 'DOT', 'AVAX', 'LINK', 'UNI', 'LTC', 'XRP']
+                    if current_price > 0 and symbol in major_assets:
                         try:
                             # Get historical price data for Bollinger Bands calculation
                             from src.utils.okx_native import OKXNative
@@ -3517,6 +3519,10 @@ def api_available_positions() -> ResponseReturnValue:
                                         
                         except Exception as bb_error:
                             logger.debug(f"Could not calculate Bollinger Bands for {symbol}: {bb_error}")
+                            # Ensure we don't break the API response if BB calculation fails
+                            bb_signal = "NO DATA"
+                            bb_distance_percent = 0.0
+                            lower_band_price = 0.0
                     
                     target_price = get_stable_target_price(symbol, current_price)
                     
