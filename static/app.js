@@ -3102,7 +3102,9 @@ class TradingApp {
                 buttonTd.className = 'text-center text-nowrap';
                 const viewButton = document.createElement('button');
                 viewButton.className = 'btn btn-xs btn-outline-primary px-2 py-1 small';
-                viewButton.onclick = () => toast(`${holding.symbol} position details`, 'info');
+                viewButton.onclick = () => {
+                    alert(`${holding.symbol} Position Details\n\nSymbol: ${holding.symbol}\nQuantity: ${qty.toLocaleString()}\nAvg Price: ${this.formatCryptoPrice(purchasePrice)}\nCurrent Price: ${this.formatCryptoPrice(cp)}\nValue: ${this.formatCurrency(cv, this.selectedCurrency)}\nP&L: ${this.formatCurrency(pnlNum)} (${pp.toFixed(1)}%)`);
+                };
                 viewButton.textContent = 'View';
                 buttonTd.appendChild(viewButton);
                 row.appendChild(buttonTd);

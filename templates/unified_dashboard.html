@@ -701,11 +701,15 @@
     }
 
     function renderAvailableTable(positions) {
+        console.debug("renderAvailableTable called with:", positions);
         const tbody = document.getElementById('available-tbody');
-        if (!tbody || !positions || positions.length === 0) {
-            if (tbody) {
-                tbody.innerHTML = '<tr><td colspan="6" class="text-center py-3 text-muted">No available positions</td></tr>';
-            }
+        if (!tbody) {
+            console.error("available-tbody element not found!");
+            return;
+        }
+        
+        if (!positions || positions.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="11" class="text-center py-3 text-muted">No available positions</td></tr>';
             return;
         }
         

@@ -1929,12 +1929,12 @@ def api_worst_performer() -> ResponseReturnValue:
                 continue
 
             inst = f"{symbol}-USDT"
-            tk = with_throttle(client.ticker, inst)
+            tk = client.ticker(inst)
             price_change_24h = float(tk.get('pct_24h', 0) or 0)
             volume_24h = float(tk.get('vol24h', 0) or 0)
             current_price = float(tk.get('last', 0) or h.get('current_price', 0) or 0)
 
-            candles = with_throttle(client.candles, inst, bar="1D", limit=7) or []
+            candles = client.candles(inst, bar="1D", limit=7) or []
             price_change_7d = 0.0
             if len(candles) >= 2:
                 newest_close = float(candles[0][4])
