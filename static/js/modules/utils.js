@@ -7,18 +7,25 @@ export class AppUtils {
 
     static async fetchJSON(url, { method='GET', body, timeout=30000, headers={}, noStore=true } = {}) {
         const ctl = new AbortController();
-        const t = setTimeout(() => {
-            ctl.abort('Request timeout');
-        }, timeout);
-        
-        const h = {
-            'Content-Type': 'application/json',
-            ...(noStore ? {'Cache-Control': 'no-store'} : {}),
-            ...(AppUtils.getAdminToken() ? {'X-Admin-Token': AppUtils.getAdminToken()} : {}),
-            ...headers
-        };
+        let timeoutId = null;
         
         try {
+            // Set up timeout with proper cleanup
+            timeoutId = setTimeout(() => {
+                try {
+                    ctl.abort('Request timeout');
+                } catch (e) {
+                    // Ignore errors during abort
+                }
+            }, timeout);
+            
+            const h = {
+                'Content-Type': 'application/json',
+                ...(noStore ? {'Cache-Control': 'no-store'} : {}),
+                ...(AppUtils.getAdminToken() ? {'X-Admin-Token': AppUtils.getAdminToken()} : {}),
+                ...headers
+            };
+            
             const res = await fetch(url, { 
                 method, 
                 headers: h, 
@@ -27,7 +34,11 @@ export class AppUtils {
                 cache: 'no-store' 
             });
             
-            clearTimeout(t);
+            // Clear timeout on successful response
+            if (timeoutId) {
+                clearTimeout(timeoutId);
+                timeoutId = null;
+            }
             
             // Check if response is OK first
             if (!res.ok) {
@@ -43,15 +54,13 @@ export class AppUtils {
             const data = await res.json();
             return data;
         } catch (error) {
-            // Properly handle abort errors and other fetch errors
-            if (error.name === 'AbortError') {
-                // Silently handle timeout/abort errors
-                return null;
-            }
-            // Handle other fetch errors silently
+            // Handle all fetch errors silently to prevent console errors
             return null;
         } finally { 
-            clearTimeout(t); 
+            // Always clean up timeout
+            if (timeoutId) {
+                clearTimeout(timeoutId);
+            }
         }
     }
 
