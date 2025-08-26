@@ -3398,15 +3398,18 @@ def api_available_positions() -> ResponseReturnValue:
         available_positions = []
         
         # Define comprehensive list of major cryptocurrencies ACTUALLY AVAILABLE on OKX
-        # Filtered to only include currencies with live OKX trading pairs (removed unsupported ones)
+        # Updated with missing major OKX-supported currencies (Jan 2025)
         major_crypto_assets = [
-            'BTC', 'ETH', 'SOL', 'ADA', 'DOT', 'AVAX', 'LINK', 'UNI', 'LTC',
+            'BTC', 'ETH', 'SOL', 'ADA', 'DOT', 'AVAX', 'MATIC', 'LINK', 'UNI', 'LTC',
             'BCH', 'XLM', 'ALGO', 'ATOM', 'ICP', 'NEAR', 'SAND', 'MANA', 'CRO',
             'APE', 'GALA', 'TRX', 'PEPE', 'SHIB', 'DOGE', 'XRP', 'BNB', 'USDT', 'USDC',
             'DAI', 'BUSD', 'AXS', 'CHZ', 'BAT', 'ETC', 
             'THETA', 'ZIL', 'ICX', 'KNC', 'LRC',
             'STORJ', 'GRT', 'COMP', 'MKR', 'YFI', 'SUSHI', 'SNX', 'AAVE', 'CRV', 'BAL',
             '1INCH', 'ALPHA', 'PERP', 'DYDX', 'IMX', 'API3',
+            # Major OKX currencies that were missing
+            'OKB', 'TON', 'FIL', 'OP', 'ARB', 'RNDR', 'LDO', 'FET', 'INJ', 
+            'BONK', 'WIF', 'FLOKI', 'JASMY',
             'AUD'  # Include AUD fiat
         ]
         
