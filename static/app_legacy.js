@@ -3196,27 +3196,50 @@ class TradingApp {
                 const takeProfit = this.formatCryptoPrice(purchasePrice * 1.04);  // 4% take profit (Enhanced Bollinger Bands)
                 const daysHeld = '30';
 
+                // Calculate target values
+                const targetValue = (cv * 1.08).toLocaleString('en-US', {style: 'currency', currency: 'USD'});
+                const targetProfit = (cv * 0.08).toLocaleString('en-US', {style: 'currency', currency: 'USD'});
+                
+                // Get position status badge based on P&L
+                let positionStatus = '<span class="badge bg-secondary">FLAT</span>';
+                if (qty > 0) {
+                    if (pp >= 8.0) {
+                        positionStatus = '<span class="badge bg-success" title="Position above 8% profit - in active management zone">MANAGED</span>';
+                    } else if (pp >= 3.0) {
+                        positionStatus = '<span class="badge bg-warning text-dark" title="Position above 3% profit - monitored for exit signals">WATCH</span>';
+                    } else if (pp < 0) {
+                        positionStatus = '<span class="badge bg-danger" title="Position at loss - monitored for crash protection">LOSS</span>';
+                    } else {
+                        positionStatus = '<span class="badge bg-primary" title="Holding long position - monitored by trading bot">LONG</span>';
+                    }
+                }
+
                 // Safe DOM creation instead of innerHTML
                 const cells = [
                     { content: crypto.symbol || 'PEPE', classes: 'text-start', tag: 'strong' },
-                    { content: side, classes: 'text-start' },
-                    { content: qty.toLocaleString(undefined, {maximumFractionDigits: 0}), classes: 'text-end' },
+                    { content: qty.toLocaleString(undefined, {maximumFractionDigits: 6}), classes: 'text-end' },
                     { content: this.formatCryptoPrice(purchasePrice), classes: 'text-end' },
                     { content: this.formatCryptoPrice(cp), classes: 'text-end' },
                     { content: this.formatCurrency(cv, this.selectedCurrency), classes: 'text-end' },
                     { content: this.formatCurrency(pnlNum), classes: `text-end ${pnlClass}`, tag: 'strong' },
-                    { content: `${pnlIcon} ${pp.toFixed(1)}%`, classes: `text-end ${pnlClass}`, tag: 'strong' },
-                    { content: change24h, classes: `text-end ${pp >= 0 ? 'text-success' : 'text-danger'}` },
-                    { content: `${weight}%`, classes: 'text-end' },
-                    { content: `${target}%`, classes: 'text-end' },
-                    { content: `${deviation}%`, classes: 'text-end' },
-                    { content: `${stopLoss} / ${takeProfit}`, classes: 'text-center', containerTag: 'small', containerClass: 'text-muted' },
-                    { content: daysHeld, classes: 'text-end' }
+                    { content: `${pnlIcon} ${pp.toFixed(2)}%`, classes: `text-end ${pnlClass}`, tag: 'strong' },
+                    { content: targetValue, classes: 'text-end text-success' },
+                    { content: targetProfit, classes: 'text-end text-success' },
+                    { content: '+8.0%', classes: 'text-end text-success' },
+                    { content: positionStatus, classes: '', isHTML: true },
+                    { content: '<span class="badge bg-secondary">HOLD</span>', classes: '', isHTML: true }
                 ];
                 
                 cells.forEach(cellData => {
                     const td = document.createElement('td');
                     td.className = cellData.classes;
+                    
+                    // Handle HTML content (for badges)
+                    if (cellData.isHTML) {
+                        td.innerHTML = cellData.content;
+                        row.appendChild(td);
+                        return;
+                    }
                     
                     let element;
                     if (cellData.containerTag) {
