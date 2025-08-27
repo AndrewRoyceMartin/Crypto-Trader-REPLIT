@@ -642,6 +642,9 @@ class PortfolioService:
             if not self.exchange or not self.exchange.is_connected():
                 return 0.0
                 
+            # Initialize live_price to prevent unbound variable error
+            live_price = 0.0
+            
             # Try currency-specific trading pair first if not USD
             if currency != 'USD':
                 currency_pair = f"{actual_symbol}/{currency}T"  # e.g., BTC/EURT, PEPE/AUDT
@@ -686,7 +689,7 @@ class PortfolioService:
                 cache_put_price(cache_key, live_price)
                 return live_price
             else:
-                self.logger.warning(f"Invalid live price for {symbol}: {live_price}")
+                self.logger.warning(f"No valid price found for {symbol} (USD price: {usd_price})")
                 return 0.0
                 
         except Exception as e:
