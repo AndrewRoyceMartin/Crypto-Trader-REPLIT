@@ -1771,32 +1771,33 @@ class EnhancedTestRunner {
         const totalTests = results.length;
         const successRate = Math.round((passedTests / totalTests) * 100);
         
-        // Create summary header
-        let html = `
-            <div class="alert alert-info mb-4">
-                <h5><i class="fas fa-check-circle me-2"></i>Normal Test Results</h5>
-                <div class="row mt-3">
-                    <div class="col-md-4">
-                        <div class="text-center">
-                            <div class="h4 mb-1 ${successRate >= 75 ? 'text-success' : successRate >= 50 ? 'text-warning' : 'text-danger'}">${successRate}%</div>
-                            <div class="small text-muted">Success Rate</div>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="text-center">
-                            <div class="h4 mb-1 text-primary">${passedTests}</div>
-                            <div class="small text-muted">Passed</div>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="text-center">
-                            <div class="h4 mb-1 text-secondary">${totalTests}</div>
-                            <div class="small text-muted">Total Tests</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+        // Simple pass/fail indicators at the top
+        let html = `<div class="mb-4">`;
+        
+        results.forEach(result => {
+            const statusSymbol = result.status === 'pass' ? '✅' : result.status === 'fail' ? '❌' : '⚠️';
+            const statusClass = result.status === 'pass' ? 'text-success' : result.status === 'fail' ? 'text-danger' : 'text-warning';
             
+            html += `
+                <div class="d-flex align-items-center mb-2">
+                    <span class="me-2">${statusSymbol}</span>
+                    <span class="${statusClass} fw-bold">${result.testName}</span>
+                    <span class="ms-auto badge ${result.status === 'pass' ? 'bg-success' : result.status === 'fail' ? 'bg-danger' : 'bg-warning'}">${result.status.toUpperCase()}</span>
+                </div>
+            `;
+        });
+        
+        html += `</div>`;
+        
+        // Summary stats
+        html += `
+            <div class="alert alert-${successRate >= 75 ? 'success' : successRate >= 50 ? 'warning' : 'danger'} mb-4">
+                <strong>Test Summary:</strong> ${passedTests}/${totalTests} passed (${successRate}%)
+            </div>
+        `;
+        
+        // Detailed log at the bottom
+        html += `
             <div class="card">
                 <div class="card-header">
                     <h6 class="mb-0">Formatted Test Data</h6>
