@@ -20,7 +20,7 @@ from collections import OrderedDict
 from typing import Any, Optional, Iterator, TypedDict, List, Dict, Tuple
 from functools import wraps
 
-from flask import Flask, jsonify, request, render_template, make_response
+from flask import Flask, jsonify, request, render_template, make_response, Response
 from flask.typing import ResponseReturnValue
 
 # Top-level imports only (satisfies linter)
@@ -783,7 +783,8 @@ def api_status() -> ResponseReturnValue:
             if dt.tzinfo is None:
                 dt = dt.replace(tzinfo=timezone.utc)
             bot_runtime_sec = max(0, int((datetime.now(dt.tzinfo) - dt).total_seconds()))
-        except Exception:
+        except (ValueError, TypeError, KeyError) as e:
+            logger.debug(f"Error parsing bot start time: {e}")
             bot_runtime_sec = 0
 
     payload = {
@@ -840,12 +841,14 @@ def crypto_portfolio_okx() -> ResponseReturnValue:
                     if hasattr(exchange, "clear_cache") and callable(exchange.clear_cache):
                         try:
                             exchange.clear_cache()
-                        except Exception:
+                        except (AttributeError, RuntimeError) as e:
+                            logger.debug(f"Exchange cache clear failed: {e}")
                             pass
                     elif hasattr(exchange, "invalidate_cache") and callable(exchange.invalidate_cache):
                         try:
                             exchange.invalidate_cache()
-                        except Exception:
+                        except (AttributeError, RuntimeError) as e:
+                            logger.debug(f"Exchange cache invalidate failed: {e}")
                             pass
             except Exception as e:
                 logger.debug(f"Cache invalidation not available: {e}")
@@ -937,7 +940,8 @@ def api_portfolio_overview() -> ResponseReturnValue:
                     portfolio_service.invalidate_cache()
                 elif hasattr(portfolio_service, "clear_cache"):
                     portfolio_service.clear_cache()
-            except Exception:
+            except (AttributeError, RuntimeError) as e:
+                logger.debug(f"Cache clearing operation failed: {e}")
                 pass
             data = portfolio_service.get_portfolio_data(currency=selected_currency)
 
@@ -1293,7 +1297,8 @@ def bot_status() -> ResponseReturnValue:
             if dt.tzinfo is None:
                 dt = dt.replace(tzinfo=timezone.utc)
             runtime_sec = max(0, int((datetime.now(dt.tzinfo) - dt).total_seconds()))
-        except Exception:
+        except (ValueError, TypeError, KeyError) as e:
+            logger.debug(f"Error parsing runtime timestamp: {e}")
             runtime_sec = 0
 
     status = {
@@ -2215,7 +2220,8 @@ def api_equity_curve() -> ResponseReturnValue:
                         continue
                     date_key = datetime.fromtimestamp(ts / 1000, tz=timezone.utc).strftime("%Y-%m-%d")
                     daily_balances.setdefault(date_key, {})[ccy] = bal_after
-                except Exception:
+                except (ValueError, TypeError, KeyError) as e:
+                    logger.debug(f"Error parsing account bill: {e}")
                     continue
         except Exception as bills_error:
             logger.info(f"Bills API not accessible (using portfolio fallback): {bills_error}")
@@ -2620,7 +2626,8 @@ def api_performance_analytics() -> ResponseReturnValue:
                                         'type': bill_type
                                     })
 
-                            except Exception:
+                            except (ValueError, TypeError, KeyError) as e:
+                                logger.debug(f"Error processing bill record: {e}")
                                 continue
 
                         total_trades = len(trade_records)
@@ -2753,7 +2760,8 @@ def api_performance_analytics() -> ResponseReturnValue:
 server_start_time = datetime.now(LOCAL_TZ)
 try:
     server_start_monotonic = time.monotonic()
-except Exception:
+except (OSError, RuntimeError) as e:
+    logger.debug(f"Monotonic clock unavailable: {e}")
     server_start_monotonic = None
 
 
@@ -2762,12 +2770,14 @@ def get_uptime_seconds() -> int:
     if 'server_start_monotonic' in globals() and server_start_monotonic is not None:
         try:
             return max(0, int(time.monotonic() - server_start_monotonic))
-        except Exception:
+        except (OSError, RuntimeError) as e:
+            logger.debug(f"Monotonic uptime calculation failed: {e}")
             pass
     # Fallback to wall-clock delta
     try:
         return max(0, int((datetime.now(LOCAL_TZ) - server_start_time).total_seconds()))
-    except Exception:
+    except (OverflowError, ValueError, TypeError) as e:
+        logger.debug(f"Fallback uptime calculation failed: {e}")
         return 0
 
 
@@ -2946,7 +2956,8 @@ def create_sample_portfolio_for_export() -> list[dict[str, Any]]:
             cryptocurrencies.append(crypto)
 
         return cryptocurrencies
-    except Exception:
+    except (ImportError, ConnectionError, ValueError, AttributeError) as e:
+        logger.debug(f"Failed to create sample portfolio: {e}")
         return []
 
 # Add missing API routes that the original dashboard expects
@@ -3988,7 +3999,8 @@ def api_reset_entire_program() -> ResponseReturnValue:
         server_start_time = datetime.now(LOCAL_TZ)
         try:
             server_start_monotonic = time.monotonic()
-        except Exception:
+        except (OSError, RuntimeError) as e:
+            logger.debug(f"Monotonic clock reset failed: {e}")
             server_start_monotonic = None
 
         trading_state.update({
@@ -4336,7 +4348,8 @@ def api_okx_status() -> ResponseReturnValue:
         try:
             exchange.load_markets()
             connected = True
-        except Exception:
+        except (ConnectionError, TimeoutError, AttributeError, RuntimeError) as e:
+            logger.debug(f"Exchange market loading failed: {e}")
             connected = False
 
         status = {
@@ -4484,7 +4497,8 @@ def execute_take_profit() -> ResponseReturnValue:
                             'pnl_percent': pnl_percent,
                             'buy_score': abs(pnl_percent)
                         })
-                except Exception:
+                except (ValueError, TypeError, KeyError) as e:
+                    logger.debug(f"Error processing buy candidate: {e}")
                     continue
 
             buy_candidates.sort(key=lambda x: x['buy_score'], reverse=True)
@@ -5103,7 +5117,8 @@ def api_test_sync_data() -> ResponseReturnValue:
                     # consider it running if any pair is running or the object says it is
                     pair_running = any(s.get("running", False) for s in mc_status.get("pairs", {}).values())
                     mc_running = bool(pair_running or mc_status.get('running', False))
-            except Exception:
+            except (AttributeError, TypeError, ValueError) as e:
+                logger.debug(f"Error getting multi-currency trader status: {e}")
                 mc_running = None
 
             pass_cond = (running == active) and (mc_running is None or running == mc_running)
@@ -5174,7 +5189,8 @@ def api_test_sync_data() -> ResponseReturnValue:
                         err = abs(v - expected) / expected * 100
                         if err > 1.0:  # >1% mismatch
                             bad_rows.append({'symbol': h.get('symbol'), 'expected': expected, 'actual': v, 'error_pct': round(err, 3)})
-                except Exception:
+                except (ValueError, TypeError, ZeroDivisionError) as e:
+                    logger.debug(f"Error calculating holding value mismatch: {e}")
                     continue
 
             tot_err_pct = (abs(total_current_value - sum_current_value) / sum_current_value * 100) if sum_current_value > 0 else 0
@@ -5219,7 +5235,8 @@ def api_test_sync_data() -> ResponseReturnValue:
                     if p_native > 0 and p_ccxt > 0:
                         diff_pct = abs(p_native - p_ccxt) / p_native * 100
                         diffs.append({'pair': pair, 'native': p_native, 'ccxt': p_ccxt, 'diff_pct': round(diff_pct, 4)})
-                except Exception:
+                except (ValueError, TypeError, AttributeError, ConnectionError, ZeroDivisionError) as e:
+                    logger.debug(f"Error comparing prices for {pair}: {e}")
                     continue
 
             max_diff = max((d['diff_pct'] for d in diffs), default=0.0)
@@ -5265,7 +5282,8 @@ def api_test_sync_data() -> ResponseReturnValue:
                     # Use already imported timedelta to avoid local variable issues
                     ts = datetime.fromisoformat(str(last_update).replace('Z', '+00:00'))
                     is_recent = (datetime.now(ts.tzinfo) - ts) < timedelta(minutes=10)
-                except Exception:
+                except (ValueError, TypeError, AttributeError, OverflowError) as e:
+                    logger.debug(f"Error parsing timestamp {last_update}: {e}")
                     parse_ok = False
             test_data['test_results']['timestamp_integrity'] = {
                 'status': 'pass' if (parse_ok and is_recent) else 'fail',
@@ -5315,7 +5333,8 @@ def api_test_sync_data() -> ResponseReturnValue:
                     is_json = True
                     has_trades_data = 'trades' in json_data and isinstance(json_data.get('trades'), list)
                     trades_count = len(json_data.get('trades', []))
-            except Exception:
+            except (ValueError, TypeError, KeyError) as e:
+                logger.debug(f"Error parsing recent trades JSON response: {e}")
                 is_json = False
 
             # Enhanced validation
@@ -5388,7 +5407,8 @@ def api_test_sync_data() -> ResponseReturnValue:
                         dt = dt.replace(tzinfo=timezone.utc)
                     bot_runtime_seconds = max(0, int((datetime.now(dt.tzinfo) - dt).total_seconds()))
                     bot_runtime_human = humanize_seconds(bot_runtime_seconds)
-                except Exception:
+                except (ValueError, TypeError, OverflowError, AttributeError) as e:
+                    logger.debug(f"Error calculating bot runtime: {e}")
                     bot_runtime_seconds = 0
                     bot_runtime_human = "Runtime calculation error"
 
@@ -5620,7 +5640,8 @@ def api_test_sync_data() -> ResponseReturnValue:
                     portfolio_service = get_portfolio_service()
                     if portfolio_service and hasattr(portfolio_service, 'exchange'):
                         trading_tests['live_trading_ready'] = True
-                except Exception:
+                except (AttributeError, ConnectionError, ImportError) as e:
+                    logger.debug(f"Error checking trading readiness: {e}")
                     pass
 
                 # Mark buy/sell endpoints as functional if system is ready
