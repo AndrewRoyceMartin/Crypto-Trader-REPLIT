@@ -1774,6 +1774,9 @@ class EnhancedTestRunner {
         testResultsContainer.innerHTML = '<div class="text-center p-4"><i class="fas fa-spinner fa-spin fa-2x text-primary mb-3"></i><h5>Running Enhanced Tests (deep cycle & slower response tests)...</h5></div>';
         
         try {
+            // Initialize real-time monitoring before running enhanced tests
+            this.startRealTimeMonitoring();
+            
             // Run deep cycle and slower tests for enhanced testing
             await this.runDeepCycleTests();
             
@@ -1786,6 +1789,9 @@ class EnhancedTestRunner {
                     <small class="text-muted">Please try refreshing the page and running the tests again.</small>
                 </div>
             `;
+        } finally {
+            // Clean up real-time monitoring after tests complete
+            this.stopRealTimeMonitoring();
         }
     }
     
