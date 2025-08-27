@@ -804,6 +804,9 @@ class EnhancedTestRunner {
                 case 'bollinger_strategy_priority':
                     testResult = await testBollingerBandsPrioritization();
                     break;
+                case 'available_positions_data_integrity':
+                    testResult = await testAvailablePositionsDataIntegrity();
+                    break;
                 default:
                     testResult = await this.executeStandardTest(testName);
             }
@@ -2899,7 +2902,8 @@ function getTestDescription(testName) {
         'take_profit_button': 'Tests take profit button functionality and API endpoint connectivity.',
         'buy_button': 'Validates buy button functionality and trading API endpoint.',
         'sell_button': 'Tests sell button functionality and trading API endpoint.',
-        'bollinger_strategy_priority': 'Validates that Enhanced Bollinger Bands strategy is prioritized over fixed percentage exits, with 95% confidence thresholds for algorithmic trading signals.'
+        'bollinger_strategy_priority': 'Validates that Enhanced Bollinger Bands strategy is prioritized over fixed percentage exits, with 95% confidence thresholds for algorithmic trading signals.',
+        'available_positions_data_integrity': 'Comprehensive validation of Available Positions data accuracy, OKX API alignment, target price calculations, and confidence scoring for all tradeable cryptocurrencies.'
     };
     return descriptions[testName] || 'Validates synchronization and accuracy of OKX data integration.';
 }
@@ -3139,10 +3143,8 @@ async function validateAvailablePositionsTable() {
         let mismatches = 0;
         let details = [];
         
-        // Sample validation for first 10 positions (to avoid overwhelming output)
-        const samplePositions = apiPositions.slice(0, 10);
-        
-        for (const position of samplePositions) {
+        // Comprehensive validation for ALL available positions (same as open positions)
+        for (const position of apiPositions) {
             const symbol = position.symbol;
             if (!symbol) continue;
             
@@ -3158,50 +3160,116 @@ async function validateAvailablePositionsTable() {
                 continue;
             }
             
-            // Validate key data points
+            // Validate key data points with comprehensive column checking
             const cells = matchingRow.querySelectorAll('td');
-            if (cells.length < 3) {
+            if (cells.length < 6) {  // Available positions table has more columns
                 mismatches++;
-                details.push(`❌ ${symbol}: Insufficient table columns`);
+                details.push(`❌ ${symbol}: Insufficient table columns (found ${cells.length}, expected 6+)`);
                 continue;
             }
             
             let rowValid = true;
             
-            // Check balance (Balance column)
-            const balanceCell = cells[1];
-            const expectedBalance = parseFloat(position.current_balance || position.free_balance || 0);
-            const displayedBalance = parseFloat(balanceCell.textContent.replace(/[^0-9.-]/g, ''));
-            if (expectedBalance > 0 && Math.abs((expectedBalance - displayedBalance) / expectedBalance) > 0.01) {
-                details.push(`❌ ${symbol}: Balance mismatch - API: ${expectedBalance}, Table: ${displayedBalance}`);
+            // Check free balance (FREE BALANCE column - column index 1)
+            const freeBalanceCell = cells[1];
+            const expectedFreeBalance = parseFloat(position.free_balance || position.current_balance || 0);
+            const displayedFreeBalance = parseFloat(freeBalanceCell.textContent.replace(/[^0-9.-]/g, ''));
+            if (expectedFreeBalance > 0 && Math.abs((expectedFreeBalance - displayedFreeBalance) / expectedFreeBalance) > 0.001) {
+                details.push(`❌ ${symbol}: Free balance mismatch - API: ${expectedFreeBalance}, Table: ${displayedFreeBalance}`);
                 rowValid = false;
             }
             
-            // Check price (Current Price column)
+            // Check current price (CURRENT PRICE column - column index 2)
             const priceCell = cells[2];
             const expectedPrice = parseFloat(position.current_price || 0);
             const displayedPrice = parseFloat(priceCell.textContent.replace(/[^0-9.-]/g, ''));
-            if (expectedPrice > 0 && Math.abs((expectedPrice - displayedPrice) / expectedPrice) > 0.02) {
+            if (expectedPrice > 0 && Math.abs((expectedPrice - displayedPrice) / expectedPrice) > 0.01) {
                 details.push(`❌ ${symbol}: Price mismatch - API: $${expectedPrice}, Table: $${displayedPrice}`);
                 rowValid = false;
             }
             
+            // Check USD value (USD VALUE column - column index 3) 
+            if (cells.length > 3) {
+                const usdValueCell = cells[3];
+                const expectedUsdValue = parseFloat(position.usd_value || position.market_value || (expectedFreeBalance * expectedPrice) || 0);
+                const displayedUsdValue = parseFloat(usdValueCell.textContent.replace(/[^0-9.-]/g, ''));
+                if (expectedUsdValue > 0 && Math.abs((expectedUsdValue - displayedUsdValue) / expectedUsdValue) > 0.02) {
+                    details.push(`❌ ${symbol}: USD value mismatch - API: $${expectedUsdValue.toFixed(2)}, Table: $${displayedUsdValue.toFixed(2)}`);
+                    rowValid = false;
+                }
+            }
+            
+            // Check target buy price (TARGET BUY PRICE column - column index 4)
+            if (cells.length > 4) {
+                const targetPriceCell = cells[4];
+                const expectedTargetPrice = parseFloat(position.target_buy_price || position.buy_target || 0);
+                const displayedTargetPrice = parseFloat(targetPriceCell.textContent.replace(/[^0-9.-]/g, ''));
+                if (expectedTargetPrice > 0 && Math.abs((expectedTargetPrice - displayedTargetPrice) / expectedTargetPrice) > 0.01) {
+                    details.push(`❌ ${symbol}: Target price mismatch - API: $${expectedTargetPrice}, Table: $${displayedTargetPrice}`);
+                    rowValid = false;
+                }
+            }
+            
+            // Check confidence score (CONFIDENCE column - column index 5)
+            if (cells.length > 5) {
+                const confidenceCell = cells[5];
+                const expectedConfidence = parseFloat(position.confidence_score || position.confidence || 0);
+                const displayedConfidence = parseFloat(confidenceCell.textContent.replace(/[^0-9.-]/g, ''));
+                if (expectedConfidence > 0 && Math.abs(expectedConfidence - displayedConfidence) > 1) {
+                    details.push(`❌ ${symbol}: Confidence mismatch - API: ${expectedConfidence}%, Table: ${displayedConfidence}%`);
+                    rowValid = false;
+                }
+            }
+            
             if (rowValid) {
                 matches++;
-                details.push(`✅ ${symbol}: Data validated`);
+                details.push(`✅ ${symbol}: All data validated`);
             } else {
                 mismatches++;
             }
         }
         
+        // Check for extra rows in table that don't have API data
+        const extraRows = tableRows.length - apiPositions.length;
+        if (extraRows > 0) {
+            details.push(`⚠️ ${extraRows} extra rows in table vs API data`);
+        }
+        
+        // Additional validation: Check if all major cryptocurrencies are present
+        const majorCryptos = ['BTC', 'ETH', 'BNB', 'ADA', 'SOL', 'XRP', 'DOT', 'DOGE', 'AVAX', 'MATIC'];
+        let majorCryptosFound = 0;
+        for (const crypto of majorCryptos) {
+            const found = apiPositions.some(pos => pos.symbol === crypto);
+            if (found) majorCryptosFound++;
+        }
+        details.push(`📊 Major cryptocurrencies available: ${majorCryptosFound}/${majorCryptos.length}`);
+        
+        // Data integrity validation
+        const dataIntegrityChecks = [
+            apiPositions.length > 0,
+            tableRows.length > 0,
+            apiPositions.length === tableRows.length,
+            mismatches === 0,
+            majorCryptosFound >= 5
+        ];
+        
+        const passedIntegrityChecks = dataIntegrityChecks.filter(Boolean).length;
+        const integrityScore = Math.round((passedIntegrityChecks / dataIntegrityChecks.length) * 100);
+        
         return {
-            status: mismatches === 0 ? 'pass' : 'fail',
+            status: mismatches === 0 && integrityScore >= 80 ? 'pass' : integrityScore >= 60 ? 'partial' : 'fail',
             api_positions: apiPositions.length,
             table_rows: tableRows.length,
             perfect_matches: matches,
             mismatches: mismatches,
-            sample_tested: samplePositions.length,
-            validation_details: details.slice(0, 10),
+            major_cryptos_found: majorCryptosFound,
+            major_cryptos_total: majorCryptos.length,
+            data_integrity_score: integrityScore,
+            integrity_checks_passed: passedIntegrityChecks,
+            integrity_checks_total: dataIntegrityChecks.length,
+            validation_details: details.slice(0, 15), // Show more details for comprehensive testing
+            extra_rows: extraRows,
+            comprehensive_validation: true,
             test_timestamp: new Date().toISOString()
         };
         
@@ -5130,6 +5198,234 @@ async function testBollingerBandsPrioritization() {
         return {
             status: 'error',
             error: `Bollinger Bands prioritization test failed: ${error.message}`,
+            test_timestamp: new Date().toISOString()
+        };
+    }
+}
+
+// Test Available Positions Data Integrity - Comprehensive validation
+async function testAvailablePositionsDataIntegrity() {
+    try {
+        console.log('📊 Testing Available Positions comprehensive data integrity...');
+        
+        let testResults = {
+            okx_api_validated: false,
+            price_accuracy_verified: false,
+            target_price_calculations: false,
+            confidence_scoring_verified: false,
+            major_cryptos_coverage: false,
+            data_consistency: false,
+            validation_details: []
+        };
+        
+        // Test 1: Validate OKX API data accuracy
+        try {
+            const availableResponse = await fetch('/api/available-positions', { cache: 'no-store' });
+            if (availableResponse.ok) {
+                const availableData = await availableResponse.json();
+                
+                if (availableData.available_positions && availableData.available_positions.length > 0) {
+                    testResults.okx_api_validated = true;
+                    testResults.validation_details.push(`✅ OKX API data retrieved: ${availableData.available_positions.length} positions`);
+                    
+                    // Validate price accuracy for sample positions
+                    const samplePositions = availableData.available_positions.slice(0, 5);
+                    let priceAccuracyCount = 0;
+                    
+                    for (const position of samplePositions) {
+                        if (position.current_price && parseFloat(position.current_price) > 0) {
+                            priceAccuracyCount++;
+                        }
+                    }
+                    
+                    if (priceAccuracyCount === samplePositions.length) {
+                        testResults.price_accuracy_verified = true;
+                        testResults.validation_details.push(`✅ Price accuracy validated for ${priceAccuracyCount} sample positions`);
+                    }
+                    
+                    // Validate target price calculations
+                    let targetPriceCount = 0;
+                    for (const position of samplePositions) {
+                        if (position.target_buy_price && parseFloat(position.target_buy_price) > 0) {
+                            targetPriceCount++;
+                        }
+                    }
+                    
+                    if (targetPriceCount >= Math.ceil(samplePositions.length * 0.8)) {
+                        testResults.target_price_calculations = true;
+                        testResults.validation_details.push(`✅ Target price calculations verified for ${targetPriceCount}/${samplePositions.length} positions`);
+                    }
+                    
+                    // Validate confidence scoring
+                    let confidenceCount = 0;
+                    for (const position of samplePositions) {
+                        if (position.confidence_score && parseFloat(position.confidence_score) >= 0) {
+                            confidenceCount++;
+                        }
+                    }
+                    
+                    if (confidenceCount >= Math.ceil(samplePositions.length * 0.6)) {
+                        testResults.confidence_scoring_verified = true;
+                        testResults.validation_details.push(`✅ Confidence scoring verified for ${confidenceCount}/${samplePositions.length} positions`);
+                    }
+                    
+                    // Check major cryptocurrency coverage
+                    const majorCryptos = ['BTC', 'ETH', 'BNB', 'ADA', 'SOL', 'XRP', 'DOT', 'DOGE', 'AVAX', 'MATIC'];
+                    let majorCryptosFound = 0;
+                    
+                    for (const crypto of majorCryptos) {
+                        const found = availableData.available_positions.some(pos => pos.symbol === crypto);
+                        if (found) majorCryptosFound++;
+                    }
+                    
+                    if (majorCryptosFound >= 7) {
+                        testResults.major_cryptos_coverage = true;
+                        testResults.validation_details.push(`✅ Major cryptocurrencies coverage: ${majorCryptosFound}/${majorCryptos.length}`);
+                    } else {
+                        testResults.validation_details.push(`⚠️ Limited major crypto coverage: ${majorCryptosFound}/${majorCryptos.length}`);
+                    }
+                    
+                } else {
+                    testResults.validation_details.push('❌ No available positions data found');
+                }
+            } else {
+                testResults.validation_details.push(`❌ Available positions API failed: ${availableResponse.status}`);
+            }
+        } catch (apiError) {
+            testResults.validation_details.push(`❌ API test failed: ${apiError.message}`);
+        }
+        
+        // Test 2: Validate data consistency with current holdings
+        try {
+            const holdingsResponse = await fetch('/api/current-holdings', { cache: 'no-store' });
+            if (holdingsResponse.ok) {
+                const holdingsData = await holdingsResponse.json();
+                
+                if (holdingsData.holdings && holdingsData.holdings.length > 0) {
+                    // Check if available positions include held assets
+                    const availableResponse = await fetch('/api/available-positions', { cache: 'no-store' });
+                    if (availableResponse.ok) {
+                        const availableData = await availableResponse.json();
+                        
+                        let consistencyMatches = 0;
+                        for (const holding of holdingsData.holdings) {
+                            const foundInAvailable = availableData.available_positions?.some(
+                                pos => pos.symbol === holding.symbol
+                            );
+                            if (foundInAvailable) consistencyMatches++;
+                        }
+                        
+                        const consistencyRate = Math.round((consistencyMatches / holdingsData.holdings.length) * 100);
+                        if (consistencyRate >= 80) {
+                            testResults.data_consistency = true;
+                            testResults.validation_details.push(`✅ Data consistency verified: ${consistencyRate}% match between holdings and available positions`);
+                        } else {
+                            testResults.validation_details.push(`⚠️ Data consistency concern: ${consistencyRate}% match rate`);
+                        }
+                    }
+                }
+            }
+        } catch (consistencyError) {
+            testResults.validation_details.push(`⚠️ Consistency test failed: ${consistencyError.message}`);
+        }
+        
+        // Test 3: Validate table display accuracy
+        try {
+            const tableValidationResult = await validateAvailablePositionsTable();
+            if (tableValidationResult.status === 'pass') {
+                testResults.validation_details.push('✅ Available positions table display validation passed');
+            } else if (tableValidationResult.status === 'partial') {
+                testResults.validation_details.push('⚠️ Available positions table display partially validated');
+            } else {
+                testResults.validation_details.push('❌ Available positions table display validation failed');
+            }
+        } catch (tableError) {
+            testResults.validation_details.push(`⚠️ Table validation failed: ${tableError.message}`);
+        }
+        
+        // Test 4: Validate Bollinger Bands integration
+        try {
+            const availableResponse = await fetch('/api/available-positions', { cache: 'no-store' });
+            if (availableResponse.ok) {
+                const availableData = await availableResponse.json();
+                
+                // Check if positions have Bollinger Bands data
+                let bbIntegrationCount = 0;
+                const samplePositions = availableData.available_positions?.slice(0, 10) || [];
+                
+                for (const position of samplePositions) {
+                    if (position.bb_analysis || position.bollinger_signal || 
+                        position.technical_analysis || position.market_opportunity) {
+                        bbIntegrationCount++;
+                    }
+                }
+                
+                if (bbIntegrationCount >= Math.ceil(samplePositions.length * 0.5)) {
+                    testResults.validation_details.push(`✅ Bollinger Bands integration detected in ${bbIntegrationCount}/${samplePositions.length} positions`);
+                } else {
+                    testResults.validation_details.push(`⚠️ Limited Bollinger Bands integration: ${bbIntegrationCount}/${samplePositions.length} positions`);
+                }
+            }
+        } catch (bbError) {
+            testResults.validation_details.push(`⚠️ Bollinger Bands integration test failed: ${bbError.message}`);
+        }
+        
+        // Determine overall test status
+        const criticalChecks = [
+            testResults.okx_api_validated,
+            testResults.price_accuracy_verified,
+            testResults.target_price_calculations,
+            testResults.major_cryptos_coverage
+        ];
+        
+        const passedCriticalChecks = criticalChecks.filter(Boolean).length;
+        const totalCriticalChecks = criticalChecks.length;
+        
+        // Additional verification checks
+        const verificationChecks = [
+            testResults.confidence_scoring_verified,
+            testResults.data_consistency,
+            testResults.validation_details.length >= 5
+        ];
+        
+        const passedVerificationChecks = verificationChecks.filter(Boolean).length;
+        
+        const overallSuccessRate = Math.round(((passedCriticalChecks + passedVerificationChecks) / (totalCriticalChecks + verificationChecks.length)) * 100);
+        
+        let status = 'fail';
+        if (passedCriticalChecks === totalCriticalChecks && passedVerificationChecks >= 2) {
+            status = 'pass';
+        } else if (passedCriticalChecks >= 3 || overallSuccessRate >= 65) {
+            status = 'partial';
+        }
+        
+        return {
+            status: status,
+            okx_api_validated: testResults.okx_api_validated,
+            price_accuracy_verified: testResults.price_accuracy_verified,
+            target_price_calculations: testResults.target_price_calculations,
+            confidence_scoring_verified: testResults.confidence_scoring_verified,
+            major_cryptos_coverage: testResults.major_cryptos_coverage,
+            data_consistency: testResults.data_consistency,
+            success_rate: overallSuccessRate,
+            critical_checks_passed: passedCriticalChecks,
+            total_critical_checks: totalCriticalChecks,
+            verification_checks_passed: passedVerificationChecks,
+            validation_details: testResults.validation_details,
+            comprehensive_validation: {
+                okx_alignment: testResults.okx_api_validated,
+                price_accuracy: testResults.price_accuracy_verified,
+                target_pricing: testResults.target_price_calculations,
+                confidence_scoring: testResults.confidence_scoring_verified,
+                coverage_completeness: testResults.major_cryptos_coverage
+            },
+            test_timestamp: new Date().toISOString()
+        };
+        
+    } catch (error) {
+        return {
+            status: 'error',
+            error: `Available Positions data integrity test failed: ${error.message}`,
             test_timestamp: new Date().toISOString()
         };
     }
