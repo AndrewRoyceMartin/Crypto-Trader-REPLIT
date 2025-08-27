@@ -23,7 +23,6 @@ export class DashboardManager {
             equityCurve: { data: null, timestamp: 0, ttl: 30000 },
             drawdownAnalysis: { data: null, timestamp: 0, ttl: 30000 },
             currentHoldings: { data: null, timestamp: 0, ttl: 15000 },
-            recentTrades: { data: null, timestamp: 0, ttl: 20000 },
             performanceAnalytics: { data: null, timestamp: 0, ttl: 30000 }
         };
         

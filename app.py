@@ -535,8 +535,6 @@ def _get_warmup_error() -> str:
 
 # Portfolio state - starts empty, only populates when trading begins
 portfolio_initialized = False
-# Recent initial trades for display
-recent_initial_trades = []
 # Legacy cache removed - using TTL'd LRU cache above
 
 
@@ -3997,9 +3995,8 @@ def api_reset_entire_program() -> ResponseReturnValue:
             "start_time": None
         })
 
-        global portfolio_initialized, recent_initial_trades
+        global portfolio_initialized
         portfolio_initialized = False
-        recent_initial_trades = []
 
         try:
             initialize_system()
@@ -4533,12 +4530,7 @@ def execute_take_profit() -> ResponseReturnValue:
 
         all_trades = executed_trades + buy_trades
 
-        global recent_initial_trades
         if all_trades:
-            if recent_initial_trades is None:
-                recent_initial_trades = []
-            recent_initial_trades.extend(all_trades)
-
             try:
                 from src.utils.database import DatabaseManager
                 db = DatabaseManager()
@@ -4566,8 +4558,6 @@ def execute_take_profit() -> ResponseReturnValue:
 
             except Exception as db_error:
                 logger.error(f"Failed to save trades to database: {db_error}")
-
-            recent_initial_trades = recent_initial_trades[-100:]
 
         total_profit = sum(trade.get('net_pnl', 0) for trade in executed_trades)
         total_reinvested = sum(trade.get('investment_amount', 0) for trade in buy_trades)

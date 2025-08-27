@@ -292,7 +292,6 @@ class TradingApp {
             equityCurve: { data: null, timestamp: 0, ttl: 30000 },    // 30s
             drawdownAnalysis: { data: null, timestamp: 0, ttl: 30000 }, // 30s
             currentHoldings: { data: null, timestamp: 0, ttl: 15000 },  // 15s
-            recentTrades: { data: null, timestamp: 0, ttl: 20000 },     // 20s
             performanceAnalytics: { data: null, timestamp: 0, ttl: 30000 } // 30s
         };
 
@@ -757,14 +756,10 @@ class TradingApp {
         // Bot status update removed - not used in current dashboard
         // this.fetchAndUpdateBotStatus();
 
-        // Recent trades
-        const trades = data.recent_trades || data.trades || [];
-        if (trades.length === 0) {
-            // Force display of no trades message for dashboard
-            this.displayDashboardRecentTrades([]);
-
-        } else {
-            this.displayDashboardRecentTrades(trades);
+        // Trade data available
+        const trades = data.trades || [];
+        if (trades.length > 0) {
+            console.log('Trades data available:', trades.length);
         }
 
         // Status widgets
@@ -4560,13 +4555,13 @@ async function sellCrypto(symbol) {
 
 // Old in-page section toggles kept for compatibility (index now uses separate pages)
 function showMainDashboard() {
-    const ids = ['main-dashboard','performance-dashboard','current-holdings','recent-trades-page'];
+    const ids = ['main-dashboard','performance-dashboard','current-holdings'];
     ids.forEach(id => { const el = document.getElementById(id); if (el) el.style.display = (id === 'main-dashboard' ? 'block' : 'none'); });
     updateNavbarButtons('main');
     window.tradingApp?.updateCryptoPortfolio();
 }
 function showPerformanceDashboard() {
-    const ids = ['main-dashboard','performance-dashboard','current-holdings','recent-trades-page'];
+    const ids = ['main-dashboard','performance-dashboard','current-holdings'];
     ids.forEach(id => { const el = document.getElementById(id); if (el) el.style.display = (id === 'performance-dashboard' ? 'block' : 'none'); });
     updateNavbarButtons('performance');
     if (window.tradingApp?.currentCryptoData) {
@@ -4575,7 +4570,7 @@ function showPerformanceDashboard() {
     window.tradingApp?.updateCryptoPortfolio();
 }
 function showCurrentPositions() {
-    const ids = ['main-dashboard','performance-dashboard','current-holdings','recent-trades-page'];
+    const ids = ['main-dashboard','performance-dashboard','current-holdings'];
     ids.forEach(id => { const el = document.getElementById(id); if (el) el.style.display = (id === 'current-holdings' ? 'block' : 'none'); });
     updateNavbarButtons('holdings');
     if (window.tradingApp?.currentCryptoData) {
@@ -4584,12 +4579,12 @@ function showCurrentPositions() {
     }
     window.tradingApp?.updateCryptoPortfolio();
 }
-function showRecentTrades() {
-    const ids = ['main-dashboard','performance-dashboard','current-holdings','recent-trades-page'];
-    ids.forEach(id => { const el = document.getElementById(id); if (el) el.style.display = (id === 'recent-trades-page' ? 'block' : 'none'); });
+function showCurrentHoldings() {
+    const ids = ['main-dashboard','performance-dashboard','current-holdings'];
+    ids.forEach(id => { const el = document.getElementById(id); if (el) el.style.display = (id === 'current-holdings' ? 'block' : 'none'); });
 }
 function hideAllSections() {
-    const sections = ['main-dashboard','performance-dashboard','positions-dashboard','current-holdings','recent-trades-page'];
+    const sections = ['main-dashboard','performance-dashboard','positions-dashboard','current-holdings'];
     sections.forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
 }
 function updateNavbarButtons(activeView) {
@@ -4608,9 +4603,9 @@ window.debugTrades = {
         try {
             const response = await fetch('/api/status', { cache: 'no-cache' });
             const data = await response.json();
-            console.log('Server trades data:', data.recent_trades);
-            if (data.recent_trades?.length) console.log('First trade keys:', Object.keys(data.recent_trades[0]));
-            return data.recent_trades;
+            console.log('Server trades data:', data.trades);
+            if (data.trades?.length) console.log('First trade keys:', Object.keys(data.trades[0]));
+            return data.trades;
         } catch (e) { /* Silently handle server data fetch errors */ }
     },
     testNormalizer() {
@@ -5060,7 +5055,7 @@ function updateTopMovers(holdings) {
         el.appendChild(noDataDiv);
     }
 }
-function renderDashboardOverview(portfolioData, recentTrades = []) {
+function renderDashboardOverview(portfolioData, trades = []) {
     updateQuickOverview(portfolioData);
     updateQuickOverviewCharts(portfolioData);
 }
@@ -6691,14 +6686,14 @@ async function refreshTradesData() {
             console.log(`Updated trades table with ${data.trades.length} trades from OKX trading history`);
             
             // Update count if element exists
-            const countElement = document.getElementById('recent-trades-count');
+            const countElement = document.getElementById('trades-count');
             if (countElement) {
                 countElement.textContent = data.trades.length;
             }
         } else {
             console.warn('No trades data in response:', data);
             if (tableBody) {
-                tableBody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No recent trades found</td></tr>'; // Fixed: Recent Trades has 6 columns
+                tableBody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No trades found</td></tr>';
             }
         }
     } catch (error) {
@@ -7103,12 +7098,12 @@ async function loadCryptoDetails(symbol) {
         
         // Load recent trading activity
         const activityData = await activityResponse.json();
-        const recentTrades = activityData.trades?.filter(t => t.symbol === symbol).slice(0, 5) || [];
+        const trades = activityData.trades?.filter(t => t.symbol === symbol).slice(0, 5) || [];
         
         const activityEl = document.getElementById(`recent-activity-${symbol}`);
         if (activityEl) {
-            if (recentTrades.length > 0) {
-                const tradesHtml = recentTrades.map(trade => `
+            if (trades.length > 0) {
+                const tradesHtml = trades.map(trade => `
                     <div class="d-flex justify-content-between align-items-center py-1 border-bottom">
                         <div>
                             <small class="text-muted">${new Date(trade.datetime).toLocaleDateString()}</small>

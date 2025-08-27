@@ -48,6 +48,7 @@ The system utilizes a modular Flask-based web interface for live OKX trading, st
 -   **Centralized Exchange Access:** A `get_reusable_exchange()` function prioritizes using the existing portfolio service exchange instance to eliminate redundant re-authentication and market loading calls per request, improving performance and reliability.
 -   **Environment-Dependent CSP:** Content Security Policy headers are dynamically configured for development vs production environments, allowing localhost connections for HMR during development while maintaining strict security in production.
 -   **Thread-Safe State Management:** All shared state operations use centralized thread-safe helpers (`_set_warmup()`, `_set_bot_state()`, `_get_warmup_done()`, `_get_warmup_error()`) with RLock protection to prevent race conditions and ensure data consistency across concurrent requests.
+-   **Code Quality Enhancement (August 2025):** Comprehensive removal of all Recent Trades UI functionality to establish a clean codebase foundation. Removed backend variables, frontend cache references, and template elements while preserving core trading and portfolio functionality.
 
 ## External Dependencies
 
