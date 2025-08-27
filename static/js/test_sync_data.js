@@ -1481,6 +1481,12 @@ class EnhancedTestRunner {
                         </ul>
                     </div>
                 ` : ''}
+                
+                <!-- Comprehensive Test Details Section -->
+                <div class="mt-4">
+                    <h5><i class="fas fa-list-alt me-2"></i>Detailed Test Results</h5>
+                    ${this.generateDetailedTestResults(results)}
+                </div>
             </div>
         `;
         
@@ -1488,6 +1494,152 @@ class EnhancedTestRunner {
         
         // Update overview section
         this.updateOverviewEnhanced(results);
+        
+        // Also populate the formatted test data section with comprehensive logs
+        this.populateFormattedTestData(results);
+    }
+    
+    generateDetailedTestResults(results) {
+        let detailsHTML = '<div class="accordion" id="testDetailsAccordion">';
+        let accordionIndex = 0;
+        
+        // Iterate through category results to show individual test details
+        Object.entries(results.categoryResults).forEach(([category, categoryData]) => {
+            detailsHTML += `
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="heading${accordionIndex}">
+                        <button class="accordion-button ${accordionIndex > 0 ? 'collapsed' : ''}" type="button" 
+                                data-bs-toggle="collapse" data-bs-target="#collapse${accordionIndex}" 
+                                aria-expanded="${accordionIndex === 0 ? 'true' : 'false'}" aria-controls="collapse${accordionIndex}">
+                            <i class="fas ${this.getCategoryIcon(category)} me-2"></i>
+                            ${category.replace('_', ' ').toUpperCase()} Category Results
+                            <span class="badge ${categoryData.successRate >= 80 ? 'bg-success' : categoryData.successRate >= 60 ? 'bg-warning' : 'bg-danger'} ms-2">
+                                ${categoryData.successRate}% Success
+                            </span>
+                        </button>
+                    </h2>
+                    <div id="collapse${accordionIndex}" class="accordion-collapse collapse ${accordionIndex === 0 ? 'show' : ''}" 
+                         aria-labelledby="heading${accordionIndex}" data-bs-parent="#testDetailsAccordion">
+                        <div class="accordion-body">
+                            ${this.generateCategoryTestDetails(categoryData)}
+                        </div>
+                    </div>
+                </div>
+            `;
+            accordionIndex++;
+        });
+        
+        detailsHTML += '</div>';
+        return detailsHTML;
+    }
+    
+    generateCategoryTestDetails(categoryData) {
+        let html = `
+            <div class="mb-3">
+                <div class="row">
+                    <div class="col-md-6">
+                        <strong>Execution Time:</strong> ${categoryData.executionTime}ms
+                    </div>
+                    <div class="col-md-6">
+                        <strong>Success Rate:</strong> ${categoryData.successRate}%
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // Show individual test results if available
+        if (categoryData.results && categoryData.results.size > 0) {
+            html += '<h6>Individual Test Results:</h6>';
+            html += '<div class="list-group">';
+            
+            categoryData.results.forEach((result, testName) => {
+                const statusClass = result.status === 'pass' ? 'list-group-item-success' : 
+                                  result.status === 'fail' ? 'list-group-item-danger' : 'list-group-item-warning';
+                const icon = result.status === 'pass' ? 'fa-check-circle text-success' : 
+                           result.status === 'fail' ? 'fa-times-circle text-danger' : 'fa-exclamation-triangle text-warning';
+                
+                html += `
+                    <div class="list-group-item ${statusClass}">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">
+                                <i class="fas ${icon} me-2"></i>
+                                ${testName.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
+                            </h6>
+                            <small class="text-muted">${result.status.toUpperCase()}</small>
+                        </div>
+                        ${result.error ? `
+                            <p class="mb-1"><strong>Error:</strong> ${result.error}</p>
+                        ` : ''}
+                        ${result.details ? `
+                            <p class="mb-1"><strong>Details:</strong> ${result.details}</p>
+                        ` : ''}
+                        ${result.executionTime ? `
+                            <small class="text-muted">Execution time: ${result.executionTime}ms</small>
+                        ` : ''}
+                    </div>
+                `;
+            });
+            
+            html += '</div>';
+        }
+        
+        return html;
+    }
+    
+    populateFormattedTestData(results) {
+        const rawDataDiv = document.getElementById('raw-data');
+        if (!rawDataDiv) return;
+        
+        let formattedData = `
+            <div class="mb-3">
+                <strong>Comprehensive Test Session:</strong> ${new Date().toLocaleString()}<br>
+                <strong>Overall Success Rate:</strong> ${results.overallSuccessRate}%<br>
+                <strong>Total Execution Time:</strong> ${results.totalExecutionTime}ms<br>
+                <strong>Categories Tested:</strong> ${results.totalCategories}
+            </div>
+            
+            <h6>Detailed Test Logs:</h6>
+            <div class="bg-light p-3 rounded">
+                <pre class="mb-0" style="font-size: 12px; max-height: 400px; overflow-y: auto;">
+        `;
+        
+        // Add comprehensive error and test logs
+        Object.entries(results.categoryResults).forEach(([category, categoryData]) => {
+            formattedData += `\\n=== ${category.toUpperCase()} CATEGORY ===\\n`;
+            formattedData += `Success Rate: ${categoryData.successRate}%\\n`;
+            formattedData += `Execution Time: ${categoryData.executionTime}ms\\n`;
+            
+            if (categoryData.results && categoryData.results.size > 0) {
+                categoryData.results.forEach((result, testName) => {
+                    formattedData += `\\n[${result.status.toUpperCase()}] ${testName}\\n`;
+                    if (result.error) {
+                        formattedData += `  Error: ${result.error}\\n`;
+                    }
+                    if (result.details) {
+                        formattedData += `  Details: ${result.details}\\n`;
+                    }
+                    if (result.executionTime) {
+                        formattedData += `  Time: ${result.executionTime}ms\\n`;
+                    }
+                });
+            }
+            formattedData += `\\n`;
+        });
+        
+        // Add any recommendations or issues
+        if (results.recommendations && results.recommendations.length > 0) {
+            formattedData += `\\n=== RECOMMENDATIONS ===\\n`;
+            results.recommendations.forEach(rec => {
+                formattedData += `- ${rec}\\n`;
+            });
+        }
+        
+        formattedData += `
+                </pre>
+            </div>
+        `;
+        
+        rawDataDiv.innerHTML = formattedData;
     }
     
     getCategoryIcon(category) {
