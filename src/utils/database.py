@@ -214,8 +214,8 @@ class DatabaseManager:
             self.logger.error(f"Error saving trade: {str(e)}")
             raise
     
-    def get_trades(self, symbol: str = None, start_date: datetime = None, 
-                  end_date: datetime = None, mode: str = None) -> pd.DataFrame:
+    def get_trades(self, symbol: Optional[str] = None, start_date: Optional[datetime] = None, 
+                  end_date: Optional[datetime] = None, mode: Optional[str] = None) -> pd.DataFrame:
         """
         Get trades from database.
         
@@ -239,11 +239,11 @@ class DatabaseManager:
                 
                 if start_date:
                     query += ' AND timestamp >= ?'
-                    params.append(start_date)
+                    params.append(start_date.isoformat())
                 
                 if end_date:
                     query += ' AND timestamp <= ?'
-                    params.append(end_date)
+                    params.append(end_date.isoformat())
                 
                 if mode:
                     query += ' AND mode = ?'
@@ -302,7 +302,7 @@ class DatabaseManager:
             self.logger.error(f"Error saving position: {str(e)}")
             raise
     
-    def get_positions(self, status: str = 'open', mode: str = None) -> pd.DataFrame:
+    def get_positions(self, status: str = 'open', mode: Optional[str] = None) -> pd.DataFrame:
         """
         Get positions from database.
         
@@ -366,7 +366,7 @@ class DatabaseManager:
         except Exception as e:
             self.logger.error(f"Error saving portfolio snapshot: {str(e)}")
     
-    def get_portfolio_history(self, mode: str = None, days: int = 30) -> pd.DataFrame:
+    def get_portfolio_history(self, mode: Optional[str] = None, days: int = 30) -> pd.DataFrame:
         """
         Get portfolio history.
         

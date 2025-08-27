@@ -6,6 +6,7 @@ import logging
 import logging.handlers
 import os
 from datetime import datetime
+from typing import Optional, Any
 
 
 def setup_logging(level: str = 'INFO', log_file: str = 'trading.log', 
@@ -140,7 +141,7 @@ def setup_trade_logger(log_file: str = 'trades.log') -> logging.Logger:
 
 
 def log_trade_execution(logger: logging.Logger, action: str, symbol: str, 
-                       size: float, price: float, order_id: str = None):
+                       size: float, price: float, order_id: Optional[str] = None):
     """
     Log trade execution with standardized format.
     
@@ -224,7 +225,7 @@ class PerformanceLogger:
             name: Logger name
         """
         self.logger = logging.getLogger(f'trading.{name}')
-        self.timers = {}
+        self.timers: dict[str, Any] = {}
     
     def start_timer(self, operation: str):
         """

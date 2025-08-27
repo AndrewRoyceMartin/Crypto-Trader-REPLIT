@@ -155,7 +155,7 @@ class BotPricingCalculator:
                               equity: float,
                               lower_band: float,
                               upper_band: float,
-                              current_position: float = 0.0) -> Dict[str, any]:
+                              current_position: float = 0.0) -> Dict[str, Any]:
         """
         Apply complete bot.py sizing logic for buy/sell decisions.
         

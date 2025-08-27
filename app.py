@@ -27,7 +27,11 @@ from flask.typing import ResponseReturnValue
 from src.services.portfolio_service import get_portfolio_service as _get_ps
 
 # Only suppress specific pkg_resources deprecation warning - all other warnings will show
-warnings.filterwarnings('ignore', message='pkg_resources is deprecated as an API.*', category=DeprecationWarning)
+warnings.filterwarnings(
+    'ignore',
+    message='pkg_resources is deprecated as an API.*',
+    category=DeprecationWarning
+)
 
 # Set up logging for deployment - MOVED TO TOP to avoid NameError
 logging.basicConfig(
@@ -197,7 +201,9 @@ def okx_request(
     if method == 'GET':
         resp = _requests_session.get(base_url + path, headers=headers, timeout=timeout)
     else:
-        resp = _requests_session.post(base_url + path, headers=headers, data=body_str, timeout=timeout)
+        resp = _requests_session.post(
+            base_url + path, headers=headers, data=body_str, timeout=timeout
+        )
     resp.raise_for_status()
     return resp.json()
 
@@ -263,7 +269,12 @@ def get_stable_target_price(symbol: str, current_price: float) -> float:
         return current_price * 0.92
 
 
-def okx_ticker_pct_change_24h(inst_id: str, api_key: str = "", secret_key: str = "", passphrase: str = "") -> dict:
+def okx_ticker_pct_change_24h(
+    inst_id: str,
+    api_key: str = "",
+    secret_key: str = "",
+    passphrase: str = ""
+) -> dict:
     """Get accurate 24h percentage change from OKX ticker data using native client."""
     try:
         client = get_okx_native_client()
@@ -281,10 +292,12 @@ def _date_range(start: datetime, end: datetime) -> Iterator[datetime]:
 
 
 # --- Ultra-fast boot knobs ---
-WATCHLIST = [s.strip() for s in os.getenv(
-    "WATCHLIST",
-    "BTC/USDT,ETH/USDT,SOL/USDT,XRP/USDT,DOGE/USDT,BNB/USDT,ADA/USDT,AVAX/USDT,LINK/USDT,UNI/USDT"
-).split(",") if s.strip()]
+WATCHLIST = [
+    s.strip() for s in os.getenv(
+        "WATCHLIST",
+        "BTC/USDT,ETH/USDT,SOL/USDT,XRP/USDT,DOGE/USDT,BNB/USDT,ADA/USDT,AVAX/USDT,LINK/USDT,UNI/USDT"
+    ).split(",") if s.strip()
+]
 
 MAX_STARTUP_SYMBOLS = int(os.getenv("MAX_STARTUP_SYMBOLS", "3"))     # minimal: only 3 symbols
 STARTUP_TIMEOUT_SEC = int(os.getenv("STARTUP_TIMEOUT_SEC", "8"))    # deployment timeout limit
@@ -295,9 +308,9 @@ OHLCV_TTL_SEC = int(os.getenv("OHLCV_TTL_SEC", "60"))    # candles can be cached
 CACHE_MAX_KEYS = int(os.getenv("CACHE_MAX_KEYS", "200"))  # prevent unbounded growth
 
 # limit concurrent outbound API calls (reduced to prevent rate limiting)
-_MAX_OUTBOUND = int(os.getenv("MAX_OUTBOUND_CALLS", "2"))  # Further reduced from 3 to 2 for stability
+_MAX_OUTBOUND = int(os.getenv("MAX_OUTBOUND_CALLS", "2"))  # Reduced for stability
 _ext_sem = threading.Semaphore(_MAX_OUTBOUND)
-_rate_limit_delay = float(os.getenv("API_RATE_DELAY", "0.5"))  # Increased to 500ms delay between requests
+_rate_limit_delay = float(os.getenv("API_RATE_DELAY", "0.5"))  # 500ms delay
 
 
 def with_throttle(fn, *a, **kw):
@@ -409,7 +422,13 @@ def cache_get_ohlcv(sym: str, tf: str) -> Optional[Any]:
 warmup: WarmupState = {"started": False, "done": False, "error": "", "loaded": []}
 
 # Global bot state - define before first use
-bot_state: BotState = {"running": False, "mode": None, "symbol": None, "timeframe": None, "started_at": None}
+bot_state: BotState = {
+    "running": False,
+    "mode": None,
+    "symbol": None,
+    "timeframe": None,
+    "started_at": None
+}
 
 # Global trading state
 trading_state = {
@@ -444,7 +463,11 @@ def _set_bot_state(**kv: Any) -> None:
         running = bool(bot_state.get("running", False))
         trading_state["active"] = running
         # if mode not set, fall back to 'stopped' when not running
-        trading_state["mode"] = bot_state.get("mode") or ("stopped" if not running else trading_state.get("mode"))
+        trading_state["mode"] = (
+            bot_state.get("mode") or (
+                "stopped" if not running else trading_state.get("mode")
+            )
+        )
         trading_state["start_time"] = bot_state.get("started_at") if running else None
 
 
@@ -483,7 +506,12 @@ def get_portfolio_summary() -> Dict[str, Any]:
     try:
         portfolio_service = get_portfolio_service()
         if not portfolio_service:
-            return {"total_value": 0.0, "daily_pnl": 0.0, "daily_pnl_percent": 0.0, "error": "Service not available"}
+            return {
+                "total_value": 0.0,
+                "daily_pnl": 0.0,
+                "daily_pnl_percent": 0.0,
+                "error": "Service not available"
+            }
 
         portfolio_data = portfolio_service.get_portfolio_data()
         return {
@@ -495,7 +523,12 @@ def get_portfolio_summary() -> Dict[str, Any]:
         }
     except Exception as e:
         logger.info(f"Portfolio summary unavailable: {e}")
-        return {"total_value": 0.0, "daily_pnl": 0.0, "daily_pnl_percent": 0.0, "error": "Portfolio data unavailable"}
+        return {
+            "total_value": 0.0,
+            "daily_pnl": 0.0,
+            "daily_pnl_percent": 0.0,
+            "error": "Portfolio data unavailable"
+        }
 
 
 def cache_get(sym: str, tf: str) -> Optional[Any]:
@@ -544,7 +577,8 @@ def validate_symbol(pair: str) -> bool:
 
         # Check against exchange markets
         service = get_portfolio_service()
-        if (hasattr(service, 'exchange') and hasattr(service.exchange, 'exchange')
+        if (hasattr(service, 'exchange')
+                and hasattr(service.exchange, 'exchange')
                 and hasattr(service.exchange.exchange, 'markets')):
             markets = getattr(service.exchange.exchange, 'markets', None)
             if markets is not None:
@@ -578,7 +612,9 @@ def get_public_price(pair: str) -> float:
         logger.debug(f"Native price fetch failed for {pair}: {e}")
         try:
             service = get_portfolio_service()
-            if (hasattr(service, 'exchange') and hasattr(service.exchange, 'exchange') and service.exchange.exchange):
+            if (hasattr(service, 'exchange')
+                    and hasattr(service.exchange, 'exchange')
+                    and service.exchange.exchange):
                 service.exchange.exchange.timeout = 8000
                 ticker = service.exchange.exchange.fetch_ticker(pair)
                 price = float(ticker.get('last') or 0)
@@ -587,7 +623,9 @@ def get_public_price(pair: str) -> float:
                 return price
             return 0.0
         except Exception as fallback_error:
-            logger.error(f"Both native and CCXT price fetch failed for {pair}: {fallback_error}")
+            logger.error(
+                f"Both native and CCXT price fetch failed for {pair}: {fallback_error}"
+            )
             return 0.0
 
 
@@ -1469,11 +1507,13 @@ def api_trade_history() -> ResponseReturnValue:
                     # Get ALL fills without instType filter to capture all trade types (SPOT, conversions, etc.)
                     fills_params = {
                         'limit': '100'
-                        # Removed instType filter to get all trade types (Simple trades, Converts, etc.)
+                        # Removed instType filter to get all trade types
                     }
 
                     logger.info(f"Fetching ALL trade fills from OKX API with params: {fills_params}")
-                    response = exchange.privateGetTradeFills(fills_params)
+                    response = exchange.privateGetTradeFills(
+                        fills_params
+                    )
 
                     logger.debug(f"OKX fills API response: {response}")
                     if response.get('code') == '0' and response.get('data'):
@@ -1488,11 +1528,13 @@ def api_trade_history() -> ResponseReturnValue:
                                 logger.debug(f"Processing fill: {fill}")
                                 # Use the same formatting as OKXAdapter._format_okx_fill_direct
                                 inst_id = fill.get('instId', '')
-                                side = fill.get('side', '').upper()  # This is the CORRECT OKX action field
+                                side = fill.get('side', '').upper()  # OKX action field
 
                                 # Skip if no side data
                                 if not side:
-                                    logger.warning(f"Skipping fill with missing side: {fill.get('fillId', '')}")
+                                    logger.warning(
+                                        f"Skipping fill with missing side: {fill.get('fillId', '')}"
+                                    )
                                     continue
 
                                 # Convert instrument ID to display symbol (BTC-USDT -> BTC/USDT)
@@ -1516,7 +1558,9 @@ def api_trade_history() -> ResponseReturnValue:
                                 quantity = float(fill.get('fillSz', fill.get('sz', 0)) or 0)
                                 price = float(fill.get('fillPx', fill.get('px', 0)) or 0)
                                 fee = float(fill.get('fee', 0) or 0)
-                                total_value = quantity * price if quantity and price else 0
+                                total_value = (
+                                    quantity * price if quantity and price else 0
+                                )
 
                                 # Skip duplicates
                                 if fill_id in trade_ids_seen:
@@ -1717,7 +1761,9 @@ def api_trade_history() -> ResponseReturnValue:
                                 quantity = float(order.get('fillSz', order.get('sz', 0)) or 0)  # fillSz = filled size
                                 price = float(order.get('avgPx', order.get('px', 0)) or 0)      # avgPx = average fill price
                                 fee = float(order.get('fee', 0) or 0)
-                                total_value = quantity * price if quantity and price else 0
+                                total_value = (
+                                    quantity * price if quantity and price else 0
+                                )
 
                                 # Check if trade already exists (by ID) to avoid duplicates
                                 trade_id = ord_id
