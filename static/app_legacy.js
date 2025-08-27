@@ -6259,10 +6259,12 @@ function sellPosition(symbol, percentage) {
 // Show detailed confidence analysis
 async function showConfidenceDetails(symbol) {
     try {
+        console.log(`Fetching confidence details for ${symbol}...`);
         const response = await fetch(`/api/entry-confidence/${symbol}`, { cache: 'no-cache' });
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         
         const data = await response.json();
+        console.log(`Received confidence data for ${symbol}:`, data);
         if (data.status === 'success') {
             const info = data.data;
             const breakdown = info.breakdown;
@@ -6286,6 +6288,12 @@ async function showConfidenceDetails(symbol) {
                 support_resistance: breakdown?.support_resistance || 50,
                 ...breakdown
             };
+            
+            // Remove existing modal if it exists
+            const existingModal = document.getElementById('confidenceModal');
+            if (existingModal) {
+                existingModal.remove();
+            }
             
             const modalHtml = `
                 <div class="modal fade" id="confidenceModal" tabindex="-1">
@@ -6398,25 +6406,26 @@ async function showConfidenceDetails(symbol) {
                 </div>
             `;
             
-            // Remove existing modal if any
-            const existingModal = document.getElementById('confidenceModal');
-            if (existingModal) {
-                existingModal.remove();
-            }
             
             // Add modal to body
             document.body.insertAdjacentHTML('beforeend', modalHtml);
+            console.log(`Modal HTML added for ${symbol}`);
             
             // Show modal safely - wait for Bootstrap to be ready
             if (window.bootstrap && window.bootstrap.Modal) {
                 const modal = new bootstrap.Modal(document.getElementById('confidenceModal'));
+                console.log(`Showing modal for ${symbol}`);
                 modal.show();
             } else {
+                console.log('Bootstrap not ready, waiting...');
                 // Fallback - wait for Bootstrap to load
                 setTimeout(() => {
                     if (window.bootstrap && window.bootstrap.Modal) {
                         const modal = new bootstrap.Modal(document.getElementById('confidenceModal'));
+                        console.log(`Showing modal for ${symbol} (delayed)`);
                         modal.show();
+                    } else {
+                        console.error('Bootstrap Modal not available after timeout');
                     }
                 }, 100);
             }
