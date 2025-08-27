@@ -4258,11 +4258,32 @@ class NormalTestRunner {
             ];
             
             const results = [];
+            
+            // DEBUG: Log available methods on this class
+            console.log('🔍 DEBUG: Available methods on EnhancedTestRunner:', Object.getOwnPropertyNames(Object.getPrototypeOf(this)).filter(name => name.startsWith('test')));
+            
             for (const test of tests) {
                 try {
+                    console.log(`🔍 DEBUG: Attempting to call test: ${test.name} (function: ${test.func})`);
+                    
+                    // Check if the method exists
+                    if (typeof this[test.func] !== 'function') {
+                        console.error(`❌ DEBUG: Method ${test.func} is not a function. Type:`, typeof this[test.func]);
+                        results.push({
+                            status: 'error',
+                            testName: test.name,
+                            error: `Function ${test.func} does not exist`,
+                            details: `Method ${test.func} is not defined on the test runner class`
+                        });
+                        continue;
+                    }
+                    
+                    console.log(`✅ DEBUG: Method ${test.func} exists, executing...`);
                     const result = await this[test.func]();
+                    console.log(`✅ DEBUG: Test ${test.name} completed with status:`, result.status);
                     results.push({ ...result, testName: test.name });
                 } catch (error) {
+                    console.error(`❌ DEBUG: Test ${test.name} failed with error:`, error);
                     results.push({ 
                         testName: test.name, 
                         status: 'error', 
