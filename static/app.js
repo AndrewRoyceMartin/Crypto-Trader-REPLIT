@@ -543,8 +543,8 @@ async function showConfidenceDetails(symbol) {
                                     <div class="col-md-6">
                                         <h6>Overall Confidence</h6>
                                         <div class="progress mb-2">
-                                            <div class="progress-bar bg-${info.score >= 70 ? 'success' : info.score >= 50 ? 'warning' : 'danger'}" 
-                                                 style="width: ${info.score}%">${info.score.toFixed(1)}%</div>
+                                            <div class="progress-bar bg-${(info.score || 0) >= 70 ? 'success' : (info.score || 0) >= 50 ? 'warning' : 'danger'}" 
+                                                 style="width: ${info.score || 0}%">${(info.score || 0).toFixed(1)}%</div>
                                         </div>
                                         <p><strong>Level:</strong> ${info.level}</p>
                                         <p><strong>Timing Signal:</strong> ${info.timing_signal}</p>
@@ -561,19 +561,19 @@ async function showConfidenceDetails(symbol) {
                                 <div class="list-group">
                                     <div class="list-group-item d-flex justify-content-between align-items-center">
                                         <span>Technical Analysis</span>
-                                        <span class="badge bg-${breakdown.technical >= 60 ? 'success' : breakdown.technical >= 40 ? 'warning' : 'danger'}">${breakdown.technical.toFixed(1)}%</span>
+                                        <span class="badge bg-${(breakdown.technical || 0) >= 60 ? 'success' : (breakdown.technical || 0) >= 40 ? 'warning' : 'danger'}">${(breakdown.technical || 0).toFixed(1)}%</span>
                                     </div>
                                     <div class="list-group-item d-flex justify-content-between align-items-center">
                                         <span>Market Momentum</span>
-                                        <span class="badge bg-${breakdown.momentum >= 60 ? 'success' : breakdown.momentum >= 40 ? 'warning' : 'danger'}">${breakdown.momentum.toFixed(1)}%</span>
+                                        <span class="badge bg-${(breakdown.momentum || 0) >= 60 ? 'success' : (breakdown.momentum || 0) >= 40 ? 'warning' : 'danger'}">${(breakdown.momentum || 0).toFixed(1)}%</span>
                                     </div>
                                     <div class="list-group-item d-flex justify-content-between align-items-center">
                                         <span>Risk Assessment</span>
-                                        <span class="badge bg-${breakdown.risk >= 60 ? 'success' : breakdown.risk >= 40 ? 'warning' : 'danger'}">${breakdown.risk.toFixed(1)}%</span>
+                                        <span class="badge bg-${(breakdown.risk || 0) >= 60 ? 'success' : (breakdown.risk || 0) >= 40 ? 'warning' : 'danger'}">${(breakdown.risk || 0).toFixed(1)}%</span>
                                     </div>
                                     <div class="list-group-item d-flex justify-content-between align-items-center">
                                         <span>Volume Profile</span>
-                                        <span class="badge bg-${breakdown.volume >= 60 ? 'success' : breakdown.volume >= 40 ? 'warning' : 'danger'}">${breakdown.volume.toFixed(1)}%</span>
+                                        <span class="badge bg-${(breakdown.volume || 0) >= 60 ? 'success' : (breakdown.volume || 0) >= 40 ? 'warning' : 'danger'}">${(breakdown.volume || 0).toFixed(1)}%</span>
                                     </div>
                                 </div>
                             </div>
