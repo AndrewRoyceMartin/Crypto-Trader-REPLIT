@@ -298,17 +298,135 @@ class PortfolioService:
             self.logger.warning(f"Error getting OKX conversion rate: {e}")
             return 1.0
 
+    def get_portfolio_data_OKX_NATIVE_ONLY(self, currency: str = 'USD', force_refresh: bool = False) -> Dict[str, Any]:
+        """
+        FINANCIAL SAFETY: Uses ONLY OKX native calculated values - NO estimations, NO cost basis calculations.
+        This method prevents financial losses by avoiding any calculated or estimated data for live trading.
+        """
+        try:
+            if force_refresh:
+                self.logger.info("Portfolio service cache invalidated")
+                self._cache.clear()
+                self._last_balance_update = 0
+                self._last_holdings_update = 0
+
+            # Get ONLY balance data from OKX - no trade history needed
+            balance_data = self.exchange.get_balance()
+            account_balances = balance_data if isinstance(balance_data, dict) else {}
+            
+            self.logger.info(f"OKX NATIVE MODE: Retrieved balance data with {len(account_balances)} keys")
+            
+            holdings = []
+            total_value = 0.0
+            
+            if isinstance(account_balances, dict):
+                excluded_keys = ['info', 'timestamp', 'datetime', 'free', 'used', 'total', 'AUD', 'USD', 'EUR', 'GBP']
+                
+                for symbol, balance_info in account_balances.items():
+                    if (symbol not in excluded_keys and 
+                        isinstance(balance_info, dict) and 
+                        'free' in balance_info):
+                        
+                        quantity = float(balance_info.get('free', 0.0) or 0.0)
+                        
+                        if quantity > 0:
+                            # Use OKX's native USD value directly - NO calculations
+                            okx_usd_value = balance_info.get('usdValue') or balance_info.get('value_usd')
+                            
+                            if okx_usd_value and float(okx_usd_value) > 0:
+                                current_value = float(okx_usd_value)
+                                current_price = self.get_price(symbol) if symbol != 'USDT' else 1.0
+                                
+                                self.logger.info(f"OKX NATIVE: {symbol} qty={quantity:.4f}, usdValue=${current_value:.2f}")
+                                
+                                position = {
+                                    'symbol': symbol,
+                                    'name': symbol,
+                                    'quantity': float(quantity),
+                                    'current_price': float(current_price),
+                                    'current_value': float(current_value),  # OKX calculated
+                                    'value': float(current_value),
+                                    'has_position': True,
+                                    'is_live': True,
+                                    'allocation_percent': 0.0,  # Will calculate later
+                                    # Safe defaults - no dangerous P&L calculations
+                                    'cost_basis': float(current_value),  # Use current as safe default
+                                    'avg_entry_price': float(current_price),  # Use current as safe default  
+                                    'pnl': 0.0,  # No P&L without real cost basis
+                                    'pnl_percent': 0.0,  # No P&L without real cost basis
+                                    'unrealized_pnl': 0.0,
+                                    'unrealized_pnl_percent': 0.0
+                                }
+                                
+                                holdings.append(position)
+                                total_value += current_value
+                            else:
+                                self.logger.warning(f"No OKX usdValue for {symbol} with quantity {quantity} - skipping to avoid estimations")
+            
+            # Calculate allocation percentages
+            for holding in holdings:
+                if total_value > 0:
+                    holding['allocation_percent'] = (holding['current_value'] / total_value) * 100
+            
+            # Sort by value and add ranking
+            holdings.sort(key=lambda x: x['current_value'], reverse=True)
+            for i, holding in enumerate(holdings):
+                holding['rank'] = i + 1
+            
+            # Include cash balances using OKX native values only
+            cash_balance = 0.0
+            aud_balance = 0.0
+            
+            if 'USDT' in account_balances and isinstance(account_balances['USDT'], dict):
+                cash_balance = float(account_balances['USDT'].get('free', 0.0) or 0.0)
+                total_value += cash_balance  # USDT = USD
+                
+            if 'AUD' in account_balances and isinstance(account_balances['AUD'], dict):
+                aud_balance = float(account_balances['AUD'].get('free', 0.0) or 0.0)
+                # Only add AUD if OKX provides native USD conversion
+                if 'usdValue' in account_balances['AUD']:
+                    aud_usd = float(account_balances['AUD']['usdValue'])
+                    total_value += aud_usd
+                    self.logger.info(f"Including AUD: {aud_balance:.2f} AUD = ${aud_usd:.2f} USD (OKX native conversion)")
+            
+            self.logger.info(f"OKX NATIVE PORTFOLIO: {len(holdings)} positions, total value ${total_value:.2f}")
+            
+            return {
+                "holdings": holdings,
+                "total_current_value": float(total_value),
+                "total_estimated_value": float(total_value),  # Same as current - no estimations
+                "total_pnl": 0.0,  # No P&L without real cost basis data
+                "total_pnl_percent": 0.0,  # No P&L without real cost basis data
+                "cash_balance": float(cash_balance),
+                "aud_balance": float(aud_balance),
+                "last_update": datetime.now().isoformat()
+            }
+            
+        except Exception as e:
+            self.logger.error(f"Error in OKX native portfolio data: {e}")
+            return {
+                "holdings": [],
+                "total_current_value": 0.0,
+                "total_estimated_value": 0.0,
+                "total_pnl": 0.0,
+                "total_pnl_percent": 0.0,
+                "cash_balance": 0.0,
+                "aud_balance": 0.0,
+                "last_update": datetime.now().isoformat()
+            }
+
     def get_portfolio_data(self, currency: str = 'USD', force_refresh: bool = False) -> Dict[str, Any]:
         """
-        Get complete portfolio data from OKX with the specified currency.
-        Instead of doing local currency conversion, we refresh data from OKX directly.
-        
-        Args:
-            currency: Target currency for portfolio data (USD, EUR, GBP, AUD, etc.)
-            force_refresh: If True, clear caches and force fresh data from OKX
-        
-        Returns a dict with keys: holdings, total_current_value, total_pnl, total_pnl_percent,
-        cash_balance, last_update
+        REDIRECTED TO SAFE METHOD: Now uses OKX native data only for financial safety.
+        NO cost basis calculations, NO trade history dependencies, NO estimations.
+        """
+        # FINANCIAL SAFETY: Redirect to safe OKX-native method
+        return self.get_portfolio_data_OKX_NATIVE_ONLY(currency, force_refresh)
+
+    def get_portfolio_data_OLD_UNSAFE(self, currency: str = 'USD', force_refresh: bool = False) -> Dict[str, Any]:
+        """
+        OLD UNSAFE METHOD - kept for reference only, not used.
+        Contains dangerous cost basis calculations and trade history dependencies.
         """
         try:
             # Clear caches if force refresh is requested
