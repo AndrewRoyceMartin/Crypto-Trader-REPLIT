@@ -1660,7 +1660,7 @@ class EnhancedTestRunner {
         const testResultsContainer = document.getElementById('test-results-container');
         
         // Show loading state
-        testResultsContainer.innerHTML = '<div class="text-center p-4"><i class="fas fa-spinner fa-spin fa-2x text-primary mb-3"></i><h5>Running Normal Tests (9 fast response tests)...</h5></div>';
+        testResultsContainer.innerHTML = '<div class="text-center p-4"><i class="fas fa-spinner fa-spin fa-2x text-primary mb-3"></i><h5>Running Normal Tests (8 fast response tests)...</h5></div>';
         
         try {
             // Run fast response tests as "normal" testing
@@ -1669,7 +1669,6 @@ class EnhancedTestRunner {
                 { name: 'Portfolio Data', func: 'testBasicPortfolioData' },
                 { name: 'Price Updates', func: 'testBasicPriceUpdates' },
                 { name: 'Button Functions', func: 'testBasicButtonFunctions' },
-                { name: 'API Response Timing', func: 'testAPIResponseTiming' },
                 { name: 'ATO Export Button', func: 'testATOExportButton' },
                 { name: 'Buy Button', func: 'testBuyButton' },
                 { name: 'Sell Button', func: 'testSellButton' },
@@ -1863,6 +1862,7 @@ class EnhancedTestRunner {
             'testPriceFreshnessRealtime', 
             'testRecalculationWorkflowAdvanced',
             'testButtonWorkflowComprehensive',
+            'testAPIResponseTiming',
             'bot_runtime_status',
             'bot_state_sync',
             'cache_disabled',
