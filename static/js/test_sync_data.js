@@ -24,6 +24,139 @@ class EnhancedTestRunner {
             startTime: null,
             currentTest: null
         };
+        // Enhanced error logging system
+        this.errorLog = {
+            detailedErrors: [],
+            consoleErrors: [],
+            networkErrors: [],
+            testFailures: [],
+            systemInfo: {},
+            sessionId: this.generateSessionId()
+        };
+        this.setupErrorCapture();
+    }
+
+    generateSessionId() {
+        return 'test_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    }
+
+    setupErrorCapture() {
+        // Capture console errors
+        const originalConsoleError = console.error;
+        const originalConsoleWarn = console.warn;
+        
+        console.error = (...args) => {
+            this.logError('CONSOLE_ERROR', args.join(' '), new Error().stack);
+            originalConsoleError.apply(console, args);
+        };
+        
+        console.warn = (...args) => {
+            this.logError('CONSOLE_WARN', args.join(' '), new Error().stack);
+            originalConsoleWarn.apply(console, args);
+        };
+
+        // Capture unhandled promise rejections
+        window.addEventListener('unhandledrejection', (event) => {
+            this.logError('UNHANDLED_PROMISE', event.reason, event.reason.stack);
+        });
+
+        // Capture JavaScript errors
+        window.addEventListener('error', (event) => {
+            this.logError('JAVASCRIPT_ERROR', event.message, event.error?.stack, {
+                filename: event.filename,
+                lineno: event.lineno,
+                colno: event.colno
+            });
+        });
+    }
+
+    logError(type, message, stack = null, metadata = {}) {
+        const errorEntry = {
+            type,
+            message,
+            stack,
+            metadata,
+            timestamp: new Date().toISOString(),
+            sessionId: this.errorLog.sessionId,
+            url: window.location.href,
+            userAgent: navigator.userAgent
+        };
+        
+        this.errorLog.detailedErrors.push(errorEntry);
+        
+        // Categorize errors
+        if (type.includes('CONSOLE')) {
+            this.errorLog.consoleErrors.push(errorEntry);
+        } else if (type.includes('NETWORK') || type.includes('FETCH')) {
+            this.errorLog.networkErrors.push(errorEntry);
+        } else if (type.includes('TEST')) {
+            this.errorLog.testFailures.push(errorEntry);
+        }
+    }
+
+    async logNetworkError(url, method, error, response = null) {
+        const networkError = {
+            type: 'NETWORK_ERROR',
+            url,
+            method,
+            error: error.message,
+            stack: error.stack,
+            response: response ? {
+                status: response.status,
+                statusText: response.statusText,
+                headers: response.headers ? Object.fromEntries(response.headers.entries()) : null
+            } : null,
+            timestamp: new Date().toISOString()
+        };
+        
+        this.errorLog.networkErrors.push(networkError);
+        this.errorLog.detailedErrors.push(networkError);
+    }
+
+    async logTestFailure(testName, category, error, context = {}) {
+        const testFailure = {
+            type: 'TEST_FAILURE',
+            testName,
+            category,
+            error: error.message || error,
+            stack: error.stack || new Error().stack,
+            context,
+            timestamp: new Date().toISOString()
+        };
+        
+        this.errorLog.testFailures.push(testFailure);
+        this.errorLog.detailedErrors.push(testFailure);
+    }
+
+    collectSystemInfo() {
+        this.errorLog.systemInfo = {
+            timestamp: new Date().toISOString(),
+            userAgent: navigator.userAgent,
+            viewport: {
+                width: window.innerWidth,
+                height: window.innerHeight
+            },
+            screen: {
+                width: screen.width,
+                height: screen.height,
+                colorDepth: screen.colorDepth
+            },
+            connection: navigator.connection ? {
+                effectiveType: navigator.connection.effectiveType,
+                downlink: navigator.connection.downlink,
+                rtt: navigator.connection.rtt
+            } : null,
+            memory: performance.memory ? {
+                usedJSHeapSize: performance.memory.usedJSHeapSize,
+                totalJSHeapSize: performance.memory.totalJSHeapSize,
+                jsHeapSizeLimit: performance.memory.jsHeapSizeLimit
+            } : null,
+            timing: performance.timing ? {
+                navigationStart: performance.timing.navigationStart,
+                loadEventEnd: performance.timing.loadEventEnd,
+                domContentLoadedEventEnd: performance.timing.domContentLoadedEventEnd
+            } : null
+        };
     }
 
     // Enhanced test execution with concurrent processing
@@ -4026,3 +4159,132 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }, 100);
 });
+
+// ===== COMPREHENSIVE ERROR LOGGING ENHANCEMENT =====
+// Add error export and detailed logging to the enhanced test runner
+(function enhanceTestRunnerWithErrorLogging() {
+    // Wait for the enhanced test runner to be available
+    setTimeout(() => {
+        const enhancedTestRunner = window.enhancedTestRunner;
+        if (!enhancedTestRunner) {
+            console.warn('Enhanced test runner not found, retrying...');
+            setTimeout(enhanceTestRunnerWithErrorLogging, 500);
+            return;
+        }
+
+        // Add error summary generation method
+        enhancedTestRunner.generateErrorSummary = function() {
+            return {
+                totalErrors: this.errorLog.detailedErrors.length,
+                consoleErrors: this.errorLog.consoleErrors.length,
+                networkErrors: this.errorLog.networkErrors.length,
+                testFailures: this.errorLog.testFailures.length,
+                sessionId: this.errorLog.sessionId,
+                errorBreakdown: {
+                    javascript: this.errorLog.detailedErrors.filter(e => e.type.includes('JAVASCRIPT')).length,
+                    network: this.errorLog.detailedErrors.filter(e => e.type.includes('NETWORK')).length,
+                    test: this.errorLog.detailedErrors.filter(e => e.type.includes('TEST')).length,
+                    console: this.errorLog.detailedErrors.filter(e => e.type.includes('CONSOLE')).length
+                }
+            };
+        };
+
+        // Add detailed error export functionality
+        enhancedTestRunner.exportErrorLog = function() {
+            this.collectSystemInfo();
+            
+            const errorReport = {
+                sessionId: this.errorLog.sessionId,
+                timestamp: new Date().toISOString(),
+                systemInfo: this.errorLog.systemInfo,
+                summary: this.generateErrorSummary(),
+                detailedErrors: this.errorLog.detailedErrors,
+                consoleErrors: this.errorLog.consoleErrors,
+                networkErrors: this.errorLog.networkErrors,
+                testFailures: this.errorLog.testFailures,
+                testMetrics: Array.from(this.metrics.values()),
+                progressTracking: this.progressTracking
+            };
+
+            // Create downloadable error log
+            const errorLogJson = JSON.stringify(errorReport, null, 2);
+            const blob = new Blob([errorLogJson], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `test-error-log-${this.errorLog.sessionId}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+
+            return errorReport;
+        };
+
+        // Add error display to test results
+        enhancedTestRunner.addErrorDisplayToResults = function(resultsHtml, errorSummary) {
+            if (errorSummary.totalErrors === 0) {
+                return resultsHtml + `
+                    <div class="alert alert-success mt-3">
+                        <h6><i class="fas fa-check-circle me-2"></i>No Errors Detected</h6>
+                        <p class="mb-0">All tests completed without any JavaScript, network, or console errors.</p>
+                    </div>`;
+            }
+
+            const errorExportButton = `
+                <div class="alert alert-warning mt-3">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h6><i class="fas fa-exclamation-triangle me-2"></i>Errors Detected: ${errorSummary.totalErrors}</h6>
+                            <ul class="mb-2">
+                                <li>Console Errors: ${errorSummary.errorBreakdown.console}</li>
+                                <li>Network Errors: ${errorSummary.errorBreakdown.network}</li>
+                                <li>Test Failures: ${errorSummary.errorBreakdown.test}</li>
+                                <li>JavaScript Errors: ${errorSummary.errorBreakdown.javascript}</li>
+                            </ul>
+                        </div>
+                        <button class="btn btn-danger btn-sm" onclick="window.enhancedTestRunner.exportErrorLog()">
+                            <i class="fas fa-download me-1"></i>Export Error Log
+                        </button>
+                    </div>
+                    <div class="mt-2">
+                        <small class="text-muted">Session ID: ${errorSummary.sessionId}</small>
+                    </div>
+                </div>`;
+
+            // Add detailed error breakdown
+            const recentErrors = this.errorLog.detailedErrors.slice(-5).map(error => `
+                <div class="border-left border-danger pl-2 mb-2">
+                    <strong>${error.type}:</strong> ${error.message}<br>
+                    <small class="text-muted">${error.timestamp}</small>
+                </div>
+            `).join('');
+
+            const errorDetails = `
+                <div class="card mt-3">
+                    <div class="card-header">
+                        <h6 class="mb-0">Recent Errors (Last 5)</h6>
+                    </div>
+                    <div class="card-body">
+                        ${recentErrors || '<p class="text-muted">No recent errors</p>'}
+                    </div>
+                </div>`;
+
+            return resultsHtml + errorExportButton + errorDetails;
+        };
+
+        // Override the display results method to include error information
+        const originalDisplayResults = enhancedTestRunner.displayEnhancedResults;
+        enhancedTestRunner.displayEnhancedResults = async function(results) {
+            await originalDisplayResults.call(this, results);
+            
+            // Add error information to the results
+            const container = document.getElementById('test-results-container');
+            if (container) {
+                const errorSummary = this.generateErrorSummary();
+                const currentHtml = container.innerHTML;
+                container.innerHTML = this.addErrorDisplayToResults(currentHtml, errorSummary);
+            }
+        };
+
+        console.log('✅ Enhanced error logging system activated');
+    }, 1000);
+})();
