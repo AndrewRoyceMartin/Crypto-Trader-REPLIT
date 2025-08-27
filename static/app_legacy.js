@@ -6469,6 +6469,26 @@ async function showConfidenceDetails(symbol) {
             const info = data.data;
             const breakdown = info.breakdown;
             
+            // Ensure all required fields have default values to prevent undefined errors
+            const safeInfo = {
+                confidence_score: info.confidence_score || 50,
+                confidence_level: info.confidence_level || 'FAIR',
+                timing_signal: info.timing_signal || 'WAIT',
+                risk_level: info.risk_level || 'MODERATE',
+                entry_recommendation: info.entry_recommendation || 'Proceed with caution',
+                calculated_at: info.calculated_at || new Date().toISOString(),
+                ...info
+            };
+            
+            const safeBreakdown = {
+                technical_analysis: breakdown?.technical_analysis || 50,
+                volatility_assessment: breakdown?.volatility_assessment || 50,
+                momentum_indicators: breakdown?.momentum_indicators || 50,
+                volume_analysis: breakdown?.volume_analysis || 50,
+                support_resistance: breakdown?.support_resistance || 50,
+                ...breakdown
+            };
+            
             const modalHtml = `
                 <div class="modal fade" id="confidenceModal" tabindex="-1">
                     <div class="modal-dialog modal-lg">
@@ -6482,9 +6502,9 @@ async function showConfidenceDetails(symbol) {
                                     <div class="col-md-6">
                                         <div class="card h-100">
                                             <div class="card-body text-center">
-                                                <h2 class="display-4 ${info.confidence_score >= 75 ? 'text-success' : info.confidence_score >= 60 ? 'text-warning' : 'text-danger'}">${info.confidence_score}</h2>
+                                                <h2 class="display-4 ${safeInfo.confidence_score >= 75 ? 'text-success' : safeInfo.confidence_score >= 60 ? 'text-warning' : 'text-danger'}">${safeInfo.confidence_score}</h2>
                                                 <p class="card-text">
-                                                    <strong class="${info.confidence_score >= 75 ? 'text-success' : info.confidence_score >= 60 ? 'text-warning' : 'text-danger'}">${info.confidence_level}</strong>
+                                                    <strong class="${safeInfo.confidence_score >= 75 ? 'text-success' : safeInfo.confidence_score >= 60 ? 'text-warning' : 'text-danger'}">${safeInfo.confidence_level}</strong>
                                                     <br><small class="text-muted">Confidence Level</small>
                                                 </p>
                                             </div>
@@ -6494,9 +6514,9 @@ async function showConfidenceDetails(symbol) {
                                         <div class="card h-100">
                                             <div class="card-body">
                                                 <h6 class="card-title">Signal & Risk</h6>
-                                                <p><strong>Timing Signal:</strong> <span class="${info.timing_signal === 'BUY' ? 'text-success' : info.timing_signal === 'CAUTIOUS_BUY' ? 'text-warning' : 'text-muted'}">${info.timing_signal.replace('_', ' ')}</span></p>
-                                                <p><strong>Risk Level:</strong> <span class="${info.risk_level === 'LOW' ? 'text-success' : info.risk_level === 'MODERATE' ? 'text-warning' : 'text-danger'}">${info.risk_level}</span></p>
-                                                <small class="text-muted">${info.entry_recommendation}</small>
+                                                <p><strong>Timing Signal:</strong> <span class="${safeInfo.timing_signal === 'BUY' ? 'text-success' : safeInfo.timing_signal === 'CAUTIOUS_BUY' ? 'text-warning' : 'text-muted'}">${safeInfo.timing_signal.replace('_', ' ')}</span></p>
+                                                <p><strong>Risk Level:</strong> <span class="${safeInfo.risk_level === 'LOW' ? 'text-success' : safeInfo.risk_level === 'MODERATE' ? 'text-warning' : 'text-danger'}">${safeInfo.risk_level}</span></p>
+                                                <small class="text-muted">${safeInfo.entry_recommendation}</small>
                                             </div>
                                         </div>
                                     </div>
@@ -6512,51 +6532,51 @@ async function showConfidenceDetails(symbol) {
                                                 <div class="mb-3">
                                                     <label class="form-label">Technical Analysis</label>
                                                     <div class="progress">
-                                                        <div class="progress-bar ${breakdown.technical_analysis >= 70 ? 'bg-success' : breakdown.technical_analysis >= 50 ? 'bg-warning' : 'bg-danger'}" 
-                                                             style="width: ${breakdown.technical_analysis}%"></div>
+                                                        <div class="progress-bar ${safeBreakdown.technical_analysis >= 70 ? 'bg-success' : safeBreakdown.technical_analysis >= 50 ? 'bg-warning' : 'bg-danger'}" 
+                                                             style="width: ${safeBreakdown.technical_analysis}%"></div>
                                                     </div>
-                                                    <small class="text-muted">${breakdown.technical_analysis}/100</small>
+                                                    <small class="text-muted">${safeBreakdown.technical_analysis}/100</small>
                                                 </div>
                                                 
                                                 <div class="mb-3">
                                                     <label class="form-label">Volatility Assessment</label>
                                                     <div class="progress">
-                                                        <div class="progress-bar ${breakdown.volatility_assessment >= 70 ? 'bg-success' : breakdown.volatility_assessment >= 50 ? 'bg-warning' : 'bg-danger'}" 
-                                                             style="width: ${breakdown.volatility_assessment}%"></div>
+                                                        <div class="progress-bar ${safeBreakdown.volatility_assessment >= 70 ? 'bg-success' : safeBreakdown.volatility_assessment >= 50 ? 'bg-warning' : 'bg-danger'}" 
+                                                             style="width: ${safeBreakdown.volatility_assessment}%"></div>
                                                     </div>
-                                                    <small class="text-muted">${breakdown.volatility_assessment}/100</small>
+                                                    <small class="text-muted">${safeBreakdown.volatility_assessment}/100</small>
                                                 </div>
                                                 
                                                 <div class="mb-3">
                                                     <label class="form-label">Momentum Indicators</label>
                                                     <div class="progress">
-                                                        <div class="progress-bar ${breakdown.momentum_indicators >= 70 ? 'bg-success' : breakdown.momentum_indicators >= 50 ? 'bg-warning' : 'bg-danger'}" 
-                                                             style="width: ${breakdown.momentum_indicators}%"></div>
+                                                        <div class="progress-bar ${safeBreakdown.momentum_indicators >= 70 ? 'bg-success' : safeBreakdown.momentum_indicators >= 50 ? 'bg-warning' : 'bg-danger'}" 
+                                                             style="width: ${safeBreakdown.momentum_indicators}%"></div>
                                                     </div>
-                                                    <small class="text-muted">${breakdown.momentum_indicators}/100</small>
+                                                    <small class="text-muted">${safeBreakdown.momentum_indicators}/100</small>
                                                 </div>
                                             </div>
                                             <div class="col-md-6">
                                                 <div class="mb-3">
                                                     <label class="form-label">Volume Analysis</label>
                                                     <div class="progress">
-                                                        <div class="progress-bar ${breakdown.volume_analysis >= 70 ? 'bg-success' : breakdown.volume_analysis >= 50 ? 'bg-warning' : 'bg-danger'}" 
-                                                             style="width: ${breakdown.volume_analysis}%"></div>
+                                                        <div class="progress-bar ${safeBreakdown.volume_analysis >= 70 ? 'bg-success' : safeBreakdown.volume_analysis >= 50 ? 'bg-warning' : 'bg-danger'}" 
+                                                             style="width: ${safeBreakdown.volume_analysis}%"></div>
                                                     </div>
-                                                    <small class="text-muted">${breakdown.volume_analysis}/100</small>
+                                                    <small class="text-muted">${safeBreakdown.volume_analysis}/100</small>
                                                 </div>
                                                 
                                                 <div class="mb-3">
                                                     <label class="form-label">Support/Resistance</label>
                                                     <div class="progress">
-                                                        <div class="progress-bar ${breakdown.support_resistance >= 70 ? 'bg-success' : breakdown.support_resistance >= 50 ? 'bg-warning' : 'bg-danger'}" 
-                                                             style="width: ${breakdown.support_resistance}%"></div>
+                                                        <div class="progress-bar ${safeBreakdown.support_resistance >= 70 ? 'bg-success' : safeBreakdown.support_resistance >= 50 ? 'bg-warning' : 'bg-danger'}" 
+                                                             style="width: ${safeBreakdown.support_resistance}%"></div>
                                                     </div>
-                                                    <small class="text-muted">${breakdown.support_resistance}/100</small>
+                                                    <small class="text-muted">${safeBreakdown.support_resistance}/100</small>
                                                 </div>
                                                 
                                                 <div class="alert alert-info">
-                                                    <small><strong>Analysis Time:</strong> ${new Date(info.calculated_at).toLocaleString()}</small>
+                                                    <small><strong>Analysis Time:</strong> ${new Date(safeInfo.calculated_at).toLocaleString()}</small>
                                                 </div>
                                             </div>
                                         </div>
@@ -6565,7 +6585,7 @@ async function showConfidenceDetails(symbol) {
                             </div>
                             <div class="modal-footer">
                                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                                ${info.confidence_score >= 60 ? 
+                                ${safeInfo.confidence_score >= 60 ? 
                                     `<button type="button" class="btn btn-primary" onclick="buyBackPosition('${symbol}'); 
                                         // Safe Bootstrap modal hide
                                         if (window.bootstrap && window.bootstrap.Modal) {
