@@ -292,7 +292,7 @@ export class ChartUpdater {
             }
             
             const labels = data.history.map(item => AppUtils.formatDateTime(item.timestamp));
-            const values = data.history.map(item => AppUtils.safeNum(item.total_value));
+            const values = data.history.map(item => AppUtils.safeNum(item.value));
             
             this.charts.portfolioChart.data.labels = labels;
             this.charts.portfolioChart.data.datasets[0].data = values;
@@ -309,13 +309,13 @@ export class ChartUpdater {
         
         try {
             const data = await AppUtils.fetchJSON('/api/asset-allocation');
-            if (!data || !data.allocations) {
+            if (!data || !data.allocation) {
                 ChartUpdater.createChartFallback('allocationChart', 'No allocation data available', 'warning');
                 return;
             }
             
-            const labels = data.allocations.map(item => item.symbol);
-            const values = data.allocations.map(item => AppUtils.safeNum(item.percentage));
+            const labels = data.allocation.map(item => item.symbol);
+            const values = data.allocation.map(item => AppUtils.safeNum(item.allocation_percent));
             
             this.charts.allocationChart.data.labels = labels;
             this.charts.allocationChart.data.datasets[0].data = values;
