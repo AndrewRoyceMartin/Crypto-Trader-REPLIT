@@ -668,13 +668,10 @@ async function showConfidenceDetails(symbol) {
             
             // Now fetch market data in the background and update the modal
             try {
-                console.log(`DEBUG: Fetching market data for ${symbol}...`);
                 const positionsResponse = await fetch(`/api/available-positions`, { cache: 'no-cache' });
                 if (positionsResponse.ok) {
                     const positionsData = await positionsResponse.json();
-                    console.log(`DEBUG: Available positions response:`, positionsData);
                     const position = positionsData.data?.find(p => p.symbol === symbol);
-                    console.log(`DEBUG: Found ${symbol} in available positions:`, position);
                     
                     if (position) {
                         // Update the market data in the already-shown modal
@@ -685,18 +682,13 @@ async function showConfidenceDetails(symbol) {
                         if (currentPriceEl) currentPriceEl.textContent = '$' + parseFloat(position.current_price || 0).toFixed(6);
                         if (targetPriceEl) targetPriceEl.textContent = '$' + parseFloat(position.target_buy_price || 0).toFixed(6);
                         if (opportunityEl) opportunityEl.textContent = parseFloat(position.price_diff_percent || 0).toFixed(2) + '%';
-                        console.log(`DEBUG: Updated market data from available positions for ${symbol}`);
                     } else {
                         // Try to find price data from portfolio API as fallback
-                        console.log(`DEBUG: ${symbol} not in available positions, trying portfolio API...`);
                         try {
                             const portfolioResponse = await fetch(`/api/crypto-portfolio?currency=USD`, { cache: 'no-cache' });
                             if (portfolioResponse.ok) {
                                 const portfolioData = await portfolioResponse.json();
-                                console.log(`DEBUG: Portfolio response structure:`, Object.keys(portfolioData));
-                                console.log(`DEBUG: Portfolio holdings:`, portfolioData.holdings);
                                 const portfolioPosition = portfolioData.holdings?.find(p => p.symbol === symbol);
-                                console.log(`DEBUG: Found ${symbol} in portfolio:`, portfolioPosition);
                                 
                                 if (portfolioPosition) {
                                     const currentPriceEl = document.getElementById(`current-price-${symbol}`);
@@ -706,10 +698,8 @@ async function showConfidenceDetails(symbol) {
                                     if (currentPriceEl) currentPriceEl.textContent = '$' + parseFloat(portfolioPosition.current_price || 0).toFixed(6);
                                     if (targetPriceEl) targetPriceEl.textContent = 'Portfolio Asset';
                                     if (opportunityEl) opportunityEl.textContent = parseFloat(portfolioPosition.pnl_percent || 0).toFixed(2) + '%';
-                                    console.log(`DEBUG: Updated market data from portfolio for ${symbol}`);
                                 } else {
                                     // Update with "Not Available" if position not found
-                                    console.log(`DEBUG: ${symbol} not found in either API, setting Not Available`);
                                     const currentPriceEl = document.getElementById(`current-price-${symbol}`);
                                     const targetPriceEl = document.getElementById(`target-price-${symbol}`);
                                     const opportunityEl = document.getElementById(`opportunity-${symbol}`);
@@ -718,15 +708,11 @@ async function showConfidenceDetails(symbol) {
                                     if (targetPriceEl) targetPriceEl.textContent = 'Not Available';
                                     if (opportunityEl) opportunityEl.textContent = 'Not Available';
                                 }
-                            } else {
-                                console.log(`DEBUG: Portfolio API failed with status:`, portfolioResponse.status);
                             }
                         } catch (portfolioError) {
-                            console.log(`DEBUG: Portfolio API error:`, portfolioError);
+                            // Portfolio API fallback failed
                         }
                     }
-                } else {
-                    console.log(`DEBUG: Available positions API failed with status:`, positionsResponse.status);
                 }
             } catch (marketError) {
                 // Update with error state
