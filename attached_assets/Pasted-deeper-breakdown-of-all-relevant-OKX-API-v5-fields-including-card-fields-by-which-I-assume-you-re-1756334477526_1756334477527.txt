@@ -1,0 +1,170 @@
+deeper breakdown of all relevant OKX API v5 fields, including "card" fields—by which I assume you're referring to UI-like summary cards (e.g., cost price, PnL, spot trading performance). Here's a comprehensive, structured mapping of OKX API data fields that correspond to such UI card components, along with what they represent and how to implement them in your app.
+
+1. Unified Account – GET /api/v5/account/balance
+
+totalEq — Total Equity in USD: The entire portfolio value across all currencies in the unified account. This maps to the "Estimated Total Value" card headline.
+
+details[] (per currency):
+
+ccy — currency code (e.g. "SOL").
+
+cashBal — available balance in that currency (spot holdings).
+
+availBal — balance available for trading or withdrawal.
+
+eq — equity of that currency in base units, contributing to totalEq.
+
+2. Market Data – GET /api/v5/market/ticker
+
+Fields to populate pricing and performance cards:
+
+instId — trading pair (e.g., "SOL–USDT").
+
+last — latest price.
+
+open24h, high24h, low24h — 24-hour price range.
+
+vol24h, volCcy24h — trade volume in base and quote currencies.
+
+bidPx, askPx — best bid and ask prices.
+
+ts — timestamp of the data.
+
+Use these to calculate:
+
+24H Change % = (last - open24h) / open24h × 100.
+
+Display current price and price movement in a “Spot Trading Performance” card.
+
+3. Market Candlesticks – GET /api/v5/market/candles
+
+Essential for charting portfolio value or asset price trends:
+
+ts — candle start time.
+
+o, h, l, c — OHLC prices.
+
+vol, volCcy, volCcyQuote — volumes.
+
+confirm — flag (0 = in-progress, 1 = closed).
+
+Use the c (close) values to build asset-value charts, potentially multiplied by your holdings.
+
+4. Trades / Fills – GET /api/v5/trade/fills-history
+
+For performance metrics like cost price and realized/unrealized PnL:
+
+instId — trading pair.
+
+side — "buy" or "sell".
+
+fillSz — size filled (currency units).
+
+fillPx — price per unit.
+
+fee, feeCcy — trading fee and its denomination.
+
+Use these to calculate:
+
+Cost Basis: Weighted average buy price.
+
+Unrealized PnL: (current price – cost price) × holdings.
+
+5. Positions Data (WebSocket or REST)
+
+For derivative positions (not typical spot cards but may still inform “Performance” cards):
+
+instId, posSide, pos — instrument and position details.
+
+avgPx — entry price.
+
+last — current price.
+
+upl — unrealized profit/loss.
+
+uplRatio — profit/loss in ratio.
+
+lever, mgnMode, posId — margin and position identifiers.
+
+6. Wallet / On-Chain – Web3 & DEX APIs
+On-Chain Wallet Total Value:
+
+GET /api/v5/wallet/asset/total-value → totalValue in USD. Populates a “Total Value (on-chain)” card. 
+OKX
++6
+OKX
++6
+OKX Wallet
++6
+OKX Australia
+Wundertrading
+OKX Wallet
++2
+OKX
++2
+OKX
+OKX Wallet
+
+DEX / DeFi Total Value:
+
+GET /api/v5/dex/balance/total-value → USD total of DEX + DeFi assets. 
+OKX Wallet
++2
+OKX
++2
+
+Token Balances (DEX Wallet):
+
+symbol, balance, tokenPrice, isRiskToken. Useful for listing individual token positions in UI cards. 
+OKX Wallet
+
+7. Instrument & Product Configuration
+
+To support card components that display trading rules or instrument metadata:
+
+GET /api/v5/public/instruments provides:
+
+instId, ctVal (contract face value), minSz (minimum size), perhaps trading fees. 
+NexusTrader
++5
+OKX
++5
+OKX
++5
+OKX
++1
+
+Useful for cards such as: “Min Order Size,” “Contract Face Value.”
+
+8. Account Configuration – GET /api/v5/account/config
+
+To reflect account mode or settings in UI:
+
+Returns details like account mode (spot/margin/futures), position mode (net vs long/short), autoBorrow, greeksType, etc. 
+OKX
+OKX Wallet
++2
+OKX
++2
+OKX Wallet
++5
+OKX
++5
+OKX
++5
+
+Useful for informational cards like “Account Settings,” “Margin Configuration.”
+
+Summary Table: Card → API Fields
+UI Card	OKX Endpoint / Field(s)
+Estimated Total Value	/account/balance → totalEq
+Currency Holding (e.g. SOL)	/account/balance → details[] → ccy, cashBal or eq
+Last Price / 24h Change	/market/ticker → last, open24h (compute Δ%)
+Performance / PnL	Combine fills + ticker: use fills-history fields + current price
+Chart (1D/1W/1M)	/market/candles → c, timestamps
+Margin / Derivative PnL	WebSocket positions → avgPx, last, upl, uplRatio
+On-chain Total Value	/wallet/asset/total-value → totalValue (USD)
+DEX/DeFi Total Value	/dex/balance/total-value → totalValue (USD)
+Token Details	/dex/...token-balances-by-address → symbol, balance, tokenPrice, isRiskToken
+Instrument Info	/public/instruments → instId, minSz, ctVal, etc.
+Account Settings	/account/config → accountMode, posMode, autoBorrow, etc.

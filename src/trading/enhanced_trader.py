@@ -67,11 +67,75 @@ class EnhancedTrader:
         )
         self.last_update_time: Optional[datetime] = None
 
+    def _sync_with_portfolio(self, symbol: str) -> None:
+        """Sync trader position state with actual OKX portfolio holdings."""
+        try:
+            # Import here to avoid circular imports
+            from ..services.portfolio_service import get_portfolio_service
+            
+            portfolio_service = get_portfolio_service()
+            portfolio_data = portfolio_service.get_portfolio_data()
+            holdings = portfolio_data.get('holdings', [])
+            
+            # Extract base symbol (e.g., SOL from SOL/USDT)
+            base_symbol = symbol.split('/')[0] if '/' in symbol else symbol
+            
+            # Find matching position in portfolio
+            matching_position = None
+            for holding in holdings:
+                holding_symbol = holding.get('symbol', '')
+                if holding_symbol == base_symbol:
+                    matching_position = holding
+                    break
+            
+            if matching_position:
+                quantity = float(matching_position.get('quantity', 0) or 0)
+                avg_entry_price = float(matching_position.get('avg_entry_price', 0) or 0)
+                current_price = float(matching_position.get('current_price', 0) or 0)
+                
+                # Only sync if we have valid data and a real position
+                if quantity > 0 and avg_entry_price > 0:
+                    # Update strategy position state
+                    if hasattr(self.strategy, 'position_state'):
+                        self.strategy.position_state['position_qty'] = quantity
+                        self.strategy.position_state['entry_price'] = avg_entry_price
+                        self.strategy.position_state['peak_since_entry'] = max(avg_entry_price, current_price)
+                        self.strategy.position_state['rebuy_armed'] = False  # Reset rebuy for existing positions
+                        
+                        self.logger.critical(
+                            "🔄 PORTFOLIO SYNC: %s position found - Qty: %.8f, Entry: $%.4f, Current: $%.4f",
+                            base_symbol, quantity, avg_entry_price, current_price
+                        )
+                        
+                        # Check if position should exit immediately
+                        gain_percent = ((current_price - avg_entry_price) / avg_entry_price) * 100
+                        if gain_percent >= 4.0:  # Above 4% primary target
+                            self.logger.warning(
+                                "⚠️ EXISTING POSITION ABOVE TARGET: %s at +%.2f%% (Target: 4.0%%) - Will exit on next signal",
+                                base_symbol, gain_percent
+                            )
+                        elif gain_percent >= 6.0:  # Above 6% safety net
+                            self.logger.error(
+                                "🚨 EXISTING POSITION ABOVE SAFETY NET: %s at +%.2f%% (Safety: 6.0%%) - Will exit immediately",
+                                base_symbol, gain_percent
+                            )
+                else:
+                    self.logger.info("📊 PORTFOLIO SYNC: %s - No significant position found", base_symbol)
+            else:
+                self.logger.info("📊 PORTFOLIO SYNC: %s - Symbol not found in portfolio", base_symbol)
+                
+        except Exception as e:
+            self.logger.error("Failed to sync with portfolio for %s: %s", symbol, e)
+            # Continue trading even if sync fails - don't break the system
+
     def start_trading(self, symbol: str, timeframe: str = '1h') -> None:
         self.logger.info("Starting enhanced trading: %s on %s", symbol, timeframe)
         try:
             if not self.exchange.connect():
                 raise RuntimeError("Failed to connect to exchange")
+
+            # CRITICAL: Sync with existing OKX positions before starting
+            self._sync_with_portfolio(symbol)
 
             self.running = True
 
