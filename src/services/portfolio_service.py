@@ -388,9 +388,8 @@ class PortfolioService:
                         self.logger.error(f"Failed to get live OKX price for {symbol} in {currency}, skipping asset")
                     continue  # Skip this asset if we can't get live OKX price
 
-                # Since we can't get trade history, calculate cost basis from current holdings and market data
-                # This provides realistic cost basis from OKX trading history
-                real_cost_basis, real_avg_entry_price = self._estimate_cost_basis_from_holdings(symbol, account_balances, current_price)
+                # Use actual OKX trade history to calculate real cost basis
+                real_cost_basis, real_avg_entry_price = self._calculate_real_cost_basis_from_trades(symbol, trade_history, account_balances, current_price)
                 
                 quantity: float = 0.0
                 avg_entry_price: float = real_avg_entry_price if real_avg_entry_price > 0 else current_price
@@ -431,7 +430,7 @@ class PortfolioService:
                             if cost_basis <= 0:
                                 self.logger.warning(f"Zero cost basis for {symbol}, recalculating with realistic purchase price")
                                 # Recalculate with realistic pricing
-                                _, better_avg_entry = self._estimate_cost_basis_from_holdings(symbol, quantity, current_price, account_balances)
+                                _, better_avg_entry = self._calculate_real_cost_basis_from_trades(symbol, trade_history, account_balances, current_price)
                                 cost_basis = quantity * better_avg_entry
                                 avg_entry_price = better_avg_entry
                                 self.logger.info(f"Fixed {symbol} cost basis: {quantity:.8f} × ${avg_entry_price:.8f} = ${cost_basis:.8f}")
@@ -616,6 +615,78 @@ class PortfolioService:
                 "last_update": datetime.now(timezone.utc).isoformat(),
             }
     
+    def _calculate_real_cost_basis_from_trades(self, symbol: str, trade_history: List[Dict], account_balances: Dict, current_price: float) -> tuple[float, float]:
+        """
+        Calculate actual cost basis from OKX trade history data.
+        Uses real executed trades to determine accurate weighted average purchase price.
+        
+        Args:
+            symbol: The cryptocurrency symbol (e.g., 'SOL')
+            trade_history: List of actual trade records from OKX
+            account_balances: Account balance data from OKX
+            current_price: Current market price
+            
+        Returns:
+            tuple: (actual_cost_basis, actual_avg_entry_price)
+        """
+        try:
+            # Check if we have a balance for this symbol
+            if (symbol in account_balances and 
+                isinstance(account_balances[symbol], dict) and 
+                'free' in account_balances[symbol]):
+                
+                balance_info = account_balances[symbol]
+                current_quantity = float(balance_info.get('free', 0.0) or 0.0)
+                
+                if current_quantity > 0:
+                    # Filter trades for this symbol
+                    symbol_trades = []
+                    for trade in trade_history:
+                        trade_symbol = trade.get('symbol', '').replace('/USDT', '').replace('-USDT', '')
+                        if trade_symbol == symbol and trade.get('side') == 'buy':
+                            symbol_trades.append(trade)
+                    
+                    if symbol_trades:
+                        # Calculate weighted average purchase price from actual trades
+                        total_cost = 0.0
+                        total_quantity = 0.0
+                        
+                        for trade in symbol_trades:
+                            trade_price = float(trade.get('price', 0))
+                            trade_amount = float(trade.get('amount', 0))
+                            trade_cost = float(trade.get('cost', 0))
+                            
+                            if trade_cost > 0:
+                                # Use OKX's calculated cost if available
+                                total_cost += trade_cost
+                                total_quantity += trade_amount
+                            elif trade_price > 0 and trade_amount > 0:
+                                # Calculate from price and amount
+                                trade_total = trade_price * trade_amount
+                                total_cost += trade_total
+                                total_quantity += trade_amount
+                        
+                        if total_quantity > 0:
+                            actual_avg_entry_price = total_cost / total_quantity
+                            actual_cost_basis = current_quantity * actual_avg_entry_price
+                            
+                            self.logger.info(f"{symbol} ACTUAL TRADE cost basis: ${actual_cost_basis:.2f}, "
+                                           f"avg entry: ${actual_avg_entry_price:.8f} (from {len(symbol_trades)} trades), "
+                                           f"current: ${current_price:.8f}")
+                            
+                            return actual_cost_basis, actual_avg_entry_price
+                    
+                    # Fallback: if no trade history, use a conservative estimation
+                    self.logger.warning(f"No trade history found for {symbol}, using conservative estimation")
+                    return self._estimate_cost_basis_from_holdings(symbol, account_balances, current_price)
+                    
+            return 0.0, 0.0
+            
+        except Exception as e:
+            self.logger.error(f"Error calculating real cost basis for {symbol}: {e}")
+            # Fallback to estimation if real calculation fails
+            return self._estimate_cost_basis_from_holdings(symbol, account_balances, current_price)
+
     def _estimate_cost_basis_from_holdings(self, symbol: str, account_balances: Dict, current_price: float) -> tuple[float, float]:
         """
         Estimate cost basis from current holdings since OKX trade history has API restrictions.
