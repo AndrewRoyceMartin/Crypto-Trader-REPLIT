@@ -366,9 +366,12 @@ class EnhancedTestRunner {
             progressText.textContent = `${progressPercent}%`;
         }
         
+        // Format current test name for better readability
+        const displayTestName = this.formatTestName(currentTestName || progress.currentTest || '-');
+        
         // Update status elements
         this.updateProgressElement('progress-status', this.getProgressStatus(progressPercent));
-        this.updateProgressElement('current-test-name', currentTestName || progress.currentTest || '-');
+        this.updateProgressElement('current-test-name', displayTestName);
         this.updateProgressElement('completed-count', progress.completedTests);
         this.updateProgressElement('failed-count', progress.failedTests);
         this.updateProgressElement('elapsed-time', `${elapsedSeconds}s`);
@@ -395,6 +398,32 @@ class EnhancedTestRunner {
         if (element) {
             element.textContent = value;
         }
+    }
+    
+    formatTestName(testName) {
+        if (testName === '-' || !testName) return 'Waiting...';
+        
+        // Convert test names to readable format
+        const nameMap = {
+            'holdings_sync_enhanced': 'Portfolio Sync Check',
+            'price_freshness_realtime': 'Live Price Updates',
+            'recalculation_workflow_advanced': 'Recalculation Workflow',
+            'trade_data_comprehensive': 'Trade History Validation',
+            'ui_responsiveness_enhanced': 'UI Performance Test',
+            'error_handling_comprehensive': 'Error Handling Check',
+            'button_workflow_comprehensive': 'Button Functions Test',
+            'table_validation_enhanced': 'Data Table Validation',
+            'API Connectivity': 'API Connection Test',
+            'Portfolio Data': 'Portfolio Data Check',
+            'Price Updates': 'Price Update Test',
+            'Button Functions': 'Button Test'
+        };
+        
+        return nameMap[testName] || testName
+            .replace(/_/g, ' ')
+            .replace(/([A-Z])/g, ' $1')
+            .replace(/^\w/, c => c.toUpperCase())
+            .trim();
     }
     
     getProgressStatus(percent) {
@@ -4023,6 +4052,42 @@ window.addEventListener('load', function() {
 class NormalTestRunner {
     constructor() {
         this.testResults = [];
+    }
+    
+    initializeBasicProgress() {
+        const container = document.getElementById('test-progress-container');
+        if (container) {
+            container.style.display = 'block';
+        }
+    }
+    
+    updateBasicProgress(testName, completed, total) {
+        const progressPercent = Math.round((completed / total) * 100);
+        
+        // Update progress bar
+        const progressBar = document.getElementById('test-progress-bar');
+        const progressText = document.getElementById('progress-text');
+        if (progressBar) {
+            progressBar.style.width = `${progressPercent}%`;
+            progressBar.setAttribute('aria-valuenow', progressPercent);
+        }
+        if (progressText) {
+            progressText.textContent = `${progressPercent}%`;
+        }
+        
+        // Update current test name
+        const testNameElement = document.getElementById('current-test-name');
+        if (testNameElement) {
+            testNameElement.textContent = testName;
+        }
+        
+        // Update completed count
+        const completedElement = document.getElementById('completed-count');
+        if (completedElement) {
+            completedElement.textContent = completed;
+        }
+        
+        console.log(`📊 Normal Test Progress: ${progressPercent}% - ${testName}`);
     }
     
     async runBasicTests() {
