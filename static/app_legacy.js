@@ -510,7 +510,7 @@ class TradingApp {
         }
     }
     getTradesTbody() {
-        return document.getElementById('trades-table');
+        return document.getElementById('trades-tbody');
     }
 
     // Normalize trades from various backends (single canonical version)
