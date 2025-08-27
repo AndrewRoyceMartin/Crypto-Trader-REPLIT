@@ -329,17 +329,45 @@ class PortfolioService:
             
             self.logger.info(f"Found {len(okx_details)} detailed OKX positions")
             
+            # DATA VALIDATION: Track all OKX positions for 100% accuracy verification
+            okx_positions_total = len(okx_details)
+            okx_positions_processed = 0
+            okx_positions_skipped = 0
+            okx_positions_excluded = []
+            okx_positions_valid = []
+            okx_total_value_raw = 0.0
+            
             # Process each OKX detailed position
             for detail in okx_details:
+                okx_positions_processed += 1
                 if not isinstance(detail, dict):
                     continue
                     
                 symbol = detail.get('ccy', '')
                 quantity = float(detail.get('eq', 0) or 0)
+                okx_value_raw = float(detail.get('eqUsd', 0) or 0)
+                okx_total_value_raw += okx_value_raw
                 
-                # Skip very small balances and excluded currencies
-                if quantity <= 0 or symbol in ['AUD', 'USD', 'EUR', 'GBP']:
+                # DATA VALIDATION: Track exclusions for audit trail
+                excluded_reason = None
+                if quantity <= 0:
+                    excluded_reason = f"zero_quantity ({quantity})"
+                elif symbol in ['AUD', 'USD', 'EUR', 'GBP']:
+                    excluded_reason = f"excluded_currency ({symbol})"
+                
+                if excluded_reason:
+                    okx_positions_skipped += 1
+                    okx_positions_excluded.append({
+                        'symbol': symbol,
+                        'quantity': quantity,
+                        'okx_value': okx_value_raw,
+                        'reason': excluded_reason
+                    })
+                    self.logger.warning(f"🚨 DATA SKIP WARNING: {symbol} skipped - {excluded_reason}, OKX value: ${okx_value_raw:.2f}")
                     continue
+                
+                # Track valid positions
+                okx_positions_valid.append(symbol)
                 
                 # Get OKX's native values - EXACTLY as provided by OKX
                 okx_estimated_total_value = float(detail.get('eqUsd', 0) or 0)  # OKX Estimated Total Value
@@ -402,6 +430,51 @@ class PortfolioService:
             holdings.sort(key=lambda x: x['current_value'], reverse=True)
             for i, holding in enumerate(holdings):
                 holding['rank'] = i + 1
+            
+            # ===============================================
+            # 🚨 CRITICAL DATA VALIDATION AUDIT
+            # ===============================================
+            
+            displayed_positions = len(holdings)
+            valid_positions = len(okx_positions_valid)
+            value_difference = abs(okx_total_value_raw - total_value)
+            
+            # AUDIT: Position count verification
+            self.logger.warning(f"📊 DATA AUDIT: OKX Raw Positions: {okx_positions_total}, "
+                             f"Processed: {okx_positions_processed}, Valid: {valid_positions}, "
+                             f"Displayed: {displayed_positions}, Skipped: {okx_positions_skipped}")
+            
+            # AUDIT: Value alignment verification (accounting for USDT cash added separately)
+            expected_total = okx_total_value_raw + cash_balance
+            value_difference = abs(expected_total - total_value)
+            
+            self.logger.warning(f"💰 VALUE AUDIT: OKX Positions: ${okx_total_value_raw:.2f}, "
+                             f"USDT Cash: ${cash_balance:.2f}, Expected: ${expected_total:.2f}, "
+                             f"Displayed: ${total_value:.2f}, Difference: ${value_difference:.2f}")
+            
+            # CRITICAL WARNINGS for data integrity issues
+            if displayed_positions != valid_positions:
+                self.logger.error(f"🚨 CRITICAL: POSITION MISMATCH! Valid OKX positions: {valid_positions}, "
+                               f"Displayed positions: {displayed_positions}")
+            
+            if value_difference > 0.01:  # More than 1 cent difference
+                self.logger.error(f"🚨 CRITICAL: VALUE MISMATCH! Expected: ${expected_total:.2f}, "
+                               f"Displayed: ${total_value:.2f}, Difference: ${value_difference:.2f}")
+            
+            # AUDIT: Excluded positions summary
+            if okx_positions_excluded:
+                self.logger.warning(f"📋 EXCLUDED POSITIONS AUDIT:")
+                for exc in okx_positions_excluded:
+                    self.logger.warning(f"   - {exc['symbol']}: {exc['reason']}, value: ${exc['okx_value']:.2f}")
+            
+            # AUDIT: Final verification
+            position_match = displayed_positions == valid_positions
+            value_match = value_difference <= 0.01
+            
+            if position_match and value_match:
+                self.logger.info(f"✅ DATA INTEGRITY VERIFIED: 100% OKX alignment confirmed")
+            else:
+                self.logger.error(f"❌ DATA INTEGRITY FAILED: Position match: {position_match}, Value match: {value_match}")
             
             self.logger.info(f"OKX REAL PORTFOLIO: {len(holdings)} positions, "
                            f"total value ${total_value:.2f}, total P&L ${total_pnl:.2f} ({total_pnl_percent:.2f}%)")
