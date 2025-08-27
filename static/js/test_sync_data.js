@@ -760,7 +760,11 @@ class EnhancedTestRunner {
     // ===== ENHANCED TEST EXECUTION METHODS =====
     async executeEnhancedTest(testName) {
         const startTime = performance.now();
-        this.realTimeMonitor.metrics.activeRequests++;
+        
+        // Safely update metrics if realTimeMonitor exists
+        if (this.realTimeMonitor && this.realTimeMonitor.metrics) {
+            this.realTimeMonitor.metrics.activeRequests++;
+        }
 
         // Mark test as started for progress tracking
         this.markTestStarted(testName);
@@ -832,7 +836,10 @@ class EnhancedTestRunner {
                 timestamp: Date.now()
             };
         } finally {
-            this.realTimeMonitor.metrics.activeRequests--;
+            // Safely update metrics if realTimeMonitor exists
+            if (this.realTimeMonitor && this.realTimeMonitor.metrics) {
+                this.realTimeMonitor.metrics.activeRequests--;
+            }
         }
     }
 
@@ -2160,6 +2167,12 @@ class EnhancedTestRunner {
 
     // Performance metrics management
     updateTestMetrics(testName, executionTime, success) {
+        // Safely update metrics if realTimeMonitor exists
+        if (!this.realTimeMonitor || !this.realTimeMonitor.metrics) {
+            console.warn('Real-time monitor not available for metrics update');
+            return;
+        }
+        
         const metrics = this.realTimeMonitor.metrics;
         
         if (success) {

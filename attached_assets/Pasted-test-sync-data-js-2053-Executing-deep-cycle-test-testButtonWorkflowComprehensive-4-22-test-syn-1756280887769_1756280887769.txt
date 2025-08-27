@@ -1,0 +1,260 @@
+test_sync_data.js:2053 🔬 Executing deep cycle test: testButtonWorkflowComprehensive (4/22)
+test_sync_data.js:50 ❌ Deep cycle test testButtonWorkflowComprehensive failed: TypeError: Cannot read properties of null (reading 'metrics')
+    at EnhancedTestRunner.executeEnhancedTest (test_sync_data.js:763:30)
+    at EnhancedTestRunner.runDeepCycleTests (test_sync_data.js:2055:43)
+    at async EnhancedTestRunner.runEnhancedTests (test_sync_data.js:1771:13)
+    at async runSyncTests (test_sync_data.js:2451:5)
+console.error @ test_sync_data.js:50
+console.error @ test_sync_data.js:50
+runDeepCycleTests @ test_sync_data.js:2067
+await in runDeepCycleTests
+runEnhancedTests @ test_sync_data.js:1771
+runSyncTests @ test_sync_data.js:2451
+(anonymous) @ test_sync_data.js:2910Understand this error
+test_sync_data.js:2053 🔬 Executing deep cycle test: testAPIResponseTiming (5/22)
+test_sync_data.js:50 ❌ Deep cycle test testAPIResponseTiming failed: TypeError: Cannot read properties of null (reading 'metrics')
+    at EnhancedTestRunner.executeEnhancedTest (test_sync_data.js:763:30)
+    at EnhancedTestRunner.runDeepCycleTests (test_sync_data.js:2055:43)
+    at async EnhancedTestRunner.runEnhancedTests (test_sync_data.js:1771:13)
+    at async runSyncTests (test_sync_data.js:2451:5)
+console.error @ test_sync_data.js:50
+console.error @ test_sync_data.js:50
+runDeepCycleTests @ test_sync_data.js:2067
+await in runDeepCycleTests
+runEnhancedTests @ test_sync_data.js:1771
+runSyncTests @ test_sync_data.js:2451
+(anonymous) @ test_sync_data.js:2910Understand this error
+test_sync_data.js:2053 🔬 Executing deep cycle test: testBasicButtonFunctions (6/22)
+test_sync_data.js:50 ❌ Deep cycle test testBasicButtonFunctions failed: TypeError: Cannot read properties of null (reading 'metrics')
+    at EnhancedTestRunner.executeEnhancedTest (test_sync_data.js:763:30)
+    at EnhancedTestRunner.runDeepCycleTests (test_sync_data.js:2055:43)
+    at async EnhancedTestRunner.runEnhancedTests (test_sync_data.js:1771:13)
+    at async runSyncTests (test_sync_data.js:2451:5)
+console.error @ test_sync_data.js:50
+console.error @ test_sync_data.js:50
+runDeepCycleTests @ test_sync_data.js:2067
+await in runDeepCycleTests
+runEnhancedTests @ test_sync_data.js:1771
+runSyncTests @ test_sync_data.js:2451
+(anonymous) @ test_sync_data.js:2910Understand this error
+test_sync_data.js:2053 🔬 Executing deep cycle test: testATOExportButton (7/22)
+test_sync_data.js:50 ❌ Deep cycle test testATOExportButton failed: TypeError: Cannot read properties of null (reading 'metrics')
+    at EnhancedTestRunner.executeEnhancedTest (test_sync_data.js:763:30)
+    at EnhancedTestRunner.runDeepCycleTests (test_sync_data.js:2055:43)
+    at async EnhancedTestRunner.runEnhancedTests (test_sync_data.js:1771:13)
+    at async runSyncTests (test_sync_data.js:2451:5)
+console.error @ test_sync_data.js:50
+console.error @ test_sync_data.js:50
+runDeepCycleTests @ test_sync_data.js:2067
+await in runDeepCycleTests
+runEnhancedTests @ test_sync_data.js:1771
+runSyncTests @ test_sync_data.js:2451
+(anonymous) @ test_sync_data.js:2910Understand this error
+test_sync_data.js:2053 🔬 Executing deep cycle test: testBuyButton (8/22)
+test_sync_data.js:50 ❌ Deep cycle test testBuyButton failed: TypeError: Cannot read properties of null (reading 'metrics')
+    at EnhancedTestRunner.executeEnhancedTest (test_sync_data.js:763:30)
+    at EnhancedTestRunner.runDeepCycleTests (test_sync_data.js:2055:43)
+    at async EnhancedTestRunner.runEnhancedTests (test_sync_data.js:1771:13)
+    at async runSyncTests (test_sync_data.js:2451:5)
+console.error @ test_sync_data.js:50
+console.error @ test_sync_data.js:50
+runDeepCycleTests @ test_sync_data.js:2067
+await in runDeepCycleTests
+runEnhancedTests @ test_sync_data.js:1771
+runSyncTests @ test_sync_data.js:2451
+(anonymous) @ test_sync_data.js:2910Understand this error
+test_sync_data.js:2053 🔬 Executing deep cycle test: testSellButton (9/22)
+test_sync_data.js:50 ❌ Deep cycle test testSellButton failed: TypeError: Cannot read properties of null (reading 'metrics')
+    at EnhancedTestRunner.executeEnhancedTest (test_sync_data.js:763:30)
+    at EnhancedTestRunner.runDeepCycleTests (test_sync_data.js:2055:43)
+    at async EnhancedTestRunner.runEnhancedTests (test_sync_data.js:1771:13)
+    at async runSyncTests (test_sync_data.js:2451:5)
+console.error @ test_sync_data.js:50
+console.error @ test_sync_data.js:50
+runDeepCycleTests @ test_sync_data.js:2067
+await in runDeepCycleTests
+runEnhancedTests @ test_sync_data.js:1771
+runSyncTests @ test_sync_data.js:2451
+(anonymous) @ test_sync_data.js:2910Understand this error
+test_sync_data.js:2053 🔬 Executing deep cycle test: testTakeProfitButton (10/22)
+test_sync_data.js:50 ❌ Deep cycle test testTakeProfitButton failed: TypeError: Cannot read properties of null (reading 'metrics')
+    at EnhancedTestRunner.executeEnhancedTest (test_sync_data.js:763:30)
+    at EnhancedTestRunner.runDeepCycleTests (test_sync_data.js:2055:43)
+    at async EnhancedTestRunner.runEnhancedTests (test_sync_data.js:1771:13)
+    at async runSyncTests (test_sync_data.js:2451:5)
+console.error @ test_sync_data.js:50
+console.error @ test_sync_data.js:50
+runDeepCycleTests @ test_sync_data.js:2067
+await in runDeepCycleTests
+runEnhancedTests @ test_sync_data.js:1771
+runSyncTests @ test_sync_data.js:2451
+(anonymous) @ test_sync_data.js:2910Understand this error
+test_sync_data.js:2053 🔬 Executing deep cycle test: bot_runtime_status (11/22)
+test_sync_data.js:50 ❌ Deep cycle test bot_runtime_status failed: TypeError: Cannot read properties of null (reading 'metrics')
+    at EnhancedTestRunner.executeEnhancedTest (test_sync_data.js:763:30)
+    at EnhancedTestRunner.runDeepCycleTests (test_sync_data.js:2055:43)
+    at async EnhancedTestRunner.runEnhancedTests (test_sync_data.js:1771:13)
+    at async runSyncTests (test_sync_data.js:2451:5)
+console.error @ test_sync_data.js:50
+console.error @ test_sync_data.js:50
+runDeepCycleTests @ test_sync_data.js:2067
+await in runDeepCycleTests
+runEnhancedTests @ test_sync_data.js:1771
+runSyncTests @ test_sync_data.js:2451
+(anonymous) @ test_sync_data.js:2910Understand this error
+test_sync_data.js:2053 🔬 Executing deep cycle test: bot_state_sync (12/22)
+test_sync_data.js:50 ❌ Deep cycle test bot_state_sync failed: TypeError: Cannot read properties of null (reading 'metrics')
+    at EnhancedTestRunner.executeEnhancedTest (test_sync_data.js:763:30)
+    at EnhancedTestRunner.runDeepCycleTests (test_sync_data.js:2055:43)
+    at async EnhancedTestRunner.runEnhancedTests (test_sync_data.js:1771:13)
+    at async runSyncTests (test_sync_data.js:2451:5)
+console.error @ test_sync_data.js:50
+console.error @ test_sync_data.js:50
+runDeepCycleTests @ test_sync_data.js:2067
+await in runDeepCycleTests
+runEnhancedTests @ test_sync_data.js:1771
+runSyncTests @ test_sync_data.js:2451
+(anonymous) @ test_sync_data.js:2910Understand this error
+test_sync_data.js:2053 🔬 Executing deep cycle test: cache_disabled (13/22)
+test_sync_data.js:50 ❌ Deep cycle test cache_disabled failed: TypeError: Cannot read properties of null (reading 'metrics')
+    at EnhancedTestRunner.executeEnhancedTest (test_sync_data.js:763:30)
+    at EnhancedTestRunner.runDeepCycleTests (test_sync_data.js:2055:43)
+    at async EnhancedTestRunner.runEnhancedTests (test_sync_data.js:1771:13)
+    at async runSyncTests (test_sync_data.js:2451:5)
+console.error @ test_sync_data.js:50
+console.error @ test_sync_data.js:50
+runDeepCycleTests @ test_sync_data.js:2067
+await in runDeepCycleTests
+runEnhancedTests @ test_sync_data.js:1771
+runSyncTests @ test_sync_data.js:2451
+(anonymous) @ test_sync_data.js:2910Understand this error
+test_sync_data.js:2053 🔬 Executing deep cycle test: futures_margin (14/22)
+test_sync_data.js:50 ❌ Deep cycle test futures_margin failed: TypeError: Cannot read properties of null (reading 'metrics')
+    at EnhancedTestRunner.executeEnhancedTest (test_sync_data.js:763:30)
+    at EnhancedTestRunner.runDeepCycleTests (test_sync_data.js:2055:43)
+    at async EnhancedTestRunner.runEnhancedTests (test_sync_data.js:1771:13)
+    at async runSyncTests (test_sync_data.js:2451:5)
+console.error @ test_sync_data.js:50
+console.error @ test_sync_data.js:50
+runDeepCycleTests @ test_sync_data.js:2067
+await in runDeepCycleTests
+runEnhancedTests @ test_sync_data.js:1771
+runSyncTests @ test_sync_data.js:2451
+(anonymous) @ test_sync_data.js:2910Understand this error
+test_sync_data.js:2053 🔬 Executing deep cycle test: mode_sandbox_sync (15/22)
+test_sync_data.js:50 ❌ Deep cycle test mode_sandbox_sync failed: TypeError: Cannot read properties of null (reading 'metrics')
+    at EnhancedTestRunner.executeEnhancedTest (test_sync_data.js:763:30)
+    at EnhancedTestRunner.runDeepCycleTests (test_sync_data.js:2055:43)
+    at async EnhancedTestRunner.runEnhancedTests (test_sync_data.js:1771:13)
+    at async runSyncTests (test_sync_data.js:2451:5)
+console.error @ test_sync_data.js:50
+console.error @ test_sync_data.js:50
+runDeepCycleTests @ test_sync_data.js:2067
+await in runDeepCycleTests
+runEnhancedTests @ test_sync_data.js:1771
+runSyncTests @ test_sync_data.js:2451
+(anonymous) @ test_sync_data.js:2910Understand this error
+test_sync_data.js:2053 🔬 Executing deep cycle test: portfolio_totals (16/22)
+test_sync_data.js:50 ❌ Deep cycle test portfolio_totals failed: TypeError: Cannot read properties of null (reading 'metrics')
+    at EnhancedTestRunner.executeEnhancedTest (test_sync_data.js:763:30)
+    at EnhancedTestRunner.runDeepCycleTests (test_sync_data.js:2055:43)
+    at async EnhancedTestRunner.runEnhancedTests (test_sync_data.js:1771:13)
+    at async runSyncTests (test_sync_data.js:2451:5)
+console.error @ test_sync_data.js:50
+console.error @ test_sync_data.js:50
+runDeepCycleTests @ test_sync_data.js:2067
+await in runDeepCycleTests
+runEnhancedTests @ test_sync_data.js:1771
+runSyncTests @ test_sync_data.js:2451
+(anonymous) @ test_sync_data.js:2910Understand this error
+test_sync_data.js:2053 🔬 Executing deep cycle test: price_consistency (17/22)
+test_sync_data.js:50 ❌ Deep cycle test price_consistency failed: TypeError: Cannot read properties of null (reading 'metrics')
+    at EnhancedTestRunner.executeEnhancedTest (test_sync_data.js:763:30)
+    at EnhancedTestRunner.runDeepCycleTests (test_sync_data.js:2055:43)
+    at async EnhancedTestRunner.runEnhancedTests (test_sync_data.js:1771:13)
+    at async runSyncTests (test_sync_data.js:2451:5)
+console.error @ test_sync_data.js:50
+console.error @ test_sync_data.js:50
+runDeepCycleTests @ test_sync_data.js:2067
+await in runDeepCycleTests
+runEnhancedTests @ test_sync_data.js:1771
+runSyncTests @ test_sync_data.js:2451
+(anonymous) @ test_sync_data.js:2910Understand this error
+test_sync_data.js:2053 🔬 Executing deep cycle test: symbol_roundtrip (18/22)
+test_sync_data.js:50 ❌ Deep cycle test symbol_roundtrip failed: TypeError: Cannot read properties of null (reading 'metrics')
+    at EnhancedTestRunner.executeEnhancedTest (test_sync_data.js:763:30)
+    at EnhancedTestRunner.runDeepCycleTests (test_sync_data.js:2055:43)
+    at async EnhancedTestRunner.runEnhancedTests (test_sync_data.js:1771:13)
+    at async runSyncTests (test_sync_data.js:2451:5)
+console.error @ test_sync_data.js:50
+console.error @ test_sync_data.js:50
+runDeepCycleTests @ test_sync_data.js:2067
+await in runDeepCycleTests
+runEnhancedTests @ test_sync_data.js:1771
+runSyncTests @ test_sync_data.js:2451
+(anonymous) @ test_sync_data.js:2910Understand this error
+test_sync_data.js:2053 🔬 Executing deep cycle test: table_validation (19/22)
+test_sync_data.js:50 ❌ Deep cycle test table_validation failed: TypeError: Cannot read properties of null (reading 'metrics')
+    at EnhancedTestRunner.executeEnhancedTest (test_sync_data.js:763:30)
+    at EnhancedTestRunner.runDeepCycleTests (test_sync_data.js:2055:43)
+    at async EnhancedTestRunner.runEnhancedTests (test_sync_data.js:1771:13)
+    at async runSyncTests (test_sync_data.js:2451:5)
+console.error @ test_sync_data.js:50
+console.error @ test_sync_data.js:50
+runDeepCycleTests @ test_sync_data.js:2067
+await in runDeepCycleTests
+runEnhancedTests @ test_sync_data.js:1771
+runSyncTests @ test_sync_data.js:2451
+(anonymous) @ test_sync_data.js:2910Understand this error
+test_sync_data.js:2053 🔬 Executing deep cycle test: target_price_lock (20/22)
+test_sync_data.js:50 ❌ Deep cycle test target_price_lock failed: TypeError: Cannot read properties of null (reading 'metrics')
+    at EnhancedTestRunner.executeEnhancedTest (test_sync_data.js:763:30)
+    at EnhancedTestRunner.runDeepCycleTests (test_sync_data.js:2055:43)
+    at async EnhancedTestRunner.runEnhancedTests (test_sync_data.js:1771:13)
+    at async runSyncTests (test_sync_data.js:2451:5)
+console.error @ test_sync_data.js:50
+console.error @ test_sync_data.js:50
+runDeepCycleTests @ test_sync_data.js:2067
+await in runDeepCycleTests
+runEnhancedTests @ test_sync_data.js:1771
+runSyncTests @ test_sync_data.js:2451
+(anonymous) @ test_sync_data.js:2910Understand this error
+test_sync_data.js:2053 🔬 Executing deep cycle test: timestamp_integrity (21/22)
+test_sync_data.js:50 ❌ Deep cycle test timestamp_integrity failed: TypeError: Cannot read properties of null (reading 'metrics')
+    at EnhancedTestRunner.executeEnhancedTest (test_sync_data.js:763:30)
+    at EnhancedTestRunner.runDeepCycleTests (test_sync_data.js:2055:43)
+    at async EnhancedTestRunner.runEnhancedTests (test_sync_data.js:1771:13)
+    at async runSyncTests (test_sync_data.js:2451:5)
+console.error @ test_sync_data.js:50
+console.error @ test_sync_data.js:50
+runDeepCycleTests @ test_sync_data.js:2067
+await in runDeepCycleTests
+runEnhancedTests @ test_sync_data.js:1771
+runSyncTests @ test_sync_data.js:2451
+(anonymous) @ test_sync_data.js:2910Understand this error
+test_sync_data.js:2053 🔬 Executing deep cycle test: unrealized_pnl (22/22)
+test_sync_data.js:50 ❌ Deep cycle test unrealized_pnl failed: TypeError: Cannot read properties of null (reading 'metrics')
+    at EnhancedTestRunner.executeEnhancedTest (test_sync_data.js:763:30)
+    at EnhancedTestRunner.runDeepCycleTests (test_sync_data.js:2055:43)
+    at async EnhancedTestRunner.runEnhancedTests (test_sync_data.js:1771:13)
+    at async runSyncTests (test_sync_data.js:2451:5)
+console.error @ test_sync_data.js:50
+console.error @ test_sync_data.js:50
+runDeepCycleTests @ test_sync_data.js:2067
+await in runDeepCycleTests
+runEnhancedTests @ test_sync_data.js:1771
+runSyncTests @ test_sync_data.js:2451
+(anonymous) @ test_sync_data.js:2910Understand this error
+test_sync_data.js:1423 🎨 Displaying enhanced test results...
+test_sync_data.js:2103 ✅ Deep cycle test execution completed
+test_sync_data.js:1457 Uncaught (in promise) TypeError: Cannot read properties of null (reading 'metrics')
+    at EnhancedTestRunner.displayEnhancedResults (test_sync_data.js:1457:92)
+    at EnhancedTestRunner.runDeepCycleTests (test_sync_data.js:2097:14)
+    at async EnhancedTestRunner.runEnhancedTests (test_sync_data.js:1771:13)
+    at async runSyncTests (test_sync_data.js:2451:5)
+displayEnhancedResults @ test_sync_data.js:1457
+runDeepCycleTests @ test_sync_data.js:2097
+await in runDeepCycleTests
+runEnhancedTests @ test_sync_data.js:1771
+runSyncTests @ test_sync_data.js:2451
+(anonymous) @ test_sync_data.js:2910Understand this error
