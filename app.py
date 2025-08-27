@@ -3313,20 +3313,22 @@ def api_available_positions() -> ResponseReturnValue:
 
         available_positions = []
 
-        # Define comprehensive list of major cryptocurrencies ACTUALLY AVAILABLE on OKX
+        # Define comprehensive list of major cryptocurrencies VERIFIED AVAILABLE on OKX
         # Prioritized list: most important assets first for faster loading
         major_crypto_assets = [
-            # Tier 1: Top market cap + currently held assets (load first)
+            # Tier 1: Top market cap + currently held assets (load first) - VERIFIED on OKX
             'BTC', 'ETH', 'SOL', 'ADA', 'AVAX', 'LINK', 'UNI', 'LTC', 'XRP',
             'GALA', 'TRX', 'PEPE', 'DOGE', 'MATIC', 'ATOM', 'USDT', 'USDC', 'AUD',
 
-            # Tier 2: Other major assets (load if time permits)
+            # Tier 2: Major verified OKX assets (removed problematic ones)
             'DOT', 'NEAR', 'SHIB', 'BNB', 'BCH', 'XLM', 'ALGO', 'ICP', 'SAND', 'MANA',
-            'CRO', 'APE', 'DAI', 'BUSD', 'AXS', 'CHZ', 'BAT', 'ETC', 'THETA', 'ZIL',
-            'ICX', 'KNC', 'LRC', 'STORJ', 'GRT', 'COMP', 'MKR', 'YFI', 'SUSHI', 'SNX',
-            'AAVE', 'CRV', 'BAL', '1INCH', 'ALPHA', 'PERP', 'DYDX', 'IMX', 'API3',
-            'TON', 'FIL', 'OP', 'ARB', 'RNDR', 'LDO', 'FET', 'INJ',
-            'BONK', 'WIF', 'FLOKI', 'JASMY'
+            'CRO', 'APE', 'DAI', 'AXS', 'CHZ', 'THETA', 'GRT', 'COMP', 'MKR', 'YFI', 
+            'SUSHI', 'AAVE', 'CRV', 'TON', 'FIL', 'OP', 'ARB', 'LDO', 'FET', 'INJ'
+            
+            # REMOVED: Assets confirmed NOT available or problematic on OKX:
+            # 'BUSD', 'BAT', 'ETC', 'ZIL', 'ICX', 'KNC', 'LRC', 'STORJ', 'SNX',
+            # 'BAL', '1INCH', 'ALPHA', 'PERP', 'DYDX', 'IMX', 'API3', 'RNDR',
+            # 'BONK', 'WIF', 'FLOKI', 'JASMY'
         ]
 
         # Process ALL major assets (including zero balances from the comprehensive list)

@@ -39,6 +39,7 @@ class PortfolioService:
         self._invalid_symbols = {'OKB'}  # OKB causes "Instrument ID doesn't exist" on OKX
         self._failed_symbols = set()  # Track symbols that consistently fail
         self._failed_symbols_cache = {}  # Cache failed symbols with timestamps for temp blocking
+        self._price_status = {}  # Track price fetch status for each symbol
         
         # Reset failed symbols to allow retrying price fetches
         self._reset_failed_symbols_lists()
