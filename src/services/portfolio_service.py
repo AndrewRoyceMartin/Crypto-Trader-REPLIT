@@ -210,8 +210,10 @@ class PortfolioService:
         """
         try:
             # Reuse the existing exchange instance to avoid load_markets() churn
-            ticker = self.exchange.exchange.fetch_ticker(pair)
-            return float(ticker.get('last', 0) or 0)
+            if self.exchange and self.exchange.exchange:
+                ticker = self.exchange.exchange.fetch_ticker(pair)
+                return float(ticker.get('last', 0) or 0)
+            return 0.0
         except Exception as e:
             self.logger.warning(f"Failed to get price for {pair}: {e}")
             return 0.0
@@ -239,6 +241,8 @@ class PortfolioService:
             failed = symbol in self._failed_symbols
             blocked = symbol in self._failed_symbols_cache
             mapped = self._symbol_mapping.get(symbol, symbol)
+            if mapped is None:
+                mapped = symbol
             
             return {
                 "symbol": symbol,
@@ -283,14 +287,21 @@ class PortfolioService:
             # Try direct trading pair
             pair = f"{to_currency}/{from_currency}"  # e.g., EUR/USD
             try:
-                ticker = self.exchange.fetch_ticker(pair)
-                return float(ticker['last'])
+                if self.exchange and hasattr(self.exchange, 'exchange') and self.exchange.exchange:
+                    ticker = self.exchange.exchange.fetch_ticker(pair)
+                    return float(ticker.get('last', 0.0) or 0.0)
+                return 1.0
             except:
                 # Try inverse pair
                 inverse_pair = f"{from_currency}/{to_currency}"  # e.g., USD/EUR
                 try:
-                    ticker = self.exchange.fetch_ticker(inverse_pair)
-                    return 1.0 / float(ticker['last'])
+                    if self.exchange and hasattr(self.exchange, 'exchange') and self.exchange.exchange:
+                        ticker = self.exchange.exchange.fetch_ticker(inverse_pair)
+                        last_price = ticker.get('last', 0.0) or 0.0
+                        if isinstance(last_price, (int, float)) and float(last_price) > 0:
+                            return 1.0 / float(last_price)
+                        return 1.0
+                    return 1.0
                 except:
                     self.logger.warning(f"Could not get OKX conversion rate for {from_currency} to {to_currency}")
                     return 1.0
@@ -760,7 +771,9 @@ class PortfolioService:
                     okx_total_pnl_pct = None
                     for pos in positions_data:
                         if isinstance(pos, dict) and pos.get('totalUnrealizedPnlPercent'):
-                            okx_total_pnl_pct = float(pos.get('totalUnrealizedPnlPercent'))
+                            pnl_value = pos.get('totalUnrealizedPnlPercent')
+                            if pnl_value is not None:
+                                okx_total_pnl_pct = float(pnl_value)
                             self.logger.debug(f"Using OKX total P&L percentage: {okx_total_pnl_pct:.2f}%")
                             break
                     
@@ -998,8 +1011,8 @@ class PortfolioService:
                     avg_price = position.get('avgPrice') or position.get('average')
                     size = position.get('size') or position.get('contracts') or position.get('amount')
                     
-                    if all([mark_price, avg_price, size]):
-                        calculated_pnl = (float(mark_price) - float(avg_price)) * float(size)
+                    if all([mark_price is not None, avg_price is not None, size is not None]):
+                        calculated_pnl = (float(mark_price or 0) - float(avg_price or 0)) * float(size or 0)
                         self.logger.info(f"Calculated P&L from OKX position data for {symbol}: ${calculated_pnl:.2f}")
                         return calculated_pnl
                         
@@ -1058,7 +1071,8 @@ class PortfolioService:
             if currency != 'USD':
                 currency_pair = f"{actual_symbol}/{currency}T"  # e.g., BTC/EURT, PEPE/AUDT
                 try:
-                    ticker = self.exchange.exchange.fetch_ticker(currency_pair)
+                    if self.exchange and self.exchange.exchange:
+                        ticker = self.exchange.exchange.fetch_ticker(currency_pair)
                     live_price = float(ticker.get('last', 0.0) or 0.0)
                     if live_price > 0:
                         self.logger.debug(f"Live OKX price for {symbol} ({actual_symbol}) in {currency}: {live_price:.8f}")
@@ -1080,7 +1094,8 @@ class PortfolioService:
             usd_price = 0.0
             for pair in possible_pairs:
                 try:
-                    ticker = self.exchange.exchange.fetch_ticker(pair)
+                    if self.exchange and self.exchange.exchange:
+                        ticker = self.exchange.exchange.fetch_ticker(pair)
                     usd_price = float(ticker.get('last', 0.0) or 0.0)
                     if usd_price > 0:
                         break

@@ -72,7 +72,7 @@ class OKXNative:
         return cls(OKXCreds.from_env())
 
     def ticker(self, inst_id: str) -> Dict[str, float]:
-        """Return last, open24h, vol24h, pct_24h with caching."""
+        """Return comprehensive ticker data with caching."""
         try:
             # Try cache first
             from app import cache_get_price, cache_put_price
@@ -87,9 +87,23 @@ class OKXNative:
             t = data["data"][0]
             last = float(t.get("last") or 0)
             open24h = float(t.get("open24h") or 0)
+            high24h = float(t.get("high24h") or 0)
+            low24h = float(t.get("low24h") or 0)
             vol24h = float(t.get("vol24h") or 0)
+            bidPx = float(t.get("bidPx") or 0)
+            askPx = float(t.get("askPx") or 0)
             pct_24h = ((last - open24h) / open24h * 100) if open24h > 0 else 0.0
-            ticker_data = {"last": last, "open24h": open24h, "vol24h": vol24h, "pct_24h": pct_24h}
+            
+            ticker_data = {
+                "last": last, 
+                "open24h": open24h, 
+                "high24h": high24h,
+                "low24h": low24h,
+                "vol24h": vol24h, 
+                "bidPx": bidPx,
+                "askPx": askPx,
+                "pct_24h": pct_24h
+            }
             
             # Cache the result
             try:
@@ -99,7 +113,7 @@ class OKXNative:
                 pass
                 
             return ticker_data
-        return {"last": 0.0, "open24h": 0.0, "vol24h": 0.0, "pct_24h": 0.0}
+        return {"last": 0.0, "open24h": 0.0, "high24h": 0.0, "low24h": 0.0, "vol24h": 0.0, "bidPx": 0.0, "askPx": 0.0, "pct_24h": 0.0}
 
     def candles(self, inst_id: str, bar: str = "1D", limit: int = 7, before_ms: Optional[int] = None) -> List[List[str]]:
         path = f"/api/v5/market/candles?instId={inst_id}&bar={bar}&limit={limit}"
@@ -121,8 +135,33 @@ class OKXNative:
         return data.get("data", []) if data.get("code") == "0" else []
 
     def balance(self) -> Dict[str, Any]:
+        """Return enhanced balance data with totalEq and detailed currency info."""
         data = self._request("/api/v5/account/balance")
-        return data["data"][0] if data.get("code") == "0" and data.get("data") else {}
+        if data.get("code") == "0" and data.get("data"):
+            balance_data = data["data"][0]
+            # Extract totalEq from top level for portfolio total value
+            total_eq = float(balance_data.get("totalEq") or 0)
+            
+            # Process details array to include eq field for each currency
+            details = balance_data.get("details", [])
+            enhanced_details = []
+            for detail in details:
+                enhanced_detail = {
+                    "ccy": detail.get("ccy", ""),
+                    "bal": detail.get("bal", "0"),
+                    "availBal": detail.get("availBal", "0"),
+                    "eq": float(detail.get("eq") or 0),  # Individual currency equity
+                    "eqUsd": float(detail.get("eqUsd") or 0),  # USD equivalent
+                }
+                enhanced_details.append(enhanced_detail)
+            
+            return {
+                "totalEq": total_eq,
+                "details": enhanced_details,
+                # Preserve original structure for compatibility
+                **balance_data
+            }
+        return {"totalEq": 0.0, "details": []}
 
     def price(self, inst_id: str) -> float:
         return self.ticker(inst_id).get("last", 0.0)
