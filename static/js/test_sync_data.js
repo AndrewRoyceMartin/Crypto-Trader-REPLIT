@@ -1043,8 +1043,9 @@ class EnhancedTestRunner {
         console.log(`📋 Executing standard test: ${testName}`);
         
         try {
-            // Call enhanced test system with backward compatibility
-            const response = await fetch('/api/test-sync-data?enhanced=true', {
+            // BUG FIX: Do NOT call enhanced=true for standard tests!
+            // Call basic test system without enhanced parameter
+            const response = await fetch('/api/test-sync-data', {
                 method: 'GET',
                 cache: 'no-store'
             });
