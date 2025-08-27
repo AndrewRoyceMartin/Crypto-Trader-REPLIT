@@ -3136,6 +3136,11 @@ def api_current_holdings() -> ResponseReturnValue:
             if cost_basis <= 0:
                 cost_basis = current_value * 0.8  # Fallback estimate
 
+            # Calculate avg_entry_price from OKX data
+            avg_entry_price = float(h.get('avg_entry_price', 0) or 0)
+            if avg_entry_price <= 0 and cost_basis > 0 and quantity > 0:
+                avg_entry_price = cost_basis / quantity
+
             pnl_amount = current_value - cost_basis
             pnl_percent = (pnl_amount / cost_basis * 100) if cost_basis > 0 else 0
 
@@ -3148,6 +3153,7 @@ def api_current_holdings() -> ResponseReturnValue:
                 "current_value": current_value,
                 "value": current_value,
                 "cost_basis": cost_basis,
+                "avg_entry_price": avg_entry_price,  # Add OKX entry price
                 "pnl": pnl_amount,  # Frontend expects 'pnl' field
                 "pnl_amount": pnl_amount,
                 "pnl_percent": pnl_percent,

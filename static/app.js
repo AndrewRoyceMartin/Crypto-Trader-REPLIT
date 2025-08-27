@@ -316,10 +316,11 @@ class ModularTradingApp {
         const pnlSign = (holding.pnl_percent || 0) >= 0 ? '+' : '';
         
         // Calculate additional fields for full 13-column table
-        const avgEntryPrice = (holding.cost_basis || 0) / (holding.quantity || 1);
-        const targetValue = (holding.current_value || 0) * 1.04; // 4% target
+        // Use OKX avg_entry_price directly if available, fallback to cost_basis calculation
+        const avgEntryPrice = holding.avg_entry_price || ((holding.cost_basis || 0) / (holding.quantity || 1));
+        const targetValue = (holding.current_value || 0) * 1.06; // 6% target
         const targetProfit = targetValue - (holding.current_value || 0);
-        const targetProfitPercent = 4.0; // Enhanced Bollinger Bands 4% target
+        const targetProfitPercent = 6.0; // Enhanced Bollinger Bands 6% target
         const holdPeriod = '—'; // Would need trade history data
         
         row.innerHTML = `
