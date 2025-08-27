@@ -20,13 +20,16 @@ from collections import OrderedDict
 from typing import Any, Optional, Iterator, TypedDict
 from functools import wraps
 
-from flask import Flask, jsonify, request, render_template, make_response, Response
+from flask import (
+    Flask, jsonify, request, render_template, make_response, Response
+)
 from flask.typing import ResponseReturnValue
 
 # Top-level imports only (satisfies linter)
 from src.services.portfolio_service import get_portfolio_service as _get_ps
 
-# Only suppress specific pkg_resources deprecation warning - all other warnings will show
+# Only suppress specific pkg_resources deprecation warning
+# - all other warnings will show
 warnings.filterwarnings(
     'ignore',
     message='pkg_resources is deprecated as an API.*',
@@ -50,7 +53,8 @@ logger.setLevel(LOG_LEVEL)
 # For local timezone support
 try:
     import pytz
-    LOCAL_TZ = pytz.timezone('America/New_York')  # Default to EST/EDT, user can change
+    # Default to EST/EDT, user can change
+    LOCAL_TZ = pytz.timezone('America/New_York')
 except ImportError:
     LOCAL_TZ = timezone.utc  # Fallback to UTC if pytz not available
 
@@ -59,7 +63,8 @@ ADMIN_TOKEN = os.getenv("ADMIN_TOKEN", "")
 
 
 def require_admin(f: Any) -> Any:
-    """Decorator to require admin authentication token for protected endpoints."""
+    """Decorator to require admin authentication token for protected
+    endpoints."""
     @wraps(f)
     def _w(*args: Any, **kwargs: Any) -> Any:
         if ADMIN_TOKEN and request.headers.get("X-Admin-Token") != ADMIN_TOKEN:
@@ -111,10 +116,12 @@ def now_utc_iso() -> str:
     return utcnow().strftime('%Y-%m-%dT%H:%M:%S.%fZ')
 
 
-def okx_sign(secret_key: str, timestamp: str, method: str, path: str, body: str = '') -> str:
+def okx_sign(secret_key: str, timestamp: str, method: str, path: str,
+             body: str = '') -> str:
     """Generate OKX API signature using HMAC-SHA256."""
     msg = f"{timestamp}{method}{path}{body}"
-    mac = hmac.new(secret_key.encode('utf-8'), msg.encode('utf-8'), hashlib.sha256)
+    mac = hmac.new(secret_key.encode('utf-8'), msg.encode('utf-8'),
+                    hashlib.sha256)
     return base64.b64encode(mac.digest()).decode('utf-8')
 
 
@@ -123,12 +130,15 @@ _requests_session = requests.Session()
 
 
 def get_reusable_exchange() -> Any:
-    """Get centralized CCXT exchange instance to avoid re-auth and load_markets() calls."""
+    """Get centralized CCXT exchange instance to avoid re-auth and
+    load_markets() calls."""
     try:
         service = get_portfolio_service()
-        if (hasattr(service, 'exchange') and hasattr(service.exchange, 'exchange')
-                and service.exchange.exchange is not None):
-            logger.debug("Reusing existing portfolio service exchange instance")
+        if (hasattr(service, 'exchange') and
+                hasattr(service.exchange, 'exchange') and
+                service.exchange.exchange is not None):
+            logger.debug("Reusing existing portfolio service exchange "
+                        "instance")
             return service.exchange.exchange
     except (AttributeError, ImportError) as e:
         logger.debug(f"Portfolio service unavailable: {e}")
@@ -136,7 +146,8 @@ def get_reusable_exchange() -> Any:
         logger.debug(f"Unexpected error accessing portfolio service: {e}")
 
     # Fallback to creating new instance (should be rare)
-    logger.warning("Creating new ccxt exchange instance - portfolio service unavailable")
+    logger.warning("Creating new ccxt exchange instance - "
+                   "portfolio service unavailable")
     okx_api_key = os.getenv("OKX_API_KEY")
     okx_secret = os.getenv("OKX_SECRET_KEY")
     okx_passphrase = os.getenv("OKX_PASSPHRASE")
@@ -180,7 +191,8 @@ def okx_request(
     body: Any = None,
     timeout: int = 10
 ) -> dict[str, Any]:
-    """Make authenticated request to OKX API with proper signing and simulated trading support."""
+    """Make authenticated request to OKX API with proper signing and
+    simulated trading support."""
     base_url = _okx_base_url()
     ts = now_utc_iso()
     method = method.upper()
@@ -204,10 +216,12 @@ def okx_request(
     headers['OK-ACCESS-SIGN'] = sig
 
     if method == 'GET':
-        resp = _requests_session.get(base_url + path, headers=headers, timeout=timeout)
+        resp = _requests_session.get(base_url + path, headers=headers,
+                                     timeout=timeout)
     else:
         resp = _requests_session.post(
-            base_url + path, headers=headers, data=body_str, timeout=timeout
+            base_url + path, headers=headers, data=body_str,
+            timeout=timeout
         )
     resp.raise_for_status()
     return resp.json()
@@ -233,11 +247,13 @@ def get_bb_strategy_type(symbol: str, bb_signal: str, confidence_level: str) -> 
         return 'Conservative'
 
     # Meme coins (higher volatility strategy)
-    elif symbol in ['DOGE', 'SHIB', 'PEPE', 'BONK', 'WIF', 'FLOKI']:
+    elif symbol in ['DOGE', 'SHIB', 'PEPE', 'BONK', 'WIF',
+                    'FLOKI']:
         return 'Aggressive'
 
     # Stablecoins and fiat (not applicable)
-    elif symbol in ['USDT', 'USDC', 'DAI', 'BUSD', 'AUD', 'USD', 'EUR', 'GBP']:
+    elif symbol in ['USDT', 'USDC', 'DAI', 'BUSD', 'AUD', 'USD',
+                    'EUR', 'GBP']:
         return 'N/A'
 
     # All other tokens (standard approach)
@@ -252,27 +268,31 @@ def get_stable_target_price(symbol: str, current_price: float) -> float:
     Uses TargetPriceManager to:
     - Lock target prices for 24 hours once calculated
     - Only recalculate if market drops >5% from original calculation
-    - Prevent exponential target price movement that makes orders impossible to fill
+    - Prevent exponential target price movement that makes orders
+      impossible to fill
     """
     try:
         if current_price <= 0:
             return current_price
 
         # Skip target calculation for fiat and stablecoins
-        if symbol in ['AUD', 'USD', 'EUR', 'GBP', 'USDT', 'USDC', 'DAI', 'BUSD']:
+        if symbol in ['AUD', 'USD', 'EUR', 'GBP', 'USDT', 'USDC',
+                      'DAI', 'BUSD']:
             return current_price
 
         from src.utils.target_price_manager import get_target_price_manager
         target_manager = get_target_price_manager()
 
-        target_price, is_locked = target_manager.get_locked_target_price(symbol, current_price)
+        target_price, is_locked = target_manager.get_locked_target_price(
+            symbol, current_price)
 
         return target_price
     except (ImportError, AttributeError) as e:
         logger.warning(f"Target price manager unavailable for {symbol}: {e}")
         return current_price * 0.92
     except Exception as e:
-        logger.error(f"Unexpected error getting stable target price for {symbol}: {e}")
+        logger.error(f"Unexpected error getting stable target price for "
+                     f"{symbol}: {e}")
         return current_price * 0.92
 
 
@@ -282,15 +302,18 @@ def okx_ticker_pct_change_24h(
     secret_key: str = "",
     passphrase: str = ""
 ) -> dict:
-    """Get accurate 24h percentage change from OKX ticker data using native client."""
+    """Get accurate 24h percentage change from OKX ticker data using
+    native client."""
     try:
         client = get_okx_native_client()
         return with_throttle(client.ticker, inst_id)
     except (ConnectionError, TimeoutError) as e:
-        logger.warning(f"Network error getting OKX ticker for {inst_id}: {e}")
+        logger.warning(f"Network error getting OKX ticker for "
+                       f"{inst_id}: {e}")
         return {'last': 0.0, 'open24h': 0.0, 'vol24h': 0.0, 'pct_24h': 0.0}
     except Exception as e:
-        logger.error(f"Unexpected error getting OKX ticker for {inst_id}: {e}")
+        logger.error(f"Unexpected error getting OKX ticker for "
+                     f"{inst_id}: {e}")
         return {'last': 0.0, 'open24h': 0.0, 'vol24h': 0.0, 'pct_24h': 0.0}
 
 
@@ -306,12 +329,15 @@ def _date_range(start: datetime, end: datetime) -> Iterator[datetime]:
 WATCHLIST = [
     s.strip() for s in os.getenv(
         "WATCHLIST",
-        "BTC/USDT,ETH/USDT,SOL/USDT,XRP/USDT,DOGE/USDT,BNB/USDT,ADA/USDT,AVAX/USDT,LINK/USDT,UNI/USDT"
+        "BTC/USDT,ETH/USDT,SOL/USDT,XRP/USDT,DOGE/USDT,BNB/USDT,"
+        "ADA/USDT,AVAX/USDT,LINK/USDT,UNI/USDT"
     ).split(",") if s.strip()
 ]
 
-MAX_STARTUP_SYMBOLS = int(os.getenv("MAX_STARTUP_SYMBOLS", "3"))     # minimal: only 3 symbols
-STARTUP_TIMEOUT_SEC = int(os.getenv("STARTUP_TIMEOUT_SEC", "8"))    # deployment timeout limit
+# minimal: only 3 symbols
+MAX_STARTUP_SYMBOLS = int(os.getenv("MAX_STARTUP_SYMBOLS", "3"))
+# deployment timeout limit
+STARTUP_TIMEOUT_SEC = int(os.getenv("STARTUP_TIMEOUT_SEC", "8"))
 
 # --- caching knobs (safe defaults) ---
 PRICE_TTL_SEC = int(os.getenv("PRICE_TTL_SEC", "3"))     # small TTL for live feel
