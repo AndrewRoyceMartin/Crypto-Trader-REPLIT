@@ -3760,32 +3760,7 @@ class TradingApp {
     }
 
     // ---------- Trades ----------
-    async updateRecentTrades() {
-        try {
-            // Get selected timeframe from dashboard
-            const timeframeSelector = document.getElementById('trades-timeframe');
-            const timeframe = timeframeSelector ? timeframeSelector.value : '7d';
-            
-            const url = `/api/trade-history?timeframe=${timeframe}`;
-            const r = await fetch(url, { cache: 'no-cache' });
-            if (r.ok) {
-                const data = await r.json();
-                const trades = data.trades || data.recent_trades || data || [];
-                this.displayRecentTrades(trades);
-                
-                // Update count badge
-                const countBadge = document.getElementById('recent-trades-count');
-                if (countBadge) {
-                    countBadge.textContent = trades.length;
-                }
-                return;
-            }
-        } catch (e) {
-        }
-
-        // Only show empty state if trade-history fails - don't overwrite with status data
-        this.displayDashboardRecentTrades([]);
-    }
+    // REMOVED: Duplicate updateRecentTrades function - using the comprehensive one below
 
     setupTradeTimeframeSelector() {
         const timeframeSelector = document.getElementById('trades-timeframe');
