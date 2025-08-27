@@ -318,9 +318,34 @@ class ModularTradingApp {
         // Calculate additional fields for full 13-column table
         // Use OKX avg_entry_price directly if available, fallback to cost_basis calculation
         const avgEntryPrice = holding.avg_entry_price || ((holding.cost_basis || 0) / (holding.quantity || 1));
-        const targetValue = (holding.current_value || 0) * 1.06; // 6% target
+        
+        // Enhanced Bollinger Bands strategy profit target calculation
+        // PRIORITY 1: Try to get Bollinger Bands upper band target (if available)
+        // PRIORITY 2: Use strategy's 4% take profit (primary setting)
+        // PRIORITY 3: Fall back to 6% safety net only if needed
+        let targetMultiplier = 1.04; // Enhanced Bollinger Bands primary target: 4%
+        let targetProfitPercent = 4.0;
+        let targetMethod = "Strategy 4%";
+        
+        // Check if we have Bollinger Bands data for dynamic target
+        if (holding.bollinger_upper_band && avgEntryPrice > 0) {
+            const bollingerTarget = holding.bollinger_upper_band / avgEntryPrice;
+            if (bollingerTarget > 1.01 && bollingerTarget < 1.20) { // Reasonable range
+                targetMultiplier = bollingerTarget;
+                targetProfitPercent = (bollingerTarget - 1) * 100;
+                targetMethod = "Bollinger Upper";
+            }
+        }
+        
+        // Apply safety net only if strategy targets fail
+        if (targetMultiplier < 1.01) {
+            targetMultiplier = 1.06; // 6% safety fallback
+            targetProfitPercent = 6.0;
+            targetMethod = "Safety Net 6%";
+        }
+        
+        const targetValue = (holding.current_value || 0) * targetMultiplier;
         const targetProfit = targetValue - (holding.current_value || 0);
-        const targetProfitPercent = 6.0; // Enhanced Bollinger Bands 6% target
         const holdPeriod = '—'; // Would need trade history data
         
         row.innerHTML = `
