@@ -155,14 +155,15 @@ class EnhancedTestRunner {
             }))
         };
 
-        // Create downloadable file
-        const blob = new Blob([JSON.stringify(exportData, null, 2)], { 
-            type: 'application/json' 
+        // Create downloadable TXT file
+        const txtContent = this.formatAsText(exportData);
+        const blob = new Blob([txtContent], { 
+            type: 'text/plain' 
         });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.download = `test-error-logs-${this.errorLog.sessionId}-${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.json`;
+        link.download = `test-error-logs-${this.errorLog.sessionId}-${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.txt`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -170,6 +171,129 @@ class EnhancedTestRunner {
 
         console.log('Error logs exported successfully:', exportData.errorSummary);
         return exportData;
+    }
+
+    // Format export data as readable text
+    formatAsText(data) {
+        let txt = '';
+        txt += '='.repeat(80) + '\n';
+        txt += '           CRYPTOCURRENCY TRADING SYSTEM - ERROR LOG REPORT\n';
+        txt += '='.repeat(80) + '\n\n';
+        
+        txt += `Session ID: ${data.sessionId}\n`;
+        txt += `Export Time: ${data.exportTimestamp}\n`;
+        txt += `Report Generated: ${new Date().toLocaleString()}\n\n`;
+        
+        // System Information
+        txt += '-'.repeat(60) + '\n';
+        txt += 'SYSTEM INFORMATION\n';
+        txt += '-'.repeat(60) + '\n';
+        if (data.systemInfo) {
+            txt += `Browser: ${data.systemInfo.userAgent}\n`;
+            txt += `URL: ${data.systemInfo.url}\n`;
+            txt += `Screen: ${data.systemInfo.screen.width}x${data.systemInfo.screen.height}\n`;
+            txt += `Viewport: ${data.systemInfo.viewport.width}x${data.systemInfo.viewport.height}\n`;
+            txt += `Connection: ${data.systemInfo.connection.effectiveType} (${data.systemInfo.connection.downlink}Mbps, ${data.systemInfo.connection.rtt}ms RTT)\n`;
+            txt += `Memory: ${data.systemInfo.memory}GB\n`;
+            txt += `CPU Cores: ${data.systemInfo.hardwareConcurrency}\n`;
+            txt += `Language: ${data.systemInfo.language}\n`;
+            txt += `Online: ${data.systemInfo.onLine ? 'Yes' : 'No'}\n\n`;
+        }
+        
+        // Test Metrics
+        txt += '-'.repeat(60) + '\n';
+        txt += 'TEST METRICS\n';
+        txt += '-'.repeat(60) + '\n';
+        txt += `Total Tests: ${data.testMetrics.totalTests}\n`;
+        txt += `Completed: ${data.testMetrics.completedTests}\n`;
+        txt += `Failed: ${data.testMetrics.failedTests}\n`;
+        txt += `Success Rate: ${data.testMetrics.totalTests > 0 ? ((data.testMetrics.completedTests - data.testMetrics.failedTests) / data.testMetrics.totalTests * 100).toFixed(1) : 0}%\n`;
+        txt += `Start Time: ${data.testMetrics.startTime || 'Not started'}\n`;
+        txt += `Current Test: ${data.testMetrics.currentTest || 'None'}\n\n`;
+        
+        // Error Summary
+        txt += '-'.repeat(60) + '\n';
+        txt += 'ERROR SUMMARY\n';
+        txt += '-'.repeat(60) + '\n';
+        txt += `Total Errors: ${data.errorSummary.totalErrors}\n`;
+        txt += `Console Errors: ${data.errorSummary.consoleErrors}\n`;
+        txt += `Network Errors: ${data.errorSummary.networkErrors}\n`;
+        txt += `Test Failures: ${data.errorSummary.testFailures}\n\n`;
+        
+        // Detailed Errors
+        if (data.detailedErrors && data.detailedErrors.length > 0) {
+            txt += '-'.repeat(60) + '\n';
+            txt += 'DETAILED ERROR LOG\n';
+            txt += '-'.repeat(60) + '\n';
+            data.detailedErrors.forEach((error, index) => {
+                txt += `${index + 1}. [${error.type}] ${error.timestamp}\n`;
+                txt += `   Message: ${error.message}\n`;
+                if (error.stack) {
+                    txt += `   Stack: ${error.stack}\n`;
+                }
+                if (error.metadata) {
+                    txt += `   Metadata: ${JSON.stringify(error.metadata)}\n`;
+                }
+                txt += '\n';
+            });
+        }
+        
+        // Test Failures
+        if (data.testFailures && data.testFailures.length > 0) {
+            txt += '-'.repeat(60) + '\n';
+            txt += 'TEST FAILURES\n';
+            txt += '-'.repeat(60) + '\n';
+            data.testFailures.forEach((failure, index) => {
+                txt += `${index + 1}. ${failure.testName} (${failure.timestamp})\n`;
+                txt += `   Status: ${failure.status}\n`;
+                txt += `   Error: ${failure.error}\n\n`;
+            });
+        }
+        
+        // Test Suite Results
+        if (data.testSuiteResults && data.testSuiteResults.length > 0) {
+            txt += '-'.repeat(60) + '\n';
+            txt += 'TEST SUITE RESULTS\n';
+            txt += '-'.repeat(60) + '\n';
+            data.testSuiteResults.forEach((suite, index) => {
+                txt += `${index + 1}. ${suite.suiteName}\n`;
+                txt += `   Tests: ${suite.totalTests}\n`;
+                txt += `   Passed: ${suite.passedTests}\n`;
+                txt += `   Failed: ${suite.failedTests}\n`;
+                txt += `   Duration: ${suite.duration}ms\n`;
+                txt += `   Last Run: ${suite.lastRun}\n\n`;
+            });
+        }
+        
+        txt += '='.repeat(80) + '\n';
+        txt += `Report End - Generated on ${new Date().toLocaleString()}\n`;
+        txt += '='.repeat(80) + '\n';
+        
+        return txt;
+    }
+
+    // Format error log as readable text (for Enhanced Test Runner)
+    formatErrorLogAsText(data) {
+        let txt = '';
+        txt += '='.repeat(80) + '\n';
+        txt += '        ENHANCED TEST RUNNER - COMPREHENSIVE ERROR REPORT\n';
+        txt += '='.repeat(80) + '\n\n';
+        
+        txt += `Session: ${data.sessionId}\n`;
+        txt += `Generated: ${new Date().toLocaleString()}\n\n`;
+        
+        // Add similar formatting for Enhanced Test Runner data
+        txt += '-'.repeat(60) + '\n';
+        txt += 'ERROR TRACKING METRICS\n';
+        txt += '-'.repeat(60) + '\n';
+        txt += `Total Metrics Collected: ${data.testMetrics ? data.testMetrics.length : 0}\n`;
+        txt += `Progress Tracking Active: ${data.progressTracking ? 'Yes' : 'No'}\n\n`;
+        
+        txt += '='.repeat(80) + '\n';
+        txt += 'End of Enhanced Test Runner Report\n';
+        txt += '='.repeat(80) + '\n';
+        
+        return txt;
     }
 
     collectSystemInfo() {
@@ -4099,12 +4223,38 @@ class NormalTestRunner {
         testResultsContainer.innerHTML = '<div class="text-center p-4"><i class="fas fa-spinner fa-spin fa-2x text-primary mb-3"></i><h5>Running Basic Tests...</h5></div>';
         
         try {
-            // Run essential tests only
+            // Run comprehensive test suite (21+ tests)
             const tests = [
+                // Core API & Connectivity Tests
                 { name: 'API Connectivity', func: 'testBasicAPIConnectivity' },
                 { name: 'Portfolio Data', func: 'testBasicPortfolioData' },
                 { name: 'Price Updates', func: 'testBasicPriceUpdates' },
-                { name: 'Button Functions', func: 'testBasicButtonFunctions' }
+                { name: 'OKX Status Check', func: 'testOKXStatusEndpoint' },
+                { name: 'Market Data Sync', func: 'testMarketDataSync' },
+                
+                // Portfolio & Holdings Tests
+                { name: 'Holdings Sync Enhanced', func: 'testHoldingsSyncEnhanced' },
+                { name: 'Portfolio Validation', func: 'testPortfolioValidation' },
+                { name: 'Balance Accuracy', func: 'testBalanceAccuracy' },
+                { name: 'PnL Calculations', func: 'testPnLCalculations' },
+                { name: 'Current Holdings', func: 'testCurrentHoldings' },
+                
+                // Trading & Position Tests
+                { name: 'Available Positions', func: 'testAvailablePositions' },
+                { name: 'Trade Data Comprehensive', func: 'testTradeDataComprehensive' },
+                { name: 'Position Management', func: 'testPositionManagement' },
+                { name: 'Entry Confidence', func: 'testEntryConfidence' },
+                { name: 'Target Price System', func: 'testTargetPriceSystem' },
+                
+                // UI & Button Tests
+                { name: 'Button Functions', func: 'testBasicButtonFunctions' },
+                { name: 'Button Workflow Comprehensive', func: 'testButtonWorkflowComprehensive' },
+                { name: 'Modal Functions', func: 'testModalFunctions' },
+                { name: 'Table Validation', func: 'testTableValidation' },
+                
+                // Performance & Error Tests
+                { name: 'Error Handling Comprehensive', func: 'testErrorHandlingComprehensive' },
+                { name: 'Performance Analytics', func: 'testPerformanceAnalytics' }
             ];
             
             const results = [];
@@ -4310,13 +4460,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 progressTracking: this.progressTracking
             };
 
-            // Create downloadable error log
-            const errorLogJson = JSON.stringify(errorReport, null, 2);
-            const blob = new Blob([errorLogJson], { type: 'application/json' });
+            // Create downloadable error log in TXT format
+            const errorLogTxt = this.formatErrorLogAsText(errorReport);
+            const blob = new Blob([errorLogTxt], { type: 'text/plain' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `test-error-log-${this.errorLog.sessionId}.json`;
+            a.download = `test-error-log-${this.errorLog.sessionId}.txt`;
             a.click();
             URL.revokeObjectURL(url);
 
