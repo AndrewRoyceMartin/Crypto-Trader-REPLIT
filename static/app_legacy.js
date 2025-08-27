@@ -762,7 +762,7 @@ class TradingApp {
         if (trades.length === 0) {
             // Force display of no trades message for dashboard
             this.displayDashboardRecentTrades([]);
-            await this.updateRecentTrades();
+
         } else {
             this.displayDashboardRecentTrades(trades);
         }
@@ -795,9 +795,6 @@ class TradingApp {
         // Current holdings
         this.updateCurrentHoldings();
         
-        // Recent trades - force call with additional logging
-        console.log('DEBUG: About to call updateRecentTrades from updateDashboard');
-        this.updateRecentTrades();
         
         // Performance analytics
         this.updatePerformanceAnalytics();
@@ -1997,76 +1994,8 @@ class TradingApp {
             }
         ];
         
-        console.log('DEBUG: About to call updateTradesTable with test data:', sampleTrades);
-        this.updateTradesTable(sampleTrades, {});
     }
 
-    async updateRecentTrades() {
-        try {
-            console.log('DEBUG: updateRecentTrades called in app_legacy.js');
-            
-            // Show progress
-            if (window.TableProgressManager) {
-                window.TableProgressManager.showLoading('trades', 'Fetching trade history...');
-                window.TableProgressManager.showProgress('trades', 30, 'Loading from OKX...');
-            }
-            
-            const timeframe = document.getElementById('trades-timeframe')?.value || '7d';
-            console.log('DEBUG: Fetching trades with timeframe:', timeframe);
-            
-            // Use the working trade-history endpoint directly 
-            const response = await fetch(`/api/trade-history?timeframe=${timeframe}&limit=20`, { cache: 'no-cache' });
-            console.log('DEBUG: Trade-history response status:', response.status, response.ok);
-            if (!response.ok) {
-                if (window.TableProgressManager) {
-                    window.TableProgressManager.hideProgress('trades');
-                }
-                return;
-            }
-            
-            if (window.TableProgressManager) {
-                window.TableProgressManager.showProgress('trades', 70, 'Processing trades...');
-            }
-            
-            const data = await response.json();
-            console.log('DEBUG: Trade-history response data:', data);
-            console.log('DEBUG: Trades count:', data.trades?.length);
-            
-            if (!data.success || !data.trades) {
-                console.log('DEBUG: No trades data or unsuccessful response');
-                if (window.TableProgressManager) {
-                    window.TableProgressManager.hideProgress('trades');
-                }
-                return;
-            }
-            
-            if (window.TableProgressManager) {
-                window.TableProgressManager.showProgress('trades', 90, 'Updating table...');
-            }
-            
-            console.log('DEBUG: About to call updateTradesTable with', data.trades.length, 'trades');
-            // Update trades table
-            this.updateTradesTable(data.trades, data.summary);
-            
-            if (window.TableProgressManager) {
-                window.TableProgressManager.hideProgress('trades');
-            }
-
-            // Update mobile data labels and ensure proper table formatting
-            const table = document.getElementById('trades-table');
-            if (table) {
-                v02ApplyDataLabels(table);
-                // Ensure all v02 tables are properly initialized after dynamic updates
-                initializeV02Tables();
-            }
-            
-        } catch (error) {
-            console.error('DEBUG: Recent trades update failed:', error);
-            if (window.TableProgressManager) {
-                window.TableProgressManager.hideProgress('trades');
-            }
-        }
-    }
     
     
     updateTradesTable(trades, summary) {
@@ -2642,7 +2571,7 @@ class TradingApp {
         
         // Refresh all data sources from OKX with currency parameter
         // Run Recent Trades independently to prevent blocking
-        this.updateRecentTrades();
+        
         
         await Promise.all([
             this.updateCryptoPortfolio(),
@@ -2839,7 +2768,7 @@ class TradingApp {
                 this.displayRecentTrades(trades);
             } else if (this.updateRecentTrades) {
                 try {
-                    await this.updateRecentTrades();
+        
                 } catch (e) {
                     console.log('Recent trades fetch failed (non-fatal):', e.message || e);
                 }
@@ -3810,7 +3739,7 @@ class TradingApp {
         const timeframeSelector = document.getElementById('trades-timeframe');
         if (timeframeSelector) {
             timeframeSelector.addEventListener('change', () => {
-                this.updateRecentTrades();
+                
             });
         }
     }
