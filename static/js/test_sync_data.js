@@ -3846,3 +3846,183 @@ async function testCryptoLogosDisplay() {
 window.addEventListener('load', function() {
     setTimeout(initializeTooltips, 500);
 });
+
+// ===== NORMAL TESTING FUNCTIONALITY =====
+class NormalTestRunner {
+    constructor() {
+        this.testResults = [];
+    }
+    
+    async runBasicTests() {
+        const button = document.getElementById('run-normal-tests-btn');
+        const testResultsContainer = document.getElementById('test-results-container');
+        
+        // Reset UI
+        this.updateButtonState(button, 'running');
+        testResultsContainer.innerHTML = '<div class="text-center p-4"><i class="fas fa-spinner fa-spin fa-2x text-primary mb-3"></i><h5>Running Basic Tests...</h5></div>';
+        
+        try {
+            // Run essential tests only
+            const tests = [
+                { name: 'API Connectivity', func: 'testBasicAPIConnectivity' },
+                { name: 'Portfolio Data', func: 'testBasicPortfolioData' },
+                { name: 'Price Updates', func: 'testBasicPriceUpdates' },
+                { name: 'Button Functions', func: 'testBasicButtonFunctions' }
+            ];
+            
+            const results = [];
+            for (const test of tests) {
+                try {
+                    const result = await this[test.func]();
+                    results.push({ ...result, testName: test.name });
+                } catch (error) {
+                    results.push({ 
+                        testName: test.name, 
+                        status: 'error', 
+                        error: error.message 
+                    });
+                }
+            }
+            
+            this.displayBasicResults(results);
+            
+        } catch (error) {
+            testResultsContainer.innerHTML = `<div class="alert alert-danger">Test execution failed: ${error.message}</div>`;
+        } finally {
+            this.updateButtonState(button, 'idle');
+        }
+    }
+    
+    async testBasicAPIConnectivity() {
+        try {
+            const response = await fetch('/api/okx-status');
+            const data = await response.json();
+            return {
+                status: data.connected ? 'pass' : 'fail',
+                details: `OKX Status: ${data.connected ? 'Connected' : 'Disconnected'}`
+            };
+        } catch (error) {
+            return { status: 'error', error: error.message };
+        }
+    }
+    
+    async testBasicPortfolioData() {
+        try {
+            const response = await fetch('/api/crypto-portfolio');
+            const data = await response.json();
+            return {
+                status: data.holdings && data.holdings.length > 0 ? 'pass' : 'fail',
+                details: `Found ${data.holdings ? data.holdings.length : 0} holdings`
+            };
+        } catch (error) {
+            return { status: 'error', error: error.message };
+        }
+    }
+    
+    async testBasicPriceUpdates() {
+        try {
+            const response = await fetch('/api/price-source-status');
+            const data = await response.json();
+            return {
+                status: data.status === 'connected' ? 'pass' : 'fail',
+                details: `Price source: ${data.status}`
+            };
+        } catch (error) {
+            return { status: 'error', error: error.message };
+        }
+    }
+    
+    async testBasicButtonFunctions() {
+        const recalcButton = document.getElementById('recalculate-btn');
+        const atoButton = document.getElementById('ato-export-btn');
+        
+        let foundButtons = 0;
+        if (recalcButton) foundButtons++;
+        if (atoButton) foundButtons++;
+        
+        return {
+            status: foundButtons >= 1 ? 'pass' : 'fail',
+            details: `Found ${foundButtons} essential buttons`
+        };
+    }
+    
+    displayBasicResults(results) {
+        const container = document.getElementById('test-results-container');
+        const passedTests = results.filter(r => r.status === 'pass').length;
+        const totalTests = results.length;
+        const successRate = Math.round((passedTests / totalTests) * 100);
+        
+        let html = `
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-clipboard-check me-2"></i>Normal Test Results</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-3 text-center">
+                            <h3 class="text-primary">${totalTests}</h3>
+                            <small class="text-muted">Total Tests</small>
+                        </div>
+                        <div class="col-md-3 text-center">
+                            <h3 class="text-success">${passedTests}</h3>
+                            <small class="text-muted">Passed</small>
+                        </div>
+                        <div class="col-md-3 text-center">
+                            <h3 class="text-danger">${totalTests - passedTests}</h3>
+                            <small class="text-muted">Failed</small>
+                        </div>
+                        <div class="col-md-3 text-center">
+                            <h3 class="${successRate >= 75 ? 'text-success' : successRate >= 50 ? 'text-warning' : 'text-danger'}">${successRate}%</h3>
+                            <small class="text-muted">Success Rate</small>
+                        </div>
+                    </div>
+                    <div class="row">`;
+        
+        results.forEach(result => {
+            const statusClass = result.status === 'pass' ? 'success' : result.status === 'error' ? 'danger' : 'warning';
+            const icon = result.status === 'pass' ? 'check-circle' : result.status === 'error' ? 'times-circle' : 'exclamation-triangle';
+            
+            html += `
+                <div class="col-md-6 mb-3">
+                    <div class="card border-${statusClass}">
+                        <div class="card-body">
+                            <h6 class="card-title">
+                                <i class="fas fa-${icon} text-${statusClass} me-2"></i>${result.testName}
+                            </h6>
+                            <p class="card-text small">${result.details || result.error || 'Test completed'}</p>
+                        </div>
+                    </div>
+                </div>`;
+        });
+        
+        html += `</div></div></div>`;
+        container.innerHTML = html;
+    }
+    
+    updateButtonState(button, state) {
+        if (!button) return;
+        
+        if (state === 'running') {
+            button.disabled = true;
+            button.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Running Tests...';
+        } else {
+            button.disabled = false;
+            button.innerHTML = '<i class="fas fa-play me-2"></i>Run Normal Tests';
+        }
+    }
+}
+
+// Additional DOMContentLoaded handler for normal testing
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize normal test runner
+    window.normalTestRunner = new NormalTestRunner();
+    
+    // Bind normal tests button
+    setTimeout(() => {
+        const runNormalTestsBtn = document.getElementById('run-normal-tests-btn');
+        if (runNormalTestsBtn) {
+            runNormalTestsBtn.addEventListener('click', () => window.normalTestRunner.runBasicTests());
+            console.log('✅ Normal test runner initialized');
+        }
+    }, 100);
+});

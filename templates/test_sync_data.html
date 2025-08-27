@@ -457,11 +457,20 @@
                     </div>
                 </div>
 
-                <!-- Enhanced Run Tests Button -->
+                <!-- Testing Options -->
                 <div class="text-center mb-4">
-                    <button id="run-tests-btn" class="btn btn-primary btn-lg px-5 py-3">
-                        <i class="fas fa-rocket me-2"></i>Run Enhanced Tests
-                    </button>
+                    <div class="d-flex justify-content-center gap-3 flex-wrap">
+                        <button id="run-normal-tests-btn" class="btn btn-outline-primary btn-lg px-4 py-3">
+                            <i class="fas fa-play me-2"></i>Run Normal Tests
+                        </button>
+                        <button id="run-tests-btn" class="btn btn-primary btn-lg px-4 py-3">
+                            <i class="fas fa-rocket me-2"></i>Run Enhanced Tests
+                        </button>
+                    </div>
+                    <p class="text-muted mt-2 small">
+                        <strong>Normal:</strong> Quick essential tests • <strong>Enhanced:</strong> Comprehensive testing with progress tracking
+                    </p>
+                </div>
                     
                     <!-- Test Progress Bar -->
                     <div id="test-progress-container" class="mt-4" style="display: none;">
