@@ -6122,9 +6122,9 @@ function createHoldingRow(holding) {
             { content: currentValue.toLocaleString('en-US', {style: 'currency', currency: 'USD'}), class: '' }, // POSITION VALUE
             { content: `${pnlSign}${pnl.toLocaleString('en-US', {style: 'currency', currency: 'USD'})}`, class: pnlClass }, // UNREALIZED $
             { content: `${pnlSign}${pnlPercent.toFixed(2)}%`, class: pnlClass }, // GAIN/LOSS %
-            { content: 'N/A', class: 'text-muted' }, // 4% TARGET VALUE
-            { content: 'N/A', class: 'text-muted' }, // TARGET PROFIT $
-            { content: 'N/A', class: 'text-muted' }, // TARGET PROFIT %
+            { content: calculateTargetValue(currentValue), class: 'text-success' }, // TARGET VALUE
+            { content: calculateTargetProfit(currentValue), class: 'text-success' }, // TARGET PROFIT $
+            { content: '+8.0%', class: 'text-success' }, // TARGET PROFIT %
             { content: getPositionStatus(holding), class: '' }, // POSITION
             { content: '<span class="badge bg-secondary">HOLD</span>', class: '' } // ACTIONS
         ];
@@ -6144,21 +6144,43 @@ function createHoldingRow(holding) {
     }
 }
 
+/** Calculate target value based on 8% profit target */
+function calculateTargetValue(currentValue) {
+    const target = currentValue * 1.08; // 8% profit target
+    return target.toLocaleString('en-US', {style: 'currency', currency: 'USD'});
+}
+
+/** Calculate target profit in dollars based on 8% profit target */
+function calculateTargetProfit(currentValue) {
+    const profit = currentValue * 0.08; // 8% profit
+    return profit.toLocaleString('en-US', {style: 'currency', currency: 'USD'});
+}
+
 /** Get position status based on trading bot state and holding data */
 function getPositionStatus(holding) {
     const quantity = parseFloat(holding.quantity || 0);
-    const pnlPercent = parseFloat(holding.pnl_percent || 0);
+    const pnlPercent = parseFloat(holding.pnl_percent || holding.unrealized_pnl_percent || 0);
     
     if (quantity <= 0) {
         return '<span class="badge bg-secondary" title="No position held">FLAT</span>';
     }
     
-    // Check if position should be actively managed (above targets)
-    if (pnlPercent >= 4.0) {
-        return '<span class="badge bg-warning text-dark" title="Position above 4% target - actively managed by Enhanced Bollinger Bands bot">MANAGED</span>';
+    // Check if position is significantly profitable (likely to be managed by bot)
+    if (pnlPercent >= 8.0) {
+        return '<span class="badge bg-success" title="Position above 8% profit - in active management zone">MANAGED</span>';
     }
     
-    // Regular long position
+    // Check if position is moderately profitable
+    if (pnlPercent >= 3.0) {
+        return '<span class="badge bg-warning text-dark" title="Position above 3% profit - monitored for exit signals">WATCH</span>';
+    }
+    
+    // Position at a loss or small gain
+    if (pnlPercent < 0) {
+        return '<span class="badge bg-danger" title="Position at loss - monitored for crash protection">LOSS</span>';
+    }
+    
+    // Regular long position with small gains
     return '<span class="badge bg-primary" title="Holding long position - monitored by trading bot">LONG</span>';
 }
 
