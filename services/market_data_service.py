@@ -60,11 +60,11 @@ class MarketDataService:
             from src.utils.okx_native import OKXNative
             okx_client = OKXNative.from_env()
             
-            # Get 100 daily candles for BB calculation
+            # Get 60 daily candles for BB calculation
             symbol_pair = f"{symbol}-USDT"
-            candles = okx_client.candles(symbol_pair, bar="1D", limit=100)
+            candles = okx_client.candles(symbol_pair, bar="1D", limit=60)
             
-            if candles and len(candles) >= 50:
+            if candles and len(candles) >= 30:
                 import pandas as pd
                 from src.indicators.technical import TechnicalIndicators
                 

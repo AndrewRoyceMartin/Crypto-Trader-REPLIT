@@ -3528,11 +3528,20 @@ def api_available_positions() -> ResponseReturnValue:
                             from src.utils.okx_native import OKXNative
                             okx_client = OKXNative.from_env()
 
-                            # Get 100 daily candles for BB calculation (need extra for 50-period rolling window)
+                            # Get 60 daily candles for BB calculation (need extra for 30-period rolling window)
                             symbol_pair = f"{symbol}-USDT"
-                            candles = okx_client.candles(symbol_pair, bar="1D", limit=100)
+                            candles = okx_client.candles(symbol_pair, bar="1D", limit=60)
+                            
+                            # Fallback data sources: try different timeframes if daily data insufficient
+                            if not candles or len(candles) < 30:
+                                logger.info(f"Insufficient daily data for {symbol}, trying 4-hour timeframe")
+                                candles = okx_client.candles(symbol_pair, bar="4H", limit=120)  # ~20 days of 4H data
+                                
+                            if not candles or len(candles) < 30:
+                                logger.info(f"Insufficient 4H data for {symbol}, trying 1-hour timeframe")
+                                candles = okx_client.candles(symbol_pair, bar="1H", limit=240)  # ~10 days of 1H data
 
-                            if candles and len(candles) >= 50:
+                            if candles and len(candles) >= 30:
                                 import pandas as pd
                                 from src.indicators.technical import TechnicalIndicators
 
@@ -3577,10 +3586,64 @@ def api_available_positions() -> ResponseReturnValue:
 
                         except Exception as bb_error:
                             logger.info(f"Could not calculate Bollinger Bands for {symbol}: {bb_error}")
-                            # Ensure we don't break the API response if BB calculation fails
-                            bb_signal = "NO DATA"
-                            bb_distance_percent = 0.0
-                            lower_band_price = 0.0
+                            
+                            # Alternative buy criteria when BB data insufficient
+                            try:
+                                # Try alternative analysis with reduced data requirements
+                                if candles and len(candles) >= 10:  # Only need 10 candles for alternative analysis
+                                    import pandas as pd
+                                    
+                                    # Extract price data for alternative analysis
+                                    price_data = [[candle[0], candle[1], candle[2], candle[3], candle[4]] for candle in candles]
+                                    df = pd.DataFrame(price_data, columns=['timestamp', 'open', 'high', 'low', 'close'])
+                                    df['close'] = pd.to_numeric(df['close'], errors='coerce')
+                                    
+                                    if not df['close'].isna().all() and len(df) >= 10:
+                                        close_prices = df['close'].dropna()
+                                        
+                                        # Alternative Criteria 1: Simple Moving Average Crossover
+                                        if len(close_prices) >= 10:
+                                            sma_5 = close_prices.tail(5).mean()
+                                            sma_10 = close_prices.tail(10).mean()
+                                            recent_high = close_prices.tail(10).max()
+                                            recent_low = close_prices.tail(10).min()
+                                            
+                                            # Calculate a simple target price based on recent range
+                                            price_range = recent_high - recent_low
+                                            alt_target_price = recent_low + (price_range * 0.2)  # 20% above recent low
+                                            
+                                            # Alternative buy signal logic
+                                            if current_price <= alt_target_price:
+                                                bb_signal = "BUY ZONE"
+                                                lower_band_price = alt_target_price
+                                                bb_distance_percent = 0
+                                            elif current_price <= alt_target_price * 1.05:  # Within 5% of target
+                                                bb_signal = "VERY CLOSE"
+                                                lower_band_price = alt_target_price
+                                                bb_distance_percent = ((current_price - alt_target_price) / current_price) * 100
+                                            elif current_price <= alt_target_price * 1.15:  # Within 15% of target
+                                                bb_signal = "APPROACHING"
+                                                lower_band_price = alt_target_price
+                                                bb_distance_percent = ((current_price - alt_target_price) / current_price) * 100
+                                            else:
+                                                bb_signal = "MODERATE"
+                                                lower_band_price = alt_target_price
+                                                bb_distance_percent = ((current_price - alt_target_price) / current_price) * 100
+                                            
+                                            logger.info(f"Alternative analysis for {symbol}: target=${alt_target_price:.6f}, signal={bb_signal}")
+                                        else:
+                                            raise ValueError("Insufficient data for alternative analysis")
+                                    else:
+                                        raise ValueError("No valid price data for alternative analysis")
+                                else:
+                                    raise ValueError("Insufficient candles for any analysis")
+                                    
+                            except Exception as alt_error:
+                                logger.debug(f"Alternative analysis also failed for {symbol}: {alt_error}")
+                                # Final fallback - use target price system if available
+                                bb_signal = "NO DATA"
+                                bb_distance_percent = 0.0
+                                lower_band_price = 0.0
 
                     target_price = get_stable_target_price(symbol, current_price)
 
@@ -3628,8 +3691,21 @@ def api_available_positions() -> ResponseReturnValue:
                     logger.debug(f"Error processing asset {symbol}: {symbol_error}")
                     continue
 
-        # Sort positions: current holdings first (non-zero balances), then available assets alphabetically
-        available_positions.sort(key=lambda x: (x['current_balance'] == 0, x['symbol']))
+        # Sort positions: current holdings first, then by working calculations priority, then alphabetically
+        def sort_priority(position):
+            has_balance = position['current_balance'] > 0
+            has_working_data = position['bollinger_analysis']['signal'] != 'NO DATA'
+            has_buy_signal = position['bollinger_analysis']['signal'] in ['BUY ZONE', 'VERY CLOSE', 'APPROACHING']
+            
+            # Priority order: holdings > buy signals > working data > alphabetical
+            return (
+                not has_balance,  # Holdings first (False sorts before True)
+                not has_buy_signal,  # Buy signals next
+                not has_working_data,  # Working data next
+                position['symbol']  # Alphabetical last
+            )
+        
+        available_positions.sort(key=sort_priority)
 
         logger.info(f"Found {len(available_positions)} available positions from current holdings")
 
