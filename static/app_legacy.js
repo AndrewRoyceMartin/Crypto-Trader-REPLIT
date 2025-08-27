@@ -2758,20 +2758,14 @@ class TradingApp {
             }
 
             // Dashboard Overview (KPIs + quick charts + recent trades preview)
-            const trades = data.recent_trades || data.trades || [];
+            const trades = data.trades || [];
             if (typeof renderDashboardOverview === 'function') {
                 renderDashboardOverview(data, trades);
             }
 
             // Recent trades full table preview/fetch
-            if (trades.length && this.displayRecentTrades) {
-                this.displayRecentTrades(trades);
-            } else if (this.updateRecentTrades) {
-                try {
-        
-                } catch (e) {
-                    console.log('Recent trades fetch failed (non-fatal):', e.message || e);
-                }
+            if (trades.length) {
+                console.log('Trades data available:', trades.length);
             }
 
             this.updateLoadingProgress(100, 'Complete!');
@@ -3744,98 +3738,6 @@ class TradingApp {
         }
     }
 
-    displayRecentTrades(trades) {
-        const tableBody = this.getTradesTbody();
-        if (!tableBody) {
-            this.displayDashboardRecentTrades(trades);
-            return;
-        }
-        
-        // Handle trade-history data format
-        const normalizedTrades = (trades || []).map(trade => ({
-            ...trade,
-            trade_id: trade.id || trade.trade_id || Math.random().toString(36).substr(2, 9),
-            symbol: trade.symbol || 'Unknown',
-            side: trade.side || trade.action || 'Unknown',
-            quantity: parseFloat(trade.quantity || 0),
-            price: parseFloat(trade.price || 0),
-            pnl: parseFloat(trade.pnl || 0),
-            timestamp: trade.timestamp || Date.now(),
-            source: trade.source || 'unknown'
-        }));
-        
-        this.allTrades = normalizedTrades;
-        this.applyTradeFilters();
-    }
-
-    displayDashboardRecentTrades(trades) {
-        const tableBody = document.getElementById('recent-trades-preview-body');
-        if (!tableBody) return;
-
-        const normalized = this.normalizeTrades(trades || []);
-        const recent = normalized.slice(0, 5);
-
-        if (recent.length === 0) {
-            tableBody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-3"><i class="fa-solid fa-circle-info me-2"></i>No trades executed yet - Start trading to see recent transactions</td></tr>'; // Fixed: Recent Trades has 6 columns
-            return;
-        }
-
-        // Clear existing content safely
-        tableBody.textContent = '';
-        
-        recent.forEach((t, idx) => {
-            const pnlClass = (t.pnl || 0) >= 0 ? 'text-success' : 'text-danger';
-            const sideBadge = t.side === 'BUY' ? 'badge bg-success' : 'badge bg-danger';
-            
-            const row = document.createElement('tr');
-            
-            // Index cell
-            const indexCell = document.createElement('td');
-            indexCell.textContent = idx + 1;
-            row.appendChild(indexCell);
-            
-            // Time cell
-            const timeCell = document.createElement('td');
-            timeCell.className = 'text-start';
-            timeCell.textContent = this.formatTradeTime(t.timestamp);
-            row.appendChild(timeCell);
-            
-            // Symbol cell with strong formatting
-            const symbolCell = document.createElement('td');
-            const strongSymbol = document.createElement('strong');
-            strongSymbol.textContent = t.symbol;
-            symbolCell.appendChild(strongSymbol);
-            row.appendChild(symbolCell);
-            
-            // Side cell with badge
-            const sideCell = document.createElement('td');
-            const sideBadgeSpan = document.createElement('span');
-            sideBadgeSpan.className = sideBadge;
-            sideBadgeSpan.textContent = t.side;
-            sideCell.appendChild(sideBadgeSpan);
-            row.appendChild(sideCell);
-            
-            // Quantity cell
-            const quantityCell = document.createElement('td');
-            quantityCell.className = 'text-end';
-            quantityCell.textContent = this.num(t.quantity).toFixed(6);
-            row.appendChild(quantityCell);
-            
-            // Price cell
-            const priceCell = document.createElement('td');
-            priceCell.className = 'text-end';
-            priceCell.textContent = this.formatCurrency(t.price);
-            row.appendChild(priceCell);
-            
-            // PnL cell
-            const pnlCell = document.createElement('td');
-            pnlCell.className = `text-end ${pnlClass}`;
-            pnlCell.textContent = this.formatCurrency(t.pnl);
-            row.appendChild(pnlCell);
-            
-            tableBody.appendChild(row);
-        });
-    }
 
     applyTradeFilters() {
         const tableBody = this.getTradesTbody();
@@ -4685,7 +4587,6 @@ function showCurrentPositions() {
 function showRecentTrades() {
     const ids = ['main-dashboard','performance-dashboard','current-holdings','recent-trades-page'];
     ids.forEach(id => { const el = document.getElementById(id); if (el) el.style.display = (id === 'recent-trades-page' ? 'block' : 'none'); });
-    window.tradingApp?.updateRecentTrades();
 }
 function hideAllSections() {
     const sections = ['main-dashboard','performance-dashboard','positions-dashboard','current-holdings','recent-trades-page'];
@@ -4719,7 +4620,6 @@ window.debugTrades = {
         ];
         const normalized = window.tradingApp.normalizeTrades(rawTrades);
         console.log('Normalized trades:', normalized);
-        window.tradingApp.displayRecentTrades(rawTrades);
         return normalized;
     },
     checkTableElement() {
@@ -4737,7 +4637,6 @@ window.debugTrades = {
             { timestamp: Date.now(), symbol: 'ETH', side: 'BUY', price: 4200, quantity: 0.5, pnl: -5 },
             { timestamp: Date.now(), symbol: 'SOL', side: 'sell', price: 190, quantity: 2, pnl: 8 }
         ];
-        window.tradingApp.displayRecentTrades(testTrades);
         const normalized = window.tradingApp.normalizeTrades(testTrades);
         console.log('Normalized sides:', normalized.map(t => t.side));
     }
@@ -5164,81 +5063,9 @@ function updateTopMovers(holdings) {
 function renderDashboardOverview(portfolioData, recentTrades = []) {
     updateQuickOverview(portfolioData);
     updateQuickOverviewCharts(portfolioData);
-    updateRecentTradesPreview(recentTrades.slice(0, 5));
 }
 
 // Trade History quick preview (used if some pages still call it)
-function updateRecentTradesPreview(trades) {
-    const previewBody = document.getElementById("recent-trades-preview-body");
-    if (!previewBody) return;
-
-    const normalized = window.tradingApp?.normalizeTrades(trades || []) || [];
-    if (!normalized.length) {
-        previewBody.textContent = '';
-        const emptyRow = document.createElement('tr');
-        const emptyCell = document.createElement('td');
-        emptyCell.setAttribute('colspan', '7');
-        emptyCell.className = 'text-center text-muted py-3';
-        emptyCell.textContent = 'No recent trades';
-        emptyRow.appendChild(emptyCell);
-        previewBody.appendChild(emptyRow);
-        return;
-    }
-
-    previewBody.textContent = '';
-    normalized.slice(0, 5).forEach((t, i) => {
-        const pnlClass = (t.pnl || 0) >= 0 ? 'text-success' : 'text-danger';
-        const sideBadge = t.side === 'BUY' ? 'badge bg-success' : 'badge bg-danger';
-        
-        const row = document.createElement('tr');
-        
-        // Index cell
-        const indexCell = document.createElement('td');
-        indexCell.textContent = i + 1;
-        row.appendChild(indexCell);
-        
-        // Time cell
-        const timeCell = document.createElement('td');
-        timeCell.className = 'text-start';
-        timeCell.textContent = window.tradingApp.formatTradeTime(t.timestamp);
-        row.appendChild(timeCell);
-        
-        // Symbol cell
-        const symbolCell = document.createElement('td');
-        const symbolStrong = document.createElement('strong');
-        symbolStrong.textContent = t.symbol;
-        symbolCell.appendChild(symbolStrong);
-        row.appendChild(symbolCell);
-        
-        // Side cell
-        const sideCell = document.createElement('td');
-        const sideBadgeSpan = document.createElement('span');
-        sideBadgeSpan.className = sideBadge;
-        sideBadgeSpan.textContent = t.side;
-        sideCell.appendChild(sideBadgeSpan);
-        row.appendChild(sideCell);
-        
-        // Quantity cell
-        const quantityCell = document.createElement('td');
-        quantityCell.className = 'text-end';
-        quantityCell.textContent = window.tradingApp.num(t.quantity).toFixed(6);
-        row.appendChild(quantityCell);
-        
-        // Price cell
-        const priceCell = document.createElement('td');
-        priceCell.className = 'text-end';
-        priceCell.textContent = window.tradingApp.formatCurrency(t.price);
-        row.appendChild(priceCell);
-        
-        // PnL cell
-        const pnlCell = document.createElement('td');
-        pnlCell.className = `text-end ${pnlClass}`;
-        pnlCell.textContent = window.tradingApp.formatCurrency(t.pnl);
-        row.appendChild(pnlCell);
-        
-        previewBody.appendChild(row);
-    });
-}
 
 // Quick Overview charts
 function initializeQuickOverviewCharts() {
