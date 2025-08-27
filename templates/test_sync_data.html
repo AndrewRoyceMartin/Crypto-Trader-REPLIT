@@ -194,6 +194,132 @@
         .card .text-muted {
             color: #6b7280 !important;
         }
+        
+        /* Enhanced Testing Framework Styles */
+        .metric-card {
+            padding: 15px;
+            text-align: center;
+            border-radius: 8px;
+            background: #f8f9fa;
+            margin: 5px;
+            transition: all 0.3s ease;
+        }
+        
+        .metric-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+        
+        .metric-card.success {
+            border-left: 4px solid #28a745;
+            background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+        }
+        
+        .metric-card.warning {
+            border-left: 4px solid #ffc107;
+            background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+        }
+        
+        .metric-card.danger {
+            border-left: 4px solid #dc3545;
+            background: linear-gradient(135deg, #f8d7da 0%, #f1aeb5 100%);
+        }
+        
+        .metric-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: #2c3e50;
+        }
+        
+        .metric-label {
+            font-size: 0.875rem;
+            color: #6c757d;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            font-weight: 600;
+        }
+        
+        .enhanced-test-results .progress {
+            border-radius: 8px;
+            height: 8px;
+        }
+        
+        .badge-success {
+            background-color: #28a745;
+        }
+        
+        .badge-warning {
+            background-color: #ffc107;
+            color: #212529;
+        }
+        
+        .badge-danger {
+            background-color: #dc3545;
+        }
+        
+        .badge-dark {
+            background-color: #343a40;
+        }
+        
+        .enhanced-test-results .card {
+            transition: all 0.3s ease;
+            border: 1px solid #dee2e6;
+        }
+        
+        .enhanced-test-results .card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+            border-color: #007bff;
+        }
+        
+        .test-overview {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .category-icon {
+            font-size: 1.2rem;
+            margin-right: 8px;
+        }
+        
+        .status-badge {
+            font-size: 0.875rem;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-weight: 600;
+        }
+        
+        .performance-bar {
+            height: 6px;
+            border-radius: 3px;
+            overflow: hidden;
+            background: #e9ecef;
+        }
+        
+        .performance-fill {
+            height: 100%;
+            transition: width 0.5s ease;
+        }
+        
+        .recommendation-item {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-bottom: 8px;
+        }
+        
+        .test-category-header {
+            background: linear-gradient(90deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-bottom: 16px;
+            border-left: 4px solid #007bff;
+        }
     </style>
 </head>
 <body>
@@ -222,7 +348,7 @@
                     <p class="lead text-muted">Comprehensive testing of OKX API synchronization with your trading dashboard</p>
                 </div>
 
-                <!-- Test Overview Cards -->
+                <!-- Enhanced Test Overview Cards -->
                 <div class="row mb-4">
                     <div class="col-md-3 mb-3">
                         <div class="card h-100">
@@ -257,11 +383,52 @@
                         </div>
                     </div>
                 </div>
+                
+                <!-- Real-time Enhanced Monitoring -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-tachometer-alt me-2"></i>Enhanced Real-time Monitoring
+                                </h6>
+                            </div>
+                            <div class="card-body" id="real-time-metrics">
+                                <div class="row text-center">
+                                    <div class="col-3">
+                                        <div class="metric-card">
+                                            <div class="metric-value">0</div>
+                                            <div class="metric-label">Active</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-3">
+                                        <div class="metric-card">
+                                            <div class="metric-value">0</div>
+                                            <div class="metric-label">Completed</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-3">
+                                        <div class="metric-card">
+                                            <div class="metric-value">0ms</div>
+                                            <div class="metric-label">Avg Response</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-3">
+                                        <div class="metric-card">
+                                            <div class="metric-value">0%</div>
+                                            <div class="metric-label">Data Fresh</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
-                <!-- Run Tests Button -->
+                <!-- Enhanced Run Tests Button -->
                 <div class="text-center mb-4">
                     <button id="run-tests-btn" class="btn btn-primary btn-lg px-5 py-3">
-                        <i class="fas fa-play me-2"></i>Run All Tests
+                        <i class="fas fa-rocket me-2"></i>Run Enhanced Tests
                     </button>
                     
                     <!-- Debug Information (hidden by default) -->
