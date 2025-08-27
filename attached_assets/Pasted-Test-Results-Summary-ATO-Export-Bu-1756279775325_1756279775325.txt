@@ -1,0 +1,221 @@
+Test Results Summary:
+
+    
+            
+
+                
+
+                    ATO Export Button Test
+                
+
+                Status: PASS
+        
+
+            
+
+                
+
+                    Bot Runtime Status
+                
+
+                Status: PASS
+        
+
+            
+
+                
+
+                    Bot State Synchronization
+                
+
+                Status: PASS
+        
+
+            
+
+                
+
+                    Button Function Validation
+                
+
+                Status: PASS
+        
+
+            
+
+                
+
+                    Buy Button Test
+                
+
+                Status: PASS
+        
+
+            
+
+                
+
+                    Cache Bypass Validation
+                
+
+                Status: PASS
+        
+
+            
+
+                
+
+                    Card Data Sync
+                
+
+                Status: PARTIAL
+        
+
+            
+
+                
+
+                    Futures/Margin Access
+                
+
+                Status: PASS
+        
+✓ 
+                
+                    Account Access: Yes, Positions: 0
+                
+            
+
+            
+
+                
+
+                    Holdings Synchronization
+                
+
+                Status: PASS
+        
+✓ 
+                
+                    Perfect Matches: 8, Mismatches: 0
+                
+            
+
+            
+
+                
+
+                    Live Mode Verification
+                
+
+                Status: PASS
+        
+
+            
+
+                
+
+                    Portfolio Totals Accuracy
+                
+
+                Status: PASS
+        
+
+            
+
+                
+
+                    Price Data Consistency
+                
+
+                Status: PASS
+        
+
+            
+
+                
+
+                    Price Data Freshness
+                
+
+                Status: PASS
+        
+✓ 
+                
+                    Data Recent: Yes, Live Holdings: Yes
+                
+            
+
+            
+
+                
+
+                    Sell Button Test
+                
+
+                Status: PASS
+        
+
+            
+
+                
+
+                    Symbol Mapping Integrity
+                
+
+                Status: PASS
+        
+
+            
+
+                
+
+                    Frontend Table Data Integrity
+                
+
+                Status: PASS
+        
+
+            
+
+                
+
+                    Take Profit Button Test
+                
+
+                Status: PASS
+        
+
+            
+
+                
+
+                    Target Price Stability
+                
+
+                Status: PASS
+        
+
+            
+
+                
+
+                    Data Timestamp Validation
+                
+
+                Status: PASS
+        
+
+            
+
+                
+
+                    Unrealized P&L Accuracy
+                
+
+                Status: PASS
+        
+✓ 
+                
+                    Calculation Accuracy: 100%
+                
