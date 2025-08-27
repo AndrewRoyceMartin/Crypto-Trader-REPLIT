@@ -82,6 +82,9 @@ class PortfolioService:
             'MKR': 'MKR',          # Maker
             'YFI': 'YFI',          # yearn.finance
             'SUSHI': 'SUSHI',      # SushiSwap
+            'SNX': 'SNX',          # Synthetix
+            'LRC': 'LRC',          # Loopring
+            'ETC': 'ETC',          # Ethereum Classic
         }
         
         # Price status tracking for more specific error reporting
@@ -139,7 +142,18 @@ class PortfolioService:
         """Reset failed symbols lists to allow retrying price fetches."""
         self._failed_symbols.clear()
         self._failed_symbols_cache.clear()
+        self._price_status.clear()
         self.logger.info("Failed symbols lists reset - allowing price fetch retries")
+        
+    def _clear_failed_symbol(self, symbol: str) -> None:
+        """Clear a specific symbol from failed lists to retry."""
+        if symbol in self._failed_symbols:
+            self._failed_symbols.remove(symbol)
+        if symbol in self._failed_symbols_cache:
+            del self._failed_symbols_cache[symbol]
+        if symbol in self._price_status:
+            del self._price_status[symbol]
+        self.logger.info(f"Cleared failed status for {symbol} - enabling retries")
 
     def invalidate_cache(self) -> None:
         """Clear all cached data to force fresh fetches."""
@@ -759,7 +773,9 @@ class PortfolioService:
             possible_pairs = [
                 f"{actual_symbol}/USDT",
                 f"{actual_symbol}/USD", 
-                f"{actual_symbol}USDT"
+                f"{actual_symbol}USDT",
+                f"{actual_symbol}-USDT",  # Some exchanges use dash format
+                f"{actual_symbol}T"       # Abbreviated format
             ]
             
             usd_price = 0.0
