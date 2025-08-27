@@ -430,7 +430,11 @@ class PortfolioService:
                             if cost_basis <= 0:
                                 self.logger.warning(f"Zero cost basis for {symbol}, recalculating with realistic purchase price")
                                 # Recalculate with realistic pricing
+                                # SAFETY: Use only real trade data, no estimations
                                 _, better_avg_entry = self._calculate_real_cost_basis_from_trades(symbol, trade_history, account_balances, current_price)
+                                if better_avg_entry <= 0:
+                                    self.logger.error(f"CRITICAL: Cannot get real cost basis for {symbol} - skipping position")
+                                    continue
                                 cost_basis = quantity * better_avg_entry
                                 avg_entry_price = better_avg_entry
                                 self.logger.info(f"Fixed {symbol} cost basis: {quantity:.8f} × ${avg_entry_price:.8f} = ${cost_basis:.8f}")
@@ -639,12 +643,26 @@ class PortfolioService:
                 current_quantity = float(balance_info.get('free', 0.0) or 0.0)
                 
                 if current_quantity > 0:
+                    # Debug: Show what trade history data looks like
+                    if len(trade_history) > 0:
+                        sample_trade = trade_history[0]
+                        self.logger.info(f"DEBUG: Sample trade data structure: {sample_trade}")
+                        self.logger.info(f"DEBUG: Looking for trades for symbol '{symbol}' in {len(trade_history)} total trades")
+                    
                     # Filter trades for this symbol
                     symbol_trades = []
                     for trade in trade_history:
                         trade_symbol = trade.get('symbol', '').replace('/USDT', '').replace('-USDT', '')
-                        if trade_symbol == symbol and trade.get('side') == 'buy':
+                        trade_side = trade.get('side', '').lower()
+                        
+                        # Debug each trade
+                        self.logger.debug(f"DEBUG: Trade symbol='{trade.get('symbol')}' -> cleaned='{trade_symbol}', side='{trade_side}', looking for '{symbol}'")
+                        
+                        if trade_symbol == symbol and trade_side in ['buy', 'b']:
                             symbol_trades.append(trade)
+                            self.logger.info(f"DEBUG: Found matching trade for {symbol}: {trade}")
+                    
+                    self.logger.info(f"DEBUG: Found {len(symbol_trades)} buy trades for {symbol}")
                     
                     if symbol_trades:
                         # Calculate weighted average purchase price from actual trades
@@ -676,16 +694,17 @@ class PortfolioService:
                             
                             return actual_cost_basis, actual_avg_entry_price
                     
-                    # Fallback: if no trade history, use a conservative estimation
-                    self.logger.warning(f"No trade history found for {symbol}, using conservative estimation")
-                    return self._estimate_cost_basis_from_holdings(symbol, account_balances, current_price)
+                    # SAFETY: NO estimations allowed for live trading data
+                    self.logger.error(f"CRITICAL: No trade history found for {symbol} - cannot calculate cost basis without real data")
+                    return 0.0, 0.0
                     
             return 0.0, 0.0
             
         except Exception as e:
             self.logger.error(f"Error calculating real cost basis for {symbol}: {e}")
-            # Fallback to estimation if real calculation fails
-            return self._estimate_cost_basis_from_holdings(symbol, account_balances, current_price)
+            # SAFETY: NO estimations allowed for live trading data  
+            self.logger.error(f"CRITICAL: Error calculating real cost basis for {symbol} - will not use estimations for live data")
+            return 0.0, 0.0
 
     def _estimate_cost_basis_from_holdings(self, symbol: str, account_balances: Dict, current_price: float) -> tuple[float, float]:
         """
