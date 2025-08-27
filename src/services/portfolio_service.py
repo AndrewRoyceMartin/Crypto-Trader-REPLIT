@@ -383,8 +383,6 @@ class PortfolioService:
                 # Get OKX's native values - EXACTLY as provided by OKX
                 okx_estimated_total_value = float(detail.get('eqUsd', 0) or 0)  # OKX Estimated Total Value
                 okx_entry_price = float(detail.get('openAvgPx', 0) or 0)  # Real OKX cost price
-                okx_pnl = float(detail.get('spotUpl', 0) or 0)  # Real OKX unrealized P&L
-                okx_pnl_ratio = float(detail.get('spotUplRatio', 0) or 0) * 100  # Convert to percentage
                 
                 # Calculate current price from OKX Estimated Total Value
                 current_price = okx_estimated_total_value / quantity if quantity > 0 else 0.0
@@ -392,10 +390,21 @@ class PortfolioService:
                 # Calculate cost basis from OKX entry price
                 cost_basis = quantity * okx_entry_price if okx_entry_price > 0 else 0.0
                 
+                # ✅ FIXED P&L CALCULATION: Use standard mathematical formulas instead of OKX native P&L
+                # Following user's verified formulas:
+                # position_value = qty * current_price
+                # cost_value = qty * entry_price  
+                # unrealized = position_value - cost_value
+                # gain_loss_pct = unrealized / cost_value * 100
+                position_value = quantity * current_price
+                cost_value = quantity * okx_entry_price if okx_entry_price > 0 else 0.0
+                calculated_pnl = position_value - cost_value
+                calculated_pnl_percent = (calculated_pnl / cost_value * 100) if cost_value > 0 else 0.0
+                
                 if okx_estimated_total_value > 0:
                     self.logger.info(f"OKX ESTIMATED VALUE: {symbol} qty={quantity:.4f}, "
                                    f"entry=${okx_entry_price:.4f}, current=${current_price:.4f}, "
-                                   f"OKX_eqUsd=${okx_estimated_total_value:.2f}, pnl=${okx_pnl:.2f} ({okx_pnl_ratio:.2f}%)")
+                                   f"OKX_eqUsd=${okx_estimated_total_value:.2f}, pnl=${calculated_pnl:.2f} ({calculated_pnl_percent:.2f}%)")
                     
                     position = {
                         'symbol': symbol,
@@ -409,16 +418,17 @@ class PortfolioService:
                         'has_position': True,
                         'is_live': True,
                         'allocation_percent': 0.0,  # Will calculate later
-                        # REAL OKX P&L data
-                        'pnl': float(okx_pnl),  # Real OKX unrealized P&L
-                        'pnl_percent': float(okx_pnl_ratio),  # Real OKX P&L percentage
-                        'unrealized_pnl': float(okx_pnl),
-                        'unrealized_pnl_percent': float(okx_pnl_ratio)
+                        # ✅ CORRECTED P&L data using standard mathematical formulas
+                        'pnl': float(calculated_pnl),  # Calculated P&L: position_value - cost_value
+                        'pnl_percent': float(calculated_pnl_percent),  # Calculated P&L %: (pnl / cost_value) * 100
+                        'pnl_amount': float(calculated_pnl),  # For frontend compatibility
+                        'unrealized_pnl': float(calculated_pnl),
+                        'unrealized_pnl_percent': float(calculated_pnl_percent)
                     }
                     
                     holdings.append(position)
                     total_value += okx_estimated_total_value
-                    total_pnl += okx_pnl
+                    total_pnl += calculated_pnl
             
             # Handle USDT cash balance separately (no entry price/P&L for cash)
             cash_balance = 0.0

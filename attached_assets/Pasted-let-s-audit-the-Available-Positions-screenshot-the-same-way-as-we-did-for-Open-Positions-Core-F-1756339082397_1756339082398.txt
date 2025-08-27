@@ -1,0 +1,127 @@
+let’s audit the Available Positions screenshot the same way as we did for Open Positions.
+
+🔑 Core Formula (for “Diff %” and Target)
+
+Target Price is usually derived from an assumed % target (here it looks like 8–15% lower than market, depending on asset).
+
+Diff % = (Current Price – Target Price) / Target Price × 100
+
+But in your table, “Diff %” looks like it’s being shown as the % difference between current price and target, inverted from how traders normally calculate entry targets. Let’s check line by line.
+
+📊 Spot Checks
+1. BTC
+
+Current = 111,192.10
+
+Target = 103,865.71
+
+Diff % = (111,192.10 – 103,865.71) ÷ 103,865.71 × 100 = +7.06%
+
+Table shows +6.59% (slightly off, maybe due to rounding or earlier price snapshot). ✔ close.
+
+2. GALA
+
+Current = 0.02
+
+Target = 0.01
+
+Diff % = (0.02 – 0.01) ÷ 0.01 × 100 = +100%
+
+Table shows +12.40% ❌ (incorrect by an order of magnitude).
+
+3. PEPE
+
+Current = 0.00001
+
+Target = 0.000009
+
+Diff % = (0.00001 – 0.000009) ÷ 0.000009 × 100 ≈ +11.1%
+
+Table shows +14.28% ❌
+
+4. SOL
+
+Current = 203.01
+
+Target = 184.83
+
+Diff % = (203.01 – 184.83) ÷ 184.83 × 100 ≈ +9.82%
+
+Table shows +8.96% ❌ slightly under
+
+5. TRX
+
+Current = 0.34
+
+Target = 0.31
+
+Diff % = (0.34 – 0.31) ÷ 0.31 × 100 ≈ +9.68%
+
+Table shows +9.90% ✔
+
+6. ALGO
+
+Current = 0.25
+
+Target = 0.23
+
+Diff % = (0.25 – 0.23) ÷ 0.23 × 100 ≈ +8.70%
+
+Table shows +7.44% ❌
+
+7. ARB
+
+Current = 0.50
+
+Target = 0.46
+
+Diff % = (0.50 – 0.46) ÷ 0.46 × 100 ≈ +8.70%
+
+Table shows +9.26% ❌ off
+
+8. AUD (Fiat balance)
+
+Current = 0.65
+
+Target = 0.65
+
+Diff % = 0 → 0%
+
+Table shows 0.00% ✔
+
+9. LINK
+
+Current = 23.75
+
+Target = 22.14
+
+Diff % = (23.75 – 22.14) ÷ 22.14 × 100 ≈ +7.27%
+
+Table shows +6.76% ❌
+
+10. USDT
+
+Current = 1.00
+
+Target = 1.00
+
+Diff % = 0 → 0%
+
+Table shows 0.00% ✔
+
+🚩 Findings
+
+BTC, TRX, AUD, USDT → Correct or very close.
+
+SOL, LINK, ARB, ALGO, PEPE, GALA → Misaligned with proper % diff formula.
+
+GALA is the most glaring (should be +100%, not +12.4%).
+
+✅ Recommendation
+
+Recompute Diff % strictly as:
+
+diff_pct = (current_price - target_price) / target_price * 100
+
+
+and ensure all numbers are pulled fresh from the API at the same timestamp to avoid mismatch.
