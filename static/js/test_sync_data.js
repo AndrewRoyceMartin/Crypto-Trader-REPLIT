@@ -1832,9 +1832,9 @@ class EnhancedTestRunner {
 // Global instance of enhanced test runner
 const enhancedTestRunner = new EnhancedTestRunner();
 
-// Updated main function to use enhanced testing
+// Updated main function to use enhanced testing  
 async function runSyncTests() {
-    await enhancedTestRunner.runAllTests();
+    await enhancedTestRunner.runEnhancedTests();
 }
 
 function updateOverview(data) {
@@ -4209,13 +4209,34 @@ class NormalTestRunner {
         const testResultsContainer = document.getElementById('test-results-container');
         
         // Reset UI
-        this.updateButtonState(button, 'running');
-        testResultsContainer.innerHTML = '<div class="text-center p-4"><i class="fas fa-spinner fa-spin fa-2x text-primary mb-3"></i><h5>Running Basic Tests...</h5></div>';
+        testResultsContainer.innerHTML = '<div class="text-center p-4"><i class="fas fa-spinner fa-spin fa-2x text-primary mb-3"></i><h5>Running Normal Tests (21+ comprehensive tests)...</h5></div>';
         
         try {
-            // Run comprehensive test suite (21+ tests)
+            // Run the comprehensive 21+ test system (this should be the "normal" testing)
+            await this.runAllTests();
+            
+        } catch (error) {
+            console.error('❌ Normal test execution failed:', error);
+            testResultsContainer.innerHTML = `
+                <div class="alert alert-danger">
+                    <h5><i class="fas fa-exclamation-triangle me-2"></i>Normal Test Execution Failed</h5>
+                    <p><strong>Error:</strong> ${error.message}</p>
+                    <small class="text-muted">Please try refreshing the page and running the tests again.</small>
+                </div>
+            `;
+        }
+    }
+    
+    async runEnhancedTests() {
+        const button = document.getElementById('run-tests-btn');
+        const testResultsContainer = document.getElementById('test-results-container');
+        
+        // Show loading state
+        testResultsContainer.innerHTML = '<div class="text-center p-4"><i class="fas fa-spinner fa-spin fa-2x text-primary mb-3"></i><h5>Running Enhanced Tests (additional 4 basic tests)...</h5></div>';
+        
+        try {
+            // Run the 4 basic tests as "enhanced" testing
             const tests = [
-                // Only include tests that actually exist on the class
                 { name: 'API Connectivity', func: 'testBasicAPIConnectivity' },
                 { name: 'Portfolio Data', func: 'testBasicPortfolioData' },
                 { name: 'Price Updates', func: 'testBasicPriceUpdates' },
@@ -4240,9 +4261,14 @@ class NormalTestRunner {
             this.displayBasicResults(results);
             
         } catch (error) {
-            testResultsContainer.innerHTML = `<div class="alert alert-danger">Test execution failed: ${error.message}</div>`;
-        } finally {
-            this.updateButtonState(button, 'idle');
+            console.error('❌ Enhanced test execution failed:', error);
+            testResultsContainer.innerHTML = `
+                <div class="alert alert-danger">
+                    <h5><i class="fas fa-exclamation-triangle me-2"></i>Enhanced Test Execution Failed</h5>
+                    <p><strong>Error:</strong> ${error.message}</p>
+                    <small class="text-muted">Please try refreshing the page and running the tests again.</small>
+                </div>
+            `;
         }
     }
     
