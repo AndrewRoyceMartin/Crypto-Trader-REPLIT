@@ -1900,7 +1900,7 @@ def filter_trades_by_timeframe(trades: list[dict[str, Any]], timeframe: str) -> 
 
 @app.route("/api/recent-trades")
 def api_recent_trades() -> ResponseReturnValue:
-    """Get recent trades - redirect to working trade-history endpoint with limit."""
+    """Get recent trades - returns JSON data directly (no redirect)."""
     try:
         # Validate timeframe parameter against allowed values
         timeframe = request.args.get('timeframe', '7d')
@@ -1916,12 +1916,28 @@ def api_recent_trades() -> ResponseReturnValue:
         except (ValueError, TypeError):
             limit = 50  # Default to safe value
 
-        # Use internal redirect to working trade-history endpoint
-        from flask import redirect
-        return redirect(f'/api/trade-history?timeframe={timeframe}&limit={limit}')
+        # Get trade history directly (no redirect - return JSON)
+        portfolio_service = get_portfolio_service()
+        trade_history = portfolio_service.get_trade_history(limit=limit)
+        
+        # Filter trades based on timeframe if needed
+        if timeframe and timeframe != 'all':
+            trade_history = filter_trades_by_timeframe(trade_history, timeframe)
+        
+        # Limit results again after filtering (in case filter returned more than limit)
+        if limit and len(trade_history) > limit:
+            trade_history = trade_history[:limit]
+
+        return _no_cache_json({
+            "success": True,
+            "timeframe": timeframe,
+            "limit": limit,
+            "total_count": len(trade_history),
+            "trades": trade_history
+        })
 
     except Exception as e:
-        logger.error(f"Error redirecting recent trades: {e}")
+        logger.error(f"Error getting recent trades: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
 
 
@@ -5166,7 +5182,81 @@ def api_test_sync_data() -> ResponseReturnValue:
         except Exception as e:
             test_data['test_results']['target_price_lock'] = {'status': 'error', 'error': str(e)}
 
-        # Test 12: Bot State Synchronization
+        # Test 12: Recent Trades API Response Format
+        try:
+            start_time = time.time()
+            
+            # Test that recent-trades returns JSON, not HTML redirect
+            import requests
+            response = requests.get('http://localhost:5000/api/recent-trades?timeframe=7d&limit=5', 
+                                  timeout=10, allow_redirects=False)
+            
+            execution_time = (time.time() - start_time) * 1000
+            
+            # Check response format
+            is_json = False
+            has_trades_data = False
+            trades_count = 0
+            
+            try:
+                if response.headers.get('content-type', '').startswith('application/json'):
+                    json_data = response.json()
+                    is_json = True
+                    has_trades_data = 'trades' in json_data and isinstance(json_data.get('trades'), list)
+                    trades_count = len(json_data.get('trades', []))
+            except Exception:
+                is_json = False
+            
+            # Enhanced validation
+            assertion_results = []
+            if enhanced_mode:
+                assertion_results.extend([
+                    {
+                        'type': 'api_format',
+                        'passed': is_json,
+                        'message': 'Recent trades returns JSON format',
+                        'details': {'content_type': response.headers.get('content-type', 'unknown')}
+                    },
+                    {
+                        'type': 'data_structure', 
+                        'passed': has_trades_data,
+                        'message': 'Recent trades contains trades array',
+                        'details': {'trades_count': trades_count}
+                    },
+                    {
+                        'type': 'performance',
+                        'passed': execution_time < 5000,
+                        'message': 'Recent trades API responds quickly',
+                        'details': {'execution_time_ms': execution_time}
+                    }
+                ])
+            
+            result = {
+                'status': 'pass' if (is_json and has_trades_data and response.status_code == 200) else 'fail',
+                'response_format': 'JSON' if is_json else 'HTML' if 'html' in response.text.lower() else 'OTHER',
+                'has_trades_data': has_trades_data,
+                'trades_count': trades_count,
+                'response_code': response.status_code
+            }
+            
+            if enhanced_mode:
+                result['enhanced_metrics'] = {
+                    'execution_time_ms': round(execution_time, 2),
+                    'assertion_count': len(assertion_results),
+                    'assertion_results': assertion_results
+                }
+                test_data['test_categories']['data_sync'].append('recent_trades_format')
+                test_data['performance_metrics']['assertion_count'] += len(assertion_results)
+            
+            test_data['test_results']['recent_trades_format'] = result
+
+        except Exception as e:
+            test_data['test_results']['recent_trades_format'] = {
+                'status': 'error',
+                'error': str(e)
+            }
+
+        # Test 13: Bot State Synchronization
         try:
             with _state_lock:
                 current_bot_state = bot_state.copy()
