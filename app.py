@@ -366,7 +366,7 @@ def with_throttle(fn, *a, **kw) -> Any:
         # Check for rate limiting and backoff
         if hasattr(e, 'response') and hasattr(e.response, 'json'):
             try:
-                error_data = e.response.json()
+                error_data: dict[str, Any] = e.response.json()
                 if error_data.get('code') == '50011':  # Too Many Requests
                     logger.warning("Rate limited, backing off for 1 second")
                     time.sleep(1.0)
@@ -557,7 +557,7 @@ def get_portfolio_summary() -> dict[str, Any]:
                 "error": "Service not available"
             }
 
-        portfolio_data = portfolio_service.get_portfolio_data()
+        portfolio_data: dict[str, Any] = portfolio_service.get_portfolio_data()
         return {
             "total_value": portfolio_data.get('total_current_value', 0.0),
             "daily_pnl": portfolio_data.get('total_pnl', 0.0),
@@ -582,7 +582,7 @@ def cache_get(sym: str, tf: str) -> Optional[Any]:
 # Forwarder to the PortfolioService singleton in the service module
 
 
-def get_portfolio_service() -> Any:
+def get_portfolio_service():
     """Get the global PortfolioService singleton from the service module."""
     return _get_ps()
 
@@ -660,7 +660,7 @@ def get_public_price(pair: str) -> float:
                     and hasattr(service.exchange, 'exchange')
                     and service.exchange.exchange):
                 service.exchange.exchange.timeout = 8000
-                ticker = service.exchange.exchange.fetch_ticker(pair)
+                ticker: dict[str, Any] = service.exchange.exchange.fetch_ticker(pair)
                 price = float(ticker.get('last') or 0)
                 if price > 0:
                     cache_put_price(pair, price)
@@ -678,12 +678,14 @@ def create_initial_purchase_trades(mode: str, trade_type: str) -> list[dict[str,
     try:
         initialize_system()
         portfolio_service = get_portfolio_service()
-        okx_portfolio = portfolio_service.get_portfolio_data()
+        okx_portfolio: dict[str, Any] = portfolio_service.get_portfolio_data()
 
         initial_trades = []
         trade_counter = 1
 
         for holding in okx_portfolio.get('holdings', []):
+            # Type hint: holding is a dict from portfolio service
+            holding: dict[str, Any]
             symbol = holding['symbol']
             current_price = holding['current_price']
             quantity = holding['quantity']
@@ -880,7 +882,7 @@ def crypto_portfolio_okx() -> ResponseReturnValue:
                             pass
             except Exception as e:
                 logger.debug(f"Cache invalidation not available: {e}")
-            okx_portfolio_data = portfolio_service.get_portfolio_data(currency=selected_currency)
+            okx_portfolio_data: dict[str, Any] = portfolio_service.get_portfolio_data(currency=selected_currency)
 
         holdings_list = okx_portfolio_data['holdings']
         recent_trades = portfolio_service.get_trade_history(limit=50)
