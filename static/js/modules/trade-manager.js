@@ -53,13 +53,12 @@ export class TradeManager {
         try {
             const payload = {
                 symbol,
-                action: 'buy_back',
                 amount: 100 // Default $100 rebuy
             };
 
             AppUtils.showToast(`Buying back position for ${symbol}...`, 'info');
             
-            const result = await AppUtils.fetchJSON('/api/execute-trade', {
+            const result = await AppUtils.fetchJSON('/api/buy', {
                 method: 'POST', 
                 body: payload
             });
