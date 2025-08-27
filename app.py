@@ -59,6 +59,7 @@ ADMIN_TOKEN = os.getenv("ADMIN_TOKEN", "")
 
 
 def require_admin(f: Any) -> Any:
+    """Decorator to require admin authentication token for protected endpoints."""
     @wraps(f)
     def _w(*args: Any, **kwargs: Any) -> Any:
         if ADMIN_TOKEN and request.headers.get("X-Admin-Token") != ADMIN_TOKEN:
@@ -74,7 +75,7 @@ class WarmupState(TypedDict, total=False):
     started: bool
     done: bool
     error: str
-    loaded: List[str]
+    loaded: list[str]
     start_time: str
     start_ts: float
 
@@ -91,6 +92,7 @@ class BotState(TypedDict, total=False):
 
 
 def utcnow() -> datetime:
+    """Get current UTC datetime with timezone awareness."""
     return datetime.now(timezone.utc)
 
 
@@ -120,7 +122,7 @@ def okx_sign(secret_key: str, timestamp: str, method: str, path: str, body: str 
 _requests_session = requests.Session()
 
 
-def get_reusable_exchange():
+def get_reusable_exchange() -> Any:
     """Get centralized CCXT exchange instance to avoid re-auth and load_markets() calls."""
     try:
         service = get_portfolio_service()
@@ -128,8 +130,10 @@ def get_reusable_exchange():
                 and service.exchange.exchange is not None):
             logger.debug("Reusing existing portfolio service exchange instance")
             return service.exchange.exchange
+    except (AttributeError, ImportError) as e:
+        logger.debug(f"Portfolio service unavailable: {e}")
     except Exception as e:
-        logger.debug(f"Could not reuse portfolio service exchange: {e}")
+        logger.debug(f"Unexpected error accessing portfolio service: {e}")
 
     # Fallback to creating new instance (should be rare)
     logger.warning("Creating new ccxt exchange instance - portfolio service unavailable")
@@ -158,6 +162,7 @@ def get_reusable_exchange():
 
 
 def _okx_base_url() -> str:
+    """Get the OKX API base URL with preference for www.okx.com."""
     # Prefer www.okx.com over app.okx.com unless explicitly overridden
     raw = os.getenv("OKX_HOSTNAME") or os.getenv("OKX_REGION") or "www.okx.com"
     base = raw.rstrip("/")
@@ -174,7 +179,7 @@ def okx_request(
     method: str = 'GET',
     body: Any = None,
     timeout: int = 10
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Make authenticated request to OKX API with proper signing and simulated trading support."""
     base_url = _okx_base_url()
     ts = now_utc_iso()
@@ -263,9 +268,11 @@ def get_stable_target_price(symbol: str, current_price: float) -> float:
         target_price, is_locked = target_manager.get_locked_target_price(symbol, current_price)
 
         return target_price
+    except (ImportError, AttributeError) as e:
+        logger.warning(f"Target price manager unavailable for {symbol}: {e}")
+        return current_price * 0.92
     except Exception as e:
-        logger.error(f"Error getting stable target price for {symbol}: {e}")
-        # Fallback: 8% discount for safe profitable entry
+        logger.error(f"Unexpected error getting stable target price for {symbol}: {e}")
         return current_price * 0.92
 
 
@@ -279,12 +286,16 @@ def okx_ticker_pct_change_24h(
     try:
         client = get_okx_native_client()
         return with_throttle(client.ticker, inst_id)
+    except (ConnectionError, TimeoutError) as e:
+        logger.warning(f"Network error getting OKX ticker for {inst_id}: {e}")
+        return {'last': 0.0, 'open24h': 0.0, 'vol24h': 0.0, 'pct_24h': 0.0}
     except Exception as e:
-        logger.error(f"Failed to get OKX ticker for {inst_id}: {e}")
+        logger.error(f"Unexpected error getting OKX ticker for {inst_id}: {e}")
         return {'last': 0.0, 'open24h': 0.0, 'vol24h': 0.0, 'pct_24h': 0.0}
 
 
 def _date_range(start: datetime, end: datetime) -> Iterator[datetime]:
+    """Generate daily datetime range from start to end (inclusive)."""
     d = start
     while d.date() <= end.date():
         yield d
@@ -313,7 +324,8 @@ _ext_sem = threading.Semaphore(_MAX_OUTBOUND)
 _rate_limit_delay = float(os.getenv("API_RATE_DELAY", "0.5"))  # 500ms delay
 
 
-def with_throttle(fn, *a, **kw):
+def with_throttle(fn, *a, **kw) -> Any:
+    """Execute function with throttling to prevent API rate limiting."""
     acquired = _ext_sem.acquire(timeout=15)  # Increased timeout
     if not acquired:
         raise RuntimeError("busy: too many outbound calls")
@@ -321,6 +333,9 @@ def with_throttle(fn, *a, **kw):
         # Add mandatory delay between API calls to prevent rate limiting
         time.sleep(_rate_limit_delay)
         return fn(*a, **kw)
+    except (ConnectionError, TimeoutError) as e:
+        logger.warning(f"Network error in throttled call: {e}")
+        raise
     except Exception as e:
         # Check for rate limiting and backoff
         if hasattr(e, 'response') and hasattr(e.response, 'json'):
@@ -330,7 +345,7 @@ def with_throttle(fn, *a, **kw):
                     logger.warning("Rate limited, backing off for 1 second")
                     time.sleep(1.0)
                     raise RuntimeError("Rate limited - please retry")
-            except Exception:
+            except (ValueError, KeyError, AttributeError):
                 pass
         raise e
     finally:
@@ -339,10 +354,11 @@ def with_throttle(fn, *a, **kw):
 
 # Rate limiting for heavy endpoints
 _rate_lock = threading.RLock()
-_hits: Dict[Tuple[str, str], List[float]] = {}
+_hits: dict[tuple[str, str], list[float]] = {}
 
 
 def rate_limit(max_hits: int, per_seconds: int):
+    """Decorator to limit API endpoint access to max_hits per per_seconds window."""
     def deco(f):
         @wraps(f)
         def _w(*a, **kw):
@@ -501,7 +517,7 @@ def cache_put(sym: str, tf: str, df: Any) -> None:
     pass  # Disabled to ensure always live data
 
 
-def get_portfolio_summary() -> Dict[str, Any]:
+def get_portfolio_summary() -> dict[str, Any]:
     """Get portfolio summary for status endpoint."""
     try:
         portfolio_service = get_portfolio_service()
@@ -629,7 +645,7 @@ def get_public_price(pair: str) -> float:
             return 0.0
 
 
-def create_initial_purchase_trades(mode: str, trade_type: str) -> List[Dict[str, Any]]:
+def create_initial_purchase_trades(mode: str, trade_type: str) -> list[dict[str, Any]]:
     """Create trade records using real OKX cost basis instead of $10 simulations."""
     try:
         initialize_system()
@@ -651,8 +667,8 @@ def create_initial_purchase_trades(mode: str, trade_type: str) -> List[Dict[str,
                     "symbol": f"{symbol}/USDT",
                     "side": "BUY",
                     "quantity": quantity,
-                    "price": holding.get('avg_entry_price', current_price),  # Use real entry price from OKX
-                    "total_value": cost_basis,  # Use real cost basis from OKX instead of $10 simulation
+                    "price": holding.get('avg_entry_price', current_price),  # Real entry from OKX
+                    "total_value": cost_basis,  # Real cost basis from OKX
                     "type": "INITIAL_PURCHASE",
                     "mode": mode,
                     "timestamp": iso_utc(),
@@ -663,8 +679,11 @@ def create_initial_purchase_trades(mode: str, trade_type: str) -> List[Dict[str,
 
         logger.info("Created %d initial purchase trades for portfolio setup", len(initial_trades))
         return initial_trades
+    except (KeyError, AttributeError, ValueError) as e:
+        logger.error(f"Data error creating initial purchase trades: {e}")
+        return []
     except Exception as e:
-        logger.error(f"Error creating initial purchase trades: {e}")
+        logger.error(f"Unexpected error creating initial purchase trades: {e}")
         return []
 
 
@@ -672,7 +691,10 @@ def background_warmup() -> None:
     with _state_lock:
         if warmup["started"]:
             return
-    _set_warmup(started=True, done=False, error="", loaded=[], start_time=iso_utc(), start_ts=time.time())
+    _set_warmup(
+        started=True, done=False, error="", loaded=[],
+        start_time=iso_utc(), start_ts=time.time()
+    )
     try:
         # ping OKX quickly
         from src.utils.okx_native import OKXNative
@@ -681,9 +703,12 @@ def background_warmup() -> None:
         _set_warmup(loaded=WATCHLIST[:MAX_STARTUP_SYMBOLS])
         _set_warmup(done=True)
         logger.info("Warmup complete (OKX reachable)")
+    except (ImportError, ConnectionError, TimeoutError) as e:
+        _set_warmup(error=str(e), done=True)
+        logger.error(f"Network/connection error during warmup: {e}")
     except Exception as e:
         _set_warmup(error=str(e), done=True)
-        logger.error(f"Warmup error: {e}")
+        logger.error(f"Unexpected warmup error: {e}")
 
         _set_warmup(done=True)
         logger.info(
@@ -733,7 +758,7 @@ app = Flask(__name__)
 # Register the real OKX endpoint directly without circular import
 
 
-def _no_cache_json(payload: dict, code: int = 200):
+def _no_cache_json(payload: dict, code: int = 200) -> tuple[Response, int]:
     resp = make_response(jsonify(payload), code)
     resp.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0, private"
     resp.headers["Pragma"] = "no-cache"
@@ -803,9 +828,11 @@ def crypto_portfolio_okx() -> ResponseReturnValue:
         except TypeError:
             # Fallback if force_refresh not supported on this install
             try:
-                if hasattr(portfolio_service, "invalidate_cache") and callable(portfolio_service.invalidate_cache):
+                if (hasattr(portfolio_service, "invalidate_cache")
+                        and callable(portfolio_service.invalidate_cache)):
                     portfolio_service.invalidate_cache()
-                elif hasattr(portfolio_service, "clear_cache") and callable(portfolio_service.clear_cache):
+                elif (hasattr(portfolio_service, "clear_cache")
+                        and callable(portfolio_service.clear_cache)):
                     portfolio_service.clear_cache()
                 elif hasattr(portfolio_service, "exchange"):
                     # Last resort: try exchange cache clearing methods
@@ -1016,9 +1043,12 @@ def api_price() -> ResponseReturnValue:
             item_copy["ts"] = str(item["ts"])
             result.append(item_copy)
         return jsonify(result)
+    except (ValueError, TypeError) as e:
+        logger.error(f"Data validation error in api_price: {e}")
+        return jsonify({"error": "Invalid request parameters"}), 400
     except Exception as e:
-        logger.error(f"api_price error: {e}")
-        return jsonify({"error": str(e)}), 500
+        logger.error(f"Unexpected api_price error: {e}")
+        return jsonify({"error": "Internal server error"}), 500
 
 
 @app.route("/")
@@ -1213,10 +1243,14 @@ def DISABLED_api_crypto_portfolio() -> ResponseReturnValue:
                     'name': worst_performer.get('name', 'N/A'),
                     'pnl_percent': round(worst_performer.get('pnl_percent', 0), 2)
                 } if worst_performer else {'symbol': 'N/A', 'name': 'N/A', 'pnl_percent': 0},
-                'top_allocations': sorted(holdings, key=lambda x: x.get('allocation_percent', 0), reverse=True)[:5],
+                'top_allocations': sorted(
+                    holdings, key=lambda x: x.get('allocation_percent', 0), reverse=True
+                )[:5],
                 'concentration_risk': round(
                     sum(h.get('allocation_percent', 0)
-                        for h in sorted(holdings, key=lambda x: x.get('allocation_percent', 0), reverse=True)[:3]
+                        for h in sorted(
+                            holdings, key=lambda x: x.get('allocation_percent', 0), reverse=True
+                        )[:3]
                         ), 2
                 ),
                 'win_rate': round((len(profitable) / len(holdings) * 100) if holdings else 0, 2),
@@ -1499,8 +1533,11 @@ def api_trade_history() -> ResponseReturnValue:
             service = get_portfolio_service()
             if service and hasattr(service, 'exchange') and service.exchange:
                 # This is the WORKING OKX exchange instance that successfully gets "2 trades from OKX"
-                exchange = service.exchange.exchange  # Access the CCXT exchange instance directly
-                logger.info("Using the same OKX exchange instance that portfolio service uses successfully")
+                # Access the CCXT exchange instance directly
+                exchange = service.exchange.exchange
+                logger.info(
+                    "Using the same OKX exchange instance that portfolio service uses successfully"
+                )
 
                 # Method 1: OKX Trade Fills API (PRIMARY - has correct action data from OKX)
                 try:
@@ -1510,7 +1547,9 @@ def api_trade_history() -> ResponseReturnValue:
                         # Removed instType filter to get all trade types
                     }
 
-                    logger.info(f"Fetching ALL trade fills from OKX API with params: {fills_params}")
+                    logger.info(
+                        f"Fetching ALL trade fills from OKX API with params: {fills_params}"
+                    )
                     response = exchange.privateGetTradeFills(
                         fills_params
                     )
@@ -1553,7 +1592,10 @@ def api_trade_history() -> ResponseReturnValue:
                                 # Parse fill data using proper OKX fields
                                 fill_id = fill.get('fillId', fill.get('tradeId', ''))
                                 timestamp_ms = int(fill.get('ts', 0))
-                                timestamp_dt = datetime.fromtimestamp(timestamp_ms / 1000, timezone.utc) if timestamp_ms > 0 else utcnow()
+                                timestamp_dt = (
+                                    datetime.fromtimestamp(timestamp_ms / 1000, timezone.utc)
+                                    if timestamp_ms > 0 else utcnow()
+                                )
 
                                 quantity = float(fill.get('fillSz', fill.get('sz', 0)) or 0)
                                 price = float(fill.get('fillPx', fill.get('px', 0)) or 0)
@@ -1584,7 +1626,7 @@ def api_trade_history() -> ResponseReturnValue:
                                         'pnl': 0,
                                         'strategy': '',
                                         'order_id': fill.get('ordId', ''),
-                                        'fee': abs(fee),  # Fee is negative in OKX, make it positive for display
+                                        'fee': abs(fee),  # Fee is negative in OKX, make positive
                                         'fee_currency': fill.get('feeCcy', 'USDT'),
                                         'source': 'okx_trade_fills_ccxt'
                                     }
@@ -1593,13 +1635,19 @@ def api_trade_history() -> ResponseReturnValue:
                                                 f"action={side}, qty={quantity}, price={price}, "
                                                 f"timestamp={timestamp_dt}")
                                 else:
-                                    logger.warning(f"Skipped fill trade: id={fill_id}, qty={quantity}, price={price} (invalid data)")
+                                    logger.warning(
+                                        f"Skipped fill trade: id={fill_id}, qty={quantity}, "
+                                        f"price={price} (invalid data)"
+                                    )
 
                             except Exception as e:
                                 logger.error(f"Error processing fill: {e}")
                                 continue
                     else:
-                        logger.info(f"OKX fills API response: {response.get('code')} - {response.get('msg', 'No message')}")
+                        logger.info(
+                            f"OKX fills API response: {response.get('code')} - "
+                            f"{response.get('msg', 'No message')}"
+                        )
 
                 except Exception as e:
                     logger.warning(f"OKX privateGetTradeFills failed: {e}")
@@ -1789,7 +1837,10 @@ def api_trade_history() -> ResponseReturnValue:
                                         'source': 'okx_executed_orders_ccxt'
                                     }
                                     all_trades.append(formatted_trade)
-                                    logger.info(f"Added order trade: id={ord_id}, symbol={symbol}, qty={quantity}, price={price}, timestamp={timestamp_dt}")
+                                    logger.info(
+                                        f"Added order trade: id={ord_id}, symbol={symbol}, "
+                                        f"qty={quantity}, price={price}, timestamp={timestamp_dt}"
+                                    )
                                 elif exists:
                                     logger.info(f"Skipped duplicate order trade: id={trade_id}")
                                 else:
@@ -2523,7 +2574,10 @@ def api_performance_analytics() -> ResponseReturnValue:
                                 continue
 
                 # Get account bills for historical performance
-                bills_request_path = f"/api/v5/account/bills?begin={int(start_date.timestamp() * 1000)}&end={int(end_date.timestamp() * 1000)}&limit=100"
+                bills_request_path = (
+                    f"/api/v5/account/bills?begin={int(start_date.timestamp() * 1000)}"
+                    f"&end={int(end_date.timestamp() * 1000)}&limit=100"
+                )
                 bills_signature = sign_request(timestamp, method, bills_request_path)
 
                 bills_headers = {
@@ -2624,7 +2678,10 @@ def api_performance_analytics() -> ResponseReturnValue:
 
                 # Get trade fills for more accurate trade count
                 try:
-                    fills_request_path = f"/api/v5/trade/fills?begin={int(start_date.timestamp() * 1000)}&end={int(end_date.timestamp() * 1000)}&limit=100"
+                    fills_request_path = (
+                        f"/api/v5/trade/fills?begin={int(start_date.timestamp() * 1000)}"
+                        f"&end={int(end_date.timestamp() * 1000)}&limit=100"
+                    )
                     fills_signature = sign_request(timestamp, method, fills_request_path)
 
                     fills_headers = {
