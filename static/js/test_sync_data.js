@@ -785,6 +785,18 @@ class EnhancedTestRunner {
                 case 'button_workflow_comprehensive':
                     testResult = await this.testButtonWorkflowComprehensive();
                     break;
+                case 'testATOExportButton':
+                    testResult = await testATOExportButton();
+                    break;
+                case 'testBuyButton':
+                    testResult = await testBuyButton();
+                    break;
+                case 'testSellButton':
+                    testResult = await testSellButton();
+                    break;
+                case 'testTakeProfitButton':
+                    testResult = await testTakeProfitButton();
+                    break;
                 default:
                     testResult = await this.executeStandardTest(testName);
             }
@@ -1648,7 +1660,7 @@ class EnhancedTestRunner {
         const testResultsContainer = document.getElementById('test-results-container');
         
         // Show loading state
-        testResultsContainer.innerHTML = '<div class="text-center p-4"><i class="fas fa-spinner fa-spin fa-2x text-primary mb-3"></i><h5>Running Normal Tests (5 fast response tests)...</h5></div>';
+        testResultsContainer.innerHTML = '<div class="text-center p-4"><i class="fas fa-spinner fa-spin fa-2x text-primary mb-3"></i><h5>Running Normal Tests (9 fast response tests)...</h5></div>';
         
         try {
             // Run fast response tests as "normal" testing
@@ -1657,7 +1669,11 @@ class EnhancedTestRunner {
                 { name: 'Portfolio Data', func: 'testBasicPortfolioData' },
                 { name: 'Price Updates', func: 'testBasicPriceUpdates' },
                 { name: 'Button Functions', func: 'testBasicButtonFunctions' },
-                { name: 'API Response Timing', func: 'testAPIResponseTiming' }
+                { name: 'API Response Timing', func: 'testAPIResponseTiming' },
+                { name: 'ATO Export Button', func: 'testATOExportButton' },
+                { name: 'Buy Button', func: 'testBuyButton' },
+                { name: 'Sell Button', func: 'testSellButton' },
+                { name: 'Take Profit Button', func: 'testTakeProfitButton' }
             ];
             
             const results = [];
@@ -1839,7 +1855,19 @@ class EnhancedTestRunner {
             'testHoldingsSyncEnhanced',
             'testPriceFreshnessRealtime', 
             'testRecalculationWorkflowAdvanced',
-            'testButtonWorkflowComprehensive'
+            'testButtonWorkflowComprehensive',
+            'bot_runtime_status',
+            'bot_state_sync',
+            'cache_disabled',
+            'futures_margin',
+            'mode_sandbox_sync',
+            'portfolio_totals',
+            'price_consistency',
+            'symbol_roundtrip',
+            'table_validation',
+            'target_price_lock',
+            'timestamp_integrity',
+            'unrealized_pnl'
         ];
         
         const results = [];
