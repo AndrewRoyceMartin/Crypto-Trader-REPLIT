@@ -4364,8 +4364,8 @@ class NormalTestRunner {
         testResultsContainer.innerHTML = '<div class="text-center p-4"><i class="fas fa-spinner fa-spin fa-2x text-primary mb-3"></i><h5>Running Normal Tests (21+ comprehensive tests)...</h5></div>';
         
         try {
-            // Run the comprehensive 21+ test system (this should be the "normal" testing)
-            await this.runAllTests();
+            // Run the comprehensive 21+ test system using the enhanced test runner
+            await window.enhancedTestRunner.runAllTests();
             
         } catch (error) {
             console.error('❌ Normal test execution failed:', error);
@@ -4545,14 +4545,11 @@ class NormalTestRunner {
 
 // Additional DOMContentLoaded handler for normal testing
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialize normal test runner
-    window.normalTestRunner = new NormalTestRunner();
-    
-    // Bind normal tests button
+    // Bind normal tests button to enhanced test runner
     setTimeout(() => {
         const runNormalTestsBtn = document.getElementById('run-normal-tests-btn');
         if (runNormalTestsBtn) {
-            runNormalTestsBtn.addEventListener('click', () => window.normalTestRunner.runBasicTests());
+            runNormalTestsBtn.addEventListener('click', () => window.enhancedTestRunner.runBasicTests());
             console.log('✅ Normal test runner initialized');
         }
     }, 100);
