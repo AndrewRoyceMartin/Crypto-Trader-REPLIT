@@ -466,7 +466,7 @@ class EnhancedTestRunner {
     
     updateProgress(currentTestName = null) {
         const progress = this.progressTracking;
-        const progressPercent = Math.round((progress.completedTests / progress.totalTests) * 100);
+        const progressPercent = progress.totalTests > 0 ? Math.round((progress.completedTests / progress.totalTests) * 100) : 0;
         const elapsedSeconds = Math.round((Date.now() - progress.startTime) / 1000);
         
         // Update progress bar
@@ -4935,7 +4935,7 @@ class NormalTestRunner {
     }
     
     updateBasicProgress(testName, completed, total) {
-        const progressPercent = Math.round((completed / total) * 100);
+        const progressPercent = total > 0 ? Math.round((completed / total) * 100) : 0;
         
         // Update progress bar
         const progressBar = document.getElementById('test-progress-bar');
