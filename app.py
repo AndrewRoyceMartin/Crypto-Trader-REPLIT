@@ -111,6 +111,7 @@ def okx_sign(secret_key: str, timestamp: str, method: str, path: str, body: str 
     mac = hmac.new(secret_key.encode('utf-8'), msg.encode('utf-8'), hashlib.sha256)
     return base64.b64encode(mac.digest()).decode('utf-8')
 
+
 # Global HTTP session for connection reuse
 _requests_session = requests.Session()
 
@@ -1097,10 +1098,10 @@ def render_full_dashboard() -> str:
         from version import get_version
         cache_version = int(time.time())
         return render_template("unified_dashboard.html",
-                             cache_version=cache_version,
-                             version=get_version(),
-                             ADMIN_TOKEN=ADMIN_TOKEN,
-                             config={'ADMIN_TOKEN': ADMIN_TOKEN})
+                               cache_version=cache_version,
+                               version=get_version(),
+                               ADMIN_TOKEN=ADMIN_TOKEN,
+                               config={'ADMIN_TOKEN': ADMIN_TOKEN})
     except Exception as e:
         logger.error(f"Error rendering original dashboard: {e}")
         return """
@@ -1178,7 +1179,7 @@ def DISABLED_api_crypto_portfolio() -> ResponseReturnValue:
                 'concentration_risk': round(
                     sum(h.get('allocation_percent', 0)
                         for h in sorted(holdings, key=lambda x: x.get('allocation_percent', 0), reverse=True)[:3]
-                    ), 2
+                        ), 2
                 ),
                 'win_rate': round((len(profitable) / len(holdings) * 100) if holdings else 0, 2),
                 'ytd_realized_pnl': 0.0,
@@ -1287,7 +1288,6 @@ def bot_start() -> ResponseReturnValue:
 
         # Start trading in background thread
 
-
         def start_background_trading():
             retry_count = 0
             max_retries = 3
@@ -1301,20 +1301,20 @@ def bot_start() -> ResponseReturnValue:
 
                         # Check if this is a recoverable error
                         is_recoverable = (
-                            'too many requests' in error_msg or
-                            '50011' in error_msg or  # OKX rate limit code
-                            'rate limit' in error_msg or
-                            'timeout' in error_msg or
-                            'connection' in error_msg or
-                            'network' in error_msg
+                            'too many requests' in error_msg
+                            or '50011' in error_msg  # OKX rate limit code
+                            or 'rate limit' in error_msg
+                            or 'timeout' in error_msg
+                            or 'connection' in error_msg
+                            or 'network' in error_msg
                         )
 
                         if is_recoverable and retry_count < max_retries - 1:
                             retry_count += 1
                             wait_time = min(60, 10 * retry_count)  # Exponential backoff: 10s, 20s, 30s max
                             logger.warning(
-                f"Recoverable error in trading bot (attempt {retry_count}/{max_retries}): {e}"
-            )
+                                f"Recoverable error in trading bot (attempt {retry_count}/{max_retries}): {e}"
+                            )
                             logger.info(f"Retrying in {wait_time} seconds...")
 
                             import time
@@ -1807,8 +1807,8 @@ def api_trade_history() -> ResponseReturnValue:
         if all_trades:
             for i, trade in enumerate(all_trades[:3]):  # Log first 3 trades
                 logger.info(f"Trade {i+1} sample: id={trade.get('id')}, "
-                           f"symbol={trade.get('symbol')}, timestamp={trade.get('timestamp')}, "
-                           f"source={trade.get('source')}")
+                            f"symbol={trade.get('symbol')}, timestamp={trade.get('timestamp')}, "
+                            f"source={trade.get('source')}")
 
         # Filter trades by timeframe if we have trades
         if timeframe != 'all' and all_trades:
@@ -1887,9 +1887,9 @@ def filter_trades_by_timeframe(trades: list[dict[str, Any]], timeframe: str) -> 
                 trade_timestamp = trade_time.timestamp() * 1000
 
                 logger.info(f"Trade {trade.get('id', 'unknown')}: "
-                           f"original='{original_timestamp}' -> cleaned='{timestamp_str}' -> "
-                           f"parsed={trade_time} -> timestamp={trade_timestamp} "
-                           f"(cutoff={cutoff_timestamp})")
+                            f"original='{original_timestamp}' -> cleaned='{timestamp_str}' -> "
+                            f"parsed={trade_time} -> timestamp={trade_timestamp} "
+                            f"(cutoff={cutoff_timestamp})")
 
             except Exception as e:
                 # If parsing fails, skip this trade but log the issue
@@ -1927,11 +1927,11 @@ def api_recent_trades() -> ResponseReturnValue:
         # Get trade history directly (no redirect - return JSON)
         portfolio_service = get_portfolio_service()
         trade_history = portfolio_service.get_trade_history(limit=limit)
-        
+
         # Filter trades based on timeframe if needed
         if timeframe and timeframe != 'all':
             trade_history = filter_trades_by_timeframe(trade_history, timeframe)
-        
+
         # Limit results again after filtering (in case filter returned more than limit)
         if limit and len(trade_history) > limit:
             trade_history = trade_history[:limit]
@@ -2116,7 +2116,7 @@ def api_equity_curve() -> ResponseReturnValue:
                     bal_after = float(b.get("bal", b.get("balAfter", 0)) or 0)
                     if ts == 0 or not ccy:
                         continue
-                    date_key = datetime.fromtimestamp(ts/1000, tz=timezone.utc).strftime("%Y-%m-%d")
+                    date_key = datetime.fromtimestamp(ts / 1000, tz=timezone.utc).strftime("%Y-%m-%d")
                     daily_balances.setdefault(date_key, {})[ccy] = bal_after
                 except Exception:
                     continue
@@ -2141,10 +2141,9 @@ def api_equity_curve() -> ResponseReturnValue:
                 for row in candles:
                     # row = [ts, o, h, l, c, vol, volCcy, volCcyQuote, confirm]
                     ts_ms = int(row[0])
-                    dkey = datetime.fromtimestamp(ts_ms/1000, tz=timezone.utc).strftime("%Y-%m-%d")
+                    dkey = datetime.fromtimestamp(ts_ms / 1000, tz=timezone.utc).strftime("%Y-%m-%d")
                     dmap[dkey] = float(row[4])
                 price_map[inst] = dmap
-
 
         def _price_for_day(ccy: str, dkey: str) -> float:
             if ccy in STABLES:
@@ -2205,7 +2204,7 @@ def api_equity_curve() -> ResponseReturnValue:
                         dmap = {}
                         for row in c:
                             ts_ms = int(row[0])
-                            dkey = datetime.fromtimestamp(ts_ms/1000, tz=timezone.utc).strftime("%Y-%m-%d")
+                            dkey = datetime.fromtimestamp(ts_ms / 1000, tz=timezone.utc).strftime("%Y-%m-%d")
                             dmap[dkey] = float(row[4])
                         price_map[inst] = dmap
                     except Exception as candle_error:
@@ -2281,7 +2280,7 @@ def api_equity_curve() -> ResponseReturnValue:
         })
     except Exception as e:
         logger.error(f"Error getting equity curve: {e}")
-        return jsonify({"success": False, "error": str(e), "equity_curve": [], "timeframe": request.args.get('timeframe','30d')}), 500
+        return jsonify({"success": False, "error": str(e), "equity_curve": [], "timeframe": request.args.get('timeframe', '30d')}), 500
 
 
 @app.route("/api/drawdown-analysis")
@@ -2289,14 +2288,13 @@ def api_drawdown_analysis() -> ResponseReturnValue:
     """Get simplified drawdown analysis for chart display."""
     try:
         timeframe = request.args.get('timeframe', '30d')
-        
+
         # Return lightweight mock data for chart display to prevent timeouts
         # The original heavy calculation has been simplified to avoid API delays
-        
+
         days_back = 30 if timeframe == '30d' else 7 if timeframe == '7d' else 90
         end_date = datetime.now(LOCAL_TZ)
-        start_date = end_date - timedelta(days=days_back)
-        
+
         # Generate simple drawdown simulation based on current portfolio
         from src.services.portfolio_service import get_portfolio_service
         portfolio_service = get_portfolio_service()
@@ -2305,28 +2303,28 @@ def api_drawdown_analysis() -> ResponseReturnValue:
 
         # Generate simplified drawdown data for chart display (fast)
         drawdown_data = []
-        
+
         # Create realistic but simplified drawdown simulation
         import random
         random.seed(42)  # Consistent data for testing
-        
+
         for i in range(days_back, -1, -1):
             point_date = end_date - timedelta(days=i)
-            
+
             # Simple drawdown simulation: generally decreasing with volatility
             days_from_start = days_back - i
             base_drawdown = min(0, -0.5 * (days_from_start / days_back) * 100)  # -0.5% max
             volatility = random.uniform(-0.2, 0.3)  # Add some noise
             drawdown_percent = max(-2.0, base_drawdown + volatility)  # Cap at -2%
-            
+
             drawdown_data.append({
                 'date': point_date.strftime('%Y-%m-%d'),
                 'timestamp': point_date.isoformat(),
                 'drawdown_percent': drawdown_percent,
-                'equity': current_value * (1 + drawdown_percent/100),
+                'equity': current_value * (1 + drawdown_percent / 100),
                 'source': 'simulated'
             })
-        
+
         # Calculate basic metrics from drawdown data
         if drawdown_data:
             drawdown_values = [abs(d['drawdown_percent']) for d in drawdown_data]
@@ -2335,7 +2333,7 @@ def api_drawdown_analysis() -> ResponseReturnValue:
         else:
             max_drawdown = 0.0
             avg_drawdown = 0.0
-        
+
         return jsonify({
             "success": True,
             "drawdown_data": drawdown_data,  # Use consistent field name
@@ -2348,12 +2346,12 @@ def api_drawdown_analysis() -> ResponseReturnValue:
             },
             "last_update": iso_utc()
         })
-        
+
     except Exception as e:
         logger.error(f"Error in drawdown analysis: {e}")
         return jsonify({
-            "success": False, 
-            "error": str(e), 
+            "success": False,
+            "error": str(e),
             "drawdown_data": [],
             "timeframe": timeframe or '30d'
         }), 500
@@ -2387,7 +2385,6 @@ def api_performance_analytics() -> ResponseReturnValue:
         api_key = os.getenv("OKX_API_KEY", "")
         secret_key = os.getenv("OKX_SECRET_KEY", "")
         passphrase = os.getenv("OKX_PASSPHRASE", "")
-
 
         def sign_request(timestamp, method, request_path, body=''):
             message = timestamp + method + request_path + body
@@ -2553,7 +2550,7 @@ def api_performance_analytics() -> ResponseReturnValue:
                             if len(sorted_dates) > 1:
                                 daily_returns = []
                                 for i in range(1, len(sorted_dates)):
-                                    prev_value = daily_values[sorted_dates[i-1]]
+                                    prev_value = daily_values[sorted_dates[i - 1]]
                                     curr_value = daily_values[sorted_dates[i]]
                                     if prev_value > 0:
                                         daily_return = ((curr_value - prev_value) / prev_value) * 100
@@ -2632,7 +2629,7 @@ def api_performance_analytics() -> ResponseReturnValue:
         return jsonify({
             "success": False,
             "error": str(e),
-            "timeframe": request.args.get('timeframe','30d'),
+            "timeframe": request.args.get('timeframe', '30d'),
             "metrics": {
                 "total_return": 0.0,
                 "total_return_percent": 0.0,
@@ -2647,6 +2644,7 @@ def api_performance_analytics() -> ResponseReturnValue:
             },
             "data_source": "error"
         }), 500
+
 
 # Global server start time (monotonic + wall clock) for reliable uptime
 server_start_time = datetime.now(LOCAL_TZ)
@@ -2676,9 +2674,12 @@ def humanize_seconds(total: int) -> str:
     h, r = divmod(r, 3600)
     m, s = divmod(r, 60)
     parts = []
-    if d: parts.append(f"{d}d")
-    if h or d: parts.append(f"{h}h")
-    if m or h or d: parts.append(f"{m}m")
+    if d:
+        parts.append(f"{d}d")
+    if h or d:
+        parts.append(f"{h}h")
+    if m or h or d:
+        parts.append(f"{m}m")
     parts.append(f"{s}s")
     return " ".join(parts)
 
@@ -3330,9 +3331,9 @@ def api_available_positions() -> ResponseReturnValue:
 
             # Tier 2: Major verified OKX assets (removed problematic ones)
             'DOT', 'NEAR', 'SHIB', 'BNB', 'BCH', 'XLM', 'ALGO', 'ICP', 'SAND', 'MANA',
-            'CRO', 'APE', 'DAI', 'AXS', 'CHZ', 'THETA', 'GRT', 'COMP', 'MKR', 'YFI', 
+            'CRO', 'APE', 'DAI', 'AXS', 'CHZ', 'THETA', 'GRT', 'COMP', 'MKR', 'YFI',
             'SUSHI', 'AAVE', 'CRV', 'TON', 'FIL', 'OP', 'ARB', 'LDO', 'FET', 'INJ'
-            
+
             # REMOVED: Assets confirmed NOT available or problematic on OKX:
             # 'BUSD', 'BAT', 'ETC', 'ZIL', 'ICX', 'KNC', 'LRC', 'STORJ', 'SNX',
             # 'BAL', '1INCH', 'ALPHA', 'PERP', 'DYDX', 'IMX', 'API3', 'RNDR',
@@ -3406,8 +3407,8 @@ def api_available_positions() -> ResponseReturnValue:
                     ]  # Only 10 assets with BB analysis for fast loading
 
                     # Only calculate BB for priority assets and if we have current holdings
-                    if (current_price > 0 and symbol in priority_assets and
-                        (total_balance > 0 or symbol in ['BTC', 'ETH', 'SOL', 'ADA'])):
+                    if (current_price > 0 and symbol in priority_assets
+                            and (total_balance > 0 or symbol in ['BTC', 'ETH', 'SOL', 'ADA'])):
                         logger.info(f"Calculating BB opportunity analysis for {symbol} at ${current_price}")
 
                         # Minimal delay for faster response (50ms)
@@ -3705,10 +3706,10 @@ def live_buy() -> ResponseReturnValue:
         try:
             # Use the same working method as diagnostic test
             exchange = get_reusable_exchange()
-            
+
             # Convert symbol format for CCXT (BTC-USDT → BTC/USDT)
             ccxt_symbol = symbol.replace('-', '/')
-            
+
             # Get current price using CCXT
             ticker = exchange.fetch_ticker(ccxt_symbol)
             current_price = ticker['last']
@@ -3720,7 +3721,7 @@ def live_buy() -> ResponseReturnValue:
                 symbol=ccxt_symbol,
                 type='market',
                 side='buy',
-                amount=quantity,  # For market buy with CCXT, amount is in base currency 
+                amount=quantity,  # For market buy with CCXT, amount is in base currency
                 price=None
             )
 
@@ -3741,7 +3742,7 @@ def live_buy() -> ResponseReturnValue:
                     }
                 })
             else:
-                logger.error(f"Live buy order failed: No order ID returned")
+                logger.error("Live buy order failed: No order ID returned")
                 return jsonify({"success": False, "error": "Order failed: No confirmation received"}), 400
 
         except Exception as api_error:
@@ -4134,12 +4135,12 @@ def render_loading_skeleton(message: str = "Loading live cryptocurrency data..."
 
             @keyframes spin {{ 0% {{ transform: rotate(0deg); }} 100% {{ transform: rotate(360deg); }} }}
             .progress {{ width: 100%; background: #e9ecef; height: 8px; border-radius: 4px; margin: 15px 0; }}
-            .progress-bar {{ 
-                height: 100%; 
-                background: linear-gradient(90deg, #007bff, #28a745); 
-                border-radius: 4px; 
-                width: {progress_width}%; 
-                transition: width 0.5s; 
+            .progress-bar {{
+                height: 100%;
+                background: linear-gradient(90deg, #007bff, #28a745);
+                border-radius: 4px;
+                width: {progress_width}%;
+                transition: width 0.5s;
             }}
             .skeleton {{ background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; }}
             .skeleton-item {{ height: 20px; background: #e9ecef; border-radius: 4px; margin: 10px 0; animation: pulse 1.5s ease-in-out infinite; }}
@@ -4586,7 +4587,7 @@ def api_performance() -> ResponseReturnValue:
         attribution.sort(key=lambda x: abs(x['pnl']), reverse=True)
 
         returns = [point['daily_return'] for point in equity_curve if 'daily_return' in point]
-        volatility = (sum((r - sum(returns)/len(returns))**2 for r in returns) / len(returns))**0.5 * (252**0.5) if returns else 0
+        volatility = (sum((r - sum(returns) / len(returns))**2 for r in returns) / len(returns))**0.5 * (252**0.5) if returns else 0
 
         winning_trades = [t for t in trades_data if t.get('pnl', 0) > 0]
         total_trades = len(trades_data)
@@ -4621,7 +4622,7 @@ def api_performance() -> ResponseReturnValue:
             year = year_month.split('-')[0]
             month = int(year_month.split('-')[1])
             month_names = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-                          'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+                           'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
             if len(values) >= 2:
                 monthly_return = ((values[-1] - values[0]) / values[0]) * 100 if values[0] > 0 else 0
@@ -4740,12 +4741,11 @@ def api_test_sync_data() -> ResponseReturnValue:
         # Import all dependencies at the top to avoid local variable issues
         from datetime import timedelta
         from src.utils.okx_native import OKXNative
-        import asyncio
         import time
 
         # Check if enhanced mode is requested
         enhanced_mode = request.args.get('enhanced', 'false').lower() == 'true'
-        
+
         # Initialize all variables to prevent state leakage
         portfolio_service = None
         portfolio_data = None
@@ -4759,7 +4759,7 @@ def api_test_sync_data() -> ResponseReturnValue:
             'test_results': {},
             'enhanced_mode': enhanced_mode
         }
-        
+
         # Enhanced mode features
         if enhanced_mode:
             test_data['enhanced_features'] = {
@@ -4786,7 +4786,7 @@ def api_test_sync_data() -> ResponseReturnValue:
         # Test 1: Enhanced Holdings Synchronization
         try:
             start_time = time.time()
-            
+
             # Get portfolio data safely with proper initialization
             if portfolio_service is None:
                 portfolio_service = get_portfolio_service()
@@ -4834,7 +4834,7 @@ def api_test_sync_data() -> ResponseReturnValue:
                             })
 
             execution_time = (time.time() - start_time) * 1000  # Convert to ms
-            
+
             result = {
                 'status': 'pass' if len(mismatches) == 0 else 'fail',
                 'perfect_matches': len(matches),
@@ -4842,7 +4842,7 @@ def api_test_sync_data() -> ResponseReturnValue:
                 'matches': matches,
                 'mismatch_details': mismatches
             }
-            
+
             if enhanced_mode:
                 result['enhanced_metrics'] = {
                     'execution_time_ms': round(execution_time, 2),
@@ -5033,7 +5033,7 @@ def api_test_sync_data() -> ResponseReturnValue:
             expected_paper = (bot_state.get('mode') == 'paper')
             # In paper mode we expect sandbox True or x-simulated-trading=1. In live, sandbox False and header not set.
             looks_paper = (sandbox_flag is True) or (header_sim == '1')
-            looks_live  = (sandbox_flag is False) and (not header_sim or header_sim == '0')
+            looks_live = (sandbox_flag is False) and (not header_sim or header_sim == '0')
 
             pass_cond = (expected_paper and looks_paper) or ((not expected_paper) and looks_live)
             test_data['test_results']['mode_sandbox_sync'] = {
@@ -5193,19 +5193,19 @@ def api_test_sync_data() -> ResponseReturnValue:
         # Test 12: Recent Trades API Response Format
         try:
             start_time = time.time()
-            
+
             # Test that recent-trades returns JSON, not HTML redirect
             import requests
-            response = requests.get('http://localhost:5000/api/recent-trades?timeframe=7d&limit=5', 
-                                  timeout=10, allow_redirects=False)
-            
+            response = requests.get('http://localhost:5000/api/recent-trades?timeframe=7d&limit=5',
+                                    timeout=10, allow_redirects=False)
+
             execution_time = (time.time() - start_time) * 1000
-            
+
             # Check response format
             is_json = False
             has_trades_data = False
             trades_count = 0
-            
+
             try:
                 if response.headers.get('content-type', '').startswith('application/json'):
                     json_data = response.json()
@@ -5214,7 +5214,7 @@ def api_test_sync_data() -> ResponseReturnValue:
                     trades_count = len(json_data.get('trades', []))
             except Exception:
                 is_json = False
-            
+
             # Enhanced validation
             assertion_results = []
             if enhanced_mode:
@@ -5226,7 +5226,7 @@ def api_test_sync_data() -> ResponseReturnValue:
                         'details': {'content_type': response.headers.get('content-type', 'unknown')}
                     },
                     {
-                        'type': 'data_structure', 
+                        'type': 'data_structure',
                         'passed': has_trades_data,
                         'message': 'Recent trades contains trades array',
                         'details': {'trades_count': trades_count}
@@ -5238,7 +5238,7 @@ def api_test_sync_data() -> ResponseReturnValue:
                         'details': {'execution_time_ms': execution_time}
                     }
                 ])
-            
+
             result = {
                 'status': 'pass' if (is_json and has_trades_data and response.status_code == 200) else 'fail',
                 'response_format': 'JSON' if is_json else 'HTML' if 'html' in response.text.lower() else 'OTHER',
@@ -5246,7 +5246,7 @@ def api_test_sync_data() -> ResponseReturnValue:
                 'trades_count': trades_count,
                 'response_code': response.status_code
             }
-            
+
             if enhanced_mode:
                 result['enhanced_metrics'] = {
                     'execution_time_ms': round(execution_time, 2),
@@ -5255,7 +5255,7 @@ def api_test_sync_data() -> ResponseReturnValue:
                 }
                 test_data['test_categories']['data_sync'].append('recent_trades_format')
                 test_data['performance_metrics']['assertion_count'] += len(assertion_results)
-            
+
             test_data['test_results']['recent_trades_format'] = result
 
         except Exception as e:
@@ -5420,8 +5420,8 @@ def api_test_sync_data() -> ResponseReturnValue:
                     with open('static/app.js', 'r') as f:
                         js_content = f.read()
                     recalc_test_results['onclick_function_exists'] = (
-                        'function recalculatePositions()' in js_content or 
-                        'recalculatePositions =' in js_content
+                        'function recalculatePositions()' in js_content
+                        or 'recalculatePositions =' in js_content
                     )
                     # Test for the missing function that caused the error
                     recalc_test_results['javascript_function_defined'] = 'TradingApp.updateAvailablePositions' in js_content
@@ -5556,9 +5556,9 @@ def api_test_sync_data() -> ResponseReturnValue:
             total_button_tests = len(all_button_tests)
 
             test_data['test_results']['button_functionality'] = {
-                'status': ('pass' if passed_button_tests == total_button_tests 
-                          else 'partial' if (passed_button_tests + partial_button_tests) > 0 
-                          else 'fail'),
+                'status': ('pass' if passed_button_tests == total_button_tests
+                           else 'partial' if (passed_button_tests + partial_button_tests) > 0
+                           else 'fail'),
                 'tests_passed': passed_button_tests,
                 'tests_partial': partial_button_tests,
                 'tests_total': total_button_tests,
@@ -5642,7 +5642,7 @@ def api_test_sync_data() -> ResponseReturnValue:
                 if positions_response.get('available_positions'):
                     positions_count = len(positions_response['available_positions'])
                     valid_positions = [p for p in positions_response['available_positions']
-                                     if p.get('current_balance', 0) > 0 or p.get('current_price', 0) > 0]
+                                       if p.get('current_balance', 0) > 0 or p.get('current_price', 0) > 0]
 
                     # Check data structure for table display requirements
                     complete_positions = 0
@@ -5706,10 +5706,10 @@ def api_test_sync_data() -> ResponseReturnValue:
         # Enhanced mode final processing
         if enhanced_mode:
             # Calculate overall performance metrics
-            passed_tests = sum(1 for result in test_data['test_results'].values() 
-                             if result.get('status') == 'pass')
+            passed_tests = sum(1 for result in test_data['test_results'].values()
+                               if result.get('status') == 'pass')
             total_tests = len(test_data['test_results'])
-            
+
             test_data['enhanced_summary'] = {
                 'overall_status': 'pass' if passed_tests >= total_tests * 0.8 else 'fail',
                 'success_rate': round((passed_tests / max(total_tests, 1)) * 100, 1),
@@ -5720,16 +5720,16 @@ def api_test_sync_data() -> ResponseReturnValue:
                     category: len(tests) for category, tests in test_data['test_categories'].items()
                 }
             }
-            
+
             # Add recommendations based on results
             recommendations = []
             if passed_tests < total_tests:
                 recommendations.append("Some tests failed - review error details for improvement areas")
             if test_data['performance_metrics']['assertion_count'] > 50:
                 recommendations.append("High assertion coverage - comprehensive validation achieved")
-            
+
             test_data['enhanced_summary']['recommendations'] = recommendations
-            
+
             # Update final performance metrics
             test_data['performance_metrics']['data_freshness_score'] = round(
                 passed_tests / max(total_tests, 1) * 100, 1
@@ -5864,29 +5864,29 @@ def diagnose_trading():
     """Detailed OKX trading diagnostics to identify permission issues"""
     try:
         results = {}
-        
+
         # Test 1: Check OKX connectivity and credentials
         results['test_1_connectivity'] = test_okx_connectivity()
-        
+
         # Test 2: Try to get account info (should work with read permissions)
         results['test_2_account_info'] = test_okx_account_info()
-        
+
         # Test 3: Try to get trading balance (requires read permissions)
         results['test_3_trading_balance'] = test_okx_trading_balance()
-        
+
         # Test 4: Try a minimal order operation (requires trade permissions)
         results['test_4_trading_permissions'] = test_okx_trading_permissions()
-        
+
         # Test 5: Check specific error details from order placement
         results['test_5_order_placement'] = test_okx_order_placement()
-        
+
         return jsonify({
             'success': True,
             'test_time': datetime.now().isoformat(),
             'diagnostic_results': results,
             'summary': generate_diagnostic_summary(results)
         })
-        
+
     except Exception as e:
         logger.error(f"Trading diagnostics error: {e}")
         return jsonify({
@@ -5894,6 +5894,7 @@ def diagnose_trading():
             'error': str(e),
             'test_time': datetime.now().isoformat()
         }), 500
+
 
 def test_okx_connectivity():
     """Test basic OKX connection"""
@@ -5912,6 +5913,7 @@ def test_okx_connectivity():
             'details': 'Failed to connect to OKX or fetch market data'
         }
 
+
 def test_okx_account_info():
     """Test account info access (read permissions)"""
     try:
@@ -5928,6 +5930,7 @@ def test_okx_account_info():
             'error': str(e),
             'details': 'Failed to access account information'
         }
+
 
 def test_okx_trading_balance():
     """Test trading balance access"""
@@ -5947,6 +5950,7 @@ def test_okx_trading_balance():
             'details': 'Failed to access trading balance'
         }
 
+
 def test_okx_trading_permissions():
     """Test trading permissions by checking order capabilities"""
     try:
@@ -5965,31 +5969,32 @@ def test_okx_trading_permissions():
             'details': 'Failed to access trading-related market data'
         }
 
+
 def test_okx_order_placement():
     """Test actual order placement with detailed error capture"""
     try:
         exchange = get_reusable_exchange()
-        
+
         # Try to create a very small test order (1 USDT worth of BTC)
         symbol = 'BTC/USDT'
         amount = 0.00001  # Very small amount
         price = None  # Market order
         side = 'buy'
         order_type = 'market'
-        
+
         # This will likely fail, but we want to capture the exact error
         order = exchange.create_order(symbol, order_type, side, amount, price)
-        
+
         return {
             'status': 'PASS',
             'details': f'Order created successfully! ID: {order.get("id", "unknown")}',
             'order_info': order
         }
-        
+
     except Exception as e:
         error_msg = str(e)
         error_type = type(e).__name__
-        
+
         # Analyze specific error types
         if 'unauthorized' in error_msg.lower() or '401' in error_msg:
             details = 'AUTHENTICATION ERROR: API credentials invalid or insufficient permissions'
@@ -6003,7 +6008,7 @@ def test_okx_order_placement():
             details = 'IP RESTRICTION: API key may be restricted to specific IP addresses'
         else:
             details = f'UNKNOWN ERROR: {error_msg}'
-            
+
         return {
             'status': 'FAIL',
             'error': error_msg,
@@ -6012,17 +6017,18 @@ def test_okx_order_placement():
             'details': 'Order placement failed - see analysis for likely cause'
         }
 
+
 def generate_diagnostic_summary(results):
     """Generate a summary of diagnostic results"""
     passed_tests = []
     failed_tests = []
-    
+
     for test_name, result in results.items():
         if result.get('status') == 'PASS':
             passed_tests.append(test_name)
         else:
             failed_tests.append(test_name)
-    
+
     if not failed_tests:
         return 'All tests passed - trading should work normally'
     elif len(failed_tests) == 1 and 'order_placement' in failed_tests[0]:
@@ -6078,7 +6084,6 @@ if __name__ == "__main__":
     gc.set_threshold(700, 10, 10)  # Less aggressive GC to reduce CPU overhead
     logger.info("Configured optimized garbage collection for deployment stability")
 
-
     def deployment_stability_monitor():
         """Lightweight memory monitoring to prevent deployment crashes"""
         try:
@@ -6102,7 +6107,6 @@ if __name__ == "__main__":
     initialize_system()  # config/db only; no network calls here
 
     # Auto-start trading upon deployment
-
 
     def auto_start_trading():
         """Automatically start trading bot when app deploys"""
@@ -6137,7 +6141,6 @@ if __name__ == "__main__":
             )
 
             # Run trading loop in a child thread
-
 
             def _run():
                 try:
