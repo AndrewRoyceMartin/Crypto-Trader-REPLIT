@@ -34,7 +34,6 @@ The system utilizes a modular Flask-based web interface for live OKX trading, st
 -   **Live Data & Strategy P&L Testing Frameworks:** Comprehensive test suites validate live OKX data synchronization and the mathematical accuracy of P&L calculations.
 -   **Optimized Performance Endpoints:** `/api/best-performer` and `/api/worst-performer` are rewritten using the OKX native client for streamlined calculations.
 -   **Enhanced Current Holdings Endpoint:** `/api/current-holdings` uses a hybrid approach combining portfolio service reliability and native OKX price updates.
--   **Robust Recent Trades Endpoint:** `/api/recent-trades` uses a dual-tier approach prioritizing native OKX fills API and graceful fallback to portfolio service data, supporting flexible timeframe filtering.
 -   **Native OKX Equity Curve Endpoint:** `/api/equity-curve` uses the native OKX client with an intelligent fallback strategy (account bills + historical candles, or portfolio service data).
 -   **Optimized Heavy Endpoints:** `/api/equity-curve`, `/api/drawdown-analysis`, and `/api/performance-analytics` are rebuilt using the OKXNative client to eliminate duplicate HMAC signing and CCXT dependencies.
 -   **UI Improvements:** Includes a countdown timer for data refresh, refined P&L card display, and a redesigned sync test page with HTML format and tooltips.
@@ -43,7 +42,6 @@ The system utilizes a modular Flask-based web interface for live OKX trading, st
 -   **Service Layer Architecture:** Extracted business logic into dedicated service classes (`PortfolioBusinessService`, `MarketDataService`, `TradingBusinessService`, `AuthenticationService`) with clean dependency injection and separation of concerns.
 -   **State Management Pattern:** Implemented centralized state management with thread-safe operations, observer pattern, type safety, and backward compatibility through migration adapters. Features persistent state storage and comprehensive change notifications.
 -   **Missing API Endpoints Fix:** Implemented `/api/portfolio-analytics`, `/api/asset-allocation`, and `/api/portfolio-history` to resolve console 404 errors.
--   **Recent Trades Data Fix:** Ensured `/api/recent-trades` aligns with the trade-history endpoint for consistent data display.
 -   **Available Positions Enhancement:** Displays a comprehensive list of 68+ major tradeable cryptocurrencies.
 -   **Stable Target Price System:** Implements locked target buy prices that prevent exponential recalculation, ensuring orders can actually be executed. Target prices lock for 24 hours and only recalculate if market drops >5% from original price.
 -   **Target Price Manager:** SQLite-based persistence for target prices with tier-based discounting (Large cap: 3-8%, Mid cap: 5-12%, Gaming/Meta: 8-15%, Meme coins: 10-20%).

@@ -1292,7 +1292,6 @@
             
             // Test 4: Trade History API
             console.log('Testing trade history API...');
-            const tradesResponse = await fetch('/api/trade-history?timeframe=7d');
             const tradesData = await tradesResponse.json();
             results.push({
                 test: 'Trade History API',

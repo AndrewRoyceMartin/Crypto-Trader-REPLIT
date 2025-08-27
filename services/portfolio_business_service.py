@@ -145,7 +145,6 @@ class PortfolioBusinessService:
         
         payload = {
             "holdings": holdings_list,
-            "recent_trades": portfolio_data.get('recent_trades', []),
             "summary": {
                 "total_cryptos": len(holdings_list),
                 "total_current_value": overview["total_value"],
