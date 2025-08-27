@@ -449,6 +449,10 @@
                                                     class="btn btn-sm btn-success mt-2 ms-2">
                                                 Run Quick Tests
                                             </button>
+                                            <button onclick="runTradingDiagnostics(); console.log('DEBUG: Trading diagnostics triggered');" 
+                                                    class="btn btn-sm btn-warning mt-2 ms-2">
+                                                Diagnose Trading Issue
+                                            </button>
                                         </div>
                                     </td>
                                 </tr>
@@ -1398,6 +1402,67 @@
         
         console.log(output);
         alert('Quick tests completed! Check browser console for detailed results.');
+    }
+    
+    // Trading diagnostics function to identify OKX trading issues
+    async function runTradingDiagnostics() {
+        console.log('🔍 Running Trading Diagnostics...');
+        
+        try {
+            const response = await fetch('/api/diagnose-trading', {
+                method: 'GET',
+                headers: {
+                    'X-Admin-Token': 'replit-agent-secret' // Add admin token
+                }
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                // Display detailed diagnostic results
+                let output = '\\n🔍 TRADING DIAGNOSTICS RESULTS:\\n';
+                output += '========================================\\n';
+                output += `Summary: ${data.summary}\\n\\n`;
+                
+                // Show individual test results
+                Object.entries(data.diagnostic_results).forEach(([testName, result]) => {
+                    const testTitle = testName.replace(/_/g, ' ').replace(/test \\d+ /, '').toUpperCase();
+                    const icon = result.status === 'PASS' ? '✅' : '❌';
+                    output += `${icon} ${testTitle}: ${result.status}\\n`;
+                    output += `   Details: ${result.details}\\n`;
+                    
+                    if (result.error) {
+                        output += `   Error: ${result.error}\\n`;
+                    }
+                    if (result.analysis) {
+                        output += `   Analysis: ${result.analysis}\\n`;
+                    }
+                    output += '\\n';
+                });
+                
+                output += '========================================';
+                console.log(output);
+                
+                // Show summary alert
+                const failedTests = Object.values(data.diagnostic_results).filter(r => r.status !== 'PASS');
+                if (failedTests.length === 0) {
+                    alert('All trading tests passed! Trading should work normally. Check console for details.');
+                } else {
+                    alert(`Found ${failedTests.length} issues with trading setup. Check console for detailed analysis.`);
+                }
+            } else {
+                console.error('❌ Diagnostic failed:', data.error);
+                alert('Diagnostic test failed: ' + data.error);
+            }
+            
+        } catch (error) {
+            console.error('❌ Diagnostic error:', error);
+            alert('Failed to run diagnostics: ' + error.message);
+        }
     }
     </script>
 </body>

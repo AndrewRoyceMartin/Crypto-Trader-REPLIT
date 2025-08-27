@@ -5852,6 +5852,179 @@ def okx_dashboard() -> str:
         }), 500
 
 
+@app.route('/api/diagnose-trading')
+@require_admin
+def diagnose_trading():
+    """Detailed OKX trading diagnostics to identify permission issues"""
+    try:
+        results = {}
+        
+        # Test 1: Check OKX connectivity and credentials
+        results['test_1_connectivity'] = test_okx_connectivity()
+        
+        # Test 2: Try to get account info (should work with read permissions)
+        results['test_2_account_info'] = test_okx_account_info()
+        
+        # Test 3: Try to get trading balance (requires read permissions)
+        results['test_3_trading_balance'] = test_okx_trading_balance()
+        
+        # Test 4: Try a minimal order operation (requires trade permissions)
+        results['test_4_trading_permissions'] = test_okx_trading_permissions()
+        
+        # Test 5: Check specific error details from order placement
+        results['test_5_order_placement'] = test_okx_order_placement()
+        
+        return jsonify({
+            'success': True,
+            'test_time': datetime.now().isoformat(),
+            'diagnostic_results': results,
+            'summary': generate_diagnostic_summary(results)
+        })
+        
+    except Exception as e:
+        logger.error(f"Trading diagnostics error: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'test_time': datetime.now().isoformat()
+        }), 500
+
+def test_okx_connectivity():
+    """Test basic OKX connection"""
+    try:
+        exchange = get_reusable_exchange()
+        # Test basic market data access
+        ticker = exchange.fetch_ticker('BTC/USDT')
+        return {
+            'status': 'PASS',
+            'details': f'Connected successfully. BTC price: ${ticker["last"]}'
+        }
+    except Exception as e:
+        return {
+            'status': 'FAIL',
+            'error': str(e),
+            'details': 'Failed to connect to OKX or fetch market data'
+        }
+
+def test_okx_account_info():
+    """Test account info access (read permissions)"""
+    try:
+        exchange = get_reusable_exchange()
+        balance = exchange.fetch_balance()
+        total_balance = balance.get('USDT', {}).get('total', 0)
+        return {
+            'status': 'PASS',
+            'details': f'Account info accessible. USDT balance: {total_balance}'
+        }
+    except Exception as e:
+        return {
+            'status': 'FAIL',
+            'error': str(e),
+            'details': 'Failed to access account information'
+        }
+
+def test_okx_trading_balance():
+    """Test trading balance access"""
+    try:
+        exchange = get_reusable_exchange()
+        balance = exchange.fetch_balance()
+        free_usdt = balance.get('USDT', {}).get('free', 0)
+        used_usdt = balance.get('USDT', {}).get('used', 0)
+        return {
+            'status': 'PASS',
+            'details': f'Trading balance accessible. Free USDT: {free_usdt}, Used: {used_usdt}'
+        }
+    except Exception as e:
+        return {
+            'status': 'FAIL',
+            'error': str(e),
+            'details': 'Failed to access trading balance'
+        }
+
+def test_okx_trading_permissions():
+    """Test trading permissions by checking order capabilities"""
+    try:
+        exchange = get_reusable_exchange()
+        # Try to get trading fees (requires some trading permissions)
+        markets = exchange.load_markets()
+        btc_market = markets.get('BTC/USDT', {})
+        return {
+            'status': 'PASS',
+            'details': f'Markets loaded successfully. BTC/USDT info available: {bool(btc_market)}'
+        }
+    except Exception as e:
+        return {
+            'status': 'FAIL',
+            'error': str(e),
+            'details': 'Failed to access trading-related market data'
+        }
+
+def test_okx_order_placement():
+    """Test actual order placement with detailed error capture"""
+    try:
+        exchange = get_reusable_exchange()
+        
+        # Try to create a very small test order (1 USDT worth of BTC)
+        symbol = 'BTC/USDT'
+        amount = 0.00001  # Very small amount
+        price = None  # Market order
+        side = 'buy'
+        order_type = 'market'
+        
+        # This will likely fail, but we want to capture the exact error
+        order = exchange.create_order(symbol, order_type, side, amount, price)
+        
+        return {
+            'status': 'PASS',
+            'details': f'Order created successfully! ID: {order.get("id", "unknown")}',
+            'order_info': order
+        }
+        
+    except Exception as e:
+        error_msg = str(e)
+        error_type = type(e).__name__
+        
+        # Analyze specific error types
+        if 'unauthorized' in error_msg.lower() or '401' in error_msg:
+            details = 'AUTHENTICATION ERROR: API credentials invalid or insufficient permissions'
+        elif 'insufficient' in error_msg.lower():
+            details = 'INSUFFICIENT FUNDS: Not enough balance for trade'
+        elif 'minimum' in error_msg.lower():
+            details = 'MINIMUM ORDER SIZE: Order too small for exchange requirements'
+        elif 'trading' in error_msg.lower() and 'disabled' in error_msg.lower():
+            details = 'TRADING DISABLED: Account or API key has trading restrictions'
+        elif 'ip' in error_msg.lower():
+            details = 'IP RESTRICTION: API key may be restricted to specific IP addresses'
+        else:
+            details = f'UNKNOWN ERROR: {error_msg}'
+            
+        return {
+            'status': 'FAIL',
+            'error': error_msg,
+            'error_type': error_type,
+            'analysis': details,
+            'details': 'Order placement failed - see analysis for likely cause'
+        }
+
+def generate_diagnostic_summary(results):
+    """Generate a summary of diagnostic results"""
+    passed_tests = []
+    failed_tests = []
+    
+    for test_name, result in results.items():
+        if result.get('status') == 'PASS':
+            passed_tests.append(test_name)
+        else:
+            failed_tests.append(test_name)
+    
+    if not failed_tests:
+        return 'All tests passed - trading should work normally'
+    elif len(failed_tests) == 1 and 'order_placement' in failed_tests[0]:
+        return 'Connection and permissions OK - order placement issue may be due to order size or balance'
+    else:
+        return f'Issues detected in: {", ".join(failed_tests)} - check individual test details'
+
+
 @app.after_request
 def add_security_headers(resp: Any) -> Any:
     # Environment-dependent CSP configuration
