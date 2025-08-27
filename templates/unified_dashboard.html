@@ -445,7 +445,7 @@
                                                     class="btn btn-sm btn-outline-primary mt-2">
                                                 Refresh Trades
                                             </button>
-                                            <button onclick="if(window.tradingApp && window.tradingApp.testPopulateTradesTable) { console.log('DEBUG: Test populate triggered'); window.tradingApp.testPopulateTradesTable(); } else { console.error('DEBUG: tradingApp not ready'); }" 
+                                            <button onclick="testDirectTableLoad()" 
                                                     class="btn btn-sm btn-outline-success mt-2">
                                                 Test Load
                                             </button>
@@ -1467,6 +1467,45 @@
             console.error('❌ Diagnostic error:', error);
             alert('Failed to run diagnostics: ' + error.message);
         }
+    }
+    
+    // Direct table test function - bypasses all class dependencies
+    function testDirectTableLoad() {
+        console.log('DEBUG: Direct table test started');
+        
+        const tbody = document.getElementById('trades-tbody');
+        if (!tbody) {
+            console.error('DEBUG: trades-tbody not found');
+            return;
+        }
+        
+        console.log('DEBUG: Found tbody, clearing content');
+        tbody.innerHTML = '';
+        
+        // Create sample trade rows directly
+        const sampleTrades = [
+            { side: 'BUY', symbol: 'BTC/USDT', timestamp: '2025-08-27T06:05:20Z', quantity: 0.00001, price: 111280.7, pnl: 0 },
+            { side: 'SELL', symbol: 'ETH/USDT', timestamp: '2025-08-27T05:21:05Z', quantity: 0.001, price: 4500, pnl: -5.2 }
+        ];
+        
+        sampleTrades.forEach(trade => {
+            const row = document.createElement('tr');
+            const sideClass = trade.side === 'BUY' ? 'badge bg-success' : 'badge bg-danger';
+            const pnlClass = trade.pnl >= 0 ? 'text-success' : 'text-danger';
+            
+            row.innerHTML = `
+                <td><span class="badge bg-primary">Trade</span></td>
+                <td><span class="${sideClass}">${trade.side}</span></td>
+                <td>${trade.symbol}</td>
+                <td>${new Date(trade.timestamp).toLocaleString()}</td>
+                <td>${trade.quantity}</td>
+                <td>$${trade.price.toLocaleString()}</td>
+                <td class="${pnlClass}">$${trade.pnl.toFixed(2)}</td>
+            `;
+            tbody.appendChild(row);
+        });
+        
+        console.log('DEBUG: Added 2 sample trade rows to table');
     }
     </script>
 </body>
