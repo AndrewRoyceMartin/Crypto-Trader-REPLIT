@@ -574,12 +574,8 @@ class ModularTradingApp {
 // Show detailed confidence analysis - Global function for onclick handlers
 async function showConfidenceDetails(symbol) {
     try {
-        // Fetch both confidence and market data
-        const [confidenceResponse, positionsResponse] = await Promise.all([
-            fetch(`/api/entry-confidence/${symbol}`, { cache: 'no-cache' }),
-            fetch(`/api/available-positions`, { cache: 'no-cache' })
-        ]);
-        
+        // First fetch confidence data quickly
+        const confidenceResponse = await fetch(`/api/entry-confidence/${symbol}`, { cache: 'no-cache' });
         if (!confidenceResponse.ok) throw new Error(`HTTP ${confidenceResponse.status}`);
         
         const confidenceData = await confidenceResponse.json();
@@ -588,19 +584,12 @@ async function showConfidenceDetails(symbol) {
             const info = confidenceData.data;
             const breakdown = info.breakdown;
             
-            // Get market data for this symbol
-            let marketData = { current_price: 0, target_buy_price: 0, price_opportunity: 0 };
-            if (positionsResponse.ok) {
-                const positionsData = await positionsResponse.json();
-                const position = positionsData.data?.find(p => p.symbol === symbol);
-                if (position) {
-                    marketData = {
-                        current_price: position.current_price || 0,
-                        target_buy_price: position.target_buy_price || 0,
-                        price_opportunity: position.price_diff_percent || 0
-                    };
-                }
-            }
+            // Show modal immediately with loading state for market data
+            let marketData = { 
+                current_price: 'Loading...', 
+                target_buy_price: 'Loading...', 
+                price_opportunity: 'Loading...' 
+            };
             
             const modalHtml = `
                 <div class="modal fade" id="confidenceModal" tabindex="-1">
@@ -623,9 +612,11 @@ async function showConfidenceDetails(symbol) {
                                     </div>
                                     <div class="col-md-6">
                                         <h6>Current Market Data</h6>
-                                        <p><strong>Price:</strong> $${parseFloat(marketData.current_price).toFixed(6)}</p>
-                                        <p><strong>Target:</strong> $${parseFloat(marketData.target_buy_price).toFixed(6)}</p>
-                                        <p><strong>Opportunity:</strong> ${parseFloat(marketData.price_opportunity).toFixed(2)}%</p>
+                                        <div id="market-data-${symbol}">
+                                            <p><strong>Price:</strong> <span id="current-price-${symbol}">${typeof marketData.current_price === 'string' ? marketData.current_price : '$' + parseFloat(marketData.current_price).toFixed(6)}</span></p>
+                                            <p><strong>Target:</strong> <span id="target-price-${symbol}">${typeof marketData.target_buy_price === 'string' ? marketData.target_buy_price : '$' + parseFloat(marketData.target_buy_price).toFixed(6)}</span></p>
+                                            <p><strong>Opportunity:</strong> <span id="opportunity-${symbol}">${typeof marketData.price_opportunity === 'string' ? marketData.price_opportunity : parseFloat(marketData.price_opportunity).toFixed(2) + '%'}</span></p>
+                                        </div>
                                         <p><strong>Risk Level:</strong> <span class="${info.risk_level === 'LOW' ? 'text-success' : info.risk_level === 'MODERATE' ? 'text-warning' : 'text-danger'}">${info.risk_level}</span></p>
                                     </div>
                                 </div>
@@ -674,6 +665,43 @@ async function showConfidenceDetails(symbol) {
             // Show modal using Bootstrap
             const modal = new bootstrap.Modal(document.getElementById('confidenceModal'));
             modal.show();
+            
+            // Now fetch market data in the background and update the modal
+            try {
+                const positionsResponse = await fetch(`/api/available-positions`, { cache: 'no-cache' });
+                if (positionsResponse.ok) {
+                    const positionsData = await positionsResponse.json();
+                    const position = positionsData.data?.find(p => p.symbol === symbol);
+                    if (position) {
+                        // Update the market data in the already-shown modal
+                        const currentPriceEl = document.getElementById(`current-price-${symbol}`);
+                        const targetPriceEl = document.getElementById(`target-price-${symbol}`);
+                        const opportunityEl = document.getElementById(`opportunity-${symbol}`);
+                        
+                        if (currentPriceEl) currentPriceEl.textContent = '$' + parseFloat(position.current_price || 0).toFixed(6);
+                        if (targetPriceEl) targetPriceEl.textContent = '$' + parseFloat(position.target_buy_price || 0).toFixed(6);
+                        if (opportunityEl) opportunityEl.textContent = parseFloat(position.price_diff_percent || 0).toFixed(2) + '%';
+                    } else {
+                        // Update with "Not Available" if position not found
+                        const currentPriceEl = document.getElementById(`current-price-${symbol}`);
+                        const targetPriceEl = document.getElementById(`target-price-${symbol}`);
+                        const opportunityEl = document.getElementById(`opportunity-${symbol}`);
+                        
+                        if (currentPriceEl) currentPriceEl.textContent = 'Not Available';
+                        if (targetPriceEl) targetPriceEl.textContent = 'Not Available';
+                        if (opportunityEl) opportunityEl.textContent = 'Not Available';
+                    }
+                }
+            } catch (marketError) {
+                // Update with error state
+                const currentPriceEl = document.getElementById(`current-price-${symbol}`);
+                const targetPriceEl = document.getElementById(`target-price-${symbol}`);
+                const opportunityEl = document.getElementById(`opportunity-${symbol}`);
+                
+                if (currentPriceEl) currentPriceEl.textContent = 'Error loading';
+                if (targetPriceEl) targetPriceEl.textContent = 'Error loading';
+                if (opportunityEl) opportunityEl.textContent = 'Error loading';
+            }
             
         } else {
             throw new Error(data.message || 'Analysis failed');
