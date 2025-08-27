@@ -797,7 +797,7 @@
         }
         
         tbody.innerHTML = positions.slice(0, 50).map(pos => {
-            const diffClass = (pos.price_difference || 0) < 0 ? 'text-success' : 'text-muted';
+            const diffClass = (pos.price_difference || 0) < 0 ? 'text-success' : 'text-danger';
             const timingClass = 
                 pos.entry_confidence?.timing_signal === 'BUY_NOW' ? 'badge bg-success' :
                 pos.entry_confidence?.timing_signal === 'CAUTIOUS_BUY' ? 'badge bg-warning' :
