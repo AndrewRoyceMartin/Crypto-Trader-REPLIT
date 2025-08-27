@@ -671,7 +671,12 @@ async function showConfidenceDetails(symbol) {
                 const positionsResponse = await fetch(`/api/available-positions`, { cache: 'no-cache' });
                 if (positionsResponse.ok) {
                     const positionsData = await positionsResponse.json();
+                    console.log(`Available positions response for ${symbol}:`, positionsData.data?.length, 'positions');
+                    console.log(`Available symbols:`, positionsData.data?.map(p => p.symbol));
+                    
                     const position = positionsData.data?.find(p => p.symbol === symbol);
+                    console.log(`Found position for ${symbol}:`, position);
+                    
                     if (position) {
                         // Update the market data in the already-shown modal
                         const currentPriceEl = document.getElementById(`current-price-${symbol}`);
@@ -682,14 +687,37 @@ async function showConfidenceDetails(symbol) {
                         if (targetPriceEl) targetPriceEl.textContent = '$' + parseFloat(position.target_buy_price || 0).toFixed(6);
                         if (opportunityEl) opportunityEl.textContent = parseFloat(position.price_diff_percent || 0).toFixed(2) + '%';
                     } else {
-                        // Update with "Not Available" if position not found
-                        const currentPriceEl = document.getElementById(`current-price-${symbol}`);
-                        const targetPriceEl = document.getElementById(`target-price-${symbol}`);
-                        const opportunityEl = document.getElementById(`opportunity-${symbol}`);
-                        
-                        if (currentPriceEl) currentPriceEl.textContent = 'Not Available';
-                        if (targetPriceEl) targetPriceEl.textContent = 'Not Available';
-                        if (opportunityEl) opportunityEl.textContent = 'Not Available';
+                        // Try to find price data from portfolio API as fallback
+                        console.log(`${symbol} not found in available positions, trying portfolio API...`);
+                        try {
+                            const portfolioResponse = await fetch(`/api/crypto-portfolio?currency=USD`, { cache: 'no-cache' });
+                            if (portfolioResponse.ok) {
+                                const portfolioData = await portfolioResponse.json();
+                                const portfolioPosition = portfolioData.positions?.find(p => p.symbol === symbol);
+                                
+                                if (portfolioPosition) {
+                                    console.log(`Found ${symbol} in portfolio:`, portfolioPosition);
+                                    const currentPriceEl = document.getElementById(`current-price-${symbol}`);
+                                    const targetPriceEl = document.getElementById(`target-price-${symbol}`);
+                                    const opportunityEl = document.getElementById(`opportunity-${symbol}`);
+                                    
+                                    if (currentPriceEl) currentPriceEl.textContent = '$' + parseFloat(portfolioPosition.current_price || 0).toFixed(6);
+                                    if (targetPriceEl) targetPriceEl.textContent = 'Portfolio Asset';
+                                    if (opportunityEl) opportunityEl.textContent = parseFloat(portfolioPosition.pnl_percent || 0).toFixed(2) + '%';
+                                } else {
+                                    // Update with "Not Available" if position not found
+                                    const currentPriceEl = document.getElementById(`current-price-${symbol}`);
+                                    const targetPriceEl = document.getElementById(`target-price-${symbol}`);
+                                    const opportunityEl = document.getElementById(`opportunity-${symbol}`);
+                                    
+                                    if (currentPriceEl) currentPriceEl.textContent = 'Not Available';
+                                    if (targetPriceEl) targetPriceEl.textContent = 'Not Available';
+                                    if (opportunityEl) opportunityEl.textContent = 'Not Available';
+                                }
+                            }
+                        } catch (portfolioError) {
+                            console.error('Portfolio API fallback failed:', portfolioError);
+                        }
                     }
                 }
             } catch (marketError) {
