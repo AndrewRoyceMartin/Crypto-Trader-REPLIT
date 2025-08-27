@@ -3114,6 +3114,10 @@ def api_current_holdings() -> ResponseReturnValue:
             current_value = float(h.get('current_value', 0) or 0)
             if not symbol or quantity <= 0:
                 continue
+            
+            # Exclude USDT from open positions - it's trading cash, not a position to trade
+            if symbol == 'USDT':
+                continue
 
             # Get live price using native client
             if symbol in STABLES:
