@@ -17,6 +17,13 @@ class EnhancedTestRunner {
             sync_accuracy: 95,          // 95% accuracy
             button_response: 500        // 500ms
         };
+        this.progressTracking = {
+            totalTests: 0,
+            completedTests: 0,
+            failedTests: 0,
+            startTime: null,
+            currentTest: null
+        };
     }
 
     // Enhanced test execution with concurrent processing
@@ -38,6 +45,9 @@ class EnhancedTestRunner {
         if (debugDiv) debugDiv.innerHTML = `🚀 Enhanced testing started at ${new Date().toLocaleTimeString()}`;
 
         try {
+            // Initialize progress tracking
+            this.initializeProgressTracking();
+            
             // Initialize real-time monitoring
             this.startRealTimeMonitoring();
             
@@ -50,6 +60,9 @@ class EnhancedTestRunner {
             // Process and analyze results
             const enhancedResults = await this.analyzeResults(results, startTime);
             
+            // Final progress update
+            this.updateProgress('All tests completed');
+            
             // Update UI with enhanced results
             await this.displayEnhancedResults(enhancedResults);
             
@@ -61,6 +74,7 @@ class EnhancedTestRunner {
             this.displayErrorResults(error);
         } finally {
             this.stopRealTimeMonitoring();
+            this.hideProgressBar();
             this.updateButtonState(button, 'idle');
         }
     }
@@ -123,6 +137,114 @@ class EnhancedTestRunner {
         });
 
         return results;
+    }
+
+    // ===== PROGRESS BAR FUNCTIONALITY =====
+    
+    initializeProgressTracking() {
+        const testCategories = this.createTestCategories();
+        const totalTests = Object.values(testCategories).reduce((sum, tests) => sum + tests.length, 0);
+        
+        this.progressTracking = {
+            totalTests: totalTests,
+            completedTests: 0,
+            failedTests: 0,
+            startTime: Date.now(),
+            currentTest: null
+        };
+        
+        this.showProgressBar();
+        this.updateProgress();
+        
+        console.log(`🎯 Progress tracking initialized: ${totalTests} total tests`);
+    }
+    
+    showProgressBar() {
+        const container = document.getElementById('test-progress-container');
+        if (container) {
+            container.style.display = 'block';
+            container.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+    }
+    
+    hideProgressBar() {
+        const container = document.getElementById('test-progress-container');
+        if (container) {
+            setTimeout(() => {
+                container.style.display = 'none';
+            }, 2000); // Keep visible for 2 seconds after completion
+        }
+    }
+    
+    updateProgress(currentTestName = null) {
+        const progress = this.progressTracking;
+        const progressPercent = Math.round((progress.completedTests / progress.totalTests) * 100);
+        const elapsedSeconds = Math.round((Date.now() - progress.startTime) / 1000);
+        
+        // Update progress bar
+        const progressBar = document.getElementById('test-progress-bar');
+        const progressText = document.getElementById('progress-text');
+        if (progressBar) {
+            progressBar.style.width = `${progressPercent}%`;
+            progressBar.setAttribute('aria-valuenow', progressPercent);
+        }
+        if (progressText) {
+            progressText.textContent = `${progressPercent}%`;
+        }
+        
+        // Update status elements
+        this.updateProgressElement('progress-status', this.getProgressStatus(progressPercent));
+        this.updateProgressElement('current-test-name', currentTestName || progress.currentTest || '-');
+        this.updateProgressElement('completed-count', progress.completedTests);
+        this.updateProgressElement('failed-count', progress.failedTests);
+        this.updateProgressElement('elapsed-time', `${elapsedSeconds}s`);
+        
+        // Update progress bar color based on success rate
+        if (progressBar) {
+            const successRate = progress.completedTests > 0 ? 
+                ((progress.completedTests - progress.failedTests) / progress.completedTests) * 100 : 100;
+            
+            if (successRate >= 90) {
+                progressBar.className = 'progress-bar progress-bar-striped progress-bar-animated bg-success';
+            } else if (successRate >= 70) {
+                progressBar.className = 'progress-bar progress-bar-striped progress-bar-animated bg-warning';
+            } else {
+                progressBar.className = 'progress-bar progress-bar-striped progress-bar-animated bg-danger';
+            }
+        }
+        
+        console.log(`📊 Progress: ${progressPercent}% (${progress.completedTests}/${progress.totalTests})`);
+    }
+    
+    updateProgressElement(elementId, value) {
+        const element = document.getElementById(elementId);
+        if (element) {
+            element.textContent = value;
+        }
+    }
+    
+    getProgressStatus(percent) {
+        if (percent === 0) return 'Initializing...';
+        if (percent < 25) return 'Starting tests...';
+        if (percent < 50) return 'Testing in progress...';
+        if (percent < 75) return 'More than halfway...';
+        if (percent < 100) return 'Almost complete...';
+        return 'Tests completed!';
+    }
+    
+    markTestStarted(testName) {
+        this.progressTracking.currentTest = testName;
+        this.updateProgress(testName);
+        console.log(`🔄 Test started: ${testName}`);
+    }
+    
+    markTestCompleted(testName, success = true) {
+        this.progressTracking.completedTests++;
+        if (!success) {
+            this.progressTracking.failedTests++;
+        }
+        this.updateProgress();
+        console.log(`${success ? '✅' : '❌'} Test completed: ${testName}`);
     }
 
     // Execute individual test category with performance monitoring
@@ -323,6 +445,9 @@ class EnhancedTestRunner {
         const startTime = performance.now();
         this.realTimeMonitor.metrics.activeRequests++;
 
+        // Mark test as started for progress tracking
+        this.markTestStarted(testName);
+
         try {
             console.log(`🔬 Executing enhanced test: ${testName}`);
             
@@ -352,6 +477,9 @@ class EnhancedTestRunner {
             // Update performance metrics
             this.updateTestMetrics(testName, executionTime, true);
             
+            // Mark test as completed successfully
+            this.markTestCompleted(testName, true);
+            
             return {
                 ...testResult,
                 testName,
@@ -363,6 +491,9 @@ class EnhancedTestRunner {
         } catch (error) {
             const executionTime = performance.now() - startTime;
             this.updateTestMetrics(testName, executionTime, false);
+            
+            // Mark test as completed with failure
+            this.markTestCompleted(testName, false);
             
             return {
                 testName,
