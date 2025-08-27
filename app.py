@@ -5802,13 +5802,96 @@ def api_test_sync_data() -> ResponseReturnValue:
         # Add dynamic test count and use no-cache response
         test_data['tests_available'] = len(test_data['test_results'])
 
+        # Generate comprehensive test summary for frontend display
+        passed_tests = sum(1 for result in test_data['test_results'].values()
+                           if result.get('status') == 'pass')
+        failed_tests = sum(1 for result in test_data['test_results'].values()
+                           if result.get('status') == 'fail')
+        error_tests = sum(1 for result in test_data['test_results'].values()
+                          if result.get('status') == 'error')
+        partial_tests = sum(1 for result in test_data['test_results'].values()
+                            if result.get('status') == 'partial')
+        total_tests = len(test_data['test_results'])
+
+        # Create formatted summary for display
+        summary_lines = []
+        summary_lines.append(f"📊 **Test Results Summary**")
+        summary_lines.append(f"✅ Passed: {passed_tests}/{total_tests} ({round((passed_tests/max(total_tests,1))*100, 1)}%)")
+        
+        if failed_tests > 0:
+            summary_lines.append(f"❌ Failed: {failed_tests}")
+        if error_tests > 0:
+            summary_lines.append(f"🚨 Errors: {error_tests}")
+        if partial_tests > 0:
+            summary_lines.append(f"⚠️ Partial: {partial_tests}")
+            
+        summary_lines.append("")
+        summary_lines.append("**Individual Test Results:**")
+        
+        # Add each test result to summary
+        for test_name, result in test_data['test_results'].items():
+            status = result.get('status', 'unknown')
+            status_icon = {
+                'pass': '✅',
+                'fail': '❌', 
+                'error': '🚨',
+                'partial': '⚠️',
+                'warning': '⚠️'
+            }.get(status, '❓')
+            
+            # Format test name for display
+            display_name = test_name.replace('_', ' ').title()
+            summary_lines.append(f"{status_icon} **{display_name}**: {status}")
+            
+            # Add error details if present
+            if 'error' in result:
+                summary_lines.append(f"   └─ Error: {result['error']}")
+            elif status == 'fail' and 'issues' in result:
+                issues = result['issues']
+                if issues:
+                    summary_lines.append(f"   └─ Issues: {len(issues)} found")
+
+        test_data['summary'] = {
+            'overall_status': 'pass' if passed_tests >= total_tests * 0.8 else 'fail',
+            'success_rate': round((passed_tests / max(total_tests, 1)) * 100, 1),
+            'total_tests': total_tests,
+            'passed_tests': passed_tests,
+            'failed_tests': failed_tests,
+            'error_tests': error_tests,
+            'partial_tests': partial_tests,
+            'formatted_summary': '\n'.join(summary_lines),
+            'test_breakdown': {
+                'CRITICAL': {'passed': 0, 'failed': 0, 'total': 0},
+                'PERFORMANCE': {'passed': 0, 'failed': 0, 'total': 0},
+                'UI_INTERACTION': {'passed': 0, 'failed': 0, 'total': 0}
+            }
+        }
+
+        # Categorize tests for detailed breakdown
+        critical_tests = ['portfolio_totals_consistency', 'live_okx_data', 'okx_enhanced_fields', 'symbol_roundtrip', 'price_consistency']
+        performance_tests = ['cache_disabled', 'bot_runtime_status', 'timestamp_integrity']
+        ui_tests = ['button_functionality', 'table_validation', 'card_data_sync']
+
+        for test_name, result in test_data['test_results'].items():
+            status = result.get('status', 'unknown')
+            passed = 1 if status == 'pass' else 0
+            failed = 1 if status in ['fail', 'error'] else 0
+            
+            if test_name in critical_tests:
+                test_data['summary']['test_breakdown']['CRITICAL']['passed'] += passed
+                test_data['summary']['test_breakdown']['CRITICAL']['failed'] += failed
+                test_data['summary']['test_breakdown']['CRITICAL']['total'] += 1
+            elif test_name in performance_tests:
+                test_data['summary']['test_breakdown']['PERFORMANCE']['passed'] += passed
+                test_data['summary']['test_breakdown']['PERFORMANCE']['failed'] += failed
+                test_data['summary']['test_breakdown']['PERFORMANCE']['total'] += 1
+            elif test_name in ui_tests:
+                test_data['summary']['test_breakdown']['UI_INTERACTION']['passed'] += passed
+                test_data['summary']['test_breakdown']['UI_INTERACTION']['failed'] += failed
+                test_data['summary']['test_breakdown']['UI_INTERACTION']['total'] += 1
+
         # Enhanced mode final processing
         if enhanced_mode:
-            # Calculate overall performance metrics
-            passed_tests = sum(1 for result in test_data['test_results'].values()
-                               if result.get('status') == 'pass')
-            total_tests = len(test_data['test_results'])
-
             test_data['enhanced_summary'] = {
                 'overall_status': 'pass' if passed_tests >= total_tests * 0.8 else 'fail',
                 'success_rate': round((passed_tests / max(total_tests, 1)) * 100, 1),
