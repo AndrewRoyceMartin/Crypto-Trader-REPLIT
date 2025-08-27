@@ -1680,7 +1680,17 @@ class EnhancedTestRunner {
             
             for (const test of tests) {
                 try {
-                    const result = await this[test.func]();
+                    let result;
+                    // Handle different function types
+                    if (test.func.startsWith('test') && test.func !== 'testBasicAPIConnectivity' && 
+                        test.func !== 'testBasicPortfolioData' && test.func !== 'testBasicPriceUpdates' && 
+                        test.func !== 'testBasicButtonFunctions' && test.func !== 'testAPIResponseTiming') {
+                        // Global button test functions
+                        result = await window[test.func]();
+                    } else {
+                        // Instance methods
+                        result = await this[test.func]();
+                    }
                     results.push({ ...result, testName: test.name });
                 } catch (error) {
                     results.push({ 
