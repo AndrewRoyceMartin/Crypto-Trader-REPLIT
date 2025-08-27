@@ -574,8 +574,6 @@ class ModularTradingApp {
 // Show detailed confidence analysis - Global function for onclick handlers
 async function showConfidenceDetails(symbol) {
     try {
-        console.log(`Fetching confidence details for ${symbol}...`);
-        
         // Fetch both confidence and market data
         const [confidenceResponse, positionsResponse] = await Promise.all([
             fetch(`/api/entry-confidence/${symbol}`, { cache: 'no-cache' }),
@@ -585,7 +583,6 @@ async function showConfidenceDetails(symbol) {
         if (!confidenceResponse.ok) throw new Error(`HTTP ${confidenceResponse.status}`);
         
         const confidenceData = await confidenceResponse.json();
-        console.log(`Received confidence data for ${symbol}:`, confidenceData);
         
         if (confidenceData.status === 'success') {
             const info = confidenceData.data;
