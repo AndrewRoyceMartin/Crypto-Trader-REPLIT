@@ -40,6 +40,9 @@ class PortfolioService:
         self._failed_symbols = set()  # Track symbols that consistently fail
         self._failed_symbols_cache = {}  # Cache failed symbols with timestamps for temp blocking
         
+        # Reset failed symbols to allow retrying price fetches
+        self._reset_failed_symbols_lists()
+        
         # Symbol mapping for OKX trading pairs (some symbols have different names)
         self._symbol_mapping = {
             'MATIC': 'POL',  # MATIC is now POL on many exchanges
@@ -95,6 +98,12 @@ class PortfolioService:
             'timestamp': datetime.now().timestamp()
         }
     
+    def _reset_failed_symbols_lists(self) -> None:
+        """Reset failed symbols lists to allow retrying price fetches."""
+        self._failed_symbols.clear()
+        self._failed_symbols_cache.clear()
+        self.logger.info("Failed symbols lists reset - allowing price fetch retries")
+
     def invalidate_cache(self) -> None:
         """Clear all cached data to force fresh fetches."""
         self._cache.clear()
