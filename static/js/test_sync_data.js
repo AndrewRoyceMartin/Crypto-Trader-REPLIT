@@ -1658,6 +1658,21 @@ class EnhancedTestRunner {
     async runBasicTests() {
         const button = document.getElementById('run-normal-tests-btn');
         const testResultsContainer = document.getElementById('test-results-container');
+        const progressContainer = document.getElementById('test-progress-container');
+        const progressBar = document.getElementById('test-progress-bar');
+        const progressText = document.getElementById('progress-text');
+        const currentTestName = document.getElementById('current-test-name');
+        const completedCount = document.getElementById('completed-count');
+        const failedCount = document.getElementById('failed-count');
+        const elapsedTime = document.getElementById('elapsed-time');
+        
+        // Show progress container
+        progressContainer.style.display = 'block';
+        
+        // Initialize progress
+        const startTime = Date.now();
+        let completed = 0;
+        let failed = 0;
         
         // Show loading state
         testResultsContainer.innerHTML = '<div class="text-center p-4"><i class="fas fa-spinner fa-spin fa-2x text-primary mb-3"></i><h5>Running Normal Tests (4 fast response tests)...</h5></div>';
@@ -1672,8 +1687,14 @@ class EnhancedTestRunner {
             ];
             
             const results = [];
+            const totalTests = tests.length;
             
-            for (const test of tests) {
+            for (let i = 0; i < tests.length; i++) {
+                const test = tests[i];
+                
+                // Update current test name
+                currentTestName.textContent = test.name;
+                
                 try {
                     let result;
                     // Handle different function types
@@ -1686,19 +1707,47 @@ class EnhancedTestRunner {
                         // Instance methods
                         result = await this[test.func]();
                     }
+                    
+                    if (result.status === 'pass') {
+                        completed++;
+                    } else {
+                        failed++;
+                    }
+                    
                     results.push({ ...result, testName: test.name });
                 } catch (error) {
+                    failed++;
                     results.push({ 
                         testName: test.name, 
                         status: 'error', 
                         error: error.message 
                     });
                 }
+                
+                // Update progress
+                const progress = Math.round(((i + 1) / totalTests) * 100);
+                progressBar.style.width = `${progress}%`;
+                progressBar.setAttribute('aria-valuenow', progress);
+                progressText.textContent = `${progress}%`;
+                completedCount.textContent = completed;
+                failedCount.textContent = failed;
+                
+                // Update elapsed time
+                const elapsed = Math.round((Date.now() - startTime) / 1000);
+                elapsedTime.textContent = `${elapsed}s`;
             }
+            
+            // Hide progress container after completion
+            setTimeout(() => {
+                progressContainer.style.display = 'none';
+            }, 1000);
             
             this.displayBasicResults(results);
             
         } catch (error) {
+            // Hide progress on error
+            progressContainer.style.display = 'none';
+            
             console.error('❌ Normal test execution failed:', error);
             testResultsContainer.innerHTML = `
                 <div class="alert alert-danger">
@@ -1948,6 +1997,22 @@ class EnhancedTestRunner {
     async runDeepCycleTests() {
         console.log('🔬 Starting deep cycle test execution...');
         
+        const progressContainer = document.getElementById('test-progress-container');
+        const progressBar = document.getElementById('test-progress-bar');
+        const progressText = document.getElementById('progress-text');
+        const currentTestName = document.getElementById('current-test-name');
+        const completedCount = document.getElementById('completed-count');
+        const failedCount = document.getElementById('failed-count');
+        const elapsedTime = document.getElementById('elapsed-time');
+        
+        // Show progress container
+        progressContainer.style.display = 'block';
+        
+        // Initialize progress
+        const startTime = Date.now();
+        let completed = 0;
+        let failed = 0;
+        
         // Define deep cycle and slower tests
         const deepCycleTests = [
             'testHoldingsSyncEnhanced',
@@ -1976,17 +2041,31 @@ class EnhancedTestRunner {
         
         const results = [];
         let completedTests = 0;
+        const totalTests = deepCycleTests.length;
         
-        for (const testName of deepCycleTests) {
+        for (let i = 0; i < deepCycleTests.length; i++) {
+            const testName = deepCycleTests[i];
+            
+            // Update current test name
+            currentTestName.textContent = testName.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
+            
             try {
                 console.log(`🔬 Executing deep cycle test: ${testName} (${completedTests + 1}/${deepCycleTests.length})`);
                 
                 const result = await this.executeEnhancedTest(testName);
+                
+                if (result.status === 'pass' || result.status === 'excellent' || result.status === 'good') {
+                    completed++;
+                } else {
+                    failed++;
+                }
+                
                 results.push(result);
                 completedTests++;
                 
             } catch (error) {
                 console.error(`❌ Deep cycle test ${testName} failed:`, error);
+                failed++;
                 results.push({
                     testName,
                     status: 'error',
@@ -1995,13 +2074,30 @@ class EnhancedTestRunner {
                 });
                 completedTests++;
             }
+            
+            // Update progress
+            const progress = Math.round(((i + 1) / totalTests) * 100);
+            progressBar.style.width = `${progress}%`;
+            progressBar.setAttribute('aria-valuenow', progress);
+            progressText.textContent = `${progress}%`;
+            completedCount.textContent = completed;
+            failedCount.textContent = failed;
+            
+            // Update elapsed time
+            const elapsed = Math.round((Date.now() - startTime) / 1000);
+            elapsedTime.textContent = `${elapsed}s`;
         }
+        
+        // Hide progress container after completion
+        setTimeout(() => {
+            progressContainer.style.display = 'none';
+        }, 2000);
         
         // Display results using the enhanced display system
         this.displayEnhancedResults(results, { 
             testType: 'Deep Cycle Tests',
             totalExecuted: completedTests,
-            startTime: Date.now()
+            startTime: startTime
         });
         
         console.log('✅ Deep cycle test execution completed');
