@@ -4393,32 +4393,54 @@ document.addEventListener('DOMContentLoaded', function() {
     }, 1000);
 })();
 
+// Initialize Enhanced Test Runner on page load for continuous error capture
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🔧 Initializing Enhanced Test Runner for continuous error capture...');
+    window.enhancedTestRunner = new EnhancedTestRunner();
+    
+    // Start background error monitoring immediately
+    setTimeout(() => {
+        if (window.enhancedTestRunner) {
+            console.log('✅ Enhanced Test Runner initialized - now capturing errors continuously');
+            // Collect initial system info
+            window.enhancedTestRunner.errorLog.systemInfo = window.enhancedTestRunner.collectSystemInfo();
+            
+            // Test the error capture by logging a benign test message
+            window.enhancedTestRunner.logError('SYSTEM_INIT', 'Test runner initialized successfully', null, {
+                initTime: new Date().toISOString(),
+                pageUrl: window.location.href
+            });
+        }
+    }, 1000);
+});
+
 // Global export function to maintain compatibility with HTML onclick
 function exportErrorLogs() {
     try {
-        if (window.enhancedTestRunner) {
-            const exportData = window.enhancedTestRunner.exportErrorLogs();
-            console.log('Error logs exported:', exportData.errorSummary);
-            
-            // Show success message
-            if (typeof AppUtils !== 'undefined' && AppUtils.showToast) {
-                AppUtils.showToast(`Error logs exported successfully! Found ${exportData.errorSummary.totalErrors} errors.`, 'success');
-            } else {
-                alert(`Error logs exported successfully! Found ${exportData.errorSummary.totalErrors} errors.`);
-            }
-        } else {
-            console.warn('Enhanced test runner not initialized - creating new instance for export');
-            const tempRunner = new EnhancedTestRunner();
-            const exportData = tempRunner.exportErrorLogs();
-            
-            if (typeof AppUtils !== 'undefined' && AppUtils.showToast) {
-                AppUtils.showToast('Error logs exported (no current session data)', 'info');
-            } else {
-                alert('Error logs exported (no current session data)');
-            }
+        // Ensure test runner is initialized
+        if (!window.enhancedTestRunner) {
+            console.log('🔧 Test runner not found - initializing now...');
+            window.enhancedTestRunner = new EnhancedTestRunner();
+            window.enhancedTestRunner.errorLog.systemInfo = window.enhancedTestRunner.collectSystemInfo();
         }
+        
+        const exportData = window.enhancedTestRunner.exportErrorLogs();
+        console.log('📊 Error logs exported:', exportData.errorSummary);
+        
+        // Enhanced success message with detailed info
+        const totalErrors = exportData.errorSummary.totalErrors;
+        const messageText = totalErrors > 0 
+            ? `Error logs exported! Found ${totalErrors} errors (${exportData.errorSummary.consoleErrors} console, ${exportData.errorSummary.networkErrors} network, ${exportData.errorSummary.testFailures} test failures)`
+            : `Error logs exported successfully! System monitoring active since page load. No errors captured yet.`;
+        
+        if (typeof AppUtils !== 'undefined' && AppUtils.showToast) {
+            AppUtils.showToast(messageText, totalErrors > 0 ? 'warning' : 'success');
+        } else {
+            alert(messageText);
+        }
+        
     } catch (error) {
-        console.error('Export error:', error);
+        console.error('❌ Export error:', error);
         if (typeof AppUtils !== 'undefined' && AppUtils.showToast) {
             AppUtils.showToast('Failed to export error logs: ' + error.message, 'error');
         } else {
