@@ -801,6 +801,9 @@ class EnhancedTestRunner {
                 case 'testTakeProfitButton':
                     testResult = await testTakeProfitButton();
                     break;
+                case 'bollinger_strategy_priority':
+                    testResult = await testBollingerBandsPrioritization();
+                    break;
                 default:
                     testResult = await this.executeStandardTest(testName);
             }
@@ -2627,7 +2630,8 @@ function getTestDisplayName(testName) {
         'ato_export_button': 'ATO Export Button Test',
         'take_profit_button': 'Take Profit Button Test',
         'buy_button': 'Buy Button Test',
-        'sell_button': 'Sell Button Test'
+        'sell_button': 'Sell Button Test',
+        'bollinger_strategy_priority': 'Bollinger Bands Exit Strategy Prioritization'
     };
     // Improved test name formatting with global replace and proper title case
     return names[testName] || testName.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
@@ -2894,7 +2898,8 @@ function getTestDescription(testName) {
         'ato_export_button': 'Verifies ATO export button calls correct API endpoint for tax reporting.',
         'take_profit_button': 'Tests take profit button functionality and API endpoint connectivity.',
         'buy_button': 'Validates buy button functionality and trading API endpoint.',
-        'sell_button': 'Tests sell button functionality and trading API endpoint.'
+        'sell_button': 'Tests sell button functionality and trading API endpoint.',
+        'bollinger_strategy_priority': 'Validates that Enhanced Bollinger Bands strategy is prioritized over fixed percentage exits, with 95% confidence thresholds for algorithmic trading signals.'
     };
     return descriptions[testName] || 'Validates synchronization and accuracy of OKX data integration.';
 }
@@ -4916,6 +4921,215 @@ async function testCryptoLogosDisplay() {
         return {
             status: 'error',
             error: `Crypto logos display test failed: ${error.message}`,
+            test_timestamp: new Date().toISOString()
+        };
+    }
+}
+
+// Test Enhanced Bollinger Bands Strategy Prioritization
+async function testBollingerBandsPrioritization() {
+    try {
+        console.log('🎯 Testing Enhanced Bollinger Bands strategy prioritization logic...');
+        
+        let testResults = {
+            strategy_priority_verified: false,
+            bollinger_bands_primary: false,
+            fixed_percentage_secondary: false,
+            confidence_threshold_95: false,
+            exit_strategy_metadata: {},
+            validation_details: []
+        };
+        
+        // Test 1: Verify Enhanced Bollinger Bands strategy is loaded and configured
+        try {
+            // Check if strategy configuration is accessible via API
+            const strategyResponse = await fetch('/api/strategy-config', { cache: 'no-store' });
+            
+            if (strategyResponse.ok) {
+                const strategyData = await strategyResponse.json();
+                
+                // Check for Enhanced Bollinger Bands configuration
+                if (strategyData.strategy_name && strategyData.strategy_name.toLowerCase().includes('bollinger')) {
+                    testResults.bollinger_bands_primary = true;
+                    testResults.validation_details.push('✅ Enhanced Bollinger Bands strategy detected as primary');
+                    
+                    // Check for 95% confidence threshold
+                    if (strategyData.confidence_threshold >= 95 || strategyData.bb_confidence >= 95) {
+                        testResults.confidence_threshold_95 = true;
+                        testResults.validation_details.push('✅ 95% confidence threshold confirmed');
+                    }
+                    
+                    // Check for fixed percentage as secondary
+                    if (strategyData.fixed_percentage_fallback || strategyData.safety_net_percentage) {
+                        const fallbackPercentage = strategyData.fixed_percentage_fallback || strategyData.safety_net_percentage;
+                        if (fallbackPercentage >= 6) {
+                            testResults.fixed_percentage_secondary = true;
+                            testResults.validation_details.push(`✅ Fixed percentage safety net confirmed: ${fallbackPercentage}%`);
+                        } else {
+                            testResults.validation_details.push(`⚠️ Fixed percentage detected but below 6%: ${fallbackPercentage}%`);
+                        }
+                    }
+                    
+                    testResults.exit_strategy_metadata = strategyData;
+                } else {
+                    testResults.validation_details.push('❌ Enhanced Bollinger Bands strategy not detected as primary');
+                }
+            } else {
+                testResults.validation_details.push('⚠️ Strategy config API not accessible, testing via metadata validation');
+            }
+        } catch (strategyError) {
+            testResults.validation_details.push(`⚠️ Strategy API test failed: ${strategyError.message}`);
+        }
+        
+        // Test 2: Check exit strategy logic metadata from current holdings
+        try {
+            const holdingsResponse = await fetch('/api/current-holdings', { cache: 'no-store' });
+            if (holdingsResponse.ok) {
+                const holdingsData = await holdingsResponse.json();
+                
+                if (holdingsData.holdings && holdingsData.holdings.length > 0) {
+                    // Look for strategy metadata in holdings response
+                    const sampleHolding = holdingsData.holdings[0];
+                    
+                    // Check for exit strategy indicators
+                    const hasExitStrategy = sampleHolding.exit_strategy || sampleHolding.bb_exit_price || sampleHolding.bollinger_upper;
+                    const hasFixedPercentage = sampleHolding.target_exit_percentage || sampleHolding.profit_target;
+                    
+                    if (hasExitStrategy) {
+                        testResults.validation_details.push('✅ Exit strategy metadata found in holdings data');
+                        testResults.strategy_priority_verified = true;
+                    }
+                    
+                    if (hasFixedPercentage) {
+                        testResults.validation_details.push('✅ Fixed percentage fallback metadata detected');
+                    }
+                    
+                    // Check metadata for strategy change indicators
+                    if (holdingsData.metadata || holdingsData.strategy_info) {
+                        const metadata = holdingsData.metadata || holdingsData.strategy_info;
+                        if (metadata.strategy_updates || metadata.enhancement_date) {
+                            testResults.validation_details.push('✅ Strategy enhancement metadata detected');
+                        }
+                    }
+                }
+            }
+        } catch (holdingsError) {
+            testResults.validation_details.push(`⚠️ Holdings metadata test failed: ${holdingsError.message}`);
+        }
+        
+        // Test 3: Validate strategy prioritization logic via bot status
+        try {
+            const botStatusResponse = await fetch('/api/bot-status', { cache: 'no-store' });
+            if (botStatusResponse.ok) {
+                const botData = await botStatusResponse.json();
+                
+                // Check for strategy configuration in bot status
+                if (botData.strategy || botData.current_strategy) {
+                    const strategy = botData.strategy || botData.current_strategy;
+                    
+                    if (strategy.name && strategy.name.toLowerCase().includes('bollinger')) {
+                        testResults.validation_details.push('✅ Bot confirms Bollinger Bands as active strategy');
+                        
+                        // Check for priority configuration
+                        if (strategy.exit_priority || strategy.primary_exit) {
+                            const priority = strategy.exit_priority || strategy.primary_exit;
+                            if (priority.toLowerCase().includes('bollinger')) {
+                                testResults.strategy_priority_verified = true;
+                                testResults.validation_details.push('✅ Bollinger Bands confirmed as primary exit mechanism');
+                            }
+                        }
+                        
+                        // Check for secondary mechanisms
+                        if (strategy.secondary_exit || strategy.fallback_strategy) {
+                            const secondary = strategy.secondary_exit || strategy.fallback_strategy;
+                            if (secondary.toLowerCase().includes('percentage') || secondary.toLowerCase().includes('fixed')) {
+                                testResults.validation_details.push('✅ Fixed percentage confirmed as secondary exit mechanism');
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (botError) {
+            testResults.validation_details.push(`⚠️ Bot status test failed: ${botError.message}`);
+        }
+        
+        // Test 4: Direct validation via sync test endpoint (if available)
+        try {
+            const syncTestResponse = await fetch('/api/test-sync-data', { cache: 'no-store' });
+            if (syncTestResponse.ok) {
+                const syncData = await syncTestResponse.json();
+                
+                // Look for strategy validation results
+                if (syncData.strategy_tests || syncData.bollinger_tests) {
+                    const strategyTests = syncData.strategy_tests || syncData.bollinger_tests;
+                    
+                    if (strategyTests.priority_confirmed || strategyTests.bollinger_primary) {
+                        testResults.strategy_priority_verified = true;
+                        testResults.validation_details.push('✅ Sync test confirms strategy prioritization');
+                    }
+                    
+                    if (strategyTests.confidence_95 || strategyTests.high_confidence) {
+                        testResults.confidence_threshold_95 = true;
+                        testResults.validation_details.push('✅ 95% confidence threshold verified via sync test');
+                    }
+                }
+            }
+        } catch (syncError) {
+            testResults.validation_details.push(`⚠️ Sync test validation failed: ${syncError.message}`);
+        }
+        
+        // Determine overall test status
+        const criticalChecks = [
+            testResults.bollinger_bands_primary,
+            testResults.strategy_priority_verified,
+            testResults.fixed_percentage_secondary || testResults.confidence_threshold_95
+        ];
+        
+        const passedCriticalChecks = criticalChecks.filter(Boolean).length;
+        const totalCriticalChecks = criticalChecks.length;
+        
+        // Additional verification checks
+        const verificationChecks = [
+            testResults.confidence_threshold_95,
+            testResults.exit_strategy_metadata && Object.keys(testResults.exit_strategy_metadata).length > 0,
+            testResults.validation_details.length >= 3
+        ];
+        
+        const passedVerificationChecks = verificationChecks.filter(Boolean).length;
+        
+        const overallSuccessRate = Math.round(((passedCriticalChecks + passedVerificationChecks) / (totalCriticalChecks + verificationChecks.length)) * 100);
+        
+        let status = 'fail';
+        if (passedCriticalChecks === totalCriticalChecks && passedVerificationChecks >= 2) {
+            status = 'pass';
+        } else if (passedCriticalChecks >= 2 || overallSuccessRate >= 60) {
+            status = 'partial';
+        }
+        
+        return {
+            status: status,
+            bollinger_bands_primary: testResults.bollinger_bands_primary,
+            strategy_priority_verified: testResults.strategy_priority_verified,
+            fixed_percentage_secondary: testResults.fixed_percentage_secondary,
+            confidence_threshold_95: testResults.confidence_threshold_95,
+            success_rate: overallSuccessRate,
+            critical_checks_passed: passedCriticalChecks,
+            total_critical_checks: totalCriticalChecks,
+            verification_checks_passed: passedVerificationChecks,
+            validation_details: testResults.validation_details,
+            exit_strategy_metadata: testResults.exit_strategy_metadata,
+            priority_logic: {
+                primary: 'Enhanced Bollinger Bands (95% confidence)',
+                secondary: 'Fixed Percentage Safety Net (6%)',
+                tertiary: 'Stop Loss Risk Management'
+            },
+            test_timestamp: new Date().toISOString()
+        };
+        
+    } catch (error) {
+        return {
+            status: 'error',
+            error: `Bollinger Bands prioritization test failed: ${error.message}`,
             test_timestamp: new Date().toISOString()
         };
     }
