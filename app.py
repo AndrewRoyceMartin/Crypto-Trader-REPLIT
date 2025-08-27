@@ -5149,7 +5149,68 @@ def api_test_sync_data() -> ResponseReturnValue:
         except Exception as e:
             test_data['test_results']['mode_sandbox_sync'] = {'status': 'error', 'error': str(e)}
 
-        # Test 7: Portfolio totals consistency
+        # Test 7: Enhanced OKX API v5 Field Extraction
+        try:
+            from src.utils.okx_native import OKXNative
+            
+            okx_native = OKXNative()
+            
+            # Test balance data with totalEq field
+            balance_data = okx_native.get_balance()
+            total_eq = balance_data.get('totalEq', 0)
+            balance_details = balance_data.get('details', [])
+            
+            # Test ticker data with enhanced fields
+            test_symbols = ['BTC-USDT', 'ETH-USDT']
+            ticker_results = []
+            
+            for symbol in test_symbols:
+                try:
+                    ticker = okx_native.fetch_ticker(symbol)
+                    ticker_results.append({
+                        'symbol': symbol,
+                        'has_bidPx': 'bidPx' in ticker and ticker['bidPx'] > 0,
+                        'has_askPx': 'askPx' in ticker and ticker['askPx'] > 0,
+                        'has_high24h': 'high24h' in ticker and ticker['high24h'] > 0,
+                        'has_low24h': 'low24h' in ticker and ticker['low24h'] > 0,
+                        'has_vol24h': 'vol24h' in ticker and ticker['vol24h'] > 0,
+                        'bidPx': ticker.get('bidPx', 0),
+                        'askPx': ticker.get('askPx', 0),
+                        'high24h': ticker.get('high24h', 0),
+                        'low24h': ticker.get('low24h', 0)
+                    })
+                except Exception as e:
+                    ticker_results.append({
+                        'symbol': symbol,
+                        'error': str(e)
+                    })
+            
+            # Check if all required fields are present
+            balance_fields_ok = total_eq > 0 and len(balance_details) > 0
+            ticker_fields_ok = all(
+                result.get('has_bidPx', False) and 
+                result.get('has_askPx', False) and 
+                result.get('has_high24h', False) and 
+                result.get('has_low24h', False)
+                for result in ticker_results if 'error' not in result
+            )
+            
+            test_data['test_results']['okx_enhanced_fields'] = {
+                'status': 'pass' if balance_fields_ok and ticker_fields_ok else 'fail',
+                'balance_totalEq': total_eq,
+                'balance_details_count': len(balance_details),
+                'ticker_tests': ticker_results,
+                'balance_fields_valid': balance_fields_ok,
+                'ticker_fields_valid': ticker_fields_ok
+            }
+            
+        except Exception as e:
+            test_data['test_results']['okx_enhanced_fields'] = {
+                'status': 'error',
+                'error': str(e)
+            }
+
+        # Test 8: Portfolio totals consistency
         try:
             if portfolio_service is None:
                 portfolio_service = get_portfolio_service()
