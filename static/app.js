@@ -371,7 +371,7 @@ class ModularTradingApp {
             <td class="text-end">${AppUtils.formatCurrency(targetValue)}</td>
             <td class="text-end text-success">+${AppUtils.formatCurrency(targetProfit)}</td>
             <td class="text-end text-success">+${targetProfitPercent.toFixed(1)}%</td>
-            <td class="text-center text-muted">${holdPeriod}</td>
+            <td class="text-center">${this.getPositionStatusBadge(holding)}</td>
             <td class="text-center">
                 <button class="btn btn-sm btn-primary" onclick="tradeManager.showSellDialog('${holding.symbol}', ${holding.quantity}, ${holding.current_price})">
                     Sell
@@ -442,8 +442,21 @@ class ModularTradingApp {
                     ${this.getRiskLevel(position.entry_confidence?.score)}
                 </span>
             </td>
-            <td>${position.buy_signal || 'NO DATA'}</td>
-            <td>${position.bollinger_analysis?.strategy || position.bb_strategy || 'Enhanced BB'}</td>
+            <td>
+                <span class="badge ${
+                    position.buy_signal === 'CURRENT HOLDING' ? 'bg-primary' :
+                    position.buy_signal === 'READY TO BUY' ? 'bg-success' :
+                    'bg-secondary'
+                }">
+                    ${position.buy_signal || 'NO DATA'}
+                </span>
+            </td>
+            <td class="text-center">
+                ${hasBalance ? 
+                    '<span class="text-info fw-bold">OWNED</span>' :
+                    `<span class="text-${priceDiff >= 0 ? 'danger' : 'success'}">${Math.abs(priceDiff).toFixed(1)}% ${priceDiff >= 0 ? 'above' : 'below'} target</span>`
+                }
+            </td>
             <td>
                 <div class="d-flex gap-1">
                     <button class="btn btn-sm btn-outline-info" onclick="showConfidenceDetails('${position.symbol}')" title="View Details">
@@ -458,6 +471,25 @@ class ModularTradingApp {
         `;
         
         return row;
+    }
+
+    getPositionStatusBadge(holding) {
+        const pnlPercent = holding.pnl_percent || 0;
+        const quantity = holding.quantity || 0;
+        
+        if (quantity <= 0) {
+            return '<span class="badge bg-secondary" title="No position held">FLAT</span>';
+        }
+        
+        if (pnlPercent >= 8.0) {
+            return '<span class="badge bg-success" title="Position above 8% profit - in active management zone">MANAGED</span>';
+        } else if (pnlPercent >= 3.0) {
+            return '<span class="badge bg-warning text-dark" title="Position above 3% profit - monitored for exit signals">WATCH</span>';
+        } else if (pnlPercent < 0) {
+            return '<span class="badge bg-danger" title="Position at loss - monitored for crash protection">LOSS</span>';
+        } else {
+            return '<span class="badge bg-primary" title="Holding long position - monitored by trading bot">LONG</span>';
+        }
     }
 
     getConfidenceClass(level) {
