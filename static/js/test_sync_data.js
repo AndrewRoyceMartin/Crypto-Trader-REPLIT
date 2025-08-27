@@ -1796,42 +1796,35 @@ class EnhancedTestRunner {
             </div>
         `;
         
-        // Detailed log at the bottom
-        html += `
-            <div class="card">
-                <div class="card-header">
-                    <h6 class="mb-0">Formatted Test Data</h6>
-                </div>
-                <div class="card-body">
-                    <pre class="test-log-data" style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; font-family: 'Courier New', monospace; font-size: 0.9em; max-height: 400px; overflow-y: auto;">`;
-        
-        // Add timestamp
-        const timestamp = new Date().toISOString();
-        html += `=== NORMAL TEST EXECUTION LOG ===\n`;
-        html += `Timestamp: ${timestamp}\n`;
-        html += `Total Tests: ${totalTests}\n`;
-        html += `Passed: ${passedTests}\n`;
-        html += `Failed: ${totalTests - passedTests}\n`;
-        html += `Success Rate: ${successRate}%\n\n`;
-        
-        // Add detailed test results in log format
-        results.forEach((result, index) => {
-            const statusSymbol = result.status === 'pass' ? '✅' : result.status === 'fail' ? '❌' : '⚠️';
-            html += `--- Test ${index + 1}: ${result.testName} ---\n`;
-            html += `Status: ${statusSymbol} ${result.status.toUpperCase()}\n`;
-            html += `Details: ${result.details || result.error || 'Test completed'}\n`;
-            if (result.error) {
-                html += `Error: ${result.error}\n`;
-            }
-            html += `\n`;
-        });
-        
-        html += `=== END TEST LOG ===</pre>
-                </div>
-            </div>
-        `;
-        
         container.innerHTML = html;
+        
+        // Populate the existing formatted test data area
+        const rawDataDiv = document.getElementById('raw-data');
+        if (rawDataDiv) {
+            const timestamp = new Date().toISOString();
+            let logData = `=== NORMAL TEST EXECUTION LOG ===\n`;
+            logData += `Timestamp: ${timestamp}\n`;
+            logData += `Total Tests: ${totalTests}\n`;
+            logData += `Passed: ${passedTests}\n`;
+            logData += `Failed: ${totalTests - passedTests}\n`;
+            logData += `Success Rate: ${successRate}%\n\n`;
+            
+            // Add detailed test results in log format
+            results.forEach((result, index) => {
+                const statusSymbol = result.status === 'pass' ? '✅' : result.status === 'fail' ? '❌' : '⚠️';
+                logData += `--- Test ${index + 1}: ${result.testName} ---\n`;
+                logData += `Status: ${statusSymbol} ${result.status.toUpperCase()}\n`;
+                logData += `Details: ${result.details || result.error || 'Test completed'}\n`;
+                if (result.error) {
+                    logData += `Error: ${result.error}\n`;
+                }
+                logData += `\n`;
+            });
+            
+            logData += `=== END TEST LOG ===`;
+            
+            rawDataDiv.innerHTML = `<pre style="white-space: pre-wrap; font-family: 'Courier New', monospace; font-size: 0.9em;">${logData}</pre>`;
+        }
     }
     
     getCategoryIcon(category) {
