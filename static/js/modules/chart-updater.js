@@ -361,45 +361,6 @@ export class ChartUpdater {
         }
     }
 
-    async updateRiskChart() {
-        if (!this.charts.riskChart) {
-            console.debug('Risk chart not initialized, skipping update');
-            return;
-        }
-        
-        try {
-            // Use shorter timeout for risk chart to prevent hanging
-            const data = await AppUtils.fetchJSON('/api/drawdown-analysis?timeframe=30d', { timeout: 8000 });
-            console.debug('Risk chart data received:', data);
-            
-            // Handle both drawdown_history and drawdown_data structure  
-            const drawdownData = data?.drawdown_history || data?.drawdown_data || data;
-            
-            if (!drawdownData || !Array.isArray(drawdownData)) {
-                console.debug('Invalid risk data structure, creating fallback. Expected drawdown_history or drawdown_data array');
-                ChartUpdater.createChartFallback('riskChart', 'No risk data available', 'warning');
-                return;
-            }
-            
-            if (drawdownData.length === 0) {
-                console.debug('Empty drawdown data array, creating fallback');
-                ChartUpdater.createChartFallback('riskChart', 'No risk data available', 'warning');
-                return;
-            }
-            
-            const labels = drawdownData.map(item => AppUtils.formatDateTime(item.timestamp || item.date));
-            const values = drawdownData.map(item => Math.abs(AppUtils.safeNum(item.drawdown_percent, 0)));
-            
-            console.debug(`Updating risk chart with ${labels.length} data points`);
-            
-            this.charts.riskChart.data.labels = labels;
-            this.charts.riskChart.data.datasets[0].data = values;
-            this.charts.riskChart.update('none');
-        } catch (error) {
-            console.debug('Risk chart update failed (expected for performance):', error.message);
-            ChartUpdater.createChartFallback('riskChart', 'Risk analysis unavailable', 'info');
-        }
-    }
 
     async updateAllCharts() {
         // Prevent overlapping updates
@@ -420,9 +381,6 @@ export class ChartUpdater {
             await new Promise(resolve => setTimeout(resolve, 500));
             
             await this.updateEquityChart().catch(e => console.debug('Equity chart update failed:', e));
-            await new Promise(resolve => setTimeout(resolve, 500));
-            
-            await this.updateRiskChart().catch(e => console.debug('Risk chart update failed:', e));
             
             console.debug('Chart updates completed');
         } catch (error) {
