@@ -343,7 +343,7 @@ export class TradeManager {
 
     async refreshTradeHistory() {
         try {
-            const data = await AppUtils.fetchJSON('/api/recent-trades', { 
+            const data = await AppUtils.fetchJSON('/api/trade-history?timeframe=7d', { 
                 cache: 'no-store' 
             });
             

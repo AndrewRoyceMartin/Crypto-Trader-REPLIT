@@ -1,0 +1,49 @@
+================================================================================
+           CRYPTOCURRENCY TRADING SYSTEM - ERROR LOG REPORT
+================================================================================
+
+Session ID: test_1756266047603_o01tav6h8
+Export Time: 2025-08-27T03:41:01.722Z
+Report Generated: 27/08/2025, 13:41:01
+
+------------------------------------------------------------
+SYSTEM INFORMATION
+------------------------------------------------------------
+Browser: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+URL: https://47c9c798-b0c1-4791-9090-157d07a27bb9-00-3ij4m9iy3b22d.worf.replit.dev/test-sync-data
+Screen: 1920x1080
+Viewport: 1920x911
+Connection: 4g (8.65Mbps, 50ms RTT)
+Memory: 8GB
+CPU Cores: 12
+Language: en-AU
+Online: Yes
+
+------------------------------------------------------------
+TEST METRICS
+------------------------------------------------------------
+Total Tests: 0
+Completed: 0
+Failed: 0
+Success Rate: 0%
+Start Time: Not started
+Current Test: None
+
+------------------------------------------------------------
+ERROR SUMMARY
+------------------------------------------------------------
+Total Errors: 1
+Console Errors: 0
+Network Errors: 0
+Test Failures: 0
+
+------------------------------------------------------------
+DETAILED ERROR LOG
+------------------------------------------------------------
+1. [SYSTEM_INIT] 2025-08-27T03:40:48.611Z
+   Message: Test runner initialized successfully
+   Metadata: {"initTime":"2025-08-27T03:40:48.611Z","pageUrl":"https://47c9c798-b0c1-4791-9090-157d07a27bb9-00-3ij4m9iy3b22d.worf.replit.dev/test-sync-data"}
+
+================================================================================
+Report End - Generated on 27/08/2025, 13:41:01
+================================================================================
