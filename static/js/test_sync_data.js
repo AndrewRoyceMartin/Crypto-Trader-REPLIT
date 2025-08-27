@@ -128,10 +128,54 @@ class EnhancedTestRunner {
         this.errorLog.detailedErrors.push(testFailure);
     }
 
+    // Export functionality for detailed error logs
+    exportErrorLogs() {
+        const systemInfo = this.collectSystemInfo();
+        const exportData = {
+            sessionId: this.errorLog.sessionId,
+            exportTimestamp: new Date().toISOString(),
+            systemInfo,
+            testMetrics: this.progressTracking,
+            errorSummary: {
+                totalErrors: this.errorLog.detailedErrors.length,
+                consoleErrors: this.errorLog.consoleErrors.length,
+                networkErrors: this.errorLog.networkErrors.length,
+                testFailures: this.errorLog.testFailures.length
+            },
+            detailedErrors: this.errorLog.detailedErrors,
+            testFailures: this.errorLog.testFailures,
+            networkErrors: this.errorLog.networkErrors,
+            consoleErrors: this.errorLog.consoleErrors,
+            testSuiteResults: Array.from(this.testSuites.entries()).map(([name, suite]) => ({
+                name,
+                status: suite.status,
+                metrics: suite.metrics || {},
+                errors: suite.errors || [],
+                lastRun: suite.lastRun
+            }))
+        };
+
+        // Create downloadable file
+        const blob = new Blob([JSON.stringify(exportData, null, 2)], { 
+            type: 'application/json' 
+        });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `test-error-logs-${this.errorLog.sessionId}-${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.json`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+
+        console.log('Error logs exported successfully:', exportData.errorSummary);
+        return exportData;
+    }
+
     collectSystemInfo() {
-        this.errorLog.systemInfo = {
-            timestamp: new Date().toISOString(),
+        return {
             userAgent: navigator.userAgent,
+            url: window.location.href,
             viewport: {
                 width: window.innerWidth,
                 height: window.innerHeight
@@ -146,18 +190,15 @@ class EnhancedTestRunner {
                 downlink: navigator.connection.downlink,
                 rtt: navigator.connection.rtt
             } : null,
-            memory: performance.memory ? {
-                usedJSHeapSize: performance.memory.usedJSHeapSize,
-                totalJSHeapSize: performance.memory.totalJSHeapSize,
-                jsHeapSizeLimit: performance.memory.jsHeapSizeLimit
-            } : null,
-            timing: performance.timing ? {
-                navigationStart: performance.timing.navigationStart,
-                loadEventEnd: performance.timing.loadEventEnd,
-                domContentLoadedEventEnd: performance.timing.domContentLoadedEventEnd
-            } : null
+            memory: navigator.deviceMemory || 'unknown',
+            hardwareConcurrency: navigator.hardwareConcurrency || 'unknown',
+            language: navigator.language,
+            cookieEnabled: navigator.cookieEnabled,
+            onLine: navigator.onLine,
+            timestamp: new Date().toISOString()
         };
     }
+
 
     // Enhanced test execution with concurrent processing
     async runAllTests() {
@@ -4289,3 +4330,37 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('✅ Enhanced error logging system activated');
     }, 1000);
 })();
+
+// Global export function to maintain compatibility with HTML onclick
+function exportErrorLogs() {
+    try {
+        if (window.enhancedTestRunner) {
+            const exportData = window.enhancedTestRunner.exportErrorLogs();
+            console.log('Error logs exported:', exportData.errorSummary);
+            
+            // Show success message
+            if (typeof AppUtils !== 'undefined' && AppUtils.showToast) {
+                AppUtils.showToast(`Error logs exported successfully! Found ${exportData.errorSummary.totalErrors} errors.`, 'success');
+            } else {
+                alert(`Error logs exported successfully! Found ${exportData.errorSummary.totalErrors} errors.`);
+            }
+        } else {
+            console.warn('Enhanced test runner not initialized - creating new instance for export');
+            const tempRunner = new EnhancedTestRunner();
+            const exportData = tempRunner.exportErrorLogs();
+            
+            if (typeof AppUtils !== 'undefined' && AppUtils.showToast) {
+                AppUtils.showToast('Error logs exported (no current session data)', 'info');
+            } else {
+                alert('Error logs exported (no current session data)');
+            }
+        }
+    } catch (error) {
+        console.error('Export error:', error);
+        if (typeof AppUtils !== 'undefined' && AppUtils.showToast) {
+            AppUtils.showToast('Failed to export error logs: ' + error.message, 'error');
+        } else {
+            alert('Failed to export error logs: ' + error.message);
+        }
+    }
+}
