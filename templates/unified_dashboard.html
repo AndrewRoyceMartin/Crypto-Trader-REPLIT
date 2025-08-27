@@ -771,9 +771,19 @@
                 pos.entry_confidence?.timing_signal === 'BUY_NOW' ? 'badge bg-success' :
                 pos.entry_confidence?.timing_signal === 'CAUTIOUS_BUY' ? 'badge bg-warning' :
                 'badge bg-secondary';
+            const confidenceClass = 
+                (pos.entry_confidence?.level === 'STRONG' || pos.entry_confidence?.level === 'GOOD') ? 'badge bg-success' :
+                pos.entry_confidence?.level === 'FAIR' ? 'badge bg-warning' :
+                'badge bg-danger';
+            const riskClass = 
+                pos.entry_confidence?.risk_level === 'LOW' ? 'badge bg-success' :
+                pos.entry_confidence?.risk_level === 'MODERATE' ? 'badge bg-warning' :
+                'badge bg-danger';
                 
             const symbol = pos.symbol || 'N/A';
             const cryptoIcon = getCryptoIcon(symbol);
+            const hasBalance = safeNum(pos.current_balance) > 0;
+            const priceDiff = pos.price_diff_percent || 0;
             
             return `
                 <tr>
@@ -783,16 +793,52 @@
                             <strong class="ms-2">${symbol}</strong>
                         </div>
                     </td>
+                    <td class="text-end">$${safeNum(pos.current_balance, 0).toFixed(6)}</td>
                     <td class="text-end">$${safeNum(pos.current_price, 0).toFixed(4)}</td>
                     <td class="text-end">$${safeNum(pos.target_buy_price, 0).toFixed(4)}</td>
                     <td class="text-end ${diffClass}">
                         ${safeNum(pos.price_difference, 0) < 0 ? '' : '+'}${safeNum(pos.price_difference, 0).toFixed(2)}%
                     </td>
-                    <td>${pos.buy_signal || 'N/A'}</td>
+                    <td class="text-center">
+                        <span class="${confidenceClass}">
+                            ${pos.entry_confidence?.level || 'N/A'}
+                        </span>
+                    </td>
                     <td class="text-center">
                         <span class="${timingClass}">
                             ${pos.entry_confidence?.timing_signal || 'WAIT'}
                         </span>
+                    </td>
+                    <td class="text-center">
+                        <span class="${riskClass}">
+                            ${pos.entry_confidence?.risk_level || 'N/A'}
+                        </span>
+                    </td>
+                    <td class="text-center">
+                        <span class="badge ${
+                            pos.buy_signal === 'CURRENT HOLDING' ? 'bg-primary' :
+                            pos.buy_signal === 'READY TO BUY' ? 'bg-success' :
+                            'bg-secondary'
+                        }">
+                            ${pos.buy_signal || 'NO DATA'}
+                        </span>
+                    </td>
+                    <td class="text-center">
+                        ${hasBalance ? 
+                            '<span class="text-info fw-bold">OWNED</span>' :
+                            `<span class="text-${priceDiff >= 0 ? 'danger' : 'success'}">${Math.abs(priceDiff).toFixed(1)}% ${priceDiff >= 0 ? 'above' : 'below'} target</span>`
+                        }
+                    </td>
+                    <td class="text-center">
+                        <div class="d-flex gap-1">
+                            <button class="btn btn-sm btn-outline-info" onclick="showConfidenceDetails('${symbol}')" title="View Details">
+                                <i class="fa fa-info-circle"></i>
+                            </button>
+                            ${hasBalance ? 
+                                `<button class="btn btn-sm btn-success" onclick="tradeManager.showSellDialog('${symbol}', ${pos.current_balance}, ${pos.current_price})">Sell</button>` :
+                                `<button class="btn btn-sm btn-primary" onclick="tradeManager.showBuyDialog('${symbol}', ${pos.current_price}, ${pos.target_buy_price})">Buy</button>`
+                            }
+                        </div>
                     </td>
                 </tr>
             `;

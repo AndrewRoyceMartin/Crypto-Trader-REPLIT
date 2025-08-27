@@ -1,0 +1,102 @@
+I’ve checked the numbers in your Open Positions screenshot against the formulas typically used (using OKX ticker + fills logic). Let’s go row by row and validate the math:
+
+📊 Core formulas
+
+Position Value = Qty Held × Current Price
+
+Unrealized $ = Position Value – (Qty Held × Entry Price)
+
+Gain/Loss % = (Unrealized $ ÷ (Qty Held × Entry Price)) × 100
+
+Target Value = (Qty Held × Entry Price) × (1 + Target Profit %)
+
+Target Profit $ = Target Value – (Qty Held × Entry Price)
+
+✅ Spot Checks
+1. ALGO
+
+Qty = 393.90340391
+
+Entry = 0.25 → Cost = 98.48
+
+Current = 0.25 → Position Value ≈ 97.25 (shown ✔)
+
+Unrealized = 97.25 – 98.48 = –1.23 (table shows –2.20 ❌ off)
+
+Gain/Loss % = –1.23 ÷ 98.48 = –1.25% (table shows –2.21% ❌)
+
+2. ARB
+
+Qty = 190.4669795
+
+Entry = 0.52 → Cost = 99.04
+
+Current = 0.51 → Position Value ≈ 96.30 (shown ✔)
+
+Unrealized = –2.74 (table says –3.15 ❌ off)
+
+Gain/Loss % = –2.74 ÷ 99.04 = –2.77% (table shows –3.17% ❌)
+
+3. LINK
+
+Qty = 4.00437919
+
+Entry = 24.97 → Cost = 100.04
+
+Current = 23.75 → Value ≈ 95.09 (shown ✔)
+
+Unrealized = –4.95 (table –4.92 ✔ close enough)
+
+Gain/Loss % = –4.95 ÷ 100.04 ≈ –4.95% (shown –4.92% ✔ close)
+
+4. BTC
+
+Qty = 0.00042964
+
+Entry = 113,264.46 → Cost ≈ 48.65
+
+Current = 111,192.90 → Value ≈ 47.78 (shown ✔)
+
+Unrealized = –0.87 (shown –0.88 ✔)
+
+Gain/Loss % = –0.87 ÷ 48.65 = –1.79% (shown –1.81% ✔)
+
+5. SOL
+
+Qty = 0.17362898
+
+Entry = 184.87 → Cost ≈ 32.09
+
+Current = 203.01 → Value ≈ 35.24 (shown ✔)
+
+Unrealized = +3.15 (shown ✔)
+
+Gain/Loss % = 3.15 ÷ 32.09 ≈ +9.82% (shown +9.80% ✔)
+
+🔎 Key Findings
+
+Some rows are correct (BTC, SOL, LINK mostly).
+
+Others (ALGO, ARB, BICO, TRX, etc.) are miscalculated, usually showing larger losses than the math supports.
+
+Possible causes:
+
+Entry price misalignment: maybe using average fills incorrectly (not true VWAP).
+
+Rounding differences: but errors are too large for just rounding.
+
+Fee-adjusted cost basis: If fees were included in entry cost, that could explain bigger losses.
+
+Wrong current price source: If API price differs slightly from what’s displayed, that changes PnL.
+
+🚩 Recommendation
+
+You should recalculate Unrealized $ and Gain/Loss % directly from API data:
+
+position_value = qty * current_price
+cost_value = qty * entry_price   # or VWAP from fills
+unrealized = position_value - cost_value
+gain_loss_pct = unrealized / cost_value * 100
+
+
+This will remove inconsistencies.
