@@ -6129,7 +6129,7 @@ function createHoldingRow(holding) {
             { content: 'N/A', class: 'text-muted' }, // 4% TARGET VALUE
             { content: 'N/A', class: 'text-muted' }, // TARGET PROFIT $
             { content: 'N/A', class: 'text-muted' }, // TARGET PROFIT %
-            { content: '0', class: 'text-muted' }, // HOLD PERIOD
+            { content: getPositionStatus(holding), class: '' }, // POSITION
             { content: '<span class="badge bg-secondary">HOLD</span>', class: '' } // ACTIONS
         ];
         
@@ -6146,6 +6146,24 @@ function createHoldingRow(holding) {
         console.error("Error creating holding row:", error);
         return null;
     }
+}
+
+/** Get position status based on trading bot state and holding data */
+function getPositionStatus(holding) {
+    const quantity = parseFloat(holding.quantity || 0);
+    const pnlPercent = parseFloat(holding.pnl_percent || 0);
+    
+    if (quantity <= 0) {
+        return '<span class="badge bg-secondary" title="No position held">FLAT</span>';
+    }
+    
+    // Check if position should be actively managed (above targets)
+    if (pnlPercent >= 4.0) {
+        return '<span class="badge bg-warning text-dark" title="Position above 4% target - actively managed by Enhanced Bollinger Bands bot">MANAGED</span>';
+    }
+    
+    // Regular long position
+    return '<span class="badge bg-primary" title="Holding long position - monitored by trading bot">LONG</span>';
 }
 
 /** Get cryptocurrency icon - uses CoinGecko API for authentic logos */
