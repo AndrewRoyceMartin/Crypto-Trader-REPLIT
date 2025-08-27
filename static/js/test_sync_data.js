@@ -1780,19 +1780,52 @@ class EnhancedTestRunner {
     }
     
     async testBasicButtonFunctions() {
-        // On test page, check for test control buttons instead of trading buttons
+        // On test page, check for all types of buttons
+        let foundButtons = 0;
+        let buttonDetails = [];
+        
+        // Test control buttons
         const normalTestButton = document.getElementById('run-normal-tests-btn');
         const enhancedTestButton = document.getElementById('run-tests-btn');
         const exportButton = document.getElementById('export-logs-btn');
         
-        let foundButtons = 0;
-        if (normalTestButton) foundButtons++;
-        if (enhancedTestButton) foundButtons++;
-        if (exportButton) foundButtons++;
+        if (normalTestButton) {
+            foundButtons++;
+            buttonDetails.push('Normal Tests');
+        }
+        if (enhancedTestButton) {
+            foundButtons++;
+            buttonDetails.push('Enhanced Tests');
+        }
+        if (exportButton) {
+            foundButtons++;
+            buttonDetails.push('Export Logs');
+        }
+        
+        // Information buttons (help, info, question marks)
+        const infoButtons = document.querySelectorAll('button[class*="info"], .btn-info, button[title*="help"], button[title*="info"], button .fa-info, button .fa-question, button .fa-help');
+        foundButtons += infoButtons.length;
+        if (infoButtons.length > 0) {
+            buttonDetails.push(`${infoButtons.length} info buttons`);
+        }
+        
+        // Table action buttons
+        const tableButtons = document.querySelectorAll('table button, tbody button, .table button, tr button, td button');
+        foundButtons += tableButtons.length;
+        if (tableButtons.length > 0) {
+            buttonDetails.push(`${tableButtons.length} table buttons`);
+        }
+        
+        // Other common button types
+        const otherButtons = document.querySelectorAll('button.btn-sm, button.btn-xs, .btn-secondary, .btn-warning, .btn-light, .btn-dark');
+        foundButtons += otherButtons.length;
+        if (otherButtons.length > 0) {
+            buttonDetails.push(`${otherButtons.length} other buttons`);
+        }
         
         return {
             status: foundButtons >= 2 ? 'pass' : 'fail',
-            details: `Found ${foundButtons} test control buttons`
+            details: `Found ${foundButtons} total buttons: ${buttonDetails.join(', ')}`
         };
     }
     
@@ -4744,19 +4777,52 @@ class NormalTestRunner {
     }
     
     async testBasicButtonFunctions() {
-        // On test page, check for test control buttons instead of trading buttons
+        // On test page, check for all types of buttons
+        let foundButtons = 0;
+        let buttonDetails = [];
+        
+        // Test control buttons
         const normalTestButton = document.getElementById('run-normal-tests-btn');
         const enhancedTestButton = document.getElementById('run-tests-btn');
         const exportButton = document.getElementById('export-logs-btn');
         
-        let foundButtons = 0;
-        if (normalTestButton) foundButtons++;
-        if (enhancedTestButton) foundButtons++;
-        if (exportButton) foundButtons++;
+        if (normalTestButton) {
+            foundButtons++;
+            buttonDetails.push('Normal Tests');
+        }
+        if (enhancedTestButton) {
+            foundButtons++;
+            buttonDetails.push('Enhanced Tests');
+        }
+        if (exportButton) {
+            foundButtons++;
+            buttonDetails.push('Export Logs');
+        }
+        
+        // Information buttons (help, info, question marks)
+        const infoButtons = document.querySelectorAll('button[class*="info"], .btn-info, button[title*="help"], button[title*="info"], button .fa-info, button .fa-question, button .fa-help');
+        foundButtons += infoButtons.length;
+        if (infoButtons.length > 0) {
+            buttonDetails.push(`${infoButtons.length} info buttons`);
+        }
+        
+        // Table action buttons
+        const tableButtons = document.querySelectorAll('table button, tbody button, .table button, tr button, td button');
+        foundButtons += tableButtons.length;
+        if (tableButtons.length > 0) {
+            buttonDetails.push(`${tableButtons.length} table buttons`);
+        }
+        
+        // Other common button types
+        const otherButtons = document.querySelectorAll('button.btn-sm, button.btn-xs, .btn-secondary, .btn-warning, .btn-light, .btn-dark');
+        foundButtons += otherButtons.length;
+        if (otherButtons.length > 0) {
+            buttonDetails.push(`${otherButtons.length} other buttons`);
+        }
         
         return {
             status: foundButtons >= 2 ? 'pass' : 'fail',
-            details: `Found ${foundButtons} test control buttons`
+            details: `Found ${foundButtons} total buttons: ${buttonDetails.join(', ')}`
         };
     }
     
