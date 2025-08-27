@@ -574,13 +574,36 @@ class ModularTradingApp {
 // Show detailed confidence analysis - Global function for onclick handlers
 async function showConfidenceDetails(symbol) {
     try {
-        const response = await fetch(`/api/entry-confidence/${symbol}`, { cache: 'no-cache' });
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        console.log(`Fetching confidence details for ${symbol}...`);
         
-        const data = await response.json();
-        if (data.status === 'success') {
-            const info = data.data;
+        // Fetch both confidence and market data
+        const [confidenceResponse, positionsResponse] = await Promise.all([
+            fetch(`/api/entry-confidence/${symbol}`, { cache: 'no-cache' }),
+            fetch(`/api/available-positions`, { cache: 'no-cache' })
+        ]);
+        
+        if (!confidenceResponse.ok) throw new Error(`HTTP ${confidenceResponse.status}`);
+        
+        const confidenceData = await confidenceResponse.json();
+        console.log(`Received confidence data for ${symbol}:`, confidenceData);
+        
+        if (confidenceData.status === 'success') {
+            const info = confidenceData.data;
             const breakdown = info.breakdown;
+            
+            // Get market data for this symbol
+            let marketData = { current_price: 0, target_buy_price: 0, price_opportunity: 0 };
+            if (positionsResponse.ok) {
+                const positionsData = await positionsResponse.json();
+                const position = positionsData.data?.find(p => p.symbol === symbol);
+                if (position) {
+                    marketData = {
+                        current_price: position.current_price || 0,
+                        target_buy_price: position.target_buy_price || 0,
+                        price_opportunity: position.price_diff_percent || 0
+                    };
+                }
+            }
             
             const modalHtml = `
                 <div class="modal fade" id="confidenceModal" tabindex="-1">
@@ -595,17 +618,18 @@ async function showConfidenceDetails(symbol) {
                                     <div class="col-md-6">
                                         <h6>Overall Confidence</h6>
                                         <div class="progress mb-2">
-                                            <div class="progress-bar bg-${(info.score || 0) >= 70 ? 'success' : (info.score || 0) >= 50 ? 'warning' : 'danger'}" 
-                                                 style="width: ${info.score || 0}%">${(info.score || 0).toFixed(1)}%</div>
+                                            <div class="progress-bar bg-${(info.confidence_score || 0) >= 70 ? 'success' : (info.confidence_score || 0) >= 50 ? 'warning' : 'danger'}" 
+                                                 style="width: ${info.confidence_score || 0}%">${(info.confidence_score || 0).toFixed(1)}%</div>
                                         </div>
-                                        <p><strong>Level:</strong> ${info.level}</p>
+                                        <p><strong>Level:</strong> ${info.confidence_level}</p>
                                         <p><strong>Timing Signal:</strong> ${info.timing_signal}</p>
                                     </div>
                                     <div class="col-md-6">
                                         <h6>Current Market Data</h6>
-                                        <p><strong>Price:</strong> $${parseFloat(info.current_price || 0).toFixed(6)}</p>
-                                        <p><strong>Target:</strong> $${parseFloat(info.target_price || 0).toFixed(6)}</p>
-                                        <p><strong>Opportunity:</strong> ${parseFloat(info.price_opportunity || 0).toFixed(2)}%</p>
+                                        <p><strong>Price:</strong> $${parseFloat(marketData.current_price).toFixed(6)}</p>
+                                        <p><strong>Target:</strong> $${parseFloat(marketData.target_buy_price).toFixed(6)}</p>
+                                        <p><strong>Opportunity:</strong> ${parseFloat(marketData.price_opportunity).toFixed(2)}%</p>
+                                        <p><strong>Risk Level:</strong> <span class="${info.risk_level === 'LOW' ? 'text-success' : info.risk_level === 'MODERATE' ? 'text-warning' : 'text-danger'}">${info.risk_level}</span></p>
                                     </div>
                                 </div>
                                 
@@ -613,19 +637,23 @@ async function showConfidenceDetails(symbol) {
                                 <div class="list-group">
                                     <div class="list-group-item d-flex justify-content-between align-items-center">
                                         <span>Technical Analysis</span>
-                                        <span class="badge bg-${(breakdown.technical || 0) >= 60 ? 'success' : (breakdown.technical || 0) >= 40 ? 'warning' : 'danger'}">${(breakdown.technical || 0).toFixed(1)}%</span>
+                                        <span class="badge bg-${(breakdown.technical_analysis || 0) >= 60 ? 'success' : (breakdown.technical_analysis || 0) >= 40 ? 'warning' : 'danger'}">${(breakdown.technical_analysis || 0).toFixed(1)}%</span>
                                     </div>
                                     <div class="list-group-item d-flex justify-content-between align-items-center">
                                         <span>Market Momentum</span>
-                                        <span class="badge bg-${(breakdown.momentum || 0) >= 60 ? 'success' : (breakdown.momentum || 0) >= 40 ? 'warning' : 'danger'}">${(breakdown.momentum || 0).toFixed(1)}%</span>
+                                        <span class="badge bg-${(breakdown.momentum_indicators || 0) >= 60 ? 'success' : (breakdown.momentum_indicators || 0) >= 40 ? 'warning' : 'danger'}">${(breakdown.momentum_indicators || 0).toFixed(1)}%</span>
                                     </div>
                                     <div class="list-group-item d-flex justify-content-between align-items-center">
                                         <span>Risk Assessment</span>
-                                        <span class="badge bg-${(breakdown.risk || 0) >= 60 ? 'success' : (breakdown.risk || 0) >= 40 ? 'warning' : 'danger'}">${(breakdown.risk || 0).toFixed(1)}%</span>
+                                        <span class="badge bg-${(breakdown.volatility_assessment || 0) >= 60 ? 'success' : (breakdown.volatility_assessment || 0) >= 40 ? 'warning' : 'danger'}">${(breakdown.volatility_assessment || 0).toFixed(1)}%</span>
                                     </div>
                                     <div class="list-group-item d-flex justify-content-between align-items-center">
                                         <span>Volume Profile</span>
-                                        <span class="badge bg-${(breakdown.volume || 0) >= 60 ? 'success' : (breakdown.volume || 0) >= 40 ? 'warning' : 'danger'}">${(breakdown.volume || 0).toFixed(1)}%</span>
+                                        <span class="badge bg-${(breakdown.volume_analysis || 0) >= 60 ? 'success' : (breakdown.volume_analysis || 0) >= 40 ? 'warning' : 'danger'}">${(breakdown.volume_analysis || 0).toFixed(1)}%</span>
+                                    </div>
+                                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                                        <span>Support/Resistance</span>
+                                        <span class="badge bg-${(breakdown.support_resistance || 0) >= 60 ? 'success' : (breakdown.support_resistance || 0) >= 40 ? 'warning' : 'danger'}">${(breakdown.support_resistance || 0).toFixed(1)}%</span>
                                     </div>
                                 </div>
                             </div>
