@@ -140,15 +140,13 @@ export class DashboardManager {
 
     async updateUSDTBalance() {
         try {
-            // Fetch USDT balance from portfolio data
+            // Fetch USDT balance from portfolio data - it's the cash_balance, not a holding
             const data = await AppUtils.fetchJSON(`/api/crypto-portfolio?currency=USD&_bypass_cache=${Date.now()}`);
             let usdtBalance = 0;
             
-            if (data && data.holdings) {
-                const usdtHolding = data.holdings.find(h => h.symbol === 'USDT');
-                if (usdtHolding) {
-                    usdtBalance = usdtHolding.quantity || 0;
-                }
+            // USDT is the cash balance used for trading, not an active position
+            if (data && typeof data.cash_balance === 'number') {
+                usdtBalance = data.cash_balance;
             }
 
             const cashValueEl = document.querySelector('#kpi-cash [data-kpi-value]');
