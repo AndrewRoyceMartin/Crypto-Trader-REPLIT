@@ -1461,7 +1461,7 @@ class EnhancedTestRunner {
                         </div>
                         <div class="col-md-3">
                             <div class="text-center">
-                                <div class="h4 mb-1 text-secondary">${this.realTimeMonitor.metrics.completedTests + this.realTimeMonitor.metrics.failedTests}</div>
+                                <div class="h4 mb-1 text-secondary">${this.realTimeMonitor && this.realTimeMonitor.metrics ? (this.realTimeMonitor.metrics.completedTests + this.realTimeMonitor.metrics.failedTests) : 0}</div>
                                 <div class="small text-muted">Tests Run</div>
                             </div>
                         </div>
@@ -1469,7 +1469,7 @@ class EnhancedTestRunner {
                 </div>
                 
                 <div class="row">
-                    ${Object.entries(results.categoryResults).map(([category, data]) => `
+                    ${results.categoryResults ? Object.entries(results.categoryResults).map(([category, data]) => `
                         <div class="col-md-6 mb-3">
                             <div class="card">
                                 <div class="card-body">
@@ -1489,10 +1489,10 @@ class EnhancedTestRunner {
                                 </div>
                             </div>
                         </div>
-                    `).join('')}
+                    `).join('') : '<div class="col-12"><p class="text-muted">No category results available</p></div>'}
                 </div>
                 
-                ${results.recommendations.length > 0 ? `
+                ${results.recommendations && results.recommendations.length > 0 ? `
                     <div class="alert alert-warning">
                         <h6><i class="fas fa-lightbulb me-2"></i>Recommendations</h6>
                         <ul class="mb-0">
