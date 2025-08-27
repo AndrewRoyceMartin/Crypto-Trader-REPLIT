@@ -4,6 +4,40 @@ import { DashboardManager } from './js/modules/dashboard-manager.js';
 import { ChartUpdater } from './js/modules/chart-updater.js';
 import { TradeManager } from './js/modules/trade-manager.js';
 
+// Progress Bar Management for Table Loading
+class TableProgressManager {
+    static updateProgress(tableId, percent, text = '') {
+        const progressBar = document.getElementById(`${tableId}-progress-bar`);
+        const progressText = document.getElementById(`${tableId}-progress-text`);
+        
+        if (progressBar) {
+            progressBar.style.width = `${percent}%`;
+            progressBar.setAttribute('aria-valuenow', percent);
+            progressBar.classList.toggle('progress-bar-striped', percent < 100);
+        }
+        
+        if (progressText && text) {
+            progressText.textContent = text;
+        }
+    }
+    
+    static showLoading(tableId, initialText = 'Starting...') {
+        this.updateProgress(tableId, 0, initialText);
+    }
+    
+    static showProgress(tableId, percent, text) {
+        this.updateProgress(tableId, percent, text);
+    }
+    
+    static hideProgress(tableId) {
+        // Progress bars will be hidden when table content is populated
+        this.updateProgress(tableId, 100, 'Complete');
+    }
+}
+
+// Make the TableProgressManager globally available for compatibility
+window.TableProgressManager = TableProgressManager;
+
 // Global error handlers - Allow errors to be detected by tests but log them properly
 let recentErrors = [];
 const MAX_RECENT_ERRORS = 10;
@@ -202,23 +236,37 @@ class ModularTradingApp {
 
     async refreshHoldingsData() {
         try {
+            // Show progress
+            TableProgressManager.showLoading('holdings', 'Fetching current holdings...');
+            TableProgressManager.showProgress('holdings', 20, 'Loading OKX data...');
+            
             const data = await AppUtils.fetchJSON('/api/current-holdings', {
                 cache: 'no-store',
                 timeout: 45000  // Extended timeout for complex OKX calculations
             });
             
+            TableProgressManager.showProgress('holdings', 80, 'Processing holdings...');
+            
             if (data && data.holdings) {
                 console.log('Holdings data received:', data.holdings);
                 this.updateHoldingsTable(data.holdings);
+                TableProgressManager.hideProgress('holdings');
             }
         } catch (error) {
             console.debug('Holdings refresh failed:', error);
+            TableProgressManager.showProgress('holdings', 0, 'Failed to load holdings');
         }
     }
 
     async loadAvailablePositions() {
         try {
+            // Show initial progress
+            TableProgressManager.showLoading('available', 'Loading available positions...');
+            TableProgressManager.showProgress('available', 10, 'Fetching market data...');
+            
             const data = await AppUtils.fetchJSON('/api/available-positions');
+            
+            TableProgressManager.showProgress('available', 60, 'Processing positions...');
             
             // Handle both direct array response and wrapped object response
             let positions = null;
@@ -230,15 +278,19 @@ class ModularTradingApp {
                 positions = data.positions;
             }
             
+            TableProgressManager.showProgress('available', 90, 'Rendering table...');
+            
             if (positions && positions.length > 0) {
                 console.log('Available positions loaded:', positions.length, 'positions');
                 this.renderAvailableTable(positions);
+                TableProgressManager.hideProgress('available');
             } else {
                 console.debug('No available positions data found');
                 this.renderAvailableTable([]); // Render empty table to clear loading state
             }
         } catch (error) {
             console.error('Available positions load failed:', error);
+            TableProgressManager.showProgress('available', 0, 'Failed to load positions');
             this.renderAvailableTable([]); // Render empty table to clear loading state
         }
     }

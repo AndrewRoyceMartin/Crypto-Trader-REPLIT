@@ -1972,16 +1972,35 @@ class TradingApp {
     
     async updateRecentTrades() {
         try {
+            // Show progress
+            if (window.TableProgressManager) {
+                window.TableProgressManager.showLoading('trades', 'Fetching trade history...');
+                window.TableProgressManager.showProgress('trades', 30, 'Loading from OKX...');
+            }
+            
             const timeframe = document.getElementById('trades-timeframe')?.value || '7d';
             // Use the working trade-history endpoint directly 
             const response = await fetch(`/api/trade-history?timeframe=${timeframe}&limit=20`, { cache: 'no-cache' });
             if (!response.ok) return;
+            
+            if (window.TableProgressManager) {
+                window.TableProgressManager.showProgress('trades', 70, 'Processing trades...');
+            }
+            
             const data = await response.json();
             
             if (!data.success || !data.trades) return;
             
+            if (window.TableProgressManager) {
+                window.TableProgressManager.showProgress('trades', 90, 'Updating table...');
+            }
+            
             // Update trades table
             this.updateTradesTable(data.trades, data.summary);
+            
+            if (window.TableProgressManager) {
+                window.TableProgressManager.hideProgress('trades');
+            }
 
             // Update mobile data labels and ensure proper table formatting
             const table = document.getElementById('trades-table');

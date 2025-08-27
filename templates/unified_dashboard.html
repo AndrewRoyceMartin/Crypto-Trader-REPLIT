@@ -282,8 +282,17 @@
                             </thead>
                             <tbody id="holdings-tbody">
                                 <tr>
-                                    <td colspan="12" class="text-center py-3 text-muted">
-                                        <span class="icon icon-refresh me-2"></span>Loading positions...
+                                    <td colspan="12" class="text-center py-4 text-muted">
+                                        <div class="d-flex flex-column align-items-center">
+                                            <span class="icon icon-refresh me-2 mb-2"></span>
+                                            <span class="mb-2">Loading positions...</span>
+                                            <div class="progress" style="width: 200px; height: 6px;">
+                                                <div class="progress-bar progress-bar-animated" id="holdings-progress-bar" 
+                                                     role="progressbar" style="width: 0%" aria-valuenow="0" 
+                                                     aria-valuemin="0" aria-valuemax="100"></div>
+                                            </div>
+                                            <small class="text-muted mt-1" id="holdings-progress-text">Starting...</small>
+                                        </div>
                                     </td>
                                 </tr>
                             </tbody>
@@ -363,8 +372,17 @@
                             </thead>
                             <tbody id="available-tbody">
                                 <tr>
-                                    <td colspan="11" class="text-center py-3 text-muted">
-                                        <span class="icon icon-refresh me-2"></span>Loading available positions...
+                                    <td colspan="11" class="text-center py-4 text-muted">
+                                        <div class="d-flex flex-column align-items-center">
+                                            <span class="icon icon-refresh me-2 mb-2"></span>
+                                            <span class="mb-2">Loading available positions...</span>
+                                            <div class="progress" style="width: 200px; height: 6px;">
+                                                <div class="progress-bar progress-bar-animated" id="available-progress-bar" 
+                                                     role="progressbar" style="width: 0%" aria-valuenow="0" 
+                                                     aria-valuemin="0" aria-valuemax="100"></div>
+                                            </div>
+                                            <small class="text-muted mt-1" id="available-progress-text">Starting...</small>
+                                        </div>
                                     </td>
                                 </tr>
                             </tbody>
@@ -413,8 +431,17 @@
                             </thead>
                             <tbody id="trades-tbody">
                                 <tr>
-                                    <td colspan="6" class="text-center py-3 text-muted">
-                                        <span class="icon icon-refresh me-2"></span>Loading recent trades...
+                                    <td colspan="6" class="text-center py-4 text-muted">
+                                        <div class="d-flex flex-column align-items-center">
+                                            <span class="icon icon-refresh me-2 mb-2"></span>
+                                            <span class="mb-2">Loading recent trades...</span>
+                                            <div class="progress" style="width: 200px; height: 6px;">
+                                                <div class="progress-bar progress-bar-animated" id="trades-progress-bar" 
+                                                     role="progressbar" style="width: 0%" aria-valuenow="0" 
+                                                     aria-valuemin="0" aria-valuemax="100"></div>
+                                            </div>
+                                            <small class="text-muted mt-1" id="trades-progress-text">Starting...</small>
+                                        </div>
                                     </td>
                                 </tr>
                             </tbody>
