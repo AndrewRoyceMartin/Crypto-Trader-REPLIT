@@ -43,12 +43,49 @@ class PortfolioService:
         # Reset failed symbols to allow retrying price fetches
         self._reset_failed_symbols_lists()
         
-        # Symbol mapping for OKX trading pairs (some symbols have different names)
+        # Enhanced symbol mapping for OKX trading pairs (some symbols have different names)
         self._symbol_mapping = {
-            'MATIC': 'POL',  # MATIC is now POL on many exchanges
-            'JASMY': None,   # Not available on OKX
-            'RNDR': 'RENDER', # RNDR might be listed as RENDER
+            # Existing mappings
+            'MATIC': 'POL',        # MATIC is now POL on many exchanges
+            'JASMY': None,         # Not available on OKX
+            'RNDR': 'RENDER',      # RNDR might be listed as RENDER
+            
+            # Enhanced mappings for commonly failing symbols
+            'INCH': '1INCH',       # 1inch Protocol -> 1INCH on OKX
+            'ALPHA': 'ALPHA',      # Alpha Finance Lab
+            'ARB': 'ARB',          # Arbitrum
+            'FLOKI': 'FLOKI',      # Floki Inu
+            'BAT': 'BAT',          # Basic Attention Token
+            'BCH': 'BCH',          # Bitcoin Cash
+            'XLM': 'XLM',          # Stellar Lumens
+            'AXS': 'AXS',          # Axie Infinity
+            'CHZ': 'CHZ',          # Chiliz
+            'GRT': 'GRT',          # The Graph
+            'COMP': 'COMP',        # Compound
+            'BAL': 'BAL',          # Balancer
+            'CRV': 'CRV',          # Curve DAO Token
+            'DYDX': 'DYDX',        # dYdX
+            'ICX': 'ICX',          # ICON
+            'IMX': 'IMX',          # Immutable X
+            'KNC': 'KNC',          # Kyber Network Crystal
+            'API3': 'API3',        # API3
+            'LDO': 'LDO',          # Lido DAO
+            'BNB': 'BNB',          # Binance Coin
+            'FET': 'FET',          # Fetch.ai
+            'INJ': 'INJ',          # Injective
+            'AVAX': 'AVAX',        # Avalanche
+            
+            # Add more mappings as needed
+            'UNI': 'UNI',          # Uniswap
+            'LINK': 'LINK',        # Chainlink
+            'AAVE': 'AAVE',        # Aave
+            'MKR': 'MKR',          # Maker
+            'YFI': 'YFI',          # yearn.finance
+            'SUSHI': 'SUSHI',      # SushiSwap
         }
+        
+        # Price status tracking for more specific error reporting
+        self._price_status = {}  # Store specific status for each symbol
 
         # Initialize OKX exchange with credentials
         import os
@@ -172,6 +209,56 @@ class PortfolioService:
         h = hashlib.md5(key.encode("utf-8")).hexdigest()
         return int(h[:8], 16) % 100
     
+    def get_price_status(self, symbol: str = None) -> Dict:
+        """
+        Get specific price status information for symbols.
+        
+        Args:
+            symbol: Specific symbol to check, or None for all symbols
+            
+        Returns:
+            Dict: Status information with specific error reasons
+        """
+        if symbol:
+            status = self._price_status.get(symbol, "UNKNOWN")
+            failed = symbol in self._failed_symbols
+            blocked = symbol in self._failed_symbols_cache
+            mapped = self._symbol_mapping.get(symbol, symbol)
+            
+            return {
+                "symbol": symbol,
+                "status": status,
+                "mapped_to": mapped,
+                "is_failed": failed,
+                "is_blocked": blocked,
+                "status_description": self._get_status_description(status)
+            }
+        else:
+            # Return all symbols with their status
+            all_status = {}
+            for sym in self._price_status:
+                all_status[sym] = {
+                    "status": self._price_status[sym],
+                    "mapped_to": self._symbol_mapping.get(sym, sym),
+                    "is_failed": sym in self._failed_symbols,
+                    "is_blocked": sym in self._failed_symbols_cache,
+                    "status_description": self._get_status_description(self._price_status[sym])
+                }
+            return all_status
+    
+    def _get_status_description(self, status: str) -> str:
+        """Get human-readable description for status codes."""
+        descriptions = {
+            "NOT_ON_OKX": "Symbol not available on OKX exchange",
+            "RATE_LIMITED": "Temporarily blocked due to rate limiting",
+            "FAILED_SYMBOL": "Symbol failed previous price lookups",
+            "NO_TRADING_PAIR": "No trading pair found for this symbol",
+            "NO_MARKET_SYMBOL": "Market symbol not available",
+            "API_ERROR": "API error occurred during price fetch",
+            "UNKNOWN": "Status unknown"
+        }
+        return descriptions.get(status, "Status unknown")
+
     def _get_okx_conversion_rate(self, from_currency: str, to_currency: str) -> float:
         """Get conversion rate from OKX trading pairs."""
         try:
@@ -698,7 +785,21 @@ class PortfolioService:
                 cache_put_price(cache_key, live_price)
                 return live_price
             else:
-                self.logger.warning(f"No valid price found for {symbol} (USD price: {usd_price})")
+                # More specific status messages instead of generic "NO PRICE DATA"
+                if symbol in self._symbol_mapping and self._symbol_mapping[symbol] is None:
+                    status_msg = "Not available on OKX"
+                    self._price_status[symbol] = "NOT_ON_OKX"
+                elif symbol in self._failed_symbols:
+                    status_msg = "Symbol failed previous lookups"
+                    self._price_status[symbol] = "FAILED_SYMBOL"
+                elif symbol in self._failed_symbols_cache:
+                    status_msg = "Temporarily blocked (rate limited)"
+                    self._price_status[symbol] = "RATE_LIMITED"
+                else:
+                    status_msg = "No trading pair found"
+                    self._price_status[symbol] = "NO_TRADING_PAIR"
+                
+                self.logger.warning(f"No valid price found for {symbol} - {status_msg} (USD price: {usd_price})")
                 return 0.0
                 
         except Exception as e:
@@ -706,11 +807,12 @@ class PortfolioService:
             # Skip error logging for known fiat currencies and stablecoins that don't have direct trading pairs
             known_non_tradeable = ['AUD', 'USD', 'EUR', 'GBP', 'USDT', 'USDC']
             
-            # Check for specific OKX error codes and handle appropriately
+            # Enhanced error handling with specific status tracking
             if '51001' in error_msg or "doesn't exist" in error_msg:
                 if symbol not in known_non_tradeable:
                     self.logger.warning(f"Symbol {symbol} not available on OKX, adding to failed symbols list")
                     self._failed_symbols.add(symbol)
+                    self._price_status[symbol] = "NOT_ON_OKX"
                     # Also add to temporary cache to prevent repeated attempts
                     import time
                     self._failed_symbols_cache[symbol] = time.time()
@@ -718,13 +820,14 @@ class PortfolioService:
                 # Rate limited - temporarily block this symbol to reduce pressure
                 import time
                 self._failed_symbols_cache[symbol] = time.time()
+                self._price_status[symbol] = "RATE_LIMITED"
                 self.logger.debug(f"Rate limited for {symbol}, temporarily blocking requests")
+            elif "does not have market symbol" in error_msg:
+                self._price_status[symbol] = "NO_MARKET_SYMBOL"
+                self.logger.debug(f"Market symbol not available for {symbol}: {e}")
             elif symbol not in known_non_tradeable:
-                # Reduce noise: missing market symbols are expected, not errors
-                if "does not have market symbol" in error_msg:
-                    self.logger.debug(f"Market symbol not available for {symbol}: {e}")
-                else:
-                    self.logger.error(f"Error fetching live OKX price for {symbol}: {e}")
+                self._price_status[symbol] = "API_ERROR"
+                self.logger.error(f"Error fetching live OKX price for {symbol}: {e}")
             return 0.0
     
     def _calculate_real_cost_basis(self, symbol: str, trade_history: List[Dict]) -> tuple[float, float]:
