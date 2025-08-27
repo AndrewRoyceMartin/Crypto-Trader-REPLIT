@@ -445,7 +445,7 @@
                                                     class="btn btn-sm btn-outline-primary mt-2">
                                                 Refresh Trades
                                             </button>
-                                            <button onclick="window.tradingApp?.testPopulateTradesTable?.(); console.log('DEBUG: Test populate triggered');" 
+                                            <button onclick="if(window.tradingApp && window.tradingApp.testPopulateTradesTable) { console.log('DEBUG: Test populate triggered'); window.tradingApp.testPopulateTradesTable(); } else { console.error('DEBUG: tradingApp not ready'); }" 
                                                     class="btn btn-sm btn-outline-success mt-2">
                                                 Test Load
                                             </button>
