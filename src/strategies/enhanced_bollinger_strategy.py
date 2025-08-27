@@ -213,16 +213,48 @@ class EnhancedBollingerBandsStrategy(BaseStrategy):
         return None
     
     def _check_normal_exits(self, px: float, current_low: float, bb_up: float, bb_lo: float) -> Optional[Signal]:
-        """Check for normal exit conditions."""
+        """Check for normal exit conditions with Bollinger Bands prioritization."""
         if self.position_state['position_qty'] <= 0.0:
             return None
         
         entry_price = self.position_state['entry_price']
         stop = entry_price * (1 - self.stop_loss_percent / 100)
-        take = entry_price * (1 + self.take_profit_percent / 100)
         
-        # Exit conditions: hit upper band, take profit, or stop loss
-        if px >= bb_up or px >= take or current_low <= stop:
+        # PRIORITY 1: Bollinger Bands Upper Band (Primary Exit Strategy)
+        # This is the algorithmic approach using dynamic market conditions
+        bollinger_exit = px >= bb_up
+        
+        # PRIORITY 2: Fixed percentage take profit (Secondary/Safety Net)
+        # Increased threshold to 6% (from 4%) to reduce reliance on fixed approach
+        safety_take_profit_percent = self.take_profit_percent * 1.5  # 4% * 1.5 = 6%
+        safety_take = entry_price * (1 + safety_take_profit_percent / 100)
+        fixed_percentage_exit = px >= safety_take
+        
+        # PRIORITY 3: Stop loss (Risk Management)
+        stop_loss_exit = current_low <= stop
+        
+        # Determine exit reason and confidence
+        exit_triggered = False
+        exit_reason = ""
+        confidence = 0.8
+        
+        if bollinger_exit:
+            exit_triggered = True
+            exit_reason = "BOLLINGER_UPPER_BAND"
+            confidence = 0.95  # High confidence for algorithmic exit
+            self.logger.info(f"🎯 PRIMARY EXIT: Bollinger Bands upper band hit at {px:.6f} (bb_up: {bb_up:.6f})")
+        elif stop_loss_exit:
+            exit_triggered = True
+            exit_reason = "STOP_LOSS"
+            confidence = 0.9  # High confidence for risk management
+            self.logger.warning(f"🛑 STOP LOSS: Risk management exit at {current_low:.6f} (stop: {stop:.6f})")
+        elif fixed_percentage_exit:
+            exit_triggered = True
+            exit_reason = "SAFETY_TAKE_PROFIT"
+            confidence = 0.7  # Lower confidence for fixed percentage fallback
+            self.logger.info(f"📈 SAFETY EXIT: Fixed percentage fallback at {px:.6f} (safety_take: {safety_take:.6f})")
+        
+        if exit_triggered:
             fill_price = px * (1 - 0.001)
             qty = self.position_state['position_qty']
             gross = qty * (fill_price - entry_price)
@@ -236,20 +268,23 @@ class EnhancedBollingerBandsStrategy(BaseStrategy):
                 action='sell',
                 price=fill_price,
                 size=qty,
-                confidence=0.8,
+                confidence=confidence,
                 stop_loss=None,
                 take_profit=None
             )
             
             signal.metadata = {
-                'event': 'NORMAL_EXIT',
+                'event': exit_reason,
                 'pnl': pnl,
                 'bb_up': bb_up,
                 'stop': stop,
-                'take': take
+                'safety_take': safety_take,
+                'original_take': entry_price * (1 + self.take_profit_percent / 100),
+                'bollinger_triggered': bollinger_exit,
+                'fixed_percentage_reduced': True
             }
             
-            self.logger.info(f"Normal exit: {signal.action} {qty:.6f} @ {fill_price:.2f}, PnL: {pnl:.2f}")
+            self.logger.info(f"Exit ({exit_reason}): {signal.action} {qty:.6f} @ {fill_price:.2f}, PnL: {pnl:.2f}")
             
             return signal
         
