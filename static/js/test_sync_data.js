@@ -1648,15 +1648,16 @@ class EnhancedTestRunner {
         const testResultsContainer = document.getElementById('test-results-container');
         
         // Show loading state
-        testResultsContainer.innerHTML = '<div class="text-center p-4"><i class="fas fa-spinner fa-spin fa-2x text-primary mb-3"></i><h5>Running Normal Tests (4 fast basic tests)...</h5></div>';
+        testResultsContainer.innerHTML = '<div class="text-center p-4"><i class="fas fa-spinner fa-spin fa-2x text-primary mb-3"></i><h5>Running Normal Tests (5 fast response tests)...</h5></div>';
         
         try {
-            // Run the 4 fast basic tests as "normal" testing
+            // Run fast response tests as "normal" testing
             const tests = [
                 { name: 'API Connectivity', func: 'testBasicAPIConnectivity' },
                 { name: 'Portfolio Data', func: 'testBasicPortfolioData' },
                 { name: 'Price Updates', func: 'testBasicPriceUpdates' },
-                { name: 'Button Functions', func: 'testBasicButtonFunctions' }
+                { name: 'Button Functions', func: 'testBasicButtonFunctions' },
+                { name: 'API Response Timing', func: 'testAPIResponseTiming' }
             ];
             
             const results = [];
@@ -1693,11 +1694,11 @@ class EnhancedTestRunner {
         const testResultsContainer = document.getElementById('test-results-container');
         
         // Reset UI
-        testResultsContainer.innerHTML = '<div class="text-center p-4"><i class="fas fa-spinner fa-spin fa-2x text-primary mb-3"></i><h5>Running Enhanced Tests (21+ comprehensive tests)...</h5></div>';
+        testResultsContainer.innerHTML = '<div class="text-center p-4"><i class="fas fa-spinner fa-spin fa-2x text-primary mb-3"></i><h5>Running Enhanced Tests (deep cycle & slower response tests)...</h5></div>';
         
         try {
-            // Run the comprehensive 21+ test system for enhanced testing
-            await this.runAllTests();
+            // Run deep cycle and slower tests for enhanced testing
+            await this.runDeepCycleTests();
             
         } catch (error) {
             console.error('❌ Enhanced test execution failed:', error);
@@ -1825,6 +1826,55 @@ class EnhancedTestRunner {
             
             rawDataDiv.innerHTML = `<pre style="white-space: pre-wrap; font-family: 'Courier New', monospace; font-size: 0.9em;">${logData}</pre>`;
         }
+    }
+    
+    async runDeepCycleTests() {
+        console.log('🔬 Starting deep cycle test execution...');
+        
+        // Initialize UI for deep cycle testing
+        this.initializeTestProgress();
+        
+        // Define deep cycle and slower tests
+        const deepCycleTests = [
+            'testHoldingsSyncEnhanced',
+            'testPriceFreshnessRealtime', 
+            'testRecalculationWorkflowAdvanced',
+            'testButtonWorkflowComprehensive'
+        ];
+        
+        const results = [];
+        let completedTests = 0;
+        
+        for (const testName of deepCycleTests) {
+            try {
+                this.updateTestProgress(testName, completedTests, deepCycleTests.length);
+                console.log(`🔬 Executing deep cycle test: ${testName}`);
+                
+                const result = await this.executeEnhancedTest(testName);
+                results.push(result);
+                completedTests++;
+                
+            } catch (error) {
+                console.error(`❌ Deep cycle test ${testName} failed:`, error);
+                results.push({
+                    testName,
+                    status: 'error',
+                    error: error.message,
+                    timestamp: Date.now()
+                });
+                completedTests++;
+            }
+        }
+        
+        // Display results using the enhanced display system
+        this.displayEnhancedResults(results, { 
+            testType: 'Deep Cycle Tests',
+            totalExecuted: completedTests,
+            startTime: Date.now()
+        });
+        
+        console.log('✅ Deep cycle test execution completed');
+        return results;
     }
     
     getCategoryIcon(category) {
