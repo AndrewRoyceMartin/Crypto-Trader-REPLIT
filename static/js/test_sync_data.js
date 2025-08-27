@@ -2113,12 +2113,17 @@ class EnhancedTestRunner {
             progressContainer.style.display = 'none';
         }, 2000);
         
-        // Display results using the enhanced display system
-        this.displayEnhancedResults(results, { 
-            testType: 'Deep Cycle Tests',
-            totalExecuted: completedTests,
-            startTime: startTime
+        // Convert results array to Map format for analysis
+        const resultsMap = new Map();
+        results.forEach((result, index) => {
+            resultsMap.set(result.testName || `Test ${index + 1}`, result);
         });
+        
+        // Analyze results to get summary data
+        const analyzedResults = await this.analyzeResults(resultsMap, startTime);
+        
+        // Display results using the enhanced display system
+        this.displayEnhancedResults(analyzedResults);
         
         console.log('✅ Deep cycle test execution completed');
         return results;
