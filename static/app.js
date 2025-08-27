@@ -4,16 +4,61 @@ import { DashboardManager } from './js/modules/dashboard-manager.js';
 import { ChartUpdater } from './js/modules/chart-updater.js';
 import { TradeManager } from './js/modules/trade-manager.js';
 
-// Global error handlers to prevent console errors
+// Global error handlers - Allow errors to be detected by tests but log them properly
+let recentErrors = [];
+const MAX_RECENT_ERRORS = 10;
+
 window.addEventListener('unhandledrejection', (event) => {
-    // Silently prevent unhandled promise rejections from appearing in console
-    event.preventDefault();
+    // Log for debugging and test detection
+    console.warn('Unhandled Promise Rejection:', event.reason);
+    
+    // Store for potential test access
+    recentErrors.push({
+        type: 'unhandledrejection',
+        message: event.reason?.toString() || 'Unknown promise rejection',
+        timestamp: Date.now()
+    });
+    
+    // Keep only recent errors
+    if (recentErrors.length > MAX_RECENT_ERRORS) {
+        recentErrors.shift();
+    }
+    
+    // Only prevent default for network-related promises to avoid spam
+    if (event.reason && typeof event.reason === 'string' && 
+        (event.reason.includes('Failed to fetch') || event.reason.includes('NetworkError'))) {
+        event.preventDefault();
+    }
 });
 
 window.addEventListener('error', (event) => {
-    // Silently handle script errors to prevent generic "Script error" messages
-    event.preventDefault();
+    // Log for debugging and test detection
+    console.error('JavaScript Error:', event.message, 'at', event.filename + ':' + event.lineno);
+    
+    // Store for potential test access
+    recentErrors.push({
+        type: 'javascript',
+        message: event.message,
+        filename: event.filename,
+        lineno: event.lineno,
+        timestamp: Date.now()
+    });
+    
+    // Keep only recent errors
+    if (recentErrors.length > MAX_RECENT_ERRORS) {
+        recentErrors.shift();
+    }
+    
+    // Don't prevent default - let errors be visible for testing
+    // Only silence generic "Script error" messages from external sources
+    if (event.message === 'Script error.' && event.filename === '') {
+        event.preventDefault();
+    }
 });
+
+// Make error data available globally for tests
+window.getRecentErrors = () => [...recentErrors];
+window.clearRecentErrors = () => { recentErrors.length = 0; };
 
 // Main Application Class - Lightweight coordinator with singleton pattern
 class ModularTradingApp {
@@ -123,6 +168,36 @@ class ModularTradingApp {
         } catch (error) {
             console.debug('Initial data load error:', error);
         }
+    }
+
+    // Add the missing method to prevent TypeError
+    initLegacyTableFunctions() {
+        // Maintain namespace compatibility with existing code
+        if (this.utils) {
+            window.Utils = this.utils;
+        }
+        
+        window.UI = {
+            toast: AppUtils.showToast,
+            setConn: () => {}, // No-op for compatibility
+            changeCurrency: (currency) => {
+                if (this.dashboard) {
+                    this.dashboard.selectedCurrency = currency;
+                    this.dashboard.updatePortfolioOverview();
+                }
+            }
+        };
+        
+        // Global legacy functions for backward compatibility
+        if (this.trades) {
+            window.executeTakeProfit = this.trades.executeTakeProfit?.bind(this.trades) || (() => {});
+            window.showBuyDialog = this.trades.showBuyDialog?.bind(this.trades) || (() => {});
+            window.showSellDialog = this.trades.showSellDialog?.bind(this.trades) || (() => {});
+        }
+        
+        // Make the app instance globally available
+        window.tradingApp = this;
+        console.log('Legacy table functions initialized');
     }
 
     async refreshHoldingsData() {

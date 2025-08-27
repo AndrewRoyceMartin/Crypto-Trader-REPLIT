@@ -1302,7 +1302,8 @@ async function testDetailsButtons() {
             available_positions_details: await testAvailablePositionsDetailsButtons(),
             details_modal_functionality: await testDetailsModalFunctionality(),
             confidence_api_endpoint: await testConfidenceAPIEndpoint(),
-            modal_buttons_functionality: await testModalButtonsFunctionality()
+            modal_buttons_functionality: await testModalButtonsFunctionality(),
+            crypto_logos_display: await testCryptoLogosDisplay()
         };
         
         // Determine overall status
@@ -1493,8 +1494,13 @@ async function testAvailablePositionsDetailsButtons() {
             total_data_rows: dataRows.length,
             details_buttons_found: detailsButtonsFound,
             working_buttons: workingButtons,
-            button_details: buttonDetails.slice(0, 5), // Limit details for readability
+            button_details: buttonDetails.slice(0, 8), // Show more for debugging
             has_show_confidence_details_function: typeof window.showConfidenceDetails === 'function',
+            function_check_results: {
+                global_window: typeof window.showConfidenceDetails === 'function',
+                trading_app: window.tradingApp && typeof window.tradingApp.showConfidenceDetails === 'function',
+                direct_check: typeof showConfidenceDetails !== 'undefined'
+            },
             test_timestamp: new Date().toISOString()
         };
         
@@ -2121,6 +2127,255 @@ function generateButtonTestSummary(tests) {
         errors: errorTests,
         success_rate: totalTests > 0 ? Math.round((passedTests / totalTests) * 100) : 0
     };
+}
+
+// Comprehensive JavaScript Error Detection Test
+async function testJavaScriptErrors() {
+    try {
+        const results = {
+            errors: [],
+            warnings: [],
+            function_tests: {},
+            error_tracking_available: false,
+            recent_errors: [],
+            total_checks: 0,
+            passed_checks: 0
+        };
+
+        // Clear any previous errors before testing
+        if (typeof window.clearRecentErrors === 'function') {
+            window.clearRecentErrors();
+            results.error_tracking_available = true;
+        }
+
+        // Check for JavaScript errors first
+        console.log('🔍 Checking for JavaScript errors...');
+        let hasJSErrors = false;
+
+        // Check recent errors from the new error tracking system
+        if (typeof window.getRecentErrors === 'function') {
+            const recentErrors = window.getRecentErrors();
+            results.recent_errors = recentErrors;
+            
+            if (recentErrors.length > 0) {
+                console.error('❌ Recent JavaScript errors detected:', recentErrors);
+                hasJSErrors = true;
+                recentErrors.forEach(error => {
+                    results.errors.push(`JS Error: ${error.message} ${error.filename ? `at ${error.filename}:${error.lineno}` : ''}`);
+                });
+            } else {
+                console.log('✅ No recent JavaScript errors detected');
+                results.passed_checks++;
+            }
+            results.total_checks++;
+        } else {
+            console.warn('⚠️ Error tracking system not available');
+            results.warnings.push('Error tracking system not available - cannot detect JavaScript errors');
+        }
+
+        // Check for specific functions
+        console.log('🔍 Checking function availability...');
+        const functionChecks = [
+            { name: 'showConfidenceDetails', exists: typeof window.showConfidenceDetails === 'function' },
+            { name: 'AppUtils.fetchJSON', exists: typeof AppUtils?.fetchJSON === 'function' },
+            { name: 'showBuyDialog', exists: typeof window.showBuyDialog === 'function' },
+            { name: 'showSellDialog', exists: typeof window.showSellDialog === 'function' },
+            { name: 'ModularTradingApp.initLegacyTableFunctions', exists: typeof ModularTradingApp === 'function' && 
+                                                                       ModularTradingApp.prototype.initLegacyTableFunctions !== undefined },
+            { name: 'window.getRecentErrors', exists: typeof window.getRecentErrors === 'function' },
+            { name: 'window.tradingApp', exists: typeof window.tradingApp === 'object' && window.tradingApp !== null },
+            { name: 'bootstrap.Modal', exists: typeof window.bootstrap?.Modal === 'function' },
+            { name: 'Chart', exists: typeof window.Chart === 'function' }
+        ];
+
+        functionChecks.forEach(check => {
+            results.total_checks++;
+            results.function_tests[check.name] = check.exists;
+            
+            if (!check.exists) {
+                console.error(`❌ Function missing: ${check.name}`);
+                results.errors.push(`Missing function: ${check.name}`);
+            } else {
+                console.log(`✅ Function available: ${check.name}`);
+                results.passed_checks++;
+            }
+        });
+
+        // Test core JavaScript functionality
+        try {
+            // Test basic array operations
+            const testArray = [1, 2, 3];
+            testArray.push(4);
+            if (testArray.length !== 4) throw new Error('Array operations not working');
+            results.passed_checks++;
+        } catch (e) {
+            results.errors.push('Core JavaScript array operations failing');
+        }
+        results.total_checks++;
+
+        // Test DOM functionality
+        try {
+            const testDiv = document.createElement('div');
+            testDiv.innerHTML = 'test';
+            if (testDiv.textContent !== 'test') throw new Error('DOM operations not working');
+            results.passed_checks++;
+        } catch (e) {
+            results.errors.push('DOM manipulation operations failing');
+        }
+        results.total_checks++;
+
+        // Test fetch API availability
+        try {
+            if (typeof fetch !== 'function') throw new Error('Fetch API not available');
+            results.passed_checks++;
+        } catch (e) {
+            results.errors.push('Fetch API not available');
+        }
+        results.total_checks++;
+
+        const successRate = results.total_checks > 0 ? Math.round((results.passed_checks / results.total_checks) * 100) : 0;
+        
+        return {
+            status: results.errors.length === 0 ? 'pass' : 'fail',
+            success_rate: successRate,
+            total_checks: results.total_checks,
+            passed_checks: results.passed_checks,
+            failed_checks: results.total_checks - results.passed_checks,
+            errors_found: results.errors.length,
+            warnings_found: results.warnings.length,
+            error_tracking_available: results.error_tracking_available,
+            recent_errors_count: results.recent_errors.length,
+            function_tests: results.function_tests,
+            details: {
+                errors: results.errors,
+                warnings: results.warnings,
+                recent_errors: results.recent_errors
+            },
+            test_timestamp: new Date().toISOString()
+        };
+
+    } catch (error) {
+        return {
+            status: 'error',
+            error: `JavaScript error test failed: ${error.message}`,
+            test_timestamp: new Date().toISOString()
+        };
+    }
+}
+
+// Test crypto logos display instead of generic coin icons
+async function testCryptoLogosDisplay() {
+    try {
+        // Wait for tables to load
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        let totalRows = 0;
+        let cryptoLogosFound = 0;
+        let genericIconsFound = 0;
+        let logoDetails = [];
+        
+        // Check Holdings table
+        const holdingsTable = document.querySelector('#holdings-table tbody');
+        if (holdingsTable) {
+            const holdingsRows = Array.from(holdingsTable.querySelectorAll('tr')).filter(row => {
+                return !row.textContent.includes('Loading') && 
+                       !row.textContent.includes('No holdings') &&
+                       row.cells.length > 3;
+            });
+            
+            holdingsRows.forEach((row, index) => {
+                totalRows++;
+                const firstCell = row.cells[0];
+                if (firstCell) {
+                    // Look for crypto logo images vs generic coin icons
+                    const cryptoImg = firstCell.querySelector('img[src*="coingecko.com"]');
+                    const genericIcon = firstCell.querySelector('i.fa-coins, i.fa-solid.fa-coins');
+                    
+                    if (cryptoImg) {
+                        cryptoLogosFound++;
+                        logoDetails.push({
+                            table: 'holdings',
+                            row_index: index,
+                            logo_type: 'crypto_image',
+                            src: cryptoImg.src.substr(0, 80),
+                            alt: cryptoImg.alt || 'N/A'
+                        });
+                    } else if (genericIcon) {
+                        genericIconsFound++;
+                        logoDetails.push({
+                            table: 'holdings',
+                            row_index: index,
+                            logo_type: 'generic_icon',
+                            classes: genericIcon.className,
+                            element: 'font_awesome'
+                        });
+                    }
+                }
+            });
+        }
+        
+        // Check Available Positions table  
+        const availableTable = document.querySelector('#available-table tbody');
+        if (availableTable) {
+            const availableRows = Array.from(availableTable.querySelectorAll('tr')).filter(row => {
+                return !row.textContent.includes('Loading') && 
+                       !row.textContent.includes('No positions') &&
+                       row.cells.length > 5;
+            });
+            
+            availableRows.forEach((row, index) => {
+                totalRows++;
+                const firstCell = row.cells[0];
+                if (firstCell) {
+                    // Look for crypto logo images vs generic coin icons
+                    const cryptoImg = firstCell.querySelector('img[src*="coingecko.com"]');
+                    const genericIcon = firstCell.querySelector('i.fa-coins, i.fa-solid.fa-coins');
+                    
+                    if (cryptoImg) {
+                        cryptoLogosFound++;
+                        logoDetails.push({
+                            table: 'available',
+                            row_index: index,
+                            logo_type: 'crypto_image',
+                            src: cryptoImg.src.substr(0, 80),
+                            alt: cryptoImg.alt || 'N/A'
+                        });
+                    } else if (genericIcon) {
+                        genericIconsFound++;
+                        logoDetails.push({
+                            table: 'available',
+                            row_index: index,
+                            logo_type: 'generic_icon',
+                            classes: genericIcon.className,
+                            element: 'font_awesome'
+                        });
+                    }
+                }
+            });
+        }
+        
+        // Determine pass/fail status
+        const logoPercentage = totalRows > 0 ? (cryptoLogosFound / totalRows) * 100 : 0;
+        const status = logoPercentage >= 80 ? 'pass' : logoPercentage >= 50 ? 'partial' : 'fail';
+        
+        return {
+            status: status,
+            total_rows_checked: totalRows,
+            crypto_logos_found: cryptoLogosFound,
+            generic_icons_found: genericIconsFound,
+            logo_percentage: logoPercentage.toFixed(1),
+            logo_details: logoDetails.slice(0, 10), // Limit for readability
+            recommendation: genericIconsFound > 0 ? 'Replace generic coin icons with authentic crypto logos' : 'Crypto logos correctly implemented',
+            test_timestamp: new Date().toISOString()
+        };
+        
+    } catch (error) {
+        return {
+            status: 'error',
+            error: `Crypto logos display test failed: ${error.message}`,
+            test_timestamp: new Date().toISOString()
+        };
+    }
 }
 
 // Also initialize tooltips when Bootstrap is ready
