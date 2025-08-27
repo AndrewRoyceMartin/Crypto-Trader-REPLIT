@@ -1522,6 +1522,11 @@ class EnhancedTestRunner {
         let detailsHTML = '<div class="accordion" id="testDetailsAccordion">';
         let accordionIndex = 0;
         
+        // Check if categoryResults exists before iterating
+        if (!results.categoryResults) {
+            return '<div class="alert alert-info">No detailed test results available</div>';
+        }
+        
         // Iterate through category results to show individual test details
         Object.entries(results.categoryResults).forEach(([category, categoryData]) => {
             detailsHTML += `
@@ -1623,7 +1628,8 @@ class EnhancedTestRunner {
         `;
         
         // Add comprehensive error and test logs
-        Object.entries(results.categoryResults).forEach(([category, categoryData]) => {
+        if (results.categoryResults) {
+            Object.entries(results.categoryResults).forEach(([category, categoryData]) => {
             formattedData += `\\n=== ${category.toUpperCase()} CATEGORY ===\\n`;
             formattedData += `Success Rate: ${categoryData.successRate}%\\n`;
             formattedData += `Execution Time: ${categoryData.executionTime}ms\\n`;
@@ -1643,7 +1649,8 @@ class EnhancedTestRunner {
                 });
             }
             formattedData += `\\n`;
-        });
+            });
+        }
         
         // Add any recommendations or issues
         if (results.recommendations && results.recommendations.length > 0) {
