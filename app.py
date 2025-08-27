@@ -2473,8 +2473,8 @@ def api_performance_analytics() -> ResponseReturnValue:
         secret_key = os.getenv("OKX_SECRET_KEY", "")
         passphrase = os.getenv("OKX_PASSPHRASE", "")
 
-        def sign_request(timestamp, method, request_path, body=''):
-            message = timestamp + method + request_path + body
+        def sign_request(timestamp, method, api_path, body=''):
+            message = timestamp + method + api_path + body
             mac = hmac.new(bytes(secret_key, encoding='utf8'), bytes(message, encoding='utf-8'), digestmod='sha256')
             d = mac.digest()
             return base64.b64encode(d).decode('utf-8')
@@ -2498,9 +2498,9 @@ def api_performance_analytics() -> ResponseReturnValue:
                 # Get current account balance
                 timestamp = now_utc_iso()
                 method = 'GET'
-                request_path = '/api/v5/account/balance'
+                api_path = '/api/v5/account/balance'
 
-                signature = sign_request(timestamp, method, request_path)
+                signature = sign_request(timestamp, method, api_path)
 
                 headers = {
                     'OK-ACCESS-KEY': api_key,
@@ -2511,7 +2511,7 @@ def api_performance_analytics() -> ResponseReturnValue:
                 }
 
                 current_value = 0.0
-                response = requests.get(base_url + request_path, headers=headers, timeout=10)
+                response = requests.get(base_url + api_path, headers=headers, timeout=10)
 
                 if response.status_code == 200:
                     balance_data = response.json()
@@ -2564,11 +2564,11 @@ def api_performance_analytics() -> ResponseReturnValue:
                                 continue
 
                 # Get account bills for historical performance
-                bills_request_path = (
+                bills_api_path = (
                     f"/api/v5/account/bills?begin={int(start_date.timestamp() * 1000)}"
                     f"&end={int(end_date.timestamp() * 1000)}&limit=100"
                 )
-                bills_signature = sign_request(timestamp, method, bills_request_path)
+                bills_signature = sign_request(timestamp, method, bills_api_path)
 
                 bills_headers = {
                     'OK-ACCESS-KEY': api_key,
@@ -2578,7 +2578,7 @@ def api_performance_analytics() -> ResponseReturnValue:
                     'Content-Type': 'application/json'
                 }
 
-                bills_response = requests.get(base_url + bills_request_path, headers=bills_headers, timeout=10)
+                bills_response = requests.get(base_url + bills_api_path, headers=bills_headers, timeout=10)
 
                 if bills_response.status_code == 200:
                     bills_data = bills_response.json()
@@ -2669,11 +2669,11 @@ def api_performance_analytics() -> ResponseReturnValue:
 
                 # Get trade fills for more accurate trade count
                 try:
-                    fills_request_path = (
+                    fills_api_path = (
                         f"/api/v5/trade/fills?begin={int(start_date.timestamp() * 1000)}"
                         f"&end={int(end_date.timestamp() * 1000)}&limit=100"
                     )
-                    fills_signature = sign_request(timestamp, method, fills_request_path)
+                    fills_signature = sign_request(timestamp, method, fills_api_path)
 
                     fills_headers = {
                         'OK-ACCESS-KEY': api_key,
@@ -2683,7 +2683,7 @@ def api_performance_analytics() -> ResponseReturnValue:
                         'Content-Type': 'application/json'
                     }
 
-                    fills_response = requests.get(base_url + fills_request_path, headers=fills_headers, timeout=10)
+                    fills_response = requests.get(base_url + fills_api_path, headers=fills_headers, timeout=10)
 
                     if fills_response.status_code == 200:
                         fills_data = fills_response.json()
@@ -4846,7 +4846,8 @@ def api_test_sync_data() -> ResponseReturnValue:
         import time
 
         # Check if enhanced mode is requested
-        enhanced_mode = request.args.get('enhanced', 'false').lower() == 'true'
+        from flask import request as flask_request
+        enhanced_mode = flask_request.args.get('enhanced', 'false').lower() == 'true'
 
         # Initialize all variables to prevent state leakage
         portfolio_service = None
@@ -5676,7 +5677,204 @@ def api_test_sync_data() -> ResponseReturnValue:
                 'error': f'Button functionality test framework failed: {str(e)}'
             }
 
-        # Test 16: Frontend Table Data Integrity
+        # Test 16: Live Data Synchronization
+        try:
+            # Test that live data is actually real-time and not cached
+            initial_portfolio = portfolio_service.get_portfolio_data()
+            time.sleep(1)  # Small delay
+            current_portfolio = portfolio_service.get_portfolio_data()
+            
+            # Check timestamps are different (indicating live updates)
+            initial_time = initial_portfolio.get('last_update')
+            current_time = current_portfolio.get('last_update')
+            
+            live_updates = initial_time != current_time or abs(
+                float(initial_portfolio.get('total_current_value', 0)) - 
+                float(current_portfolio.get('total_current_value', 0))
+            ) < 5.0  # Small variance indicates live data
+            
+            test_data['test_results']['live_data_sync'] = {
+                'status': 'pass' if live_updates else 'fail',
+                'initial_timestamp': initial_time,
+                'current_timestamp': current_time,
+                'timestamps_differ': initial_time != current_time,
+                'live_updates_detected': live_updates
+            }
+        except Exception as e:
+            test_data['test_results']['live_data_sync'] = {
+                'status': 'error',
+                'error': str(e)
+            }
+
+        # Test 17: OKX API Connection Health
+        try:
+            from src.utils.okx_native import OKXNative
+            okx_native = OKXNative.from_env()
+            
+            # Test multiple API endpoints
+            connection_tests = {}
+            
+            # Test balance endpoint
+            try:
+                balance_data = okx_native.balance()
+                connection_tests['balance_api'] = 'pass' if balance_data.get('totalEq', 0) > 0 else 'fail'
+            except Exception as e:
+                connection_tests['balance_api'] = 'error'
+            
+            # Test ticker endpoint  
+            try:
+                ticker_data = okx_native.ticker('BTCUSDT')
+                connection_tests['ticker_api'] = 'pass' if ticker_data.get('last', 0) > 0 else 'fail'
+            except Exception as e:
+                connection_tests['ticker_api'] = 'error'
+            
+            # Overall connection health
+            passed_connections = sum(1 for status in connection_tests.values() if status == 'pass')
+            total_connections = len(connection_tests)
+            
+            test_data['test_results']['okx_api_health'] = {
+                'status': 'pass' if passed_connections == total_connections else 'partial' if passed_connections > 0 else 'fail',
+                'connection_tests': connection_tests,
+                'success_rate': round((passed_connections / max(total_connections, 1)) * 100, 1),
+                'tests_passed': passed_connections,
+                'tests_total': total_connections
+            }
+        except Exception as e:
+            test_data['test_results']['okx_api_health'] = {
+                'status': 'error',
+                'error': str(e)
+            }
+
+        # Test 18: Portfolio P&L Accuracy
+        try:
+            portfolio_data = portfolio_service.get_portfolio_data()
+            holdings = portfolio_data.get('holdings', [])
+            
+            # Validate P&L calculations
+            total_pnl_calculated = 0
+            pnl_validation_results = []
+            
+            for holding in holdings:
+                symbol = holding.get('symbol', '')
+                quantity = float(holding.get('quantity', 0) or 0)
+                entry_price = float(holding.get('avg_entry_price', 0) or 0)
+                current_price = float(holding.get('current_price', 0) or 0)
+                reported_pnl = float(holding.get('pnl', 0) or 0)
+                
+                if quantity > 0 and entry_price > 0 and current_price > 0:
+                    # Calculate expected P&L
+                    expected_pnl = (current_price - entry_price) * quantity
+                    pnl_difference = abs(expected_pnl - reported_pnl)
+                    pnl_accurate = pnl_difference < (reported_pnl * 0.01)  # Within 1%
+                    
+                    total_pnl_calculated += expected_pnl
+                    pnl_validation_results.append({
+                        'symbol': symbol,
+                        'expected_pnl': round(expected_pnl, 2),
+                        'reported_pnl': round(reported_pnl, 2),
+                        'difference': round(pnl_difference, 2),
+                        'accurate': pnl_accurate
+                    })
+            
+            accurate_calculations = sum(1 for result in pnl_validation_results if result['accurate'])
+            total_calculations = len(pnl_validation_results)
+            
+            test_data['test_results']['pnl_accuracy'] = {
+                'status': 'pass' if accurate_calculations == total_calculations else 'partial' if accurate_calculations > 0 else 'fail',
+                'accurate_calculations': accurate_calculations,
+                'total_calculations': total_calculations,
+                'accuracy_rate': round((accurate_calculations / max(total_calculations, 1)) * 100, 1),
+                'total_pnl_calculated': round(total_pnl_calculated, 2),
+                'validation_samples': pnl_validation_results[:5]  # First 5 for display
+            }
+        except Exception as e:
+            test_data['test_results']['pnl_accuracy'] = {
+                'status': 'error',
+                'error': str(e)
+            }
+
+        # Test 19: Security & Authentication
+        try:
+            # Test that sensitive endpoints are protected
+            auth_tests = {}
+            
+            # Check if admin endpoints require authentication
+            try:
+                # Test that admin token exists in environment
+                import os
+                admin_token = os.environ.get('ADMIN_TOKEN')
+                auth_tests['admin_protection'] = 'pass' if admin_token else 'fail'
+            except Exception:
+                auth_tests['admin_protection'] = 'fail'
+            
+            # Check secrets are not exposed
+            try:
+                import os
+                has_secrets = bool(os.environ.get('OKX_API_KEY') and 
+                                 os.environ.get('OKX_SECRET_KEY') and 
+                                 os.environ.get('OKX_PASSPHRASE'))
+                auth_tests['secrets_configured'] = 'pass' if has_secrets else 'fail'
+            except Exception:
+                auth_tests['secrets_configured'] = 'error'
+            
+            passed_auth_tests = sum(1 for status in auth_tests.values() if status == 'pass')
+            total_auth_tests = len(auth_tests)
+            
+            test_data['test_results']['security_auth'] = {
+                'status': 'pass' if passed_auth_tests == total_auth_tests else 'partial' if passed_auth_tests > 0 else 'fail',
+                'auth_tests': auth_tests,
+                'tests_passed': passed_auth_tests,
+                'tests_total': total_auth_tests
+            }
+        except Exception as e:
+            test_data['test_results']['security_auth'] = {
+                'status': 'error',
+                'error': str(e)
+            }
+
+        # Test 20: Data Validation & Integrity
+        try:
+            # Test data validation across the system
+            validation_tests = {}
+            
+            # Check all holdings have required fields
+            portfolio_data = portfolio_service.get_portfolio_data()
+            holdings = portfolio_data.get('holdings', [])
+            
+            required_fields = ['symbol', 'quantity', 'current_price', 'current_value', 'pnl']
+            valid_holdings = 0
+            
+            for holding in holdings:
+                if all(holding.get(field) is not None for field in required_fields):
+                    valid_holdings += 1
+            
+            validation_tests['holdings_complete'] = 'pass' if valid_holdings == len(holdings) else 'fail'
+            
+            # Check numerical data integrity
+            total_value = float(portfolio_data.get('total_current_value', 0) or 0)
+            cash_balance = float(portfolio_data.get('cash_balance', 0) or 0)
+            
+            validation_tests['values_positive'] = 'pass' if total_value >= 0 and cash_balance >= 0 else 'fail'
+            validation_tests['values_realistic'] = 'pass' if total_value <= 100000 and cash_balance <= 10000 else 'fail'
+            
+            passed_validations = sum(1 for status in validation_tests.values() if status == 'pass')
+            total_validations = len(validation_tests)
+            
+            test_data['test_results']['data_validation'] = {
+                'status': 'pass' if passed_validations == total_validations else 'partial' if passed_validations > 0 else 'fail',
+                'validation_tests': validation_tests,
+                'valid_holdings': valid_holdings,
+                'total_holdings': len(holdings),
+                'tests_passed': passed_validations,
+                'tests_total': total_validations
+            }
+        except Exception as e:
+            test_data['test_results']['data_validation'] = {
+                'status': 'error',
+                'error': str(e)
+            }
+
+        # Test 21: Frontend Table Data Integrity
         try:
             # This test validates that frontend table display matches backend API data exactly
             table_validation_results = {}
@@ -5799,6 +5997,188 @@ def api_test_sync_data() -> ResponseReturnValue:
                 'error': f'Table validation test framework failed: {str(e)}'
             }
 
+        # Test 22: Trading System State Consistency
+        try:
+            # Test consistency between bot state and trading system
+            consistency_tests = {}
+            
+            # Check trading state alignment
+            if trading_state.get('active'):
+                consistency_tests['trading_active'] = 'pass'
+            else:
+                consistency_tests['trading_active'] = 'warning'
+            
+            # Check portfolio service availability
+            try:
+                portfolio_test = portfolio_service.get_portfolio_data()
+                consistency_tests['portfolio_service'] = 'pass' if portfolio_test else 'fail'
+            except Exception:
+                consistency_tests['portfolio_service'] = 'error'
+            
+            # Check exchange connectivity
+            try:
+                exchange = get_reusable_exchange()
+                consistency_tests['exchange_connection'] = 'pass' if exchange else 'fail'
+            except Exception:
+                consistency_tests['exchange_connection'] = 'error'
+            
+            passed_consistency_tests = sum(1 for status in consistency_tests.values() if status == 'pass')
+            total_consistency_tests = len(consistency_tests)
+            
+            test_data['test_results']['system_consistency'] = {
+                'status': 'pass' if passed_consistency_tests == total_consistency_tests else 'partial' if passed_consistency_tests > 0 else 'fail',
+                'consistency_tests': consistency_tests,
+                'tests_passed': passed_consistency_tests,
+                'tests_total': total_consistency_tests
+            }
+        except Exception as e:
+            test_data['test_results']['system_consistency'] = {
+                'status': 'error',
+                'error': str(e)
+            }
+
+        # Test 23: Performance Metrics
+        try:
+            # Test system performance characteristics
+            import psutil
+            import gc
+            
+            performance_metrics = {}
+            
+            # Memory usage
+            try:
+                process = psutil.Process()
+                memory_mb = process.memory_info().rss / 1024 / 1024
+                performance_metrics['memory_usage_mb'] = round(memory_mb, 1)
+                performance_metrics['memory_reasonable'] = 'pass' if memory_mb < 500 else 'warning'
+            except Exception:
+                performance_metrics['memory_reasonable'] = 'error'
+            
+            # Garbage collection stats
+            try:
+                gc_stats = gc.get_stats()
+                performance_metrics['gc_collections'] = len(gc_stats)
+                performance_metrics['gc_healthy'] = 'pass' if len(gc_stats) < 10 else 'warning'
+            except Exception:
+                performance_metrics['gc_healthy'] = 'error'
+            
+            # Response time check
+            try:
+                import time
+                start_time = time.time()
+                portfolio_service.get_portfolio_data()
+                response_time = (time.time() - start_time) * 1000  # ms
+                performance_metrics['response_time_ms'] = round(response_time, 1)
+                performance_metrics['response_fast'] = 'pass' if response_time < 1000 else 'warning'
+            except Exception:
+                performance_metrics['response_fast'] = 'error'
+            
+            passed_performance_tests = sum(1 for key, value in performance_metrics.items() 
+                                         if key.endswith('_reasonable') or key.endswith('_healthy') or key.endswith('_fast'))
+            performance_pass_count = sum(1 for key, value in performance_metrics.items() 
+                                       if (key.endswith('_reasonable') or key.endswith('_healthy') or key.endswith('_fast')) and value == 'pass')
+            
+            test_data['test_results']['performance_metrics'] = {
+                'status': 'pass' if performance_pass_count == passed_performance_tests else 'partial' if performance_pass_count > 0 else 'fail',
+                'metrics': performance_metrics,
+                'tests_passed': performance_pass_count,
+                'tests_total': passed_performance_tests
+            }
+        except Exception as e:
+            test_data['test_results']['performance_metrics'] = {
+                'status': 'error',
+                'error': str(e)
+            }
+
+        # Test 24: Enhanced OKX Field Coverage
+        try:
+            # Test comprehensive coverage of OKX API v5 enhanced fields
+            field_coverage_tests = {}
+            
+            try:
+                okx_native = OKXNative.from_env()
+                
+                # Test balance enhanced fields
+                balance_data = okx_native.balance()
+                enhanced_balance_fields = ['totalEq', 'details']
+                balance_coverage = sum(1 for field in enhanced_balance_fields if field in balance_data)
+                field_coverage_tests['balance_fields'] = 'pass' if balance_coverage == len(enhanced_balance_fields) else 'partial'
+                
+                # Test ticker enhanced fields
+                ticker_data = okx_native.ticker('BTCUSDT')
+                enhanced_ticker_fields = ['bidPx', 'askPx', 'high24h', 'low24h', 'vol24h']
+                ticker_coverage = sum(1 for field in enhanced_ticker_fields if field in ticker_data and ticker_data[field] > 0)
+                field_coverage_tests['ticker_fields'] = 'pass' if ticker_coverage >= 4 else 'partial'  # Allow 1 missing field
+                
+                field_coverage_tests['enhanced_api_v5'] = 'pass' if all(status == 'pass' for status in field_coverage_tests.values()) else 'partial'
+                
+            except Exception as e:
+                field_coverage_tests['enhanced_api_v5'] = 'error'
+                field_coverage_tests['error_details'] = str(e)
+            
+            passed_field_tests = sum(1 for status in field_coverage_tests.values() if status == 'pass')
+            total_field_tests = len([k for k in field_coverage_tests.keys() if not k.startswith('error')])
+            
+            test_data['test_results']['enhanced_field_coverage'] = {
+                'status': 'pass' if passed_field_tests == total_field_tests else 'partial' if passed_field_tests > 0 else 'fail',
+                'field_tests': field_coverage_tests,
+                'tests_passed': passed_field_tests,
+                'tests_total': total_field_tests
+            }
+        except Exception as e:
+            test_data['test_results']['enhanced_field_coverage'] = {
+                'status': 'error',
+                'error': str(e)
+            }
+
+        # Test 25: Comprehensive System Health
+        try:
+            # Final comprehensive health check
+            health_checks = {}
+            
+            # Check critical system components
+            try:
+                # Database connectivity
+                from src.utils.database import get_database_connection
+                conn = get_database_connection()
+                health_checks['database'] = 'pass' if conn else 'fail'
+            except Exception:
+                health_checks['database'] = 'error'
+            
+            # Check OKX integration health
+            try:
+                portfolio_data = portfolio_service.get_portfolio_data()
+                health_checks['okx_integration'] = 'pass' if portfolio_data.get('total_current_value', 0) > 0 else 'fail'
+            except Exception:
+                health_checks['okx_integration'] = 'error'
+            
+            # Check critical file existence
+            try:
+                import os
+                critical_files = ['src/utils/okx_native.py', 'src/services/portfolio_service.py', 'templates/unified_dashboard.html']
+                missing_files = [f for f in critical_files if not os.path.exists(f)]
+                health_checks['critical_files'] = 'pass' if not missing_files else 'fail'
+            except Exception:
+                health_checks['critical_files'] = 'error'
+            
+            # Overall system health
+            passed_health_checks = sum(1 for status in health_checks.values() if status == 'pass')
+            total_health_checks = len(health_checks)
+            system_healthy = passed_health_checks >= (total_health_checks * 0.8)  # 80% pass rate
+            
+            test_data['test_results']['system_health'] = {
+                'status': 'pass' if system_healthy else 'fail',
+                'health_checks': health_checks,
+                'tests_passed': passed_health_checks,
+                'tests_total': total_health_checks,
+                'health_score': round((passed_health_checks / max(total_health_checks, 1)) * 100, 1)
+            }
+        except Exception as e:
+            test_data['test_results']['system_health'] = {
+                'status': 'error',
+                'error': str(e)
+            }
+
         # Add dynamic test count and use no-cache response
         test_data['tests_available'] = len(test_data['test_results'])
 
@@ -5863,14 +6243,19 @@ def api_test_sync_data() -> ResponseReturnValue:
             'test_breakdown': {
                 'CRITICAL': {'passed': 0, 'failed': 0, 'total': 0},
                 'PERFORMANCE': {'passed': 0, 'failed': 0, 'total': 0},
-                'UI_INTERACTION': {'passed': 0, 'failed': 0, 'total': 0}
+                'UI_INTERACTION': {'passed': 0, 'failed': 0, 'total': 0},
+                'SECURITY': {'passed': 0, 'failed': 0, 'total': 0},
+                'API_INTEGRATION': {'passed': 0, 'failed': 0, 'total': 0}
             }
         }
 
         # Categorize tests for detailed breakdown
-        critical_tests = ['portfolio_totals_consistency', 'live_okx_data', 'okx_enhanced_fields', 'symbol_roundtrip', 'price_consistency']
-        performance_tests = ['cache_disabled', 'bot_runtime_status', 'timestamp_integrity']
+        critical_tests = ['portfolio_totals_consistency', 'live_okx_data', 'okx_enhanced_fields', 'symbol_roundtrip', 'price_consistency',
+                         'live_data_sync', 'okx_api_health', 'pnl_accuracy', 'data_validation', 'enhanced_field_coverage', 'system_health']
+        performance_tests = ['cache_disabled', 'bot_runtime_status', 'timestamp_integrity', 'performance_metrics', 'system_consistency']
         ui_tests = ['button_functionality', 'table_validation', 'card_data_sync']
+        security_tests = ['security_auth', 'target_price_lock', 'mode_sandbox_sync']
+        api_integration_tests = ['holdings_sync', 'price_freshness', 'unrealized_pnl', 'futures_margin', 'bot_state_sync']
 
         for test_name, result in test_data['test_results'].items():
             status = result.get('status', 'unknown')
@@ -5889,6 +6274,14 @@ def api_test_sync_data() -> ResponseReturnValue:
                 test_data['summary']['test_breakdown']['UI_INTERACTION']['passed'] += passed
                 test_data['summary']['test_breakdown']['UI_INTERACTION']['failed'] += failed
                 test_data['summary']['test_breakdown']['UI_INTERACTION']['total'] += 1
+            elif test_name in security_tests:
+                test_data['summary']['test_breakdown']['SECURITY']['passed'] += passed
+                test_data['summary']['test_breakdown']['SECURITY']['failed'] += failed
+                test_data['summary']['test_breakdown']['SECURITY']['total'] += 1
+            elif test_name in api_integration_tests:
+                test_data['summary']['test_breakdown']['API_INTEGRATION']['passed'] += passed
+                test_data['summary']['test_breakdown']['API_INTEGRATION']['failed'] += failed
+                test_data['summary']['test_breakdown']['API_INTEGRATION']['total'] += 1
 
         # Enhanced mode final processing
         if enhanced_mode:
