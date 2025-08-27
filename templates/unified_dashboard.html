@@ -441,6 +441,10 @@
                                                      aria-valuemin="0" aria-valuemax="100"></div>
                                             </div>
                                             <small class="text-muted mt-1" id="trades-progress-text">Starting...</small>
+                                            <button onclick="window.tradingApp?.updateRecentTrades?.(); console.log('DEBUG: Manual trade refresh triggered');" 
+                                                    class="btn btn-sm btn-outline-primary mt-2">
+                                                Refresh Trades
+                                            </button>
                                         </div>
                                     </td>
                                 </tr>

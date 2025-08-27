@@ -1972,6 +1972,8 @@ class TradingApp {
     
     async updateRecentTrades() {
         try {
+            console.log('DEBUG: updateRecentTrades called in app_legacy.js');
+            
             // Show progress
             if (window.TableProgressManager) {
                 window.TableProgressManager.showLoading('trades', 'Fetching trade history...');
@@ -1979,8 +1981,11 @@ class TradingApp {
             }
             
             const timeframe = document.getElementById('trades-timeframe')?.value || '7d';
+            console.log('DEBUG: Fetching trades with timeframe:', timeframe);
+            
             // Use the working trade-history endpoint directly 
             const response = await fetch(`/api/trade-history?timeframe=${timeframe}&limit=20`, { cache: 'no-cache' });
+            console.log('DEBUG: Trade-history response status:', response.status, response.ok);
             if (!response.ok) return;
             
             if (window.TableProgressManager) {
@@ -1988,13 +1993,19 @@ class TradingApp {
             }
             
             const data = await response.json();
+            console.log('DEBUG: Trade-history response data:', data);
+            console.log('DEBUG: Trades count:', data.trades?.length);
             
-            if (!data.success || !data.trades) return;
+            if (!data.success || !data.trades) {
+                console.log('DEBUG: No trades data or unsuccessful response');
+                return;
+            }
             
             if (window.TableProgressManager) {
                 window.TableProgressManager.showProgress('trades', 90, 'Updating table...');
             }
             
+            console.log('DEBUG: About to call updateTradesTable with', data.trades.length, 'trades');
             // Update trades table
             this.updateTradesTable(data.trades, data.summary);
             
@@ -2011,7 +2022,7 @@ class TradingApp {
             }
             
         } catch (error) {
-            console.debug('Recent trades update failed:', error);
+            console.error('DEBUG: Recent trades update failed:', error);
         }
     }
     
