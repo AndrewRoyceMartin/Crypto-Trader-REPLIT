@@ -17,7 +17,7 @@ import warnings
 import gc
 from datetime import datetime, timedelta, timezone
 from collections import OrderedDict
-from typing import Any, Optional, Iterator, TypedDict, List, Dict, Tuple
+from typing import Any, Optional, Iterator, TypedDict
 from functools import wraps
 
 from flask import Flask, jsonify, request, render_template, make_response, Response
@@ -336,7 +336,7 @@ def with_throttle(fn, *a, **kw) -> Any:
     except (ConnectionError, TimeoutError) as e:
         logger.warning(f"Network error in throttled call: {e}")
         raise
-    except Exception as e:
+    except requests.exceptions.HTTPError as e:
         # Check for rate limiting and backoff
         if hasattr(e, 'response') and hasattr(e.response, 'json'):
             try:
@@ -347,6 +347,8 @@ def with_throttle(fn, *a, **kw) -> Any:
                     raise RuntimeError("Rate limited - please retry")
             except (ValueError, KeyError, AttributeError):
                 pass
+        raise e
+    except Exception as e:
         raise e
     finally:
         _ext_sem.release()
@@ -758,7 +760,7 @@ app = Flask(__name__)
 # Register the real OKX endpoint directly without circular import
 
 
-def _no_cache_json(payload: dict, code: int = 200) -> tuple[Response, int]:
+def _no_cache_json(payload: dict, code: int = 200) -> Response:
     resp = make_response(jsonify(payload), code)
     resp.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0, private"
     resp.headers["Pragma"] = "no-cache"
