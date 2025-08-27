@@ -1970,6 +1970,36 @@ class TradingApp {
         }
     }
     
+    // Test function to directly populate table with known data
+    testPopulateTradesTable() {
+        console.log('DEBUG: Manual test populate trades table');
+        const sampleTrades = [
+            {
+                action: "BUY",
+                side: "BUY", 
+                symbol: "BTC/USDT",
+                timestamp: "2025-08-27T06:05:20Z",
+                quantity: 0.00001,
+                price: 111280.7,
+                pnl: 0,
+                type: "Trade"
+            },
+            {
+                action: "SELL",
+                side: "SELL",
+                symbol: "ETH/USDT", 
+                timestamp: "2025-08-27T05:21:05Z",
+                quantity: 0.001,
+                price: 4500,
+                pnl: -5.2,
+                type: "Trade"
+            }
+        ];
+        
+        console.log('DEBUG: About to call updateTradesTable with test data:', sampleTrades);
+        this.updateTradesTable(sampleTrades, {});
+    }
+
     async updateRecentTrades() {
         try {
             console.log('DEBUG: updateRecentTrades called in app_legacy.js');
