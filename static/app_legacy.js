@@ -795,7 +795,8 @@ class TradingApp {
         // Current holdings
         this.updateCurrentHoldings();
         
-        // Recent trades
+        // Recent trades - force call with additional logging
+        console.log('DEBUG: About to call updateRecentTrades from updateDashboard');
         this.updateRecentTrades();
         
         // Performance analytics
