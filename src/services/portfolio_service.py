@@ -341,32 +341,32 @@ class PortfolioService:
                 if quantity <= 0 or symbol in ['AUD', 'USD', 'EUR', 'GBP']:
                     continue
                 
-                # Get OKX's native values
-                okx_usd_value = float(detail.get('eqUsd', 0) or 0)  # Real OKX USD value
+                # Get OKX's native values - EXACTLY as provided by OKX
+                okx_estimated_total_value = float(detail.get('eqUsd', 0) or 0)  # OKX Estimated Total Value
                 okx_entry_price = float(detail.get('openAvgPx', 0) or 0)  # Real OKX cost price
                 okx_pnl = float(detail.get('spotUpl', 0) or 0)  # Real OKX unrealized P&L
                 okx_pnl_ratio = float(detail.get('spotUplRatio', 0) or 0) * 100  # Convert to percentage
                 
-                # Calculate current price from OKX data
-                current_price = okx_usd_value / quantity if quantity > 0 else 0.0
+                # Calculate current price from OKX Estimated Total Value
+                current_price = okx_estimated_total_value / quantity if quantity > 0 else 0.0
                 
                 # Calculate cost basis from OKX entry price
                 cost_basis = quantity * okx_entry_price if okx_entry_price > 0 else 0.0
                 
-                if okx_usd_value > 0:
-                    self.logger.info(f"OKX REAL DATA: {symbol} qty={quantity:.4f}, "
+                if okx_estimated_total_value > 0:
+                    self.logger.info(f"OKX ESTIMATED VALUE: {symbol} qty={quantity:.4f}, "
                                    f"entry=${okx_entry_price:.4f}, current=${current_price:.4f}, "
-                                   f"value=${okx_usd_value:.2f}, pnl=${okx_pnl:.2f} ({okx_pnl_ratio:.2f}%)")
+                                   f"OKX_eqUsd=${okx_estimated_total_value:.2f}, pnl=${okx_pnl:.2f} ({okx_pnl_ratio:.2f}%)")
                     
                     position = {
                         'symbol': symbol,
                         'name': symbol,
                         'quantity': float(quantity),
-                        'current_price': float(current_price),  # Calculated from OKX USD value
+                        'current_price': float(current_price),  # Calculated from OKX Estimated Total Value
                         'avg_entry_price': float(okx_entry_price),  # REAL OKX Cost price
                         'cost_basis': float(cost_basis),
-                        'current_value': float(okx_usd_value),  # REAL OKX USD value
-                        'value': float(okx_usd_value),
+                        'current_value': float(okx_estimated_total_value),  # EXACT OKX Estimated Total Value (eqUsd)
+                        'value': float(okx_estimated_total_value),  # EXACT OKX Estimated Total Value (eqUsd)
                         'has_position': True,
                         'is_live': True,
                         'allocation_percent': 0.0,  # Will calculate later
@@ -378,7 +378,7 @@ class PortfolioService:
                     }
                     
                     holdings.append(position)
-                    total_value += okx_usd_value
+                    total_value += okx_estimated_total_value
                     total_pnl += okx_pnl
             
             # Handle USDT cash balance separately (no entry price/P&L for cash)
