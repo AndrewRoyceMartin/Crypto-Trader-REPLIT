@@ -5928,64 +5928,84 @@ function createAvailablePositionRow(position) {
     signalCell.textContent = buySignal;
     row.appendChild(signalCell);
     
-    // Buy Criteria Cell - Shows distance to actual buy trigger
-    const bbAnalysis = position.bollinger_analysis || { signal: "NO DATA", distance_percent: 0, lower_band_price: 0 };
-    const bbSignal = bbAnalysis.signal || "NO DATA";
-    const bbDistance = parseFloat(bbAnalysis.distance_percent) || 0;
-    const lowerBandPrice = parseFloat(bbAnalysis.lower_band_price) || 0;
+    // Buy Criteria Cell - Shows actual purchase criteria for trading bot
     const hasPosition = position.position_type === 'current_holding';
+    const currentPrice = parseFloat(position.current_price || 0);
+    const targetBuyPrice = parseFloat(position.target_buy_price || 0);
+    const priceDropPercent = parseFloat(position.price_drop_from_exit || 0);
     
-    const getBuyCriteriaClass = (signal, hasPosition) => {
-        if (hasPosition) return "text-info"; // Already owned
-        if (signal === "BUY ZONE") return "text-success fw-bold";
-        if (signal === "VERY CLOSE") return "text-warning fw-bold";
-        if (signal === "APPROACHING") return "text-warning";
-        if (signal === "MODERATE") return "text-muted";
-        if (signal === "FAR") return "text-secondary";
-        return "text-muted";
-    };
-    
-    const getBuyCriteriaText = (signal, distance, hasPosition) => {
-        if (hasPosition) return "OWNED";
-        
-        switch(signal) {
-            case "BUY ZONE": return "BUY NOW";
-            case "VERY CLOSE": return `${distance.toFixed(1)}% away`;
-            case "APPROACHING": return `${distance.toFixed(1)}% away`;
-            case "MODERATE": return `${distance.toFixed(1)}% away`;
-            case "FAR": return `${distance.toFixed(1)}% away`;
-            default: return "NO DATA";
+    // Calculate actual buy criteria based on available data
+    const getBuyCriteriaStatus = () => {
+        if (hasPosition) {
+            return { status: "OWNED", class: "text-info", distance: 0 };
         }
+        
+        // If we have target buy price, use that for criteria
+        if (targetBuyPrice > 0 && currentPrice > 0) {
+            const distancePercent = ((currentPrice - targetBuyPrice) / targetBuyPrice) * 100;
+            
+            if (currentPrice <= targetBuyPrice) {
+                return { status: "BUY NOW", class: "text-success fw-bold", distance: 0 };
+            } else if (distancePercent <= 2) {
+                return { status: `${distancePercent.toFixed(1)}% away`, class: "text-warning fw-bold", distance: distancePercent };
+            } else if (distancePercent <= 5) {
+                return { status: `${distancePercent.toFixed(1)}% away`, class: "text-warning", distance: distancePercent };
+            } else if (distancePercent <= 15) {
+                return { status: `${distancePercent.toFixed(1)}% away`, class: "text-muted", distance: distancePercent };
+            } else {
+                return { status: `${distancePercent.toFixed(1)}% away`, class: "text-secondary", distance: distancePercent };
+            }
+        }
+        
+        // Fallback to Bollinger Band data if available
+        const bbAnalysis = position.bollinger_analysis || {};
+        const bbSignal = bbAnalysis.signal || "NO DATA";
+        const bbDistance = parseFloat(bbAnalysis.distance_percent) || 0;
+        
+        if (bbSignal === "BUY ZONE") {
+            return { status: "BUY NOW", class: "text-success fw-bold", distance: 0 };
+        } else if (bbSignal === "VERY CLOSE") {
+            return { status: `${bbDistance.toFixed(1)}% away`, class: "text-warning fw-bold", distance: bbDistance };
+        } else if (bbSignal === "APPROACHING") {
+            return { status: `${bbDistance.toFixed(1)}% away`, class: "text-warning", distance: bbDistance };
+        } else if (bbSignal !== "NO DATA" && bbDistance > 0) {
+            return { status: `${bbDistance.toFixed(1)}% away`, class: "text-muted", distance: bbDistance };
+        }
+        
+        return { status: "NO DATA", class: "text-muted", distance: 0 };
     };
     
-    // Create tooltip text based on signal and ownership
-    const getBuyCriteriaTooltip = (signal, distance, lowerBand, hasPosition) => {
-        const baseExplanation = "Buy Criteria: Bot purchases when price hits lower Bollinger Band (50-period, 2.0 std dev). ";
+    const criteria = getBuyCriteriaStatus();
+    
+    const getBuyCriteriaTooltip = () => {
+        const baseExplanation = "Buy Criteria: Bot purchases when price hits target buy price or lower Bollinger Band trigger. ";
         
         if (hasPosition) {
             return baseExplanation + "✅ Already owned - Bot won't buy more of existing positions.";
         }
         
-        switch(signal) {
-            case "BUY ZONE":
-                return baseExplanation + `🎯 BUY TRIGGER ACTIVE! Price is at/below lower band (${formatCurrency(lowerBand)}). Bot will execute purchase immediately.`;
-            case "VERY CLOSE":
-                return baseExplanation + `⚠️ Very close to buy trigger! Only ${distance.toFixed(1)}% above target price (${formatCurrency(lowerBand)}). Minor drop needed.`;
-            case "APPROACHING":
-                return baseExplanation + `📈 Approaching buy zone. ${distance.toFixed(1)}% above trigger price (${formatCurrency(lowerBand)}). Getting closer.`;
-            case "MODERATE":
-                return baseExplanation + `📊 Moderate distance. ${distance.toFixed(1)}% above trigger price (${formatCurrency(lowerBand)}). Significant drop needed.`;
-            case "FAR":
-                return baseExplanation + `📉 Far from trigger. ${distance.toFixed(1)}% above trigger price (${formatCurrency(lowerBand)}). Major drop required.`;
-            default:
-                return baseExplanation + "Need 50+ daily candles to calculate buy trigger price.";
+        if (targetBuyPrice > 0) {
+            if (criteria.status === "BUY NOW") {
+                return baseExplanation + `🎯 BUY TRIGGER ACTIVE! Price (${formatCurrency(currentPrice)}) is at/below target (${formatCurrency(targetBuyPrice)}). Bot will execute purchase.`;
+            } else {
+                return baseExplanation + `📊 Price needs to drop ${criteria.distance.toFixed(1)}% to hit target buy price of ${formatCurrency(targetBuyPrice)}.`;
+            }
         }
+        
+        const bbAnalysis = position.bollinger_analysis || {};
+        const lowerBandPrice = parseFloat(bbAnalysis.lower_band_price) || 0;
+        
+        if (lowerBandPrice > 0) {
+            return baseExplanation + `Using Bollinger Band trigger: ${formatCurrency(lowerBandPrice)}. Price needs to drop ${criteria.distance.toFixed(1)}% to trigger purchase.`;
+        }
+        
+        return baseExplanation + "No sufficient data to calculate buy trigger price.";
     };
     
     const buyCell = document.createElement('td');
-    buyCell.className = `text-center ${getBuyCriteriaClass(bbSignal, hasPosition)}`;
+    buyCell.className = `text-center ${criteria.class}`;
     buyCell.style.cursor = 'help';
-    buyCell.title = getBuyCriteriaTooltip(bbSignal, bbDistance, lowerBandPrice, hasPosition);
+    buyCell.title = getBuyCriteriaTooltip();
     
     const buyDiv = document.createElement('div');
     buyDiv.className = 'd-flex flex-column align-items-center';
@@ -5993,15 +6013,16 @@ function createAvailablePositionRow(position) {
     // Main criteria text
     const criteriaSpan = document.createElement('span');
     criteriaSpan.className = 'fw-bold';
-    criteriaSpan.textContent = getBuyCriteriaText(bbSignal, bbDistance, hasPosition);
+    criteriaSpan.textContent = criteria.status;
     buyDiv.appendChild(criteriaSpan);
     
     // Additional info for available positions
-    if (!hasPosition && bbDistance > 0 && bbSignal !== "NO DATA") {
+    if (!hasPosition && (targetBuyPrice > 0 || (position.bollinger_analysis && position.bollinger_analysis.lower_band_price > 0))) {
         const priceSmall = document.createElement('small');
         priceSmall.className = 'text-muted';
-        priceSmall.textContent = `Target: ${formatCurrency(lowerBandPrice)}`;
-        priceSmall.title = `Bot will buy when price drops to ${formatCurrency(lowerBandPrice)}`;
+        const targetPrice = targetBuyPrice > 0 ? targetBuyPrice : parseFloat(position.bollinger_analysis.lower_band_price);
+        priceSmall.textContent = `Target: ${formatCurrency(targetPrice)}`;
+        priceSmall.title = `Bot will buy when price drops to ${formatCurrency(targetPrice)}`;
         buyDiv.appendChild(priceSmall);
     }
     
