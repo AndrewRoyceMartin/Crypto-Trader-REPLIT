@@ -321,11 +321,11 @@ class ModularTradingApp {
         
         // Enhanced Bollinger Bands strategy profit target calculation
         // PRIORITY 1: Try to get Bollinger Bands upper band target (if available)
-        // PRIORITY 2: Use strategy's 4% take profit (primary setting)
-        // PRIORITY 3: Fall back to 6% safety net only if needed
-        let targetMultiplier = 1.04; // Enhanced Bollinger Bands primary target: 4%
-        let targetProfitPercent = 4.0;
-        let targetMethod = "Strategy 4%";
+        // PRIORITY 2: Use strategy's 8% take profit (primary setting - matches management zone)
+        // PRIORITY 3: Fall back to 10% safety net only if needed
+        let targetMultiplier = 1.08; // Enhanced Bollinger Bands primary target: 8%
+        let targetProfitPercent = 8.0;
+        let targetMethod = "Strategy 8%";
         
         // Check if we have Bollinger Bands data for dynamic target
         if (holding.bollinger_upper_band && avgEntryPrice > 0) {
@@ -339,9 +339,9 @@ class ModularTradingApp {
         
         // Apply safety net only if strategy targets fail
         if (targetMultiplier < 1.01) {
-            targetMultiplier = 1.06; // 6% safety fallback
-            targetProfitPercent = 6.0;
-            targetMethod = "Safety Net 6%";
+            targetMultiplier = 1.10; // 10% safety fallback
+            targetProfitPercent = 10.0;
+            targetMethod = "Safety Net 10%";
         }
         
         const targetValue = (holding.current_value || 0) * targetMultiplier;
