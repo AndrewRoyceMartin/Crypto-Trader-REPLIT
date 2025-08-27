@@ -671,11 +671,7 @@ async function showConfidenceDetails(symbol) {
                 const positionsResponse = await fetch(`/api/available-positions`, { cache: 'no-cache' });
                 if (positionsResponse.ok) {
                     const positionsData = await positionsResponse.json();
-                    console.log(`Available positions response for ${symbol}:`, positionsData.data?.length, 'positions');
-                    console.log(`Available symbols:`, positionsData.data?.map(p => p.symbol));
-                    
                     const position = positionsData.data?.find(p => p.symbol === symbol);
-                    console.log(`Found position for ${symbol}:`, position);
                     
                     if (position) {
                         // Update the market data in the already-shown modal
@@ -688,15 +684,13 @@ async function showConfidenceDetails(symbol) {
                         if (opportunityEl) opportunityEl.textContent = parseFloat(position.price_diff_percent || 0).toFixed(2) + '%';
                     } else {
                         // Try to find price data from portfolio API as fallback
-                        console.log(`${symbol} not found in available positions, trying portfolio API...`);
                         try {
                             const portfolioResponse = await fetch(`/api/crypto-portfolio?currency=USD`, { cache: 'no-cache' });
                             if (portfolioResponse.ok) {
                                 const portfolioData = await portfolioResponse.json();
-                                const portfolioPosition = portfolioData.positions?.find(p => p.symbol === symbol);
+                                const portfolioPosition = portfolioData.holdings?.find(p => p.symbol === symbol);
                                 
                                 if (portfolioPosition) {
-                                    console.log(`Found ${symbol} in portfolio:`, portfolioPosition);
                                     const currentPriceEl = document.getElementById(`current-price-${symbol}`);
                                     const targetPriceEl = document.getElementById(`target-price-${symbol}`);
                                     const opportunityEl = document.getElementById(`opportunity-${symbol}`);
@@ -716,7 +710,7 @@ async function showConfidenceDetails(symbol) {
                                 }
                             }
                         } catch (portfolioError) {
-                            console.error('Portfolio API fallback failed:', portfolioError);
+                            // Portfolio API fallback failed
                         }
                     }
                 }
