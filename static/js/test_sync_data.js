@@ -1771,9 +1771,10 @@ class EnhancedTestRunner {
         const totalTests = results.length;
         const successRate = Math.round((passedTests / totalTests) * 100);
         
+        // Create summary header
         let html = `
             <div class="alert alert-info mb-4">
-                <h5><i class="fas fa-check-circle me-2"></i>Basic Test Results</h5>
+                <h5><i class="fas fa-check-circle me-2"></i>Normal Test Results</h5>
                 <div class="row mt-3">
                     <div class="col-md-4">
                         <div class="text-center">
@@ -1796,32 +1797,39 @@ class EnhancedTestRunner {
                 </div>
             </div>
             
-            <div class="row">
-        `;
-        
-        results.forEach(result => {
-            const statusClass = result.status === 'pass' ? 'border-success' : 
-                              result.status === 'fail' ? 'border-danger' : 'border-warning';
-            const statusIcon = result.status === 'pass' ? 'fa-check-circle text-success' : 
-                             result.status === 'fail' ? 'fa-times-circle text-danger' : 'fa-exclamation-triangle text-warning';
-            
-            html += `
-                <div class="col-md-6 mb-3">
-                    <div class="card ${statusClass}">
-                        <div class="card-body">
-                            <h6 class="card-title">
-                                <i class="fas ${statusIcon} me-2"></i>
-                                ${result.testName}
-                            </h6>
-                            <p class="card-text">${result.details || result.error || 'Test completed'}</p>
-                            <span class="badge ${result.status === 'pass' ? 'bg-success' : result.status === 'fail' ? 'bg-danger' : 'bg-warning'}">${result.status.toUpperCase()}</span>
-                        </div>
-                    </div>
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">Formatted Test Data</h6>
                 </div>
-            `;
+                <div class="card-body">
+                    <pre class="test-log-data" style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; font-family: 'Courier New', monospace; font-size: 0.9em; max-height: 400px; overflow-y: auto;">`;
+        
+        // Add timestamp
+        const timestamp = new Date().toISOString();
+        html += `=== NORMAL TEST EXECUTION LOG ===\n`;
+        html += `Timestamp: ${timestamp}\n`;
+        html += `Total Tests: ${totalTests}\n`;
+        html += `Passed: ${passedTests}\n`;
+        html += `Failed: ${totalTests - passedTests}\n`;
+        html += `Success Rate: ${successRate}%\n\n`;
+        
+        // Add detailed test results in log format
+        results.forEach((result, index) => {
+            const statusSymbol = result.status === 'pass' ? '✅' : result.status === 'fail' ? '❌' : '⚠️';
+            html += `--- Test ${index + 1}: ${result.testName} ---\n`;
+            html += `Status: ${statusSymbol} ${result.status.toUpperCase()}\n`;
+            html += `Details: ${result.details || result.error || 'Test completed'}\n`;
+            if (result.error) {
+                html += `Error: ${result.error}\n`;
+            }
+            html += `\n`;
         });
         
-        html += '</div>';
+        html += `=== END TEST LOG ===</pre>
+                </div>
+            </div>
+        `;
+        
         container.innerHTML = html;
     }
     
