@@ -1,0 +1,60 @@
+{
+  "sessionId": "test_1756265548788_a6ty5vjnu",
+  "exportTimestamp": "2025-08-27T03:32:38.637Z",
+  "systemInfo": {
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
+    "url": "https://47c9c798-b0c1-4791-9090-157d07a27bb9-00-3ij4m9iy3b22d.worf.replit.dev/test-sync-data",
+    "viewport": {
+      "width": 1920,
+      "height": 911
+    },
+    "screen": {
+      "width": 1920,
+      "height": 1080,
+      "colorDepth": 24
+    },
+    "connection": {
+      "effectiveType": "4g",
+      "downlink": 10,
+      "rtt": 50
+    },
+    "memory": 8,
+    "hardwareConcurrency": 12,
+    "language": "en-AU",
+    "cookieEnabled": true,
+    "onLine": true,
+    "timestamp": "2025-08-27T03:32:38.637Z"
+  },
+  "testMetrics": {
+    "totalTests": 0,
+    "completedTests": 0,
+    "failedTests": 0,
+    "startTime": null,
+    "currentTest": null
+  },
+  "errorSummary": {
+    "totalErrors": 1,
+    "consoleErrors": 0,
+    "networkErrors": 0,
+    "testFailures": 0
+  },
+  "detailedErrors": [
+    {
+      "type": "SYSTEM_INIT",
+      "message": "Test runner initialized successfully",
+      "stack": null,
+      "metadata": {
+        "initTime": "2025-08-27T03:32:29.795Z",
+        "pageUrl": "https://47c9c798-b0c1-4791-9090-157d07a27bb9-00-3ij4m9iy3b22d.worf.replit.dev/test-sync-data"
+      },
+      "timestamp": "2025-08-27T03:32:29.795Z",
+      "sessionId": "test_1756265548788_a6ty5vjnu",
+      "url": "https://47c9c798-b0c1-4791-9090-157d07a27bb9-00-3ij4m9iy3b22d.worf.replit.dev/test-sync-data",
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36"
+    }
+  ],
+  "testFailures": [],
+  "networkErrors": [],
+  "consoleErrors": [],
+  "testSuiteResults": []
+}
