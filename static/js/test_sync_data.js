@@ -2178,11 +2178,8 @@ document.addEventListener('DOMContentLoaded', function() {
         setTimeout(bindButton, 1000);
     }
     
-    // Auto-run tests after 3 seconds
-    setTimeout(() => {
-        console.log('🔄 Auto-running tests...');
-        runSyncTests();
-    }, 3000);
+    // Auto-run disabled - tests should be manually triggered
+    console.log('✅ Test runners initialized - click buttons to run tests manually');
 });
 
 // Table validation functions
