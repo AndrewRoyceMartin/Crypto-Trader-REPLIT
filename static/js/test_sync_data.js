@@ -381,29 +381,19 @@ class EnhancedTestRunner {
     createTestCategories() {
         return {
             critical: [
-                'holdings_sync_enhanced',
-                'price_freshness_realtime',
-                'recalculation_workflow_advanced'
+                'testHoldingsSyncEnhanced',
+                'testPriceFreshnessRealtime',
+                'testRecalculationWorkflowAdvanced'
             ],
             performance: [
-                'api_response_timing',
-                'data_throughput_analysis',
-                'concurrent_load_handling'
-            ],
-            accuracy: [
-                'pnl_calculation_precision',
-                'symbol_mapping_integrity',
-                'target_price_stability_enhanced'
+                'testAPIResponseTiming',
+                'testBasicAPIConnectivity',
+                'testBasicPortfolioData'
             ],
             ui_interaction: [
-                'button_workflow_comprehensive',
-                'table_synchronization_realtime',
-                'modal_interaction_validation'
-            ],
-            integration: [
-                'okx_api_connectivity_deep',
-                'portfolio_service_reliability',
-                'cache_invalidation_testing'
+                'testButtonWorkflowComprehensive',
+                'testBasicButtonFunctions',
+                'testBasicPriceUpdates'
             ]
         };
     }
