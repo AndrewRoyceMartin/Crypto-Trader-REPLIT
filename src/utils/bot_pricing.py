@@ -4,7 +4,7 @@ Implements the exact risk-based position sizing used in the bot.
 """
 
 import math
-from typing import Tuple, Dict, Optional
+from typing import Tuple, Dict, Optional, Any
 from dataclasses import dataclass
 
 

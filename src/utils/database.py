@@ -296,7 +296,7 @@ class DatabaseManager:
                 position_id = cursor.lastrowid
                 conn.commit()
                 
-                return position_id or 0
+                return int(position_id or 0)
                 
         except Exception as e:
             self.logger.error(f"Error saving position: {str(e)}")
