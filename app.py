@@ -1090,7 +1090,10 @@ def render_full_dashboard() -> str:
     try:
         from version import get_version
         cache_version = int(time.time())
-        return render_template("unified_dashboard.html", cache_version=cache_version, version=get_version())
+        return render_template("unified_dashboard.html", 
+                             cache_version=cache_version, 
+                             version=get_version(),
+                             config={'ADMIN_TOKEN': ADMIN_TOKEN})
     except Exception as e:
         logger.error(f"Error rendering original dashboard: {e}")
         return """

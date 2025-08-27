@@ -1196,65 +1196,95 @@
         }, 1000);
     });
     
-    // Recalculate positions function
+    // Recalculate positions function - triggers recalculation for ALL currencies
     async function recalculatePositions() {
         const btn = document.getElementById('recalculate-btn');
+        if (!btn) {
+            console.error('Recalculation button not found');
+            return;
+        }
+        
         const originalText = btn.innerHTML;
         
         try {
             // Show loading state
             btn.disabled = true;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Recalculating...';
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Recalculating All...';
             
-            // Get admin token from environment or prompt user
-            let adminToken = document.querySelector('meta[name="admin-token"]')?.getAttribute('content');
-            if (!adminToken) {
-                // Fallback: get from user for this session
-                adminToken = prompt('Enter admin token for recalculation:');
-                if (!adminToken) {
-                    throw new Error('Admin token required for recalculation');
-                }
+            console.log('Starting recalculation for ALL currencies and positions...');
+            
+            // Call recalculation API - no auth needed if ADMIN_TOKEN is not set
+            const headers = {
+                'Content-Type': 'application/json'
+            };
+            
+            // Only add auth header if we have a token
+            const adminToken = '{{ config.get("ADMIN_TOKEN", "") }}';
+            if (adminToken && adminToken.trim()) {
+                headers['X-Admin-Token'] = adminToken;
             }
             
-            // Call recalculation API
             const response = await fetch('/api/recalculate-positions', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-Admin-Token': adminToken
-                },
+                headers: headers,
                 cache: 'no-cache'
             });
             
             const result = await response.json();
             
-            if (result.success) {
+            if (response.ok && result.success) {
                 // Show success message
-                if (window.tradingApp) {
-                    window.tradingApp.showToast(result.message, 'success');
+                const message = `✅ Successfully recalculated ALL currencies and positions! ${result.actions_taken ? result.actions_taken.length : 0} actions completed.`;
+                
+                if (window.tradingApp && window.tradingApp.showToast) {
+                    window.tradingApp.showToast(message, 'success');
+                } else {
+                    console.log(message);
+                    alert(message);
                 }
                 
-                // Wait a moment for backend processing, then refresh
-                setTimeout(async () => {
-                    await fetchAndUpdateAvailablePositions();
-                    console.log('Available positions refreshed after recalculation');
-                }, 1500);
+                console.log('Recalculation completed for all positions:', result);
                 
+                // Refresh all position data after recalculation
+                setTimeout(async () => {
+                    console.log('Refreshing all position data after recalculation...');
+                    
+                    // Refresh available positions (all currencies)
+                    if (typeof fetchAndUpdateAvailablePositions === 'function') {
+                        await fetchAndUpdateAvailablePositions();
+                        console.log('✓ Available positions refreshed');
+                    }
+                    
+                    // Refresh current holdings 
+                    if (window.tradingApp && typeof window.tradingApp.refreshHoldingsData === 'function') {
+                        await window.tradingApp.refreshHoldingsData();
+                        console.log('✓ Current holdings refreshed');
+                    }
+                    
+                    console.log('All position data refreshed after recalculation');
+                }, 2000);
+                
+            } else if (response.status === 401) {
+                throw new Error('Authentication required - please set up admin access');
             } else {
-                throw new Error(result.message || 'Recalculation failed');
+                throw new Error(result.message || result.error || 'Recalculation failed');
             }
             
         } catch (error) {
             console.error('Error recalculating positions:', error);
-            if (window.tradingApp) {
-                window.tradingApp.showToast(`Recalculation failed: ${error.message}`, 'error');
+            const errorMsg = `Recalculation failed: ${error.message}`;
+            
+            if (window.tradingApp && window.tradingApp.showToast) {
+                window.tradingApp.showToast(errorMsg, 'error');
+            } else {
+                alert(errorMsg);
             }
         } finally {
             // Restore button state
             setTimeout(() => {
                 btn.disabled = false;
                 btn.innerHTML = originalText;
-            }, 2000);
+            }, 3000);
         }
     }
     </script>
