@@ -5928,89 +5928,85 @@ function createAvailablePositionRow(position) {
     signalCell.textContent = buySignal;
     row.appendChild(signalCell);
     
-    // Bollinger Bands Strategy Cell - with safe fallbacks
+    // Buy Criteria Cell - Shows distance to actual buy trigger
     const bbAnalysis = position.bollinger_analysis || { signal: "NO DATA", distance_percent: 0, lower_band_price: 0 };
     const bbSignal = bbAnalysis.signal || "NO DATA";
     const bbDistance = parseFloat(bbAnalysis.distance_percent) || 0;
     const lowerBandPrice = parseFloat(bbAnalysis.lower_band_price) || 0;
+    const hasPosition = position.position_type === 'current_holding';
     
-    const getBollingerSignalClass = (signal) => {
+    const getBuyCriteriaClass = (signal, hasPosition) => {
+        if (hasPosition) return "text-info"; // Already owned
         if (signal === "BUY ZONE") return "text-success fw-bold";
         if (signal === "VERY CLOSE") return "text-warning fw-bold";
-        if (signal === "APPROACHING") return "text-info";
+        if (signal === "APPROACHING") return "text-warning";
         if (signal === "MODERATE") return "text-muted";
         if (signal === "FAR") return "text-secondary";
         return "text-muted";
     };
     
-    // Create tooltip text based on signal
-    const getTooltipText = (signal, distance, lowerBand, currentPrice) => {
-        const baseExplanation = "Enhanced Bollinger Bands Strategy: Automated buying triggers when price touches the lower Bollinger Band (50-period, 2.0 std dev). ";
+    const getBuyCriteriaText = (signal, distance, hasPosition) => {
+        if (hasPosition) return "OWNED";
         
         switch(signal) {
-            case "BUY ZONE":
-                return baseExplanation + `🎯 AUTOMATED BUY TRIGGERED! Price is at or below lower band (${formatCurrency(lowerBand)}). The trading bot will automatically place buy orders.`;
-            case "VERY CLOSE":
-                return baseExplanation + `⚠️ Very close to trigger! Only ${distance.toFixed(1)}% above lower band (${formatCurrency(lowerBand)}). Watch for potential automated buy signal.`;
-            case "APPROACHING":
-                return baseExplanation + `📈 Approaching trigger zone. ${distance.toFixed(1)}% above lower band (${formatCurrency(lowerBand)}). Getting closer to automated buy conditions.`;
-            case "MODERATE":
-                return baseExplanation + `📊 Moderate distance from trigger. ${distance.toFixed(1)}% above lower band (${formatCurrency(lowerBand)}). Not yet in buy zone.`;
-            case "FAR":
-                return baseExplanation + `📉 Far from trigger. ${distance.toFixed(1)}% above lower band (${formatCurrency(lowerBand)}). Unlikely to trigger soon.`;
-            default:
-                return baseExplanation + "No historical data available to calculate Bollinger Bands. Need 50+ daily candles for analysis.";
+            case "BUY ZONE": return "BUY NOW";
+            case "VERY CLOSE": return `${distance.toFixed(1)}% away`;
+            case "APPROACHING": return `${distance.toFixed(1)}% away`;
+            case "MODERATE": return `${distance.toFixed(1)}% away`;
+            case "FAR": return `${distance.toFixed(1)}% away`;
+            default: return "NO DATA";
         }
     };
     
-    const bbCell = document.createElement('td');
-    bbCell.className = `text-center ${getBollingerSignalClass(bbSignal)}`;
-    bbCell.style.cursor = 'help';
-    bbCell.title = getTooltipText(bbSignal, bbDistance, lowerBandPrice, currentPrice);
+    // Create tooltip text based on signal and ownership
+    const getBuyCriteriaTooltip = (signal, distance, lowerBand, hasPosition) => {
+        const baseExplanation = "Buy Criteria: Bot purchases when price hits lower Bollinger Band (50-period, 2.0 std dev). ";
+        
+        if (hasPosition) {
+            return baseExplanation + "✅ Already owned - Bot won't buy more of existing positions.";
+        }
+        
+        switch(signal) {
+            case "BUY ZONE":
+                return baseExplanation + `🎯 BUY TRIGGER ACTIVE! Price is at/below lower band (${formatCurrency(lowerBand)}). Bot will execute purchase immediately.`;
+            case "VERY CLOSE":
+                return baseExplanation + `⚠️ Very close to buy trigger! Only ${distance.toFixed(1)}% above target price (${formatCurrency(lowerBand)}). Minor drop needed.`;
+            case "APPROACHING":
+                return baseExplanation + `📈 Approaching buy zone. ${distance.toFixed(1)}% above trigger price (${formatCurrency(lowerBand)}). Getting closer.`;
+            case "MODERATE":
+                return baseExplanation + `📊 Moderate distance. ${distance.toFixed(1)}% above trigger price (${formatCurrency(lowerBand)}). Significant drop needed.`;
+            case "FAR":
+                return baseExplanation + `📉 Far from trigger. ${distance.toFixed(1)}% above trigger price (${formatCurrency(lowerBand)}). Major drop required.`;
+            default:
+                return baseExplanation + "Need 50+ daily candles to calculate buy trigger price.";
+        }
+    };
     
-    const bbDiv = document.createElement('div');
-    bbDiv.className = 'd-flex flex-column align-items-center';
+    const buyCell = document.createElement('td');
+    buyCell.className = `text-center ${getBuyCriteriaClass(bbSignal, hasPosition)}`;
+    buyCell.style.cursor = 'help';
+    buyCell.title = getBuyCriteriaTooltip(bbSignal, bbDistance, lowerBandPrice, hasPosition);
     
-    // Signal badge with icon
-    const signalSpan = document.createElement('span');
-    signalSpan.className = 'fw-bold d-flex align-items-center';
+    const buyDiv = document.createElement('div');
+    buyDiv.className = 'd-flex flex-column align-items-center';
     
-    // Add appropriate icon based on signal
-    let icon = '';
-    switch(bbSignal) {
-        case "BUY ZONE":
-            icon = '<i class="fas fa-bullseye me-1 text-success"></i>';
-            break;
-        case "VERY CLOSE":
-            icon = '<i class="fas fa-exclamation-triangle me-1 text-warning"></i>';
-            break;
-        case "APPROACHING":
-            icon = '<i class="fas fa-arrow-down me-1 text-info"></i>';
-            break;
-        case "MODERATE":
-            icon = '<i class="fas fa-minus me-1 text-muted"></i>';
-            break;
-        case "FAR":
-            icon = '<i class="fas fa-arrow-up me-1 text-secondary"></i>';
-            break;
-        default:
-            icon = '<i class="fas fa-question me-1 text-muted"></i>';
+    // Main criteria text
+    const criteriaSpan = document.createElement('span');
+    criteriaSpan.className = 'fw-bold';
+    criteriaSpan.textContent = getBuyCriteriaText(bbSignal, bbDistance, hasPosition);
+    buyDiv.appendChild(criteriaSpan);
+    
+    // Additional info for available positions
+    if (!hasPosition && bbDistance > 0 && bbSignal !== "NO DATA") {
+        const priceSmall = document.createElement('small');
+        priceSmall.className = 'text-muted';
+        priceSmall.textContent = `Target: ${formatCurrency(lowerBandPrice)}`;
+        priceSmall.title = `Bot will buy when price drops to ${formatCurrency(lowerBandPrice)}`;
+        buyDiv.appendChild(priceSmall);
     }
     
-    signalSpan.innerHTML = icon + bbSignal;
-    bbDiv.appendChild(signalSpan);
-    
-    // Distance text if available
-    if (bbDistance > 0 && bbSignal !== "NO DATA") {
-        const distanceSmall = document.createElement('small');
-        distanceSmall.className = 'text-muted';
-        distanceSmall.textContent = `${bbDistance.toFixed(1)}% away`;
-        distanceSmall.title = `Current price is ${bbDistance.toFixed(1)}% above the lower Bollinger Band trigger price of ${formatCurrency(lowerBandPrice)}`;
-        bbDiv.appendChild(distanceSmall);
-    }
-    
-    bbCell.appendChild(bbDiv);
-    row.appendChild(bbCell);
+    buyCell.appendChild(buyDiv);
+    row.appendChild(buyCell);
     
     // Action buttons cell
     const actionsCell = document.createElement('td');
