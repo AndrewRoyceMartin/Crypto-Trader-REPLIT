@@ -1986,7 +1986,12 @@ class TradingApp {
             // Use the working trade-history endpoint directly 
             const response = await fetch(`/api/trade-history?timeframe=${timeframe}&limit=20`, { cache: 'no-cache' });
             console.log('DEBUG: Trade-history response status:', response.status, response.ok);
-            if (!response.ok) return;
+            if (!response.ok) {
+                if (window.TableProgressManager) {
+                    window.TableProgressManager.hideProgress('trades');
+                }
+                return;
+            }
             
             if (window.TableProgressManager) {
                 window.TableProgressManager.showProgress('trades', 70, 'Processing trades...');
@@ -1998,6 +2003,9 @@ class TradingApp {
             
             if (!data.success || !data.trades) {
                 console.log('DEBUG: No trades data or unsuccessful response');
+                if (window.TableProgressManager) {
+                    window.TableProgressManager.hideProgress('trades');
+                }
                 return;
             }
             
@@ -2023,6 +2031,9 @@ class TradingApp {
             
         } catch (error) {
             console.error('DEBUG: Recent trades update failed:', error);
+            if (window.TableProgressManager) {
+                window.TableProgressManager.hideProgress('trades');
+            }
         }
     }
     
