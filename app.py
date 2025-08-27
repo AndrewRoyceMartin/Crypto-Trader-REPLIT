@@ -200,6 +200,7 @@ def okx_request(
     resp.raise_for_status()
     return resp.json()
 
+
 # Global client cache
 _okx_client_cache = None
 
@@ -218,15 +219,15 @@ def get_bb_strategy_type(symbol: str, bb_signal: str, confidence_level: str) -> 
     # Large cap assets (conservative approach)
     if symbol in ['BTC', 'ETH', 'BNB', 'XRP', 'ADA', 'SOL', 'DOT', 'LTC']:
         return 'Conservative'
-    
+
     # Meme coins (higher volatility strategy)
     elif symbol in ['DOGE', 'SHIB', 'PEPE', 'BONK', 'WIF', 'FLOKI']:
         return 'Aggressive'
-    
+
     # Stablecoins and fiat (not applicable)
     elif symbol in ['USDT', 'USDC', 'DAI', 'BUSD', 'AUD', 'USD', 'EUR', 'GBP']:
         return 'N/A'
-    
+
     # All other tokens (standard approach)
     else:
         return 'Standard'
@@ -344,6 +345,7 @@ def rate_limit(max_hits: int, per_seconds: int):
         return _w
     return deco
 
+
 # === Real TTL'd LRU Cache Implementation ===
 # (key) -> {"data": Any, "ts": float}
 _cache_lock = threading.RLock()
@@ -400,6 +402,7 @@ def cache_get_ohlcv(sym: str, tf: str) -> Optional[Any]:
             return None
         _ohlcv_cache.move_to_end(k)
         return item["data"]
+
 
 # Warm-up state & TTL cache
 warmup: WarmupState = {"started": False, "done": False, "error": "", "loaded": []}
@@ -684,6 +687,7 @@ def initialize_system() -> bool:
         logger.error(f"Initialization failed: {e}")
         return False
 
+
 # Create Flask app instance
 app = Flask(__name__)
 
@@ -915,6 +919,7 @@ def api_portfolio_overview() -> ResponseReturnValue:
         logger.error(f"portfolio-overview error: {e}")
         return _no_cache_json({"success": False, "error": str(e)}, 500)
 
+
 # Kick off warmup immediately when Flask starts
 warmup_thread = None
 
@@ -925,6 +930,7 @@ def start_warmup() -> None:
         if warmup_thread is None:
             warmup_thread = threading.Thread(target=background_warmup, daemon=True)
             warmup_thread.start()
+
 
 # Call start_warmup() once at import time so first hit isn't doing it
 start_warmup()
@@ -1090,8 +1096,8 @@ def render_full_dashboard() -> str:
     try:
         from version import get_version
         cache_version = int(time.time())
-        return render_template("unified_dashboard.html", 
-                             cache_version=cache_version, 
+        return render_template("unified_dashboard.html",
+                             cache_version=cache_version,
                              version=get_version(),
                              ADMIN_TOKEN=ADMIN_TOKEN,
                              config={'ADMIN_TOKEN': ADMIN_TOKEN})
@@ -1187,6 +1193,7 @@ def DISABLED_api_crypto_portfolio() -> ResponseReturnValue:
     except Exception as e:
         logger.error(f"Portfolio data error: {e}")
         return jsonify({"error": str(e)}), 500
+
 
 # Global bot state moved to earlier in file to avoid forward reference
 
