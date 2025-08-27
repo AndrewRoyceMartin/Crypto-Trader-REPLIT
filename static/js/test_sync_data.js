@@ -1857,9 +1857,6 @@ class EnhancedTestRunner {
     async runDeepCycleTests() {
         console.log('🔬 Starting deep cycle test execution...');
         
-        // Initialize UI for deep cycle testing
-        this.initializeTestProgress();
-        
         // Define deep cycle and slower tests
         const deepCycleTests = [
             'testHoldingsSyncEnhanced',
@@ -1885,8 +1882,7 @@ class EnhancedTestRunner {
         
         for (const testName of deepCycleTests) {
             try {
-                this.updateTestProgress(testName, completedTests, deepCycleTests.length);
-                console.log(`🔬 Executing deep cycle test: ${testName}`);
+                console.log(`🔬 Executing deep cycle test: ${testName} (${completedTests + 1}/${deepCycleTests.length})`);
                 
                 const result = await this.executeEnhancedTest(testName);
                 results.push(result);
