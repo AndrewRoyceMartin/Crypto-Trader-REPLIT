@@ -3694,40 +3694,39 @@ def live_buy() -> ResponseReturnValue:
 
         logger.info(f"Live buy request: ${amount} worth of {symbol}")
 
-        # Initialize services
-        initialize_system()
-
-        # Get current market price
+        # Get current market price and place order using the working CCXT method (no initialization needed)
         try:
-            from src.utils.okx_native import OKXNative
-            okx_client = OKXNative.from_env()
-            ticker_response = with_throttle(okx_client.ticker, symbol)
-
-            if not ticker_response or 'last' not in ticker_response:
-                return jsonify({"success": False, "error": f"Unable to get current price for {symbol}"}), 400
-
-            current_price = float(ticker_response['last'])
+            # Use the same working method as diagnostic test
+            exchange = get_reusable_exchange()
+            
+            # Convert symbol format for CCXT (BTC-USDT → BTC/USDT)
+            ccxt_symbol = symbol.replace('-', '/')
+            
+            # Get current price using CCXT
+            ticker = exchange.fetch_ticker(ccxt_symbol)
+            current_price = ticker['last']
             quantity = amount / current_price
 
-            # Execute market buy order on OKX
-            logger.info(f"Placing live buy order: ${amount} worth of {symbol} at ${current_price:.4f}")
-            order_response = okx_client.place_order(
-                inst_id=symbol,
-                side="buy",
-                ord_type="market",
-                sz=str(amount)  # For market buy, size is in quote currency (USDT)
+            # Execute market buy order using CCXT (same as diagnostic test)
+            logger.info(f"Placing live buy order: ${amount} worth of {ccxt_symbol} at ${current_price:.4f}")
+            order = exchange.create_order(
+                symbol=ccxt_symbol,
+                type='market',
+                side='buy',
+                amount=quantity,  # For market buy with CCXT, amount is in base currency 
+                price=None
             )
 
-            if order_response and order_response.get('code') == '0':
-                order_id = order_response['data'][0]['ordId']
-                logger.info(f"Live buy order placed: {order_id} - {quantity:.6f} {symbol} at ${current_price:.4f}")
+            if order and order.get('id'):
+                order_id = order['id']
+                logger.info(f"Live buy order placed: {order_id} - {quantity:.6f} {ccxt_symbol} at ${current_price:.4f}")
 
                 return jsonify({
                     "success": True,
-                    "message": f"Bought {quantity:.6f} {symbol} at ${current_price:.4f}",
+                    "message": f"Bought {quantity:.6f} {ccxt_symbol} at ${current_price:.4f}",
                     "order_id": order_id,
                     "trade": {
-                        "symbol": symbol,
+                        "symbol": ccxt_symbol,
                         "action": "BUY",
                         "quantity": quantity,
                         "price": current_price,
@@ -3735,9 +3734,8 @@ def live_buy() -> ResponseReturnValue:
                     }
                 })
             else:
-                error_msg = order_response.get('msg', 'Unknown error') if order_response else 'No response from exchange'
-                logger.error(f"Live buy order failed: {error_msg}")
-                return jsonify({"success": False, "error": f"Order failed: {error_msg}"}), 400
+                logger.error(f"Live buy order failed: No order ID returned")
+                return jsonify({"success": False, "error": "Order failed: No confirmation received"}), 400
 
         except Exception as api_error:
             logger.error(f"OKX API error during buy: {api_error}")
