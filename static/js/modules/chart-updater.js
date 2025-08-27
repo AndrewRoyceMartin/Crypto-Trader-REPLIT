@@ -363,31 +363,10 @@ export class ChartUpdater {
 
 
     async updateAllCharts() {
-        // Prevent overlapping updates
-        if (this.isUpdating) {
-            console.debug('Chart update already in progress, skipping...');
-            return;
-        }
-        
-        this.isUpdating = true;
-        
-        try {
-            console.debug('Starting chart updates...');
-            // Update charts sequentially to avoid API overload
-            await this.updatePortfolioChart().catch(e => console.debug('Portfolio chart update failed:', e));
-            await new Promise(resolve => setTimeout(resolve, 500)); // Small delay between requests
-            
-            await this.updateAllocationChart().catch(e => console.debug('Allocation chart update failed:', e));
-            await new Promise(resolve => setTimeout(resolve, 500));
-            
-            await this.updateEquityChart().catch(e => console.debug('Equity chart update failed:', e));
-            
-            console.debug('Chart updates completed');
-        } catch (error) {
-            console.debug('Chart update error:', error);
-        } finally {
-            this.isUpdating = false;
-        }
+        // Charts are not currently used in the dashboard, so updates are disabled
+        // to prevent unnecessary API calls and console errors
+        console.debug('Chart updates disabled - no charts in current dashboard');
+        return;
     }
 
     startAutoUpdate() {
@@ -396,17 +375,9 @@ export class ChartUpdater {
             clearInterval(this.chartUpdateInterval);
         }
         
-        // Update charts every 2 minutes to avoid overwhelming API
-        this.chartUpdateInterval = setInterval(() => {
-            console.debug('Auto-updating charts...');
-            this.updateAllCharts();
-        }, 120000); // 2 minutes
-        
-        // Initial update with longer delay to avoid race conditions
-        setTimeout(() => {
-            console.debug('Initial chart update...');
-            this.updateAllCharts();
-        }, 3000); // 3 seconds delay
+        // Charts are not currently used in the dashboard, so auto-updates are disabled
+        // to prevent unnecessary API calls and console errors
+        console.debug('Chart auto-updates disabled - no charts in current dashboard');
     }
 
     stopAutoUpdate() {

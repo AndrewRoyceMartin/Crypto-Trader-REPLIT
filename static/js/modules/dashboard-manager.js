@@ -51,7 +51,7 @@ export class DashboardManager {
     async updatePortfolioOverview() {
         try {
             console.debug('Loading progress: 20% - Fetching cryptocurrency data...');
-            const data = await this.cachedFetch('portfolio', `/api/crypto-portfolio?_bypass_cache=${Date.now()}&debug=1&currency=${this.selectedCurrency}`);
+            const data = await this.cachedFetch('portfolio', `/api/crypto-portfolio?currency=${this.selectedCurrency}`);
             
             if (!data) {
                 console.debug('Portfolio data not available');
@@ -141,7 +141,7 @@ export class DashboardManager {
     async updateUSDTBalance() {
         try {
             // Fetch USDT balance from portfolio data - it's the cash_balance, not a holding
-            const data = await AppUtils.fetchJSON(`/api/crypto-portfolio?currency=USD&_bypass_cache=${Date.now()}`);
+            const data = await AppUtils.fetchJSON(`/api/crypto-portfolio?currency=USD`);
             let usdtBalance = 0;
             
             // USDT is the cash balance used for trading, not an active position
@@ -222,14 +222,10 @@ export class DashboardManager {
     }
 
     async updateConnectionStatus() {
-        try {
-            await Promise.all([
-                this.updateServerStatus(),
-                this.updateOKXStatus()
-            ]);
-        } catch (error) {
-            console.debug('Connection status update failed:', error);
-        }
+        // Connection status updates disabled to reduce unnecessary API calls
+        // Status icons are updated via the main data refresh cycle instead
+        console.debug('Connection status updates disabled - reducing API call frequency');
+        return;
     }
 
     async updateServerStatus() {

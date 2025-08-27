@@ -681,8 +681,8 @@ function v02ApplyDataLabels(table) {
         }
     });
     
-    // Periodic fallback to catch any missed updates
-    setInterval(apply, 3000);
+    // Periodic fallback reduced frequency to prevent unnecessary DOM updates
+    setInterval(apply, 15000); // Reduced from 3s to 15s
 })();
 
 // Global legacy functions for backward compatibility

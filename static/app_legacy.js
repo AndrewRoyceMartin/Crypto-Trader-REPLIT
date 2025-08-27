@@ -607,11 +607,9 @@ class TradingApp {
             this.updateAllCountdowns();
         }, 1000);
         
-        // Footer status updates (every 10 seconds)
-        this.statusUpdateInterval = setInterval(() => {
-            if (typeof updateFooterStatus === 'function') updateFooterStatus();
-            if (typeof fetchAndUpdateBotStatus === 'function') fetchAndUpdateBotStatus();
-        }, 10000);
+        // Footer status updates disabled - functions don't exist in current dashboard
+        // and were causing unnecessary API calls every 10 seconds
+        // this.statusUpdateInterval = null;
     }
     stopAutoUpdate() {
         // Clear all master intervals
@@ -756,8 +754,8 @@ class TradingApp {
             this.updateActiveStatus(data.active);
         }
         
-        // Force update bot status on dashboard load
-        this.fetchAndUpdateBotStatus();
+        // Bot status update removed - not used in current dashboard
+        // this.fetchAndUpdateBotStatus();
 
         // Recent trades
         const trades = data.recent_trades || data.trades || [];
@@ -7081,8 +7079,8 @@ function updatePositionsRefreshTime() {
         clearInterval(positionsRefreshInterval);
     }
     
-    // Start new interval to update time display every 5 seconds for smooth countdown
-    positionsRefreshInterval = setInterval(updatePositionsTimeDisplay, 5000);
+    // Position refresh interval disabled - was updating display unnecessarily every 5 seconds  
+    // positionsRefreshInterval = null;
 }
 
 function updatePositionsTimeDisplay() {
