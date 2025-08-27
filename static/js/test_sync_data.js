@@ -2479,7 +2479,7 @@ const enhancedTestRunner = new EnhancedTestRunner();
 
 // Updated main function to use enhanced testing  
 async function runSyncTests() {
-    await enhancedTestRunner.runEnhancedTests();
+    await enhancedTestRunner.runAllTests();
 }
 
 function updateOverview(data) {
