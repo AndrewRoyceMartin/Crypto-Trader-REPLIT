@@ -1660,7 +1660,7 @@ class EnhancedTestRunner {
         const testResultsContainer = document.getElementById('test-results-container');
         
         // Show loading state
-        testResultsContainer.innerHTML = '<div class="text-center p-4"><i class="fas fa-spinner fa-spin fa-2x text-primary mb-3"></i><h5>Running Normal Tests (8 fast response tests)...</h5></div>';
+        testResultsContainer.innerHTML = '<div class="text-center p-4"><i class="fas fa-spinner fa-spin fa-2x text-primary mb-3"></i><h5>Running Normal Tests (4 fast response tests)...</h5></div>';
         
         try {
             // Run fast response tests as "normal" testing
@@ -1668,11 +1668,7 @@ class EnhancedTestRunner {
                 { name: 'API Connectivity', func: 'testBasicAPIConnectivity' },
                 { name: 'Portfolio Data', func: 'testBasicPortfolioData' },
                 { name: 'Price Updates', func: 'testBasicPriceUpdates' },
-                { name: 'Button Functions', func: 'testBasicButtonFunctions' },
-                { name: 'ATO Export Button', func: 'testATOExportButton' },
-                { name: 'Buy Button', func: 'testBuyButton' },
-                { name: 'Sell Button', func: 'testSellButton' },
-                { name: 'Take Profit Button', func: 'testTakeProfitButton' }
+                { name: 'Button Presence', func: 'testBasicButtonPresence' }
             ];
             
             const results = [];
@@ -1683,7 +1679,7 @@ class EnhancedTestRunner {
                     // Handle different function types
                     if (test.func.startsWith('test') && test.func !== 'testBasicAPIConnectivity' && 
                         test.func !== 'testBasicPortfolioData' && test.func !== 'testBasicPriceUpdates' && 
-                        test.func !== 'testBasicButtonFunctions' && test.func !== 'testAPIResponseTiming') {
+                        test.func !== 'testBasicButtonPresence' && test.func !== 'testAPIResponseTiming') {
                         // Global button test functions
                         result = await window[test.func]();
                     } else {
@@ -1777,6 +1773,23 @@ class EnhancedTestRunner {
         } catch (error) {
             return { status: 'error', error: error.message };
         }
+    }
+    
+    async testBasicButtonPresence() {
+        // Simple check for button presence (fast response test)
+        const normalTestButton = document.getElementById('run-normal-tests-btn');
+        const enhancedTestButton = document.getElementById('run-tests-btn');
+        const exportButton = document.getElementById('export-logs-btn');
+        
+        let foundButtons = 0;
+        if (normalTestButton) foundButtons++;
+        if (enhancedTestButton) foundButtons++;
+        if (exportButton) foundButtons++;
+        
+        return {
+            status: foundButtons >= 2 ? 'pass' : 'fail',
+            details: `Found ${foundButtons}/3 test control buttons`
+        };
     }
     
     async testBasicButtonFunctions() {
@@ -1942,6 +1955,11 @@ class EnhancedTestRunner {
             'testRecalculationWorkflowAdvanced',
             'testButtonWorkflowComprehensive',
             'testAPIResponseTiming',
+            'testBasicButtonFunctions',
+            'testATOExportButton',
+            'testBuyButton',
+            'testSellButton',
+            'testTakeProfitButton',
             'bot_runtime_status',
             'bot_state_sync',
             'cache_disabled',
