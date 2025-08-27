@@ -445,6 +445,10 @@
                                                     class="btn btn-sm btn-outline-primary mt-2">
                                                 Refresh Trades
                                             </button>
+                                            <button onclick="runQuickTests(); console.log('DEBUG: Quick tests triggered');" 
+                                                    class="btn btn-sm btn-success mt-2 ms-2">
+                                                Run Quick Tests
+                                            </button>
                                         </div>
                                     </td>
                                 </tr>
@@ -1317,6 +1321,83 @@
                 btn.innerHTML = originalText;
             }, 3000);
         }
+    }
+    
+    // Quick test function to diagnose issues
+    async function runQuickTests() {
+        console.log('🚀 Running Quick System Tests...');
+        const results = [];
+        
+        try {
+            // Test 1: API Connectivity
+            console.log('Testing API connectivity...');
+            const portfolioResponse = await fetch('/api/crypto-portfolio?currency=USD');
+            results.push({
+                test: 'Portfolio API',
+                status: portfolioResponse.ok ? 'PASS' : 'FAIL',
+                details: `Status: ${portfolioResponse.status}`
+            });
+            
+            // Test 2: Holdings API
+            console.log('Testing holdings API...');
+            const holdingsResponse = await fetch('/api/current-holdings');
+            results.push({
+                test: 'Holdings API', 
+                status: holdingsResponse.ok ? 'PASS' : 'FAIL',
+                details: `Status: ${holdingsResponse.status}`
+            });
+            
+            // Test 3: Available Positions API
+            console.log('Testing available positions API...');
+            const positionsResponse = await fetch('/api/available-positions');
+            results.push({
+                test: 'Available Positions API',
+                status: positionsResponse.ok ? 'PASS' : 'FAIL', 
+                details: `Status: ${positionsResponse.status}`
+            });
+            
+            // Test 4: Trade History API
+            console.log('Testing trade history API...');
+            const tradesResponse = await fetch('/api/trade-history?timeframe=7d');
+            const tradesData = await tradesResponse.json();
+            results.push({
+                test: 'Trade History API',
+                status: tradesResponse.ok && tradesData.success ? 'PASS' : 'FAIL',
+                details: `Status: ${tradesResponse.status}, Trades: ${tradesData.trades?.length || 0}`
+            });
+            
+            // Test 5: Buy API Authentication  
+            console.log('Testing buy API authentication...');
+            const buyResponse = await fetch('/api/buy', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({symbol: 'BTC', amount: 1})
+            });
+            results.push({
+                test: 'Buy API Auth',
+                status: buyResponse.status === 401 ? 'EXPECTED' : buyResponse.ok ? 'PASS' : 'FAIL',
+                details: `Status: ${buyResponse.status} (401 = Expected auth error)`
+            });
+            
+        } catch (error) {
+            results.push({
+                test: 'Error Handling',
+                status: 'FAIL',
+                details: error.message
+            });
+        }
+        
+        // Display results in console and alert
+        let output = '\\n📊 QUICK SYSTEM TEST RESULTS:\\n';
+        output += '================================\\n';
+        results.forEach(result => {
+            output += `${result.status === 'PASS' ? '✅' : result.status === 'EXPECTED' ? '⚠️' : '❌'} ${result.test}: ${result.status}\\n`;
+            output += `   ${result.details}\\n`;
+        });
+        output += '================================';
+        
+        console.log(output);
+        alert('Quick tests completed! Check browser console for detailed results.');
     }
     </script>
 </body>
