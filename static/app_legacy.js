@@ -2599,10 +2599,12 @@ class TradingApp {
         this.showToast(`Refreshing all data with ${currency} from OKX native APIs...`, 'info');
         
         // Refresh all data sources from OKX with currency parameter
+        // Run Recent Trades independently to prevent blocking
+        this.updateRecentTrades();
+        
         await Promise.all([
             this.updateCryptoPortfolio(),
             this.updateCurrentHoldings(),
-            this.updateRecentTrades(),
             this.updatePerformanceAnalytics(),
             this.updateDashboard()
         ]);
