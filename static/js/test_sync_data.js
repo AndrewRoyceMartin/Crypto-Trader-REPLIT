@@ -1642,6 +1642,189 @@ class EnhancedTestRunner {
         rawDataDiv.innerHTML = formattedData;
     }
     
+    // Add the test runner methods to EnhancedTestRunner class
+    async runBasicTests() {
+        const button = document.getElementById('run-normal-tests-btn');
+        const testResultsContainer = document.getElementById('test-results-container');
+        
+        // Reset UI
+        testResultsContainer.innerHTML = '<div class="text-center p-4"><i class="fas fa-spinner fa-spin fa-2x text-primary mb-3"></i><h5>Running Normal Tests (21+ comprehensive tests)...</h5></div>';
+        
+        try {
+            // Run the comprehensive 21+ test system
+            await this.runAllTests();
+            
+        } catch (error) {
+            console.error('❌ Normal test execution failed:', error);
+            testResultsContainer.innerHTML = `
+                <div class="alert alert-danger">
+                    <h5><i class="fas fa-exclamation-triangle me-2"></i>Normal Test Execution Failed</h5>
+                    <p><strong>Error:</strong> ${error.message}</p>
+                    <small class="text-muted">Please try refreshing the page and running the tests again.</small>
+                </div>
+            `;
+        }
+    }
+    
+    async runEnhancedTests() {
+        const button = document.getElementById('run-tests-btn');
+        const testResultsContainer = document.getElementById('test-results-container');
+        
+        // Show loading state
+        testResultsContainer.innerHTML = '<div class="text-center p-4"><i class="fas fa-spinner fa-spin fa-2x text-primary mb-3"></i><h5>Running Enhanced Tests (additional 4 basic tests)...</h5></div>';
+        
+        try {
+            // Run the 4 basic tests as "enhanced" testing
+            const tests = [
+                { name: 'API Connectivity', func: 'testBasicAPIConnectivity' },
+                { name: 'Portfolio Data', func: 'testBasicPortfolioData' },
+                { name: 'Price Updates', func: 'testBasicPriceUpdates' },
+                { name: 'Button Functions', func: 'testBasicButtonFunctions' }
+            ];
+            
+            const results = [];
+            
+            for (const test of tests) {
+                try {
+                    const result = await this[test.func]();
+                    results.push({ ...result, testName: test.name });
+                } catch (error) {
+                    results.push({ 
+                        testName: test.name, 
+                        status: 'error', 
+                        error: error.message 
+                    });
+                }
+            }
+            
+            this.displayBasicResults(results);
+            
+        } catch (error) {
+            console.error('❌ Enhanced test execution failed:', error);
+            testResultsContainer.innerHTML = `
+                <div class="alert alert-danger">
+                    <h5><i class="fas fa-exclamation-triangle me-2"></i>Enhanced Test Execution Failed</h5>
+                    <p><strong>Error:</strong> ${error.message}</p>
+                    <small class="text-muted">Please try refreshing the page and running the tests again.</small>
+                </div>
+            `;
+        }
+    }
+    
+    // Basic test methods
+    async testBasicAPIConnectivity() {
+        try {
+            const response = await fetch('/api/okx-status');
+            const data = await response.json();
+            return {
+                status: data.connected ? 'pass' : 'fail',
+                details: `OKX Status: ${data.connected ? 'Connected' : 'Disconnected'}`
+            };
+        } catch (error) {
+            return { status: 'error', error: error.message };
+        }
+    }
+    
+    async testBasicPortfolioData() {
+        try {
+            const response = await fetch('/api/crypto-portfolio');
+            const data = await response.json();
+            return {
+                status: data.holdings && data.holdings.length > 0 ? 'pass' : 'fail',
+                details: `Found ${data.holdings ? data.holdings.length : 0} holdings`
+            };
+        } catch (error) {
+            return { status: 'error', error: error.message };
+        }
+    }
+    
+    async testBasicPriceUpdates() {
+        try {
+            const response = await fetch('/api/price-source-status');
+            const data = await response.json();
+            return {
+                status: data.status === 'connected' ? 'pass' : 'fail',
+                details: `Price source: ${data.status}`
+            };
+        } catch (error) {
+            return { status: 'error', error: error.message };
+        }
+    }
+    
+    async testBasicButtonFunctions() {
+        const recalcButton = document.getElementById('recalculate-btn');
+        const atoButton = document.getElementById('ato-export-btn');
+        
+        let foundButtons = 0;
+        if (recalcButton) foundButtons++;
+        if (atoButton) foundButtons++;
+        
+        return {
+            status: foundButtons >= 1 ? 'pass' : 'fail',
+            details: `Found ${foundButtons} essential buttons`
+        };
+    }
+    
+    displayBasicResults(results) {
+        const container = document.getElementById('test-results-container');
+        const passedTests = results.filter(r => r.status === 'pass').length;
+        const totalTests = results.length;
+        const successRate = Math.round((passedTests / totalTests) * 100);
+        
+        let html = `
+            <div class="alert alert-info mb-4">
+                <h5><i class="fas fa-check-circle me-2"></i>Basic Test Results</h5>
+                <div class="row mt-3">
+                    <div class="col-md-4">
+                        <div class="text-center">
+                            <div class="h4 mb-1 ${successRate >= 75 ? 'text-success' : successRate >= 50 ? 'text-warning' : 'text-danger'}">${successRate}%</div>
+                            <div class="small text-muted">Success Rate</div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="text-center">
+                            <div class="h4 mb-1 text-primary">${passedTests}</div>
+                            <div class="small text-muted">Passed</div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="text-center">
+                            <div class="h4 mb-1 text-secondary">${totalTests}</div>
+                            <div class="small text-muted">Total Tests</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row">
+        `;
+        
+        results.forEach(result => {
+            const statusClass = result.status === 'pass' ? 'border-success' : 
+                              result.status === 'fail' ? 'border-danger' : 'border-warning';
+            const statusIcon = result.status === 'pass' ? 'fa-check-circle text-success' : 
+                             result.status === 'fail' ? 'fa-times-circle text-danger' : 'fa-exclamation-triangle text-warning';
+            
+            html += `
+                <div class="col-md-6 mb-3">
+                    <div class="card ${statusClass}">
+                        <div class="card-body">
+                            <h6 class="card-title">
+                                <i class="fas ${statusIcon} me-2"></i>
+                                ${result.testName}
+                            </h6>
+                            <p class="card-text">${result.details || result.error || 'Test completed'}</p>
+                            <span class="badge ${result.status === 'pass' ? 'bg-success' : result.status === 'fail' ? 'bg-danger' : 'bg-warning'}">${result.status.toUpperCase()}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        html += '</div>';
+        container.innerHTML = html;
+    }
+    
     getCategoryIcon(category) {
         const icons = {
             critical: 'fa-exclamation-triangle',
