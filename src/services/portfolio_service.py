@@ -318,50 +318,80 @@ class PortfolioService:
             
             holdings = []
             total_value = 0.0
+            total_pnl = 0.0
             
-            if isinstance(account_balances, dict):
-                excluded_keys = ['info', 'timestamp', 'datetime', 'free', 'used', 'total', 'AUD', 'USD', 'EUR', 'GBP']
+            # Extract detailed OKX position data from the 'info' structure
+            okx_details = []
+            if 'info' in account_balances and 'data' in account_balances['info']:
+                for data_item in account_balances['info']['data']:
+                    if 'details' in data_item:
+                        okx_details.extend(data_item['details'])
+            
+            self.logger.info(f"Found {len(okx_details)} detailed OKX positions")
+            
+            # Process each OKX detailed position
+            for detail in okx_details:
+                if not isinstance(detail, dict):
+                    continue
+                    
+                symbol = detail.get('ccy', '')
+                quantity = float(detail.get('eq', 0) or 0)
                 
-                for symbol, balance_info in account_balances.items():
-                    if (symbol not in excluded_keys and 
-                        isinstance(balance_info, dict) and 
-                        'free' in balance_info):
-                        
-                        quantity = float(balance_info.get('free', 0.0) or 0.0)
-                        
-                        if quantity > 0:
-                            # Use OKX's native USD value directly - NO calculations
-                            okx_usd_value = balance_info.get('usdValue') or balance_info.get('value_usd')
-                            
-                            if okx_usd_value and float(okx_usd_value) > 0:
-                                current_value = float(okx_usd_value)
-                                current_price = self.get_price(symbol) if symbol != 'USDT' else 1.0
-                                
-                                self.logger.info(f"OKX NATIVE: {symbol} qty={quantity:.4f}, usdValue=${current_value:.2f}")
-                                
-                                position = {
-                                    'symbol': symbol,
-                                    'name': symbol,
-                                    'quantity': float(quantity),
-                                    'current_price': float(current_price),
-                                    'current_value': float(current_value),  # OKX calculated
-                                    'value': float(current_value),
-                                    'has_position': True,
-                                    'is_live': True,
-                                    'allocation_percent': 0.0,  # Will calculate later
-                                    # Safe defaults - no dangerous P&L calculations
-                                    'cost_basis': float(current_value),  # Use current as safe default
-                                    'avg_entry_price': float(current_price),  # Use current as safe default  
-                                    'pnl': 0.0,  # No P&L without real cost basis
-                                    'pnl_percent': 0.0,  # No P&L without real cost basis
-                                    'unrealized_pnl': 0.0,
-                                    'unrealized_pnl_percent': 0.0
-                                }
-                                
-                                holdings.append(position)
-                                total_value += current_value
-                            else:
-                                self.logger.warning(f"No OKX usdValue for {symbol} with quantity {quantity} - skipping to avoid estimations")
+                # Skip very small balances and excluded currencies
+                if quantity <= 0 or symbol in ['AUD', 'USD', 'EUR', 'GBP']:
+                    continue
+                
+                # Get OKX's native values
+                okx_usd_value = float(detail.get('eqUsd', 0) or 0)  # Real OKX USD value
+                okx_entry_price = float(detail.get('openAvgPx', 0) or 0)  # Real OKX cost price
+                okx_pnl = float(detail.get('spotUpl', 0) or 0)  # Real OKX unrealized P&L
+                okx_pnl_ratio = float(detail.get('spotUplRatio', 0) or 0) * 100  # Convert to percentage
+                
+                # Calculate current price from OKX data
+                current_price = okx_usd_value / quantity if quantity > 0 else 0.0
+                
+                # Calculate cost basis from OKX entry price
+                cost_basis = quantity * okx_entry_price if okx_entry_price > 0 else 0.0
+                
+                if okx_usd_value > 0:
+                    self.logger.info(f"OKX REAL DATA: {symbol} qty={quantity:.4f}, "
+                                   f"entry=${okx_entry_price:.4f}, current=${current_price:.4f}, "
+                                   f"value=${okx_usd_value:.2f}, pnl=${okx_pnl:.2f} ({okx_pnl_ratio:.2f}%)")
+                    
+                    position = {
+                        'symbol': symbol,
+                        'name': symbol,
+                        'quantity': float(quantity),
+                        'current_price': float(current_price),  # Calculated from OKX USD value
+                        'avg_entry_price': float(okx_entry_price),  # REAL OKX Cost price
+                        'cost_basis': float(cost_basis),
+                        'current_value': float(okx_usd_value),  # REAL OKX USD value
+                        'value': float(okx_usd_value),
+                        'has_position': True,
+                        'is_live': True,
+                        'allocation_percent': 0.0,  # Will calculate later
+                        # REAL OKX P&L data
+                        'pnl': float(okx_pnl),  # Real OKX unrealized P&L
+                        'pnl_percent': float(okx_pnl_ratio),  # Real OKX P&L percentage
+                        'unrealized_pnl': float(okx_pnl),
+                        'unrealized_pnl_percent': float(okx_pnl_ratio)
+                    }
+                    
+                    holdings.append(position)
+                    total_value += okx_usd_value
+                    total_pnl += okx_pnl
+            
+            # Handle USDT cash balance separately (no entry price/P&L for cash)
+            cash_balance = 0.0
+            if 'USDT' in account_balances and isinstance(account_balances['USDT'], dict):
+                cash_balance = float(account_balances['USDT'].get('free', 0.0) or 0.0)
+                if cash_balance > 0:
+                    self.logger.info(f"OKX CASH: USDT ${cash_balance:.2f}")
+                    total_value += cash_balance
+            
+            # Calculate total P&L percentage if we have cost basis
+            total_cost_basis = sum(h['cost_basis'] for h in holdings if h['cost_basis'] > 0)
+            total_pnl_percent = (total_pnl / total_cost_basis * 100) if total_cost_basis > 0 else 0.0
             
             # Calculate allocation percentages
             for holding in holdings:
@@ -373,37 +403,24 @@ class PortfolioService:
             for i, holding in enumerate(holdings):
                 holding['rank'] = i + 1
             
-            # Include cash balances using OKX native values only
-            cash_balance = 0.0
-            aud_balance = 0.0
-            
-            if 'USDT' in account_balances and isinstance(account_balances['USDT'], dict):
-                cash_balance = float(account_balances['USDT'].get('free', 0.0) or 0.0)
-                total_value += cash_balance  # USDT = USD
-                
-            if 'AUD' in account_balances and isinstance(account_balances['AUD'], dict):
-                aud_balance = float(account_balances['AUD'].get('free', 0.0) or 0.0)
-                # Only add AUD if OKX provides native USD conversion
-                if 'usdValue' in account_balances['AUD']:
-                    aud_usd = float(account_balances['AUD']['usdValue'])
-                    total_value += aud_usd
-                    self.logger.info(f"Including AUD: {aud_balance:.2f} AUD = ${aud_usd:.2f} USD (OKX native conversion)")
-            
-            self.logger.info(f"OKX NATIVE PORTFOLIO: {len(holdings)} positions, total value ${total_value:.2f}")
+            self.logger.info(f"OKX REAL PORTFOLIO: {len(holdings)} positions, "
+                           f"total value ${total_value:.2f}, total P&L ${total_pnl:.2f} ({total_pnl_percent:.2f}%)")
             
             return {
                 "holdings": holdings,
                 "total_current_value": float(total_value),
-                "total_estimated_value": float(total_value),  # Same as current - no estimations
-                "total_pnl": 0.0,  # No P&L without real cost basis data
-                "total_pnl_percent": 0.0,  # No P&L without real cost basis data
+                "total_estimated_value": float(total_value),  # Same as current - all real data
+                "total_pnl": float(total_pnl),  # REAL OKX P&L
+                "total_pnl_percent": float(total_pnl_percent),  # REAL OKX P&L percentage
                 "cash_balance": float(cash_balance),
-                "aud_balance": float(aud_balance),
+                "aud_balance": 0.0,  # Handle separately if needed
                 "last_update": datetime.now().isoformat()
             }
             
         except Exception as e:
             self.logger.error(f"Error in OKX native portfolio data: {e}")
+            import traceback
+            self.logger.error(f"Full traceback: {traceback.format_exc()}")
             return {
                 "holdings": [],
                 "total_current_value": 0.0,

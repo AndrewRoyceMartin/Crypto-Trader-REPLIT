@@ -850,7 +850,7 @@ def crypto_portfolio_okx() -> ResponseReturnValue:
         # - Otherwise call any available cache invalidator
         # - Finally, call get_portfolio_data with the requested currency
         try:
-            okx_portfolio_data = portfolio_service.get_portfolio_data(
+            okx_portfolio_data = portfolio_service.get_portfolio_data_OKX_NATIVE_ONLY(
                 currency=selected_currency,
                 force_refresh=True   # <-- if supported
             )
@@ -880,7 +880,7 @@ def crypto_portfolio_okx() -> ResponseReturnValue:
                             pass
             except Exception as e:
                 logger.debug(f"Cache invalidation not available: {e}")
-            okx_portfolio_data: dict[str, Any] = portfolio_service.get_portfolio_data(currency=selected_currency)
+            okx_portfolio_data: dict[str, Any] = portfolio_service.get_portfolio_data_OKX_NATIVE_ONLY(currency=selected_currency)
 
         holdings_list = okx_portfolio_data['holdings']
 
