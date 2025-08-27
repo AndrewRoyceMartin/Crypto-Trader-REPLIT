@@ -1,6 +1,6 @@
 """
 Trading Bot Module
-Handles bot state management and trading logic
+Handles bot state management and trading logic using business services
 """
 from typing import Dict, Any, Optional
 import threading
@@ -14,23 +14,64 @@ _state_lock = threading.RLock()
 bot_state: Dict[str, Any] = {"running": False}
 warmup: Dict[str, Any] = {"done": False, "error": ""}
 
+# Initialize trading business service
+_trading_business_service = None
+
+def get_trading_business_service():
+    """Get trading business service instance."""
+    global _trading_business_service
+    if _trading_business_service is None:
+        from services.trading_business_service import TradingBusinessService
+        _trading_business_service = TradingBusinessService()
+    return _trading_business_service
+
 def get_bot_status() -> Dict[str, Any]:
-    """Get current bot status."""
-    with _state_lock:
-        running = bool(bot_state.get("running", False))
-        trading_state = {}
+    """Get current bot status with runtime stats."""
+    try:
+        with _state_lock:
+            state_copy = bot_state.copy()
         
+        # Use business service for runtime calculations
+        business_service = get_trading_business_service()
+        runtime_stats = business_service.get_bot_runtime_stats(state_copy)
+        
+        running = runtime_stats["running"]
         mode = (
-            bot_state.get("mode") or (
-                "stopped" if not running else trading_state.get("mode")
+            state_copy.get("mode") or (
+                "stopped" if not running else "unknown"
             )
         )
-        trading_state["start_time"] = bot_state.get("started_at") if running else None
         
         return {
             "running": running,
             "mode": mode,
-            "state": trading_state
+            "runtime_seconds": runtime_stats["runtime_seconds"],
+            "runtime_human": runtime_stats["runtime_human"],
+            "state": {
+                "start_time": state_copy.get("started_at") if running else None
+            }
+        }
+    except Exception as e:
+        logger.error(f"Bot status error: {e}")
+        return {
+            "running": False,
+            "mode": "error",
+            "runtime_seconds": 0,
+            "runtime_human": "0s",
+            "state": {}
+        }
+
+def calculate_entry_confidence(symbol: str, current_price: float, bb_analysis: Dict[str, Any]) -> Dict[str, Any]:
+    """Calculate entry confidence using business service."""
+    try:
+        business_service = get_trading_business_service()
+        return business_service.calculate_entry_confidence(symbol, current_price, bb_analysis)
+    except Exception as e:
+        logger.error(f"Entry confidence calculation failed: {e}")
+        return {
+            "level": "FAIR",
+            "score": 50.0,
+            "timing_signal": "WAIT"
         }
 
 def get_bot_state() -> Dict[str, Any]:

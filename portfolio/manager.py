@@ -1,34 +1,28 @@
 """
 Portfolio Management Module
-Handles portfolio data, calculations, and management
+Handles portfolio data, calculations, and management using business services
 """
 from typing import Dict, Any, Optional
 import logging
 
 logger = logging.getLogger(__name__)
 
-def get_portfolio_summary() -> Dict[str, Any]:
-    """Get portfolio summary for status endpoint."""
-    try:
-        from src.services.portfolio_service import get_portfolio_service as _get_ps
-        
-        portfolio_service = _get_ps()
-        if not portfolio_service:
-            return {
-                "total_value": 0.0,
-                "daily_pnl": 0.0,
-                "daily_pnl_percent": 0.0,
-                "error": "Service not available"
-            }
+# Initialize portfolio business service
+_portfolio_business_service = None
 
-        portfolio_data: Dict[str, Any] = portfolio_service.get_portfolio_data()
-        return {
-            "total_value": portfolio_data.get('total_current_value', 0.0),
-            "daily_pnl": portfolio_data.get('total_pnl', 0.0),
-            "daily_pnl_percent": portfolio_data.get('total_pnl_percent', 0.0),
-            "cash_balance": portfolio_data.get('cash_balance', 0.0),
-            "status": "connected"
-        }
+def get_portfolio_business_service():
+    """Get portfolio business service instance."""
+    global _portfolio_business_service
+    if _portfolio_business_service is None:
+        from services.portfolio_business_service import PortfolioBusinessService
+        _portfolio_business_service = PortfolioBusinessService()
+    return _portfolio_business_service
+
+def get_portfolio_summary() -> Dict[str, Any]:
+    """Get portfolio summary for status endpoint using business service."""
+    try:
+        business_service = get_portfolio_business_service()
+        return business_service.get_portfolio_summary()
     except Exception as e:
         logger.info(f"Portfolio summary unavailable: {e}")
         return {
@@ -37,6 +31,28 @@ def get_portfolio_summary() -> Dict[str, Any]:
             "daily_pnl_percent": 0.0,
             "error": "Portfolio data unavailable"
         }
+
+def calculate_portfolio_overview(portfolio_data: Dict[str, Any], currency: str = "USD") -> Dict[str, Any]:
+    """Calculate portfolio overview using business service."""
+    try:
+        business_service = get_portfolio_business_service()
+        return business_service.calculate_portfolio_overview(portfolio_data, currency)
+    except Exception as e:
+        logger.error(f"Portfolio overview calculation failed: {e}")
+        return {
+            "currency": currency,
+            "total_value": 0.0,
+            "error": "Calculation failed"
+        }
+
+def calculate_asset_allocation(holdings: list) -> list:
+    """Calculate asset allocation using business service."""
+    try:
+        business_service = get_portfolio_business_service()
+        return business_service.calculate_asset_allocation(holdings)
+    except Exception as e:
+        logger.error(f"Asset allocation calculation failed: {e}")
+        return []
 
 def get_portfolio_service():
     """Get the global PortfolioService singleton from the service module."""

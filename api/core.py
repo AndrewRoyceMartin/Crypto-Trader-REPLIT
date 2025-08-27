@@ -42,14 +42,23 @@ def iso_utc(dt: Optional[datetime] = None) -> str:
 # Admin authentication
 ADMIN_TOKEN = os.getenv("ADMIN_TOKEN", "")
 
+# Initialize authentication service
+_auth_service = None
+
+def get_auth_service():
+    """Get authentication service instance."""
+    global _auth_service
+    if _auth_service is None:
+        from services.authentication_service import AuthenticationService
+        _auth_service = AuthenticationService()
+    return _auth_service
+
 def require_admin(f: Any) -> Any:
-    """Decorator to require admin authentication."""
-    from functools import wraps
-    from flask import request, jsonify
-    
-    @wraps(f)
-    def wrapper(*args, **kwargs):
-        if ADMIN_TOKEN and request.headers.get("X-Admin-Token") != ADMIN_TOKEN:
-            return jsonify({"error": "unauthorized"}), 401
-        return f(*args, **kwargs)
-    return wrapper
+    """Decorator to require admin authentication using service."""
+    auth_service = get_auth_service()
+    return auth_service.require_admin_decorator()(f)
+
+def rate_limit(max_hits: int, per_seconds: int):
+    """Decorator for rate limiting using service."""
+    auth_service = get_auth_service()
+    return auth_service.rate_limit_decorator(max_hits, per_seconds)
