@@ -7327,7 +7327,7 @@ async function loadCryptoDetails(symbol) {
         }
         
         // Load recent trading activity
-        const activityResponse = await fetch(`/api/recent-trades?timeframe=7d`);
+        const activityResponse = await fetch(`/api/trade-history?timeframe=7d&limit=20`);
         const activityData = await activityResponse.json();
         const recentTrades = activityData.trades?.filter(t => t.symbol === symbol).slice(0, 5) || [];
         
