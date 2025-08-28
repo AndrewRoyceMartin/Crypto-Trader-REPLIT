@@ -665,6 +665,9 @@ class TradingApp {
         });
 
         window.addEventListener('beforeunload', () => this.cleanup());
+        
+        // Strategy sync accordion functionality
+        this.setupStrategyAccordion();
     }
 
     startAutoUpdate() {
@@ -4363,6 +4366,7 @@ function updateSortIndicatorsByIndex(tableType, columnIndex, ascending) {
         activeIcon.className = ascending ? 'fa-solid fa-sort-up text-warning ms-1' : 'fa-solid fa-sort-down text-warning ms-1';
     }
 }
+
 async function updatePerformanceData() {
     try {
         const ts = Date.now();
