@@ -1,0 +1,389 @@
+📊 Progress: 45% (9/20)
+test_sync_data.js?v=1756421235&nocache=true:707 ✅ workflow_tests category completed in 518.20ms
+test_sync_data.js?v=1756421235&nocache=true:1195  GET https://47c9c798-b0c1-4791-9090-157d07a27bb9-00-3ij4m9iy3b22d.worf.replit.dev/api/current-holdings 502 (Bad Gateway)
+testHoldingsSyncEnhanced @ test_sync_data.js?v=1756421235&nocache=true:1195
+executeEnhancedTest @ test_sync_data.js?v=1756421235&nocache=true:893
+(anonymous) @ test_sync_data.js?v=1756421235&nocache=true:687
+executeCategoryTests @ test_sync_data.js?v=1756421235&nocache=true:687
+executeConcurrentTests @ test_sync_data.js?v=1756421235&nocache=true:426
+runAllTests @ test_sync_data.js?v=1756421235&nocache=true:356
+runSyncTests @ test_sync_data.js?v=1756421235&nocache=true:2716
+(anonymous) @ test_sync_data.js?v=1756421235&nocache=true:3171Understand this error
+test_sync_data.js?v=1756421235&nocache=true:1358  GET https://47c9c798-b0c1-4791-9090-157d07a27bb9-00-3ij4m9iy3b22d.worf.replit.dev/api/current-holdings 502 (Bad Gateway)
+testAPIResponseTiming @ test_sync_data.js?v=1756421235&nocache=true:1358
+executeEnhancedTest @ test_sync_data.js?v=1756421235&nocache=true:899
+(anonymous) @ test_sync_data.js?v=1756421235&nocache=true:687
+executeCategoryTests @ test_sync_data.js?v=1756421235&nocache=true:687
+executeConcurrentTests @ test_sync_data.js?v=1756421235&nocache=true:426
+runAllTests @ test_sync_data.js?v=1756421235&nocache=true:356
+runSyncTests @ test_sync_data.js?v=1756421235&nocache=true:2716
+(anonymous) @ test_sync_data.js?v=1756421235&nocache=true:3171Understand this error
+test_sync_data.js?v=1756421235&nocache=true:2057  GET https://47c9c798-b0c1-4791-9090-157d07a27bb9-00-3ij4m9iy3b22d.worf.replit.dev/api/crypto-portfolio 502 (Bad Gateway)
+testBasicPortfolioData @ test_sync_data.js?v=1756421235&nocache=true:2057
+executeEnhancedTest @ test_sync_data.js?v=1756421235&nocache=true:926
+(anonymous) @ test_sync_data.js?v=1756421235&nocache=true:687
+executeCategoryTests @ test_sync_data.js?v=1756421235&nocache=true:687
+executeConcurrentTests @ test_sync_data.js?v=1756421235&nocache=true:426
+runAllTests @ test_sync_data.js?v=1756421235&nocache=true:356
+runSyncTests @ test_sync_data.js?v=1756421235&nocache=true:2716
+(anonymous) @ test_sync_data.js?v=1756421235&nocache=true:3171Understand this error
+test_sync_data.js?v=1756421235&nocache=true:672 ✅ Test completed: basic_portfolio_data
+test_sync_data.js?v=1756421235&nocache=true:673 📋 Category: Portfolio | Endpoint: /api/crypto-portfolio
+test_sync_data.js?v=1756421235&nocache=true:532 📊 Progress: 50% (10/20)
+test_sync_data.js?v=1756421235&nocache=true:5439  GET https://47c9c798-b0c1-4791-9090-157d07a27bb9-00-3ij4m9iy3b22d.worf.replit.dev/api/available-positions 502 (Bad Gateway)
+testAvailablePositionsDataIntegrity @ test_sync_data.js?v=1756421235&nocache=true:5439
+executeEnhancedTest @ test_sync_data.js?v=1756421235&nocache=true:920
+(anonymous) @ test_sync_data.js?v=1756421235&nocache=true:687
+executeCategoryTests @ test_sync_data.js?v=1756421235&nocache=true:687
+executeConcurrentTests @ test_sync_data.js?v=1756421235&nocache=true:426
+runAllTests @ test_sync_data.js?v=1756421235&nocache=true:356
+runSyncTests @ test_sync_data.js?v=1756421235&nocache=true:2716
+(anonymous) @ test_sync_data.js?v=1756421235&nocache=true:3171Understand this error
+test_sync_data.js?v=1756421235&nocache=true:1195  GET https://47c9c798-b0c1-4791-9090-157d07a27bb9-00-3ij4m9iy3b22d.worf.replit.dev/api/current-holdings 502 (Bad Gateway)
+testHoldingsSyncEnhanced @ test_sync_data.js?v=1756421235&nocache=true:1195
+executeEnhancedTest @ test_sync_data.js?v=1756421235&nocache=true:893
+(anonymous) @ test_sync_data.js?v=1756421235&nocache=true:687
+executeCategoryTests @ test_sync_data.js?v=1756421235&nocache=true:687
+executeConcurrentTests @ test_sync_data.js?v=1756421235&nocache=true:426
+runAllTests @ test_sync_data.js?v=1756421235&nocache=true:356
+runSyncTests @ test_sync_data.js?v=1756421235&nocache=true:2716
+(anonymous) @ test_sync_data.js?v=1756421235&nocache=true:3171Understand this error
+test_sync_data.js?v=1756421235&nocache=true:5230  GET https://47c9c798-b0c1-4791-9090-157d07a27bb9-00-3ij4m9iy3b22d.worf.replit.dev/api/strategy-config 502 (Bad Gateway)
+testBollingerBandsPrioritization @ test_sync_data.js?v=1756421235&nocache=true:5230
+executeEnhancedTest @ test_sync_data.js?v=1756421235&nocache=true:917
+(anonymous) @ test_sync_data.js?v=1756421235&nocache=true:687
+executeCategoryTests @ test_sync_data.js?v=1756421235&nocache=true:687
+executeConcurrentTests @ test_sync_data.js?v=1756421235&nocache=true:426
+runAllTests @ test_sync_data.js?v=1756421235&nocache=true:356
+runSyncTests @ test_sync_data.js?v=1756421235&nocache=true:2716
+(anonymous) @ test_sync_data.js?v=1756421235&nocache=true:3171Understand this error
+test_sync_data.js?v=1756421235&nocache=true:2070  GET https://47c9c798-b0c1-4791-9090-157d07a27bb9-00-3ij4m9iy3b22d.worf.replit.dev/api/price-source-status 502 (Bad Gateway)
+testBasicPriceUpdates @ test_sync_data.js?v=1756421235&nocache=true:2070
+executeEnhancedTest @ test_sync_data.js?v=1756421235&nocache=true:932
+(anonymous) @ test_sync_data.js?v=1756421235&nocache=true:687
+executeCategoryTests @ test_sync_data.js?v=1756421235&nocache=true:687
+executeConcurrentTests @ test_sync_data.js?v=1756421235&nocache=true:426
+runAllTests @ test_sync_data.js?v=1756421235&nocache=true:356
+runSyncTests @ test_sync_data.js?v=1756421235&nocache=true:2716
+(anonymous) @ test_sync_data.js?v=1756421235&nocache=true:3171Understand this error
+test_sync_data.js?v=1756421235&nocache=true:2042  GET https://47c9c798-b0c1-4791-9090-157d07a27bb9-00-3ij4m9iy3b22d.worf.replit.dev/api/okx-status 502 (Bad Gateway)
+testBasicAPIConnectivity @ test_sync_data.js?v=1756421235&nocache=true:2042
+executeEnhancedTest @ test_sync_data.js?v=1756421235&nocache=true:923
+(anonymous) @ test_sync_data.js?v=1756421235&nocache=true:687
+executeCategoryTests @ test_sync_data.js?v=1756421235&nocache=true:687
+executeConcurrentTests @ test_sync_data.js?v=1756421235&nocache=true:426
+runAllTests @ test_sync_data.js?v=1756421235&nocache=true:356
+runSyncTests @ test_sync_data.js?v=1756421235&nocache=true:2716
+(anonymous) @ test_sync_data.js?v=1756421235&nocache=true:3171Understand this error
+test_sync_data.js?v=1756421235&nocache=true:672 ✅ Test completed: basic_price_updates
+test_sync_data.js?v=1756421235&nocache=true:673 📋 Category: General | Endpoint: API endpoint
+test_sync_data.js?v=1756421235&nocache=true:532 📊 Progress: 55% (11/20)
+test_sync_data.js?v=1756421235&nocache=true:707 ✅ ui_interaction category completed in 10692.30ms
+test_sync_data.js?v=1756421235&nocache=true:672 ✅ Test completed: basic_api_connectivity
+test_sync_data.js?v=1756421235&nocache=true:673 📋 Category: Connectivity | Endpoint: /api/okx-status
+test_sync_data.js?v=1756421235&nocache=true:532 📊 Progress: 60% (12/20)
+test_sync_data.js?v=1756421235&nocache=true:1306  GET https://47c9c798-b0c1-4791-9090-157d07a27bb9-00-3ij4m9iy3b22d.worf.replit.dev/api/okx-status 502 (Bad Gateway)
+testPriceFreshnessRealtime @ test_sync_data.js?v=1756421235&nocache=true:1306
+executeEnhancedTest @ test_sync_data.js?v=1756421235&nocache=true:896
+(anonymous) @ test_sync_data.js?v=1756421235&nocache=true:687
+executeCategoryTests @ test_sync_data.js?v=1756421235&nocache=true:687
+executeConcurrentTests @ test_sync_data.js?v=1756421235&nocache=true:426
+runAllTests @ test_sync_data.js?v=1756421235&nocache=true:356
+runSyncTests @ test_sync_data.js?v=1756421235&nocache=true:2716
+(anonymous) @ test_sync_data.js?v=1756421235&nocache=true:3171Understand this error
+test_sync_data.js?v=1756421235&nocache=true:1358  GET https://47c9c798-b0c1-4791-9090-157d07a27bb9-00-3ij4m9iy3b22d.worf.replit.dev/api/current-holdings 502 (Bad Gateway)
+testAPIResponseTiming @ test_sync_data.js?v=1756421235&nocache=true:1358
+executeEnhancedTest @ test_sync_data.js?v=1756421235&nocache=true:899
+(anonymous) @ test_sync_data.js?v=1756421235&nocache=true:687
+executeCategoryTests @ test_sync_data.js?v=1756421235&nocache=true:687
+executeConcurrentTests @ test_sync_data.js?v=1756421235&nocache=true:426
+runAllTests @ test_sync_data.js?v=1756421235&nocache=true:356
+runSyncTests @ test_sync_data.js?v=1756421235&nocache=true:2716
+(anonymous) @ test_sync_data.js?v=1756421235&nocache=true:3171Understand this error
+test_sync_data.js?v=1756421235&nocache=true:766  GET https://47c9c798-b0c1-4791-9090-157d07a27bb9-00-3ij4m9iy3b22d.worf.replit.dev/api/okx-status 502 (Bad Gateway)
+(anonymous) @ test_sync_data.js?v=1756421235&nocache=true:766
+monitorAPIHealth @ test_sync_data.js?v=1756421235&nocache=true:763
+(anonymous) @ test_sync_data.js?v=1756421235&nocache=true:737
+setInterval
+startRealTimeMonitoring @ test_sync_data.js?v=1756421235&nocache=true:736
+runAllTests @ test_sync_data.js?v=1756421235&nocache=true:350
+runSyncTests @ test_sync_data.js?v=1756421235&nocache=true:2716
+(anonymous) @ test_sync_data.js?v=1756421235&nocache=true:3171Understand this error
+test_sync_data.js?v=1756421235&nocache=true:766  GET https://47c9c798-b0c1-4791-9090-157d07a27bb9-00-3ij4m9iy3b22d.worf.replit.dev/api/crypto-portfolio 502 (Bad Gateway)
+(anonymous) @ test_sync_data.js?v=1756421235&nocache=true:766
+monitorAPIHealth @ test_sync_data.js?v=1756421235&nocache=true:763
+(anonymous) @ test_sync_data.js?v=1756421235&nocache=true:737
+setInterval
+startRealTimeMonitoring @ test_sync_data.js?v=1756421235&nocache=true:736
+runAllTests @ test_sync_data.js?v=1756421235&nocache=true:350
+runSyncTests @ test_sync_data.js?v=1756421235&nocache=true:2716
+(anonymous) @ test_sync_data.js?v=1756421235&nocache=true:3171Understand this error
+test_sync_data.js?v=1756421235&nocache=true:766  GET https://47c9c798-b0c1-4791-9090-157d07a27bb9-00-3ij4m9iy3b22d.worf.replit.dev/api/okx-status 502 (Bad Gateway)
+(anonymous) @ test_sync_data.js?v=1756421235&nocache=true:766
+monitorAPIHealth @ test_sync_data.js?v=1756421235&nocache=true:763
+(anonymous) @ test_sync_data.js?v=1756421235&nocache=true:737
+setInterval
+startRealTimeMonitoring @ test_sync_data.js?v=1756421235&nocache=true:736
+runAllTests @ test_sync_data.js?v=1756421235&nocache=true:350
+runSyncTests @ test_sync_data.js?v=1756421235&nocache=true:2716
+(anonymous) @ test_sync_data.js?v=1756421235&nocache=true:3171Understand this error
+test_sync_data.js?v=1756421235&nocache=true:766  GET https://47c9c798-b0c1-4791-9090-157d07a27bb9-00-3ij4m9iy3b22d.worf.replit.dev/api/price-source-status 502 (Bad Gateway)
+(anonymous) @ test_sync_data.js?v=1756421235&nocache=true:766
+monitorAPIHealth @ test_sync_data.js?v=1756421235&nocache=true:763
+(anonymous) @ test_sync_data.js?v=1756421235&nocache=true:737
+setInterval
+startRealTimeMonitoring @ test_sync_data.js?v=1756421235&nocache=true:736
+runAllTests @ test_sync_data.js?v=1756421235&nocache=true:350
+runSyncTests @ test_sync_data.js?v=1756421235&nocache=true:2716
+(anonymous) @ test_sync_data.js?v=1756421235&nocache=true:3171Understand this error
+test_sync_data.js?v=1756421235&nocache=true:1537 📊 Health check: 0/3 endpoints healthy (0%)
+test_sync_data.js?v=1756421235&nocache=true:766  GET https://47c9c798-b0c1-4791-9090-157d07a27bb9-00-3ij4m9iy3b22d.worf.replit.dev/api/price-source-status 502 (Bad Gateway)
+(anonymous) @ test_sync_data.js?v=1756421235&nocache=true:766
+monitorAPIHealth @ test_sync_data.js?v=1756421235&nocache=true:763
+(anonymous) @ test_sync_data.js?v=1756421235&nocache=true:737
+setInterval
+startRealTimeMonitoring @ test_sync_data.js?v=1756421235&nocache=true:736
+runAllTests @ test_sync_data.js?v=1756421235&nocache=true:350
+runSyncTests @ test_sync_data.js?v=1756421235&nocache=true:2716
+(anonymous) @ test_sync_data.js?v=1756421235&nocache=true:3171Understand this error
+test_sync_data.js?v=1756421235&nocache=true:793  GET https://47c9c798-b0c1-4791-9090-157d07a27bb9-00-3ij4m9iy3b22d.worf.replit.dev/api/current-holdings 502 (Bad Gateway)
+monitorDataFreshness @ test_sync_data.js?v=1756421235&nocache=true:793
+(anonymous) @ test_sync_data.js?v=1756421235&nocache=true:742
+setInterval
+startRealTimeMonitoring @ test_sync_data.js?v=1756421235&nocache=true:741
+runAllTests @ test_sync_data.js?v=1756421235&nocache=true:350
+runSyncTests @ test_sync_data.js?v=1756421235&nocache=true:2716
+(anonymous) @ test_sync_data.js?v=1756421235&nocache=true:3171Understand this error
+test_sync_data.js?v=1756421235&nocache=true:766  GET https://47c9c798-b0c1-4791-9090-157d07a27bb9-00-3ij4m9iy3b22d.worf.replit.dev/api/crypto-portfolio 502 (Bad Gateway)
+(anonymous) @ test_sync_data.js?v=1756421235&nocache=true:766
+monitorAPIHealth @ test_sync_data.js?v=1756421235&nocache=true:763
+(anonymous) @ test_sync_data.js?v=1756421235&nocache=true:737
+setInterval
+startRealTimeMonitoring @ test_sync_data.js?v=1756421235&nocache=true:736
+runAllTests @ test_sync_data.js?v=1756421235&nocache=true:350
+runSyncTests @ test_sync_data.js?v=1756421235&nocache=true:2716
+(anonymous) @ test_sync_data.js?v=1756421235&nocache=true:3171Understand this error
+test_sync_data.js?v=1756421235&nocache=true:1537 📊 Health check: 0/3 endpoints healthy (0%)
+test_sync_data.js?v=1756421235&nocache=true:794  GET https://47c9c798-b0c1-4791-9090-157d07a27bb9-00-3ij4m9iy3b22d.worf.replit.dev/api/available-positions 502 (Bad Gateway)
+monitorDataFreshness @ test_sync_data.js?v=1756421235&nocache=true:794
+(anonymous) @ test_sync_data.js?v=1756421235&nocache=true:742
+setInterval
+startRealTimeMonitoring @ test_sync_data.js?v=1756421235&nocache=true:741
+runAllTests @ test_sync_data.js?v=1756421235&nocache=true:350
+runSyncTests @ test_sync_data.js?v=1756421235&nocache=true:2716
+(anonymous) @ test_sync_data.js?v=1756421235&nocache=true:3171Understand this error
+test_sync_data.js?v=1756421235&nocache=true:1199  GET https://47c9c798-b0c1-4791-9090-157d07a27bb9-00-3ij4m9iy3b22d.worf.replit.dev/api/crypto-portfolio 502 (Bad Gateway)
+testHoldingsSyncEnhanced @ test_sync_data.js?v=1756421235&nocache=true:1199
+await in testHoldingsSyncEnhanced
+executeEnhancedTest @ test_sync_data.js?v=1756421235&nocache=true:893
+(anonymous) @ test_sync_data.js?v=1756421235&nocache=true:687
+executeCategoryTests @ test_sync_data.js?v=1756421235&nocache=true:687
+executeConcurrentTests @ test_sync_data.js?v=1756421235&nocache=true:426
+runAllTests @ test_sync_data.js?v=1756421235&nocache=true:356
+runSyncTests @ test_sync_data.js?v=1756421235&nocache=true:2716
+(anonymous) @ test_sync_data.js?v=1756421235&nocache=true:3171Understand this error
+test_sync_data.js?v=1756421235&nocache=true:672 ✅ Test completed: holdings_sync_enhanced
+test_sync_data.js?v=1756421235&nocache=true:673 📋 Category: Data Integrity | Endpoint: /api/crypto-portfolio
+test_sync_data.js?v=1756421235&nocache=true:532 📊 Progress: 65% (13/20)
+test_sync_data.js?v=1756421235&nocache=true:1310  GET https://47c9c798-b0c1-4791-9090-157d07a27bb9-00-3ij4m9iy3b22d.worf.replit.dev/api/price-source-status 502 (Bad Gateway)
+testPriceFreshnessRealtime @ test_sync_data.js?v=1756421235&nocache=true:1310
+await in testPriceFreshnessRealtime
+executeEnhancedTest @ test_sync_data.js?v=1756421235&nocache=true:896
+(anonymous) @ test_sync_data.js?v=1756421235&nocache=true:687
+executeCategoryTests @ test_sync_data.js?v=1756421235&nocache=true:687
+executeConcurrentTests @ test_sync_data.js?v=1756421235&nocache=true:426
+runAllTests @ test_sync_data.js?v=1756421235&nocache=true:356
+runSyncTests @ test_sync_data.js?v=1756421235&nocache=true:2716
+(anonymous) @ test_sync_data.js?v=1756421235&nocache=true:3171Understand this error
+test_sync_data.js?v=1756421235&nocache=true:1358  GET https://47c9c798-b0c1-4791-9090-157d07a27bb9-00-3ij4m9iy3b22d.worf.replit.dev/api/available-positions 502 (Bad Gateway)
+testAPIResponseTiming @ test_sync_data.js?v=1756421235&nocache=true:1358
+await in testAPIResponseTiming
+executeEnhancedTest @ test_sync_data.js?v=1756421235&nocache=true:899
+(anonymous) @ test_sync_data.js?v=1756421235&nocache=true:687
+executeCategoryTests @ test_sync_data.js?v=1756421235&nocache=true:687
+executeConcurrentTests @ test_sync_data.js?v=1756421235&nocache=true:426
+runAllTests @ test_sync_data.js?v=1756421235&nocache=true:356
+runSyncTests @ test_sync_data.js?v=1756421235&nocache=true:2716
+(anonymous) @ test_sync_data.js?v=1756421235&nocache=true:3171Understand this error
+test_sync_data.js?v=1756421235&nocache=true:5516  GET https://47c9c798-b0c1-4791-9090-157d07a27bb9-00-3ij4m9iy3b22d.worf.replit.dev/api/current-holdings 502 (Bad Gateway)
+testAvailablePositionsDataIntegrity @ test_sync_data.js?v=1756421235&nocache=true:5516
+await in testAvailablePositionsDataIntegrity
+executeEnhancedTest @ test_sync_data.js?v=1756421235&nocache=true:920
+(anonymous) @ test_sync_data.js?v=1756421235&nocache=true:687
+executeCategoryTests @ test_sync_data.js?v=1756421235&nocache=true:687
+executeConcurrentTests @ test_sync_data.js?v=1756421235&nocache=true:426
+runAllTests @ test_sync_data.js?v=1756421235&nocache=true:356
+runSyncTests @ test_sync_data.js?v=1756421235&nocache=true:2716
+(anonymous) @ test_sync_data.js?v=1756421235&nocache=true:3171Understand this error
+test_sync_data.js?v=1756421235&nocache=true:1199  GET https://47c9c798-b0c1-4791-9090-157d07a27bb9-00-3ij4m9iy3b22d.worf.replit.dev/api/crypto-portfolio 502 (Bad Gateway)
+testHoldingsSyncEnhanced @ test_sync_data.js?v=1756421235&nocache=true:1199
+await in testHoldingsSyncEnhanced
+executeEnhancedTest @ test_sync_data.js?v=1756421235&nocache=true:893
+(anonymous) @ test_sync_data.js?v=1756421235&nocache=true:687
+executeCategoryTests @ test_sync_data.js?v=1756421235&nocache=true:687
+executeConcurrentTests @ test_sync_data.js?v=1756421235&nocache=true:426
+runAllTests @ test_sync_data.js?v=1756421235&nocache=true:356
+runSyncTests @ test_sync_data.js?v=1756421235&nocache=true:2716
+(anonymous) @ test_sync_data.js?v=1756421235&nocache=true:3171Understand this error
+test_sync_data.js?v=1756421235&nocache=true:672 ✅ Test completed: holdings_sync_enhanced
+test_sync_data.js?v=1756421235&nocache=true:673 📋 Category: Data Integrity | Endpoint: /api/crypto-portfolio
+test_sync_data.js?v=1756421235&nocache=true:532 📊 Progress: 70% (14/20)
+test_sync_data.js?v=1756421235&nocache=true:1358  GET https://47c9c798-b0c1-4791-9090-157d07a27bb9-00-3ij4m9iy3b22d.worf.replit.dev/api/available-positions 502 (Bad Gateway)
+testAPIResponseTiming @ test_sync_data.js?v=1756421235&nocache=true:1358
+await in testAPIResponseTiming
+executeEnhancedTest @ test_sync_data.js?v=1756421235&nocache=true:899
+(anonymous) @ test_sync_data.js?v=1756421235&nocache=true:687
+executeCategoryTests @ test_sync_data.js?v=1756421235&nocache=true:687
+executeConcurrentTests @ test_sync_data.js?v=1756421235&nocache=true:426
+runAllTests @ test_sync_data.js?v=1756421235&nocache=true:356
+runSyncTests @ test_sync_data.js?v=1756421235&nocache=true:2716
+(anonymous) @ test_sync_data.js?v=1756421235&nocache=true:3171Understand this error
+test_sync_data.js?v=1756421235&nocache=true:5270  GET https://47c9c798-b0c1-4791-9090-157d07a27bb9-00-3ij4m9iy3b22d.worf.replit.dev/api/current-holdings 502 (Bad Gateway)
+testBollingerBandsPrioritization @ test_sync_data.js?v=1756421235&nocache=true:5270
+await in testBollingerBandsPrioritization
+executeEnhancedTest @ test_sync_data.js?v=1756421235&nocache=true:917
+(anonymous) @ test_sync_data.js?v=1756421235&nocache=true:687
+executeCategoryTests @ test_sync_data.js?v=1756421235&nocache=true:687
+executeConcurrentTests @ test_sync_data.js?v=1756421235&nocache=true:426
+runAllTests @ test_sync_data.js?v=1756421235&nocache=true:356
+runSyncTests @ test_sync_data.js?v=1756421235&nocache=true:2716
+(anonymous) @ test_sync_data.js?v=1756421235&nocache=true:3171Understand this error
+test_sync_data.js?v=1756421235&nocache=true:1310  GET https://47c9c798-b0c1-4791-9090-157d07a27bb9-00-3ij4m9iy3b22d.worf.replit.dev/api/price-source-status 502 (Bad Gateway)
+testPriceFreshnessRealtime @ test_sync_data.js?v=1756421235&nocache=true:1310
+await in testPriceFreshnessRealtime
+executeEnhancedTest @ test_sync_data.js?v=1756421235&nocache=true:896
+(anonymous) @ test_sync_data.js?v=1756421235&nocache=true:687
+executeCategoryTests @ test_sync_data.js?v=1756421235&nocache=true:687
+executeConcurrentTests @ test_sync_data.js?v=1756421235&nocache=true:426
+runAllTests @ test_sync_data.js?v=1756421235&nocache=true:356
+runSyncTests @ test_sync_data.js?v=1756421235&nocache=true:2716
+(anonymous) @ test_sync_data.js?v=1756421235&nocache=true:3171Understand this error
+test_sync_data.js?v=1756421235&nocache=true:1358  GET https://47c9c798-b0c1-4791-9090-157d07a27bb9-00-3ij4m9iy3b22d.worf.replit.dev/api/crypto-portfolio 502 (Bad Gateway)
+testAPIResponseTiming @ test_sync_data.js?v=1756421235&nocache=true:1358
+await in testAPIResponseTiming
+executeEnhancedTest @ test_sync_data.js?v=1756421235&nocache=true:899
+(anonymous) @ test_sync_data.js?v=1756421235&nocache=true:687
+executeCategoryTests @ test_sync_data.js?v=1756421235&nocache=true:687
+executeConcurrentTests @ test_sync_data.js?v=1756421235&nocache=true:426
+runAllTests @ test_sync_data.js?v=1756421235&nocache=true:356
+runSyncTests @ test_sync_data.js?v=1756421235&nocache=true:2716
+(anonymous) @ test_sync_data.js?v=1756421235&nocache=true:3171Understand this error
+test_sync_data.js?v=1756421235&nocache=true:1321  GET https://47c9c798-b0c1-4791-9090-157d07a27bb9-00-3ij4m9iy3b22d.worf.replit.dev/api/crypto-portfolio?_bypass_cache=1756421403364 502 (Bad Gateway)
+testPriceFreshnessRealtime @ test_sync_data.js?v=1756421235&nocache=true:1321
+await in testPriceFreshnessRealtime
+executeEnhancedTest @ test_sync_data.js?v=1756421235&nocache=true:896
+(anonymous) @ test_sync_data.js?v=1756421235&nocache=true:687
+executeCategoryTests @ test_sync_data.js?v=1756421235&nocache=true:687
+executeConcurrentTests @ test_sync_data.js?v=1756421235&nocache=true:426
+runAllTests @ test_sync_data.js?v=1756421235&nocache=true:356
+runSyncTests @ test_sync_data.js?v=1756421235&nocache=true:2716
+(anonymous) @ test_sync_data.js?v=1756421235&nocache=true:3171Understand this error
+test_sync_data.js?v=1756421235&nocache=true:3338  GET https://47c9c798-b0c1-4791-9090-157d07a27bb9-00-3ij4m9iy3b22d.worf.replit.dev/api/available-positions 502 (Bad Gateway)
+validateAvailablePositionsTable @ test_sync_data.js?v=1756421235&nocache=true:3338
+testAvailablePositionsDataIntegrity @ test_sync_data.js?v=1756421235&nocache=true:5550
+await in testAvailablePositionsDataIntegrity
+executeEnhancedTest @ test_sync_data.js?v=1756421235&nocache=true:920
+(anonymous) @ test_sync_data.js?v=1756421235&nocache=true:687
+executeCategoryTests @ test_sync_data.js?v=1756421235&nocache=true:687
+executeConcurrentTests @ test_sync_data.js?v=1756421235&nocache=true:426
+runAllTests @ test_sync_data.js?v=1756421235&nocache=true:356
+runSyncTests @ test_sync_data.js?v=1756421235&nocache=true:2716
+(anonymous) @ test_sync_data.js?v=1756421235&nocache=true:3171Understand this error
+test_sync_data.js?v=1756421235&nocache=true:5306  GET https://47c9c798-b0c1-4791-9090-157d07a27bb9-00-3ij4m9iy3b22d.worf.replit.dev/api/bot-status 502 (Bad Gateway)
+testBollingerBandsPrioritization @ test_sync_data.js?v=1756421235&nocache=true:5306
+await in testBollingerBandsPrioritization
+executeEnhancedTest @ test_sync_data.js?v=1756421235&nocache=true:917
+(anonymous) @ test_sync_data.js?v=1756421235&nocache=true:687
+executeCategoryTests @ test_sync_data.js?v=1756421235&nocache=true:687
+executeConcurrentTests @ test_sync_data.js?v=1756421235&nocache=true:426
+runAllTests @ test_sync_data.js?v=1756421235&nocache=true:356
+runSyncTests @ test_sync_data.js?v=1756421235&nocache=true:2716
+(anonymous) @ test_sync_data.js?v=1756421235&nocache=true:3171Understand this error
+test_sync_data.js?v=1756421235&nocache=true:1358  GET https://47c9c798-b0c1-4791-9090-157d07a27bb9-00-3ij4m9iy3b22d.worf.replit.dev/api/crypto-portfolio 502 (Bad Gateway)
+testAPIResponseTiming @ test_sync_data.js?v=1756421235&nocache=true:1358
+await in testAPIResponseTiming
+executeEnhancedTest @ test_sync_data.js?v=1756421235&nocache=true:899
+(anonymous) @ test_sync_data.js?v=1756421235&nocache=true:687
+executeCategoryTests @ test_sync_data.js?v=1756421235&nocache=true:687
+executeConcurrentTests @ test_sync_data.js?v=1756421235&nocache=true:426
+runAllTests @ test_sync_data.js?v=1756421235&nocache=true:356
+runSyncTests @ test_sync_data.js?v=1756421235&nocache=true:2716
+(anonymous) @ test_sync_data.js?v=1756421235&nocache=true:3171Understand this error
+test_sync_data.js?v=1756421235&nocache=true:1321  GET https://47c9c798-b0c1-4791-9090-157d07a27bb9-00-3ij4m9iy3b22d.worf.replit.dev/api/crypto-portfolio?_bypass_cache=1756421403590 502 (Bad Gateway)
+testPriceFreshnessRealtime @ test_sync_data.js?v=1756421235&nocache=true:1321
+await in testPriceFreshnessRealtime
+executeEnhancedTest @ test_sync_data.js?v=1756421235&nocache=true:896
+(anonymous) @ test_sync_data.js?v=1756421235&nocache=true:687
+executeCategoryTests @ test_sync_data.js?v=1756421235&nocache=true:687
+executeConcurrentTests @ test_sync_data.js?v=1756421235&nocache=true:426
+runAllTests @ test_sync_data.js?v=1756421235&nocache=true:356
+runSyncTests @ test_sync_data.js?v=1756421235&nocache=true:2716
+(anonymous) @ test_sync_data.js?v=1756421235&nocache=true:3171Understand this error
+test_sync_data.js?v=1756421235&nocache=true:1358  GET https://47c9c798-b0c1-4791-9090-157d07a27bb9-00-3ij4m9iy3b22d.worf.replit.dev/api/okx-status 502 (Bad Gateway)
+testAPIResponseTiming @ test_sync_data.js?v=1756421235&nocache=true:1358
+await in testAPIResponseTiming
+executeEnhancedTest @ test_sync_data.js?v=1756421235&nocache=true:899
+(anonymous) @ test_sync_data.js?v=1756421235&nocache=true:687
+executeCategoryTests @ test_sync_data.js?v=1756421235&nocache=true:687
+executeConcurrentTests @ test_sync_data.js?v=1756421235&nocache=true:426
+runAllTests @ test_sync_data.js?v=1756421235&nocache=true:356
+runSyncTests @ test_sync_data.js?v=1756421235&nocache=true:2716
+(anonymous) @ test_sync_data.js?v=1756421235&nocache=true:3171Understand this error
+test_sync_data.js?v=1756421235&nocache=true:672 ✅ Test completed: api_response_timing
+test_sync_data.js?v=1756421235&nocache=true:673 📋 Category: Performance | Endpoint: Multiple endpoints
+test_sync_data.js?v=1756421235&nocache=true:532 📊 Progress: 75% (15/20)
+test_sync_data.js?v=1756421235&nocache=true:707 ✅ performance category completed in 11781.50ms
+test_sync_data.js?v=1756421235&nocache=true:5564  GET https://47c9c798-b0c1-4791-9090-157d07a27bb9-00-3ij4m9iy3b22d.worf.replit.dev/api/available-positions 502 (Bad Gateway)
+testAvailablePositionsDataIntegrity @ test_sync_data.js?v=1756421235&nocache=true:5564
+await in testAvailablePositionsDataIntegrity
+executeEnhancedTest @ test_sync_data.js?v=1756421235&nocache=true:920
+(anonymous) @ test_sync_data.js?v=1756421235&nocache=true:687
+executeCategoryTests @ test_sync_data.js?v=1756421235&nocache=true:687
+executeConcurrentTests @ test_sync_data.js?v=1756421235&nocache=true:426
+runAllTests @ test_sync_data.js?v=1756421235&nocache=true:356
+runSyncTests @ test_sync_data.js?v=1756421235&nocache=true:2716
+(anonymous) @ test_sync_data.js?v=1756421235&nocache=true:3171Understand this error
+test_sync_data.js?v=1756421235&nocache=true:672 ✅ Test completed: available_positions_data_integrity
+test_sync_data.js?v=1756421235&nocache=true:673 📋 Category: Trading Data | Endpoint: /api/available-positions
+test_sync_data.js?v=1756421235&nocache=true:532 📊 Progress: 80% (16/20)
+test_sync_data.js?v=1756421235&nocache=true:1358  GET https://47c9c798-b0c1-4791-9090-157d07a27bb9-00-3ij4m9iy3b22d.worf.replit.dev/api/okx-status 502 (Bad Gateway)
+testAPIResponseTiming @ test_sync_data.js?v=1756421235&nocache=true:1358
+await in testAPIResponseTiming
+executeEnhancedTest @ test_sync_data.js?v=1756421235&nocache=true:899
+(anonymous) @ test_sync_data.js?v=1756421235&nocache=true:687
+executeCategoryTests @ test_sync_data.js?v=1756421235&nocache=true:687
+executeConcurrentTests @ test_sync_data.js?v=1756421235&nocache=true:426
+runAllTests @ test_sync_data.js?v=1756421235&nocache=true:356
+runSyncTests @ test_sync_data.js?v=1756421235&nocache=true:2716
+(anonymous) @ test_sync_data.js?v=1756421235&nocache=true:3171Understand this error
+test_sync_data.js?v=1756421235&nocache=true:672 ✅ Test completed: api_response_timing
+test_sync_data.js?v=1756421235&nocache=true:673 📋 Category: Performance | Endpoint: Multiple endpoints
+test_sync_data.js?v=1756421235&nocache=true:532 📊 Progress: 85% (17/20)
+test_sync_data.js?v=1756421235&nocache=true:5342  GET https://47c9c798-b0c1-4791-9090-157d07a27bb9-00-3ij4m9iy3b22d.worf.replit.dev/api/test-sync-data 502 (Bad Gateway)
+testBollingerBandsPrioritization @ test_sync_data.js?v=1756421235&nocache=true:5342
+await in testBollingerBandsPrioritization
+executeEnhancedTest @ test_sync_data.js?v=1756421235&nocache=true:917
+(anonymous) @ test_sync_data.js?v=1756421235&nocache=true:687
+executeCategoryTests @ test_sync_data.js?v=1756421235&nocache=true:687
+executeConcurrentTests @ test_sync_data.js?v=1756421235&nocache=true:426
+runAllTests @ test_sync_data.js?v=1756421235&nocache=true:356
+runSyncTests @ test_sync_data.js?v=1756421235&nocache=true:2716
+(anonymous) @ test_sync_data.js?v=1756421235&nocache=true:3171Understand this error
+test_sync_data.js?v=1756421235&nocache=true:672 ✅ Test completed: bollinger_strategy_priority
+test_sync_data.js?v=1756421235&nocache=true:673 📋 Category: Strategy | Endpoint: /api/available-positions
+test_sync_data.js?v=1756421235&nocache=true:532 📊 Progress: 90% (18/20)
+test_sync_data.js?v=1756421235&nocache=true:707 ✅ strategy_validation category completed in 11792.80ms
+test_sync_data.js?v=1756421235&nocache=true:672 ✅ Test completed: price_freshness_realtime
+test_sync_data.js?v=1756421235&nocache=true:673 📋 Category: Price Data | Endpoint: /api/current-holdings
+test_sync_data.js?v=1756421235&nocache=true:532 📊 Progress: 95% (19/20)
+test_sync_data.js?v=1756421235&nocache=true:707 ✅ critical category completed in 17231.10ms
+test_sync_data.js?v=1756421235&nocache=true:672 ✅ Test completed: price_freshness_realtime
+test_sync_data.js?v=1756421235&nocache=true:673 📋 Category: Price Data | Endpoint: /api/current-holdings
+test_sync_data.js?v=1756421235&nocache=true:532 📊 Progress: 100% (20/20)
+test_sync_data.js?v=1756421235&nocache=true:707 ✅ data_integrity category completed in 17730.80ms
+test_sync_data.js?v=1756421235&nocache=true:1552 📊 Analyzing enhanced test results...
+test_sync_data.js?v=1756421235&nocache=true:532 📊 Progress: 100% (20/20)
+test_sync_data.js?v=1756421235&nocache=true:1640 🎨 Displaying enhanced test results...
+test_sync_data.js?v=1756421235&nocache=true:367 ✅ Enhanced test execution completed successfully
+test_sync_data.js?v=1756421235&nocache=true:868 📡 Real-time monitoring stopped
+test_sync_data.js?v=1756421235&nocache=true:1537 📊 Health check: 3/3 endpoints healthy (100%)
