@@ -3221,9 +3221,9 @@ class TradingApp {
                 // Get position status badge based on P&L
                 let positionStatus = '<span class="badge bg-secondary">FLAT</span>';
                 if (qty > 0) {
-                    const targetPercent = (targetMultiplier - 1) * 100;
-                    const managedThreshold = Math.max(targetPercent * 0.8, 6.0); // 80% of target or min 6%
-                    const watchThreshold = Math.max(targetPercent * 0.4, 3.0); // 40% of target or min 3%
+                    const targetPct = getTargetPercent(crypto);
+                    const managedThreshold = Math.max(targetPct * 0.8, 6.0);
+                    const watchThreshold = Math.max(targetPct * 0.4, 3.0);
                     
                     if (pp >= managedThreshold) {
                         positionStatus = `<span class="badge bg-success" title="Position above ${managedThreshold.toFixed(1)}% profit - in active management zone">MANAGED</span>`;
@@ -6339,15 +6339,15 @@ function getPositionStatus(holding) {
     }
     
     // Check if position is significantly profitable (likely to be managed by bot)
-    const targetPercent = getTargetPercent(holding);
-    const managedThreshold = Math.max(targetPercent * 0.8, 6.0); // 80% of target or min 6%
+    const targetPct = getTargetPercent(holding);
+    const managedThreshold = Math.max(targetPct * 0.8, 6.0);
     
     if (pnlPercent >= managedThreshold) {
         return `<span class="badge bg-success" title="Position above ${managedThreshold.toFixed(1)}% profit - in active management zone">MANAGED</span>`;
     }
     
     // Check if position is moderately profitable
-    const watchThreshold = Math.max(targetPercent * 0.4, 3.0); // 40% of target or min 3%
+    const watchThreshold = Math.max(targetPct * 0.4, 3.0);
     if (pnlPercent >= watchThreshold) {
         return `<span class="badge bg-warning text-dark" title="Position above ${watchThreshold.toFixed(1)}% profit - monitored for exit signals">WATCH</span>`;
     }
