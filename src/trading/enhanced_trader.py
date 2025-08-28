@@ -231,6 +231,9 @@ class EnhancedTrader:
 
             while self.running:
                 try:
+                    # 🚀 CRITICAL FIX: Sync with portfolio every iteration to detect existing positions
+                    self._sync_with_portfolio(symbol)
+                    
                     data = self._safe_get_ohlcv(symbol, timeframe, limit=100)
                     if data is None or data.empty:
                         self.logger.warning("No data available, waiting...")
@@ -244,6 +247,57 @@ class EnhancedTrader:
 
                     current_price = float(data["close"].iloc[-1])
                     current_time = datetime.now(timezone.utc)
+                    
+                    # 🔍 EXISTING POSITION EXIT CHECK: Check if we have a position that needs immediate exit
+                    base_symbol = symbol.split('/')[0] if '/' in symbol else symbol
+                    current_qty = self.position_state.get('position_qty', 0.0)
+                    entry_price = self.position_state.get('entry_price', 0.0)
+                    
+                    if current_qty > 0.0 and entry_price > 0.0:
+                        gain_percent = ((current_price - entry_price) / entry_price) * 100
+                        
+                        # Dynamic safety net threshold (volatility-adjusted)
+                        bb_analysis = self.strategy.calculate_bollinger_bands(data)
+                        if bb_analysis and len(bb_analysis['upper']) > 0:
+                            bb_up = bb_analysis['upper'][-1]
+                            bb_lo = bb_analysis['lower'][-1]
+                            bb_width_percent = ((bb_up - bb_lo) / current_price) * 100 if bb_up and bb_lo else 4.0
+                            volatility_multiplier = max(1.2, min(2.0, bb_width_percent / 4.0))
+                            dynamic_safety_threshold = 4.0 * volatility_multiplier  # Base 4% adjusted for volatility
+                        else:
+                            dynamic_safety_threshold = 6.0  # Conservative fallback
+                        
+                        if gain_percent >= dynamic_safety_threshold:
+                            self.logger.critical(
+                                "🚨 EXISTING POSITION ABOVE DYNAMIC SAFETY NET: %s at +%.2f%% (Dynamic Safety: %.1f%%) - EXECUTING IMMEDIATE EXIT",
+                                base_symbol, gain_percent, dynamic_safety_threshold
+                            )
+                            
+                            # Create immediate exit signal with portfolio metadata
+                            from ..strategies.enhanced_bollinger_strategy import Signal
+                            immediate_exit_signal = Signal(
+                                action='sell',
+                                size=1.0,  # Sell all position
+                                confidence=0.95,
+                                metadata={
+                                    'event': 'SAFETY_TAKE_PROFIT',
+                                    'pnl': (current_price - entry_price) * current_qty,
+                                    'gain_percent': gain_percent,
+                                    'dynamic_threshold': dynamic_safety_threshold,
+                                    'position_qty': current_qty,
+                                    'entry_price': entry_price,
+                                    'exit_price': current_price
+                                }
+                            )
+                            
+                            # Execute immediate exit
+                            self._execute_enhanced_signal(immediate_exit_signal, symbol, current_price, current_time)
+                            continue  # Skip normal signal processing after exit
+                        elif gain_percent >= 4.0:
+                            self.logger.warning(
+                                "⚠️ EXISTING POSITION ABOVE TARGET: %s at +%.2f%% (Target: 4.0%%) - Will exit on next signal",
+                                base_symbol, gain_percent
+                            )
 
                     # Optional equity update without static-typing complaints
                     update_fn = getattr(self.strategy, 'update_equity', None)
