@@ -296,6 +296,18 @@ def get_stable_target_price(symbol: str, current_price: float) -> float:
         return current_price * 0.92
 
 
+def reset_all_target_prices():
+    """Clear all target prices to force recalculation with new discount ranges."""
+    try:
+        from src.utils.target_price_manager import get_target_price_manager
+        target_manager = get_target_price_manager()
+        target_manager.reset_all_target_prices()
+        return True
+    except Exception as e:
+        logger.error(f"Error resetting all target prices: {e}")
+        return False
+
+
 def okx_ticker_pct_change_24h(
     inst_id: str,
     api_key: str = "",

@@ -104,24 +104,24 @@ class TargetPriceManager:
     def _calculate_new_target(self, symbol: str, current_price: float) -> Tuple[float, bool]:
         """Calculate and lock a new target price."""
         try:
-            # Asset tier classification
+            # Asset tier classification - FIXED: Much more realistic discount ranges
             if symbol in ['BTC', 'ETH']:
-                discount_range = (0.03, 0.08)
+                discount_range = (0.01, 0.03)  # 1-3% discount (was 3-8%)
                 tier = 'large_cap'
             elif symbol in ['SOL', 'ADA', 'DOT', 'MATIC', 'AVAX', 'LINK']:
-                discount_range = (0.05, 0.12)
+                discount_range = (0.015, 0.04)  # 1.5-4% discount (was 5-12%)
                 tier = 'mid_cap'
             elif symbol in ['GALA', 'SAND', 'MANA', 'CHZ', 'ENJ']:
-                discount_range = (0.08, 0.15)
+                discount_range = (0.025, 0.055)  # 2.5-5.5% discount (was 8-15%)
                 tier = 'gaming'
             elif symbol in ['PEPE', 'SHIB', 'DOGE']:
-                discount_range = (0.10, 0.20)
+                discount_range = (0.03, 0.07)  # 3-7% discount (was 10-20%)
                 tier = 'meme'
             elif current_price < 0.01:
-                discount_range = (0.12, 0.18)
+                discount_range = (0.04, 0.08)  # 4-8% discount (was 12-18%)
                 tier = 'micro_cap'
             else:
-                discount_range = (0.06, 0.12)
+                discount_range = (0.02, 0.045)  # 2-4.5% discount (was 6-12%)
                 tier = 'altcoin'
             
             # Use middle of range for consistent entries
@@ -132,7 +132,7 @@ class TargetPriceManager:
             random.seed(hash(symbol) % 1000)
             market_adjustment = random.uniform(-0.02, 0.02)
             
-            final_discount = max(0.03, min(0.25, base_discount + market_adjustment))
+            final_discount = max(0.01, min(0.10, base_discount + market_adjustment))
             target_price = current_price * (1 - final_discount)
             
             # Lock for 24 hours
@@ -169,6 +169,18 @@ class TargetPriceManager:
             
         except Exception as e:
             logger.error(f"Error saving target price for {symbol}: {e}")
+    
+    def reset_all_target_prices(self):
+        """Clear ALL target prices to force complete recalculation with new discount ranges."""
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+            cursor.execute('DELETE FROM target_prices')
+            conn.commit()
+            conn.close()
+            logger.info("🔄 ALL TARGET PRICES CLEARED - will recalculate with new discount ranges")
+        except Exception as e:
+            logger.error(f"Error clearing all target prices: {e}")
     
     def reset_target_price(self, symbol: str):
         """Manually reset a target price (force recalculation on next request)."""
