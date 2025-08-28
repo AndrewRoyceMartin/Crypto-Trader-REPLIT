@@ -1,0 +1,142 @@
+
+
+                Comprehensive Test Session: 29/08/2025, 09:24:04
+
+                Overall Success Rate: 79%
+
+                Total Execution Time: 76079ms
+
+                Categories Tested: 7
+            
+
+            
+            
+Detailed Test Logs:
+
+            
+
+                
+        
+=== CRITICAL CATEGORY ===
+Success Rate: 100%
+Execution Time: 15026ms
+Test Count: 3
+
+INDIVIDUAL TEST RESULTS:
+
+[PASS] holdings_sync_enhanced (09:22:56)
+  ⏱️ Time: 8005.899999991059ms
+
+[PASS] price_freshness_realtime (09:23:02)
+  ⏱️ Time: 14003.70000000298ms
+
+[PASS] recalculation_workflow_advanced (09:23:03)
+  📄 Details: 9/11 validations passed
+  ⏱️ Time: 15023.79999999702ms
+
+==================================================
+
+=== PERFORMANCE CATEGORY ===
+Success Rate: 67%
+Execution Time: 3006ms
+Test Count: 3
+
+INDIVIDUAL TEST RESULTS:
+
+[FAIL] api_response_timing (09:22:51)
+  ⏱️ Time: 3004.4000000059605ms
+
+[PASS] basic_api_connectivity (09:22:50)
+  📄 Details: OKX Status: Connected ({"status":{"balance":{},"connected":true,"connection_type":"Live Trading","exchange_name":"OKX Exchange","initialized":true,"last_sync":"2025-08-28T23:22:51Z","market_status":"open","total_prices":0,"trading_mode":"Live Trading","trading_pairs":2372},"success":true})
+  ⏱️ Time: 2930.0999999940395ms
+
+[PASS] basic_portfolio_data (09:22:50)
+  📄 Details: Found 9 holdings
+  ⏱️ Time: 2719.800000011921ms
+
+==================================================
+
+=== UI_INTERACTION CATEGORY ===
+Success Rate: 67%
+Execution Time: 4448ms
+Test Count: 3
+
+INDIVIDUAL TEST RESULTS:
+
+[PASS] button_workflow_comprehensive (09:22:48)
+  ⏱️ Time: 11.200000002980232ms
+
+[FAIL] basic_button_functions (09:22:48)
+  📄 Details: Functionality: Normal Tests enabled, Enhanced Tests has icons, Export enabled, Export has handler, 2 buttons interactive | Failures: Enhanced Tests disabled (83% success)
+  ⏱️ Time: 10.599999994039536ms
+
+[PASS] basic_price_updates (09:22:52)
+  📄 Details: Price source: connected
+  ⏱️ Time: 4443.800000011921ms
+
+==================================================
+
+=== TRADING_BUTTONS CATEGORY ===
+Success Rate: 100%
+Execution Time: 4691ms
+Test Count: 1
+
+INDIVIDUAL TEST RESULTS:
+
+[PASS] testTraderStrategySync (09:22:52)
+  ⏱️ Time: 4690.79999999702ms
+
+==================================================
+
+=== STRATEGY_VALIDATION CATEGORY ===
+Success Rate: 50%
+Execution Time: 76063ms
+Test Count: 2
+
+INDIVIDUAL TEST RESULTS:
+
+[PASS] bollinger_strategy_priority (09:24:04)
+  ⏱️ Time: 76062.70000000298ms
+
+[PARTIAL] available_positions_data_integrity (09:23:06)
+  ⏱️ Time: 18941.79999999702ms
+
+==================================================
+
+=== DATA_INTEGRITY CATEGORY ===
+Success Rate: 67%
+Execution Time: 18504ms
+Test Count: 3
+
+INDIVIDUAL TEST RESULTS:
+
+[PASS] holdings_sync_enhanced (09:22:56)
+  ⏱️ Time: 8005.5999999940395ms
+
+[PASS] price_freshness_realtime (09:23:06)
+  ⏱️ Time: 18502.90000000596ms
+
+[FAIL] api_response_timing (09:22:51)
+  ⏱️ Time: 3007.7000000029802ms
+
+==================================================
+
+=== WORKFLOW_TESTS CATEGORY ===
+Success Rate: 100%
+Execution Time: 15311ms
+Test Count: 2
+
+INDIVIDUAL TEST RESULTS:
+
+[PASS] recalculation_workflow_advanced (09:23:03)
+  📄 Details: 9/11 validations passed
+  ⏱️ Time: 15310.79999999702ms
+
+[PASS] button_workflow_comprehensive (09:22:48)
+  ⏱️ Time: 1.5ms
+
+==================================================
+
+=== RECOMMENDATIONS ===
+- Overall system reliability needs attention
+- API response times are concerning

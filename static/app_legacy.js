@@ -428,36 +428,37 @@ class TradingApp {
     updateTimerDisplays() {
         const now = Date.now();
         
-        // Update auto-refresh countdown
-        const timeSinceLastRefresh = now - this.lastRefreshTime;
-        const refreshSecondsLeft = Math.max(0, Math.ceil((this.refreshCooldown - timeSinceLastRefresh) / 1000));
+        // Timer display removed from UI - timer logic disabled
+        // const timeSinceLastRefresh = now - this.lastRefreshTime;
+        // const refreshSecondsLeft = Math.max(0, Math.ceil((this.refreshCooldown - timeSinceLastRefresh) / 1000));
         
-        const refreshTimer = document.getElementById('refresh-timer');
-        if (refreshTimer) {
-            if (refreshSecondsLeft > 0) {
-                refreshTimer.innerHTML = `<span class="icon icon-clock me-1"></span>Next: ${refreshSecondsLeft}s`;
-                refreshTimer.className = 'badge bg-info text-nowrap';
-            } else {
-                refreshTimer.innerHTML = `<span class="icon icon-check me-1"></span>Ready`;
-                refreshTimer.className = 'badge bg-success text-nowrap';
-            }
-        }
+        // Timer display element removed from template
+        // const refreshTimer = document.getElementById('refresh-timer');
+        // if (refreshTimer) {
+        //     if (refreshSecondsLeft > 0) {
+        //         refreshTimer.innerHTML = `<span class="icon icon-clock me-1"></span>Next: ${refreshSecondsLeft}s`;
+        //         refreshTimer.className = 'badge bg-info text-nowrap';
+        //     } else {
+        //         refreshTimer.innerHTML = `<span class="icon icon-check me-1"></span>Ready`;
+        //         refreshTimer.className = 'badge bg-success text-nowrap';
+        //     }
+        // }
         
-        // Update performance analytics cooldown
-        const analyticsTimer = document.getElementById('analytics-timer');
-        if (analyticsTimer && this.lastPerformanceUpdate) {
-            const timeSinceAnalytics = now - this.lastPerformanceUpdate;
-            const analyticsSecondsLeft = Math.max(0, Math.ceil((30000 - timeSinceAnalytics) / 1000));
-            
-            if (analyticsSecondsLeft > 0) {
-                analyticsTimer.innerHTML = `<span class="icon icon-timer me-1"></span>Analytics: ${analyticsSecondsLeft}s`;
-                analyticsTimer.style.display = 'inline-block';
-            } else {
-                analyticsTimer.style.display = 'none';
-            }
-        } else if (analyticsTimer) {
-            analyticsTimer.style.display = 'none';
-        }
+        // Analytics timer display removed from UI - analytics timer logic disabled
+        // const analyticsTimer = document.getElementById('analytics-timer');
+        // if (analyticsTimer && this.lastPerformanceUpdate) {
+        //     const timeSinceAnalytics = now - this.lastPerformanceUpdate;
+        //     const analyticsSecondsLeft = Math.max(0, Math.ceil((30000 - timeSinceAnalytics) / 1000));
+        //     
+        //     if (analyticsSecondsLeft > 0) {
+        //         analyticsTimer.innerHTML = `<span class="icon icon-timer me-1"></span>Analytics: ${analyticsSecondsLeft}s`;
+        //         analyticsTimer.style.display = 'inline-block';
+        //     } else {
+        //         analyticsTimer.style.display = 'none';
+        //     }
+        // } else if (analyticsTimer) {
+        //     analyticsTimer.style.display = 'none';
+        // }
     }
     
     updateRefreshTimestamp() {
@@ -2923,10 +2924,10 @@ class TradingApp {
                 const left = Math.max(0, Math.ceil((this.positionsCountdownEnd - Date.now()) / 1000));
                 el.textContent = `${left}s`;
                 
-                // Console logging for positions countdown
-                if (left % 10 === 0 && left > 0) { // Log every 10 seconds
-                    console.log(`⏱️ Positions countdown: ${left}s until next refresh`);
-                }
+                // Console logging for positions countdown - DISABLED
+                // if (left % 10 === 0 && left > 0) { // Log every 10 seconds
+                //     console.log(`⏱️ Positions countdown: ${left}s until next refresh`);
+                // }
                 
                 if (left === 0) this.positionsCountdownEnd = null;
             }
@@ -2939,10 +2940,10 @@ class TradingApp {
                 const left = Math.max(0, Math.ceil((this.availableCountdownEnd - Date.now()) / 1000));
                 el.textContent = `${left}s`;
                 
-                // Console logging for available positions countdown
-                if (left % 5 === 0 && left > 0) { // Log every 5 seconds
-                    console.log(`⏱️ Available positions countdown: ${left}s until next refresh`);
-                }
+                // Console logging for available positions countdown - DISABLED
+                // if (left % 5 === 0 && left > 0) { // Log every 5 seconds
+                //     console.log(`⏱️ Available positions countdown: ${left}s until next refresh`);
+                // }
                 
                 // When countdown expires, load available positions data
                 if (left === 0) {
