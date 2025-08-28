@@ -21,7 +21,7 @@ from typing import Any, Optional, Iterator, TypedDict
 from functools import wraps
 
 from flask import (
-    Flask, jsonify, request, render_template, make_response, Response
+    Flask, jsonify, request, render_template, make_response, Response, send_from_directory
 )
 from flask.typing import ResponseReturnValue
 
@@ -811,6 +811,21 @@ def initialize_system() -> bool:
 # Create Flask app instance
 app = Flask(__name__)
 
+# Custom static file handler with aggressive cache busting for JavaScript
+@app.route('/static/<path:filename>')
+def custom_static(filename):
+    """Custom static file handler with cache busting for JavaScript files."""
+    response = make_response(send_from_directory(app.static_folder, filename))
+    
+    # Add aggressive no-cache headers for JavaScript files
+    if filename.endswith('.js'):
+        response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0'
+        response.headers['Pragma'] = 'no-cache'
+        response.headers['Expires'] = '0'
+        response.headers['ETag'] = ''
+    
+    return response
+
 # Register the real OKX endpoint directly without circular import
 
 
@@ -1273,15 +1288,31 @@ def render_full_dashboard() -> str:
     """Render the unified trading dashboard using templates."""
     try:
         from version import get_version
-        cache_version = int(time.time())
-        return render_template("unified_dashboard.html",
-                               cache_version=cache_version,
-                               version=get_version(),
-                               ADMIN_TOKEN=ADMIN_TOKEN,
-                               config={'ADMIN_TOKEN': ADMIN_TOKEN})
+        import os
+        import stat
+        
+        # Use file modification time + current time for aggressive cache busting
+        js_file_path = os.path.join('static', 'app_legacy.js')
+        try:
+            file_mod_time = int(os.path.getmtime(js_file_path))
+            cache_version = f"{file_mod_time}_{int(time.time() * 1000)}"  # Include milliseconds
+        except:
+            cache_version = int(time.time() * 1000)  # Fallback with milliseconds
+            
+        response = make_response(render_template("unified_dashboard.html",
+                                               cache_version=cache_version,
+                                               version=get_version(),
+                                               ADMIN_TOKEN=ADMIN_TOKEN,
+                                               config={'ADMIN_TOKEN': ADMIN_TOKEN}))
+        
+        # Add aggressive no-cache headers
+        response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0'
+        response.headers['Pragma'] = 'no-cache'
+        response.headers['Expires'] = '0'
+        return response
     except Exception as e:
         logger.error(f"Error rendering original dashboard: {e}")
-        return """
+        response = make_response("""
         <!DOCTYPE html>
         <html>
         <head>
@@ -1294,7 +1325,9 @@ def render_full_dashboard() -> str:
             <p><a href="/dashboard">Click here if not redirected</a></p>
         </body>
         </html>
-        """
+        """)
+        response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+        return response
 
 # COMPLETELY REMOVED: Old simulation endpoint that was overriding real OKX cost basis
 # This function was calculating real OKX data but then overriding it with $10 simulation values
