@@ -338,7 +338,7 @@ class TradingApp {
         
         // Positions refresh countdown
         this.positionsCountdownInterval = null;
-        this.positionsCountdown = 95; // 90s main interval + 5s delay
+        this.positionsCountdown = 90; // 90s main interval (matches actual refresh timing)
 
         // store trades for filtering
         this.allTrades = [];
@@ -736,7 +736,7 @@ class TradingApp {
         
         // Start initial countdowns - positions countdown reflects the 90s interval
         this.startPositionsCountdown(90);
-        // Available countdown will be started after initial load (2s + 10s = 12s total)
+        // Available countdown will be started after initial holdings load (2s initial + 30s countdown)
         
         // Countdown updates (every second)
         this.countdownUpdateInterval = setInterval(() => {
