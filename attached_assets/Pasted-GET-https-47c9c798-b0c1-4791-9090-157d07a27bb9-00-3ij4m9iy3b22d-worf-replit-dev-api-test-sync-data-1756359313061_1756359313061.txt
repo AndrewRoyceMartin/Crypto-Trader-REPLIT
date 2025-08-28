@@ -1,0 +1,262 @@
+GET https://47c9c798-b0c1-4791-9090-157d07a27bb9-00-3ij4m9iy3b22d.worf.replit.dev/api/test-sync-data 502 (Bad Gateway)
+executeStandardTest @ test_sync_data.js:1257
+executeEnhancedTest @ test_sync_data.js:811
+(anonymous) @ test_sync_data.js:575
+executeCategoryTests @ test_sync_data.js:575
+executeConcurrentTests @ test_sync_data.js:407
+runAllTests @ test_sync_data.js:356
+runSyncTests @ test_sync_data.js:2488
+(anonymous) @ test_sync_data.js:2950Understand this error
+test_sync_data.js:507 📊 Progress: 56% (5/9)
+test_sync_data.js:564 ✅ Test completed: testButtonWorkflowComprehensive
+test_sync_data.js:1257  GET https://47c9c798-b0c1-4791-9090-157d07a27bb9-00-3ij4m9iy3b22d.worf.replit.dev/api/test-sync-data 502 (Bad Gateway)
+executeStandardTest @ test_sync_data.js:1257
+executeEnhancedTest @ test_sync_data.js:811
+(anonymous) @ test_sync_data.js:575
+executeCategoryTests @ test_sync_data.js:575
+executeConcurrentTests @ test_sync_data.js:407
+runAllTests @ test_sync_data.js:356
+runSyncTests @ test_sync_data.js:2488
+(anonymous) @ test_sync_data.js:2950Understand this error
+test_sync_data.js:507 📊 Progress: 67% (6/9)
+test_sync_data.js:564 ✅ Test completed: testBasicPriceUpdates
+test_sync_data.js:1257  GET https://47c9c798-b0c1-4791-9090-157d07a27bb9-00-3ij4m9iy3b22d.worf.replit.dev/api/test-sync-data 502 (Bad Gateway)
+executeStandardTest @ test_sync_data.js:1257
+executeEnhancedTest @ test_sync_data.js:811
+(anonymous) @ test_sync_data.js:575
+executeCategoryTests @ test_sync_data.js:575
+executeConcurrentTests @ test_sync_data.js:407
+runAllTests @ test_sync_data.js:356
+runSyncTests @ test_sync_data.js:2488
+(anonymous) @ test_sync_data.js:2950Understand this error
+test_sync_data.js:507 📊 Progress: 78% (7/9)
+test_sync_data.js:564 ✅ Test completed: testPriceFreshnessRealtime
+test_sync_data.js:654  GET https://47c9c798-b0c1-4791-9090-157d07a27bb9-00-3ij4m9iy3b22d.worf.replit.dev/api/okx-status 502 (Bad Gateway)
+(anonymous) @ test_sync_data.js:654
+monitorAPIHealth @ test_sync_data.js:651
+(anonymous) @ test_sync_data.js:625
+setInterval
+startRealTimeMonitoring @ test_sync_data.js:624
+runAllTests @ test_sync_data.js:350
+runSyncTests @ test_sync_data.js:2488
+(anonymous) @ test_sync_data.js:2950Understand this error
+test_sync_data.js:1257  GET https://47c9c798-b0c1-4791-9090-157d07a27bb9-00-3ij4m9iy3b22d.worf.replit.dev/api/test-sync-data 502 (Bad Gateway)
+executeStandardTest @ test_sync_data.js:1257
+executeEnhancedTest @ test_sync_data.js:811
+(anonymous) @ test_sync_data.js:575
+executeCategoryTests @ test_sync_data.js:575
+executeConcurrentTests @ test_sync_data.js:407
+runAllTests @ test_sync_data.js:356
+runSyncTests @ test_sync_data.js:2488
+(anonymous) @ test_sync_data.js:2950Understand this error
+test_sync_data.js:507 📊 Progress: 89% (8/9)
+test_sync_data.js:564 ✅ Test completed: testBasicButtonFunctions
+test_sync_data.js:595 ✅ ui_interaction category completed in 60435.70ms
+test_sync_data.js:1257  GET https://47c9c798-b0c1-4791-9090-157d07a27bb9-00-3ij4m9iy3b22d.worf.replit.dev/api/test-sync-data 502 (Bad Gateway)
+executeStandardTest @ test_sync_data.js:1257
+executeEnhancedTest @ test_sync_data.js:811
+(anonymous) @ test_sync_data.js:575
+executeCategoryTests @ test_sync_data.js:575
+executeConcurrentTests @ test_sync_data.js:407
+runAllTests @ test_sync_data.js:356
+runSyncTests @ test_sync_data.js:2488
+(anonymous) @ test_sync_data.js:2950Understand this error
+test_sync_data.js:507 📊 Progress: 100% (9/9)
+test_sync_data.js:564 ✅ Test completed: testRecalculationWorkflowAdvanced
+test_sync_data.js:595 ✅ critical category completed in 60443.10ms
+test_sync_data.js:1349 📊 Analyzing enhanced test results...
+test_sync_data.js:507 📊 Progress: 100% (9/9)
+test_sync_data.js:1436 🎨 Displaying enhanced test results...
+test_sync_data.js:367 ✅ Enhanced test execution completed successfully
+test_sync_data.js:756 📡 Real-time monitoring stopped
+test_sync_data.js:654  GET https://47c9c798-b0c1-4791-9090-157d07a27bb9-00-3ij4m9iy3b22d.worf.replit.dev/api/crypto-portfolio 502 (Bad Gateway)
+(anonymous) @ test_sync_data.js:654
+monitorAPIHealth @ test_sync_data.js:651
+(anonymous) @ test_sync_data.js:625
+setInterval
+startRealTimeMonitoring @ test_sync_data.js:624
+runAllTests @ test_sync_data.js:350
+runSyncTests @ test_sync_data.js:2488
+(anonymous) @ test_sync_data.js:2950Understand this error
+test_sync_data.js:654  GET https://47c9c798-b0c1-4791-9090-157d07a27bb9-00-3ij4m9iy3b22d.worf.replit.dev/api/price-source-status 502 (Bad Gateway)
+(anonymous) @ test_sync_data.js:654
+monitorAPIHealth @ test_sync_data.js:651
+(anonymous) @ test_sync_data.js:625
+setInterval
+startRealTimeMonitoring @ test_sync_data.js:624
+runAllTests @ test_sync_data.js:350
+runSyncTests @ test_sync_data.js:2488
+(anonymous) @ test_sync_data.js:2950Understand this error
+test_sync_data.js:1334 📊 Health check: 0/3 endpoints healthy (0%)
+test_sync_data.js:681  GET https://47c9c798-b0c1-4791-9090-157d07a27bb9-00-3ij4m9iy3b22d.worf.replit.dev/api/current-holdings 502 (Bad Gateway)
+monitorDataFreshness @ test_sync_data.js:681
+(anonymous) @ test_sync_data.js:630
+setInterval
+startRealTimeMonitoring @ test_sync_data.js:629
+runAllTests @ test_sync_data.js:350
+runSyncTests @ test_sync_data.js:2488
+(anonymous) @ test_sync_data.js:2950Understand this error
+test_sync_data.js:654  GET https://47c9c798-b0c1-4791-9090-157d07a27bb9-00-3ij4m9iy3b22d.worf.replit.dev/api/okx-status 502 (Bad Gateway)
+(anonymous) @ test_sync_data.js:654
+monitorAPIHealth @ test_sync_data.js:651
+(anonymous) @ test_sync_data.js:625
+setInterval
+startRealTimeMonitoring @ test_sync_data.js:624
+runAllTests @ test_sync_data.js:350
+runSyncTests @ test_sync_data.js:2488
+(anonymous) @ test_sync_data.js:2950Understand this error
+test_sync_data.js:654  GET https://47c9c798-b0c1-4791-9090-157d07a27bb9-00-3ij4m9iy3b22d.worf.replit.dev/api/crypto-portfolio 502 (Bad Gateway)
+(anonymous) @ test_sync_data.js:654
+monitorAPIHealth @ test_sync_data.js:651
+(anonymous) @ test_sync_data.js:625
+setInterval
+startRealTimeMonitoring @ test_sync_data.js:624
+runAllTests @ test_sync_data.js:350
+runSyncTests @ test_sync_data.js:2488
+(anonymous) @ test_sync_data.js:2950Understand this error
+test_sync_data.js:654  GET https://47c9c798-b0c1-4791-9090-157d07a27bb9-00-3ij4m9iy3b22d.worf.replit.dev/api/price-source-status 502 (Bad Gateway)
+(anonymous) @ test_sync_data.js:654
+monitorAPIHealth @ test_sync_data.js:651
+(anonymous) @ test_sync_data.js:625
+setInterval
+startRealTimeMonitoring @ test_sync_data.js:624
+runAllTests @ test_sync_data.js:350
+runSyncTests @ test_sync_data.js:2488
+(anonymous) @ test_sync_data.js:2950Understand this error
+test_sync_data.js:1334 📊 Health check: 0/3 endpoints healthy (0%)
+test_sync_data.js:682  GET https://47c9c798-b0c1-4791-9090-157d07a27bb9-00-3ij4m9iy3b22d.worf.replit.dev/api/available-positions 502 (Bad Gateway)
+monitorDataFreshness @ test_sync_data.js:682
+(anonymous) @ test_sync_data.js:630
+setInterval
+startRealTimeMonitoring @ test_sync_data.js:629
+runAllTests @ test_sync_data.js:350
+runSyncTests @ test_sync_data.js:2488
+(anonymous) @ test_sync_data.js:2950Understand this error
+test_sync_data.js:654  GET https://47c9c798-b0c1-4791-9090-157d07a27bb9-00-3ij4m9iy3b22d.worf.replit.dev/api/crypto-portfolio 502 (Bad Gateway)
+(anonymous) @ test_sync_data.js:654
+monitorAPIHealth @ test_sync_data.js:651
+(anonymous) @ test_sync_data.js:625
+setInterval
+startRealTimeMonitoring @ test_sync_data.js:624
+runAllTests @ test_sync_data.js:350
+runSyncTests @ test_sync_data.js:2488
+(anonymous) @ test_sync_data.js:2950Understand this error
+test_sync_data.js:654  GET https://47c9c798-b0c1-4791-9090-157d07a27bb9-00-3ij4m9iy3b22d.worf.replit.dev/api/okx-status 502 (Bad Gateway)
+(anonymous) @ test_sync_data.js:654
+monitorAPIHealth @ test_sync_data.js:651
+(anonymous) @ test_sync_data.js:625
+setInterval
+startRealTimeMonitoring @ test_sync_data.js:624
+runAllTests @ test_sync_data.js:350
+runSyncTests @ test_sync_data.js:2488
+(anonymous) @ test_sync_data.js:2950Understand this error
+test_sync_data.js:654  GET https://47c9c798-b0c1-4791-9090-157d07a27bb9-00-3ij4m9iy3b22d.worf.replit.dev/api/price-source-status 502 (Bad Gateway)
+(anonymous) @ test_sync_data.js:654
+monitorAPIHealth @ test_sync_data.js:651
+(anonymous) @ test_sync_data.js:625
+setInterval
+startRealTimeMonitoring @ test_sync_data.js:624
+runAllTests @ test_sync_data.js:350
+runSyncTests @ test_sync_data.js:2488
+(anonymous) @ test_sync_data.js:2950Understand this error
+test_sync_data.js:654  GET https://47c9c798-b0c1-4791-9090-157d07a27bb9-00-3ij4m9iy3b22d.worf.replit.dev/api/okx-status 502 (Bad Gateway)
+(anonymous) @ test_sync_data.js:654
+monitorAPIHealth @ test_sync_data.js:651
+(anonymous) @ test_sync_data.js:625
+setInterval
+startRealTimeMonitoring @ test_sync_data.js:624
+runAllTests @ test_sync_data.js:350
+runSyncTests @ test_sync_data.js:2488
+(anonymous) @ test_sync_data.js:2950Understand this error
+test_sync_data.js:654  GET https://47c9c798-b0c1-4791-9090-157d07a27bb9-00-3ij4m9iy3b22d.worf.replit.dev/api/price-source-status 502 (Bad Gateway)
+(anonymous) @ test_sync_data.js:654
+monitorAPIHealth @ test_sync_data.js:651
+(anonymous) @ test_sync_data.js:625
+setInterval
+startRealTimeMonitoring @ test_sync_data.js:624
+runAllTests @ test_sync_data.js:350
+runSyncTests @ test_sync_data.js:2488
+(anonymous) @ test_sync_data.js:2950Understand this error
+test_sync_data.js:1334 📊 Health check: 0/3 endpoints healthy (0%)
+test_sync_data.js:654  GET https://47c9c798-b0c1-4791-9090-157d07a27bb9-00-3ij4m9iy3b22d.worf.replit.dev/api/crypto-portfolio 502 (Bad Gateway)
+(anonymous) @ test_sync_data.js:654
+monitorAPIHealth @ test_sync_data.js:651
+(anonymous) @ test_sync_data.js:625
+setInterval
+startRealTimeMonitoring @ test_sync_data.js:624
+runAllTests @ test_sync_data.js:350
+runSyncTests @ test_sync_data.js:2488
+(anonymous) @ test_sync_data.js:2950Understand this error
+test_sync_data.js:1334 📊 Health check: 0/3 endpoints healthy (0%)
+test_sync_data.js:681  GET https://47c9c798-b0c1-4791-9090-157d07a27bb9-00-3ij4m9iy3b22d.worf.replit.dev/api/current-holdings 502 (Bad Gateway)
+monitorDataFreshness @ test_sync_data.js:681
+(anonymous) @ test_sync_data.js:630
+setInterval
+startRealTimeMonitoring @ test_sync_data.js:629
+runAllTests @ test_sync_data.js:350
+runSyncTests @ test_sync_data.js:2488
+(anonymous) @ test_sync_data.js:2950Understand this error
+test_sync_data.js:682  GET https://47c9c798-b0c1-4791-9090-157d07a27bb9-00-3ij4m9iy3b22d.worf.replit.dev/api/available-positions 502 (Bad Gateway)
+monitorDataFreshness @ test_sync_data.js:682
+(anonymous) @ test_sync_data.js:630
+setInterval
+startRealTimeMonitoring @ test_sync_data.js:629
+runAllTests @ test_sync_data.js:350
+runSyncTests @ test_sync_data.js:2488
+(anonymous) @ test_sync_data.js:2950Understand this error
+test_sync_data.js:654  GET https://47c9c798-b0c1-4791-9090-157d07a27bb9-00-3ij4m9iy3b22d.worf.replit.dev/api/okx-status 502 (Bad Gateway)
+(anonymous) @ test_sync_data.js:654
+monitorAPIHealth @ test_sync_data.js:651
+(anonymous) @ test_sync_data.js:625
+setInterval
+startRealTimeMonitoring @ test_sync_data.js:624
+runAllTests @ test_sync_data.js:350
+runSyncTests @ test_sync_data.js:2488
+(anonymous) @ test_sync_data.js:2950Understand this error
+test_sync_data.js:654  GET https://47c9c798-b0c1-4791-9090-157d07a27bb9-00-3ij4m9iy3b22d.worf.replit.dev/api/crypto-portfolio 502 (Bad Gateway)
+(anonymous) @ test_sync_data.js:654
+monitorAPIHealth @ test_sync_data.js:651
+(anonymous) @ test_sync_data.js:625
+setInterval
+startRealTimeMonitoring @ test_sync_data.js:624
+runAllTests @ test_sync_data.js:350
+runSyncTests @ test_sync_data.js:2488
+(anonymous) @ test_sync_data.js:2950Understand this error
+test_sync_data.js:654  GET https://47c9c798-b0c1-4791-9090-157d07a27bb9-00-3ij4m9iy3b22d.worf.replit.dev/api/price-source-status 502 (Bad Gateway)
+(anonymous) @ test_sync_data.js:654
+monitorAPIHealth @ test_sync_data.js:651
+(anonymous) @ test_sync_data.js:625
+setInterval
+startRealTimeMonitoring @ test_sync_data.js:624
+runAllTests @ test_sync_data.js:350
+runSyncTests @ test_sync_data.js:2488
+(anonymous) @ test_sync_data.js:2950Understand this error
+test_sync_data.js:1334 📊 Health check: 0/3 endpoints healthy (0%)
+test_sync_data.js:654  GET https://47c9c798-b0c1-4791-9090-157d07a27bb9-00-3ij4m9iy3b22d.worf.replit.dev/api/price-source-status 503 (Service Unavailable)
+(anonymous) @ test_sync_data.js:654
+monitorAPIHealth @ test_sync_data.js:651
+(anonymous) @ test_sync_data.js:625
+setInterval
+startRealTimeMonitoring @ test_sync_data.js:624
+runAllTests @ test_sync_data.js:350
+runSyncTests @ test_sync_data.js:2488
+(anonymous) @ test_sync_data.js:2950Understand this error
+test_sync_data.js:681  GET https://47c9c798-b0c1-4791-9090-157d07a27bb9-00-3ij4m9iy3b22d.worf.replit.dev/api/current-holdings 503 (Service Unavailable)
+monitorDataFreshness @ test_sync_data.js:681
+(anonymous) @ test_sync_data.js:630
+setInterval
+startRealTimeMonitoring @ test_sync_data.js:629
+runAllTests @ test_sync_data.js:350
+runSyncTests @ test_sync_data.js:2488
+(anonymous) @ test_sync_data.js:2950Understand this error
+test_sync_data.js:654  GET https://47c9c798-b0c1-4791-9090-157d07a27bb9-00-3ij4m9iy3b22d.worf.replit.dev/api/price-source-status 503 (Service Unavailable)
+(anonymous) @ test_sync_data.js:654
+monitorAPIHealth @ test_sync_data.js:651
+(anonymous) @ test_sync_data.js:625
+setInterval
+startRealTimeMonitoring @ test_sync_data.js:624
+runAllTests @ test_sync_data.js:350
+runSyncTests @ test_sync_data.js:2488
+(anonymous) @ test_sync_data.js:2950Understand this error
+2test_sync_data.js:1334 📊 Health check: 2/3 endpoints healthy (67%)
+5test_sync_data.js:1334 📊 Health check: 3/3 endpoints healthy (100%)

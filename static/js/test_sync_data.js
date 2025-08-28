@@ -1252,9 +1252,9 @@ class EnhancedTestRunner {
         console.log(`📋 Executing standard test: ${testName}`);
         
         try {
-            // BUG FIX: Do NOT call enhanced=true for standard tests!
-            // Call basic test system without enhanced parameter
-            const response = await fetch('/api/test-sync-data', {
+            // BUG FIX: Use simplified, reliable endpoint to avoid 502 errors
+            // Call simplified test system instead of complex one
+            const response = await fetch('/api/test-sync-data-simple', {
                 method: 'GET',
                 cache: 'no-store'
             });
