@@ -107,34 +107,52 @@ class EnhancedTrader:
                             base_symbol, quantity, avg_entry_price, current_price
                         )
                         
-                        # Check if position should exit immediately
+                        # Check if position should exit immediately using dynamic safety threshold
                         gain_percent = ((current_price - avg_entry_price) / avg_entry_price) * 100
-                        if gain_percent >= 6.0:  # Above 6% safety net - EXECUTE IMMEDIATE EXIT
+                        
+                        # Dynamic safety threshold based on market volatility
+                        try:
+                            # For high volatility markets, use higher safety threshold
+                            volatility_multiplier = 1.0  # Default
+                            if hasattr(self.strategy, 'volatility_score') and self.strategy.volatility_score:
+                                # Use existing volatility score if available
+                                volatility_multiplier = max(1.0, min(2.0, self.strategy.volatility_score / 50.0))
+                            
+                            dynamic_safety_threshold = 4.0 * volatility_multiplier  # Base 4%, adjust for volatility
+                        except:
+                            dynamic_safety_threshold = 6.0  # Fallback to conservative 6%
+                            
+                        if gain_percent >= dynamic_safety_threshold:  # Dynamic safety net
                             self.logger.error(
-                                "🚨 EXISTING POSITION ABOVE SAFETY NET: %s at +%.2f%% (Safety: 6.0%%) - EXECUTING IMMEDIATE EXIT",
-                                base_symbol, gain_percent
+                                "🚨 EXISTING POSITION ABOVE DYNAMIC SAFETY NET: %s at +%.2f%% (Dynamic Safety: %.1f%%) - EXECUTING IMMEDIATE EXIT",
+                                base_symbol, gain_percent, dynamic_safety_threshold
                             )
                             # CRITICAL FIX: Actually execute the exit trade
                             try:
                                 # Create immediate sell signal for safety exit
                                 from ..strategies.enhanced_bollinger_strategy import Signal
                                 
-                                # Calculate exact sell parameters
-                                fill_price = current_price * 0.999  # Slight discount for immediate fill
+                                # Calculate exact sell parameters with dynamic fill price based on market conditions
+                                # Dynamic fill price discount based on volatility
+                                try:
+                                    # For high volatility, use larger discount to ensure fill
+                                    if hasattr(self.strategy, 'volatility_score') and self.strategy.volatility_score:
+                                        fill_discount = max(0.0005, min(0.002, self.strategy.volatility_score / 10000))  
+                                    else:
+                                        fill_discount = 0.001  # Default 0.1% discount
+                                except:
+                                    fill_discount = 0.001  # Conservative fallback
+                                    
+                                fill_price = current_price * (1 - fill_discount)
                                 gross_pnl = quantity * (fill_price - avg_entry_price)
                                 fees = 0.001 * (fill_price + avg_entry_price) * quantity
                                 net_pnl = gross_pnl - fees
                                 
                                 safety_signal = Signal(
                                     action='sell',
+                                    price=fill_price,
                                     size=quantity,
-                                    confidence=0.95,  # High confidence for safety exit
-                                    metadata={
-                                        'event': 'SAFETY_TAKE_PROFIT_IMMEDIATE',
-                                        'pnl': net_pnl,
-                                        'gain_percent': gain_percent,
-                                        'exit_reason': 'Position above 6% safety threshold'
-                                    }
+                                    confidence=0.95  # High confidence for safety exit
                                 )
                                 
                                 # Execute the safety exit immediately

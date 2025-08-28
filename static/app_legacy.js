@@ -398,28 +398,25 @@ class TradingApp {
     
     // Synchronous fallback for backwards compatibility
     getCoinDisplaySync(symbol) {
-        const coinInfo = {
-            'BTC': { icon: 'https://assets.coingecko.com/coins/images/1/standard/bitcoin.png', name: 'Bitcoin', color: '#f7931a', type: 'image' },
-            'ETH': { icon: 'https://assets.coingecko.com/coins/images/279/standard/ethereum.png', name: 'Ethereum', color: '#627eea', type: 'image' },
-            'SOL': { icon: 'https://assets.coingecko.com/coins/images/4128/standard/solana.png', name: 'Solana', color: '#9945ff', type: 'image' },
-            'TRX': { icon: 'https://assets.coingecko.com/coins/images/1094/standard/tron-logo.png', name: 'TRON', color: '#ff0013', type: 'image' },
-            'GALA': { icon: 'https://assets.coingecko.com/coins/images/12493/standard/GALA-v2.png', name: 'Gala Games', color: '#ff6600', type: 'image' },
-            'PEPE': { icon: 'https://assets.coingecko.com/coins/images/29850/standard/pepe-token.jpeg', name: 'Pepe', color: '#28a745', type: 'image' },
-            'AUD': { icon: 'fa-solid fa-dollar-sign', name: 'Australian Dollar', color: '#007bff', type: 'font' },
-            'USDT': { icon: 'https://assets.coingecko.com/coins/images/325/standard/Tether.png', name: 'Tether USDT', color: '#26a17b', type: 'image' },
-            'USDC': { icon: 'https://assets.coingecko.com/coins/images/6319/standard/usdc.png', name: 'USD Coin', color: '#2775ca', type: 'image' },
-            'DOGE': { icon: 'https://assets.coingecko.com/coins/images/5/standard/dogecoin.png', name: 'Dogecoin', color: '#c2a633', type: 'image' },
-            'ADA': { icon: 'https://assets.coingecko.com/coins/images/975/standard/cardano.png', name: 'Cardano', color: '#0033ad', type: 'image' },
-            'DOT': { icon: 'https://assets.coingecko.com/coins/images/12171/standard/polkadot.png', name: 'Polkadot', color: '#e6007a', type: 'image' },
-            'MATIC': { icon: 'https://assets.coingecko.com/coins/images/4713/standard/polygon.png', name: 'Polygon', color: '#8247e5', type: 'image' },
-            'LINK': { icon: 'https://assets.coingecko.com/coins/images/877/standard/chainlink-new-logo.png', name: 'Chainlink', color: '#375bd2', type: 'image' },
-            'XRP': { icon: 'https://assets.coingecko.com/coins/images/44/standard/xrp-symbol-white-128.png', name: 'Ripple', color: '#23292f', type: 'image' },
-            'BNB': { icon: 'https://assets.coingecko.com/coins/images/825/standard/bnb-icon2_2x.png', name: 'Binance Coin', color: '#f3ba2f', type: 'image' },
-            'SHIB': { icon: 'https://assets.coingecko.com/coins/images/11939/standard/shiba.png', name: 'Shiba Inu', color: '#ff6600', type: 'image' },
-            'AAVE': { icon: 'https://assets.coingecko.com/coins/images/12645/standard/AAVE.png', name: 'Aave', color: '#b6509e', type: 'image' }
-        };
+        // Use dynamic coin metadata from cache or generate color algorithmically
+        const cachedCoin = window.coinMetadataCache && window.coinMetadataCache[symbol];
         
-        return coinInfo[symbol] || { icon: 'fa-solid fa-coins', name: symbol, color: '#6c757d', type: 'font' };
+        if (cachedCoin) {
+            return {
+                icon: cachedCoin.icon,
+                name: cachedCoin.name,
+                color: cachedCoin.color,
+                type: cachedCoin.type
+            };
+        }
+        
+        // Dynamic fallback with algorithmic color generation
+        return { 
+            icon: 'fa-solid fa-coins', 
+            name: symbol, 
+            color: generateDynamicColor(symbol), 
+            type: 'font' 
+        };
     }
 
     formatUptime(totalSeconds) {
@@ -6223,9 +6220,9 @@ function createHoldingRow(holding) {
             { content: currentValue.toLocaleString('en-US', {style: 'currency', currency: window.tradingApp?.selectedCurrency || 'USD', minimumFractionDigits: 8, maximumFractionDigits: 8}), class: '' }, // POSITION VALUE
             { content: `${pnlSign}${pnl.toLocaleString('en-US', {style: 'currency', currency: window.tradingApp?.selectedCurrency || 'USD', minimumFractionDigits: 8, maximumFractionDigits: 8})}`, class: pnlClass }, // UNREALIZED $
             { content: `${pnlSign}${pnlPercent.toFixed(2)}%`, class: pnlClass }, // GAIN/LOSS %
-            { content: calculateTargetValue(costBasis, holding.target_multiplier), class: 'text-success' }, // TARGET VALUE
-            { content: calculateTargetProfit(costBasis, holding.target_multiplier), class: 'text-success' }, // TARGET PROFIT $
-            { content: `+${((holding.target_multiplier || 1.04) - 1) * 100}.0%`, class: 'text-success' }, // TARGET PROFIT %
+            { content: calculateBollingerTargetValue(holding), class: 'text-success' }, // TARGET VALUE - Dynamic Bollinger Band
+            { content: calculateBollingerTargetProfit(holding), class: 'text-success' }, // TARGET PROFIT $ - Dynamic Bollinger Band
+            { content: calculateBollingerTargetPercent(holding), class: 'text-success' }, // TARGET PROFIT % - Dynamic Bollinger Band
             { content: getPositionStatus(holding), class: '' }, // POSITION
             { content: '<span class="badge bg-info">MONITOR</span>', class: '' } // ACTIONS
         ];
@@ -6243,6 +6240,69 @@ function createHoldingRow(holding) {
         console.error("Error creating holding row:", error);
         return null;
     }
+}
+
+// Calculate dynamic target value using actual Bollinger Band upper band price
+function calculateBollingerTargetValue(holding) {
+    const currentValue = holding.current_value || 0;
+    const avgEntryPrice = holding.avg_entry_price || 0;
+    const quantity = holding.quantity || 0;
+    
+    // Get upper Bollinger Band price from bollinger_analysis (real trading data)
+    const bollingerAnalysis = holding.bollinger_analysis || {};
+    const upperBandPrice = bollingerAnalysis.upper_band_price || holding.upper_band_price;
+    
+    if (upperBandPrice && quantity > 0) {
+        const targetValue = quantity * upperBandPrice;
+        return targetValue.toLocaleString('en-US', {style: 'currency', currency: window.tradingApp?.selectedCurrency || 'USD', minimumFractionDigits: 2, maximumFractionDigits: 2});
+    }
+    
+    // Fallback to traditional multiplier if no Bollinger data
+    const targetMultiplier = holding.target_multiplier || 1.04;
+    const fallbackValue = currentValue * targetMultiplier;
+    return fallbackValue.toLocaleString('en-US', {style: 'currency', currency: window.tradingApp?.selectedCurrency || 'USD', minimumFractionDigits: 2, maximumFractionDigits: 2});
+}
+
+// Calculate dynamic target profit using actual Bollinger Band upper band price
+function calculateBollingerTargetProfit(holding) {
+    const currentValue = holding.current_value || 0;
+    const avgEntryPrice = holding.avg_entry_price || 0;
+    const quantity = holding.quantity || 0;
+    
+    // Get upper Bollinger Band price from bollinger_analysis (real trading data)
+    const bollingerAnalysis = holding.bollinger_analysis || {};
+    const upperBandPrice = bollingerAnalysis.upper_band_price || holding.upper_band_price;
+    
+    if (upperBandPrice && quantity > 0) {
+        const targetValue = quantity * upperBandPrice;
+        const targetProfit = targetValue - currentValue;
+        return `+${targetProfit.toLocaleString('en-US', {style: 'currency', currency: window.tradingApp?.selectedCurrency || 'USD', minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+    }
+    
+    // Fallback to traditional multiplier if no Bollinger data
+    const targetMultiplier = holding.target_multiplier || 1.04;
+    const fallbackProfit = currentValue * (targetMultiplier - 1);
+    return `+${fallbackProfit.toLocaleString('en-US', {style: 'currency', currency: window.tradingApp?.selectedCurrency || 'USD', minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+}
+
+// Calculate dynamic target percentage using actual Bollinger Band upper band price
+function calculateBollingerTargetPercent(holding) {
+    const currentPrice = holding.current_price || 0;
+    const avgEntryPrice = holding.avg_entry_price || 0;
+    
+    // Get upper Bollinger Band price from bollinger_analysis (real trading data)
+    const bollingerAnalysis = holding.bollinger_analysis || {};
+    const upperBandPrice = bollingerAnalysis.upper_band_price || holding.upper_band_price;
+    
+    if (upperBandPrice && avgEntryPrice > 0) {
+        const targetPercent = ((upperBandPrice - avgEntryPrice) / avgEntryPrice) * 100;
+        return `+${targetPercent.toFixed(1)}%`;
+    }
+    
+    // Fallback to traditional multiplier if no Bollinger data
+    const targetMultiplier = holding.target_multiplier || 1.04;
+    const fallbackPercent = (targetMultiplier - 1) * 100;
+    return `+${fallbackPercent.toFixed(1)}%`;
 }
 
 /** Calculate target value based on dynamic Bollinger Band target or 4% fallback */
@@ -7290,6 +7350,27 @@ async function loadCryptoDetails(symbol) {
 
 // Auto-load positions on page load - MERGED with main DOMContentLoaded to avoid conflicts
 // This is now handled in the main DOMContentLoaded event above to prevent conflicts
+
+// Dynamic color generation based on symbol hash
+function generateDynamicColor(symbol) {
+    // Create consistent hash from symbol
+    let hash = 0;
+    for (let i = 0; i < symbol.length; i++) {
+        const char = symbol.charCodeAt(i);
+        hash = ((hash << 5) - hash) + char;
+        hash = hash & hash; // Convert to 32-bit integer
+    }
+    
+    // Generate color components from hash
+    const hue = Math.abs(hash) % 360;
+    const saturation = 60 + (Math.abs(hash >> 8) % 40); // 60-100%
+    const lightness = 45 + (Math.abs(hash >> 16) % 20); // 45-65%
+    
+    return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+}
+
+// Make function globally available
+window.generateDynamicColor = generateDynamicColor;
 
 // Also refresh holdings on load as backup
 window.addEventListener("load", function() {

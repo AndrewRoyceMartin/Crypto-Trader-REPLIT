@@ -289,11 +289,27 @@ def get_stable_target_price(symbol: str, current_price: float) -> float:
         return target_price
     except (ImportError, AttributeError) as e:
         logger.warning(f"Target price manager unavailable for {symbol}: {e}")
-        return current_price * 0.92
+        # Use dynamic target based on Bollinger Bands or market volatility
+        try:
+            bollinger_data = get_bollinger_target_price(symbol, current_price)
+            if bollinger_data and bollinger_data.get('lower_band_price'):
+                # Use Bollinger Band lower band as dynamic target
+                return bollinger_data['lower_band_price'] * 0.98  # Slight buffer below lower band
+        except:
+            pass
+        # Fallback to volatility-adjusted target
+        return current_price * (0.92 if current_price > 1000 else 0.88)  # Larger discount for smaller coins
     except Exception as e:
         logger.error(f"Unexpected error getting stable target price for "
                      f"{symbol}: {e}")
-        return current_price * 0.92
+        # Use dynamic target based on Bollinger Bands or market volatility
+        try:
+            bollinger_data = get_bollinger_target_price(symbol, current_price)
+            if bollinger_data and bollinger_data.get('lower_band_price'):
+                return bollinger_data['lower_band_price'] * 0.98
+        except:
+            pass
+        return current_price * (0.92 if current_price > 1000 else 0.88)
 
 
 def reset_all_target_prices():

@@ -224,9 +224,19 @@ class EnhancedBollingerBandsStrategy(BaseStrategy):
         # This is the algorithmic approach using dynamic market conditions
         bollinger_exit = px >= bb_up
         
-        # PRIORITY 2: Fixed percentage take profit (Secondary/Safety Net)
-        # Increased threshold to 6% (from 4%) to reduce reliance on fixed approach
-        safety_take_profit_percent = self.take_profit_percent * 1.5  # 4% * 1.5 = 6%
+        # PRIORITY 2: Dynamic percentage take profit (Secondary/Safety Net)
+        # Adjust threshold based on market volatility and Bollinger Band width
+        try:
+            # Calculate Bollinger Band width as volatility indicator
+            bb_width_percent = ((bb_up - bb_lo) / px) * 100 if bb_up and bb_lo else 4.0
+            # Scale safety threshold based on volatility: higher volatility = higher threshold
+            volatility_multiplier = max(1.2, min(2.0, bb_width_percent / 4.0))  # 1.2x to 2.0x multiplier
+            safety_take_profit_percent = self.take_profit_percent * volatility_multiplier
+            
+            self.logger.debug(f"🎯 Dynamic safety threshold: {safety_take_profit_percent:.1f}% "
+                            f"(BB width: {bb_width_percent:.1f}%, multiplier: {volatility_multiplier:.1f}x)")
+        except:
+            safety_take_profit_percent = self.take_profit_percent * 1.5  # Fallback to static 1.5x
         safety_take = entry_price * (1 + safety_take_profit_percent / 100)
         fixed_percentage_exit = px >= safety_take
         
@@ -255,7 +265,21 @@ class EnhancedBollingerBandsStrategy(BaseStrategy):
             self.logger.info(f"📈 SAFETY EXIT: Fixed percentage fallback at {px:.6f} (safety_take: {safety_take:.6f})")
         
         if exit_triggered:
-            fill_price = px * (1 - 0.001)
+            # Dynamic fill price adjustment based on market conditions
+            try:
+                # Calculate dynamic fill discount based on current volatility
+                if hasattr(self, 'current_atr') and self.current_atr:
+                    atr_percent = (self.current_atr / px) * 100
+                    # Higher volatility = larger discount to ensure order fills
+                    fill_discount = max(0.0005, min(0.002, atr_percent / 200))  # 0.05% to 0.2%
+                else:
+                    fill_discount = 0.001  # Default 0.1%
+                    
+                self.logger.debug(f"🎯 Dynamic fill discount: {fill_discount*100:.3f}%")
+            except:
+                fill_discount = 0.001  # Conservative fallback
+                
+            fill_price = px * (1 - fill_discount)
             qty = self.position_state['position_qty']
             gross = qty * (fill_price - entry_price)
             fees = self.fee * (fill_price + entry_price) * qty
