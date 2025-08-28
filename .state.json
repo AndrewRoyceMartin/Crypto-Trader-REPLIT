@@ -1,0 +1,47 @@
+{
+  "bot": {
+    "status": "stopped",
+    "mode": null,
+    "symbol": null,
+    "timeframe": null,
+    "started_at": null,
+    "error_message": null,
+    "runtime_seconds": 0,
+    "active_pairs": []
+  },
+  "warmup": {
+    "status": "not_started",
+    "started": false,
+    "completed": false,
+    "error_message": null,
+    "loaded_symbols": [],
+    "start_time": null,
+    "progress_percent": 0
+  },
+  "trading": {
+    "mode": "paper",
+    "active": false,
+    "strategy": null,
+    "start_time": null,
+    "trade_count": 0,
+    "last_signal": null,
+    "performance": {}
+  },
+  "connection": {
+    "status": "disconnected",
+    "last_ping": null,
+    "error_count": 0,
+    "last_error": null,
+    "api_calls_today": 0,
+    "rate_limit_remaining": 1000
+  },
+  "cache": {
+    "price_cache_size": 0,
+    "ohlcv_cache_size": 0,
+    "last_cleanup": null,
+    "hit_rate_percent": 0.0
+  },
+  "server_start_time": "2025-08-28T11:24:41.180348+00:00",
+  "last_update": "2025-08-28T11:26:18.607561+00:00",
+  "admin_token_configured": true
+}
