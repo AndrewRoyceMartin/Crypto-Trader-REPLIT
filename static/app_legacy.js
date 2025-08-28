@@ -3177,15 +3177,15 @@ class TradingApp {
             cryptos.forEach(crypto => {
                 const row = document.createElement('tr');
 
-                // Force real data with explicit fallbacks to prevent 0 values
-                const qty = this.num(crypto.quantity) || 6016268.09373679;
-                const cp = this.num(crypto.current_price) || 0.00001000;
-                const purchasePrice = this.num(crypto.avg_entry_price || crypto.avg_buy_price) || 0.00000800;
-                const cv = this.num(crypto.current_value || crypto.value) || 60.16268093736791;
+                // Use real data only - no fake fallbacks
+                const qty = this.num(crypto.quantity) || 0;
+                const cp = this.num(crypto.current_price) || 0;
+                const purchasePrice = this.num(crypto.avg_entry_price || crypto.avg_buy_price) || 0;
+                const cv = this.num(crypto.current_value || crypto.value) || 0;
                 
-                // Data processed - debug logging cleaned up
-                const pnlNum = crypto.pnl || crypto.unrealized_pnl || 12.032536187473589;
-                const pp = crypto.pnl_percent || 25.000000000000018;
+                // Real P&L data only
+                const pnlNum = crypto.pnl || crypto.unrealized_pnl || 0;
+                const pp = crypto.pnl_percent || 0;
 
                 const pnlClass = pnlNum >= 0 ? 'text-success' : 'text-danger';
                 const pnlIcon = pnlNum >= 0 ? '↗' : '↘';
@@ -3337,8 +3337,8 @@ class TradingApp {
         set('pos-pepe-holdings', pepeHoldings.toLocaleString());
         
         // Current and purchase prices
-        const currentPrice = pepe.current_price || 0.00001000;
-        const purchasePrice = pepe.avg_buy_price || 0.00000800;
+        const currentPrice = pepe.current_price || 0;
+        const purchasePrice = pepe.avg_buy_price || 0;
         set('pos-current-price', this.formatCryptoPrice(currentPrice, this.selectedCurrency));
         set('pos-purchase-price', this.formatCryptoPrice(purchasePrice, this.selectedCurrency));
         
@@ -3391,7 +3391,7 @@ class TradingApp {
         set('okx-market-value', marketValue);
         
         // Purchase price (avg entry)
-        const purchasePrice = pepe.avg_buy_price || 0.00000800; // fallback to known value
+        const purchasePrice = pepe.avg_buy_price || 0; // real data only
         set('okx-purchase-price', this.formatCryptoPrice(purchasePrice, this.selectedCurrency));
         
         // Unrealized P&L with color coding
