@@ -1,0 +1,148 @@
+
+                Comprehensive Test Session: 28/08/2025, 16:05:08
+
+                Overall Success Rate: 42%
+
+                Total Execution Time: 259530ms
+
+                Categories Tested: 7
+            
+
+            
+            
+Detailed Test Logs:
+
+            
+
+                
+        
+=== CRITICAL CATEGORY ===
+Success Rate: 33%
+Execution Time: 130982ms
+Test Count: 3
+
+INDIVIDUAL TEST RESULTS:
+
+[FAIL] holdings_sync_enhanced (16:02:54)
+  ⏱️ Time: 125929.69999999925ms
+
+[PASS] price_freshness_realtime (16:02:59)
+  ⏱️ Time: 130981.30000000075ms
+
+[FAIL] recalculation_workflow_advanced (16:00:48)
+  ❌ Error: Critical: Recalculation button not found
+  ⏱️ Time: 16.300000000745058ms
+
+==================================================
+
+=== PERFORMANCE CATEGORY ===
+Success Rate: 67%
+Execution Time: 211641ms
+Test Count: 3
+
+INDIVIDUAL TEST RESULTS:
+
+[FAIL] api_response_timing (16:04:20)
+  ⏱️ Time: 211640.1000000015ms
+
+[PASS] basic_api_connectivity (16:01:03)
+  📄 Details: OKX Status: Connected ({"status":{"balance":{},"connected":true,"connection_type":"Live Trading","exchange_name":"OKX Exchange","initialized":true,"last_sync":"2025-08-28T06:01:04Z","market_status":"open","total_prices":0,"trading_mode":"Live Trading","trading_pairs":2383},"success":true})
+  ⏱️ Time: 15131.699999999255ms
+
+[PASS] basic_portfolio_data (16:01:04)
+  📄 Details: Found 9 holdings
+  ⏱️ Time: 15458.599999997765ms
+
+==================================================
+
+=== UI_INTERACTION CATEGORY ===
+Success Rate: 33%
+Execution Time: 16901ms
+Test Count: 3
+
+INDIVIDUAL TEST RESULTS:
+
+[FAIL] button_workflow_comprehensive (16:00:48)
+  ⏱️ Time: 13.900000002235174ms
+
+[FAIL] basic_button_functions (16:00:48)
+  📄 Details: Functionality: Normal Tests enabled, Enhanced Tests has icons, Export enabled, Export has handler, 2 buttons interactive | Failures: Enhanced Tests disabled (83% success)
+  ⏱️ Time: 13.800000000745058ms
+
+[PASS] basic_price_updates (16:01:05)
+  📄 Details: Price source: connected
+  ⏱️ Time: 16898.5ms
+
+==================================================
+
+=== TRADING_BUTTONS CATEGORY ===
+Success Rate: 75%
+Execution Time: 16ms
+Test Count: 4
+
+INDIVIDUAL TEST RESULTS:
+
+[PASS] testATOExportButton (16:00:48)
+  📄 Details: Export functionality: enabled, has click handler, has tooltip, visible
+  ⏱️ Time: 11.699999999254942ms
+
+[PASS] testBuyButton (16:00:48)
+  📄 Details: Action button functionality: enabled, styled, has icon, focusable
+  ⏱️ Time: 10.799999997019768ms
+
+[FAIL] testSellButton (16:00:48)
+  📄 Details: Action button states: has icon, clickable
+  ⏱️ Time: 8.599999997764826ms
+
+[PASS] testTakeProfitButton (16:00:48)
+  📄 Details: 2 functional buttons with states: has events, styled
+  ⏱️ Time: 8ms
+
+==================================================
+
+=== STRATEGY_VALIDATION CATEGORY ===
+Success Rate: 50%
+Execution Time: 259515ms
+Test Count: 2
+
+INDIVIDUAL TEST RESULTS:
+
+[PASS] bollinger_strategy_priority (16:03:51)
+  ⏱️ Time: 182574.90000000224ms
+
+[PARTIAL] available_positions_data_integrity (16:05:08)
+  ⏱️ Time: 259513.1000000015ms
+
+==================================================
+
+=== DATA_INTEGRITY CATEGORY ===
+Success Rate: 33%
+Execution Time: 204926ms
+Test Count: 3
+
+INDIVIDUAL TEST RESULTS:
+
+[FAIL] holdings_sync_enhanced (16:02:09)
+  ⏱️ Time: 80470.39999999851ms
+
+[PASS] price_freshness_realtime (16:03:27)
+  ⏱️ Time: 158808.6000000015ms
+
+[FAIL] api_response_timing (16:04:13)
+  ⏱️ Time: 204924.1000000015ms
+
+==================================================
+
+=== WORKFLOW_TESTS CATEGORY ===
+Success Rate: 0%
+Execution Time: 6ms
+Test Count: 2
+
+INDIVIDUAL TEST RESULTS:
+
+[FAIL] recalculation_workflow_advanced (16:00:48)
+  ❌ Error: Critical: Recalculation button not found
+  ⏱️ Time: 2.2000000029802322ms
+
+[FAIL] button_workflow_comprehensive (16:00:48)
+  ⏱️ Time: 1.8999999985098839ms

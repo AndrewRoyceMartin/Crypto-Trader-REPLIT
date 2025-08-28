@@ -1692,14 +1692,7 @@ class TradingApp {
             
             console.log("Holdings data received:", data.holdings);
         
-        // Target multiplier validation (debug disabled for production)
-        // if (data.holdings && data.holdings.length > 0) {
-        //     console.log("TARGET DEBUG - First position:", {
-        //         symbol: data.holdings[0].symbol,
-        //         target_multiplier: data.holdings[0].target_multiplier,
-        //         calculated_percent: getTargetPercent(data.holdings[0])
-        //     });
-        // }
+        // Target multiplier validation removed for production
             
             // Update table via consolidated system to prevent flashing
             if (window.tradingApp) {
@@ -7076,14 +7069,7 @@ async function refreshHoldingsData() {
             const positions = data.holdings || data.all_positions || [];
             console.debug('Holdings data received:', positions);
             
-            // Target multiplier validation (debug disabled for production)
-            // if (positions && positions.length > 0) {
-            //     console.log('TARGET DEBUG - Open Positions Data:', {
-            //         symbol: positions[0].symbol,
-            //         target_multiplier: positions[0].target_multiplier,
-            //         calculated_percent: getTargetPercent(positions[0])
-            //     });
-            // }
+            // Target multiplier validation removed for production
             // Update table via main TradingApp system to prevent flashing
             if (window.tradingApp) {
                 window.tradingApp.currentCryptoData = positions;
