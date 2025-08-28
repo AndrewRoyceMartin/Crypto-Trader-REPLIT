@@ -4144,7 +4144,8 @@ function sortTradesTable(columnIndex) {
     if (window.tradingApp) window.tradingApp.showToast('Trades table sorted', 'success');
 }
 
-function sortAvailableTable(columnIndex) {
+// Make sortAvailableTable globally accessible
+window.sortAvailableTable = function(columnIndex) {
     console.log(`Sorting available positions table by column ${columnIndex}`);
     
     const table = document.querySelector('#available-tbody');
@@ -4154,7 +4155,7 @@ function sortAvailableTable(columnIndex) {
     
     sortTableByColumnIndex(table, columnIndex, 'available');
     if (window.tradingApp) window.tradingApp.showToast('Available positions sorted', 'success');
-}
+};
 
 function sortTableByColumn(tableBody, column, tableType) {
     const rows = Array.from(tableBody.getElementsByTagName('tr'));
@@ -6040,6 +6041,15 @@ function createAvailablePositionRow(position) {
             return { status: "BLOCKED", class: "text-muted", tooltip: "Confidence analysis says WAIT - not favorable conditions" };
         } else if (timingSignal === "AVOID") {
             return { status: "BLOCKED", class: "text-danger", tooltip: "Confidence analysis says AVOID - poor technical setup" };
+        }
+        
+        // Check for favorable timing signals that should trigger bot action
+        if (timingSignal === "STRONG_BUY" && confidenceScore >= 75) {
+            return { status: "STRONG BUY SIGNAL", class: "text-success fw-bold", tooltip: "✅ High confidence + STRONG_BUY timing = optimal entry conditions" };
+        } else if (timingSignal === "CAUTIOUS_BUY" && confidenceScore >= 60) {
+            return { status: "CAUTIOUS BUY SIGNAL", class: "text-warning fw-bold", tooltip: "⚡ Moderate confidence + CAUTIOUS_BUY timing = favorable entry" };
+        } else if (timingSignal === "BUY" && confidenceScore >= 65) {
+            return { status: "BUY SIGNAL", class: "text-success", tooltip: "📈 Good confidence + BUY timing = suitable entry" };
         }
         
         // Check Bollinger Band trigger (primary bot criteria)
