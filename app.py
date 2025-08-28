@@ -5546,7 +5546,16 @@ def api_performance() -> ResponseReturnValue:
 @app.route('/test-sync-data')
 def test_sync_data() -> str:
     """View OKX Live Sync Test Data"""
-    return render_template('test_sync_data.html')
+    from version import get_version
+    response = make_response(render_template('test_sync_data.html', 
+                                           ADMIN_TOKEN=ADMIN_TOKEN,
+                                           version=get_version()))
+    
+    # Add aggressive no-cache headers to prevent browser caching
+    response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
+    return response
 
 
 @app.route('/api/test-sync-data-simple')
