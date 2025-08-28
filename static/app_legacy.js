@@ -5751,7 +5751,7 @@ async function fetchAndUpdateAvailablePositions() {
     }
 }
 
-// Helper function to safely create available position row
+// WORKING VERSION: Helper function to safely create available position row
 function createAvailablePositionRow(position) {
     const symbol = position.symbol || "Unknown";
     const currentBalance = parseFloat(position.current_balance || 0);
@@ -5763,30 +5763,15 @@ function createAvailablePositionRow(position) {
     const originalBuySignal = position.buy_signal || "WAIT";
     const daysSinceExit = position.days_since_exit || 0;
     
-    // Entry confidence data - FIXED: Extract risk_level properly
-    const entryConfidence = position.entry_confidence || { score: 50, level: "FAIR", risk_level: "MODERATE", timing_signal: "WAIT" };
+    // Entry confidence data
+    const entryConfidence = position.entry_confidence || { score: 50, level: "FAIR", timing_signal: "WAIT" };
     const confidenceScore = entryConfidence.score || 50;
     const confidenceLevel = entryConfidence.level || "FAIR";
-    const riskLevel = entryConfidence.risk_level || entryConfidence.level || "MODERATE";  // FIXED: Use risk_level field
     const timingSignal = entryConfidence.timing_signal || "WAIT";
     
-    // CRITICAL FIX: Override buy signal based on timing signal from confidence analysis
-    let buySignal = originalBuySignal;
-    if (timingSignal === "WAIT") {
-        buySignal = "WAIT";
-    } else if (timingSignal === "AVOID") {
-        buySignal = "AVOID";
-    } else if (timingSignal === "STRONG_BUY") {
-        buySignal = "STRONG BUY";
-    } else if (timingSignal === "CAUTIOUS_BUY") {
-        buySignal = "CAUTIOUS BUY";
-    } else if (timingSignal === "BUY") {
-        buySignal = "BUY READY";
-    }
+    const buySignal = position.buy_signal || "WAIT";
     
-    const buySignalClass = (buySignal === "BUY READY" || buySignal === "STRONG BUY") ? "text-success fw-bold" : 
-                          (buySignal === "CAUTIOUS BUY") ? "text-warning fw-bold" :
-                          (buySignal === "WAIT") ? "text-muted" : "text-danger";
+    const buySignalClass = buySignal === "BUY READY" ? "text-success fw-bold" : "text-warning";
     const priceDiffClass = priceDifference < 0 ? "text-success" : "text-danger";
     
     // Styling functions
@@ -5925,7 +5910,7 @@ function createAvailablePositionRow(position) {
         { text: formatNumber(currentBalance), className: 'text-end' },
         { text: formatCurrency(currentPrice), className: 'text-end' },
         { text: formatCurrency(targetBuyPrice), className: 'text-end fw-bold text-primary' },
-        { text: `${priceDiffPercent >= 0 ? '+' : ''}${priceDiffPercent.toFixed(2)}%`, className: `text-end ${priceDiffClass}` }  // FIXED: Show 2 decimal places for better precision
+        { text: `${priceDiffPercent >= 0 ? '+' : ''}${priceDiffPercent.toFixed(2)}%`, className: `text-end ${priceDiffClass}` }
     ];
     
     cells.forEach(cellData => {
@@ -5962,6 +5947,7 @@ function createAvailablePositionRow(position) {
     row.appendChild(timingCell);
     
     const riskCell = document.createElement('td');
+    const riskLevel = entryConfidence.risk_level || entryConfidence.level || "MODERATE";
     riskCell.className = `text-center ${getRiskLevelClass(riskLevel)}`;
     riskCell.textContent = riskLevel;
     row.appendChild(riskCell);
@@ -5970,31 +5956,25 @@ function createAvailablePositionRow(position) {
     const botCriteriaCell = document.createElement('td');
     botCriteriaCell.className = 'text-center';
     
-    // FIXED: Use proper bot criteria logic based on actual data
+    // Simple bot criteria logic
     const getBotBuyCriteriaStatus = () => {
         // Check if already owned (has significant balance)
         const hasSignificantBalance = currentBalance > 0 && (currentBalance * currentPrice) >= 100;
         if (hasSignificantBalance) {
-            return { status: "OWNED", class: "text-info fw-bold", tooltip: "Already in portfolio - bot won't buy more" };
+            return { status: "OWNED", class: "text-info fw-bold", tooltip: "Already in portfolio" };
         }
         
-        // Check for ready to buy conditions
-        if (timingSignal === "BUY" && confidenceScore >= 65 && priceDiffPercent <= -2.0) {
-            return { status: "READY TO BUY", class: "text-success fw-bold", tooltip: "BUY timing signal with sufficient discount - bot ready to execute" };
+        // Check for buy conditions based on timing signal
+        if (timingSignal === "BUY" && confidenceScore >= 60) {
+            return { status: "READY TO BUY", class: "text-success fw-bold", tooltip: "BUY signal with good confidence" };
         }
         
-        if (timingSignal === "CAUTIOUS_BUY" && confidenceScore >= 60 && priceDiffPercent <= -1.0) {
-            return { status: "WATCH", class: "text-warning fw-bold", tooltip: "CAUTIOUS_BUY timing signal - bot monitoring for execution" };
-        }
-        
-        // Check Bollinger Band trigger
-        const bbAnalysis = position.bollinger_analysis || {};
-        if (bbAnalysis.signal === "BUY ZONE") {
-            return { status: "BOT WILL BUY", class: "text-success fw-bold", tooltip: "Price hit lower Bollinger Band - bot auto-buy triggered!" };
+        if (timingSignal === "CAUTIOUS_BUY" && confidenceScore >= 50) {
+            return { status: "WATCH", class: "text-warning fw-bold", tooltip: "CAUTIOUS_BUY signal" };
         }
         
         // Default monitoring state
-        return { status: "MONITORING", class: "text-secondary", tooltip: "Monitoring market conditions - no active buy triggers" };
+        return { status: "MONITORING", class: "text-secondary", tooltip: "Monitoring conditions" };
     };
     
     // LEGACY CODE - This entire block below should be replaced with the simplified version above
