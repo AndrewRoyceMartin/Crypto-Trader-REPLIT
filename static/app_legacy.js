@@ -2697,23 +2697,64 @@ class TradingApp {
                 lastUpdateElement.textContent = new Date().toLocaleTimeString();
             }
             
-            // Fetch bot status and sync data in parallel
-            const [botStatusResponse, syncTestResponse] = await Promise.all([
-                fetch('/api/bot/status'),
-                fetch('/api/sync-test')
-            ]);
+            // Fetch bot status and sync data with better error handling
+            let botStatus = null;
+            let syncData = null;
             
-            if (!botStatusResponse.ok || !syncTestResponse.ok) {
-                throw new Error('Failed to fetch strategy status');
+            try {
+                // Create timeout promise
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 5000);
+                
+                const botStatusResponse = await fetch('/api/bot/status', { 
+                    signal: controller.signal,
+                    headers: { 'Accept': 'application/json' }
+                });
+                clearTimeout(timeoutId);
+                
+                if (botStatusResponse.ok) {
+                    botStatus = await botStatusResponse.json();
+                } else {
+                    console.warn(`Bot status endpoint returned ${botStatusResponse.status}: ${botStatusResponse.statusText}`);
+                    // Use fallback default bot status
+                    botStatus = { running: false, mode: 'unavailable', active_pairs: 0 };
+                }
+            } catch (botError) {
+                console.warn('Bot status fetch failed:', botError.message || botError.name);
+                botStatus = { running: false, mode: 'error', active_pairs: 0 };
             }
             
-            const botStatus = await botStatusResponse.json();
-            const syncData = await syncTestResponse.json();
+            try {
+                // Create timeout promise for sync test
+                const controller2 = new AbortController();
+                const timeoutId2 = setTimeout(() => controller2.abort(), 5000);
+                
+                const syncTestResponse = await fetch('/api/sync-test', { 
+                    signal: controller2.signal,
+                    headers: { 'Accept': 'application/json' }
+                });
+                clearTimeout(timeoutId2);
+                
+                if (syncTestResponse.ok) {
+                    syncData = await syncTestResponse.json();
+                } else {
+                    console.warn(`Sync test endpoint returned ${syncTestResponse.status}: ${syncTestResponse.statusText}`);
+                    // Use fallback sync data
+                    syncData = { sync_summary: { synchronized: 0, out_of_sync: 0, no_position: 0, strategy_only: 0 } };
+                }
+            } catch (syncError) {
+                console.warn('Sync test fetch failed:', syncError.message || syncError.name);
+                syncData = { sync_summary: { synchronized: 0, out_of_sync: 0, no_position: 0, strategy_only: 0 } };
+            }
             
-            // Update bot status badges and summary
-            this.updateBotStatusDisplay(botStatus);
-            this.updateSyncSummary(syncData);
-            this.updateStrategyPairsTable(botStatus, syncData);
+            // Update bot status badges and summary (with fallback data if needed)
+            if (botStatus) {
+                this.updateBotStatusDisplay(botStatus);
+            }
+            if (syncData) {
+                this.updateSyncSummary(syncData);
+                this.updateStrategyPairsTable(botStatus || {}, syncData);
+            }
             
         } catch (error) {
             console.error('Error refreshing strategy status:', error);
