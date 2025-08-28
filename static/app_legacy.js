@@ -5562,19 +5562,24 @@ function updateOpenPositionsTable(positions, totalValue = 0) {
             };
             
             // Format micro-cap token values in a meaningful way
-            const formatMeaningfulCurrency = (value) => {
+            const formatMeaningfulCurrency = (value, currency = 'USD') => {
                 const numValue = Number(value) || 0;
                 if (Math.abs(numValue) < 0.000001 && numValue !== 0) {
                     // For micro-values, show in millionths for readability
                     const millionths = numValue * 1000000;
-                    return `${millionths.toFixed(2)} µUSD`;
+                    return `${millionths.toFixed(2)} µ${currency}`;
                 }
                 if (Math.abs(numValue) < 0.01 && numValue !== 0) {
-                    return '$' + numValue.toFixed(8);
+                    return new Intl.NumberFormat("en-US", { 
+                        style: "currency", 
+                        currency: currency,
+                        minimumFractionDigits: 8,
+                        maximumFractionDigits: 8
+                    }).format(numValue);
                 }
                 return new Intl.NumberFormat("en-US", { 
                     style: "currency", 
-                    currency: window.tradingApp?.selectedCurrency || "USD",
+                    currency: currency,
                     minimumFractionDigits: 2,
                     maximumFractionDigits: 6
                 }).format(numValue);
@@ -5668,14 +5673,14 @@ function updateOpenPositionsTable(positions, totalValue = 0) {
             // Create all other cells safely
             const cells = [
                 formatNumber(quantity),                                    // BALANCE
-                formatMeaningfulCurrency(displayCurrentValue),             // VALUE  
-                formatMeaningfulCurrency(displayCostBasis),                // COST BASIS
+                formatMeaningfulCurrency(displayCurrentValue, window.tradingApp?.selectedCurrency || 'USD'),             // VALUE  
+                formatMeaningfulCurrency(displayCostBasis, window.tradingApp?.selectedCurrency || 'USD'),                // COST BASIS
                 formatCurrency(displayCurrentPrice),                       // PRICE (per unit)
-                formatMeaningfulCurrency(totalMarketValue),                // MARKET VALUE (use live market data)
-                { text: formatMeaningfulCurrency(currentPnlDollar), className: currentPnlClass },  // P&L $
+                formatMeaningfulCurrency(totalMarketValue, window.tradingApp?.selectedCurrency || 'USD'),                // MARKET VALUE (use live market data)
+                { text: formatMeaningfulCurrency(currentPnlDollar, window.tradingApp?.selectedCurrency || 'USD'), className: currentPnlClass },  // P&L $
                 { text: `${currentPnlPercent >= 0 ? "+" : ""}${currentPnlPercent.toFixed(2)}%`, className: currentPnlClass }, // P&L %
-                formatMeaningfulCurrency(displayTargetValue),              // TARGET VALUE
-                { text: formatMeaningfulCurrency(targetPnlDollar), className: targetPnlClass },   // TARGET P&L $
+                formatMeaningfulCurrency(displayTargetValue, window.tradingApp?.selectedCurrency || 'USD'),              // TARGET VALUE
+                { text: formatMeaningfulCurrency(targetPnlDollar, window.tradingApp?.selectedCurrency || 'USD'), className: targetPnlClass },   // TARGET P&L $
                 { text: `+${targetPnlPercent.toFixed(2)}%`, className: targetPnlClass },          // TARGET P&L %
                 typeof daysHeld === 'number' ? `${daysHeld} days` : daysHeld  // DAYS (show "—" if unknown)
             ];
