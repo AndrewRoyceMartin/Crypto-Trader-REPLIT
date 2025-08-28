@@ -3,6 +3,12 @@
 // Constants
 const MIN_POSITION_USD = 0.01; // Minimum position value to display in main tables
 
+// Helper function to get dynamic column count
+function getTableColumnCount(tableId) {
+    const headerRow = document.querySelector(`#${tableId} thead tr`);
+    return headerRow ? headerRow.children.length : 10; // fallback to 10
+}
+
 // ===== ORGANIZED NAMESPACE ARCHITECTURE USING IIFE =====
 // 
 // This refactors 80+ global functions into organized namespaces to prevent
@@ -1717,7 +1723,7 @@ class TradingApp {
                 // Show empty state
                 const emptyRow = document.createElement('tr');
                 const emptyCell = document.createElement('td');
-                emptyCell.setAttribute('colspan', '13');
+                emptyCell.setAttribute('colspan', getTableColumnCount('holdings-table'));
                 emptyCell.className = 'text-center text-muted py-4';
                 
                 const icon = document.createElement('i');
@@ -1750,7 +1756,7 @@ class TradingApp {
                 // Show message that small positions are moved to Available Positions
                 const infoRow = document.createElement('tr');
                 const infoCell = document.createElement('td');
-                infoCell.setAttribute('colspan', '13');
+                infoCell.setAttribute('colspan', getTableColumnCount('holdings-table'));
                 infoCell.className = 'text-center text-muted py-4';
                 
                 const icon = document.createElement('i');
@@ -1954,7 +1960,7 @@ class TradingApp {
             holdingsTableBody.textContent = '';
             const errorRow = document.createElement('tr');
             const errorCell = document.createElement('td');
-            errorCell.setAttribute('colspan', '13');
+            errorCell.setAttribute('colspan', getTableColumnCount('holdings-table'));
             errorCell.className = 'text-center text-danger py-4';
             
             const errorIcon = document.createElement('i');
@@ -2592,10 +2598,8 @@ class TradingApp {
             const row = document.createElement('tr');
             const cell = document.createElement('td');
 
-            if (tableId === 'crypto-tracked-table')      cell.colSpan = 13;
-            else if (tableId === 'performance-page-table-body') cell.colSpan = 12;
-            else if (tableId === 'holdings-tbody') cell.colSpan = 13;
-            else cell.colSpan = 10;
+            // Dynamic column count based on table header
+            cell.colSpan = getTableColumnCount(tableId.replace('-tbody', '-table').replace('-body', '-table'));
 
             cell.className = 'text-center text-warning p-4';
             // Safe DOM creation instead of innerHTML
@@ -2862,7 +2866,8 @@ class TradingApp {
 
         if (!cryptos || cryptos.length === 0) {
             const row = document.createElement('tr');
-            row.innerHTML = '<td colspan="13" class="text-center text-muted">No cryptocurrency data available</td>';
+            const colCount = getTableColumnCount('crypto-tracked-table');
+            row.innerHTML = `<td colspan="${colCount}" class="text-center text-muted">No cryptocurrency data available</td>`;
             tableBody.appendChild(row);
             return;
         }
@@ -3165,7 +3170,7 @@ class TradingApp {
             if (!cryptos || cryptos.length === 0) {
                 const row = document.createElement('tr');
                 const cell = document.createElement('td');
-                cell.colSpan = 13; // Fixed: Current Positions table has 13 columns
+                cell.colSpan = getTableColumnCount('holdings-table'); // Dynamic column count
                 cell.className = 'text-center text-muted';
                 cell.textContent = 'No holdings data available';
                 row.appendChild(cell);
@@ -5456,7 +5461,7 @@ function updateOpenPositionsTable(positions, totalValue = 0) {
             positionsTableBody.textContent = '';
             const row = document.createElement('tr');
             const cell = document.createElement('td');
-            cell.colSpan = 13;
+            cell.colSpan = getTableColumnCount('open-positions-table');
             cell.className = 'text-center py-4';
             
             const icon = document.createElement('i');
