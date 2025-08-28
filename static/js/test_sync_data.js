@@ -3336,7 +3336,7 @@ function getTestDescription(testName) {
         'buy_button': 'Validates buy button functionality and trading API endpoint.',
         'sell_button': 'Tests sell button functionality and trading API endpoint.',
         'bollinger_strategy_priority': 'Validates that Enhanced Bollinger Bands strategy is prioritized over fixed percentage exits, with 95% confidence thresholds for algorithmic trading signals.',
-        'available_positions_data_integrity': 'Comprehensive validation of Available Positions data accuracy, OKX API alignment, target price calculations, and confidence scoring for all tradeable cryptocurrencies.'
+        'available_positions_data_integrity': 'Comprehensive validation of ALL Available Positions (68+ cryptocurrencies) - validates price accuracy, target price calculations, confidence scoring, and strategy integration for every single tradeable position, not just samples.'
     };
     return descriptions[testName] || 'Validates synchronization and accuracy of OKX data integration.';
 }
@@ -5664,45 +5664,54 @@ async function testAvailablePositionsDataIntegrity() {
                     testResults.okx_api_validated = true;
                     testResults.validation_details.push(`✅ OKX API data retrieved: ${availableData.available_positions.length} positions`);
                     
-                    // Validate price accuracy for sample positions
-                    const samplePositions = availableData.available_positions.slice(0, 5);
+                    // Validate price accuracy for ALL positions (comprehensive strategy validation)
+                    const allPositions = availableData.available_positions;
                     let priceAccuracyCount = 0;
                     
-                    for (const position of samplePositions) {
+                    for (const position of allPositions) {
                         if (position.current_price && parseFloat(position.current_price) > 0) {
                             priceAccuracyCount++;
                         }
                     }
                     
-                    if (priceAccuracyCount === samplePositions.length) {
+                    const priceAccuracyRate = (priceAccuracyCount / allPositions.length) * 100;
+                    if (priceAccuracyRate >= 95) { // 95% of positions must have valid prices
                         testResults.price_accuracy_verified = true;
-                        testResults.validation_details.push(`✅ Price accuracy validated for ${priceAccuracyCount} sample positions`);
+                        testResults.validation_details.push(`✅ Price accuracy validated for ${priceAccuracyCount}/${allPositions.length} positions (${priceAccuracyRate.toFixed(1)}%)`);
+                    } else {
+                        testResults.validation_details.push(`❌ Price accuracy insufficient: ${priceAccuracyCount}/${allPositions.length} positions (${priceAccuracyRate.toFixed(1)}%)`);
                     }
                     
-                    // Validate target price calculations
+                    // Validate target price calculations for ALL positions
                     let targetPriceCount = 0;
-                    for (const position of samplePositions) {
+                    for (const position of allPositions) {
                         if (position.target_buy_price && parseFloat(position.target_buy_price) > 0) {
                             targetPriceCount++;
                         }
                     }
                     
-                    if (targetPriceCount >= Math.ceil(samplePositions.length * 0.8)) {
+                    const targetPriceRate = (targetPriceCount / allPositions.length) * 100;
+                    if (targetPriceRate >= 80) { // 80% of positions must have valid target prices
                         testResults.target_price_calculations = true;
-                        testResults.validation_details.push(`✅ Target price calculations verified for ${targetPriceCount}/${samplePositions.length} positions`);
+                        testResults.validation_details.push(`✅ Target price calculations verified for ${targetPriceCount}/${allPositions.length} positions (${targetPriceRate.toFixed(1)}%)`);
+                    } else {
+                        testResults.validation_details.push(`❌ Target price calculations insufficient: ${targetPriceCount}/${allPositions.length} positions (${targetPriceRate.toFixed(1)}%)`);
                     }
                     
-                    // Validate confidence scoring
+                    // Validate confidence scoring for ALL positions
                     let confidenceCount = 0;
-                    for (const position of samplePositions) {
+                    for (const position of allPositions) {
                         if (position.confidence_score && parseFloat(position.confidence_score) >= 0) {
                             confidenceCount++;
                         }
                     }
                     
-                    if (confidenceCount >= Math.ceil(samplePositions.length * 0.6)) {
+                    const confidenceRate = (confidenceCount / allPositions.length) * 100;
+                    if (confidenceRate >= 60) { // 60% of positions must have valid confidence scores
                         testResults.confidence_scoring_verified = true;
-                        testResults.validation_details.push(`✅ Confidence scoring verified for ${confidenceCount}/${samplePositions.length} positions`);
+                        testResults.validation_details.push(`✅ Confidence scoring verified for ${confidenceCount}/${allPositions.length} positions (${confidenceRate.toFixed(1)}%)`);
+                    } else {
+                        testResults.validation_details.push(`❌ Confidence scoring insufficient: ${confidenceCount}/${allPositions.length} positions (${confidenceRate.toFixed(1)}%)`);
                     }
                     
                     // Check major cryptocurrency coverage
@@ -5819,21 +5828,22 @@ async function testAvailablePositionsDataIntegrity() {
             if (availableResponse.ok) {
                 const availableData = await availableResponse.json();
                 
-                // Check if positions have Bollinger Bands data
+                // Check if ALL positions have Bollinger Bands data (comprehensive strategy validation)
                 let bbIntegrationCount = 0;
-                const samplePositions = availableData.available_positions?.slice(0, 10) || [];
+                const allPositions = availableData.available_positions || [];
                 
-                for (const position of samplePositions) {
-                    if (position.bb_analysis || position.bollinger_signal || 
+                for (const position of allPositions) {
+                    if (position.bb_analysis || position.bollinger_signal || position.bollinger_analysis ||
                         position.technical_analysis || position.market_opportunity) {
                         bbIntegrationCount++;
                     }
                 }
                 
-                if (bbIntegrationCount >= Math.ceil(samplePositions.length * 0.5)) {
-                    testResults.validation_details.push(`✅ Bollinger Bands integration detected in ${bbIntegrationCount}/${samplePositions.length} positions`);
+                const bbIntegrationRate = (bbIntegrationCount / allPositions.length) * 100;
+                if (bbIntegrationRate >= 50) { // 50% of positions must have Bollinger Bands integration
+                    testResults.validation_details.push(`✅ Bollinger Bands integration detected in ${bbIntegrationCount}/${allPositions.length} positions (${bbIntegrationRate.toFixed(1)}%)`);
                 } else {
-                    testResults.validation_details.push(`⚠️ Limited Bollinger Bands integration: ${bbIntegrationCount}/${samplePositions.length} positions`);
+                    testResults.validation_details.push(`❌ Limited Bollinger Bands integration: ${bbIntegrationCount}/${allPositions.length} positions (${bbIntegrationRate.toFixed(1)}%)`);
                 }
             }
         } catch (bbError) {
