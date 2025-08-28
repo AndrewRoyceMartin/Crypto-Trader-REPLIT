@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="admin-token" content="{{ ADMIN_TOKEN|default('') }}">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>Crypto Trading Dashboard - Unified View</title>
     
     <!-- Keep Bootstrap base -->
@@ -255,7 +258,7 @@
                                         CURRENT PRICE <span class="icon icon-sort text-muted"></span>
                                     </th>
                                     <th class="table-sortable text-end" data-sort="market_value" style="min-width: 80px;" title="Current total value at market price">
-                                        POSITION VALUE <span class="icon icon-sort text-muted"></span>
+                                        VALUE <span class="icon icon-sort text-muted"></span>
                                     </th>
                                     <th class="table-sortable text-end" data-sort="pnl_dollar" style="min-width: 60px;" title="Unrealized profit/loss in USD">
                                         UNREALIZED $ <span class="icon icon-sort text-muted"></span>
