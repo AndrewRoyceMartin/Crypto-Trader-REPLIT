@@ -417,10 +417,7 @@ class EnhancedTestRunner {
                 'basic_price_updates'
             ],
             trading_buttons: [
-                'testATOExportButton',
-                'testBuyButton', 
-                'testSellButton',
-                'testTakeProfitButton'
+                'testTraderStrategySync'
             ],
             strategy_validation: [
                 'bollinger_strategy_priority',
@@ -485,17 +482,13 @@ class EnhancedTestRunner {
         this.updateProgress();
         
         console.log(`🎯 Progress tracking initialized: ${totalTests} total tests`);
-        console.log('📊 Attempting to show progress bar...');
     }
     
     showProgressBar() {
         const container = document.getElementById('test-progress-container');
         if (container) {
-            console.log('📊 Progress bar container found, showing progress bar');
             container.style.display = 'block';
             container.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        } else {
-            console.error('❌ Progress bar container #test-progress-container not found in DOM');
         }
     }
     
@@ -926,17 +919,8 @@ class EnhancedTestRunner {
                 case 'button_workflow_comprehensive':
                     testResult = await this.testButtonWorkflowComprehensive();
                     break;
-                case 'testATOExportButton':
-                    testResult = await testATOExportButton();
-                    break;
-                case 'testBuyButton':
-                    testResult = await testBuyButton();
-                    break;
-                case 'testSellButton':
-                    testResult = await testSellButton();
-                    break;
-                case 'testTakeProfitButton':
-                    testResult = await testTakeProfitButton();
+                case 'testTraderStrategySync':
+                    testResult = await this.testTraderStrategySync();
                     break;
                 case 'bollinger_strategy_priority':
                     testResult = await testBollingerBandsPrioritization();
@@ -1946,7 +1930,7 @@ ${'='.repeat(50)}
         let failed = 0;
         
         // Show loading state
-        testResultsContainer.innerHTML = '<div class="text-center p-4"><i class="fas fa-spinner fa-spin fa-2x text-primary mb-3"></i><h5>Running Normal Tests (4 fast response tests)...</h5></div>';
+        testResultsContainer.innerHTML = '<div class="text-center p-4"><i class="fas fa-spinner fa-spin fa-2x text-primary mb-3"></i><h5>Running Normal Tests (8 fast response tests)...</h5></div>';
         
         try {
             // Run fast response tests as "normal" testing
@@ -1954,8 +1938,11 @@ ${'='.repeat(50)}
                 { name: 'API Connectivity', func: 'testBasicAPIConnectivity' },
                 { name: 'Portfolio Data', func: 'testBasicPortfolioData' },
                 { name: 'Price Updates', func: 'testBasicPriceUpdates' },
-                { name: 'Trader Strategy Sync', func: 'testTraderStrategySync' },
-                { name: 'Button Presence', func: 'testBasicButtonPresence' }
+                { name: 'Button Presence', func: 'testBasicButtonPresence' },
+                { name: 'ATO Export Button', func: 'testATOExportButton' },
+                { name: 'Buy Button', func: 'testBuyButton' },
+                { name: 'Sell Button', func: 'testSellButton' },
+                { name: 'Take Profit Button', func: 'testTakeProfitButton' }
             ];
             
             const results = [];
@@ -1970,10 +1957,8 @@ ${'='.repeat(50)}
                 try {
                     let result;
                     // Handle different function types
-                    if (test.func.startsWith('test') && test.func !== 'testBasicAPIConnectivity' && 
-                        test.func !== 'testBasicPortfolioData' && test.func !== 'testBasicPriceUpdates' && 
-                        test.func !== 'testBasicButtonPresence' && test.func !== 'testAPIResponseTiming' &&
-                        test.func !== 'testTraderStrategySync') {
+                    if (test.func === 'testATOExportButton' || test.func === 'testBuyButton' || 
+                        test.func === 'testSellButton' || test.func === 'testTakeProfitButton') {
                         // Global button test functions
                         result = await window[test.func]();
                     } else {
@@ -2300,10 +2285,7 @@ ${'='.repeat(50)}
             'testButtonWorkflowComprehensive',
             'testAPIResponseTiming',
             'testBasicButtonFunctions',
-            'testATOExportButton',
-            'testBuyButton',
-            'testSellButton',
-            'testTakeProfitButton',
+            'testTraderStrategySync',
             'bot_runtime_status',
             'bot_state_sync',
             'cache_disabled',
