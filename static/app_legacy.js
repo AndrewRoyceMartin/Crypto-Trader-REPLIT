@@ -7941,16 +7941,16 @@ window.SyncTest = {
             // Update UI to show loading
             if (button) {
                 button.disabled = true;
-                button.innerHTML = '<span class="icon icon-refresh spinner-border spinner-border-sm me-1"></span>Testing...';
+                button.innerHTML = '<span class="icon icon-refresh spinner-border spinner-border-sm me-1"></span>Testing (5s timeout)...';
             }
             if (statusBadge) {
                 statusBadge.className = 'badge bg-warning';
                 statusBadge.innerHTML = '<span class="icon icon-circle me-1"></span>Testing';
             }
             
-            // Call sync test API
+            // Call sync test API with shorter timeout
             console.log('🔍 Calling sync test API...');
-            const response = await Utils.fetchJSON('/api/sync-test');
+            const response = await Utils.fetchJSON('/api/sync-test', { timeout: 5000 });
             console.log('🔍 Sync test response:', response);
             
             if (!response) {
