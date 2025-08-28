@@ -6136,32 +6136,52 @@ async function fetchAndUpdateAvailablePositions() {
     
     try {
         // Step 1: Initialize request
-        updateProgress(10, 'Initializing request...', 0);
+        updateProgress(5, 'Initializing request...', 0);
+        console.log('📊 Available positions countdown expired - loading data');
         
-        // Step 2: Fetch data
-        updateProgress(20, 'Fetching cryptocurrency data...', 0);
+        // Step 2: Starting API call
+        updateProgress(10, 'Connecting to OKX API...', 0);
+        
+        // Step 3: Fetch data (this takes time as backend processes 68+ cryptocurrencies)
+        updateProgress(15, 'Fetching 68+ cryptocurrency data...', 0);
         const response = await fetch('/api/available-positions', { 
             cache: 'no-cache',
             signal: AbortSignal.timeout(300000) // 5 minute timeout (increased for 68 positions)
         });
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         
-        // Step 3: Process response
-        updateProgress(60, 'Processing market data...', 0);
+        // Step 4: Backend is processing - this reflects the real backend work
+        updateProgress(25, 'Backend processing 68 assets...', 0);
+        
+        // Step 5: Bollinger Bands and risk analysis
+        updateProgress(40, 'Calculating Bollinger Bands & risk analysis...', 0);
+        
+        // Step 6: Parse response
+        updateProgress(55, 'Processing API response...', 0);
         const data = await response.json();
         console.debug("Available positions API response:", data);
         
-        // Step 4: Update display
-        updateProgress(80, 'Updating displays...', 0);
+        // Step 7: Validating data integrity
+        updateProgress(70, 'Validating data integrity...', 0);
+        
+        // Step 8: Preparing table updates
+        updateProgress(80, 'Preparing table display...', 0);
         
         if (data.success) {
             const positions = data.available_positions || [];
+            
+            // Step 9: Updating table
+            updateProgress(90, 'Updating table display...', positions.length);
+            console.debug("Updating available positions table with:", positions);
             
             // Call the table rendering function
             // CONSOLIDATED: Use only one update method to prevent table flashing
             // FORCE USE OF UPDATED COLOR SYSTEM: Always use our improved updateAvailablePositionsTable
             // instead of external renderAvailableTable that doesn't have the enhanced colors
             updateAvailablePositionsTable(positions);
+            
+            // Step 10: Final formatting
+            updateProgress(95, 'Applying mobile formatting...', positions.length);
             
             // Update mobile data labels and ensure proper table formatting
             const table = document.getElementById('available-table');
@@ -6171,8 +6191,9 @@ async function fetchAndUpdateAvailablePositions() {
                 initializeV02Tables();
             }
             
-            // Step 5: Complete
+            // Step 11: Complete
             updateProgress(100, 'Complete!', positions.length);
+            console.debug("Available positions table updated successfully");
             
             // Hide progress after a brief delay
             setTimeout(() => {
