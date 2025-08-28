@@ -956,7 +956,7 @@
         return `<img src="https://assets.coingecko.com/coins/images/${getCoinGeckoImageId(coinId)}/small/${coinId}.png" 
                      alt="${symbol}" 
                      class="crypto-icon crypto-icon-img" 
-                     style="width: 24px; height: 24px; border-radius: 50%;"`;
+                     style="width: 24px; height: 24px; border-radius: 50%;">`;
     }
     
     /** Get CoinGecko image IDs for major cryptocurrencies */
@@ -1334,6 +1334,7 @@
             
             // Test 4: Trade History API
             console.log('Testing trade history API...');
+            const tradesResponse = await fetch('/api/recent-trades');
             const tradesData = await tradesResponse.json();
             results.push({
                 test: 'Trade History API',
