@@ -243,9 +243,14 @@ document.addEventListener('DOMContentLoaded', function() {
     }, 500);
 
     document.addEventListener('click', function(e) {
-        if (e.target.classList.contains('view-toggle-btn') || e.target.parentNode.classList.contains('view-toggle-btn')) {
-            const button = e.target.classList.contains('view-toggle-btn') ? e.target : e.target.parentNode;
-            const cardId = button.getAttribute('data-card');
+        // Safely check for view-toggle-btn elements with null protection
+        if (e.target && e.target.classList && e.target.classList.contains('view-toggle-btn')) {
+            const cardId = e.target.getAttribute('data-card');
+            if (cardId && typeof toggleCardView === 'function') {
+                toggleCardView(cardId);
+            }
+        } else if (e.target && e.target.parentNode && e.target.parentNode.classList && e.target.parentNode.classList.contains('view-toggle-btn')) {
+            const cardId = e.target.parentNode.getAttribute('data-card');
             if (cardId && typeof toggleCardView === 'function') {
                 toggleCardView(cardId);
             }
@@ -6635,15 +6640,20 @@ async function recalculatePositions() {
         btn.disabled = true;
         btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Recalculating...';
         
-        // Get admin token from window (set by app authentication)
-        const adminToken = window.ADMIN_TOKEN || localStorage.getItem('admin_token') || 'trading-admin-2024';
+        // Get admin token from meta tag (set by Flask template)
+        const metaToken = document.querySelector('meta[name="admin-token"]');
+        const adminToken = metaToken ? metaToken.getAttribute('content') : '';
         
-        // Call recalculation API
+        if (!adminToken) {
+            throw new Error('Admin token not available - cannot recalculate positions');
+        }
+        
+        // Call recalculation API with correct header format
         const response = await fetch('/api/recalculate-positions', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${adminToken}`
+                'X-Admin-Token': adminToken
             },
             body: JSON.stringify({ force_refresh: true })
         });
