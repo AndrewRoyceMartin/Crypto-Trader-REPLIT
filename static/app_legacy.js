@@ -1880,25 +1880,27 @@ class TradingApp {
                 pnlPercentCell.textContent = `${pnlSign}${holding.pnl_percent.toFixed(2)}%`;
                 row.appendChild(pnlPercentCell);
                 
-                // Target value cell (dynamic Bollinger Band target)
+                // Target value cell (dynamic calculation)
+                const costBasis = holding.cost_basis || 0;
+                const targetValueNum = calcTargetValue(costBasis, holding);
+                const targetProfitNum = calcTargetDollar(costBasis, holding);
+                const targetPctNum = getTargetPercent(holding);
+                
                 const targetValueCell = document.createElement('td');
                 targetValueCell.className = 'text-end';
-                const targetMultiplier = getTargetMultiplier(holding);
-                const targetValue = (holding.cost_basis || 0) * targetMultiplier;
-                targetValueCell.textContent = this.formatCurrency(targetValue);
+                targetValueCell.textContent = formatMoney(targetValueNum, this.selectedCurrency, 2, 2);
                 row.appendChild(targetValueCell);
                 
                 // Target PnL Dollar cell
                 const targetPnlDollarCell = document.createElement('td');
                 targetPnlDollarCell.className = 'text-end text-success';
-                const targetPnlDollar = targetValue - (holding.cost_basis || 0);
-                targetPnlDollarCell.textContent = `+${this.formatCurrency(targetPnlDollar)}`;
+                targetPnlDollarCell.textContent = formatMoney(targetProfitNum, this.selectedCurrency, 2, 2);
                 row.appendChild(targetPnlDollarCell);
                 
                 // Target PnL Percent cell
                 const targetPnlPercentCell = document.createElement('td');
                 targetPnlPercentCell.className = 'text-end text-success';
-                const targetPnlPercent = (targetMultiplier - 1) * 100;
+                const targetPnlPercent = targetPctNum;
                 targetPnlPercentCell.textContent = `+${targetPnlPercent.toFixed(2)}%`;
                 row.appendChild(targetPnlPercentCell);
                 
@@ -6315,19 +6317,16 @@ function calculateBollingerTargetPercent(holding) {
     return `+${fallbackPercent.toFixed(1)}%`;
 }
 
-/** Calculate target value based on dynamic Bollinger Band target or 4% fallback */
-function calculateTargetValue(costBasis, targetMultiplier = 1.04, currency = null) {
-    const selectedCurrency = currency || window.tradingApp?.selectedCurrency || currentCurrency() || 'USD';
-    const target = costBasis * targetMultiplier; // Use dynamic target multiplier
-    return target.toLocaleString('en-US', {style: 'currency', currency: selectedCurrency, minimumFractionDigits: 8, maximumFractionDigits: 8});
+/** Calculate target value based on dynamic calculations */
+function calculateTargetValue(costBasis, holding, ccy='USD') {
+    const target = calcTargetValue(costBasis, holding);
+    return formatMoney(target, ccy, 2, 2);
 }
 
-/** Calculate target profit in dollars based on dynamic Bollinger Band target or 4% fallback */
-function calculateTargetProfit(costBasis, targetMultiplier = 1.04, currency = null) {
-    const selectedCurrency = currency || window.tradingApp?.selectedCurrency || currentCurrency() || 'USD';
-    const profit = costBasis * (targetMultiplier - 1); // Calculate profit from target multiplier
-    console.log('TARGET DEBUG - calculateTargetProfit:', {costBasis, targetMultiplier, profit});
-    return profit.toLocaleString('en-US', {style: 'currency', currency: selectedCurrency, minimumFractionDigits: 8, maximumFractionDigits: 8});
+/** Calculate target profit based on dynamic calculations */
+function calculateTargetProfit(costBasis, holding, ccy='USD') {
+    const profit = calcTargetDollar(costBasis, holding);
+    return formatMoney(profit, ccy, 2, 2);
 }
 
 /** Get position status based on trading bot state and holding data */
@@ -7384,6 +7383,28 @@ function getTargetMultiplier(holding) {
 // Centralized target percentage calculation
 function getTargetPercent(holding) {
     return (getTargetMultiplier(holding) - 1) * 100;
+}
+
+// Money formatting utility
+function formatMoney(num, ccy = 'USD', min=2, max=2) {
+    return Number(num).toLocaleString('en-US', { 
+        style:'currency', 
+        currency: ccy,
+        minimumFractionDigits: min, 
+        maximumFractionDigits: max 
+    });
+}
+
+// Target dollar profit calculation
+function calcTargetDollar(costBasis, holding) {
+    const m = getTargetMultiplier(holding);
+    return costBasis * (m - 1);
+}
+
+// Target total value calculation
+function calcTargetValue(costBasis, holding) {
+    const m = getTargetMultiplier(holding);
+    return costBasis * m;
 }
 
 // Dynamic color generation based on symbol hash

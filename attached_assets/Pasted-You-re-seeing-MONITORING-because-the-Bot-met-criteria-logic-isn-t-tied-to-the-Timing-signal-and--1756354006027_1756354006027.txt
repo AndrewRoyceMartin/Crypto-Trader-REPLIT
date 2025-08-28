@@ -1,0 +1,58 @@
+You’re seeing “MONITORING” because the “Bot met criteria” logic isn’t tied to the Timing signal and (most commonly) it’s evaluating the wrong side of the spread or wrong units. In your tables:
+
+Diff % is a premium over target: (price - target) / target * 100 (positive when price is ABOVE target).
+
+Entry logic should use a discount from target: (target - price) / target * 100 (positive when price is BELOW target).
+If you compare a premium against buy thresholds, the condition never hits → default MONITORING.
+
+Also, several codebases accidentally compare fractions (0.06) to percent values (6), or never actually reference the Timing field.
+
+Below is a drop-in, unit-safe patch that makes “Bot met criteria” reflect Timing and your dynamic % thresholds.
+
+1) Compute both premium & discount (and keep units consistent)
+// Always compute in PERCENT units (not fractions)
+function pctPremium(price, target)  { return ((price  - target) / target) * 100; } // >0 when above
+function pctDiscount(price, target) { return ((target - price) / target) * 100; } // >0 when below
+
+2) Dynamic target % (no magic numbers)
+const DEFAULT_TARGET_PCT = 8; // fallback; or read from user settings
+
+function getTargetPercent(holding) {
+  if (holding?.target_pct != null) return Number(holding.target_pct);       // e.g. 8
+  if (holding?.target_multiplier)  return (Number(holding.target_multiplier) - 1) * 100;
+  return DEFAULT_TARGET_PCT;
+}
+
+3) Make MANAGED/WATCH thresholds respect the dynamic % and the Timing signal
+// timing is one of: 'BUY', 'CAUTIOUS_BUY', 'WAIT', 'SELL', etc.
+function deriveBotCriteria({ price, target, timing, holding, confidence, risk, owned, isFiat }) {
+  if (owned)    return 'OWNED';
+  if (isFiat)   return 'FIAT BALANCE';       // never generate buy signals on fiat
+  
+  const targetPct = getTargetPercent(holding);      // e.g. 8  (percent units)
+  const managedThreshold = Math.max(targetPct * 0.8, 6.0); // 80% of TP or ≥6%
+  const watchThreshold   = Math.max(targetPct * 0.4, 3.0); // 40% of TP or ≥3%
+
+  // Use DISCOUNT for entry logic (positive when price < target)
+  const discount = pctDiscount(price, target);      // percent units
+
+  // Tie to Timing column first
+  const timingOK = timing === 'BUY' || timing === 'CAUTIOUS_BUY';
+
+  if (timingOK && discount >= managedThreshold && (confidence !== 'WEAK')) {
+    return 'READY TO BUY';
+  }
+  if (timingOK && discount >= watchThreshold) {
+    return 'WATCH';
+  }
+  return 'MONITORING';
+}
+
+
+Why this works
+
+If Timing says BUY/CAUTIOUS_BUY and price is sufficiently below target (discount ≥ threshold), you get READY TO BUY or WATCH.
+
+If Timing says WAIT, you get MONITORING regardless of discount.
+
+Thresholds scale with your dynamic target % (8%, 10%, etc.).
