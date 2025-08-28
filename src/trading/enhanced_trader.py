@@ -160,7 +160,17 @@ class EnhancedTrader:
                     if callable(update_fn):
                         update_fn(self.equity)
 
-                    if not self.risk_manager.check_trading_allowed(self.equity):
+                    # Get USDT balance for risk check
+                    try:
+                        from ..services.portfolio_service import get_portfolio_service
+                        portfolio_service = get_portfolio_service()
+                        portfolio_data = portfolio_service.get_portfolio_data()
+                        usdt_balance = portfolio_data.get('cash_balance', 0.0)
+                    except Exception as e:
+                        self.logger.warning(f"Failed to get USDT balance: {e}")
+                        usdt_balance = 0.0
+
+                    if not self.risk_manager.check_trading_allowed(self.equity, usdt_balance):
                         self.logger.warning("Trading halted due to risk limits")
                         time.sleep(300)
                         continue

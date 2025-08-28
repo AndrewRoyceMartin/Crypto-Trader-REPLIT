@@ -48,12 +48,13 @@ class RiskManager:
         
         self.logger.info(f"Risk manager initialized - Max portfolio risk: {self.max_portfolio_risk}%")
     
-    def check_trading_allowed(self, portfolio_value: float) -> bool:
+    def check_trading_allowed(self, portfolio_value: float, usdt_balance: float = 0.0) -> bool:
         """
         Check if trading is allowed based on risk limits.
         
         Args:
             portfolio_value: Current portfolio value
+            usdt_balance: Available USDT cash balance
             
         Returns:
             True if trading is allowed, False otherwise
@@ -64,6 +65,12 @@ class RiskManager:
         # Check if trading is halted
         if self.trading_halted:
             self.logger.warning(f"Trading halted: {self.halt_reason}")
+            return False
+        
+        # Check minimum USDT balance for purchases
+        min_usdt_balance = 100.0  # Minimum $100 USDT required for new purchases
+        if usdt_balance < min_usdt_balance:
+            self.logger.warning(f"Insufficient USDT balance for new purchases: ${usdt_balance:.2f} < ${min_usdt_balance:.2f}")
             return False
         
         # Check daily loss limit
