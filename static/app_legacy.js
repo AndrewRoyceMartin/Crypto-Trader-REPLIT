@@ -1894,7 +1894,9 @@ class TradingApp {
                 // Days cell
                 const daysCell = document.createElement('td');
                 daysCell.className = 'text-center text-muted';
-                daysCell.textContent = '30d';
+                const daysHeld =
+                  holding.open_time ? Math.floor((Date.now() - new Date(holding.open_time)) / 86_400_000) : null;
+                daysCell.textContent = daysHeld != null ? `${daysHeld}d` : '—';
                 row.appendChild(daysCell);
                 
                 // Actions cell
