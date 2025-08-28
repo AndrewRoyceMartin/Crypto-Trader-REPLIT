@@ -1648,16 +1648,16 @@ class TradingApp {
     }
     
     updateDrawdownMetrics(metrics) {
-        // Update drawdown metrics elements if they exist
+        // Update drawdown metrics elements if they exist with safe null checks
         const elements = {
-            'drawdown-max': `${metrics.max_drawdown_percent.toFixed(2)}%`,
-            'drawdown-current': `${metrics.current_drawdown_percent.toFixed(2)}%`,
-            'drawdown-average': `${metrics.average_drawdown_percent.toFixed(2)}%`,
-            'drawdown-periods': metrics.total_drawdown_periods,
-            'drawdown-recovery': metrics.recovery_periods,
-            'drawdown-underwater': `${metrics.underwater_percentage.toFixed(1)}%`,
-            'drawdown-duration': `${metrics.max_drawdown_duration_days} days`,
-            'drawdown-peak': this.formatCurrency(metrics.peak_equity),
+            'drawdown-max': `${(metrics.max_drawdown_percent || 0).toFixed(2)}%`,
+            'drawdown-current': `${(metrics.current_drawdown_percent || 0).toFixed(2)}%`,
+            'drawdown-average': `${(metrics.average_drawdown_percent || 0).toFixed(2)}%`,
+            'drawdown-periods': metrics.total_drawdown_periods || 'N/A',
+            'drawdown-recovery': metrics.recovery_periods || 'N/A',
+            'drawdown-underwater': `${(metrics.underwater_percentage || 0).toFixed(1)}%`,
+            'drawdown-duration': `${metrics.max_drawdown_duration_days || 0} days`,
+            'drawdown-peak': this.formatCurrency(metrics.peak_equity || metrics.current_equity || 0),
             'drawdown-start': metrics.max_drawdown_start || 'N/A',
             'drawdown-end': metrics.max_drawdown_end || 'N/A'
         };
