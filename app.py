@@ -658,8 +658,8 @@ def get_public_price(pair: str) -> float:
                     and hasattr(service.exchange, 'exchange')
                     and service.exchange.exchange):
                 service.exchange.exchange.timeout = 8000
-                ticker: dict[str, Any] = service.exchange.exchange.fetch_ticker(pair)
-                price = float(ticker.get('last') or 0)
+                ticker = service.exchange.exchange.fetch_ticker(pair)
+                price = float(ticker.get('last') or 0) if isinstance(ticker, dict) else 0.0
                 if price > 0:
                     cache_put_price(pair, price)
                 return price
@@ -1070,7 +1070,7 @@ def api_price() -> ResponseReturnValue:
         result = []
         for item in out:
             item_copy = item.copy()
-            item_copy["ts"] = str(item["ts"])
+            item_copy["ts"] = str(item.get("ts", ""))
             result.append(item_copy)
         return jsonify(result)
     except (ValueError, TypeError) as e:
@@ -3539,12 +3539,13 @@ def api_available_positions() -> ResponseReturnValue:
                     ]  # Expanded to 40+ assets for comprehensive analysis
 
                     # Analyze BB for all major assets (holdings OR top opportunities)
+                    current_price = current_price if 'current_price' in locals() else 0.0
                     if (current_price > 0 and symbol in priority_assets):
                         logger.info(f"Calculating BB opportunity analysis for {symbol} at ${current_price}")
 
                         # Ultra-fast processing for recalculate operations
                         import time
-                        time.sleep(0.01)  # 10ms delay - 5x faster for quick recalculation
+                        time.sleep(0.005)  # 5ms delay - 10x faster for quick recalculation
 
                         try:
                             # Get historical price data for Bollinger Bands calculation
@@ -3740,9 +3741,9 @@ def api_available_positions() -> ResponseReturnValue:
             logger.warning(f"🔍 DEBUG: Batch {batch_index + 1}/{total_batches} complete: processed {processed_count}/{total_assets} assets, added {added_count}, skipped {skipped_count}")
             
             if batch_index < total_batches - 1:
-                logger.info(f"Waiting 2 seconds before next batch...")
+                logger.info(f"Waiting 0.3 seconds before next batch...")
                 import time
-                time.sleep(2.0)  # 2-second delay between batches
+                time.sleep(0.3)  # Reduced from 2s to 0.3s - 6.7x faster batch processing
 
         # Sort positions: current holdings first, then by working calculations priority, then alphabetically
         def sort_priority(position):
