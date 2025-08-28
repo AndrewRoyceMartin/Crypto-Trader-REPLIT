@@ -363,7 +363,7 @@ class PortfolioService:
                 excluded_reason = None
                 if quantity <= 0:
                     excluded_reason = f"zero_quantity ({quantity})"
-                elif symbol in ['AUD', 'USD', 'EUR', 'GBP']:
+                elif symbol in ['USDT', 'AUD', 'USD', 'EUR', 'GBP']:  # CRITICAL FIX: Exclude USDT from position processing
                     excluded_reason = f"excluded_currency ({symbol})"
                 
                 if excluded_reason:
@@ -390,16 +390,18 @@ class PortfolioService:
                 # Calculate cost basis from OKX entry price
                 cost_basis = quantity * okx_entry_price if okx_entry_price > 0 else 0.0
                 
-                # ✅ FIXED P&L CALCULATION: Use standard mathematical formulas instead of OKX native P&L
-                # Following user's verified formulas:
-                # position_value = qty * current_price
-                # cost_value = qty * entry_price  
-                # unrealized = position_value - cost_value
-                # gain_loss_pct = unrealized / cost_value * 100
-                position_value = quantity * current_price
-                cost_value = quantity * okx_entry_price if okx_entry_price > 0 else 0.0
-                calculated_pnl = position_value - cost_value
-                calculated_pnl_percent = (calculated_pnl / cost_value * 100) if cost_value > 0 else 0.0
+                # ✅ FIXED P&L CALCULATION: Only calculate P&L for actual crypto holdings, not cash
+                # USDT is cash and should have zero P&L regardless of entry price
+                if symbol == 'USDT':
+                    # Cash has no P&L - it's just cash
+                    calculated_pnl = 0.0
+                    calculated_pnl_percent = 0.0
+                else:
+                    # For crypto holdings: use standard mathematical formulas
+                    position_value = quantity * current_price
+                    cost_value = quantity * okx_entry_price if okx_entry_price > 0 else 0.0
+                    calculated_pnl = position_value - cost_value
+                    calculated_pnl_percent = (calculated_pnl / cost_value * 100) if cost_value > 0 else 0.0
                 
                 if okx_estimated_total_value > 0:
                     self.logger.info(f"OKX ESTIMATED VALUE: {symbol} qty={quantity:.4f}, "
@@ -438,9 +440,14 @@ class PortfolioService:
                     self.logger.info(f"OKX CASH: USDT ${cash_balance:.2f}")
                     total_value += cash_balance
             
-            # Calculate total P&L percentage if we have cost basis
-            total_cost_basis = sum(h['cost_basis'] for h in holdings if h['cost_basis'] > 0)
-            total_pnl_percent = (total_pnl / total_cost_basis * 100) if total_cost_basis > 0 else 0.0
+            # CRITICAL FIX: Calculate total P&L percentage using only crypto holdings
+            # USDT cash has no cost basis or P&L, so exclude it from P&L calculations
+            crypto_cost_basis = sum(h['cost_basis'] for h in holdings if h['cost_basis'] > 0)
+            crypto_pnl = sum(h['pnl'] for h in holdings if h['cost_basis'] > 0)  # Only crypto P&L
+            total_pnl_percent = (crypto_pnl / crypto_cost_basis * 100) if crypto_cost_basis > 0 else 0.0
+            
+            # Update total_pnl to reflect only crypto P&L for consistency
+            total_pnl = crypto_pnl
             
             # Calculate allocation percentages
             for holding in holdings:
@@ -772,9 +779,10 @@ class PortfolioService:
                 h["allocation_percent"] = (float(h.get("current_value", 0.0)) / total_value_for_alloc) * 100.0
 
             total_pnl = sum(float(h.get("pnl", 0.0)) for h in holdings)
-            # FIXED: Try to get portfolio-level P&L from OKX if available
+            # FINANCIAL SAFETY FIX: Use cost basis instead of initial value for accurate P&L percentage
+            total_cost_basis_for_pnl = sum(float(h.get("cost_basis", 0.0)) for h in holdings if h.get("cost_basis", 0.0) > 0)
             total_pnl_percent = 0.0
-            if total_initial_value > 0:
+            if total_cost_basis_for_pnl > 0:
                 # Check if OKX provides overall portfolio P&L percentage
                 if hasattr(positions_data, '__iter__') and len(positions_data) > 0:
                     # Look for aggregated P&L data from OKX
@@ -787,9 +795,10 @@ class PortfolioService:
                             self.logger.debug(f"Using OKX total P&L percentage: {okx_total_pnl_pct:.2f}%")
                             break
                     
-                    total_pnl_percent = okx_total_pnl_pct if okx_total_pnl_pct is not None else (total_pnl / total_initial_value * 100.0)
+                    # CRITICAL FIX: Use cost basis for mathematically correct P&L percentage
+                    total_pnl_percent = okx_total_pnl_pct if okx_total_pnl_pct is not None else (total_pnl / total_cost_basis_for_pnl * 100.0)
                 else:
-                    total_pnl_percent = (total_pnl / total_initial_value * 100.0)
+                    total_pnl_percent = (total_pnl / total_cost_basis_for_pnl * 100.0)
 
             # Calculate cash balance from real OKX account  
             cash_balance = 0.0
