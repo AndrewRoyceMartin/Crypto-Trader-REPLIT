@@ -677,7 +677,13 @@ class TradingApp {
         // IMMEDIATE INITIAL DATA LOAD (only once)
         this.updateRefreshTimestamp(); // Set initial timestamp for timer
         this.debouncedUpdateDashboard(); // Overview refresh (/api/crypto-portfolio)
-        // Initial holdings refresh will be handled by the interval's setTimeout call
+        
+        // Load current holdings immediately - don't make users wait 80+ seconds!
+        setTimeout(() => {
+            console.log(`📊 Initial holdings refresh starting immediately`);
+            this.updateCryptoPortfolio(); // Holdings refresh
+            this.startAvailableCountdown(5); // Reset available countdown
+        }, 2000); // Start after 2 seconds to allow dashboard to load first
         
         // Single master update interval (90 seconds) 
         this.masterUpdateInterval = setInterval(() => {
@@ -703,9 +709,9 @@ class TradingApp {
             }
         }, 90000);
         
-        // Start initial countdowns
+        // Start initial countdowns - positions countdown reflects the 90s interval
         this.startPositionsCountdown(90);
-        this.startAvailableCountdown(5);
+        // Available countdown will be started after initial load (2s + 5s = 7s total)
         
         // Countdown updates (every second)
         this.countdownUpdateInterval = setInterval(() => {
