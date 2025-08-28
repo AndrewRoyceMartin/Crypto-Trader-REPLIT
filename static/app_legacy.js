@@ -6147,7 +6147,7 @@ function updateHoldingsTable(holdings) {
         holdingsTableBody.innerHTML = '';
         
         if (!holdings || holdings.length === 0) {
-            holdingsTableBody.innerHTML = '<tr><td colspan="12" class="text-center text-muted">No positions found</td></tr>';
+            holdingsTableBody.innerHTML = '<tr><td colspan="11" class="text-center text-muted">No positions found</td></tr>';
             return;
         }
         
@@ -6204,8 +6204,7 @@ function createHoldingRow(holding) {
             { content: calculateBollingerTargetValue(holding), class: 'text-success' }, // TARGET VALUE - Dynamic Bollinger Band
             { content: calculateBollingerTargetProfit(holding), class: 'text-success' }, // TARGET PROFIT $ - Dynamic Bollinger Band
             { content: calculateBollingerTargetPercent(holding), class: 'text-success' }, // TARGET PROFIT % - Dynamic Bollinger Band
-            { content: getPositionStatus(holding), class: '' }, // POSITION
-            { content: '<span class="badge bg-info">MONITOR</span>', class: '' } // ACTIONS
+            { content: getPositionStatus(holding), class: '' } // POSITION
         ];
         
         cells.forEach(cellData => {
