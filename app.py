@@ -3381,7 +3381,7 @@ def api_recalculate_positions() -> ResponseReturnValue:
                 tpm.cleanup_expired_targets()
                 logger.info("Target price locks reviewed for recalculation")
         except Exception as tpm_error:
-            logger.warning(f"Could not handle target price locks: {tmp_error}")
+            logger.warning(f"Could not handle target price locks: {tpm_error}")
 
         # Force fresh portfolio service reconnection
         portfolio_service = get_portfolio_service()
