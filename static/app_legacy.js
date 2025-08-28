@@ -238,7 +238,31 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Verify critical libraries loaded before initialization
     if (!window.Chart) {
-        console.warn('Chart.js not available - charts will be disabled');
+        // Check Chart.js with fallback mechanism
+        let chartJsChecked = false;
+        const checkChartJs = () => {
+            if (typeof Chart !== 'undefined' || window.chartJsLoaded) {
+                console.log('✅ Chart.js loaded successfully');
+                chartJsChecked = true;
+                return true;
+            }
+            return false;
+        };
+        
+        // Try immediate check
+        if (!checkChartJs()) {
+            // Wait up to 2 seconds for Chart.js to load
+            let attempts = 0;
+            const checkInterval = setInterval(() => {
+                attempts++;
+                if (checkChartJs() || attempts >= 20) {
+                    clearInterval(checkInterval);
+                    if (!chartJsChecked) {
+                        console.warn('⚠️ Chart.js not available after timeout - charts will be disabled');
+                    }
+                }
+            }, 100);
+        }
     }
     if (!window.bootstrap) {
         console.warn('Bootstrap JS not available - modals may not work');
