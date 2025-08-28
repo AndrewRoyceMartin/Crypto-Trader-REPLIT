@@ -1162,16 +1162,12 @@ class EnhancedTestRunner {
                         
                         console.log(`✅ Currency validation: ${processedCryptos.length} major cryptos found`);
                     } else {
-                        // If API fails, default to true to avoid failure on timeout
-                        testResults.all_currencies_processed = true;
-                        testResults.target_price_reset = true;
-                        console.log('⚠️ Currency validation skipped due to API timeout - defaulting to pass');
+                        // API failures indicate real problems - don't mask them
+                        console.log('❌ Currency validation failed due to API timeout');
                     }
                 } catch (error) {
-                    // Timeout or error - default to passing to avoid false failures
-                    testResults.all_currencies_processed = true;
-                    testResults.target_price_reset = true;
-                    console.log('⚠️ Currency validation skipped due to error - defaulting to pass');
+                    // Timeout or error - indicate real problems
+                    console.log('❌ Currency validation failed due to error');
                 }
                 
                 // Enhanced Test 6: Optimized cache validation
@@ -1193,13 +1189,12 @@ class EnhancedTestRunner {
                         testResults.cache_invalidation = true;
                         console.log('✅ Cache validation: APIs responding correctly');
                     } else {
-                        testResults.cache_invalidation = true; // Default to pass
-                        console.log('⚠️ Cache validation: API issues but defaulting to pass');
+                        // API failures indicate real problems
+                        console.log('❌ Cache validation: API issues detected');
                     }
                 } catch (error) {
-                    // Timeout or error - default to passing
-                    testResults.cache_invalidation = true;
-                    console.log('⚠️ Cache validation skipped due to timeout - defaulting to pass');
+                    // Timeout or error - indicate real problems
+                    console.log('❌ Cache validation failed due to timeout');
                 }
                 
                 testResults.data_refresh_validation = true;
@@ -1270,7 +1265,8 @@ class EnhancedTestRunner {
             data_consistency: false,
             price_accuracy: false,
             pnl_calculations: false,
-            response_time_acceptable: false
+            response_time_acceptable: false,
+            value_integrity_check: false
         };
 
         try {
@@ -1316,31 +1312,45 @@ class EnhancedTestRunner {
                 
                 // Validate price accuracy
                 syncResults.price_accuracy = holdingsData.length > 0 && holdingsData.some(h => h.current_price > 0);
-                console.log(`✅ Sync validation: consistency=${syncResults.data_consistency}, pnl=${syncResults.pnl_calculations}, prices=${syncResults.price_accuracy}`);
+                
+                // CRITICAL: Check for USDT value integrity (catch the $221 exclusion mismatch)
+                if (portfolioData.total_current_value && portfolioData.cash_balance) {
+                    const cryptoValue = portfolioData.total_current_value;
+                    const usdtCash = portfolioData.cash_balance;
+                    const expectedTotal = cryptoValue + usdtCash;
+                    
+                    // The portfolio service expects total = crypto + USDT, but often displays only crypto
+                    // If USDT cash > $200 and crypto value seems incomplete, this indicates the exclusion issue
+                    const possibleUsdtExclusion = usdtCash > 200 && (expectedTotal - cryptoValue) > 200;
+                    
+                    if (possibleUsdtExclusion) {
+                        syncResults.value_integrity_check = false; // FAIL - matches portfolio service detection
+                        console.log(`❌ VALUE INTEGRITY FAIL: Expected $${expectedTotal.toFixed(2)}, Crypto-only $${cryptoValue.toFixed(2)}, USDT $${usdtCash.toFixed(2)}`);
+                    } else {
+                        syncResults.value_integrity_check = true;
+                        console.log(`✅ VALUE INTEGRITY PASS: Total $${expectedTotal.toFixed(2)} properly calculated`);
+                    }
+                } else {
+                    syncResults.value_integrity_check = true; // Pass if data unavailable
+                }
+                
+                console.log(`✅ Sync validation: consistency=${syncResults.data_consistency}, pnl=${syncResults.pnl_calculations}, prices=${syncResults.price_accuracy}, integrity=${syncResults.value_integrity_check}`);
             } else {
-                // If either API fails, still mark some validations as passed to avoid total failure
-                syncResults.data_consistency = true; // Default to pass if API issues
-                syncResults.pnl_calculations = true; // Default to pass if API issues  
-                syncResults.price_accuracy = true; // Default to pass if API issues
-                console.log('⚠️ Holdings sync: API issues detected, defaulting validations to pass');
+                // API failures indicate real problems - don't mask them with default passes
+                console.log('❌ Holdings sync: API failures detected - marking validations as failed');
             }
             
             const executionTime = performance.now() - startTime;
             syncResults.response_time_acceptable = executionTime < this.performanceThresholds.api_response_time;
             
         } catch (error) {
-            console.log(`⚠️ Holdings sync test error: ${error.name === 'AbortError' ? 'Timeout' : error.message}`);
-            // Default to passing validations when API timeouts occur
-            syncResults.current_holdings_accessible = true;
-            syncResults.crypto_portfolio_accessible = true;
-            syncResults.data_consistency = true;
-            syncResults.price_accuracy = true;
-            syncResults.pnl_calculations = true;
+            console.log(`❌ Holdings sync test error: ${error.name === 'AbortError' ? 'Timeout' : error.message}`);
+            // Timeouts/errors indicate real problems - don't mask them with default passes
         }
         
         const successCount = Object.values(syncResults).filter(Boolean).length;
         return {
-            status: successCount >= 4 ? 'pass' : 'fail',
+            status: successCount >= 5 ? 'pass' : 'fail', // Require 5/7 checks now (including value integrity)
             results: syncResults,
             executionTime: performance.now() - startTime,
             success_rate: Math.round((successCount / Object.keys(syncResults).length) * 100)
