@@ -6029,6 +6029,28 @@ function createAvailablePositionRow(position) {
     botCriteriaCell.className = 'text-center';
     
     const getBotBuyCriteriaStatus = () => {
+        // Use the new buildAvailableRow logic for proper criteria
+        const rowData = buildAvailableRow(position);
+        const criteria = rowData.buyCriteria;
+        
+        // Map criteria to display format
+        switch (criteria) {
+            case 'OWNED':
+                return { status: "OWNED", class: "text-info fw-bold", tooltip: "Already in portfolio - bot won't buy more" };
+            case 'FIAT BALANCE':
+                return { status: "FIAT BALANCE", class: "text-muted", tooltip: "Fiat currency - not a trading target" };
+            case 'READY TO BUY':
+                return { status: "READY TO BUY", class: "text-success fw-bold", tooltip: "BUY timing signal with sufficient discount - bot ready to execute" };
+            case 'WATCH':
+                return { status: "WATCH", class: "text-warning fw-bold", tooltip: "BUY timing signal with moderate discount - bot monitoring for execution" };
+            case 'MONITORING':
+            default:
+                return { status: "MONITORING", class: "text-secondary", tooltip: "Monitoring market conditions - no active buy triggers" };
+        }
+    };
+    
+    // LEGACY CODE - This entire block below should be replaced with the simplified version above
+    const getLegacyBotBuyCriteriaStatus = () => {
         // Check if already owned
         if (hasPosition) {
             return { status: "OWNED", class: "text-info fw-bold", tooltip: "Already in portfolio - bot won't buy more" };
@@ -6111,6 +6133,7 @@ function createAvailablePositionRow(position) {
         }
         
         return { status: "MONITORING", class: "text-secondary", tooltip: "Monitoring market conditions - no active buy triggers" };
+    }; // End of legacy function
     };
     
     const botCriteria = getBotBuyCriteriaStatus();
@@ -7382,7 +7405,9 @@ function getTargetMultiplier(holding) {
 
 // Centralized target percentage calculation
 function getTargetPercent(holding) {
-    return (getTargetMultiplier(holding) - 1) * 100;
+    if (holding?.target_pct != null) return Number(holding.target_pct);       // e.g. 8
+    if (holding?.target_multiplier)  return (Number(holding.target_multiplier) - 1) * 100;
+    return DEFAULT_TARGET_PCT;
 }
 
 // Money formatting utility
@@ -7405,6 +7430,67 @@ function calcTargetDollar(costBasis, holding) {
 function calcTargetValue(costBasis, holding) {
     const m = getTargetMultiplier(holding);
     return costBasis * m;
+}
+
+// Premium/discount calculations (always in PERCENT units)
+function pctPremium(price, target) { 
+    return ((price - target) / target) * 100; // >0 when above target
+}
+
+function pctDiscount(price, target) { 
+    return ((target - price) / target) * 100; // >0 when below target
+}
+
+// Derive bot buy criteria based on timing signal and dynamic thresholds
+function deriveBotCriteria({ price, target, timing, holding, confidence, risk, owned, isFiat }) {
+    if (owned) return 'OWNED';
+    if (isFiat) return 'FIAT BALANCE';       // never generate buy signals on fiat
+    
+    const targetPct = getTargetPercent(holding);      // e.g. 8 (percent units)
+    const managedThreshold = Math.max(targetPct * 0.8, 6.0); // 80% of TP or ≥6%
+    const watchThreshold = Math.max(targetPct * 0.4, 3.0);   // 40% of TP or ≥3%
+
+    // Use DISCOUNT for entry logic (positive when price < target)
+    const discount = pctDiscount(price, target);      // percent units
+
+    // Tie to Timing column first
+    const timingOK = timing === 'BUY' || timing === 'CAUTIOUS_BUY';
+
+    if (timingOK && discount >= managedThreshold && (confidence !== 'WEAK')) {
+        return 'READY TO BUY';
+    }
+    if (timingOK && discount >= watchThreshold) {
+        return 'WATCH';
+    }
+    return 'MONITORING';
+}
+
+// Build available position row with proper bot criteria
+function buildAvailableRow(row) {
+    const { current_price: price, target_buy_price: target, entry_confidence, symbol } = row;
+    const timing = entry_confidence?.timing_signal || 'WAIT';
+    const confidence = entry_confidence?.level || 'MODERATE';
+    const risk = entry_confidence?.risk_level || 'MODERATE';
+    const owned = row.current_balance > 0;
+    const isFiat = symbol === 'USD' || symbol === 'USDT' || symbol === 'AUD';
+
+    // Calculate criteria using proper logic
+    const criteria = deriveBotCriteria({ 
+        price, 
+        target, 
+        timing, 
+        holding: row, 
+        confidence, 
+        risk, 
+        owned, 
+        isFiat 
+    });
+
+    return {
+        ...row,
+        diffPct: pctPremium(price, target),   // for display only
+        buyCriteria: criteria,                // this drives the "Bot Buy Criteria" column
+    };
 }
 
 // Dynamic color generation based on symbol hash
