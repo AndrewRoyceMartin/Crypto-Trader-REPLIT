@@ -5948,6 +5948,13 @@ function createAvailablePositionRow(position) {
             return { status: "OWNED", class: "text-info", distance: 0 };
         }
         
+        // CRITICAL FIX: Respect timing signal - if confidence analysis says WAIT/AVOID, override other criteria
+        if (timingSignal === "WAIT") {
+            return { status: "WAIT - Low Confidence", class: "text-muted", distance: 0 };
+        } else if (timingSignal === "AVOID") {
+            return { status: "AVOID - Poor Setup", class: "text-danger", distance: 0 };
+        }
+        
         // If we have target buy price, use that for criteria
         if (targetBuyPrice > 0 && currentPrice > 0) {
             const distancePercent = ((currentPrice - targetBuyPrice) / targetBuyPrice) * 100;
@@ -5987,6 +5994,13 @@ function createAvailablePositionRow(position) {
     
     const getBuyCriteriaTooltip = () => {
         const baseExplanation = "Buy Criteria: Bot purchases when price hits target buy price or lower Bollinger Band trigger. ";
+        
+        // Add timing signal context to tooltip
+        if (timingSignal === "WAIT") {
+            return baseExplanation + "CONFIDENCE OVERRIDE: Analysis indicates WAIT - market conditions not favorable for entry despite price levels.";
+        } else if (timingSignal === "AVOID") {
+            return baseExplanation + "CONFIDENCE OVERRIDE: Analysis indicates AVOID - poor technical setup, wait for better conditions.";
+        }
         
         if (hasPosition) {
             return baseExplanation + "✅ Already owned - Bot won't buy more of existing positions.";
