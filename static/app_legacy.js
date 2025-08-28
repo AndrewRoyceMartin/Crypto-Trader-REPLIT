@@ -5699,11 +5699,24 @@ function updateOpenPositionsTable(positions, totalValue = 0) {
 
 // Fetch and update available positions table
 async function fetchAndUpdateAvailablePositions() {
+    console.log('🔍 DEBUG: Starting fetchAndUpdateAvailablePositions...');
+    const startTime = Date.now();
+    
     try {
-        const response = await fetch('/api/available-positions', { cache: 'no-cache' });
+        console.log('🔍 DEBUG: Making fetch request to /api/available-positions...');
+        const response = await fetch('/api/available-positions', { 
+            cache: 'no-cache',
+            signal: AbortSignal.timeout(120000) // 2 minute timeout
+        });
+        
+        console.log('🔍 DEBUG: Response received, status:', response.status);
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         
+        console.log('🔍 DEBUG: Parsing JSON response...');
         const data = await response.json();
+        
+        const elapsed = Date.now() - startTime;
+        console.log(`🔍 DEBUG: Request completed in ${elapsed}ms`);
         console.debug("Available positions API response:", data);
         
         if (data.success) {
@@ -5730,7 +5743,19 @@ async function fetchAndUpdateAvailablePositions() {
             }
         }
     } catch (error) {
-        console.error("Error fetching available positions:", error);
+        const elapsed = Date.now() - startTime;
+        console.error(`❌ Error fetching available positions after ${elapsed}ms:`, error);
+        
+        if (error.name === 'TimeoutError') {
+            console.error('🚨 TIMEOUT: Available positions request took longer than 2 minutes');
+        } else if (error.name === 'AbortError') {
+            console.error('🚨 ABORTED: Available positions request was cancelled');
+        } else if (error.message.includes('HTTP')) {
+            console.error('🚨 HTTP ERROR:', error.message);
+        } else {
+            console.error('🚨 UNKNOWN ERROR:', error.message, error.stack);
+        }
+        
         // Only update if renderAvailableTable isn't available
         if (!window.renderAvailableTable || typeof window.renderAvailableTable !== 'function') {
             updateAvailablePositionsTable([]);

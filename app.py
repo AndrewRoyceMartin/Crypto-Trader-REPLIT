@@ -3400,7 +3400,10 @@ def api_available_positions() -> ResponseReturnValue:
     """Get all available OKX assets that can be traded, including zero balances."""
     try:
         currency = request.args.get('currency', 'USD')
-        logger.info(f"Fetching available positions with currency: {currency}")
+        logger.warning(f"🔍 DEBUG: Available positions API called with currency: {currency}")
+        
+        import time
+        start_time = time.time()
 
         # Get ALL OKX account balances directly (including zero balances)
         portfolio_service = get_portfolio_service()
@@ -3722,17 +3725,19 @@ def api_available_positions() -> ResponseReturnValue:
                     available_positions.append(available_position)
 
                     # Log progress and position additions
+                    added_count += 1
                     if total_balance > 0:
-                        logger.info(f"Added available position: {symbol} with balance {total_balance}")
+                        logger.info(f"✅ Added available position: {symbol} with balance {total_balance}")
                     else:
-                        logger.debug(f"Added zero-balance position: {symbol}")
+                        logger.debug(f"✅ Added zero-balance position: {symbol}")
 
                 except Exception as symbol_error:
                     logger.warning(f"❌ SKIPPING {symbol}: {symbol_error}")
+                    skipped_count += 1
                     continue
             
             # Log batch completion and add delay between batches to prevent API timeouts
-            logger.info(f"Batch {batch_index + 1}/{total_batches} complete: processed {processed_count}/{total_assets} assets")
+            logger.warning(f"🔍 DEBUG: Batch {batch_index + 1}/{total_batches} complete: processed {processed_count}/{total_assets} assets, added {added_count}, skipped {skipped_count}")
             
             if batch_index < total_batches - 1:
                 logger.info(f"Waiting 2 seconds before next batch...")
@@ -3755,7 +3760,13 @@ def api_available_positions() -> ResponseReturnValue:
         
         available_positions.sort(key=sort_priority)
 
-        logger.info(f"Found {len(available_positions)} available positions from current holdings")
+        # Final debug logging
+        elapsed_time = time.time() - start_time
+        logger.warning(f"🔍 DEBUG: Final result - {len(available_positions)} positions, elapsed time: {elapsed_time:.2f}s, added: {added_count}, skipped: {skipped_count}")
+        
+        # Check for timeout issues
+        if elapsed_time > 30:
+            logger.error(f"🚨 TIMEOUT WARNING: Available positions took {elapsed_time:.2f}s to complete!")
 
         return jsonify({
             'available_positions': available_positions,
