@@ -3208,7 +3208,7 @@ class TradingApp {
                 // Calculate dynamic stop loss and take profit based on Enhanced Bollinger Bands strategy
                 const stopLoss = this.formatCryptoPrice(purchasePrice * 0.98);  // 2% stop loss (Enhanced Bollinger Bands)
                 const takeProfit = this.formatCryptoPrice(purchasePrice * getTargetMultiplier(crypto));  // Dynamic take profit from Bollinger Bands
-                const daysHeld = position.days_held || '—';
+                const daysHeld = crypto.days_held || '—';
 
                 // Calculate target values using dynamic functions  
                 const totalCostBasis = parseFloat(crypto.cost_basis || 0);
