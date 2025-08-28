@@ -494,16 +494,37 @@ class EnhancedTrader:
             
             self.logger.info(f"📊 PRE-EXIT POSITION: {base_symbol} holds {current_qty:.6f} units at ${position_before.get('current_price', 0.0):.4f}")
             
-            # SIMULATION MODE: For now, simulate the exit order 
-            # TODO: In production, replace this with actual OKX order placement
+            # 🚀 LIVE TRADING MODE: Execute actual OKX order placement
             import time
-            import random
             
-            self.logger.info(f"🎯 SIMULATING EXIT ORDER: {base_symbol} sell {current_qty:.6f} @ ${current_price:.4f}")
-            time.sleep(0.5)  # Simulate order processing time
+            self.logger.info(f"🎯 EXECUTING LIVE EXIT ORDER: {base_symbol} sell {current_qty:.6f} @ ${current_price:.4f}")
             
-            # Simulate order success/failure (90% success rate for testing)
-            order_success = random.random() > 0.1
+            # Execute actual live sell order using OKX adapter
+            try:
+                # Get the trading symbol (e.g., SOL/USDT)
+                trading_symbol = f"{base_symbol}/USDT"
+                
+                # Place live market sell order on OKX
+                order_result = self.exchange.sell_market(trading_symbol, current_qty)
+                
+                if order_result and order_result.get('id'):
+                    order_id = order_result['id']
+                    filled_amount = order_result.get('filled', current_qty)
+                    avg_price = order_result.get('average', current_price)
+                    
+                    self.logger.critical(
+                        f"✅ LIVE EXIT ORDER EXECUTED: {base_symbol} - Order ID: {order_id}, "
+                        f"Filled: {filled_amount:.6f} @ ${avg_price:.4f}"
+                    )
+                    order_success = True
+                    time.sleep(0.2)  # Brief wait for settlement
+                else:
+                    self.logger.error(f"❌ LIVE EXIT ORDER FAILED: {base_symbol} - No order ID returned")
+                    order_success = False
+                    
+            except Exception as order_error:
+                self.logger.error(f"❌ LIVE EXIT ORDER EXCEPTION: {base_symbol} - {order_error}")
+                order_success = False
             
             if not order_success:
                 self.logger.error(f"❌ EXIT ORDER FAILED: {base_symbol} - Simulated order rejection")
@@ -602,16 +623,37 @@ class EnhancedTrader:
             
             self.logger.info(f"📊 PRE-PURCHASE STATE: {base_symbol} qty={current_qty_before:.6f}, USDT=${usdt_balance:.2f}")
             
-            # SIMULATION MODE: For now, simulate the buy order 
-            # TODO: In production, replace this with actual OKX order placement
+            # 🚀 LIVE TRADING MODE: Execute actual OKX order placement
             import time
-            import random
             
-            self.logger.info(f"🎯 SIMULATING BUY ORDER: {base_symbol} buy {quantity:.6f} @ ${current_price:.4f} (${cost_dollars:.2f})")
-            time.sleep(0.8)  # Simulate order processing time
+            self.logger.info(f"🎯 EXECUTING LIVE BUY ORDER: {base_symbol} buy {quantity:.6f} @ ${current_price:.4f} (${cost_dollars:.2f})")
             
-            # Simulate order success/failure (85% success rate for testing)
-            order_success = random.random() > 0.15
+            # Execute actual live buy order using OKX adapter
+            try:
+                # Get the trading symbol (e.g., SOL/USDT)
+                trading_symbol = f"{base_symbol}/USDT"
+                
+                # Place live market buy order on OKX
+                order_result = self.exchange.buy_market(trading_symbol, quantity)
+                
+                if order_result and order_result.get('id'):
+                    order_id = order_result['id']
+                    filled_amount = order_result.get('filled', quantity)
+                    avg_price = order_result.get('average', current_price)
+                    
+                    self.logger.critical(
+                        f"✅ LIVE BUY ORDER EXECUTED: {base_symbol} - Order ID: {order_id}, "
+                        f"Filled: {filled_amount:.6f} @ ${avg_price:.4f}"
+                    )
+                    order_success = True
+                    time.sleep(0.3)  # Brief wait for settlement
+                else:
+                    self.logger.error(f"❌ LIVE BUY ORDER FAILED: {base_symbol} - No order ID returned")
+                    order_success = False
+                    
+            except Exception as order_error:
+                self.logger.error(f"❌ LIVE BUY ORDER EXCEPTION: {base_symbol} - {order_error}")
+                order_success = False
             
             if not order_success:
                 self.logger.error(f"❌ BUY ORDER FAILED: {base_symbol} - Simulated order rejection")
