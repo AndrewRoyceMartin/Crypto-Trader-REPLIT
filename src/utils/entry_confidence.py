@@ -333,7 +333,30 @@ class EntryConfidenceAnalyzer:
             return 50.0
     
     def _generate_timing_signal(self, confidence_score: float, df: pd.DataFrame, current_price: float) -> str:
-        """Generate entry timing signal."""
+        """Generate entry timing signal aligned with Enhanced Bollinger Bands strategy."""
+        try:
+            # Check if we're in Bollinger Bands BUY ZONE (at or below lower band)
+            if len(df) >= 20:
+                prices = df['price'].values
+                sma = np.mean(prices[-20:])
+                std = np.std(prices[-20:])
+                bb_lower = sma - (2 * std)
+                
+                # If price is at/below lower Bollinger Band, this is our core strategy signal
+                if current_price <= bb_lower * 1.01:  # Within 1% of lower band
+                    # Enhanced Bollinger Bands BUY ZONE - boost confidence appropriately
+                    if confidence_score >= 75:
+                        return "STRONG_BUY"
+                    elif confidence_score >= 55:  # Lowered from 60 for Bollinger alignment
+                        return "BUY" 
+                    elif confidence_score >= 45:  # Lowered from 60 for Bollinger alignment
+                        return "CAUTIOUS_BUY"
+                    else:
+                        return "WAIT"  # Still cautious if score very low
+        except Exception:
+            pass
+            
+        # Standard confidence thresholds for non-Bollinger opportunities
         if confidence_score >= 85:
             return "STRONG_BUY"
         elif confidence_score >= 75:
