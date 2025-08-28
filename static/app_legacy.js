@@ -6040,13 +6040,18 @@ function createAvailablePositionRow(position) {
             return { status: "BLOCKED", class: "text-danger", tooltip: "Confidence analysis says AVOID - poor technical setup" };
         }
         
-        // Check for favorable timing signals that should trigger bot action
+        // PRIORITY 1: Check for favorable timing signals that should trigger bot action
         if (timingSignal === "STRONG_BUY" && confidenceScore >= 75) {
-            return { status: "STRONG BUY SIGNAL", class: "text-success fw-bold", tooltip: "✅ High confidence + STRONG_BUY timing = optimal entry conditions" };
+            return { status: "STRONG BUY", class: "text-success fw-bold", tooltip: "✅ High confidence + STRONG_BUY timing = optimal entry conditions" };
         } else if (timingSignal === "CAUTIOUS_BUY" && confidenceScore >= 60) {
-            return { status: "CAUTIOUS BUY SIGNAL", class: "text-warning fw-bold", tooltip: "⚡ Moderate confidence + CAUTIOUS_BUY timing = favorable entry" };
+            return { status: "CAUTIOUS BUY", class: "text-warning fw-bold", tooltip: "⚡ Moderate confidence + CAUTIOUS_BUY timing = favorable entry" };
         } else if (timingSignal === "BUY" && confidenceScore >= 65) {
-            return { status: "BUY SIGNAL", class: "text-success", tooltip: "📈 Good confidence + BUY timing = suitable entry" };
+            return { status: "BUY", class: "text-success", tooltip: "📈 Good confidence + BUY timing = suitable entry" };
+        }
+        
+        // PRIORITY 2: Handle medium confidence timing signals  
+        if (timingSignal === "BUY" && confidenceScore >= 50) {
+            return { status: "MODERATE BUY", class: "text-warning", tooltip: "📊 Moderate confidence + BUY timing = cautious entry" };
         }
         
         // Check Bollinger Band trigger (primary bot criteria)
@@ -6097,7 +6102,14 @@ function createAvailablePositionRow(position) {
             }
         }
         
-        return { status: "NO TRIGGER", class: "text-secondary", tooltip: "No bot buy trigger conditions detected" };
+        // Final monitoring state - explain why no trigger
+        if (timingSignal === "WAIT") {
+            return { status: "WAIT", class: "text-muted", tooltip: "Confidence analysis says WAIT - not favorable conditions" };
+        } else if (timingSignal === "AVOID") {
+            return { status: "AVOID", class: "text-danger", tooltip: "Confidence analysis says AVOID - poor technical setup" };
+        }
+        
+        return { status: "MONITORING", class: "text-secondary", tooltip: "Monitoring market conditions - no active buy triggers" };
     };
     
     const botCriteria = getBotBuyCriteriaStatus();
