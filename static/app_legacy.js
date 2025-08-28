@@ -5706,7 +5706,7 @@ async function fetchAndUpdateAvailablePositions() {
         console.log('🔍 DEBUG: Making fetch request to /api/available-positions...');
         const response = await fetch('/api/available-positions', { 
             cache: 'no-cache',
-            signal: AbortSignal.timeout(120000) // 2 minute timeout
+            signal: AbortSignal.timeout(180000) // 3 minute timeout (increased from 2 min)
         });
         
         console.log('🔍 DEBUG: Response received, status:', response.status);

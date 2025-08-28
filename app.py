@@ -3526,39 +3526,34 @@ def api_available_positions() -> ResponseReturnValue:
                     # Enhanced BB analysis for comprehensive position tracking
                     # Include ALL major tradeable assets for complete recalculation capability
                     priority_assets = [
-                        # Tier 1: Large caps (always analyze)
+                        # Tier 1: Large caps + current holdings ONLY (fast analysis)
                         'BTC', 'ETH', 'SOL', 'ADA', 'AVAX', 'LINK', 'UNI', 'LTC', 'XRP',
-                        # Tier 2: Current holdings + major altcoins
-                        'GALA', 'TRX', 'PEPE', 'DOGE', 'MATIC', 'ATOM', 'DOT', 'NEAR', 'SHIB', 'BNB',
-                        # Tier 3: Gaming/DeFi assets
-                        'BCH', 'XLM', 'ALGO', 'ICP', 'SAND', 'MANA', 'FTM', 'HBAR', 'VET', 'CHZ',
-                        # Tier 4: Additional opportunities
-                        'THETA', 'EOS', 'AAVE', 'GRT', 'ARB', 'OP', 'APT', 'SUI', 'SEI', 'WLD',
-                        # Tier 5: Emerging/Trending
-                        'BICO', 'JASMY', 'LDO', 'MASK', 'CRV', 'COMP', 'BAL', 'YFI', 'SUSHI', 'UMA'
-                    ]  # Expanded to 40+ assets for comprehensive analysis
+                        # Tier 2: Current holdings only  
+                        'GALA', 'TRX', 'PEPE', 'DOGE', 'ALGO', 'ARB', 'BICO'
+                        # Reduced from 40+ to 16 assets for much faster processing
+                    ]
 
                     # Analyze BB for all major assets (holdings OR top opportunities)
                     current_price = current_price if 'current_price' in locals() else 0.0
                     if (current_price > 0 and symbol in priority_assets):
                         logger.info(f"Calculating BB opportunity analysis for {symbol} at ${current_price}")
 
-                        # Ultra-fast processing for recalculate operations
-                        import time
-                        time.sleep(0.005)  # 5ms delay - 10x faster for quick recalculation
+                        # Ultra-fast processing for recalculate operations - REMOVED DELAY
+                        # import time
+                        # time.sleep(0.005)  # Completely removed delay for maximum speed
 
                         try:
                             # Get historical price data for Bollinger Bands calculation
                             from src.utils.okx_native import OKXNative
                             okx_client = OKXNative.from_env()
 
-                            # Streamlined BB analysis - prioritize speed for recalculation
+                            # Ultra-streamlined BB analysis - minimal data for maximum speed
                             symbol_pair = f"{symbol}-USDT"
-                            candles = okx_client.candles(symbol_pair, bar="4H", limit=120)  # Start with 4H for speed
+                            candles = okx_client.candles(symbol_pair, bar="1D", limit=40)  # Use daily with fewer candles for speed
                             
-                            # Single fallback only to prevent excessive API calls during recalculation
-                            if not candles or len(candles) < 30:
-                                candles = okx_client.candles(symbol_pair, bar="1D", limit=60)  # Fallback to daily
+                            # NO fallback - if we can't get data quickly, skip it
+                            # if not candles or len(candles) < 30:
+                            #     candles = okx_client.candles(symbol_pair, bar="1D", limit=60)  # Removed fallback
 
                             if candles and len(candles) >= 30:
                                 import pandas as pd
@@ -3741,9 +3736,9 @@ def api_available_positions() -> ResponseReturnValue:
             logger.warning(f"🔍 DEBUG: Batch {batch_index + 1}/{total_batches} complete: processed {processed_count}/{total_assets} assets, added {added_count}, skipped {skipped_count}")
             
             if batch_index < total_batches - 1:
-                logger.info(f"Waiting 0.3 seconds before next batch...")
+                logger.info(f"Waiting 0.1 seconds before next batch...")
                 import time
-                time.sleep(0.3)  # Reduced from 2s to 0.3s - 6.7x faster batch processing
+                time.sleep(0.1)  # Reduced from 0.3s to 0.1s - 3x faster batch processing
 
         # Sort positions: current holdings first, then by working calculations priority, then alphabetically
         def sort_priority(position):

@@ -1,0 +1,34 @@
+Loading progress: 80% - Updating displays...
+Connection status updates disabled - reducing API call frequency
+Loading progress: 100% - Complete!
+Loading progress: 60% - Processing market data...
+Updating OKX Portfolio Overview cards with data: 
+Object {totalValue: 750.9571939587528, totalPnl: -14.263244532832086, totalPnlPercent: -2.622501266886948, dailyPnl: 0, dailyPnlPercent: 0, …}
+Loading progress: 80% - Updating displays...
+Connection status updates disabled - reducing API call frequency
+Loading progress: 100% - Complete!
+Holdings data received: 
+(9) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+Holdings data received: 
+(9) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+Loading progress: 20% - Fetching cryptocurrency data...
+Loading progress: 60% - Processing market data...
+Updating OKX Portfolio Overview cards with data: 
+Object {totalValue: 751.3527585713439, totalPnl: -13.867679920240972, totalPnlPercent: -2.5497710619698295, dailyPnl: 0, dailyPnlPercent: 0, …}
+Loading progress: 80% - Updating displays...
+Connection status updates disabled - reducing API call frequency
+Loading progress: 100% - Complete!
+Loading progress: 60% - Processing market data...
+Updating OKX Portfolio Overview cards with data: 
+Object {totalValue: 751.3527585713439, totalPnl: -13.867679920240972, totalPnlPercent: -2.5497710619698295, dailyPnl: 0, dailyPnlPercent: 0, …}
+Loading progress: 80% - Updating displays...
+Connection status updates disabled - reducing API call frequency
+Loading progress: 100% - Complete!
+No available positions data found
+renderAvailableTable called with: 
+Array []
+Request timeout
+at t.value (https://47c9c798-b0c1-4791-9090-157d07a27bb9-00-3ij4m9iy3b22d.worf.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:17465)
+at new t (https://47c9c798-b0c1-4791-9090-157d07a27bb9-00-3ij4m9iy3b22d.worf.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:12630)
+at t.value (https://47c9c798-b0c1-4791-9090-157d07a27bb9-00-3ij4m9iy3b22d.worf.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:32766)
+at https://47c9c798-b0c1-4791-9090-157d07a27bb9-00-3ij4m9iy3b22d.worf.replit.dev/__replco/static/devtools/er
