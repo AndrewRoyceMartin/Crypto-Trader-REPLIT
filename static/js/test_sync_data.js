@@ -1138,6 +1138,66 @@ class EnhancedTestRunner {
         };
     }
 
+    async testTraderStrategySync() {
+        console.log('🤖 Trader strategy sync test starting...');
+        const startTime = performance.now();
+        
+        const traderSyncResults = {
+            sync_test_accessible: false,
+            bot_status_accessible: false,
+            strategy_sync_working: false,
+            position_detection: false,
+            live_trading_status: false,
+            multi_currency_active: false
+        };
+
+        try {
+            // Test sync-test endpoint
+            const syncTestResponse = await fetch('/api/sync-test', { cache: 'no-store' });
+            traderSyncResults.sync_test_accessible = syncTestResponse.ok;
+            
+            if (syncTestResponse.ok) {
+                const syncData = await syncTestResponse.json();
+                
+                // Check strategy sync functionality
+                traderSyncResults.strategy_sync_working = syncData.sync_summary && 
+                    syncData.sync_summary.total_pairs_tested > 0;
+                
+                // Check position detection
+                traderSyncResults.position_detection = syncData.sync_summary &&
+                    (syncData.sync_summary.strategy_only > 0 || syncData.sync_summary.portfolio_only > 0);
+            }
+            
+            // Test bot status endpoint
+            const botStatusResponse = await fetch('/api/bot/status', { cache: 'no-store' });
+            traderSyncResults.bot_status_accessible = botStatusResponse.ok;
+            
+            if (botStatusResponse.ok) {
+                const botData = await botStatusResponse.json();
+                
+                // Check if live trading is active
+                traderSyncResults.live_trading_status = botData.bot_state && 
+                    botData.bot_state.status === 'running';
+                
+                // Check if multi-currency trading is active
+                traderSyncResults.multi_currency_active = botData.bot_state && 
+                    botData.bot_state.active_pairs && 
+                    botData.bot_state.active_pairs.length > 0;
+            }
+            
+        } catch (error) {
+            console.warn('Trader strategy sync test failed:', error);
+        }
+        
+        const successCount = Object.values(traderSyncResults).filter(Boolean).length;
+        return {
+            status: successCount >= 3 ? 'pass' : 'fail',
+            results: traderSyncResults,
+            executionTime: performance.now() - startTime,
+            success_rate: Math.round((successCount / Object.keys(traderSyncResults).length) * 100)
+        };
+    }
+
     async testPriceFreshnessRealtime() {
         console.log('💰 Real-time price freshness test starting...');
         const startTime = performance.now();
@@ -1778,6 +1838,7 @@ ${'='.repeat(50)}
                 { name: 'API Connectivity', func: 'testBasicAPIConnectivity' },
                 { name: 'Portfolio Data', func: 'testBasicPortfolioData' },
                 { name: 'Price Updates', func: 'testBasicPriceUpdates' },
+                { name: 'Trader Strategy Sync', func: 'testTraderStrategySync' },
                 { name: 'Button Presence', func: 'testBasicButtonPresence' }
             ];
             
