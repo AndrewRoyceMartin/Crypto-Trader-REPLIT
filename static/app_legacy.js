@@ -1709,6 +1709,15 @@ class TradingApp {
         }
     }
     
+    // Add the missing updateAvailablePositions method
+    async updateAvailablePositions() {
+        try {
+            await fetchAndUpdateAvailablePositions();
+        } catch (error) {
+            console.debug('Available positions update failed:', error);
+        }
+    }
+    
     updateHoldingsTable(holdings, totalValue) {
         const holdingsTableBody = document.getElementById('holdings-tbody');
         if (!holdingsTableBody) {
@@ -6725,7 +6734,7 @@ async function recalculatePositions() {
         if (result.success) {
             // Force refresh available positions data (avoid conflicts during other updates)
             if (window.tradingApp && !window.tradingApp.isUpdatingTables) {
-                await window.tradingApp.updateAvailablePositions();
+                await fetchAndUpdateAvailablePositions();
             }
             
             // Show success feedback
