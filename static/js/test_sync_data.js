@@ -485,13 +485,17 @@ class EnhancedTestRunner {
         this.updateProgress();
         
         console.log(`🎯 Progress tracking initialized: ${totalTests} total tests`);
+        console.log('📊 Attempting to show progress bar...');
     }
     
     showProgressBar() {
         const container = document.getElementById('test-progress-container');
         if (container) {
+            console.log('📊 Progress bar container found, showing progress bar');
             container.style.display = 'block';
             container.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        } else {
+            console.error('❌ Progress bar container #test-progress-container not found in DOM');
         }
     }
     
