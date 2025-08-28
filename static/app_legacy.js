@@ -231,10 +231,42 @@ function initializeV02Tables() {
 UI.initializeV02Tables = initializeV02Tables;
 Tables.initializeV02Tables = initializeV02Tables;
 
-// Event delegation for card view toggle buttons
+// CONSOLIDATED: Single DOMContentLoaded event listener to prevent duplicate initialization
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM ready, Bootstrap:', !!window.bootstrap, 'Chart.js:', !!window.Chart);
+    
+    // Verify critical libraries loaded before initialization
+    if (!window.Chart) {
+        console.warn('Chart.js not available - charts will be disabled');
+    }
+    if (!window.bootstrap) {
+        console.warn('Bootstrap JS not available - modals may not work');
+    }
+    
     // Initialize V02 table mobile labels on first load
     initializeV02Tables();
+    
+    // Set up sync test button event handler (consolidated from duplicate listener)
+    const syncButton = document.getElementById('btn-run-sync-test');
+    if (syncButton) {
+        syncButton.addEventListener('click', () => SyncTest.runSyncTest());
+    }
+    
+    // SAFEGUARD: Initialize TradingApp only once (consolidated from duplicate listener)
+    if (!window.tradingApp) {
+        window.tradingApp = new TradingApp();
+        console.log('TradingApp initialized once (consolidated)');
+        
+        // Maintain backward compatibility by exposing namespaced functions globally
+        window.executeTakeProfit = Trading.executeTakeProfit;
+        window.showBuyDialog = Trading.showBuyDialog;
+        window.showSellDialog = Trading.showSellDialog;
+        
+        // Initialize scroll hints
+        initializeScrollHints();
+    } else {
+        console.log('TradingApp already exists, skipping initialization');
+    }
     
     // Auto-load positions data after page loads - CONSOLIDATED to prevent duplicate calls
     // Removed refreshHoldingsData() call here to prevent race condition with TradingApp refresh
@@ -3960,28 +3992,8 @@ class TradingApp {
     }
 }
 
-// ---------- Boot ----------
-document.addEventListener('DOMContentLoaded', function () {
-    // Verify critical libraries loaded before initialization
-    if (!window.Chart) {
-        console.warn('Chart.js not available - charts will be disabled');
-    }
-    if (!window.bootstrap) {
-        console.warn('Bootstrap JS not available - modals may not work');
-    }
-    
-    // Keep main trading app in global scope for compatibility, but organize other functions in namespaces
-    window.tradingApp = new TradingApp();
-    
-    // Maintain backward compatibility by also exposing namespaced functions globally if needed
-    // (Remove these once all references are updated to use namespaces)
-    window.executeTakeProfit = Trading.executeTakeProfit;
-    window.showBuyDialog = Trading.showBuyDialog;
-    window.showSellDialog = Trading.showSellDialog;
-    
-    // Initialize scroll hints
-    initializeScrollHints();
-});
+// REMOVED: Duplicate DOMContentLoaded event listener
+// TradingApp initialization moved to the consolidated DOMContentLoaded event to prevent duplication
 
 // Conditional scroll hint functionality
 function initializeScrollHints() {
@@ -7644,10 +7656,5 @@ window.SyncTest = {
     }
 };
 
-// Set up sync test button event handler
-document.addEventListener('DOMContentLoaded', function() {
-    const syncButton = document.getElementById('btn-run-sync-test');
-    if (syncButton) {
-        syncButton.addEventListener('click', () => SyncTest.runSyncTest());
-    }
-});
+// REMOVED: Duplicate DOMContentLoaded event listener
+// Sync test button setup moved to main DOMContentLoaded event to prevent duplication
