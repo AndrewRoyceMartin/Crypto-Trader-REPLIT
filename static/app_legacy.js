@@ -2968,6 +2968,9 @@ class TradingApp {
         // Force complete data refresh from OKX APIs with new currency parameter
         this.showToast(`Refreshing all data with ${currency} from OKX native APIs...`, 'info');
         
+        // Console logging for currency change
+        console.log(`🔄 Currency change refresh initiated for ${currency}`);
+        
         // Refresh all data sources from OKX with currency parameter
         // Run Recent Trades independently to prevent blocking
         
@@ -2975,8 +2978,8 @@ class TradingApp {
         await Promise.all([
             this.updateCryptoPortfolio(), // This already handles holdings data
             // this.updateCurrentHoldings(), // REMOVED: Duplicate of updateCryptoPortfolio holdings fetch  
-            this.updatePerformanceAnalytics(),
-            this.updateDashboard()
+            this.updatePerformanceAnalytics()
+            // this.updateDashboard() // REMOVED: Duplicate of startAutoUpdate() dashboard refresh cycle
         ]);
         
         console.log(`All portfolio data refreshed from OKX native APIs with ${currency} currency`);
