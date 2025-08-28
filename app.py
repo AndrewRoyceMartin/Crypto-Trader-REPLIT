@@ -3586,10 +3586,10 @@ def api_available_positions() -> ResponseReturnValue:
 
         available_positions = []
 
-        # SIMPLIFIED: Focus on top 20 major cryptocurrencies only for fast loading
+        # ULTRA-FAST: Reduce to top 12 cryptocurrencies for maximum speed
         major_crypto_assets = [
             'BTC', 'ETH', 'SOL', 'ADA', 'AVAX', 'LINK', 'UNI', 'LTC', 'XRP',
-            'ALGO', 'ARB', 'GALA', 'TRX', 'PEPE', 'DOGE', 'MATIC', 'DOT', 'NEAR', 'SHIB', 'BCH'
+            'ALGO', 'ARB', 'DOGE'  # Reduced from 20 to 12 for faster processing
         ]
 
         # FAST PROCESSING: Process all assets quickly without complex analysis
@@ -3677,9 +3677,12 @@ def api_available_positions() -> ResponseReturnValue:
                         # Reduced from 40+ to 16 assets for much faster processing
                     ]
 
-                    # Analyze BB for all major assets (holdings OR top opportunities)
+                    # PERFORMANCE FIX: Skip expensive BB analysis by default for faster loading
+                    # Only analyze BB for positions that already have meaningful balances
                     current_price = current_price if 'current_price' in locals() else 0.0
-                    if (current_price > 0 and symbol in priority_assets):
+                    skip_bb_analysis = current_position_value < 50.0  # Skip BB for small/zero positions
+                    
+                    if (current_price > 0 and symbol in priority_assets and not skip_bb_analysis):
                         logger.info(f"Calculating BB opportunity analysis for {symbol} at ${current_price}")
 
                         # Ultra-fast processing for recalculate operations - REMOVED DELAY
@@ -3857,6 +3860,7 @@ def api_available_positions() -> ResponseReturnValue:
                         'entry_confidence': {
                             'score': confidence_score,
                             'level': confidence_level,
+                            'risk_level': confidence_level,  # FIXED: Add risk_level field for frontend compatibility
                             'timing_signal': timing_signal
                         },
                         'bollinger_analysis': {
