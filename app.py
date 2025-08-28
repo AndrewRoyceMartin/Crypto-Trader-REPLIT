@@ -3508,16 +3508,23 @@ def api_available_positions() -> ResponseReturnValue:
                     bb_distance_percent = 0.0
                     lower_band_price = 0.0
 
-                    # Optimized BB analysis for only current holdings + top 10 opportunities
-                    # This dramatically reduces API calls and improves performance
+                    # Enhanced BB analysis for comprehensive position tracking
+                    # Include ALL major tradeable assets for complete recalculation capability
                     priority_assets = [
-                        'BTC', 'ETH', 'SOL', 'GALA', 'TRX', 'PEPE',  # Current holdings
-                        'ADA', 'DOGE', 'MATIC', 'XRP'  # Top opportunities
-                    ]  # Only 10 assets with BB analysis for fast loading
+                        # Tier 1: Large caps (always analyze)
+                        'BTC', 'ETH', 'SOL', 'ADA', 'AVAX', 'LINK', 'UNI', 'LTC', 'XRP',
+                        # Tier 2: Current holdings + major altcoins
+                        'GALA', 'TRX', 'PEPE', 'DOGE', 'MATIC', 'ATOM', 'DOT', 'NEAR', 'SHIB', 'BNB',
+                        # Tier 3: Gaming/DeFi assets
+                        'BCH', 'XLM', 'ALGO', 'ICP', 'SAND', 'MANA', 'FTM', 'HBAR', 'VET', 'CHZ',
+                        # Tier 4: Additional opportunities
+                        'THETA', 'EOS', 'AAVE', 'GRT', 'ARB', 'OP', 'APT', 'SUI', 'SEI', 'WLD',
+                        # Tier 5: Emerging/Trending
+                        'BICO', 'JASMY', 'LDO', 'MASK', 'CRV', 'COMP', 'BAL', 'YFI', 'SUSHI', 'UMA'
+                    ]  # Expanded to 40+ assets for comprehensive analysis
 
-                    # Only calculate BB for priority assets and if we have current holdings
-                    if (current_price > 0 and symbol in priority_assets
-                            and (total_balance > 0 or symbol in ['BTC', 'ETH', 'SOL', 'ADA'])):
+                    # Analyze BB for all major assets (holdings OR top opportunities)
+                    if (current_price > 0 and symbol in priority_assets):
                         logger.info(f"Calculating BB opportunity analysis for {symbol} at ${current_price}")
 
                         # Minimal delay for faster response (50ms)
