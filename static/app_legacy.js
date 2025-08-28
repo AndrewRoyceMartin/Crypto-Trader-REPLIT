@@ -344,6 +344,11 @@ class TradingApp {
 
         // Currency
         this.selectedCurrency = 'USD';
+        
+        // Timer tracking for cooldowns and refresh cycles
+        this.refreshTimerInterval = null;
+        this.lastRefreshTime = Date.now();
+        this.refreshCooldown = 90000; // 90 seconds
 
         // Abort controller for in-flight requests
         this.portfolioAbortController = null;
@@ -377,6 +382,61 @@ class TradingApp {
             minimumFractionDigits: 8,
             maximumFractionDigits: 8
         }).format(numericAmount);
+    }
+
+    // Timer Display Methods
+    startTimerDisplay() {
+        // Clear any existing timer to prevent duplicates
+        if (this.refreshTimerInterval) {
+            clearInterval(this.refreshTimerInterval);
+        }
+        
+        // Update timer displays every second
+        this.refreshTimerInterval = setInterval(() => {
+            this.updateTimerDisplays();
+        }, 1000);
+        
+        // Initial update
+        this.updateTimerDisplays();
+    }
+    
+    updateTimerDisplays() {
+        const now = Date.now();
+        
+        // Update auto-refresh countdown
+        const timeSinceLastRefresh = now - this.lastRefreshTime;
+        const refreshSecondsLeft = Math.max(0, Math.ceil((this.refreshCooldown - timeSinceLastRefresh) / 1000));
+        
+        const refreshTimer = document.getElementById('refresh-timer');
+        if (refreshTimer) {
+            if (refreshSecondsLeft > 0) {
+                refreshTimer.innerHTML = `<span class="icon icon-clock me-1"></span>Next: ${refreshSecondsLeft}s`;
+                refreshTimer.className = 'badge bg-info text-nowrap';
+            } else {
+                refreshTimer.innerHTML = `<span class="icon icon-check me-1"></span>Ready`;
+                refreshTimer.className = 'badge bg-success text-nowrap';
+            }
+        }
+        
+        // Update performance analytics cooldown
+        const analyticsTimer = document.getElementById('analytics-timer');
+        if (analyticsTimer && this.lastPerformanceUpdate) {
+            const timeSinceAnalytics = now - this.lastPerformanceUpdate;
+            const analyticsSecondsLeft = Math.max(0, Math.ceil((30000 - timeSinceAnalytics) / 1000));
+            
+            if (analyticsSecondsLeft > 0) {
+                analyticsTimer.innerHTML = `<span class="icon icon-timer me-1"></span>Analytics: ${analyticsSecondsLeft}s`;
+                analyticsTimer.style.display = 'inline-block';
+            } else {
+                analyticsTimer.style.display = 'none';
+            }
+        } else if (analyticsTimer) {
+            analyticsTimer.style.display = 'none';
+        }
+    }
+    
+    updateRefreshTimestamp() {
+        this.lastRefreshTime = Date.now();
     }
 
     // Special formatter for crypto prices with consistent precision
@@ -573,6 +633,9 @@ class TradingApp {
         // Initialize footer uptime tracking
         this.startUptimeTracking();
         
+        // Start timer display for refresh countdowns
+        this.startTimerDisplay();
+        
         // CONSOLIDATED: Let startAutoUpdate handle all data fetching to prevent duplicates
         // startAutoUpdate will trigger initial data loads and set up proper intervals
         this.startAutoUpdate();
@@ -609,11 +672,15 @@ class TradingApp {
         this.stopAutoUpdate();
         
         // IMMEDIATE INITIAL DATA LOAD (only once)
+        this.updateRefreshTimestamp(); // Set initial timestamp for timer
         this.debouncedUpdateDashboard(); // Overview refresh (/api/crypto-portfolio)
         // Initial holdings refresh will be handled by the interval's setTimeout call
         
         // Single master update interval (90 seconds) 
         this.masterUpdateInterval = setInterval(() => {
+            // Update refresh timestamp for timer display
+            this.updateRefreshTimestamp();
+            
             // Main data refresh cycle
             this.debouncedUpdateDashboard(); // Overview refresh (/api/crypto-portfolio)
             this.startPositionsCountdown(90); // Reset positions countdown
