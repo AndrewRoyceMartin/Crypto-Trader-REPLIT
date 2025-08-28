@@ -3661,7 +3661,8 @@ def api_available_positions() -> ResponseReturnValue:
                     target_price = get_stable_target_price(symbol, current_price)
 
                     # DATA ERROR PROTECTION: Detect suspicious 0.00% diff cases
-                    price_diff_percent_raw = ((current_price - target_price) / target_price * 100) if target_price > 0 else 0
+                    # CORRECTED FORMULA: Negative = price above target (bad), Positive = price below target (good for buying)
+                    price_diff_percent_raw = ((target_price - current_price) / target_price * 100) if target_price > 0 else 0
                     
                     # Flag potential data errors when diff is exactly 0.00% for non-stablecoins
                     is_stablecoin = symbol in ['USDT', 'USDC', 'DAI', 'BUSD']
