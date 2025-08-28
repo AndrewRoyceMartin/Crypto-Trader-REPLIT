@@ -683,36 +683,36 @@ class TradingApp {
         setTimeout(() => {
             console.log(`📊 Initial holdings refresh starting immediately`);
             this.updateCryptoPortfolio(); // Holdings refresh
-            this.startAvailableCountdown(5); // Reset available countdown
+            this.startAvailableCountdown(30); // Reset available countdown (30s)
         }, 2000); // Start after 2 seconds to allow dashboard to load first
         
-        // Single master update interval (10 seconds) 
+        // Single master update interval (90 seconds) - RATE LIMIT FIX
         this.masterUpdateInterval = setInterval(() => {
             // Update refresh timestamp for timer display
             this.updateRefreshTimestamp();
             
             // Console logging for main refresh cycle
-            console.log(`🔄 Main refresh cycle initiated - 10s interval`);
+            console.log(`🔄 Main refresh cycle initiated - 90s interval (rate limit protection)`);
             
             // Main data refresh cycle
             this.debouncedUpdateDashboard(); // Overview refresh (/api/crypto-portfolio)
-            this.startPositionsCountdown(10); // Reset positions countdown
+            this.startPositionsCountdown(90); // Reset positions countdown
             setTimeout(() => {
-                console.log(`📊 Holdings refresh starting (5s delay)`);
+                console.log(`📊 Holdings refresh starting (10s delay)`);
                 this.updateCryptoPortfolio(); // Holdings refresh
-                this.startAvailableCountdown(5); // Reset available countdown
-            }, 5000);
+                this.startAvailableCountdown(30); // Reset available countdown (30s)
+            }, 10000);
             
-            // Update performance charts every 6 cycles (1 minute)
+            // Update performance charts every 2 cycles (3 minutes)
             this.updateCycleCount = (this.updateCycleCount || 0) + 1;
-            if (this.updateCycleCount % 6 === 0) {
+            if (this.updateCycleCount % 2 === 0) {
                 this.updatePerformanceCharts();
             }
-        }, 10000);
+        }, 90000);
         
-        // Start initial countdowns - positions countdown reflects the 10s interval
-        this.startPositionsCountdown(10);
-        // Available countdown will be started after initial load (2s + 5s = 7s total)
+        // Start initial countdowns - positions countdown reflects the 90s interval
+        this.startPositionsCountdown(90);
+        // Available countdown will be started after initial load (2s + 10s = 12s total)
         
         // Countdown updates (every second)
         this.countdownUpdateInterval = setInterval(() => {
