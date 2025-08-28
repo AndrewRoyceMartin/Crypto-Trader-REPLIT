@@ -4672,7 +4672,7 @@ window.debugTrades = {
     }
 };
 
-console.log('Debug functions loaded.');
+// Production environment - debug messages removed
 
 // ---------- Portfolio Summary & Quick Overview (global UI helpers) ----------
 function updateElementSafely(elementId, value) {
