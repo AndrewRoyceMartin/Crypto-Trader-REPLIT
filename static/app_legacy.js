@@ -819,8 +819,8 @@ class TradingApp {
         // Drawdown analysis
         this.updateDrawdownAnalysis();
         
-        // Current holdings
-        this.updateCurrentHoldings();
+        // Current holdings - REMOVED: Duplicate of updateCryptoPortfolio 
+        // this.updateCurrentHoldings(); // Data already handled by updateCryptoPortfolio()
         
         
         // Performance analytics
@@ -2611,8 +2611,8 @@ class TradingApp {
         
         
         await Promise.all([
-            this.updateCryptoPortfolio(),
-            this.updateCurrentHoldings(),
+            this.updateCryptoPortfolio(), // This already handles holdings data
+            // this.updateCurrentHoldings(), // REMOVED: Duplicate of updateCryptoPortfolio holdings fetch  
             this.updatePerformanceAnalytics(),
             this.updateDashboard()
         ]);

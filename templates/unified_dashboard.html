@@ -1256,9 +1256,10 @@
         
         // Load initial data for tables
         setTimeout(() => {
-            if (window.tradingApp && typeof window.tradingApp.updateCurrentHoldings === 'function') {
-                window.tradingApp.updateCurrentHoldings();
-            }
+            // REMOVED: Duplicate of updateCryptoPortfolio data fetch
+            // if (window.tradingApp && typeof window.tradingApp.updateCurrentHoldings === 'function') {
+            //     window.tradingApp.updateCurrentHoldings();
+            // }
             if (typeof refreshHoldingsData === 'function') {
                 refreshHoldingsData();
             }
