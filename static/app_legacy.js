@@ -1869,10 +1869,11 @@ class TradingApp {
                 pnlPercentCell.textContent = `${pnlSign}${holding.pnl_percent.toFixed(2)}%`;
                 row.appendChild(pnlPercentCell);
                 
-                // Target value cell (15% profit target)
+                // Target value cell (dynamic Bollinger Band target)
                 const targetValueCell = document.createElement('td');
                 targetValueCell.className = 'text-end';
-                const targetValue = (holding.cost_basis || 0) * 1.15;
+                const targetMultiplier = holding.target_multiplier ?? 1.04;
+                const targetValue = (holding.cost_basis || 0) * targetMultiplier;
                 targetValueCell.textContent = this.formatCurrency(targetValue);
                 row.appendChild(targetValueCell);
                 
@@ -1886,7 +1887,8 @@ class TradingApp {
                 // Target PnL Percent cell
                 const targetPnlPercentCell = document.createElement('td');
                 targetPnlPercentCell.className = 'text-end text-success';
-                targetPnlPercentCell.textContent = '+15.00%';
+                const targetPnlPercent = (targetMultiplier - 1) * 100;
+                targetPnlPercentCell.textContent = `+${targetPnlPercent.toFixed(2)}%`;
                 row.appendChild(targetPnlPercentCell);
                 
                 // Days cell
