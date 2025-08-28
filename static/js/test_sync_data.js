@@ -1468,12 +1468,13 @@ class EnhancedTestRunner {
         const timingResults = {};
         const startTime = performance.now();
         
-        for (const endpoint of endpoints) {
+        // Run endpoint tests in parallel for faster execution
+        const endpointPromises = endpoints.map(async (endpoint) => {
             const endpointStart = performance.now();
             try {
-                // Add timeout to prevent hanging
+                // Reduced timeout for faster test completion
                 const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 second timeout per endpoint
+                const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 second timeout per endpoint
                 
                 const response = await fetch(endpoint, { 
                     cache: 'no-store',
@@ -1483,7 +1484,7 @@ class EnhancedTestRunner {
                 
                 const responseTime = performance.now() - endpointStart;
                 
-                timingResults[endpoint] = {
+                const result = {
                     response_time: responseTime,
                     successful: response.ok,
                     meets_threshold: responseTime < this.performanceThresholds.api_response_time,
@@ -1491,10 +1492,11 @@ class EnhancedTestRunner {
                 };
                 
                 console.log(`✅ ${endpoint}: ${responseTime.toFixed(0)}ms (${response.status})`);
+                return { endpoint, result };
                 
             } catch (error) {
                 const responseTime = performance.now() - endpointStart;
-                timingResults[endpoint] = {
+                const result = {
                     response_time: responseTime,
                     successful: false,
                     meets_threshold: false,
@@ -1502,8 +1504,29 @@ class EnhancedTestRunner {
                 };
                 
                 console.log(`⚠️ ${endpoint}: ${error.name === 'AbortError' ? 'Timeout' : 'Error'} (${responseTime.toFixed(0)}ms)`);
+                return { endpoint, result };
             }
-        }
+        });
+        
+        // Wait for all endpoints to complete (max 3 seconds each, parallel execution)
+        const endpointResults = await Promise.allSettled(endpointPromises);
+        
+        // Process results
+        endpointResults.forEach((promiseResult, index) => {
+            if (promiseResult.status === 'fulfilled') {
+                const { endpoint, result } = promiseResult.value;
+                timingResults[endpoint] = result;
+            } else {
+                // Fallback for promise rejection
+                const endpoint = endpoints[index];
+                timingResults[endpoint] = {
+                    response_time: 3000,
+                    successful: false,
+                    meets_threshold: false,
+                    error: 'Promise rejected'
+                };
+            }
+        });
         
         const successfulEndpoints = Object.values(timingResults).filter(r => r.successful).length;
         const fastEndpoints = Object.values(timingResults).filter(r => r.meets_threshold).length;
@@ -1600,6 +1623,12 @@ class EnhancedTestRunner {
                 button.innerHTML = '<i class="fas fa-rocket me-2"></i>Run Enhanced Tests';
                 button.classList.add('btn-primary');
                 button.classList.remove('btn-warning');
+                break;
+            case 'complete':
+                button.disabled = false;
+                button.innerHTML = '<i class="fas fa-rocket me-2"></i>Run Enhanced Tests';
+                button.classList.add('btn-primary');
+                button.classList.remove('btn-warning', 'btn-secondary');
                 break;
         }
     }
@@ -2190,6 +2219,8 @@ ${'='.repeat(50)}
         } finally {
             // Clean up real-time monitoring after tests complete
             this.stopRealTimeMonitoring();
+            // Ensure Enhanced Tests button is re-enabled
+            this.updateButtonState(button, 'complete');
         }
     }
     
@@ -5680,15 +5711,31 @@ async function testAvailablePositionsDataIntegrity() {
             testResults.validation_details.push(`❌ API test failed: ${apiError.message}`);
         }
         
-        // Test 2: Validate data consistency with current holdings
+        // Test 2: Validate data consistency with current holdings (optimized with timeout)
         try {
-            const holdingsResponse = await makeApiCall('/api/current-holdings', { cache: 'no-store' });
+            const controller2 = new AbortController();
+            const timeoutId2 = setTimeout(() => controller2.abort(), 5000); // 5 second timeout
+            
+            const holdingsResponse = await makeApiCall('/api/current-holdings', { 
+                cache: 'no-store',
+                signal: controller2.signal 
+            });
+            clearTimeout(timeoutId2);
+            
             if (holdingsResponse.ok) {
                 const holdingsData = await holdingsResponse.json();
                 
                 if (holdingsData.holdings && holdingsData.holdings.length > 0) {
-                    // Check if available positions include held assets
-                    const availableResponse = await makeApiCall('/api/available-positions', { cache: 'no-store' });
+                    // Check if available positions include held assets (reuse previous data or quick call)
+                    const controller3 = new AbortController();
+                    const timeoutId3 = setTimeout(() => controller3.abort(), 3000); // 3 second timeout
+                    
+                    const availableResponse = await makeApiCall('/api/available-positions', { 
+                        cache: 'no-store',
+                        signal: controller3.signal 
+                    });
+                    clearTimeout(timeoutId3);
+                    
                     if (availableResponse.ok) {
                         const availableData = await availableResponse.json();
                         
@@ -5714,9 +5761,19 @@ async function testAvailablePositionsDataIntegrity() {
             testResults.validation_details.push(`⚠️ Consistency test failed: ${consistencyError.message}`);
         }
         
-        // Test 3: Validate table display accuracy
+        // Test 3: Validate table display accuracy (with timeout)
         try {
-            const tableValidationResult = await validateAvailablePositionsTable();
+            const tableController = new AbortController();
+            const tableTimeoutId = setTimeout(() => tableController.abort(), 3000); // 3 second timeout
+            
+            const tableValidationResult = await Promise.race([
+                validateAvailablePositionsTable(),
+                new Promise((_, reject) => 
+                    setTimeout(() => reject(new Error('Table validation timeout')), 3000)
+                )
+            ]);
+            clearTimeout(tableTimeoutId);
+            
             if (tableValidationResult.status === 'pass') {
                 testResults.validation_details.push('✅ Available positions table display validation passed');
             } else if (tableValidationResult.status === 'partial') {
@@ -5728,9 +5785,17 @@ async function testAvailablePositionsDataIntegrity() {
             testResults.validation_details.push(`⚠️ Table validation failed: ${tableError.message}`);
         }
         
-        // Test 4: Validate Bollinger Bands integration
+        // Test 4: Validate Bollinger Bands integration (optimized with timeout)
         try {
-            const availableResponse = await makeApiCall('/api/available-positions', { cache: 'no-store' });
+            const controller4 = new AbortController();
+            const timeoutId4 = setTimeout(() => controller4.abort(), 3000); // 3 second timeout
+            
+            const availableResponse = await makeApiCall('/api/available-positions', { 
+                cache: 'no-store',
+                signal: controller4.signal 
+            });
+            clearTimeout(timeoutId4);
+            
             if (availableResponse.ok) {
                 const availableData = await availableResponse.json();
                 
@@ -5883,6 +5948,9 @@ class NormalTestRunner {
                     <small class="text-muted">Please try refreshing the page and running the tests again.</small>
                 </div>
             `;
+        } finally {
+            // Ensure button is restored for Normal Tests too
+            this.updateButtonState(button, 'complete');
         }
     }
     
@@ -5928,6 +5996,9 @@ class NormalTestRunner {
                     <small class="text-muted">Please try refreshing the page and running the tests again.</small>
                 </div>
             `;
+        } finally {
+            // Ensure Enhanced Tests button is properly restored
+            this.updateButtonState(button, 'complete');
         }
     }
     
