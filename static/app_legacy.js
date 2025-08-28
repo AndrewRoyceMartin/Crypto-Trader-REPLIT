@@ -3177,9 +3177,10 @@ class TradingApp {
                 const target = '4.0';  // Enhanced Bollinger Bands 4% take profit target
                 const deviation = '0.0';
                 const change24h = pp > 0 ? `+${pp.toFixed(1)}%` : `${pp.toFixed(1)}%`;
+                // Calculate dynamic stop loss and take profit based on Enhanced Bollinger Bands strategy
                 const stopLoss = this.formatCryptoPrice(purchasePrice * 0.98);  // 2% stop loss (Enhanced Bollinger Bands)
-                const takeProfit = this.formatCryptoPrice(purchasePrice * 1.04);  // 4% take profit (Enhanced Bollinger Bands)
-                const daysHeld = '30';
+                const takeProfit = this.formatCryptoPrice(purchasePrice * targetMultiplier);  // Dynamic take profit from Bollinger Bands
+                const daysHeld = position.days_held || '—';
 
                 // Calculate target values using dynamic Bollinger Band multiplier or 4% fallback
                 const targetMultiplier = position.target_multiplier || 1.04;
@@ -3191,10 +3192,14 @@ class TradingApp {
                 // Get position status badge based on P&L
                 let positionStatus = '<span class="badge bg-secondary">FLAT</span>';
                 if (qty > 0) {
-                    if (pp >= 8.0) {
-                        positionStatus = '<span class="badge bg-success" title="Position above 8% profit - in active management zone">MANAGED</span>';
-                    } else if (pp >= 3.0) {
-                        positionStatus = '<span class="badge bg-warning text-dark" title="Position above 3% profit - monitored for exit signals">WATCH</span>';
+                    const targetPercent = (targetMultiplier - 1) * 100;
+                    const managedThreshold = Math.max(targetPercent * 0.8, 6.0); // 80% of target or min 6%
+                    const watchThreshold = Math.max(targetPercent * 0.4, 3.0); // 40% of target or min 3%
+                    
+                    if (pp >= managedThreshold) {
+                        positionStatus = `<span class="badge bg-success" title="Position above ${managedThreshold.toFixed(1)}% profit - in active management zone">MANAGED</span>`;
+                    } else if (pp >= watchThreshold) {
+                        positionStatus = `<span class="badge bg-warning text-dark" title="Position above ${watchThreshold.toFixed(1)}% profit - monitored for exit signals">WATCH</span>`;
                     } else if (pp < 0) {
                         positionStatus = '<span class="badge bg-danger" title="Position at loss - monitored for crash protection">LOSS</span>';
                     } else {
@@ -3213,9 +3218,9 @@ class TradingApp {
                     { content: `${pnlIcon} ${pp.toFixed(2)}%`, classes: `text-end ${pnlClass}`, tag: 'strong' },
                     { content: targetValue, classes: 'text-end text-success' },
                     { content: targetProfit, classes: 'text-end text-success' },
-                    { content: '+8.0%', classes: 'text-end text-success' },
+                    { content: `+${((targetMultiplier - 1) * 100).toFixed(1)}%`, classes: 'text-end text-success' },
                     { content: positionStatus, classes: '', isHTML: true },
-                    { content: '<span class="badge bg-secondary">HOLD</span>', classes: '', isHTML: true }
+                    { content: '<span class="badge bg-info">MONITOR</span>', classes: '', isHTML: true }
                 ];
                 
                 cells.forEach(cellData => {
@@ -6157,7 +6162,7 @@ function createHoldingRow(holding) {
             { content: calculateTargetProfit(costBasis, holding.target_multiplier), class: 'text-success' }, // TARGET PROFIT $
             { content: `+${((holding.target_multiplier || 1.04) - 1) * 100}%`, class: 'text-success' }, // TARGET PROFIT %
             { content: getPositionStatus(holding), class: '' }, // POSITION
-            { content: '<span class="badge bg-secondary">HOLD</span>', class: '' } // ACTIONS
+            { content: '<span class="badge bg-info">MONITOR</span>', class: '' } // ACTIONS
         ];
         
         cells.forEach(cellData => {
@@ -6197,13 +6202,18 @@ function getPositionStatus(holding) {
     }
     
     // Check if position is significantly profitable (likely to be managed by bot)
-    if (pnlPercent >= 8.0) {
-        return '<span class="badge bg-success" title="Position above 8% profit - in active management zone">MANAGED</span>';
+    const targetMultiplier = holding.target_multiplier || 1.04;
+    const targetPercent = (targetMultiplier - 1) * 100;
+    const managedThreshold = Math.max(targetPercent * 0.8, 6.0); // 80% of target or min 6%
+    
+    if (pnlPercent >= managedThreshold) {
+        return `<span class="badge bg-success" title="Position above ${managedThreshold.toFixed(1)}% profit - in active management zone">MANAGED</span>`;
     }
     
     // Check if position is moderately profitable
-    if (pnlPercent >= 3.0) {
-        return '<span class="badge bg-warning text-dark" title="Position above 3% profit - monitored for exit signals">WATCH</span>';
+    const watchThreshold = Math.max(targetPercent * 0.4, 3.0); // 40% of target or min 3%
+    if (pnlPercent >= watchThreshold) {
+        return `<span class="badge bg-warning text-dark" title="Position above ${watchThreshold.toFixed(1)}% profit - monitored for exit signals">WATCH</span>`;
     }
     
     // Position at a loss or small gain
