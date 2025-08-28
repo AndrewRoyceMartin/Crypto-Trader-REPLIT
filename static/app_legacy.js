@@ -5712,7 +5712,7 @@ async function fetchAndUpdateAvailablePositions() {
     try {
         const response = await fetch('/api/available-positions', { 
             cache: 'no-cache',
-            signal: AbortSignal.timeout(180000) // 3 minute timeout (increased from 2 min)
+            signal: AbortSignal.timeout(300000) // 5 minute timeout (increased for 68 positions)
         });
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         
