@@ -3484,7 +3484,8 @@ def api_available_positions() -> ResponseReturnValue:
                         buy_signal = 'FIAT BALANCE' if symbol in ['AUD', 'USD', 'EUR', 'GBP'] else 'CURRENT HOLDING'
                     else:
                         position_type = 'zero_balance'
-                        buy_signal = 'READY TO BUY' if current_price > 0 else 'NO PRICE DATA'
+                        # Don't set buy_signal here - will be determined after target price calculation
+                        buy_signal = 'NO PRICE DATA' if current_price <= 0 else 'MONITORING'
 
                     # Calculate entry confidence for tradeable assets
                     confidence_score = 50.0  # Default
@@ -3646,6 +3647,20 @@ def api_available_positions() -> ResponseReturnValue:
                                 lower_band_price = 0.0
 
                     target_price = get_stable_target_price(symbol, current_price)
+
+                    # CRITICAL FIX: Only set 'READY TO BUY' if asset actually meets buy criteria
+                    if position_type == 'zero_balance' and current_price > 0:
+                        # Check if price meets buy criteria (below target OR at/below Bollinger Band)
+                        price_below_target = target_price > 0 and current_price <= target_price
+                        price_at_bb_trigger = (bb_signal == "BUY ZONE" or 
+                                              (lower_band_price > 0 and current_price <= lower_band_price))
+                        
+                        # Only signal ready to buy if criteria are actually met
+                        if price_below_target or price_at_bb_trigger:
+                            buy_signal = 'READY TO BUY'
+                            logger.info(f"✅ BUY CRITERIA MET for {symbol}: price=${current_price:.6f}, target=${target_price:.6f}, BB={bb_signal}")
+                        else:
+                            buy_signal = 'MONITORING'  # Available but not at buy price yet
 
                     available_position = {
                         'symbol': symbol,
