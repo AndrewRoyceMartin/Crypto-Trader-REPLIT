@@ -3364,15 +3364,24 @@ def api_recalculate_positions() -> ResponseReturnValue:
             _price_cache.clear()
             _ohlcv_cache.clear()
 
-        # Clear target price locks to allow recalculation
+        # Handle target price reset based on request
+        target_action = "reviewed"
         try:
             from src.utils.target_price_manager import TargetPriceManager
             tpm = TargetPriceManager()
-            # Force recalculation by clearing expired locks
-            tpm._clear_expired_locks()
-            logger.info("Target price locks reviewed for recalculation")
+            
+            # Check if force reset is requested
+            data = request.get_json() or {}
+            if data.get('reset_targets', False):
+                tpm.reset_all_target_prices()
+                target_action = "reset to use intelligent 3-day algorithm"
+                logger.info("🎯 Target prices reset - will use intelligent 3-day momentum analysis")
+            else:
+                # Just clean expired locks
+                tpm.cleanup_expired_targets()
+                logger.info("Target price locks reviewed for recalculation")
         except Exception as tpm_error:
-            logger.warning(f"Could not clear target price locks: {tpm_error}")
+            logger.warning(f"Could not handle target price locks: {tmp_error}")
 
         # Force fresh portfolio service reconnection
         portfolio_service = get_portfolio_service()
@@ -3735,14 +3744,16 @@ def api_available_positions() -> ResponseReturnValue:
                         }
                     }
 
-                    available_positions.append(available_position)
-
-                    # Log progress and position additions
-                    added_count += 1
-                    if total_balance > 0:
-                        logger.info(f"✅ Added available position: {symbol} with balance {total_balance}")
-                    else:
+                    # CRITICAL FIX: Only add zero-balance positions to Available Positions
+                    # Current holdings belong in Current Holdings table, not Available Positions
+                    if position_type == 'zero_balance':
+                        available_positions.append(available_position)
                         logger.debug(f"✅ Added zero-balance position: {symbol}")
+                        added_count += 1
+                    else:
+                        # This is a current holding - skip from Available Positions
+                        logger.debug(f"⏭️ Skipped current holding: {symbol} with balance {total_balance}")
+                        skipped_count += 1
 
                 except Exception as symbol_error:
                     logger.warning(f"❌ SKIPPING {symbol}: {symbol_error}")

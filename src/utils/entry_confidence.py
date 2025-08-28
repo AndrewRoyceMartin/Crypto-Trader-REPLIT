@@ -88,11 +88,15 @@ class EntryConfidenceAnalyzer:
             # Generate entry timing recommendation
             timing_signal = self._generate_timing_signal(composite_score, df, current_price)
             
+            # CRITICAL: Calculate intelligent target buy price using 3-day analysis
+            suggested_target_price = self._calculate_intelligent_target_price(df, current_price, composite_score)
+
             return {
                 'symbol': symbol,
                 'confidence_score': round(composite_score, 1),
                 'confidence_level': self._get_confidence_level(composite_score),
                 'timing_signal': timing_signal,
+                'suggested_target_price': suggested_target_price,  # NEW: Intelligent target based on 3-day analysis
                 'breakdown': {
                     'technical_analysis': round(technical_score, 1),
                     'volatility_assessment': round(volatility_score, 1),
@@ -367,6 +371,101 @@ class EntryConfidenceAnalyzer:
         else:
             return "Poor entry conditions. Avoid until technical picture improves."
     
+    def _calculate_intelligent_target_price(self, df: pd.DataFrame, current_price: float, confidence_score: float) -> float:
+        """
+        Calculate intelligent target buy price using 3-day momentum analysis.
+        
+        This replaces the simple discount-based system with sophisticated analysis.
+        """
+        try:
+            prices = df['price'].values
+            
+            # 3-day vs 7-day momentum analysis (core algorithm)
+            recent_avg = np.mean(prices[-3:]) if len(prices) >= 3 else current_price
+            week_avg = np.mean(prices[-7:]) if len(prices) >= 7 else current_price
+            short_momentum = (recent_avg - week_avg) / week_avg * 100 if week_avg > 0 else 0
+            
+            # 14-day medium-term momentum
+            two_week_avg = np.mean(prices[-14:]) if len(prices) >= 14 else current_price
+            medium_momentum = (current_price - two_week_avg) / two_week_avg * 100 if two_week_avg > 0 else 0
+            
+            # Support level calculation
+            support_level = np.min(prices[-14:]) if len(prices) >= 14 else current_price * 0.95
+            
+            # Bollinger Bands lower band (strong support)
+            if len(prices) >= 20:
+                sma = np.mean(prices[-20:])
+                std = np.std(prices[-20:])
+                bb_lower = sma - (2 * std)
+            else:
+                bb_lower = current_price * 0.97
+            
+            # RSI-based adjustment
+            rsi = self._calculate_rsi(prices, 14) if len(prices) >= 14 else 50
+            
+            # INTELLIGENT TARGET CALCULATION
+            base_target = current_price
+            
+            # 1. Momentum-based adjustment
+            if short_momentum < -5:  # Strong downward momentum
+                momentum_discount = 0.03 + (abs(short_momentum) * 0.001)  # 3%+ based on momentum
+            elif short_momentum < -2:  # Moderate downward momentum
+                momentum_discount = 0.02 + (abs(short_momentum) * 0.002)  # 2%+ 
+            elif short_momentum < 0:  # Slight downward momentum
+                momentum_discount = 0.015  # 1.5%
+            else:  # Upward momentum - be more aggressive
+                momentum_discount = 0.01  # 1% only
+            
+            # 2. Support level consideration
+            support_distance = (current_price - support_level) / current_price
+            if support_distance > 0.05:  # Far from support
+                support_factor = 0.98  # Can go lower
+            else:  # Near support
+                support_factor = 1.005  # Be more conservative
+                
+            # 3. RSI-based fine tuning
+            if rsi < 30:  # Oversold - more aggressive
+                rsi_factor = 0.98
+            elif rsi < 40:  # Getting oversold
+                rsi_factor = 0.99
+            elif rsi > 70:  # Overbought - be cautious
+                rsi_factor = 1.01
+            else:  # Neutral
+                rsi_factor = 1.0
+            
+            # 4. Confidence-based adjustment
+            if confidence_score >= 75:  # High confidence - be more aggressive
+                confidence_factor = 0.985
+            elif confidence_score >= 60:  # Moderate confidence
+                confidence_factor = 0.995
+            else:  # Low confidence - be conservative
+                confidence_factor = 1.005
+            
+            # FINAL INTELLIGENT TARGET PRICE
+            # Use the most conservative of: momentum target, Bollinger lower, or support level
+            momentum_target = current_price * (1 - momentum_discount) * support_factor * rsi_factor * confidence_factor
+            technical_target = min(bb_lower * 1.002, support_level * 1.005)  # Slight buffer above key levels
+            
+            # Choose the higher of the two (more conservative entry)
+            target_price = max(momentum_target, technical_target)
+            
+            # Safety bounds: never more than 10% below current price
+            min_target = current_price * 0.90
+            max_target = current_price * 0.99
+            
+            final_target = max(min_target, min(max_target, target_price))
+            
+            self.logger.debug(f"🎯 INTELLIGENT TARGET: {current_price:.6f} → {final_target:.6f} "
+                            f"(momentum: {short_momentum:.1f}%, support: {support_level:.6f}, "
+                            f"confidence: {confidence_score:.1f})")
+            
+            return final_target
+            
+        except Exception as e:
+            self.logger.warning(f"Error calculating intelligent target price: {e}")
+            # Fallback to conservative 2% discount
+            return current_price * 0.98
+
     def _assess_risk_level(self, volatility_score: float, momentum_score: float) -> str:
         """Assess overall risk level."""
         avg_score = (volatility_score + momentum_score) / 2

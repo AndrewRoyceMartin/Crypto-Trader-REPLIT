@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
 Target Price Manager - Locks target buy prices to prevent exponential recalculation.
+Now uses intelligent 3-day momentum analysis instead of simple discounts.
 """
 
 import sqlite3
@@ -8,6 +9,7 @@ import logging
 from datetime import datetime, timedelta
 from typing import Dict, Optional, Tuple
 import os
+from src.utils.entry_confidence import EntryConfidenceAnalyzer
 
 logger = logging.getLogger(__name__)
 
@@ -24,6 +26,7 @@ class TargetPriceManager:
     
     def __init__(self, db_path: str = "trading.db"):
         self.db_path = db_path
+        self.confidence_analyzer = EntryConfidenceAnalyzer()  # INTEGRATION: Use 3-day algorithm
         self._init_database()
     
     def _init_database(self):
@@ -102,53 +105,50 @@ class TargetPriceManager:
             return self._calculate_new_target(symbol, current_market_price)
     
     def _calculate_new_target(self, symbol: str, current_price: float) -> Tuple[float, bool]:
-        """Calculate and lock a new target price."""
+        """Calculate and lock a new target price using INTELLIGENT 3-DAY ALGORITHM."""
         try:
-            # Asset tier classification - FIXED: Much more realistic discount ranges
+            # 🎯 REVOLUTIONARY CHANGE: Use confidence analyzer's 3-day momentum algorithm!
+            confidence_data = self.confidence_analyzer.calculate_confidence(
+                symbol=symbol, 
+                current_price=current_price
+            )
+            
+            # Get intelligent target price from sophisticated analysis
+            target_price = confidence_data.get('suggested_target_price', current_price * 0.98)
+            confidence_score = confidence_data.get('confidence_score', 50)
+            
+            # Asset tier classification (for database tracking)
             if symbol in ['BTC', 'ETH']:
-                discount_range = (0.01, 0.03)  # 1-3% discount (was 3-8%)
                 tier = 'large_cap'
             elif symbol in ['SOL', 'ADA', 'DOT', 'MATIC', 'AVAX', 'LINK']:
-                discount_range = (0.015, 0.04)  # 1.5-4% discount (was 5-12%)
                 tier = 'mid_cap'
             elif symbol in ['GALA', 'SAND', 'MANA', 'CHZ', 'ENJ']:
-                discount_range = (0.025, 0.055)  # 2.5-5.5% discount (was 8-15%)
                 tier = 'gaming'
             elif symbol in ['PEPE', 'SHIB', 'DOGE']:
-                discount_range = (0.03, 0.07)  # 3-7% discount (was 10-20%)
                 tier = 'meme'
             elif current_price < 0.01:
-                discount_range = (0.04, 0.08)  # 4-8% discount (was 12-18%)
                 tier = 'micro_cap'
             else:
-                discount_range = (0.02, 0.045)  # 2-4.5% discount (was 6-12%)
                 tier = 'altcoin'
             
-            # Use middle of range for consistent entries
-            base_discount = (discount_range[0] + discount_range[1]) / 2
-            
-            # Deterministic market adjustment per symbol
-            import random
-            random.seed(hash(symbol) % 1000)
-            market_adjustment = random.uniform(-0.02, 0.02)
-            
-            final_discount = max(0.01, min(0.10, base_discount + market_adjustment))
-            target_price = current_price * (1 - final_discount)
+            # Calculate actual discount achieved
+            discount_percent = ((current_price - target_price) / current_price) * 100
             
             # Lock for 24 hours
             lock_duration = timedelta(hours=24)
             locked_until = datetime.now() + lock_duration
             
             # Save to database
-            self._save_target_price(symbol, target_price, current_price, locked_until, tier, final_discount * 100)
+            self._save_target_price(symbol, target_price, current_price, locked_until, tier, discount_percent)
             
-            logger.info(f"{symbol}: New target ${target_price:.8f} ({final_discount*100:.1f}% discount), locked until {locked_until.strftime('%H:%M %d/%m')}")
+            logger.info(f"🎯 {symbol}: INTELLIGENT TARGET ${target_price:.8f} ({discount_percent:.1f}% discount, "
+                       f"confidence: {confidence_score:.1f}), locked until {locked_until.strftime('%H:%M %d/%m')}")
             return target_price, True
             
         except Exception as e:
-            logger.error(f"Error calculating new target for {symbol}: {e}")
-            # Fallback: 8% discount, no lock
-            return current_price * 0.92, False
+            logger.error(f"Error calculating intelligent target for {symbol}: {e}")
+            # Fallback: conservative 2% discount, no lock
+            return current_price * 0.98, False
     
     def _save_target_price(self, symbol: str, target_price: float, original_price: float, 
                           locked_until: datetime, tier: str, discount_percent: float):
@@ -171,14 +171,19 @@ class TargetPriceManager:
             logger.error(f"Error saving target price for {symbol}: {e}")
     
     def reset_all_target_prices(self):
-        """Clear ALL target prices to force complete recalculation with new discount ranges."""
+        """Clear ALL target prices to force recalculation with INTELLIGENT 3-DAY ALGORITHM."""
         try:
             conn = sqlite3.connect(self.db_path)
             cursor = conn.cursor()
+            
+            # Get count first
+            cursor.execute('SELECT COUNT(*) FROM target_prices')
+            count = cursor.fetchone()[0]
+            
             cursor.execute('DELETE FROM target_prices')
             conn.commit()
             conn.close()
-            logger.info("🔄 ALL TARGET PRICES CLEARED - will recalculate with new discount ranges")
+            logger.info(f"🎯 ALGORITHM UPGRADE: Cleared {count} old targets - will now use intelligent 3-day momentum analysis!")
         except Exception as e:
             logger.error(f"Error clearing all target prices: {e}")
     
