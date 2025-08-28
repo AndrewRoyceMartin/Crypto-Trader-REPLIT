@@ -3527,27 +3527,22 @@ def api_available_positions() -> ResponseReturnValue:
                     if (current_price > 0 and symbol in priority_assets):
                         logger.info(f"Calculating BB opportunity analysis for {symbol} at ${current_price}")
 
-                        # Minimal delay for faster response (50ms)
+                        # Ultra-fast processing for recalculate operations
                         import time
-                        time.sleep(0.05)  # 50ms delay - 3x faster than before
+                        time.sleep(0.01)  # 10ms delay - 5x faster for quick recalculation
 
                         try:
                             # Get historical price data for Bollinger Bands calculation
                             from src.utils.okx_native import OKXNative
                             okx_client = OKXNative.from_env()
 
-                            # Get 60 daily candles for BB calculation (need extra for 30-period rolling window)
+                            # Streamlined BB analysis - prioritize speed for recalculation
                             symbol_pair = f"{symbol}-USDT"
-                            candles = okx_client.candles(symbol_pair, bar="1D", limit=60)
+                            candles = okx_client.candles(symbol_pair, bar="4H", limit=120)  # Start with 4H for speed
                             
-                            # Fallback data sources: try different timeframes if daily data insufficient
+                            # Single fallback only to prevent excessive API calls during recalculation
                             if not candles or len(candles) < 30:
-                                logger.info(f"Insufficient daily data for {symbol}, trying 4-hour timeframe")
-                                candles = okx_client.candles(symbol_pair, bar="4H", limit=120)  # ~20 days of 4H data
-                                
-                            if not candles or len(candles) < 30:
-                                logger.info(f"Insufficient 4H data for {symbol}, trying 1-hour timeframe")
-                                candles = okx_client.candles(symbol_pair, bar="1H", limit=240)  # ~10 days of 1H data
+                                candles = okx_client.candles(symbol_pair, bar="1D", limit=60)  # Fallback to daily
 
                             if candles and len(candles) >= 30:
                                 import pandas as pd
