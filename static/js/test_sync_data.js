@@ -5477,9 +5477,17 @@ async function testBollingerBandsPrioritization() {
             testResults.validation_details.push(`⚠️ Strategy API test failed: ${strategyError.message}`);
         }
         
-        // Test 2: Check exit strategy logic metadata from current holdings
+        // Test 2: Check exit strategy logic metadata from current holdings (with timeout)
         try {
-            const holdingsResponse = await makeApiCall('/api/current-holdings', { cache: 'no-store' });
+            const controller2 = new AbortController();
+            const timeoutId2 = setTimeout(() => controller2.abort(), 2000);
+            
+            const holdingsResponse = await makeApiCall('/api/current-holdings', { 
+                cache: 'no-store',
+                signal: controller2.signal 
+            });
+            clearTimeout(timeoutId2);
+            
             if (holdingsResponse.ok) {
                 const holdingsData = await holdingsResponse.json();
                 
@@ -5513,9 +5521,17 @@ async function testBollingerBandsPrioritization() {
             testResults.validation_details.push(`⚠️ Holdings metadata test failed: ${holdingsError.message}`);
         }
         
-        // Test 3: Validate strategy prioritization logic via bot status
+        // Test 3: Validate strategy prioritization logic via bot status (with timeout)
         try {
-            const botStatusResponse = await fetch('/api/bot-status', { cache: 'no-store' });
+            const controller3 = new AbortController();
+            const timeoutId3 = setTimeout(() => controller3.abort(), 2000);
+            
+            const botStatusResponse = await fetch('/api/bot-status', { 
+                cache: 'no-store',
+                signal: controller3.signal 
+            });
+            clearTimeout(timeoutId3);
+            
             if (botStatusResponse.ok) {
                 const botData = await botStatusResponse.json();
                 
