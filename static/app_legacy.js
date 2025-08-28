@@ -1692,7 +1692,7 @@ class TradingApp {
             console.log("TARGET DEBUG - First position:", {
                 symbol: data.holdings[0].symbol,
                 target_multiplier: data.holdings[0].target_multiplier,
-                calculated_percent: ((data.holdings[0].target_multiplier || 1.04) - 1) * 100
+                calculated_percent: getTargetPercent(data.holdings[0])
             });
         }
             
@@ -1883,7 +1883,7 @@ class TradingApp {
                 // Target value cell (dynamic Bollinger Band target)
                 const targetValueCell = document.createElement('td');
                 targetValueCell.className = 'text-end';
-                const targetMultiplier = holding.target_multiplier ?? 1.04;
+                const targetMultiplier = getTargetMultiplier(holding);
                 const targetValue = (holding.cost_basis || 0) * targetMultiplier;
                 targetValueCell.textContent = this.formatCurrency(targetValue);
                 row.appendChild(targetValueCell);
@@ -3200,8 +3200,7 @@ class TradingApp {
                 // Calculate dynamic display values
                 const side = (qty > 0) ? 'LONG' : 'FLAT';
                 const weight = (100 / cryptos.length).toFixed(1);
-                const targetMultiplier = crypto.target_multiplier || 1.04;
-                const target = ((targetMultiplier - 1) * 100).toFixed(1);  // Dynamic target from Bollinger Bands
+                const target = getTargetPercent(crypto).toFixed(1);  // Dynamic target from Bollinger Bands
                 const deviation = crypto.bb_deviation || '0.0';
                 const change24h = pp > 0 ? `+${pp.toFixed(1)}%` : `${pp.toFixed(1)}%`;
                 // Calculate dynamic stop loss and take profit based on Enhanced Bollinger Bands strategy
@@ -3209,8 +3208,8 @@ class TradingApp {
                 const takeProfit = this.formatCryptoPrice(purchasePrice * targetMultiplier);  // Dynamic take profit from Bollinger Bands
                 const daysHeld = position.days_held || '—';
 
-                // Calculate target values using dynamic Bollinger Band multiplier or 4% fallback
-                const targetMultiplier = position.target_multiplier || 1.04;
+                // Calculate target values using dynamic Bollinger Band multiplier or fallback
+                const targetMultiplier = getTargetMultiplier(position);
                 const targetTotalValue = totalCostBasis * targetMultiplier;
                 const targetPnlDollar = targetTotalValue - totalCostBasis;
                 const selectedCurrency = window.tradingApp?.selectedCurrency || 'USD';
@@ -5514,8 +5513,8 @@ function updateOpenPositionsTable(positions, totalValue = 0) {
             const currentPnlDollar = parseFloat(position.pnl_amount || 0);
             const currentPnlPercent = parseFloat(position.pnl_percent || 0);
             
-            // Target calculations - Use ACTUAL upper Bollinger Band prices instead of hardcoded 4%
-            let targetMultiplier = position.target_multiplier || 1.04; // Use dynamic Bollinger Band target or 4% fallback
+            // Target calculations - Use ACTUAL upper Bollinger Band prices instead of hardcoded values
+            let targetMultiplier = getTargetMultiplier(position); // Use dynamic Bollinger Band target or fallback
             let upperBandPrice = position.upper_band_price || currentPrice * 1.04; // Use actual upper band or fallback
             
             // Calculate target based on upper Bollinger Band price, not fixed percentage
@@ -6270,7 +6269,7 @@ function calculateBollingerTargetValue(holding) {
     }
     
     // Fallback to traditional multiplier if no Bollinger data
-    const targetMultiplier = holding.target_multiplier || 1.04;
+    const targetMultiplier = getTargetMultiplier(holding);
     const fallbackValue = currentValue * targetMultiplier;
     return fallbackValue.toLocaleString('en-US', {style: 'currency', currency: window.tradingApp?.selectedCurrency || 'USD', minimumFractionDigits: 2, maximumFractionDigits: 2});
 }
@@ -6292,7 +6291,7 @@ function calculateBollingerTargetProfit(holding) {
     }
     
     // Fallback to traditional multiplier if no Bollinger data
-    const targetMultiplier = holding.target_multiplier || 1.04;
+    const targetMultiplier = getTargetMultiplier(holding);
     const fallbackProfit = currentValue * (targetMultiplier - 1);
     return `+${fallbackProfit.toLocaleString('en-US', {style: 'currency', currency: window.tradingApp?.selectedCurrency || 'USD', minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
 }
@@ -6312,8 +6311,7 @@ function calculateBollingerTargetPercent(holding) {
     }
     
     // Fallback to traditional multiplier if no Bollinger data
-    const targetMultiplier = holding.target_multiplier || 1.04;
-    const fallbackPercent = (targetMultiplier - 1) * 100;
+    const fallbackPercent = getTargetPercent(holding);
     return `+${fallbackPercent.toFixed(1)}%`;
 }
 
@@ -6342,8 +6340,7 @@ function getPositionStatus(holding) {
     }
     
     // Check if position is significantly profitable (likely to be managed by bot)
-    const targetMultiplier = holding.target_multiplier || 1.04;
-    const targetPercent = (targetMultiplier - 1) * 100;
+    const targetPercent = getTargetPercent(holding);
     const managedThreshold = Math.max(targetPercent * 0.8, 6.0); // 80% of target or min 6%
     
     if (pnlPercent >= managedThreshold) {
@@ -7043,7 +7040,7 @@ async function refreshHoldingsData() {
                 console.log('TARGET DEBUG - Open Positions Data:', {
                     symbol: positions[0].symbol,
                     target_multiplier: positions[0].target_multiplier,
-                    calculated_percent: ((positions[0].target_multiplier || 1.04) - 1) * 100
+                    calculated_percent: getTargetPercent(positions[0])
                 });
             }
             // Update table via main TradingApp system to prevent flashing
@@ -7362,6 +7359,32 @@ async function loadCryptoDetails(symbol) {
 
 // Auto-load positions on page load - MERGED with main DOMContentLoaded to avoid conflicts
 // This is now handled in the main DOMContentLoaded event above to prevent conflicts
+
+// Configuration for target percentages
+const DEFAULT_TARGET_PCT = 8; // Default target percentage when no dynamic data available
+
+// Centralized target multiplier calculation
+function getTargetMultiplier(holding) {
+    // Prefer explicit multiplier from backend
+    if (holding?.target_multiplier && holding.target_multiplier > 0) {
+        return Number(holding.target_multiplier);
+    }
+    // Accept target_pct from backend if available
+    if (holding?.target_pct != null) {
+        return 1 + Number(holding.target_pct)/100;
+    }
+    // Use upper Bollinger Band price for dynamic calculation if available
+    if (holding?.upper_band_price && holding?.current_price && holding.upper_band_price > holding.current_price) {
+        return holding.upper_band_price / holding.current_price;
+    }
+    // Default fallback
+    return 1 + DEFAULT_TARGET_PCT/100;
+}
+
+// Centralized target percentage calculation
+function getTargetPercent(holding) {
+    return (getTargetMultiplier(holding) - 1) * 100;
+}
 
 // Dynamic color generation based on symbol hash
 function generateDynamicColor(symbol) {
