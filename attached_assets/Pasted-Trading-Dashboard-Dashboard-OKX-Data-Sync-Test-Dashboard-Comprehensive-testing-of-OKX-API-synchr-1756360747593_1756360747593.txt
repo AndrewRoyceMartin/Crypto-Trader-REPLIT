@@ -1,0 +1,274 @@
+Trading Dashboard
+Dashboard
+ OKX Data Sync Test Dashboard
+Comprehensive testing of OKX API synchronization with your trading dashboard
+
+Tests Run
+0
+Passed
+0
+Failed
+0
+Last Run
+Never
+
+Enhanced Real-time Monitoring
+1
+Active
+19
+Completed
+70147ms
+Avg Response
+NaN%
+Data Fresh
+Normal: Quick essential tests • Enhanced: Comprehensive testing with progress tracking • Export: Download detailed error logs
+
+Enhanced Testing Results
+23%
+Overall Success
+303001ms
+Total Time
+7
+Categories
+20
+Tests Run
+ CRITICAL
+needs attention
+1862ms
+0% success rate
+ PERFORMANCE
+needs attention
+2798ms
+0% success rate
+ UI INTERACTION
+needs attention
+3753ms
+0% success rate
+ TRADING BUTTONS
+good
+12ms
+75% success rate
+ STRATEGY VALIDATION
+needs attention
+302988ms
+50% success rate
+ DATA INTEGRITY
+needs attention
+260670ms
+33% success rate
+ WORKFLOW TESTS
+needs attention
+6ms
+0% success rate
+Recommendations
+Overall system reliability needs attention
+API response times are concerning
+critical category requires immediate attention
+Detailed Test Results
+
+CRITICAL Category Results
+0% Success
+Execution Time: 1862ms
+Success Rate: 0%
+Individual Test Results:
+ Test Holdings Sync Enhanced
+SKIP
+Details: Test testHoldingsSyncEnhanced not found in standard test suite
+
+Execution time: 1231.1000000014901ms
+ Test Price Freshness Realtime
+SKIP
+Details: Test testPriceFreshnessRealtime not found in standard test suite
+
+Execution time: 1538.5ms
+ Test Recalculation Workflow Advanced
+SKIP
+Details: Test testRecalculationWorkflowAdvanced not found in standard test suite
+
+Execution time: 1860.0999999977648ms
+
+PERFORMANCE Category Results
+0% Success
+
+UI INTERACTION Category Results
+0% Success
+
+TRADING BUTTONS Category Results
+75% Success
+
+STRATEGY VALIDATION Category Results
+50% Success
+
+DATA INTEGRITY Category Results
+33% Success
+
+WORKFLOW TESTS Category Results
+0% Success
+Formatted Test Data
+
+            
+
+                Comprehensive Test Session: 28/08/2025, 15:58:55
+
+                Overall Success Rate: 23%
+
+                Total Execution Time: 303001ms
+
+                Categories Tested: 7
+            
+
+            
+            
+Detailed Test Logs:
+
+            
+
+                
+        
+=== CRITICAL CATEGORY ===
+Success Rate: 0%
+Execution Time: 1862ms
+Test Count: 3
+
+INDIVIDUAL TEST RESULTS:
+
+[SKIP] testHoldingsSyncEnhanced (15:53:54)
+  📄 Details: Test testHoldingsSyncEnhanced not found in standard test suite
+  ⏱️ Time: 1231.1000000014901ms
+
+[SKIP] testPriceFreshnessRealtime (15:53:54)
+  📄 Details: Test testPriceFreshnessRealtime not found in standard test suite
+  ⏱️ Time: 1538.5ms
+
+[SKIP] testRecalculationWorkflowAdvanced (15:53:54)
+  📄 Details: Test testRecalculationWorkflowAdvanced not found in standard test suite
+  ⏱️ Time: 1860.0999999977648ms
+
+==================================================
+
+=== PERFORMANCE CATEGORY ===
+Success Rate: 0%
+Execution Time: 2798ms
+Test Count: 3
+
+INDIVIDUAL TEST RESULTS:
+
+[SKIP] testAPIResponseTiming (15:53:55)
+  📄 Details: Test testAPIResponseTiming not found in standard test suite
+  ⏱️ Time: 2174ms
+
+[SKIP] testBasicAPIConnectivity (15:53:55)
+  📄 Details: Test testBasicAPIConnectivity not found in standard test suite
+  ⏱️ Time: 2483.10000000149ms
+
+[SKIP] testBasicPortfolioData (15:53:55)
+  📄 Details: Test testBasicPortfolioData not found in standard test suite
+  ⏱️ Time: 2797ms
+
+==================================================
+
+=== UI_INTERACTION CATEGORY ===
+Success Rate: 0%
+Execution Time: 3753ms
+Test Count: 3
+
+INDIVIDUAL TEST RESULTS:
+
+[SKIP] testButtonWorkflowComprehensive (15:53:55)
+  📄 Details: Test testButtonWorkflowComprehensive not found in standard test suite
+  ⏱️ Time: 3128.099999997765ms
+
+[SKIP] testBasicButtonFunctions (15:53:56)
+  📄 Details: Test testBasicButtonFunctions not found in standard test suite
+  ⏱️ Time: 3441.5ms
+
+[SKIP] testBasicPriceUpdates (15:53:56)
+  📄 Details: Test testBasicPriceUpdates not found in standard test suite
+  ⏱️ Time: 3751.300000000745ms
+
+==================================================
+
+=== TRADING_BUTTONS CATEGORY ===
+Success Rate: 75%
+Execution Time: 12ms
+Test Count: 4
+
+INDIVIDUAL TEST RESULTS:
+
+[PASS] testATOExportButton (15:53:52)
+  📄 Details: Export functionality: enabled, has click handler, has tooltip, visible
+  ⏱️ Time: 8.5ms
+
+[PASS] testBuyButton (15:53:52)
+  📄 Details: Action button functionality: enabled, styled, has icon, focusable
+  ⏱️ Time: 7.699999999254942ms
+
+[FAIL] testSellButton (15:53:52)
+  📄 Details: Action button states: has icon, clickable
+  ⏱️ Time: 6.800000000745058ms
+
+[PASS] testTakeProfitButton (15:53:52)
+  📄 Details: 2 functional buttons with states: has events, styled
+  ⏱️ Time: 6.300000000745058ms
+
+==================================================
+
+=== STRATEGY_VALIDATION CATEGORY ===
+Success Rate: 50%
+Execution Time: 302988ms
+Test Count: 2
+
+INDIVIDUAL TEST RESULTS:
+
+[PASS] bollinger_strategy_priority (15:58:44)
+  ⏱️ Time: 291431.90000000224ms
+
+[PARTIAL] available_positions_data_integrity (15:58:55)
+  ⏱️ Time: 302987.40000000224ms
+
+==================================================
+
+=== DATA_INTEGRITY CATEGORY ===
+Success Rate: 33%
+Execution Time: 260670ms
+Test Count: 3
+
+INDIVIDUAL TEST RESULTS:
+
+[FAIL] holdings_sync_enhanced (15:55:43)
+  ⏱️ Time: 110454.80000000075ms
+
+[PASS] price_freshness_realtime (15:57:03)
+  ⏱️ Time: 190228.80000000075ms
+
+[FAIL] api_response_timing (15:58:13)
+  ⏱️ Time: 260668.69999999925ms
+
+==================================================
+
+=== WORKFLOW_TESTS CATEGORY ===
+Success Rate: 0%
+Execution Time: 6ms
+Test Count: 2
+
+INDIVIDUAL TEST RESULTS:
+
+[FAIL] recalculation_workflow_advanced (15:53:52)
+  ❌ Error: Critical: Recalculation button not found
+  ⏱️ Time: 2.300000000745058ms
+
+[FAIL] button_workflow_comprehensive (15:53:52)
+  ⏱️ Time: 1.699999999254942ms
+
+==================================================
+
+=== RECOMMENDATIONS ===
+- Overall system reliability needs attention
+- API response times are concerning
+- critical category requires immediate attention
+
+                
+
+            
+
+        

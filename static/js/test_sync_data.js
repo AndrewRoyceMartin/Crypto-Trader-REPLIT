@@ -381,19 +381,19 @@ class EnhancedTestRunner {
     createTestCategories() {
         return {
             critical: [
-                'testHoldingsSyncEnhanced',
-                'testPriceFreshnessRealtime',
-                'testRecalculationWorkflowAdvanced'
+                'holdings_sync_enhanced',
+                'price_freshness_realtime',
+                'recalculation_workflow_advanced'
             ],
             performance: [
-                'testAPIResponseTiming',
-                'testBasicAPIConnectivity',
-                'testBasicPortfolioData'
+                'api_response_timing',
+                'basic_api_connectivity',
+                'basic_portfolio_data'
             ],
             ui_interaction: [
-                'testButtonWorkflowComprehensive',
-                'testBasicButtonFunctions',
-                'testBasicPriceUpdates'
+                'button_workflow_comprehensive',
+                'basic_button_functions',
+                'basic_price_updates'
             ],
             trading_buttons: [
                 'testATOExportButton',
@@ -825,6 +825,18 @@ class EnhancedTestRunner {
                     break;
                 case 'available_positions_data_integrity':
                     testResult = await testAvailablePositionsDataIntegrity();
+                    break;
+                case 'basic_api_connectivity':
+                    testResult = await this.testBasicAPIConnectivity();
+                    break;
+                case 'basic_portfolio_data':
+                    testResult = await this.testBasicPortfolioData();
+                    break;
+                case 'basic_button_functions':
+                    testResult = await this.testBasicButtonFunctions();
+                    break;
+                case 'basic_price_updates':
+                    testResult = await this.testBasicPriceUpdates();
                     break;
                 default:
                     testResult = await this.executeStandardTest(testName);
