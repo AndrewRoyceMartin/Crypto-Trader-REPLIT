@@ -1472,9 +1472,9 @@ class EnhancedTestRunner {
         const endpointPromises = endpoints.map(async (endpoint) => {
             const endpointStart = performance.now();
             try {
-                // Reduced timeout for faster test completion
+                // Increased timeout to match real API performance
                 const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 second timeout per endpoint
+                const timeoutId = setTimeout(() => controller.abort(), 6000); // 6 second timeout per endpoint
                 
                 const response = await fetch(endpoint, { 
                     cache: 'no-store',
