@@ -3181,9 +3181,12 @@ class TradingApp {
                 const takeProfit = this.formatCryptoPrice(purchasePrice * 1.04);  // 4% take profit (Enhanced Bollinger Bands)
                 const daysHeld = '30';
 
-                // Calculate target values from cost basis
-                const targetValue = (totalCostBasis * 1.08).toLocaleString('en-US', {style: 'currency', currency: 'USD', minimumFractionDigits: 8, maximumFractionDigits: 8});
-                const targetProfit = (totalCostBasis * 0.08).toLocaleString('en-US', {style: 'currency', currency: 'USD', minimumFractionDigits: 8, maximumFractionDigits: 8});
+                // Calculate target values using dynamic Bollinger Band multiplier or 4% fallback
+                const targetMultiplier = position.target_multiplier || 1.04;
+                const targetTotalValue = totalCostBasis * targetMultiplier;
+                const targetPnlDollar = targetTotalValue - totalCostBasis;
+                const targetValue = targetTotalValue.toLocaleString('en-US', {style: 'currency', currency: 'USD', minimumFractionDigits: 8, maximumFractionDigits: 8});
+                const targetProfit = targetPnlDollar.toLocaleString('en-US', {style: 'currency', currency: 'USD', minimumFractionDigits: 8, maximumFractionDigits: 8});
                 
                 // Get position status badge based on P&L
                 let positionStatus = '<span class="badge bg-secondary">FLAT</span>';
@@ -6150,9 +6153,9 @@ function createHoldingRow(holding) {
             { content: currentValue.toLocaleString('en-US', {style: 'currency', currency: 'USD', minimumFractionDigits: 8, maximumFractionDigits: 8}), class: '' }, // POSITION VALUE
             { content: `${pnlSign}${pnl.toLocaleString('en-US', {style: 'currency', currency: 'USD', minimumFractionDigits: 8, maximumFractionDigits: 8})}`, class: pnlClass }, // UNREALIZED $
             { content: `${pnlSign}${pnlPercent.toFixed(2)}%`, class: pnlClass }, // GAIN/LOSS %
-            { content: calculateTargetValue(costBasis), class: 'text-success' }, // TARGET VALUE
-            { content: calculateTargetProfit(costBasis), class: 'text-success' }, // TARGET PROFIT $
-            { content: '+8.0%', class: 'text-success' }, // TARGET PROFIT %
+            { content: calculateTargetValue(costBasis, holding.target_multiplier), class: 'text-success' }, // TARGET VALUE
+            { content: calculateTargetProfit(costBasis, holding.target_multiplier), class: 'text-success' }, // TARGET PROFIT $
+            { content: `+${((holding.target_multiplier || 1.04) - 1) * 100}%`, class: 'text-success' }, // TARGET PROFIT %
             { content: getPositionStatus(holding), class: '' }, // POSITION
             { content: '<span class="badge bg-secondary">HOLD</span>', class: '' } // ACTIONS
         ];
@@ -6172,15 +6175,15 @@ function createHoldingRow(holding) {
     }
 }
 
-/** Calculate target value based on 8% profit target from cost basis */
-function calculateTargetValue(costBasis) {
-    const target = costBasis * 1.08; // 8% profit target from cost basis
+/** Calculate target value based on dynamic Bollinger Band target or 4% fallback */
+function calculateTargetValue(costBasis, targetMultiplier = 1.04) {
+    const target = costBasis * targetMultiplier; // Use dynamic target multiplier
     return target.toLocaleString('en-US', {style: 'currency', currency: 'USD', minimumFractionDigits: 8, maximumFractionDigits: 8});
 }
 
-/** Calculate target profit in dollars based on 8% profit target from cost basis */
-function calculateTargetProfit(costBasis) {
-    const profit = costBasis * 0.08; // 8% profit from cost basis
+/** Calculate target profit in dollars based on dynamic Bollinger Band target or 4% fallback */
+function calculateTargetProfit(costBasis, targetMultiplier = 1.04) {
+    const profit = costBasis * (targetMultiplier - 1); // Calculate profit from target multiplier
     return profit.toLocaleString('en-US', {style: 'currency', currency: 'USD', minimumFractionDigits: 8, maximumFractionDigits: 8});
 }
 
