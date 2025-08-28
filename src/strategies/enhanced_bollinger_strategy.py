@@ -182,8 +182,9 @@ class EnhancedBollingerBandsStrategy(BaseStrategy):
             # Arm rebuy mechanism
             self._arm_rebuy(px)
             
-            # Reset position state
-            self._reset_position()
+            # CRITICAL FIX: Don't reset position until exit order is confirmed
+            # Position will be reset by enhanced trader after verifying order filled
+            # self._reset_position()  # DISABLED - prevents phantom positions
             
             signal = Signal(
                 action='sell',
@@ -285,8 +286,9 @@ class EnhancedBollingerBandsStrategy(BaseStrategy):
             fees = self.fee * (fill_price + entry_price) * qty
             pnl = gross - fees
             
-            # Reset position state
-            self._reset_position()
+            # CRITICAL FIX: Don't reset position until exit order is confirmed  
+            # Position will be reset by enhanced trader after verifying order filled
+            # self._reset_position()  # DISABLED - prevents phantom positions
             
             signal = Signal(
                 action='sell',
