@@ -394,24 +394,33 @@ class EnhancedTrader:
                 fees = position_size_dollars * 0.001
                 total_cost = position_size_dollars + fees
                 if total_cost <= self.equity and position_size_units > 0:
-                    self.equity -= total_cost
-                    record: TradeRecord = {
-                        'timestamp': timestamp,
-                        'symbol': symbol,
-                        'action': 'buy',
-                        'size': position_size_units,
-                        'price': current_price,
-                        'confidence': confidence,
-                        'event_type': event_type,
-                        'stop_loss': float(stop_loss) if stop_loss is not None else None,
-                        'take_profit': float(take_profit) if take_profit is not None else None,
-                        'equity_after': self.equity,
-                    }
-                    self.trade_history.append(record)
-                    self.logger.info(
-                        "[%s] BUY %.6f %s @ $%.2f (Conf: %.2f, Equity: $%.2f)",
-                        event_type, position_size_units, symbol, current_price, confidence, self.equity
-                    )
+                    base_symbol = symbol.split('/')[0] if '/' in symbol else symbol
+                    
+                    # Use verified purchase system to prevent inverse phantom positions
+                    purchase_success = self._execute_verified_purchase(signal, symbol, base_symbol, current_price, timestamp, position_size_units, position_size_dollars)
+                    
+                    if purchase_success:
+                        # Only update equity and record trade if purchase was verified
+                        self.equity -= total_cost
+                        record: TradeRecord = {
+                            'timestamp': timestamp,
+                            'symbol': symbol,
+                            'action': 'buy',
+                            'size': position_size_units,
+                            'price': current_price,
+                            'confidence': confidence,
+                            'event_type': event_type,
+                            'stop_loss': float(stop_loss) if stop_loss is not None else None,
+                            'take_profit': float(take_profit) if take_profit is not None else None,
+                            'equity_after': self.equity,
+                        }
+                        self.trade_history.append(record)
+                        self.logger.critical(
+                            "✅ BUY VERIFIED: [%s] %.6f %s @ $%.2f (Conf: %.2f, Equity: $%.2f)",
+                            event_type, position_size_units, symbol, current_price, confidence, self.equity
+                        )
+                    else:
+                        self.logger.error(f"❌ BUY VERIFICATION FAILED: {base_symbol} - Position not acquired")
 
             elif action == 'sell':
                 # For strategy-generated exits, use verification system
@@ -548,6 +557,98 @@ class EnhancedTrader:
             
         except Exception as e:
             self.logger.error(f"❌ VERIFIED EXIT EXCEPTION: {base_symbol} - {e}")
+            return False
+
+    def _execute_verified_purchase(self, signal: Any, symbol: str, base_symbol: str, current_price: float, timestamp: datetime, quantity: float, cost_dollars: float) -> bool:
+        """Execute buy order with proper verification to prevent inverse phantom positions."""
+        try:
+            self.logger.info(f"🔄 VERIFIED PURCHASE START: {base_symbol} - Attempting to buy {quantity:.6f} units for ${cost_dollars:.2f}")
+            
+            # Get event type for logging
+            metadata = getattr(signal, "metadata", {}) or {}
+            event_type = str(metadata.get("event", "UNKNOWN_BUY"))
+            
+            # Import portfolio service to verify positions before/after
+            from ..services.portfolio_service import get_portfolio_service
+            portfolio_service = get_portfolio_service()
+            
+            # Get current portfolio state BEFORE purchase attempt
+            portfolio_before = portfolio_service.get_portfolio_data()
+            holdings_before = portfolio_before.get('holdings', [])
+            
+            # Check current position (if any)
+            position_before = None
+            current_qty_before = 0.0
+            for holding in holdings_before:
+                if holding.get('symbol') == base_symbol:
+                    position_before = holding
+                    current_qty_before = holding.get('quantity', 0.0)
+                    break
+            
+            # Check available USDT balance
+            usdt_balance = 0.0
+            for holding in holdings_before:
+                if holding.get('symbol') == 'USDT':
+                    usdt_balance = holding.get('quantity', 0.0)
+                    break
+            
+            # Also check cash balance from portfolio service directly
+            cash_balance = portfolio_before.get('cash_balance', 0.0)
+            usdt_balance = max(usdt_balance, cash_balance)  # Use the larger value
+            
+            if usdt_balance < cost_dollars:
+                self.logger.error(f"⚠️ INSUFFICIENT FUNDS: Need ${cost_dollars:.2f}, have ${usdt_balance:.2f} USDT")
+                return False
+            
+            self.logger.info(f"📊 PRE-PURCHASE STATE: {base_symbol} qty={current_qty_before:.6f}, USDT=${usdt_balance:.2f}")
+            
+            # SIMULATION MODE: For now, simulate the buy order 
+            # TODO: In production, replace this with actual OKX order placement
+            import time
+            import random
+            
+            self.logger.info(f"🎯 SIMULATING BUY ORDER: {base_symbol} buy {quantity:.6f} @ ${current_price:.4f} (${cost_dollars:.2f})")
+            time.sleep(0.8)  # Simulate order processing time
+            
+            # Simulate order success/failure (85% success rate for testing)
+            order_success = random.random() > 0.15
+            
+            if not order_success:
+                self.logger.error(f"❌ BUY ORDER FAILED: {base_symbol} - Simulated order rejection")
+                return False
+            
+            # Wait a moment for settlement
+            time.sleep(0.8)
+            
+            # Verify position was actually acquired by checking live portfolio
+            portfolio_service.refresh_portfolio_data()  # Force refresh
+            portfolio_after = portfolio_service.get_portfolio_data()
+            holdings_after = portfolio_after.get('holdings', [])
+            
+            # Check if position was created/increased
+            position_after = None
+            current_qty_after = 0.0
+            for holding in holdings_after:
+                if holding.get('symbol') == base_symbol:
+                    position_after = holding
+                    current_qty_after = holding.get('quantity', 0.0)
+                    break
+            
+            # Verify purchase actually happened
+            quantity_increase = current_qty_after - current_qty_before
+            min_expected_qty = quantity * 0.95  # Allow for 5% slippage/fees
+            
+            if quantity_increase < min_expected_qty:
+                self.logger.error(f"❌ BUY VERIFICATION FAILED: {base_symbol} qty increase {quantity_increase:.6f} < expected {min_expected_qty:.6f}")
+                return False
+            
+            # Success! Position was acquired
+            self.logger.critical(f"✅ BUY VERIFIED SUCCESSFUL: {base_symbol} acquired {quantity_increase:.6f} units (total: {current_qty_after:.6f})")
+            
+            return True
+            
+        except Exception as e:
+            self.logger.error(f"❌ VERIFIED PURCHASE EXCEPTION: {base_symbol} - {e}")
             return False
 
     def _monitor_enhanced_positions(self, symbol: str, current_price: float, current_data: pd.Series) -> None:
