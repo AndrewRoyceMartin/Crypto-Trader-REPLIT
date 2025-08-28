@@ -3190,11 +3190,12 @@ class TradingApp {
                 const pnlClass = pnlNum >= 0 ? 'text-success' : 'text-danger';
                 const pnlIcon = pnlNum >= 0 ? '↗' : '↘';
 
-                // Calculate stable display values
-                const side = 'LONG';
+                // Calculate dynamic display values
+                const side = (qty > 0) ? 'LONG' : 'FLAT';
                 const weight = (100 / cryptos.length).toFixed(1);
-                const target = '4.0';  // Enhanced Bollinger Bands 4% take profit target
-                const deviation = '0.0';
+                const targetMultiplier = crypto.target_multiplier || 1.04;
+                const target = ((targetMultiplier - 1) * 100).toFixed(1);  // Dynamic target from Bollinger Bands
+                const deviation = crypto.bb_deviation || '0.0';
                 const change24h = pp > 0 ? `+${pp.toFixed(1)}%` : `${pp.toFixed(1)}%`;
                 // Calculate dynamic stop loss and take profit based on Enhanced Bollinger Bands strategy
                 const stopLoss = this.formatCryptoPrice(purchasePrice * 0.98);  // 2% stop loss (Enhanced Bollinger Bands)
@@ -3240,7 +3241,7 @@ class TradingApp {
                     { content: targetProfit, classes: 'text-end text-success' },
                     { content: `+${((targetMultiplier - 1) * 100).toFixed(1)}%`, classes: 'text-end text-success' },
                     { content: positionStatus, classes: '', isHTML: true },
-                    { content: '<span class="badge bg-info">MONITOR</span>', classes: '', isHTML: true }
+                    { content: getPositionStatus(crypto), classes: '', isHTML: true }
                 ];
                 
                 cells.forEach(cellData => {
