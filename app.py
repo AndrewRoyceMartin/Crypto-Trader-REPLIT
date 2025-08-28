@@ -3905,6 +3905,20 @@ def api_available_positions() -> ResponseReturnValue:
         
         import time
         start_time = time.time()
+        
+        # HARD TIMEOUT: Maximum 30 seconds for entire endpoint
+        HARD_TIMEOUT = 30  # seconds
+        
+        def check_timeout():
+            if time.time() - start_time > HARD_TIMEOUT:
+                logger.error(f"🚨 HARD TIMEOUT: Available positions exceeded {HARD_TIMEOUT}s limit")
+                raise TimeoutError(f"Request exceeded {HARD_TIMEOUT} second limit")
+        
+        # FALLBACK MODE: Check if we should use simplified processing
+        fallback_mode = request.args.get('fallback', 'false').lower() == 'true'
+        if fallback_mode:
+            logger.warning("🏃‍♂️ FALLBACK MODE: Using simplified position processing")
+            return _get_available_positions_fallback(currency)
 
         # Get ALL OKX account balances directly (including zero balances)
         portfolio_service = get_portfolio_service()
@@ -3961,12 +3975,28 @@ def api_available_positions() -> ResponseReturnValue:
         
         logger.info(f"Processing {total_assets} assets (comprehensive mode - 68+ cryptocurrencies)")
         
+        # CIRCUIT BREAKER: Check if we're in rate limiting state
+        rate_limit_key = "available_positions_rate_limit"
+        rate_limit_recovery_time = cache_get_price(rate_limit_key)
+        current_time = time.time()
+        
+        if rate_limit_recovery_time and current_time < rate_limit_recovery_time:
+            remaining_cooldown = int(rate_limit_recovery_time - current_time)
+            logger.warning(f"🚫 CIRCUIT BREAKER: Rate limiting cooldown active for {remaining_cooldown}s")
+            return jsonify({
+                'available_positions': [],
+                'count': 0,
+                'error': f'Rate limiting cooldown active - retry in {remaining_cooldown}s',
+                'success': False,
+                'cooldown_remaining': remaining_cooldown
+            }), 429
+
         # PERFORMANCE FIX: Batch fetch all prices at once to prevent rate limiting
         batch_prices = {}
         try:
-            # Add throttling delay before major API call
+            # AGGRESSIVE THROTTLING: Much longer delay to prevent rate limiting
             import time
-            time.sleep(0.1)  # 100ms delay to respect rate limits
+            time.sleep(0.5)  # 500ms delay to respect rate limits
             
             # Get all tickers in a single API call
             if exchange.exchange:
@@ -3982,12 +4012,26 @@ def api_available_positions() -> ResponseReturnValue:
                 logger.info(f"Batch fetched {len(batch_prices)} prices in single API call")
         except Exception as batch_error:
             logger.warning(f"Batch price fetch failed: {batch_error}")
-            # Rate limiting error handling
+            # Rate limiting error handling with circuit breaker
             if "busy" in str(batch_error).lower() or "rate" in str(batch_error).lower():
-                logger.error("Rate limiting detected - consider reducing request frequency")
-                time.sleep(1.0)  # Extended delay for rate limiting recovery
+                logger.error("🚨 RATE LIMITING DETECTED - Activating circuit breaker")
+                # Set circuit breaker for 2 minutes
+                cooldown_end_time = current_time + 120  # 2 minutes
+                cache_put_price(rate_limit_key, cooldown_end_time, 120)
+                return jsonify({
+                    'available_positions': [],
+                    'count': 0,
+                    'error': 'Rate limiting detected - circuit breaker activated for 2 minutes',
+                    'success': False,
+                    'cooldown_remaining': 120
+                }), 429
+            time.sleep(2.0)  # Extended delay for other errors
         
         for symbol in major_crypto_assets:
+            # TIMEOUT CHECK: Every 10 symbols
+            if processed_count % 10 == 0:
+                check_timeout()
+            
             processed_count += 1
             try:
                     # Get balance from actual OKX data or default to zero
@@ -4051,13 +4095,23 @@ def api_available_positions() -> ResponseReturnValue:
                     bb_distance_percent = 0.0
                     lower_band_price = 0.0
 
+                    # CIRCUIT BREAKER: Completely skip BB analysis during rate limiting recovery
+                    # Check if we're in active rate limiting state
+                    bb_rate_limit_key = "bb_analysis_rate_limit"
+                    bb_recovery_time = cache_get_price(bb_rate_limit_key)
+                    bb_in_cooldown = bb_recovery_time and current_time < bb_recovery_time
+                    
                     # PERFORMANCE FIX: Severely limit BB analysis to prevent rate limiting
-                    # Only analyze positions we currently hold (non-zero balances)
+                    # Only analyze positions we currently hold (non-zero balances) AND not in cooldown
                     current_holdings_only = ['GALA', 'TRX', 'PEPE', 'ALGO', 'ARB', 'BICO', 'BTC', 'SOL', 'LINK']
                     
-                    # Skip BB analysis for zero/small positions to prevent API overload
-                    skip_bb_analysis = (current_position_value < 50.0 or 
+                    # Skip BB analysis for zero/small positions, API overload prevention, or active cooldown
+                    skip_bb_analysis = (bb_in_cooldown or 
+                                      current_position_value < 50.0 or 
                                       symbol not in current_holdings_only)
+                    
+                    if bb_in_cooldown:
+                        logger.warning(f"🚫 Skipping BB analysis for {symbol} - rate limiting cooldown active")
                     
                     if (current_price > 0 and not skip_bb_analysis):
                         logger.info(f"Calculating BB opportunity analysis for {symbol} at ${current_price}")
@@ -4124,6 +4178,15 @@ def api_available_positions() -> ResponseReturnValue:
 
                         except Exception as bb_error:
                             logger.info(f"Could not calculate Bollinger Bands for {symbol}: {bb_error}")
+                            
+                            # CIRCUIT BREAKER: Check if BB error is due to rate limiting
+                            if "busy" in str(bb_error).lower() or "rate" in str(bb_error).lower():
+                                logger.error(f"🚨 BB RATE LIMITING DETECTED for {symbol} - Activating circuit breaker")
+                                # Set BB circuit breaker for 3 minutes
+                                bb_cooldown_end_time = current_time + 180  # 3 minutes
+                                cache_put_price(bb_rate_limit_key, bb_cooldown_end_time, 180)
+                                # Skip remaining BB analysis for all symbols
+                                break
                             
                             # Alternative buy criteria when BB data insufficient
                             try:
