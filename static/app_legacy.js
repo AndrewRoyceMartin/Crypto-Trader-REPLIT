@@ -3202,8 +3202,9 @@ class TradingApp {
                 const targetMultiplier = position.target_multiplier || 1.04;
                 const targetTotalValue = totalCostBasis * targetMultiplier;
                 const targetPnlDollar = targetTotalValue - totalCostBasis;
-                const targetValue = targetTotalValue.toLocaleString('en-US', {style: 'currency', currency: 'USD', minimumFractionDigits: 8, maximumFractionDigits: 8});
-                const targetProfit = targetPnlDollar.toLocaleString('en-US', {style: 'currency', currency: 'USD', minimumFractionDigits: 8, maximumFractionDigits: 8});
+                const selectedCurrency = window.tradingApp?.selectedCurrency || 'USD';
+                const targetValue = targetTotalValue.toLocaleString('en-US', {style: 'currency', currency: selectedCurrency, minimumFractionDigits: 8, maximumFractionDigits: 8});
+                const targetProfit = targetPnlDollar.toLocaleString('en-US', {style: 'currency', currency: selectedCurrency, minimumFractionDigits: 8, maximumFractionDigits: 8});
                 
                 // Get position status badge based on P&L
                 let positionStatus = '<span class="badge bg-secondary">FLAT</span>';
@@ -5539,7 +5540,7 @@ function updateOpenPositionsTable(positions, totalValue = 0) {
                 }
                 return new Intl.NumberFormat("en-US", { 
                     style: "currency", 
-                    currency: "USD",
+                    currency: window.tradingApp?.selectedCurrency || "USD",
                     minimumFractionDigits: 2,
                     maximumFractionDigits: 8
                 }).format(numValue);
@@ -5564,7 +5565,7 @@ function updateOpenPositionsTable(positions, totalValue = 0) {
                 }
                 return new Intl.NumberFormat("en-US", { 
                     style: "currency", 
-                    currency: "USD",
+                    currency: window.tradingApp?.selectedCurrency || "USD",
                     minimumFractionDigits: 2,
                     maximumFractionDigits: 6
                 }).format(numValue);
@@ -5852,14 +5853,14 @@ function createAvailablePositionRow(position) {
         if (Math.abs(numValue) < 0.000001 && numValue !== 0) {
             return new Intl.NumberFormat("en-US", { 
                 style: "currency", 
-                currency: "USD",
+                currency: window.tradingApp?.selectedCurrency || "USD",
                 minimumFractionDigits: 8,
                 maximumFractionDigits: 12
             }).format(numValue);
         }
         return new Intl.NumberFormat("en-US", { 
             style: "currency", 
-            currency: "USD",
+            currency: window.tradingApp?.selectedCurrency || "USD",
             minimumFractionDigits: 2,
             maximumFractionDigits: 8
         }).format(numValue);
@@ -6178,10 +6179,10 @@ function createHoldingRow(holding) {
         const avgEntryPrice = costBasis / (quantity || 1); // Calculate avg entry from cost basis
         const cells = [
             { content: quantity.toFixed(6), class: '' }, // QTY HELD
-            { content: avgEntryPrice.toLocaleString('en-US', {style: 'currency', currency: 'USD', minimumFractionDigits: 8, maximumFractionDigits: 8}), class: '' }, // ENTRY PRICE (formerly AVG ENTRY)
-            { content: currentPrice.toLocaleString('en-US', {style: 'currency', currency: 'USD', minimumFractionDigits: 8, maximumFractionDigits: 8}), class: '' }, // CURRENT PRICE (formerly LIVE PRICE)
-            { content: currentValue.toLocaleString('en-US', {style: 'currency', currency: 'USD', minimumFractionDigits: 8, maximumFractionDigits: 8}), class: '' }, // POSITION VALUE
-            { content: `${pnlSign}${pnl.toLocaleString('en-US', {style: 'currency', currency: 'USD', minimumFractionDigits: 8, maximumFractionDigits: 8})}`, class: pnlClass }, // UNREALIZED $
+            { content: avgEntryPrice.toLocaleString('en-US', {style: 'currency', currency: window.tradingApp?.selectedCurrency || 'USD', minimumFractionDigits: 8, maximumFractionDigits: 8}), class: '' }, // ENTRY PRICE (formerly AVG ENTRY)
+            { content: currentPrice.toLocaleString('en-US', {style: 'currency', currency: window.tradingApp?.selectedCurrency || 'USD', minimumFractionDigits: 8, maximumFractionDigits: 8}), class: '' }, // CURRENT PRICE (formerly LIVE PRICE)
+            { content: currentValue.toLocaleString('en-US', {style: 'currency', currency: window.tradingApp?.selectedCurrency || 'USD', minimumFractionDigits: 8, maximumFractionDigits: 8}), class: '' }, // POSITION VALUE
+            { content: `${pnlSign}${pnl.toLocaleString('en-US', {style: 'currency', currency: window.tradingApp?.selectedCurrency || 'USD', minimumFractionDigits: 8, maximumFractionDigits: 8})}`, class: pnlClass }, // UNREALIZED $
             { content: `${pnlSign}${pnlPercent.toFixed(2)}%`, class: pnlClass }, // GAIN/LOSS %
             { content: calculateTargetValue(costBasis, holding.target_multiplier), class: 'text-success' }, // TARGET VALUE
             { content: calculateTargetProfit(costBasis, holding.target_multiplier), class: 'text-success' }, // TARGET PROFIT $
@@ -6206,16 +6207,18 @@ function createHoldingRow(holding) {
 }
 
 /** Calculate target value based on dynamic Bollinger Band target or 4% fallback */
-function calculateTargetValue(costBasis, targetMultiplier = 1.04) {
+function calculateTargetValue(costBasis, targetMultiplier = 1.04, currency = null) {
+    const selectedCurrency = currency || window.tradingApp?.selectedCurrency || currentCurrency() || 'USD';
     const target = costBasis * targetMultiplier; // Use dynamic target multiplier
-    return target.toLocaleString('en-US', {style: 'currency', currency: 'USD', minimumFractionDigits: 8, maximumFractionDigits: 8});
+    return target.toLocaleString('en-US', {style: 'currency', currency: selectedCurrency, minimumFractionDigits: 8, maximumFractionDigits: 8});
 }
 
 /** Calculate target profit in dollars based on dynamic Bollinger Band target or 4% fallback */
-function calculateTargetProfit(costBasis, targetMultiplier = 1.04) {
+function calculateTargetProfit(costBasis, targetMultiplier = 1.04, currency = null) {
+    const selectedCurrency = currency || window.tradingApp?.selectedCurrency || currentCurrency() || 'USD';
     const profit = costBasis * (targetMultiplier - 1); // Calculate profit from target multiplier
     console.log('TARGET DEBUG - calculateTargetProfit:', {costBasis, targetMultiplier, profit});
-    return profit.toLocaleString('en-US', {style: 'currency', currency: 'USD', minimumFractionDigits: 8, maximumFractionDigits: 8});
+    return profit.toLocaleString('en-US', {style: 'currency', currency: selectedCurrency, minimumFractionDigits: 8, maximumFractionDigits: 8});
 }
 
 /** Get position status based on trading bot state and holding data */
