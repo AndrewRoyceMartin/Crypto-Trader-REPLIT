@@ -1,0 +1,212 @@
+🔄 DOM loaded, initializing...
+test_sync_data.js?v=1756421235&nocache=true:6363 🔧 Initializing Enhanced Test Runner for continuous error capture...
+test_sync_data.js?v=1756421235&nocache=true:6227 ✅ Normal test runner initialized
+test_sync_data.js?v=1756421235&nocache=true:3370 ✅ Button bound successfully
+test_sync_data.js?v=1756421235&nocache=true:3386 ✅ Test runners initialized - click buttons to run tests manually
+test_sync_data.js?v=1756421235&nocache=true:6357 ✅ Enhanced error logging system activated
+test_sync_data.js?v=1756421235&nocache=true:6369 ✅ Enhanced Test Runner initialized - now capturing errors continuously
+test_sync_data.js?v=1756421235&nocache=true:351 🚀 Enhanced Test Runner: Starting concurrent test execution...
+test_sync_data.js?v=1756421235&nocache=true:550 📊 Progress: 0% (0/17)
+test_sync_data.js?v=1756421235&nocache=true:484 🎯 Progress tracking initialized: 17 total tests
+test_sync_data.js?v=1756421235&nocache=true:737 📡 Initializing real-time monitoring system...
+test_sync_data.js?v=1756421235&nocache=true:1733 🔌 WebSocket monitoring initialization (placeholder)
+test_sync_data.js?v=1756421235&nocache=true:702 📊 Executing critical category (3 tests)...
+test_sync_data.js?v=1756421235&nocache=true:611 🔄 Test started: holdings_sync_enhanced
+test_sync_data.js?v=1756421235&nocache=true:612 📊 Test details: Validating portfolio synchronization with OKX exchange
+test_sync_data.js?v=1756421235&nocache=true:613 🎯 Expected endpoint: /api/crypto-portfolio
+test_sync_data.js?v=1756421235&nocache=true:550 📊 Progress: 0% (0/17)
+test_sync_data.js?v=1756421235&nocache=true:903 🔬 Executing enhanced test: holdings_sync_enhanced
+test_sync_data.js?v=1756421235&nocache=true:1264 💼 Enhanced holdings sync test starting...
+test_sync_data.js?v=1756421235&nocache=true:611 🔄 Test started: price_freshness_realtime
+test_sync_data.js?v=1756421235&nocache=true:612 📊 Test details: Checking real-time price updates and data freshness
+test_sync_data.js?v=1756421235&nocache=true:613 🎯 Expected endpoint: /api/current-holdings
+test_sync_data.js?v=1756421235&nocache=true:550 📊 Progress: 0% (0/17)
+test_sync_data.js?v=1756421235&nocache=true:903 🔬 Executing enhanced test: price_freshness_realtime
+test_sync_data.js?v=1756421235&nocache=true:1409 💰 Real-time price freshness test starting...
+test_sync_data.js?v=1756421235&nocache=true:611 🔄 Test started: recalculation_workflow_advanced
+test_sync_data.js?v=1756421235&nocache=true:612 📊 Test details: Testing data refresh and recalculation workflows
+test_sync_data.js?v=1756421235&nocache=true:613 🎯 Expected endpoint: /api/available-positions
+test_sync_data.js?v=1756421235&nocache=true:550 📊 Progress: 0% (0/17)
+test_sync_data.js?v=1756421235&nocache=true:903 🔬 Executing enhanced test: recalculation_workflow_advanced
+test_sync_data.js?v=1756421235&nocache=true:999 🔄 Enhanced recalculation workflow test starting...
+test_sync_data.js?v=1756421235&nocache=true:702 📊 Executing performance category (3 tests)...
+test_sync_data.js?v=1756421235&nocache=true:611 🔄 Test started: api_response_timing
+test_sync_data.js?v=1756421235&nocache=true:612 📊 Test details: Measuring API response times and performance
+test_sync_data.js?v=1756421235&nocache=true:613 🎯 Expected endpoint: Multiple endpoints
+test_sync_data.js?v=1756421235&nocache=true:550 📊 Progress: 0% (0/17)
+test_sync_data.js?v=1756421235&nocache=true:903 🔬 Executing enhanced test: api_response_timing
+test_sync_data.js?v=1756421235&nocache=true:1460 ⚡ API response timing test starting...
+test_sync_data.js?v=1756421235&nocache=true:611 🔄 Test started: basic_api_connectivity
+test_sync_data.js?v=1756421235&nocache=true:612 📊 Test details: Testing basic connection to OKX exchange
+test_sync_data.js?v=1756421235&nocache=true:613 🎯 Expected endpoint: /api/okx-status
+test_sync_data.js?v=1756421235&nocache=true:550 📊 Progress: 0% (0/17)
+test_sync_data.js?v=1756421235&nocache=true:903 🔬 Executing enhanced test: basic_api_connectivity
+test_sync_data.js?v=1756421235&nocache=true:611 🔄 Test started: basic_portfolio_data
+test_sync_data.js?v=1756421235&nocache=true:612 📊 Test details: Fetching and validating portfolio account information
+test_sync_data.js?v=1756421235&nocache=true:613 🎯 Expected endpoint: /api/crypto-portfolio
+test_sync_data.js?v=1756421235&nocache=true:550 📊 Progress: 0% (0/17)
+test_sync_data.js?v=1756421235&nocache=true:903 🔬 Executing enhanced test: basic_portfolio_data
+test_sync_data.js?v=1756421235&nocache=true:702 📊 Executing ui_interaction category (3 tests)...
+test_sync_data.js?v=1756421235&nocache=true:611 🔄 Test started: button_workflow_comprehensive
+test_sync_data.js?v=1756421235&nocache=true:612 📊 Test details: Running test validation
+test_sync_data.js?v=1756421235&nocache=true:613 🎯 Expected endpoint: API endpoint
+test_sync_data.js?v=1756421235&nocache=true:550 📊 Progress: 0% (0/17)
+test_sync_data.js?v=1756421235&nocache=true:903 🔬 Executing enhanced test: button_workflow_comprehensive
+test_sync_data.js?v=1756421235&nocache=true:1552 🔘 Comprehensive button workflow test starting...
+test_sync_data.js?v=1756421235&nocache=true:611 🔄 Test started: basic_button_functions
+test_sync_data.js?v=1756421235&nocache=true:612 📊 Test details: Running test validation
+test_sync_data.js?v=1756421235&nocache=true:613 🎯 Expected endpoint: API endpoint
+test_sync_data.js?v=1756421235&nocache=true:550 📊 Progress: 0% (0/17)
+test_sync_data.js?v=1756421235&nocache=true:903 🔬 Executing enhanced test: basic_button_functions
+test_sync_data.js?v=1756421235&nocache=true:611 🔄 Test started: basic_price_updates
+test_sync_data.js?v=1756421235&nocache=true:612 📊 Test details: Running test validation
+test_sync_data.js?v=1756421235&nocache=true:613 🎯 Expected endpoint: API endpoint
+test_sync_data.js?v=1756421235&nocache=true:550 📊 Progress: 0% (0/17)
+test_sync_data.js?v=1756421235&nocache=true:903 🔬 Executing enhanced test: basic_price_updates
+test_sync_data.js?v=1756421235&nocache=true:702 📊 Executing trading_buttons category (1 tests)...
+test_sync_data.js?v=1756421235&nocache=true:611 🔄 Test started: testTraderStrategySync
+test_sync_data.js?v=1756421235&nocache=true:612 📊 Test details: Running test validation
+test_sync_data.js?v=1756421235&nocache=true:613 🎯 Expected endpoint: API endpoint
+test_sync_data.js?v=1756421235&nocache=true:550 📊 Progress: 0% (0/17)
+test_sync_data.js?v=1756421235&nocache=true:903 🔬 Executing enhanced test: testTraderStrategySync
+test_sync_data.js?v=1756421235&nocache=true:1351 🤖 Trader strategy sync test starting...
+test_sync_data.js?v=1756421235&nocache=true:702 📊 Executing strategy_validation category (2 tests)...
+test_sync_data.js?v=1756421235&nocache=true:611 🔄 Test started: bollinger_strategy_priority
+test_sync_data.js?v=1756421235&nocache=true:612 📊 Test details: Testing Bollinger Bands strategy calculations
+test_sync_data.js?v=1756421235&nocache=true:613 🎯 Expected endpoint: /api/available-positions
+test_sync_data.js?v=1756421235&nocache=true:550 📊 Progress: 0% (0/17)
+test_sync_data.js?v=1756421235&nocache=true:903 🔬 Executing enhanced test: bollinger_strategy_priority
+test_sync_data.js?v=1756421235&nocache=true:5411 🎯 Testing Enhanced Bollinger Bands strategy prioritization logic...
+test_sync_data.js?v=1756421235&nocache=true:611 🔄 Test started: available_positions_data_integrity
+test_sync_data.js?v=1756421235&nocache=true:612 📊 Test details: Validating trading opportunity data accuracy
+test_sync_data.js?v=1756421235&nocache=true:613 🎯 Expected endpoint: /api/available-positions
+test_sync_data.js?v=1756421235&nocache=true:550 📊 Progress: 0% (0/17)
+test_sync_data.js?v=1756421235&nocache=true:903 🔬 Executing enhanced test: available_positions_data_integrity
+test_sync_data.js?v=1756421235&nocache=true:5627 📊 Testing Available Positions data integrity (optimized)...
+test_sync_data.js?v=1756421235&nocache=true:702 📊 Executing data_integrity category (3 tests)...
+test_sync_data.js?v=1756421235&nocache=true:611 🔄 Test started: holdings_sync_enhanced
+test_sync_data.js?v=1756421235&nocache=true:612 📊 Test details: Validating portfolio synchronization with OKX exchange
+test_sync_data.js?v=1756421235&nocache=true:613 🎯 Expected endpoint: /api/crypto-portfolio
+test_sync_data.js?v=1756421235&nocache=true:550 📊 Progress: 0% (0/17)
+test_sync_data.js?v=1756421235&nocache=true:903 🔬 Executing enhanced test: holdings_sync_enhanced
+test_sync_data.js?v=1756421235&nocache=true:1264 💼 Enhanced holdings sync test starting...
+test_sync_data.js?v=1756421235&nocache=true:611 🔄 Test started: price_freshness_realtime
+test_sync_data.js?v=1756421235&nocache=true:612 📊 Test details: Checking real-time price updates and data freshness
+test_sync_data.js?v=1756421235&nocache=true:613 🎯 Expected endpoint: /api/current-holdings
+test_sync_data.js?v=1756421235&nocache=true:550 📊 Progress: 0% (0/17)
+test_sync_data.js?v=1756421235&nocache=true:903 🔬 Executing enhanced test: price_freshness_realtime
+test_sync_data.js?v=1756421235&nocache=true:1409 💰 Real-time price freshness test starting...
+test_sync_data.js?v=1756421235&nocache=true:611 🔄 Test started: api_response_timing
+test_sync_data.js?v=1756421235&nocache=true:612 📊 Test details: Measuring API response times and performance
+test_sync_data.js?v=1756421235&nocache=true:613 🎯 Expected endpoint: Multiple endpoints
+test_sync_data.js?v=1756421235&nocache=true:550 📊 Progress: 0% (0/17)
+test_sync_data.js?v=1756421235&nocache=true:903 🔬 Executing enhanced test: api_response_timing
+test_sync_data.js?v=1756421235&nocache=true:1460 ⚡ API response timing test starting...
+test_sync_data.js?v=1756421235&nocache=true:702 📊 Executing workflow_tests category (2 tests)...
+test_sync_data.js?v=1756421235&nocache=true:611 🔄 Test started: recalculation_workflow_advanced
+test_sync_data.js?v=1756421235&nocache=true:612 📊 Test details: Testing data refresh and recalculation workflows
+test_sync_data.js?v=1756421235&nocache=true:613 🎯 Expected endpoint: /api/available-positions
+test_sync_data.js?v=1756421235&nocache=true:550 📊 Progress: 0% (0/17)
+test_sync_data.js?v=1756421235&nocache=true:903 🔬 Executing enhanced test: recalculation_workflow_advanced
+test_sync_data.js?v=1756421235&nocache=true:999 🔄 Enhanced recalculation workflow test starting...
+test_sync_data.js?v=1756421235&nocache=true:611 🔄 Test started: button_workflow_comprehensive
+test_sync_data.js?v=1756421235&nocache=true:612 📊 Test details: Running test validation
+test_sync_data.js?v=1756421235&nocache=true:613 🎯 Expected endpoint: API endpoint
+test_sync_data.js?v=1756421235&nocache=true:550 📊 Progress: 0% (0/17)
+test_sync_data.js?v=1756421235&nocache=true:903 🔬 Executing enhanced test: button_workflow_comprehensive
+test_sync_data.js?v=1756421235&nocache=true:1552 🔘 Comprehensive button workflow test starting...
+test_sync_data.js?v=1756421235&nocache=true:690 ✅ Test completed: button_workflow_comprehensive
+test_sync_data.js?v=1756421235&nocache=true:691 📋 Category: General | Endpoint: API endpoint
+test_sync_data.js?v=1756421235&nocache=true:550 📊 Progress: 6% (1/17)
+test_sync_data.js?v=1756421235&nocache=true:690 ✅ Test completed: basic_button_functions
+test_sync_data.js?v=1756421235&nocache=true:691 📋 Category: General | Endpoint: API endpoint
+test_sync_data.js?v=1756421235&nocache=true:550 📊 Progress: 12% (2/17)
+test_sync_data.js?v=1756421235&nocache=true:690 ✅ Test completed: button_workflow_comprehensive
+test_sync_data.js?v=1756421235&nocache=true:691 📋 Category: General | Endpoint: API endpoint
+test_sync_data.js?v=1756421235&nocache=true:550 📊 Progress: 18% (3/17)
+test_sync_data.js?v=1756421235&nocache=true:1494 ✅ /api/crypto-portfolio: 1203ms (200)
+test_sync_data.js?v=1756421235&nocache=true:690 ✅ Test completed: basic_portfolio_data
+test_sync_data.js?v=1756421235&nocache=true:691 📋 Category: Portfolio | Endpoint: /api/crypto-portfolio
+test_sync_data.js?v=1756421235&nocache=true:550 📊 Progress: 24% (4/17)
+test_sync_data.js?v=1756421235&nocache=true:1494 ✅ /api/okx-status: 3031ms (200)
+test_sync_data.js?v=1756421235&nocache=true:690 ✅ Test completed: basic_api_connectivity
+test_sync_data.js?v=1756421235&nocache=true:691 📋 Category: Connectivity | Endpoint: /api/okx-status
+test_sync_data.js?v=1756421235&nocache=true:550 📊 Progress: 29% (5/17)
+test_sync_data.js?v=1756421235&nocache=true:690 ✅ Test completed: basic_price_updates
+test_sync_data.js?v=1756421235&nocache=true:691 📋 Category: General | Endpoint: API endpoint
+test_sync_data.js?v=1756421235&nocache=true:550 📊 Progress: 35% (6/17)
+test_sync_data.js?v=1756421235&nocache=true:725 ✅ ui_interaction category completed in 4315.70ms
+test_sync_data.js?v=1756421235&nocache=true:1494 ✅ /api/available-positions: 4867ms (200)
+test_sync_data.js?v=1756421235&nocache=true:1506 ⚠️ /api/current-holdings: Timeout (6005ms)
+test_sync_data.js?v=1756421235&nocache=true:690 ✅ Test completed: api_response_timing
+test_sync_data.js?v=1756421235&nocache=true:691 📋 Category: Performance | Endpoint: Multiple endpoints
+test_sync_data.js?v=1756421235&nocache=true:550 📊 Progress: 41% (7/17)
+test_sync_data.js?v=1756421235&nocache=true:725 ✅ performance category completed in 6006.20ms
+test_sync_data.js?v=1756421235&nocache=true:1506 ⚠️ /api/current-holdings: Timeout (6003ms)
+test_sync_data.js?v=1756421235&nocache=true:1506 ⚠️ /api/available-positions: Timeout (6003ms)
+test_sync_data.js?v=1756421235&nocache=true:1506 ⚠️ /api/crypto-portfolio: Timeout (6003ms)
+test_sync_data.js?v=1756421235&nocache=true:1506 ⚠️ /api/okx-status: Timeout (6003ms)
+test_sync_data.js?v=1756421235&nocache=true:690 ✅ Test completed: api_response_timing
+test_sync_data.js?v=1756421235&nocache=true:691 📋 Category: Performance | Endpoint: Multiple endpoints
+test_sync_data.js?v=1756421235&nocache=true:550 📊 Progress: 47% (8/17)
+test_sync_data.js?v=1756421235&nocache=true:19  POST https://47c9c798-b0c1-4791-9090-157d07a27bb9-00-3ij4m9iy3b22d.worf.replit.dev/api/recalculate-positions 401 (Unauthorized)
+makeApiCall @ test_sync_data.js?v=1756421235&nocache=true:19
+testRecalculationWorkflowAdvanced @ test_sync_data.js?v=1756421235&nocache=true:1076
+await in testRecalculationWorkflowAdvanced
+executeEnhancedTest @ test_sync_data.js?v=1756421235&nocache=true:908
+(anonymous) @ test_sync_data.js?v=1756421235&nocache=true:705
+executeCategoryTests @ test_sync_data.js?v=1756421235&nocache=true:705
+executeConcurrentTests @ test_sync_data.js?v=1756421235&nocache=true:444
+runAllTests @ test_sync_data.js?v=1756421235&nocache=true:377
+runSyncTests @ test_sync_data.js?v=1756421235&nocache=true:2911
+(anonymous) @ test_sync_data.js?v=1756421235&nocache=true:3366Understand this error
+test_sync_data.js?v=1756421235&nocache=true:1099 ✅ API Security: Endpoint properly protected (401)
+test_sync_data.js?v=1756421235&nocache=true:19  POST https://47c9c798-b0c1-4791-9090-157d07a27bb9-00-3ij4m9iy3b22d.worf.replit.dev/api/recalculate-positions 401 (Unauthorized)
+makeApiCall @ test_sync_data.js?v=1756421235&nocache=true:19
+testRecalculationWorkflowAdvanced @ test_sync_data.js?v=1756421235&nocache=true:1076
+await in testRecalculationWorkflowAdvanced
+executeEnhancedTest @ test_sync_data.js?v=1756421235&nocache=true:908
+(anonymous) @ test_sync_data.js?v=1756421235&nocache=true:705
+executeCategoryTests @ test_sync_data.js?v=1756421235&nocache=true:705
+executeConcurrentTests @ test_sync_data.js?v=1756421235&nocache=true:444
+runAllTests @ test_sync_data.js?v=1756421235&nocache=true:377
+runSyncTests @ test_sync_data.js?v=1756421235&nocache=true:2911
+(anonymous) @ test_sync_data.js?v=1756421235&nocache=true:3366Understand this error
+test_sync_data.js?v=1756421235&nocache=true:1099 ✅ API Security: Endpoint properly protected (401)
+test_sync_data.js?v=1756421235&nocache=true:690 ✅ Test completed: testTraderStrategySync
+test_sync_data.js?v=1756421235&nocache=true:691 📋 Category: General | Endpoint: API endpoint
+test_sync_data.js?v=1756421235&nocache=true:550 📊 Progress: 53% (9/17)
+test_sync_data.js?v=1756421235&nocache=true:725 ✅ trading_buttons category completed in 6826.00ms
+test_sync_data.js?v=1756421235&nocache=true:1332 ⚠️ Holdings sync test error: Timeout
+test_sync_data.js?v=1756421235&nocache=true:690 ✅ Test completed: holdings_sync_enhanced
+test_sync_data.js?v=1756421235&nocache=true:691 📋 Category: Data Integrity | Endpoint: /api/crypto-portfolio
+test_sync_data.js?v=1756421235&nocache=true:550 📊 Progress: 59% (10/17)
+test_sync_data.js?v=1756421235&nocache=true:1332 ⚠️ Holdings sync test error: Timeout
+test_sync_data.js?v=1756421235&nocache=true:690 ✅ Test completed: holdings_sync_enhanced
+test_sync_data.js?v=1756421235&nocache=true:691 📋 Category: Data Integrity | Endpoint: /api/crypto-portfolio
+test_sync_data.js?v=1756421235&nocache=true:550 📊 Progress: 65% (11/17)
+2test_sync_data.js?v=1756421235&nocache=true:1726 📊 Health check: 3/3 endpoints healthy (100%)
+test_sync_data.js?v=1756421235&nocache=true:690 ✅ Test completed: price_freshness_realtime
+test_sync_data.js?v=1756421235&nocache=true:691 📋 Category: Price Data | Endpoint: /api/current-holdings
+test_sync_data.js?v=1756421235&nocache=true:550 📊 Progress: 71% (12/17)
+test_sync_data.js?v=1756421235&nocache=true:1163 ✅ Currency validation: 9 major cryptos found
+test_sync_data.js?v=1756421235&nocache=true:1174 ⚠️ Currency validation skipped due to error - defaulting to pass
+test_sync_data.js?v=1756421235&nocache=true:1194 ✅ Cache validation: APIs responding correctly
+test_sync_data.js?v=1756421235&nocache=true:1202 ⚠️ Cache validation skipped due to timeout - defaulting to pass
+test_sync_data.js?v=1756421235&nocache=true:1726 📊 Health check: 3/3 endpoints healthy (100%)
+test_sync_data.js?v=1756421235&nocache=true:690 ✅ Test completed: recalculation_workflow_advanced
+test_sync_data.js?v=1756421235&nocache=true:691 📋 Category: Workflow | Endpoint: /api/available-positions
+test_sync_data.js?v=1756421235&nocache=true:550 📊 Progress: 76% (13/17)
+test_sync_data.js?v=1756421235&nocache=true:725 ✅ critical category completed in 18098.10ms
+test_sync_data.js?v=1756421235&nocache=true:690 ✅ Test completed: price_freshness_realtime
+test_sync_data.js?v=1756421235&nocache=true:691 📋 Category: Price Data | Endpoint: /api/current-holdings
+test_sync_data.js?v=1756421235&nocache=true:550 📊 Progress: 82% (14/17)
+test_sync_data.js?v=1756421235&nocache=true:725 ✅ data_integrity category completed in 18613.40ms
+test_sync_data.js?v=1756421235&nocache=true:690 ✅ Test completed: available_positions_data_integrity
+test_sync_data.js?v=1756421235&nocache=true:691 📋 Category: Trading Data | Endpoint: /api/available-positions
+test_sync_data.js?v=1756421235&nocache=true:550 📊 Progress: 88% (15/17)
+test_sync_data.js?v=1756421235&nocache=true:690 ✅ Test completed: recalculation_workflow_advanced
+test_sync_data.js?v=1756421235&nocache=true:691 📋 Category: Workflow | Endpoint: /api/available-positions
+test_sync_data.js?v=1756421235&nocache=true:550 📊 Progress: 94% (16/17)
+test_sync_data.js?v=1756421235&nocache=true:725 ✅ workflow_tests category completed in 18949.40ms
+2test_sync_data.js?v=1756421235&nocache=true:1726 📊 Health check: 3/3 endpoints healthy (100%)
