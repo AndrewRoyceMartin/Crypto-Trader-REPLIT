@@ -2919,7 +2919,12 @@ class TradingApp {
                     console.log(`⏱️ Available positions countdown: ${left}s until next refresh`);
                 }
                 
-                if (left === 0) this.availableCountdownEnd = null;
+                // When countdown expires, load available positions data
+                if (left === 0) {
+                    this.availableCountdownEnd = null;
+                    console.log(`📊 Available positions countdown expired - loading data`);
+                    this.updateAvailablePositions();
+                }
             }
         }
         
