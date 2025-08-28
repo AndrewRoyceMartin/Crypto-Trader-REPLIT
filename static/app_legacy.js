@@ -5791,10 +5791,22 @@ function createAvailablePositionRow(position) {
     };
     
     const getRiskLevelClass = (level) => {
-        if (level === "LOW") return "text-success";
-        if (level === "MODERATE") return "text-warning";
-        if (level === "HIGH") return "text-danger";
-        return "text-danger fw-bold";
+        // Map all possible risk levels to appropriate colors
+        switch(level) {
+            case "LOW":
+            case "EXCELLENT":
+                return "text-success fw-bold";  // Green for low risk
+            case "FAIR":
+            case "GOOD":
+            case "MODERATE":
+                return "text-warning";  // Orange for moderate risk  
+            case "WEAK":
+            case "HIGH":
+            case "POOR":
+                return "text-danger";  // Red for high risk
+            default:
+                return "text-muted";  // Gray for unknown
+        }
     };
     
     // Format functions
