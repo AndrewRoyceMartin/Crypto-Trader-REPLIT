@@ -7939,10 +7939,14 @@ window.SyncTest = {
         
         try {
             // Update UI to show loading
-            button.disabled = true;
-            button.innerHTML = '<span class="icon icon-refresh spinner-border spinner-border-sm me-1"></span>Testing...';
-            statusBadge.className = 'badge bg-warning';
-            statusBadge.innerHTML = '<span class="icon icon-circle me-1"></span>Testing';
+            if (button) {
+                button.disabled = true;
+                button.innerHTML = '<span class="icon icon-refresh spinner-border spinner-border-sm me-1"></span>Testing...';
+            }
+            if (statusBadge) {
+                statusBadge.className = 'badge bg-warning';
+                statusBadge.innerHTML = '<span class="icon icon-circle me-1"></span>Testing';
+            }
             
             // Call sync test API
             const response = await Utils.fetchJSON('/api/sync-test');
@@ -7952,11 +7956,17 @@ window.SyncTest = {
             }
             
             // Update timestamp
-            lastCheck.textContent = new Date().toLocaleTimeString();
+            if (lastCheck) {
+                lastCheck.textContent = new Date().toLocaleTimeString();
+            }
             
             // Hide placeholder and show details
-            placeholder.style.display = 'none';
-            details.style.display = 'block';
+            if (placeholder) {
+                placeholder.style.display = 'none';
+            }
+            if (details) {
+                details.style.display = 'block';
+            }
             
             // Update metrics
             document.getElementById('sync-total-pairs').textContent = response.total_pairs_tested || 0;
@@ -7969,12 +7979,14 @@ window.SyncTest = {
             document.getElementById('sync-discrepancies').textContent = discrepancies.length;
             
             // Update status badge
-            if (discrepancies.length === 0) {
-                statusBadge.className = 'badge bg-success';
-                statusBadge.innerHTML = '<span class="icon icon-check me-1"></span>Synchronized';
-            } else {
-                statusBadge.className = 'badge bg-danger';
-                statusBadge.innerHTML = '<span class="icon icon-warning me-1"></span>Out of Sync';
+            if (statusBadge) {
+                if (discrepancies.length === 0) {
+                    statusBadge.className = 'badge bg-success';
+                    statusBadge.innerHTML = '<span class="icon icon-check me-1"></span>Synchronized';
+                } else {
+                    statusBadge.className = 'badge bg-danger';
+                    statusBadge.innerHTML = '<span class="icon icon-warning me-1"></span>Out of Sync';
+                }
             }
             
             // Update discrepancies table
@@ -7982,21 +7994,29 @@ window.SyncTest = {
             
         } catch (error) {
             console.error('Sync test failed:', error);
-            statusBadge.className = 'badge bg-danger';
-            statusBadge.innerHTML = '<span class="icon icon-times me-1"></span>Error';
+            if (statusBadge) {
+                statusBadge.className = 'badge bg-danger';
+                statusBadge.innerHTML = '<span class="icon icon-times me-1"></span>Error';
+            }
             
             // Show error message
-            placeholder.innerHTML = `
-                <span class="icon icon-warning me-2 text-danger"></span>
-                Sync test failed: ${error.message}
-            `;
-            placeholder.style.display = 'block';
-            details.style.display = 'none';
+            if (placeholder) {
+                placeholder.innerHTML = `
+                    <span class="icon icon-warning me-2 text-danger"></span>
+                    Sync test failed: ${error.message}
+                `;
+                placeholder.style.display = 'block';
+            }
+            if (details) {
+                details.style.display = 'none';
+            }
             
         } finally {
             // Reset button
-            button.disabled = false;
-            button.innerHTML = '<span class="icon icon-refresh me-1"></span>Test Sync';
+            if (button) {
+                button.disabled = false;
+                button.innerHTML = '<span class="icon icon-refresh me-1"></span>Test Sync';
+            }
         }
     },
     
