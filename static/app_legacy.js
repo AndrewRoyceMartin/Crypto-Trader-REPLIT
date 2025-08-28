@@ -391,8 +391,13 @@ class TradingApp {
             return numericAmount.toFixed(2);
         }
     }
-    // Get crypto coin icon and name
-    getCoinDisplay(symbol) {
+    // Get crypto coin icon and name - now uses dynamic metadata cache  
+    async getCoinDisplay(symbol) {
+        return await CoinMetadataCache.getCoinMetadata(symbol);
+    }
+    
+    // Synchronous fallback for backwards compatibility
+    getCoinDisplaySync(symbol) {
         const coinInfo = {
             'BTC': { icon: 'https://assets.coingecko.com/coins/images/1/standard/bitcoin.png', name: 'Bitcoin', color: '#f7931a', type: 'image' },
             'ETH': { icon: 'https://assets.coingecko.com/coins/images/279/standard/ethereum.png', name: 'Ethereum', color: '#627eea', type: 'image' },
@@ -1785,7 +1790,7 @@ class TradingApp {
                 const pnlSign = holding.pnl_percent >= 0 ? '+' : '';
                 
                 // Get coin display info
-                const coinDisplay = this.getCoinDisplay(holding.symbol);
+                const coinDisplay = this.getCoinDisplaySync(holding.symbol); // Use sync version for immediate display
                 
                 // Create symbol cell with safe DOM methods
                 const symbolCell = document.createElement('td');
@@ -5592,7 +5597,12 @@ function updateOpenPositionsTable(positions, totalValue = 0) {
             const displayTargetValue = targetTotalValue;
             
             // Get coin display info (use same as Available Positions for consistency)
-            const getCoinDisplay = (symbol) => {
+            const getCoinDisplay = async (symbol) => {
+                return await CoinMetadataCache.getCoinMetadata(symbol);
+            };
+            
+            // Synchronous fallback for immediate use
+            const getCoinDisplaySync = (symbol) => {
                 const coinInfo = {
                     'BTC': { icon: 'https://assets.coingecko.com/coins/images/1/standard/bitcoin.png', name: 'Bitcoin', color: '#f7931a', type: 'image' },
                     'ETH': { icon: 'https://assets.coingecko.com/coins/images/279/standard/ethereum.png', name: 'Ethereum', color: '#627eea', type: 'image' },
@@ -5617,7 +5627,7 @@ function updateOpenPositionsTable(positions, totalValue = 0) {
                 return coinInfo[symbol] || { icon: 'fa-solid fa-coins', name: symbol, color: '#6c757d', type: 'font' };
             };
             
-            const coinDisplay = getCoinDisplay(symbol);
+            const coinDisplay = getCoinDisplaySync(symbol); // Use sync version for immediate display
             
             // Create row using safe DOM methods
             const row = document.createElement('tr');
@@ -5887,7 +5897,12 @@ function createAvailablePositionRow(position) {
     };
     
     // Get coin display info safely
-    const getCoinDisplay = (symbol) => {
+    const getCoinDisplay = async (symbol) => {
+        return await CoinMetadataCache.getCoinMetadata(symbol);
+    };
+    
+    // Synchronous fallback
+    const getCoinDisplaySync = (symbol) => {
         const coinInfo = {
             'BTC': { icon: 'https://assets.coingecko.com/coins/images/1/standard/bitcoin.png', name: 'Bitcoin', color: '#f7931a', type: 'image' },
             'ETH': { icon: 'https://assets.coingecko.com/coins/images/279/standard/ethereum.png', name: 'Ethereum', color: '#627eea', type: 'image' },
@@ -5911,7 +5926,7 @@ function createAvailablePositionRow(position) {
         return coinInfo[symbol] || { icon: 'fa-solid fa-coins', name: symbol, color: '#6c757d', type: 'font' };
     };
     
-    const coinDisplay = getCoinDisplay(symbol);
+    const coinDisplay = getCoinDisplaySync(symbol); // Use sync version for immediate display
     
     // Create row using safe DOM methods
     const row = document.createElement('tr');

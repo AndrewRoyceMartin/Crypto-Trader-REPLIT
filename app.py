@@ -847,6 +847,57 @@ def api_status() -> ResponseReturnValue:
     return _no_cache_json(payload)
 
 
+@app.route("/api/coin-metadata/<symbol>")
+def coin_metadata(symbol: str) -> ResponseReturnValue:
+    """Get coin metadata from OKX exchange data for dynamic coin display."""
+    try:
+        symbol = symbol.upper().strip()
+        if not symbol:
+            return jsonify({"error": "Symbol is required"}), 400
+            
+        # Try to get metadata from OKX native client
+        client = get_okx_native_client()
+        
+        # Try to fetch ticker to validate symbol exists
+        try:
+            okx_symbol = f"{symbol}-USDT"
+            ticker_data = client.ticker(okx_symbol)
+            
+            if ticker_data:
+                # Generate consistent color from symbol hash
+                hash_val = 0
+                for char in symbol:
+                    hash_val = ord(char) + ((hash_val << 5) - hash_val)
+                hue = abs(hash_val) % 360
+                
+                return jsonify({
+                    "icon": f"https://www.okx.com/cdn/oksupport/asset/currency/icon/{symbol.lower()}.png",
+                    "name": symbol,  # Could be enhanced with full names from OKX API
+                    "color": f"hsl({hue}, 60%, 50%)",
+                    "type": "image",
+                    "source": "okx"
+                })
+        except Exception as okx_error:
+            logger.debug(f"OKX metadata failed for {symbol}: {okx_error}")
+        
+        # Fallback response
+        hash_val = 0
+        for char in symbol:
+            hash_val = ord(char) + ((hash_val << 5) - hash_val)
+        hue = abs(hash_val) % 360
+        
+        return jsonify({
+            "icon": "fa-solid fa-coins",
+            "name": symbol,
+            "color": f"hsl({hue}, 60%, 50%)",
+            "type": "font",
+            "source": "fallback"
+        })
+        
+    except Exception as e:
+        logger.error(f"Coin metadata error for {symbol}: {e}")
+        return jsonify({"error": "Failed to fetch coin metadata"}), 500
+
 @app.route("/api/crypto-portfolio")
 def crypto_portfolio_okx() -> ResponseReturnValue:
     """Get real OKX portfolio data using PortfolioService, forcing a re-pull on currency change."""
