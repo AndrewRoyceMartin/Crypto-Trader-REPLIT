@@ -5696,6 +5696,7 @@ function updateOpenPositionsTable(positions, totalValue = 0) {
 
 // Fetch and update available positions table
 async function fetchAndUpdateAvailablePositions() {
+    const startTime = Date.now();
     try {
         const response = await fetch('/api/available-positions', { 
             cache: 'no-cache',
