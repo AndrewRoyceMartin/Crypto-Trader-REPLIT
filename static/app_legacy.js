@@ -3207,13 +3207,13 @@ class TradingApp {
                 const change24h = pp > 0 ? `+${pp.toFixed(1)}%` : `${pp.toFixed(1)}%`;
                 // Calculate dynamic stop loss and take profit based on Enhanced Bollinger Bands strategy
                 const stopLoss = this.formatCryptoPrice(purchasePrice * 0.98);  // 2% stop loss (Enhanced Bollinger Bands)
-                const takeProfit = this.formatCryptoPrice(purchasePrice * targetMultiplier);  // Dynamic take profit from Bollinger Bands
+                const takeProfit = this.formatCryptoPrice(purchasePrice * getTargetMultiplier(crypto));  // Dynamic take profit from Bollinger Bands
                 const daysHeld = position.days_held || '—';
 
-                // Calculate target values using dynamic Bollinger Band multiplier or fallback
-                const targetMultiplier = getTargetMultiplier(position);
-                const targetTotalValue = totalCostBasis * targetMultiplier;
-                const targetPnlDollar = targetTotalValue - totalCostBasis;
+                // Calculate target values using dynamic functions  
+                const totalCostBasis = parseFloat(crypto.cost_basis || 0);
+                const targetTotalValue = calcTargetValue(totalCostBasis, crypto);
+                const targetPnlDollar = calcTargetDollar(totalCostBasis, crypto);
                 const selectedCurrency = window.tradingApp?.selectedCurrency || 'USD';
                 const targetValue = targetTotalValue.toLocaleString('en-US', {style: 'currency', currency: selectedCurrency, minimumFractionDigits: 8, maximumFractionDigits: 8});
                 const targetProfit = targetPnlDollar.toLocaleString('en-US', {style: 'currency', currency: selectedCurrency, minimumFractionDigits: 8, maximumFractionDigits: 8});
@@ -6137,7 +6137,6 @@ function createAvailablePositionRow(position) {
         }
         
         return { status: "MONITORING", class: "text-secondary", tooltip: "Monitoring market conditions - no active buy triggers" };
-    }; // End of legacy function
     };
     
     const botCriteria = getBotBuyCriteriaStatus();
