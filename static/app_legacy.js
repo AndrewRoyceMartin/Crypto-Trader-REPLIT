@@ -7969,14 +7969,28 @@ window.SyncTest = {
             }
             
             // Update metrics
-            document.getElementById('sync-total-pairs').textContent = response.total_pairs_tested || 0;
+            const totalPairsEl = document.getElementById('sync-total-pairs');
+            if (totalPairsEl) {
+                totalPairsEl.textContent = response.total_pairs_tested || 0;
+            }
             
             const discrepancies = response.discrepancies || [];
             const synchronizedCount = (response.total_pairs_tested || 0) - discrepancies.length;
             
-            document.getElementById('sync-synchronized').textContent = synchronizedCount;
-            document.getElementById('sync-out-of-sync').textContent = discrepancies.length;
-            document.getElementById('sync-discrepancies').textContent = discrepancies.length;
+            const syncedEl = document.getElementById('sync-synchronized');
+            if (syncedEl) {
+                syncedEl.textContent = synchronizedCount;
+            }
+            
+            const outOfSyncEl = document.getElementById('sync-out-of-sync');
+            if (outOfSyncEl) {
+                outOfSyncEl.textContent = discrepancies.length;
+            }
+            
+            const discrepanciesEl = document.getElementById('sync-discrepancies');
+            if (discrepanciesEl) {
+                discrepanciesEl.textContent = discrepancies.length;
+            }
             
             // Update status badge
             if (statusBadge) {
