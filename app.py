@@ -3586,10 +3586,23 @@ def api_available_positions() -> ResponseReturnValue:
 
         available_positions = []
 
-        # ULTRA-FAST: Reduce to top 12 cryptocurrencies for maximum speed
+        # COMPREHENSIVE: 68+ major tradeable cryptocurrencies as documented
         major_crypto_assets = [
-            'BTC', 'ETH', 'SOL', 'ADA', 'AVAX', 'LINK', 'UNI', 'LTC', 'XRP',
-            'ALGO', 'ARB', 'DOGE'  # Reduced from 20 to 12 for faster processing
+            # Large Cap (Top 15)
+            'BTC', 'ETH', 'BNB', 'SOL', 'XRP', 'ADA', 'AVAX', 'DOGE', 'TRX', 'DOT',
+            'MATIC', 'LTC', 'ATOM', 'XLM', 'FIL',
+            
+            # Mid Cap (16-35)
+            'LINK', 'UNI', 'VET', 'SAND', 'MANA', 'ALGO', 'ICP', 'HBAR', 'EOS', 'AAVE',
+            'MKR', 'GRT', 'CRV', 'SNX', 'COMP', 'YFI', 'SUSHI', '1INCH', 'REN', 'LRC',
+            
+            # DeFi & Layer 2 (36-50)
+            'ARB', 'OP', 'FTM', 'NEAR', 'ROSE', 'ONE', 'CELO', 'KAVA', 'ZRX', 'BAL',
+            'KNC', 'BAND', 'RUNE', 'ALPHA', 'CAKE',
+            
+            # Gaming & Metaverse (51-68)
+            'AXS', 'GALA', 'ENJ', 'CHZ', 'FLOW', 'IMX', 'YGG', 'ALICE', 'SLP', 'GHST',
+            'REVV', 'PYR', 'QUICK', 'WAXP', 'STARL', 'SUPER', 'NFTX', 'RARI'
         ]
 
         # FAST PROCESSING: Process all assets quickly without complex analysis
@@ -3598,7 +3611,7 @@ def api_available_positions() -> ResponseReturnValue:
         added_count = 0
         skipped_count = 0
         
-        logger.info(f"Processing {total_assets} assets (fast mode)")
+        logger.info(f"Processing {total_assets} assets (comprehensive mode - 68+ cryptocurrencies)")
         
         for symbol in major_crypto_assets:
             processed_count += 1
