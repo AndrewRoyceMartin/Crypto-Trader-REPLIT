@@ -745,6 +745,12 @@
         }).join('');
     }
 
+    // Utility function for safe number handling
+    function safeNum(value, defaultValue = 0) {
+        const num = parseFloat(value);
+        return isNaN(num) ? defaultValue : num;
+    }
+
     function renderAvailableTable(positions) {
         console.debug("renderAvailableTable called with:", positions);
         const tbody = document.getElementById('available-tbody');
@@ -821,17 +827,6 @@
                             '<span class="text-info fw-bold">OWNED</span>' :
                             `<span class="text-${priceDiff >= 0 ? 'danger' : 'success'}">${Math.abs(priceDiff).toFixed(1)}% ${priceDiff >= 0 ? 'above' : 'below'} target</span>`
                         }
-                    </td>
-                    <td class="text-center">
-                        <div class="d-flex gap-1">
-                            <button class="btn btn-sm btn-outline-info" onclick="showConfidenceDetails('${symbol}')" title="View Details">
-                                <i class="fa fa-info-circle"></i>
-                            </button>
-                            ${hasBalance ? 
-                                `<button class="btn btn-sm btn-success" onclick="tradeManager.showSellDialog('${symbol}', ${pos.current_balance}, ${pos.current_price})">Sell</button>` :
-                                `<button class="btn btn-sm btn-primary" onclick="tradeManager.showBuyDialog('${symbol}', ${pos.current_price}, ${pos.target_buy_price})">Buy</button>`
-                            }
-                        </div>
                     </td>
                 </tr>
             `;
