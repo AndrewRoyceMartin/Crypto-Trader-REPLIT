@@ -1160,12 +1160,12 @@ class EnhancedTestRunner {
                 const syncData = await syncTestResponse.json();
                 
                 // Check strategy sync functionality
-                traderSyncResults.strategy_sync_working = syncData.sync_summary && 
-                    syncData.sync_summary.total_pairs_tested > 0;
+                traderSyncResults.strategy_sync_working = syncData.total_pairs_tested && 
+                    syncData.total_pairs_tested > 0;
                 
                 // Check position detection
                 traderSyncResults.position_detection = syncData.sync_summary &&
-                    (syncData.sync_summary.strategy_only > 0 || syncData.sync_summary.portfolio_only > 0);
+                    (syncData.sync_summary.strategy_only > 0 || syncData.sync_summary.synchronized > 0);
             }
             
             // Test bot status endpoint
@@ -1176,13 +1176,11 @@ class EnhancedTestRunner {
                 const botData = await botStatusResponse.json();
                 
                 // Check if live trading is active
-                traderSyncResults.live_trading_status = botData.bot_state && 
-                    botData.bot_state.status === 'running';
+                traderSyncResults.live_trading_status = botData.running === true;
                 
                 // Check if multi-currency trading is active
-                traderSyncResults.multi_currency_active = botData.bot_state && 
-                    botData.bot_state.active_pairs && 
-                    botData.bot_state.active_pairs.length > 0;
+                traderSyncResults.multi_currency_active = botData.active_pairs && 
+                    botData.active_pairs > 0;
             }
             
         } catch (error) {
