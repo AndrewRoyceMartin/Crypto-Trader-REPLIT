@@ -3160,51 +3160,39 @@ function initializeTooltips() {
     }
 }
 
-// IMMEDIATE button binding - try multiple approaches
+// Streamlined button binding
 function bindButton() {
-    console.log('🔍 Attempting to bind button...');
     const btn = document.getElementById('run-tests-btn');
-    console.log('🔍 Button element:', btn);
     
-    if (btn) {
-        // Remove any existing listeners
-        btn.replaceWith(btn.cloneNode(true));
-        const newBtn = document.getElementById('run-tests-btn');
-        
-        newBtn.addEventListener('click', function(e) {
-            console.log('🚀 BUTTON CLICKED!');
+    if (btn && !btn.dataset.bound) {
+        btn.addEventListener('click', function(e) {
             e.preventDefault();
             e.stopPropagation();
             runSyncTests();
         });
         
-        // Also try mousedown for mobile
-        newBtn.addEventListener('mousedown', function(e) {
-            console.log('🚀 BUTTON MOUSEDOWN!');
-        });
-        
+        btn.dataset.bound = 'true';
         console.log('✅ Button bound successfully');
         return true;
     }
-    console.log('❌ Button not found');
     return false;
 }
 
-// Try multiple binding attempts
+// Optimized single initialization
 document.addEventListener('DOMContentLoaded', function() {
     console.log('🔄 DOM loaded, initializing...');
+    
+    // Initialize tooltips once
     initializeTooltips();
     
-    // Try binding immediately
-    if (!bindButton()) {
-        // Try again after short delay
-        setTimeout(bindButton, 100);
-        setTimeout(bindButton, 500);
-        setTimeout(bindButton, 1000);
-    }
-    
-    // Auto-run disabled - tests should be manually triggered
-    console.log('✅ Test runners initialized - click buttons to run tests manually');
+    // Single button binding attempt with simple retry
+    setTimeout(() => {
+        if (bindButton()) {
+            console.log('✅ Test runners initialized - click buttons to run tests manually');
+        } else {
+            console.warn('⚠️ Button binding failed - tests may not be available');
+        }
+    }, 250);
 });
 
 // Table validation functions
