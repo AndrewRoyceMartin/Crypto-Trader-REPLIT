@@ -1906,10 +1906,13 @@ class TradingApp {
                 btnGroup.className = 'btn-group btn-group-sm';
                 btnGroup.setAttribute('role', 'group');
                 
-                ['25%', '50%', 'All'].forEach(percent => {
+                const ACTION_PCTS = [0.25, 0.5, 1.0]; // config
+                ACTION_PCTS.forEach(p => {
                     const btn = document.createElement('button');
                     btn.className = 'btn btn-outline-primary btn-xs px-2';
-                    btn.textContent = percent;
+                    btn.textContent = `${Math.round(p*100)}%`;
+                    // attach handler that uses (p * quantity)
+                    btn.onclick = () => sellPosition(holding.symbol, Math.round(p*100));
                     btnGroup.appendChild(btn);
                 });
                 
@@ -5684,12 +5687,21 @@ function updateOpenPositionsTable(positions, totalValue = 0) {
             btnGroup.className = 'btn-group btn-group-sm';
             btnGroup.setAttribute('role', 'group');
             
-            const buttons = [
-                { text: '25%', title: 'Sell 25%', onclick: () => sellPosition(symbol, 25) },
-                { text: '50%', title: 'Sell 50%', onclick: () => sellPosition(symbol, 50) },
-                { text: 'All', title: 'Sell All', onclick: () => sellPosition(symbol, 100) },
-                { text: '+', title: 'Buy More', className: 'btn-outline-primary', onclick: () => buyMorePosition(symbol) }
-            ];
+            const ACTION_PCTS = [0.25, 0.5, 1.0]; // config
+            const buttons = [];
+            
+            // Generate sell buttons from config
+            ACTION_PCTS.forEach(p => {
+                const pct = Math.round(p*100);
+                buttons.push({
+                    text: `${pct}%`,
+                    title: `Sell ${pct}%`,
+                    onclick: () => sellPosition(symbol, pct)
+                });
+            });
+            
+            // Add buy more button
+            buttons.push({ text: '+', title: 'Buy More', className: 'btn-outline-primary', onclick: () => buyMorePosition(symbol) });
             
             buttons.forEach(btnData => {
                 const btn = document.createElement('button');
