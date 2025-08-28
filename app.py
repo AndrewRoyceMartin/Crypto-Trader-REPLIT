@@ -3453,6 +3453,8 @@ def api_available_positions() -> ResponseReturnValue:
         batch_size = 5
         total_assets = len(major_crypto_assets)
         processed_count = 0
+        added_count = 0
+        skipped_count = 0
         
         # Create batches of 5 assets each
         asset_batches = [major_crypto_assets[i:i + batch_size] for i in range(0, len(major_crypto_assets), batch_size)]
@@ -3465,53 +3467,53 @@ def api_available_positions() -> ResponseReturnValue:
             
             for symbol in asset_batch:
                 processed_count += 1
-            # Get balance from actual OKX data or default to zero
-            balance_info = balance_data.get(symbol, {'total': 0, 'free': 0, 'used': 0})
-
-            if isinstance(balance_info, dict):
                 try:
-                    # Get balance details
-                    free_balance = float(balance_info.get('free', 0.0) or 0.0)
-                    used_balance = float(balance_info.get('used', 0.0) or 0.0)
-                    total_balance = float(balance_info.get('total', 0.0) or 0.0)
+                    # Get balance from actual OKX data or default to zero
+                    balance_info = balance_data.get(symbol, {'total': 0, 'free': 0, 'used': 0})
 
-                    # Get current price for this asset
-                    current_price = 0.0
-                    if symbol not in ['AUD', 'USD', 'EUR', 'GBP', 'USDT', 'USDC', 'DAI', 'BUSD']:  # Skip fiat and stablecoins
-                        try:
-                            current_price = float(portfolio_service._get_live_okx_price(symbol) or 0.0)
-                        except Exception as price_error:
-                            logger.debug(f"Could not get live price for {symbol}: {price_error}")
-                            current_price = 0.0
-                    elif symbol in ['USDT', 'USDC', 'DAI', 'BUSD']:
-                        current_price = 1.0  # Stablecoins pegged to USD
-                    elif symbol == 'AUD':
-                        current_price = 0.65  # Approximate AUD to USD conversion
+                    if isinstance(balance_info, dict):
+                        # Get balance details
+                        free_balance = float(balance_info.get('free', 0.0) or 0.0)
+                        used_balance = float(balance_info.get('used', 0.0) or 0.0)
+                        total_balance = float(balance_info.get('total', 0.0) or 0.0)
 
-                    # Determine position type and buy signal
-                    if total_balance > 0:
-                        position_type = 'current_holding'
-                        buy_signal = 'FIAT BALANCE' if symbol in ['AUD', 'USD', 'EUR', 'GBP'] else 'CURRENT HOLDING'
-                    else:
-                        position_type = 'zero_balance'
-                        # Don't set buy_signal here - will be determined after target price calculation
-                        buy_signal = 'NO PRICE DATA' if current_price <= 0 else 'MONITORING'
+                        # Get current price for this asset
+                        current_price = 0.0
+                        if symbol not in ['AUD', 'USD', 'EUR', 'GBP', 'USDT', 'USDC', 'DAI', 'BUSD']:  # Skip fiat and stablecoins
+                            try:
+                                current_price = float(portfolio_service._get_live_okx_price(symbol) or 0.0)
+                            except Exception as price_error:
+                                logger.debug(f"Could not get live price for {symbol}: {price_error}")
+                                current_price = 0.0
+                        elif symbol in ['USDT', 'USDC', 'DAI', 'BUSD']:
+                            current_price = 1.0  # Stablecoins pegged to USD
+                        elif symbol == 'AUD':
+                            current_price = 0.65  # Approximate AUD to USD conversion
 
-                    # Calculate entry confidence for tradeable assets
-                    confidence_score = 50.0  # Default
-                    confidence_level = "FAIR"
-                    timing_signal = "WAIT"
+                        # Determine position type and buy signal
+                        if total_balance > 0:
+                            position_type = 'current_holding'
+                            buy_signal = 'FIAT BALANCE' if symbol in ['AUD', 'USD', 'EUR', 'GBP'] else 'CURRENT HOLDING'
+                        else:
+                            position_type = 'zero_balance'
+                            # Don't set buy_signal here - will be determined after target price calculation
+                            buy_signal = 'NO PRICE DATA' if current_price <= 0 else 'MONITORING'
 
-                    if current_price > 0 and symbol not in ['AUD', 'USD', 'EUR', 'GBP', 'USDT', 'USDC', 'DAI', 'BUSD']:
-                        try:
-                            from src.utils.entry_confidence import get_confidence_analyzer
-                            analyzer = get_confidence_analyzer()
-                            confidence_data = analyzer.calculate_confidence(symbol, current_price)
-                            confidence_score = confidence_data['confidence_score']
-                            confidence_level = confidence_data['confidence_level']
-                            timing_signal = confidence_data['timing_signal']
-                        except Exception as conf_error:
-                            logger.debug(f"Could not calculate confidence for {symbol}: {conf_error}")
+                        # Calculate entry confidence for tradeable assets
+                        confidence_score = 50.0  # Default
+                        confidence_level = "FAIR"
+                        timing_signal = "WAIT"
+
+                        if current_price > 0 and symbol not in ['AUD', 'USD', 'EUR', 'GBP', 'USDT', 'USDC', 'DAI', 'BUSD']:
+                            try:
+                                from src.utils.entry_confidence import get_confidence_analyzer
+                                analyzer = get_confidence_analyzer()
+                                confidence_data = analyzer.calculate_confidence(symbol, current_price)
+                                confidence_score = confidence_data['confidence_score']
+                                confidence_level = confidence_data['confidence_level']
+                                timing_signal = confidence_data['timing_signal']
+                            except Exception as conf_error:
+                                logger.debug(f"Could not calculate confidence for {symbol}: {conf_error}")
 
                     # Calculate Bollinger Bands proximity for Enhanced Strategy tracking
                     bb_signal = "NO DATA"
@@ -3726,7 +3728,7 @@ def api_available_positions() -> ResponseReturnValue:
                         logger.debug(f"Added zero-balance position: {symbol}")
 
                 except Exception as symbol_error:
-                    logger.debug(f"Error processing asset {symbol}: {symbol_error}")
+                    logger.warning(f"❌ SKIPPING {symbol}: {symbol_error}")
                     continue
             
             # Log batch completion and add delay between batches to prevent API timeouts
