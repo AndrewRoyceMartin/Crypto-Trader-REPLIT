@@ -546,6 +546,9 @@ def _set_bot_state(**kv: Any) -> None:
 def _get_bot_running() -> bool:
     """Thread-safe bot running state read."""
     with _state_lock:
+        # BUGFIX: Force reset stuck state - always return False if no multi_currency_trader exists
+        if not globals().get('multi_currency_trader'):
+            bot_state["running"] = False
         return bot_state.get("running", False)
 
 
