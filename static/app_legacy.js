@@ -3247,7 +3247,7 @@ class TradingApp {
                     { content: `${pnlIcon} ${pp.toFixed(2)}%`, classes: `text-end ${pnlClass}`, tag: 'strong' },
                     { content: targetValue, classes: 'text-end text-success' },
                     { content: targetProfit, classes: 'text-end text-success' },
-                    { content: `+${((targetMultiplier - 1) * 100).toFixed(1)}%`, classes: 'text-end text-success' },
+                    { content: `+${getTargetPercent(crypto).toFixed(1)}%`, classes: 'text-end text-success' },
                     { content: positionStatus, classes: '', isHTML: true },
                     { content: getPositionStatus(crypto), classes: '', isHTML: true }
                 ];
@@ -5517,13 +5517,12 @@ function updateOpenPositionsTable(positions, totalValue = 0) {
             
             // Target calculations - Use ACTUAL upper Bollinger Band prices instead of hardcoded values
             let targetMultiplier = getTargetMultiplier(position); // Use dynamic Bollinger Band target or fallback
-            let upperBandPrice = position.upper_band_price || currentPrice * 1.04; // Use actual upper band or fallback
+            let upperBandPrice = position.upper_band_price || currentPrice * targetMultiplier; // Use actual upper band or fallback
             
-            // Calculate target based on upper Bollinger Band price, not fixed percentage
-            // This reflects the real algorithmic exit strategy used in production
-            const targetTotalValue = totalCostBasis * targetMultiplier;
-            const targetPnlDollar = targetTotalValue - totalCostBasis;
-            const targetPnlPercent = totalCostBasis > 0 ? (targetPnlDollar / totalCostBasis) * 100 : 0;
+            // Calculate target based on dynamic Bollinger Band calculations
+            const targetTotalValue = calcTargetValue(totalCostBasis, position);
+            const targetPnlDollar = calcTargetDollar(totalCostBasis, position);
+            const targetPnlPercent = getTargetPercent(position);
             
             // Days held calculation - use actual data or indicate unavailable
             let daysHeld = "—";
