@@ -100,7 +100,7 @@ async function fetchJSON(url, { method='GET', body, timeout=10000, headers={}, n
     
     // Check if response is OK first
     if (!res.ok) {
-      console.debug(`API ${url} returned ${res.status}: ${res.statusText}`);
+      console.error(`❌ API ERROR: ${url} returned ${res.status}: ${res.statusText}`);
       return null;
     }
     
@@ -7949,10 +7949,12 @@ window.SyncTest = {
             }
             
             // Call sync test API
+            console.log('🔍 Calling sync test API...');
             const response = await Utils.fetchJSON('/api/sync-test');
+            console.log('🔍 Sync test response:', response);
             
             if (!response) {
-                throw new Error('No response from sync test endpoint');
+                throw new Error('No response from sync test endpoint - check console for details');
             }
             
             // Update timestamp
