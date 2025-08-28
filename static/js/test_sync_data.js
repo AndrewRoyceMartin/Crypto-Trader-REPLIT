@@ -1856,7 +1856,8 @@ ${'='.repeat(50)}
                     // Handle different function types
                     if (test.func.startsWith('test') && test.func !== 'testBasicAPIConnectivity' && 
                         test.func !== 'testBasicPortfolioData' && test.func !== 'testBasicPriceUpdates' && 
-                        test.func !== 'testBasicButtonPresence' && test.func !== 'testAPIResponseTiming') {
+                        test.func !== 'testBasicButtonPresence' && test.func !== 'testAPIResponseTiming' &&
+                        test.func !== 'testTraderStrategySync') {
                         // Global button test functions
                         result = await window[test.func]();
                     } else {
