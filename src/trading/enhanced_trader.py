@@ -520,8 +520,18 @@ class EnhancedTrader:
                 # Get the trading symbol (e.g., SOL/USDT)
                 trading_symbol = f"{base_symbol}/USDT"
                 
+                # Get exchange instance from portfolio service for live trading
+                from ..services.portfolio_service import get_portfolio_service
+                portfolio_service = get_portfolio_service()
+                live_exchange = portfolio_service.exchange
+                
+                if not live_exchange:
+                    raise RuntimeError("No live exchange instance available for order execution")
+                
+                self.logger.info(f"🔗 Using live exchange instance: {type(live_exchange).__name__}")
+                
                 # Place live market sell order on OKX
-                order_result = self.exchange.sell_market(trading_symbol, current_qty)
+                order_result = live_exchange.sell_market(trading_symbol, current_qty)
                 
                 if order_result and order_result.get('id'):
                     order_id = order_result['id']
@@ -649,8 +659,18 @@ class EnhancedTrader:
                 # Get the trading symbol (e.g., SOL/USDT)
                 trading_symbol = f"{base_symbol}/USDT"
                 
+                # Get exchange instance from portfolio service for live trading
+                from ..services.portfolio_service import get_portfolio_service
+                portfolio_service = get_portfolio_service()
+                live_exchange = portfolio_service.exchange
+                
+                if not live_exchange:
+                    raise RuntimeError("No live exchange instance available for order execution")
+                
+                self.logger.info(f"🔗 Using live exchange instance: {type(live_exchange).__name__}")
+                
                 # Place live market buy order on OKX
-                order_result = self.exchange.buy_market(trading_symbol, quantity)
+                order_result = live_exchange.buy_market(trading_symbol, quantity)
                 
                 if order_result and order_result.get('id'):
                     order_id = order_result['id']
