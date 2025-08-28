@@ -255,9 +255,11 @@ class LiveTrader:
             self.logger.warning("Signal confidence too low: %.3f < %.3f", getattr(signal, "confidence", 0.0), min_confidence)
             return False
 
-        # Check position size is reasonable
+        # Check position size is reasonable - ONLY for buy signals
+        # Sell signals use 'size' for quantity to sell, not position percentage
+        signal_action = str(getattr(signal, "action", "")).lower()
         max_position_percent = 0.10  # Max 10% of portfolio per trade
-        if getattr(signal, "size", 0.0) > max_position_percent:
+        if signal_action == 'buy' and getattr(signal, "size", 0.0) > max_position_percent:
             self.logger.warning("Position size too large: %.3f > %.3f", getattr(signal, "size", 0.0), max_position_percent)
             return False
 

@@ -240,7 +240,9 @@ class EnhancedTrader:
             self.logger.debug("Signal confidence below threshold: %.2f", confidence)
             return False
 
-        if size > 0.08:
+        # CRITICAL FIX: Position size limits only apply to BUY signals, not SELL signals
+        # Sell signals use 'size' for quantity to sell, not position size percentage
+        if action == 'buy' and size > 0.08:
             self.logger.warning("Position size too large: %.2f", size)
             return False
 
