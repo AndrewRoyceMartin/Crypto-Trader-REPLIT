@@ -3196,9 +3196,9 @@ class TradingApp {
                 const takeProfit = this.formatCryptoPrice(purchasePrice * 1.04);  // 4% take profit (Enhanced Bollinger Bands)
                 const daysHeld = '30';
 
-                // Calculate target values
-                const targetValue = (cv * 1.08).toLocaleString('en-US', {style: 'currency', currency: 'USD'});
-                const targetProfit = (cv * 0.08).toLocaleString('en-US', {style: 'currency', currency: 'USD'});
+                // Calculate target values from cost basis
+                const targetValue = (totalCostBasis * 1.08).toLocaleString('en-US', {style: 'currency', currency: 'USD'});
+                const targetProfit = (totalCostBasis * 0.08).toLocaleString('en-US', {style: 'currency', currency: 'USD'});
                 
                 // Get position status badge based on P&L
                 let positionStatus = '<span class="badge bg-secondary">FLAT</span>';
@@ -6166,8 +6166,8 @@ function createHoldingRow(holding) {
             { content: currentValue.toLocaleString('en-US', {style: 'currency', currency: 'USD'}), class: '' }, // POSITION VALUE
             { content: `${pnlSign}${pnl.toLocaleString('en-US', {style: 'currency', currency: 'USD'})}`, class: pnlClass }, // UNREALIZED $
             { content: `${pnlSign}${pnlPercent.toFixed(2)}%`, class: pnlClass }, // GAIN/LOSS %
-            { content: calculateTargetValue(currentValue), class: 'text-success' }, // TARGET VALUE
-            { content: calculateTargetProfit(currentValue), class: 'text-success' }, // TARGET PROFIT $
+            { content: calculateTargetValue(costBasis), class: 'text-success' }, // TARGET VALUE
+            { content: calculateTargetProfit(costBasis), class: 'text-success' }, // TARGET PROFIT $
             { content: '+8.0%', class: 'text-success' }, // TARGET PROFIT %
             { content: getPositionStatus(holding), class: '' }, // POSITION
             { content: '<span class="badge bg-secondary">HOLD</span>', class: '' } // ACTIONS
@@ -6188,15 +6188,15 @@ function createHoldingRow(holding) {
     }
 }
 
-/** Calculate target value based on 8% profit target */
-function calculateTargetValue(currentValue) {
-    const target = currentValue * 1.08; // 8% profit target
+/** Calculate target value based on 8% profit target from cost basis */
+function calculateTargetValue(costBasis) {
+    const target = costBasis * 1.08; // 8% profit target from cost basis
     return target.toLocaleString('en-US', {style: 'currency', currency: 'USD'});
 }
 
-/** Calculate target profit in dollars based on 8% profit target */
-function calculateTargetProfit(currentValue) {
-    const profit = currentValue * 0.08; // 8% profit
+/** Calculate target profit in dollars based on 8% profit target from cost basis */
+function calculateTargetProfit(costBasis) {
+    const profit = costBasis * 0.08; // 8% profit from cost basis
     return profit.toLocaleString('en-US', {style: 'currency', currency: 'USD'});
 }
 

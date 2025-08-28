@@ -344,8 +344,8 @@ class ModularTradingApp {
             targetMethod = "Safety Net 10%";
         }
         
-        const targetValue = (holding.current_value || 0) * targetMultiplier;
-        const targetProfit = targetValue - (holding.current_value || 0);
+        const targetValue = (holding.cost_basis || 0) * targetMultiplier;
+        const targetProfit = targetValue - (holding.cost_basis || 0);
         const holdPeriod = '—'; // Would need trade history data
         
         row.innerHTML = `

@@ -1,0 +1,157 @@
+let’s audit this updated Open Positions table with the corrected values. I’ll recalc each asset and compare against what your app is showing.
+
+🔑 Formulas
+
+Cost Basis = Qty × Entry Price
+
+Position Value = Qty × Current Price
+
+Unrealized $ = Position Value – Cost Basis
+
+Gain/Loss % = (Unrealized $ ÷ Cost Basis) × 100
+
+Target Value = Cost Basis × (1 + Target Profit %)
+
+Target Profit $ = Target Value – Cost Basis
+
+📊 Line-by-Line Check
+1. ALGO
+
+Qty = 393.90340391
+
+Entry = 0.25 → Cost = 98.48
+
+Current = 0.25 → Value = 97.45 ✔
+
+Unrealized = –1.03 (table shows –2.00 ❌ too negative)
+
+Gain/Loss % = –1.03 ÷ 98.48 = –1.05% (table –2.01% ❌)
+
+Target Value = 98.48 × 1.08 = 106.36 (table 105.25 ❌)
+
+2. ARB
+
+Qty = 190.4669795
+
+Entry = 0.52 → Cost = 99.04
+
+Current = 0.51 → Value = 96.34 ✔
+
+Unrealized = –2.70 (table –3.11 ❌)
+
+Gain/Loss % = –2.73% (table –3.13% ❌)
+
+Target Value = 99.04 × 1.08 = 106.96 (table 104.05 ❌ too low)
+
+3. LINK
+
+Qty = 4.00437919
+
+Entry = 24.97 → Cost = 100.04
+
+Current = 23.74 → Value = 95.04 ✔
+
+Unrealized = –5.00 (table –4.96 ✔ close)
+
+Gain/Loss % = –4.99% (table –4.96% ✔ close)
+
+Target Value = 100.04 × 1.08 = 108.04 (table 102.64 ❌ far too low)
+
+4. BICO
+
+Qty = 755.48443929
+
+Entry = 0.13 → Cost = 98.21
+
+Current = 0.12 → Value = 91.50 ✔
+
+Unrealized = –6.71 (table –8.51 ❌ too negative)
+
+Gain/Loss % = –6.83% (table –8.51% ❌)
+
+Target Value = 98.21 × 1.08 = 106.07 (table 98.82 ❌)
+
+5. BTC
+
+Qty = 0.00042964
+
+Entry = 113,264.46 → Cost = 48.65
+
+Current = 111,258.00 → Value = 47.81 ✔
+
+Unrealized = –0.84 (table –0.85 ✔ ok)
+
+Gain/Loss % = –1.73% (table –1.75% ✔ close)
+
+Target Value = 48.65 × 1.08 = 52.54 (table 51.64 ❌)
+
+6. SOL
+
+Qty = 0.17362898
+
+Entry = 184.87 → Cost = 32.09
+
+Current = 203.19 → Value = 35.30 ✔
+
+Unrealized = +3.21 (table +3.20 ✔ ok)
+
+Gain/Loss % = +9.99% (table +9.96% ✔ ok)
+
+Target Value = 32.09 × 1.08 = 34.66 (table 38.12 ❌ too high)
+
+7. GALA
+
+Qty = 1923.63696038
+
+Entry = 0.02 → Cost = 38.47
+
+Current = 0.02 → Value = 31.55 ✔
+
+Unrealized = –6.92 (table –0.56 ❌ huge mismatch)
+
+Gain/Loss % = –17.98% (table –1.74% ❌ way off)
+
+Target Value = 38.47 × 1.08 = 41.55 (table 34.07 ❌)
+
+8. TRX
+
+Qty = 88.53826200
+
+Entry = 0.36 → Cost = 31.87
+
+Current = 0.34 → Value = 30.56 ✔
+
+Unrealized = –1.31 (table –1.54 ❌ slightly off)
+
+Gain/Loss % = –4.12% (table –4.80% ❌)
+
+Target Value = 31.87 × 1.08 = 34.42 (table 33.00 ❌)
+
+9. PEPE
+
+Qty = 0.09373679
+
+Entry = 0.000011 → Cost = 0.00000103
+
+Current = 0.00001 → Value = 0.00000094 ✔
+
+Unrealized = –0.00000009 (table –0.00000005 ❌ slightly off)
+
+Gain/Loss % = –8.7% (table –4.84% ❌)
+
+Target Value = 0.00000103 × 1.08 = 0.00000111 (table 0.000001 ✔ close but low)
+
+🚩 Key Findings
+
+Some assets are accurate (BTC, SOL, LINK close enough)
+
+Most others (ALGO, ARB, BICO, GALA, TRX, PEPE) are misaligned, especially Target Value and Target Profit → they are being calculated against something other than true cost basis (maybe using current price instead of entry price).
+
+GALA is the most broken (Unrealized and % completely wrong).
+
+✅ Recommendation:
+Your app should compute consistently from cost basis (Qty × Entry Price). Right now, it looks like:
+
+Unrealized values sometimes reference current price incorrectly.
+
+Target Value is being based on current price instead of cost price.
