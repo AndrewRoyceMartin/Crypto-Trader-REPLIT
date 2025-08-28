@@ -823,8 +823,8 @@ class TradingApp {
         // this.updateCurrentHoldings(); // Data already handled by updateCryptoPortfolio()
         
         
-        // Performance analytics
-        this.updatePerformanceAnalytics();
+        // Performance analytics - REMOVED: Prevent duplicate with Promise.all call
+        // this.updatePerformanceAnalytics(); // Called via Promise.all in setSelectedCurrency
     }
 
     async updatePortfolioAnalytics() {
@@ -2185,6 +2185,14 @@ class TradingApp {
     
     async updatePerformanceAnalytics() {
         try {
+            // THROTTLE: Prevent rapid-fire calls to avoid 429 rate limiting
+            const now = Date.now();
+            if (this.lastPerformanceUpdate && (now - this.lastPerformanceUpdate) < 30000) {
+                console.debug('Performance analytics throttled (30s cooldown)');
+                return;
+            }
+            this.lastPerformanceUpdate = now;
+            
             const timeframe = document.getElementById('performance-timeframe')?.value || '30d';
             const response = await fetch(`/api/performance-analytics?timeframe=${timeframe}&currency=${this.selectedCurrency}&force_okx=true`, { cache: 'no-cache' });
             if (!response.ok) return;
