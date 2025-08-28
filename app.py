@@ -3586,44 +3586,23 @@ def api_available_positions() -> ResponseReturnValue:
 
         available_positions = []
 
-        # Define comprehensive list of major cryptocurrencies VERIFIED AVAILABLE on OKX
-        # Prioritized list: most important assets first for faster loading
+        # SIMPLIFIED: Focus on top 20 major cryptocurrencies only for fast loading
         major_crypto_assets = [
-            # Tier 1: Top market cap + currently held assets (load first) - VERIFIED on OKX
             'BTC', 'ETH', 'SOL', 'ADA', 'AVAX', 'LINK', 'UNI', 'LTC', 'XRP',
-            'GALA', 'TRX', 'PEPE', 'DOGE', 'MATIC', 'ATOM', 'USDT', 'USDC', 'AUD',
-
-            # Tier 2: Major verified OKX assets (removed problematic ones)
-            'DOT', 'NEAR', 'SHIB', 'BNB', 'BCH', 'XLM', 'ALGO', 'ICP', 'SAND', 'MANA',
-            'CRO', 'APE', 'DAI', 'AXS', 'CHZ', 'THETA', 'GRT', 'COMP', 'MKR', 'YFI',
-            'SUSHI', 'AAVE', 'CRV', 'TON', 'FIL', 'OP', 'ARB', 'LDO', 'FET', 'INJ'
-
-            # REMOVED: Assets confirmed NOT available or problematic on OKX:
-            # 'BUSD', 'BAT', 'ETC', 'ZIL', 'ICX', 'KNC', 'LRC', 'STORJ', 'SNX',
-            # 'BAL', '1INCH', 'ALPHA', 'PERP', 'DYDX', 'IMX', 'API3', 'RNDR',
-            # 'BONK', 'WIF', 'FLOKI', 'JASMY'
+            'ALGO', 'ARB', 'GALA', 'TRX', 'PEPE', 'DOGE', 'MATIC', 'DOT', 'NEAR', 'SHIB', 'BCH'
         ]
 
-        # BATCH PROCESSING: Process assets in groups of 5 with 2-second delays to prevent timeouts
-        # Split major assets into batches of 5 for manageable processing
-        batch_size = 5
+        # FAST PROCESSING: Process all assets quickly without complex analysis
         total_assets = len(major_crypto_assets)
         processed_count = 0
         added_count = 0
         skipped_count = 0
         
-        # Create batches of 5 assets each
-        asset_batches = [major_crypto_assets[i:i + batch_size] for i in range(0, len(major_crypto_assets), batch_size)]
-        total_batches = len(asset_batches)
+        logger.info(f"Processing {total_assets} assets (fast mode)")
         
-        logger.info(f"Processing {total_assets} assets in {total_batches} batches of {batch_size} each")
-        
-        for batch_index, asset_batch in enumerate(asset_batches):
-            logger.info(f"Processing batch {batch_index + 1}/{total_batches}: {asset_batch}")
-            
-            for symbol in asset_batch:
-                processed_count += 1
-                try:
+        for symbol in major_crypto_assets:
+            processed_count += 1
+            try:
                     # Get balance from actual OKX data or default to zero
                     balance_info = balance_data.get(symbol, {'total': 0, 'free': 0, 'used': 0})
 
@@ -3894,18 +3873,10 @@ def api_available_positions() -> ResponseReturnValue:
                     logger.debug(f"✅ Added position: {symbol} ({position_type}) with balance {total_balance}")
                     added_count += 1
 
-                except Exception as symbol_error:
-                    logger.warning(f"❌ SKIPPING {symbol}: {symbol_error}")
-                    skipped_count += 1
-                    continue
-            
-            # Log batch completion and add delay between batches to prevent API timeouts
-            logger.warning(f"🔍 DEBUG: Batch {batch_index + 1}/{total_batches} complete: processed {processed_count}/{total_assets} assets, added {added_count}, skipped {skipped_count}")
-            
-            if batch_index < total_batches - 1:
-                logger.info(f"Waiting 0.1 seconds before next batch...")
-                import time
-                time.sleep(0.1)  # Reduced from 0.3s to 0.1s - 3x faster batch processing
+            except Exception as symbol_error:
+                logger.warning(f"❌ SKIPPING {symbol}: {symbol_error}")
+                skipped_count += 1
+                continue
 
         # Sort positions: current holdings first, then by working calculations priority, then alphabetically
         def sort_priority(position):
@@ -3925,7 +3896,7 @@ def api_available_positions() -> ResponseReturnValue:
 
         # Final debug logging
         elapsed_time = time.time() - start_time
-        logger.warning(f"🔍 DEBUG: Final result - {len(available_positions)} positions, elapsed time: {elapsed_time:.2f}s, added: {added_count}, skipped: {skipped_count}")
+        logger.warning(f"🔍 DEBUG: FAST MODE - {len(available_positions)} positions, elapsed time: {elapsed_time:.2f}s, added: {added_count}, skipped: {skipped_count}")
         
         # Check for timeout issues
         if elapsed_time > 30:
