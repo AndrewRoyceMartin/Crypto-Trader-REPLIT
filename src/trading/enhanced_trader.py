@@ -429,7 +429,23 @@ class EnhancedTrader:
                 # Check if this is a strategy exit signal
                 if event_type in ['CRASH_EXIT', 'STOP_LOSS', 'SAFETY_TAKE_PROFIT', 'BOLLINGER_EXIT']:
                     self.logger.warning(f"🔍 STRATEGY EXIT DETECTED: {event_type} for {base_symbol} - Using verification system")
-                    # Strategy exits are handled by _execute_verified_exit in portfolio sync
+                    
+                    # 🚀 EXECUTE LIVE ORDER: Call verification system to place actual trade
+                    try:
+                        pnl_val = float(metadata.get('pnl', 0.0))
+                        gain_percent = float(metadata.get('gain_percent', 0.0))
+                        
+                        # Execute verified exit with live OKX order placement
+                        exit_success = self._execute_verified_exit(signal, symbol, base_symbol, current_price, timestamp, position_size_units, gain_percent)
+                        
+                        if exit_success:
+                            self.logger.critical(f"✅ STRATEGY EXIT EXECUTED: {event_type} for {base_symbol} - Live order placed successfully")
+                        else:
+                            self.logger.error(f"❌ STRATEGY EXIT FAILED: {event_type} for {base_symbol} - Live order placement failed")
+                            
+                    except Exception as exec_error:
+                        self.logger.error(f"❌ STRATEGY EXIT EXCEPTION: {event_type} for {base_symbol} - {exec_error}")
+                    
                     return
                 
                 # Regular sell signal processing (non-strategy exits)
