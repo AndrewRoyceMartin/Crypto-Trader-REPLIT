@@ -3515,13 +3515,22 @@ def api_available_positions() -> ResponseReturnValue:
                             current_price = 0.65  # Approximate AUD to USD conversion
 
                         # Determine position type and buy signal
-                        if total_balance > 0:
+                        # Calculate current position value for rebuy threshold check
+                        current_position_value = total_balance * current_price
+                        
+                        # REBUY LOGIC: Holdings under $100 should use rebuy mechanism
+                        # This matches the $100 rebuy_max_usd threshold from Enhanced Bollinger strategy
+                        if total_balance > 0 and current_position_value >= 100.0:
                             position_type = 'current_holding'
                             buy_signal = 'FIAT BALANCE' if symbol in ['AUD', 'USD', 'EUR', 'GBP'] else 'CURRENT HOLDING'
                         else:
+                            # Either zero balance OR low value holding (under $100) - both use rebuy mechanism
                             position_type = 'zero_balance'
-                            # Don't set buy_signal here - will be determined after target price calculation
-                            buy_signal = 'NO PRICE DATA' if current_price <= 0 else 'MONITORING'
+                            if total_balance > 0:
+                                buy_signal = 'LOW VALUE HOLDING'  # Small position ready for rebuy
+                                logger.info(f"🔄 LOW VALUE REBUY: {symbol} worth ${current_position_value:.2f} (under $100 threshold)")
+                            else:
+                                buy_signal = 'NO PRICE DATA' if current_price <= 0 else 'MONITORING'
 
                         # Calculate entry confidence for tradeable assets
                         confidence_score = 50.0  # Default
