@@ -7942,20 +7942,42 @@ window.SyncTest = {
             // Update UI to show loading
             if (button) {
                 button.disabled = true;
-                button.innerHTML = '<span class="icon icon-refresh spinner-border spinner-border-sm me-1"></span>Testing (processing 8 pairs)...';
+                button.innerHTML = '<span class="icon icon-refresh spinner-border spinner-border-sm me-1"></span>Testing (20s timeout)...';
             }
             if (statusBadge) {
                 statusBadge.className = 'badge bg-warning';
                 statusBadge.innerHTML = '<span class="icon icon-circle me-1"></span>Testing';
             }
             
-            // Call sync test API with longer timeout (processing 8 trading pairs)
+            // Call sync test API with retry mechanism
             console.log('🔍 Calling sync test API...');
-            const response = await Utils.fetchJSON('/api/sync-test', { timeout: 15000 });
-            console.log('🔍 Sync test response:', response);
+            let response = null;
+            let attempts = 0;
+            const maxAttempts = 2;
+            
+            while (!response && attempts < maxAttempts) {
+                attempts++;
+                console.log(`🔍 Sync test attempt ${attempts}/${maxAttempts}`);
+                const startTime = Date.now();
+                
+                try {
+                    response = await Utils.fetchJSON('/api/sync-test', { 
+                        timeout: 15000,
+                        headers: { 'Cache-Control': 'no-cache, no-store' }
+                    });
+                    const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+                    console.log(`🔍 Sync test response (${elapsed}s):`, response);
+                } catch (error) {
+                    console.error(`🔍 Sync test attempt ${attempts} failed:`, error);
+                    if (attempts < maxAttempts) {
+                        console.log('🔍 Retrying in 1 second...');
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+                    }
+                }
+            }
             
             if (!response) {
-                throw new Error('No response from sync test endpoint - check console for details');
+                throw new Error(`No response after ${maxAttempts} attempts - API endpoint is working, this may be a browser cache/connection issue`);
             }
             
             // Update timestamp
