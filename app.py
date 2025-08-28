@@ -3888,16 +3888,11 @@ def api_available_positions() -> ResponseReturnValue:
                         }
                     }
 
-                    # CRITICAL FIX: Only add zero-balance positions to Available Positions
-                    # Current holdings belong in Current Holdings table, not Available Positions
-                    if position_type == 'zero_balance':
-                        available_positions.append(available_position)
-                        logger.debug(f"✅ Added zero-balance position: {symbol}")
-                        added_count += 1
-                    else:
-                        # This is a current holding - skip from Available Positions
-                        logger.debug(f"⏭️ Skipped current holding: {symbol} with balance {total_balance}")
-                        skipped_count += 1
+                    # FIXED: Add ALL tradeable positions to Available Positions with real data
+                    # Available Positions should show comprehensive view of all assets
+                    available_positions.append(available_position)
+                    logger.debug(f"✅ Added position: {symbol} ({position_type}) with balance {total_balance}")
+                    added_count += 1
 
                 except Exception as symbol_error:
                     logger.warning(f"❌ SKIPPING {symbol}: {symbol_error}")
