@@ -3675,19 +3675,24 @@ def api_available_positions() -> ResponseReturnValue:
                         logger.warning(f"🚨 DATA ERROR detected for {symbol}: price=${current_price:.6f}, target=${target_price:.6f} (0.00% diff)")
                         
                     else:
-                        # CRITICAL FIX: Only set 'READY TO BUY' if asset actually meets buy criteria
+                        # CRITICAL FIX: Only set 'READY TO BUY' if asset actually meets buy criteria WITH meaningful discount
                         if position_type == 'zero_balance' and current_price > 0:
                             # Check if price meets buy criteria (below target OR at/below Bollinger Band)
                             price_below_target = target_price > 0 and current_price <= target_price
                             price_at_bb_trigger = (bb_signal == "BUY ZONE" or 
                                                   (lower_band_price > 0 and current_price <= lower_band_price))
                             
-                            # Only signal ready to buy if criteria are actually met
-                            if price_below_target or price_at_bb_trigger:
+                            # NEW: Require minimum 1% discount to be considered a real buying opportunity
+                            # This prevents 0.00% positions from showing as "ready to buy"
+                            has_meaningful_discount = price_diff_percent_raw >= 1.0  # At least 1% below target
+                            has_bb_opportunity = bb_signal == "BUY ZONE" and bb_distance_percent <= -1.0  # At least 1% below BB
+                            
+                            # Only signal ready to buy if criteria are met AND there's a meaningful discount
+                            if (price_below_target or price_at_bb_trigger) and (has_meaningful_discount or has_bb_opportunity):
                                 buy_signal = 'READY TO BUY'
-                                logger.info(f"✅ BUY CRITERIA MET for {symbol}: price=${current_price:.6f}, target=${target_price:.6f}, BB={bb_signal}")
+                                logger.info(f"✅ BUY CRITERIA MET for {symbol}: price=${current_price:.6f}, target=${target_price:.6f}, BB={bb_signal}, discount={price_diff_percent_raw:.2f}%")
                             else:
-                                buy_signal = 'MONITORING'  # Available but not at buy price yet
+                                buy_signal = 'MONITORING'  # Available but not at buy price yet or insufficient discount
 
                     available_position = {
                         'symbol': symbol,
