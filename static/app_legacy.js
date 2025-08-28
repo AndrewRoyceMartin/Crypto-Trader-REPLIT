@@ -684,10 +684,14 @@ class TradingApp {
             // Update refresh timestamp for timer display
             this.updateRefreshTimestamp();
             
+            // Console logging for main refresh cycle
+            console.log(`🔄 Main refresh cycle initiated - 90s interval`);
+            
             // Main data refresh cycle
             this.debouncedUpdateDashboard(); // Overview refresh (/api/crypto-portfolio)
             this.startPositionsCountdown(90); // Reset positions countdown
             setTimeout(() => {
+                console.log(`📊 Holdings refresh starting (5s delay)`);
                 this.updateCryptoPortfolio(); // Holdings refresh
                 this.startAvailableCountdown(5); // Reset available countdown
             }, 5000);
@@ -2598,10 +2602,17 @@ class TradingApp {
             if (this.countdown > 0) {
                 el.textContent = `Starting in ${this.countdown}s`;
                 el.className = 'badge bg-warning ms-3';
+                
+                // Console logging for system startup countdown
+                console.log(`🚀 System startup countdown: ${this.countdown}s`);
+                
                 this.countdown--;
             } else {
                 el.textContent = 'System Ready';
                 el.className = 'badge bg-success ms-3';
+                
+                console.log(`✅ System startup complete - Trading system ready`);
+                
                 clearInterval(this.countdownInterval);
                 this.countdownInterval = null;
             }
@@ -2612,6 +2623,267 @@ class TradingApp {
         this.positionsCountdownEnd = Date.now() + seconds * 1000;
     }
     
+    // ---------- Strategy Sync Accordion ----------
+    setupStrategyAccordion() {
+        // Setup accordion chevron rotation
+        const accordionButton = document.querySelector('[data-bs-target="#strategy-sync-collapse"]');
+        const chevronIcon = document.getElementById('strategy-sync-chevron');
+        
+        if (accordionButton && chevronIcon) {
+            accordionButton.addEventListener('click', () => {
+                chevronIcon.style.transform = chevronIcon.style.transform === 'rotate(180deg)' 
+                    ? 'rotate(0deg)' 
+                    : 'rotate(180deg)';
+            });
+        }
+        
+        // Setup refresh button
+        const refreshButton = document.getElementById('btn-refresh-strategy-status');
+        if (refreshButton) {
+            refreshButton.addEventListener('click', () => {
+                this.refreshStrategyStatus();
+            });
+        }
+        
+        // Setup sync test button
+        const syncTestButton = document.getElementById('btn-run-sync-test');
+        if (syncTestButton) {
+            syncTestButton.addEventListener('click', () => {
+                this.runSyncTest();
+            });
+        }
+        
+        // Initial load
+        this.refreshStrategyStatus();
+    }
+    
+    async refreshStrategyStatus() {
+        try {
+            // Update last update timestamp
+            const lastUpdateElement = document.getElementById('strategy-last-update');
+            if (lastUpdateElement) {
+                lastUpdateElement.textContent = new Date().toLocaleTimeString();
+            }
+            
+            // Fetch bot status and sync data in parallel
+            const [botStatusResponse, syncTestResponse] = await Promise.all([
+                fetch('/api/bot/status'),
+                fetch('/api/sync-test')
+            ]);
+            
+            if (!botStatusResponse.ok || !syncTestResponse.ok) {
+                throw new Error('Failed to fetch strategy status');
+            }
+            
+            const botStatus = await botStatusResponse.json();
+            const syncData = await syncTestResponse.json();
+            
+            // Update bot status badges and summary
+            this.updateBotStatusDisplay(botStatus);
+            this.updateSyncSummary(syncData);
+            this.updateStrategyPairsTable(botStatus, syncData);
+            
+        } catch (error) {
+            console.error('Error refreshing strategy status:', error);
+            this.handleStrategyStatusError(error);
+        }
+    }
+    
+    updateBotStatusDisplay(botStatus) {
+        // Update running status badge
+        const runningBadge = document.getElementById('bot-running-badge');
+        if (runningBadge) {
+            const isRunning = botStatus.running || botStatus.active;
+            runningBadge.className = `badge ${isRunning ? 'bg-success' : 'bg-secondary'}`;
+            runningBadge.innerHTML = `<span class="icon icon-circle me-1"></span>${isRunning ? 'Running' : 'Stopped'}`;
+        }
+        
+        // Update active pairs badge
+        const activePairsBadge = document.getElementById('active-pairs-badge');
+        if (activePairsBadge && botStatus.active_pairs !== undefined) {
+            activePairsBadge.innerHTML = `<span class="icon icon-layers me-1"></span>${botStatus.active_pairs} pairs`;
+        }
+        
+        // Update bot configuration
+        if (document.getElementById('bot-mode')) document.getElementById('bot-mode').textContent = botStatus.mode || '—';
+        if (document.getElementById('bot-runtime')) document.getElementById('bot-runtime').textContent = botStatus.runtime_human || '—';
+        if (document.getElementById('active-positions-count')) document.getElementById('active-positions-count').textContent = botStatus.active_positions || '—';
+        
+        // Update rebuy limit (from supported pairs or default)
+        const rebuyElement = document.getElementById('rebuy-limit');
+        if (rebuyElement) {
+            rebuyElement.textContent = '$100'; // Default rebuy limit from system
+        }
+    }
+    
+    updateSyncSummary(syncData) {
+        if (!syncData.sync_summary) return;
+        
+        const summary = syncData.sync_summary;
+        
+        // Update sync summary counts
+        if (document.getElementById('sync-synchronized')) document.getElementById('sync-synchronized').textContent = summary.synchronized || '—';
+        if (document.getElementById('sync-discrepancies')) document.getElementById('sync-discrepancies').textContent = summary.out_of_sync || '—';
+        if (document.getElementById('sync-no-position')) document.getElementById('sync-no-position').textContent = summary.no_position || '—';
+        if (document.getElementById('sync-strategy-only')) document.getElementById('sync-strategy-only').textContent = summary.strategy_only || '—';
+    }
+    
+    updateStrategyPairsTable(botStatus, syncData) {
+        const tbody = document.getElementById('strategy-pairs-tbody');
+        if (!tbody) return;
+        
+        // Clear loading state
+        tbody.innerHTML = '';
+        
+        // Get supported pairs from bot status
+        const supportedPairs = botStatus.supported_pairs || [];
+        const syncResults = syncData.sync_results || {};
+        
+        if (supportedPairs.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="8" class="text-center text-muted py-3">
+                        No trading pairs configured
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+        
+        // Create rows for each supported pair
+        supportedPairs.forEach(pair => {
+            const syncResult = syncResults[pair] || {};
+            const row = this.createStrategyPairRow(pair, syncResult, botStatus);
+            tbody.appendChild(row);
+        });
+    }
+    
+    createStrategyPairRow(pair, syncResult, botStatus) {
+        const row = document.createElement('tr');
+        
+        // Determine sync status and styling
+        const isRunning = botStatus.running && botStatus.active_pairs > 0;
+        const syncStatus = syncResult.sync_status || 'unknown';
+        
+        let statusBadge, syncBadge;
+        
+        if (isRunning) {
+            statusBadge = '<span class="badge bg-success">Active</span>';
+        } else {
+            statusBadge = '<span class="badge bg-secondary">Inactive</span>';
+        }
+        
+        switch (syncStatus) {
+            case 'synchronized':
+                syncBadge = '<span class="badge bg-success">Synced</span>';
+                break;
+            case 'out_of_sync':
+                syncBadge = '<span class="badge bg-warning">Out of Sync</span>';
+                break;
+            case 'no_position':
+                syncBadge = '<span class="badge bg-secondary">No Position</span>';
+                break;
+            case 'strategy_only':
+                syncBadge = '<span class="badge bg-info">Strategy Only</span>';
+                break;
+            default:
+                syncBadge = '<span class="badge bg-secondary">Unknown</span>';
+        }
+        
+        // Format quantities and prices
+        const strategyQty = syncResult.strategy_qty !== undefined ? syncResult.strategy_qty.toFixed(6) : '—';
+        const liveQty = syncResult.live_qty !== undefined ? syncResult.live_qty.toFixed(6) : '—';
+        const entryPrice = syncResult.strategy_entry !== undefined ? `$${syncResult.strategy_entry.toFixed(2)}` : '—';
+        const currentPrice = syncResult.live_entry !== undefined ? `$${syncResult.live_entry.toFixed(2)}` : '—';
+        
+        // Calculate P&L if data available
+        let pnlDisplay = '—';
+        if (syncResult.live_qty && syncResult.live_entry && syncResult.strategy_entry) {
+            const pnl = (syncResult.live_entry - syncResult.strategy_entry) * syncResult.live_qty;
+            const pnlPercent = ((syncResult.live_entry - syncResult.strategy_entry) / syncResult.strategy_entry * 100);
+            const pnlClass = pnl >= 0 ? 'text-success' : 'text-danger';
+            pnlDisplay = `<span class="${pnlClass}">$${pnl.toFixed(2)} (${pnlPercent.toFixed(2)}%)</span>`;
+        }
+        
+        row.innerHTML = `
+            <td class="fw-bold">${pair}</td>
+            <td>${statusBadge}</td>
+            <td class="text-end">${strategyQty}</td>
+            <td class="text-end">${liveQty}</td>
+            <td>${syncBadge}</td>
+            <td class="text-end">${entryPrice}</td>
+            <td class="text-end">${currentPrice}</td>
+            <td class="text-end">${pnlDisplay}</td>
+        `;
+        
+        return row;
+    }
+    
+    async runSyncTest() {
+        const syncTestButton = document.getElementById('btn-run-sync-test');
+        if (!syncTestButton) return;
+        
+        const originalText = syncTestButton.innerHTML;
+        
+        try {
+            // Show loading state
+            syncTestButton.innerHTML = '<span class="icon icon-spinner fa-spin me-2"></span>Testing...';
+            syncTestButton.disabled = true;
+            
+            // Run sync test
+            const response = await fetch('/api/sync-test');
+            if (!response.ok) {
+                throw new Error('Sync test failed');
+            }
+            
+            const syncData = await response.json();
+            
+            // Fetch fresh bot status for update
+            const botStatusResponse = await fetch('/api/bot/status');
+            const botStatus = botStatusResponse.ok ? await botStatusResponse.json() : { supported_pairs: [] };
+            
+            // Update display with fresh sync data
+            this.updateSyncSummary(syncData);
+            this.updateStrategyPairsTable(botStatus, syncData);
+            
+            // Show success message briefly
+            syncTestButton.innerHTML = '<span class="icon icon-check me-2"></span>Test Complete';
+            setTimeout(() => {
+                syncTestButton.innerHTML = originalText;
+            }, 2000);
+            
+        } catch (error) {
+            console.error('Sync test error:', error);
+            syncTestButton.innerHTML = '<span class="icon icon-exclamation-triangle me-2"></span>Test Failed';
+            setTimeout(() => {
+                syncTestButton.innerHTML = originalText;
+            }, 2000);
+        } finally {
+            syncTestButton.disabled = false;
+        }
+    }
+    
+    handleStrategyStatusError(error) {
+        // Update badges to show error state
+        const runningBadge = document.getElementById('bot-running-badge');
+        if (runningBadge) {
+            runningBadge.className = 'badge bg-danger';
+            runningBadge.innerHTML = '<span class="icon icon-exclamation-triangle me-1"></span>Error';
+        }
+        
+        // Show error in table
+        const tbody = document.getElementById('strategy-pairs-tbody');
+        if (tbody) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="8" class="text-center text-danger py-3">
+                        <span class="icon icon-exclamation-triangle me-2"></span>Error loading strategy status: ${error.message}
+                    </td>
+                </tr>
+            `;
+        }
+    }
+    
     updateAllCountdowns() {
         // Update positions countdown
         if (this.positionsCountdownEnd) {
@@ -2619,6 +2891,12 @@ class TradingApp {
             if (el) {
                 const left = Math.max(0, Math.ceil((this.positionsCountdownEnd - Date.now()) / 1000));
                 el.textContent = `${left}s`;
+                
+                // Console logging for positions countdown
+                if (left % 10 === 0 && left > 0) { // Log every 10 seconds
+                    console.log(`⏱️ Positions countdown: ${left}s until next refresh`);
+                }
+                
                 if (left === 0) this.positionsCountdownEnd = null;
             }
         }
@@ -2629,6 +2907,12 @@ class TradingApp {
             if (el) {
                 const left = Math.max(0, Math.ceil((this.availableCountdownEnd - Date.now()) / 1000));
                 el.textContent = `${left}s`;
+                
+                // Console logging for available positions countdown
+                if (left % 5 === 0 && left > 0) { // Log every 5 seconds
+                    console.log(`⏱️ Available positions countdown: ${left}s until next refresh`);
+                }
+                
                 if (left === 0) this.availableCountdownEnd = null;
             }
         }
