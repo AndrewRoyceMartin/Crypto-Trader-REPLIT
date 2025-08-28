@@ -6,6 +6,7 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
+    <meta name="admin-token" content="{{ admin_token }}">
     <title>OKX Sync Test Dashboard</title>
     
     <!-- Bootstrap CSS -->
@@ -559,7 +560,7 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="/static/app_legacy.js?v=1756420995" defer></script>
-    <script src="/static/js/test_sync_data.js?v=1756420995" defer></script>
+    <!-- Only load test sync data JS - no trading app logic needed -->
+    <script src="/static/js/test_sync_data.js?v=1756421105" defer></script>
 </body>
 </html>
