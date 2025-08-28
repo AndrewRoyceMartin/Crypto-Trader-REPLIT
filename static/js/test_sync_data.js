@@ -1,6 +1,27 @@
 // ===== ENHANCED ASYNCHRONOUS TESTING FRAMEWORK =====
 // Advanced concurrent testing with real-time monitoring and performance profiling
 
+// API Base URL Helper - ensures proper relative paths
+function getApiBaseUrl() {
+    // Always use relative paths from current origin
+    const origin = window.location.origin;
+    return origin;
+}
+
+// Helper function to make API calls with proper base URL
+function makeApiCall(endpoint, options = {}) {
+    // Ensure endpoint starts with /api
+    if (!endpoint.startsWith('/api')) {
+        endpoint = '/api/' + endpoint.replace(/^\//, '');
+    }
+    
+    // Use relative path (browser will resolve to current origin)
+    return fetch(endpoint, {
+        cache: 'no-store',
+        ...options
+    });
+}
+
 let testData = null;
 let currentTestSession = null;
 
@@ -790,8 +811,8 @@ class EnhancedTestRunner {
         try {
             // Check multiple timestamps to verify data freshness
             const freshnessCalls = [
-                fetch('/api/current-holdings', { cache: 'no-store' }),
-                fetch('/api/available-positions', { cache: 'no-store' })
+                makeApiCall('/api/current-holdings'),
+                makeApiCall('/api/available-positions')
             ];
 
             const responses = await Promise.all(freshnessCalls);
@@ -1039,7 +1060,7 @@ class EnhancedTestRunner {
         const apiStartTime = performance.now();
         try {
             const testPayload = { test: true, timestamp: Date.now() };
-            const response = await fetch('/api/recalculate-positions', {
+            const response = await makeApiCall('/api/recalculate-positions', {
                 method: 'POST',
                 headers: { 
                     'Content-Type': 'application/json',
@@ -1090,7 +1111,7 @@ class EnhancedTestRunner {
                 testResults.workflow_execution = true;
                 
                 // Enhanced Test 5: Comprehensive currency processing validation
-                const availablePositionsResponse = await fetch('/api/available-positions', { 
+                const availablePositionsResponse = await makeApiCall('/api/available-positions', { 
                     cache: 'no-store',
                     headers: { 'X-Test-Request': 'true' }
                 });
@@ -1138,7 +1159,7 @@ class EnhancedTestRunner {
 
         // Enhanced Test 7: Data freshness validation
         try {
-            const portfolioResponse = await fetch('/api/crypto-portfolio', { cache: 'no-store' });
+            const portfolioResponse = await makeApiCall('/api/crypto-portfolio', { cache: 'no-store' });
             if (portfolioResponse.ok) {
                 const portfolioData = await portfolioResponse.json();
                 if (portfolioData.timestamp) {
@@ -1192,11 +1213,11 @@ class EnhancedTestRunner {
 
         try {
             // Test current holdings endpoint
-            const holdingsResponse = await fetch('/api/current-holdings', { cache: 'no-store' });
+            const holdingsResponse = await makeApiCall('/api/current-holdings', { cache: 'no-store' });
             syncResults.current_holdings_accessible = holdingsResponse.ok;
             
             // Test crypto portfolio endpoint 
-            const portfolioResponse = await fetch('/api/crypto-portfolio', { cache: 'no-store' });
+            const portfolioResponse = await makeApiCall('/api/crypto-portfolio', { cache: 'no-store' });
             syncResults.crypto_portfolio_accessible = portfolioResponse.ok;
             
             if (holdingsResponse.ok && portfolioResponse.ok) {
@@ -1246,7 +1267,7 @@ class EnhancedTestRunner {
 
         try {
             // Test sync-test endpoint
-            const syncTestResponse = await fetch('/api/sync-test', { cache: 'no-store' });
+            const syncTestResponse = await makeApiCall('/api/sync-test', { cache: 'no-store' });
             traderSyncResults.sync_test_accessible = syncTestResponse.ok;
             
             if (syncTestResponse.ok) {
@@ -1262,7 +1283,7 @@ class EnhancedTestRunner {
             }
             
             // Test bot status endpoint
-            const botStatusResponse = await fetch('/api/bot/status', { cache: 'no-store' });
+            const botStatusResponse = await makeApiCall('/api/bot/status', { cache: 'no-store' });
             traderSyncResults.bot_status_accessible = botStatusResponse.ok;
             
             if (botStatusResponse.ok) {
@@ -1303,11 +1324,11 @@ class EnhancedTestRunner {
 
         try {
             // Test OKX status
-            const okxResponse = await fetch('/api/okx-status', { cache: 'no-store' });
+            const okxResponse = await makeApiCall('/api/okx-status', { cache: 'no-store' });
             freshnessResults.okx_status_responsive = okxResponse.ok;
             
             // Test price source
-            const priceResponse = await fetch('/api/price-source-status', { cache: 'no-store' });
+            const priceResponse = await makeApiCall('/api/price-source-status', { cache: 'no-store' });
             freshnessResults.price_source_accessible = priceResponse.ok;
             
             if (priceResponse.ok) {
@@ -2039,7 +2060,7 @@ ${'='.repeat(50)}
     // Basic test methods
     async testBasicAPIConnectivity() {
         try {
-            const response = await fetch('/api/okx-status');
+            const response = await makeApiCall('/api/okx-status');
             const data = await response.json();
             // More flexible status check
             const isConnected = data.connected === true || data.status === 'connected' || response.ok;
@@ -2054,7 +2075,7 @@ ${'='.repeat(50)}
     
     async testBasicPortfolioData() {
         try {
-            const response = await fetch('/api/crypto-portfolio');
+            const response = await makeApiCall('/api/crypto-portfolio');
             const data = await response.json();
             return {
                 status: data.holdings && data.holdings.length > 0 ? 'pass' : 'fail',
@@ -2067,7 +2088,7 @@ ${'='.repeat(50)}
     
     async testBasicPriceUpdates() {
         try {
-            const response = await fetch('/api/price-source-status');
+            const response = await makeApiCall('/api/price-source-status');
             const data = await response.json();
             return {
                 status: data.status === 'connected' ? 'pass' : 'fail',
@@ -3220,7 +3241,7 @@ async function validateTableData() {
 async function validateOpenPositionsTable() {
     try {
         // Fetch backend API data
-        const response = await fetch('/api/current-holdings', { cache: 'no-store' });
+        const response = await makeApiCall('/api/current-holdings', { cache: 'no-store' });
         if (!response.ok) throw new Error(`API returned ${response.status}`);
         const apiData = await response.json();
         
@@ -3335,7 +3356,7 @@ async function validateOpenPositionsTable() {
 async function validateAvailablePositionsTable() {
     try {
         // Fetch backend API data
-        const response = await fetch('/api/available-positions', { cache: 'no-store' });
+        const response = await makeApiCall('/api/available-positions', { cache: 'no-store' });
         if (!response.ok) throw new Error(`API returned ${response.status}`);
         const apiData = await response.json();
         
@@ -4052,7 +4073,7 @@ async function testRecalculateButton() {
         
         try {
             // First test without authentication (should require admin token)
-            const response = await fetch('/api/recalculate-positions', { 
+            const response = await makeApiCall('/api/recalculate-positions', { 
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -4066,7 +4087,7 @@ async function testRecalculateButton() {
                 
                 // Test with admin token
                 const adminToken = window.ADMIN_TOKEN || localStorage.getItem('admin_token') || 'trading-admin-2024';
-                const authResponse = await fetch('/api/recalculate-positions', {
+                const authResponse = await makeApiCall('/api/recalculate-positions', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -5227,7 +5248,7 @@ async function testBollingerBandsPrioritization() {
         // Test 1: Verify Enhanced Bollinger Bands strategy is loaded and configured
         try {
             // Check if strategy configuration is accessible via API
-            const strategyResponse = await fetch('/api/strategy-config', { cache: 'no-store' });
+            const strategyResponse = await makeApiCall('/api/strategy-config', { cache: 'no-store' });
             
             if (strategyResponse.ok) {
                 const strategyData = await strategyResponse.json();
@@ -5267,7 +5288,7 @@ async function testBollingerBandsPrioritization() {
         
         // Test 2: Check exit strategy logic metadata from current holdings
         try {
-            const holdingsResponse = await fetch('/api/current-holdings', { cache: 'no-store' });
+            const holdingsResponse = await makeApiCall('/api/current-holdings', { cache: 'no-store' });
             if (holdingsResponse.ok) {
                 const holdingsData = await holdingsResponse.json();
                 
@@ -5436,7 +5457,7 @@ async function testAvailablePositionsDataIntegrity() {
         
         // Test 1: Validate OKX API data accuracy
         try {
-            const availableResponse = await fetch('/api/available-positions', { cache: 'no-store' });
+            const availableResponse = await makeApiCall('/api/available-positions', { cache: 'no-store' });
             if (availableResponse.ok) {
                 const availableData = await availableResponse.json();
                 
@@ -5513,13 +5534,13 @@ async function testAvailablePositionsDataIntegrity() {
         
         // Test 2: Validate data consistency with current holdings
         try {
-            const holdingsResponse = await fetch('/api/current-holdings', { cache: 'no-store' });
+            const holdingsResponse = await makeApiCall('/api/current-holdings', { cache: 'no-store' });
             if (holdingsResponse.ok) {
                 const holdingsData = await holdingsResponse.json();
                 
                 if (holdingsData.holdings && holdingsData.holdings.length > 0) {
                     // Check if available positions include held assets
-                    const availableResponse = await fetch('/api/available-positions', { cache: 'no-store' });
+                    const availableResponse = await makeApiCall('/api/available-positions', { cache: 'no-store' });
                     if (availableResponse.ok) {
                         const availableData = await availableResponse.json();
                         
@@ -5561,7 +5582,7 @@ async function testAvailablePositionsDataIntegrity() {
         
         // Test 4: Validate Bollinger Bands integration
         try {
-            const availableResponse = await fetch('/api/available-positions', { cache: 'no-store' });
+            const availableResponse = await makeApiCall('/api/available-positions', { cache: 'no-store' });
             if (availableResponse.ok) {
                 const availableData = await availableResponse.json();
                 
@@ -5764,7 +5785,7 @@ class NormalTestRunner {
     
     async testBasicAPIConnectivity() {
         try {
-            const response = await fetch('/api/okx-status');
+            const response = await makeApiCall('/api/okx-status');
             const data = await response.json();
             // More flexible status check
             const isConnected = data.connected === true || data.status === 'connected' || response.ok;
@@ -5779,7 +5800,7 @@ class NormalTestRunner {
     
     async testBasicPortfolioData() {
         try {
-            const response = await fetch('/api/crypto-portfolio');
+            const response = await makeApiCall('/api/crypto-portfolio');
             const data = await response.json();
             return {
                 status: data.holdings && data.holdings.length > 0 ? 'pass' : 'fail',
@@ -5792,7 +5813,7 @@ class NormalTestRunner {
     
     async testBasicPriceUpdates() {
         try {
-            const response = await fetch('/api/price-source-status');
+            const response = await makeApiCall('/api/price-source-status');
             const data = await response.json();
             return {
                 status: data.status === 'connected' ? 'pass' : 'fail',
