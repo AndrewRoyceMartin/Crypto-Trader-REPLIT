@@ -1604,6 +1604,140 @@ def bot_start() -> ResponseReturnValue:
         return jsonify({"error": f"Failed to start multi-currency trading: {str(e)}"}), 500
 
 
+@app.route("/api/sync-test")
+def api_sync_test() -> ResponseReturnValue:
+    """Test Enhanced Bollinger Bands strategy sync with live OKX positions."""
+    try:
+        # Get portfolio service for OKX positions
+        portfolio_service = get_portfolio_service()
+        portfolio_data = portfolio_service.get_portfolio_data()
+        live_holdings = {h.get('symbol', ''): h for h in portfolio_data.get('holdings', [])}
+        
+        sync_results = {
+            "timestamp": iso_utc(),
+            "total_pairs_tested": 0,
+            "sync_status": "unknown",
+            "pairs": {},
+            "discrepancies": [],
+            "last_sync_times": {},
+            "sync_summary": {
+                "synchronized": 0,
+                "out_of_sync": 0,
+                "no_position": 0,
+                "strategy_only": 0,
+                "okx_only": 0
+            }
+        }
+        
+        # Check if multi-currency trader is available
+        global multi_currency_trader
+        if not multi_currency_trader or not hasattr(multi_currency_trader, 'traders'):
+            sync_results.update({
+                "sync_status": "no_trader",
+                "error": "Multi-currency trader not initialized or not running"
+            })
+            return _no_cache_json(sync_results)
+        
+        # Test sync for each trading pair
+        for pair, trader in multi_currency_trader.traders.items():
+            base_symbol = pair.split('/')[0]
+            sync_results["total_pairs_tested"] += 1
+            
+            # Get strategy position state
+            strategy_state = {}
+            if hasattr(trader, 'strategy') and hasattr(trader.strategy, 'position_state'):
+                strategy_state = trader.strategy.position_state.copy()
+            
+            # Get live OKX position
+            live_position = live_holdings.get(base_symbol, {})
+            
+            # Compare positions
+            strategy_qty = float(strategy_state.get('position_qty', 0))
+            live_qty = float(live_position.get('quantity', 0))
+            
+            # Determine sync status for this pair
+            pair_sync_status = "unknown"
+            discrepancy_details = None
+            
+            if strategy_qty == 0 and live_qty == 0:
+                pair_sync_status = "no_position"
+                sync_results["sync_summary"]["no_position"] += 1
+            elif abs(strategy_qty - live_qty) < 0.00001:  # Very small threshold for float comparison
+                pair_sync_status = "synchronized"  
+                sync_results["sync_summary"]["synchronized"] += 1
+            else:
+                pair_sync_status = "out_of_sync"
+                sync_results["sync_summary"]["out_of_sync"] += 1
+                
+                # Record discrepancy details
+                discrepancy_details = {
+                    "pair": pair,
+                    "strategy_qty": strategy_qty,
+                    "live_qty": live_qty,
+                    "difference": live_qty - strategy_qty,
+                    "strategy_entry": float(strategy_state.get('entry_price', 0)),
+                    "live_entry": float(live_position.get('avg_entry_price', 0))
+                }
+                sync_results["discrepancies"].append(discrepancy_details)
+            
+            # Check for positions that exist only in strategy or only in OKX
+            if strategy_qty > 0 and live_qty == 0:
+                pair_sync_status = "strategy_only"
+                sync_results["sync_summary"]["strategy_only"] += 1
+            elif strategy_qty == 0 and live_qty > 0:
+                pair_sync_status = "okx_only"
+                sync_results["sync_summary"]["okx_only"] += 1
+            
+            # Record pair details
+            sync_results["pairs"][pair] = {
+                "sync_status": pair_sync_status,
+                "strategy_position": {
+                    "qty": strategy_qty,
+                    "entry_price": float(strategy_state.get('entry_price', 0)),
+                    "peak_since_entry": float(strategy_state.get('peak_since_entry', 0)),
+                    "rebuy_armed": strategy_state.get('rebuy_armed', False)
+                },
+                "live_position": {
+                    "qty": live_qty,
+                    "entry_price": float(live_position.get('avg_entry_price', 0)),
+                    "current_price": float(live_position.get('current_price', 0)),
+                    "pnl_percent": float(live_position.get('pnl_percent', 0))
+                },
+                "discrepancy": discrepancy_details,
+                "trader_running": getattr(trader, 'running', False),
+                "last_update": trader.last_update_time.isoformat() if hasattr(trader, 'last_update_time') and trader.last_update_time else None
+            }
+            
+            # Record last sync time if available
+            if hasattr(trader, 'last_update_time') and trader.last_update_time:
+                sync_results["last_sync_times"][pair] = trader.last_update_time.isoformat()
+        
+        # Determine overall sync status
+        total_pairs = sync_results["total_pairs_tested"]
+        synchronized = sync_results["sync_summary"]["synchronized"]  
+        out_of_sync = sync_results["sync_summary"]["out_of_sync"]
+        strategy_only = sync_results["sync_summary"]["strategy_only"]
+        okx_only = sync_results["sync_summary"]["okx_only"]
+        
+        if out_of_sync > 0 or strategy_only > 0 or okx_only > 0:
+            sync_results["sync_status"] = "issues_detected"
+        elif synchronized > 0:
+            sync_results["sync_status"] = "synchronized"
+        else:
+            sync_results["sync_status"] = "no_active_positions"
+            
+        return _no_cache_json(sync_results)
+        
+    except Exception as e:
+        logger.error(f"Sync test error: {e}")
+        return jsonify({
+            "timestamp": iso_utc(),
+            "sync_status": "error",
+            "error": str(e),
+            "pairs": {}
+        }), 500
+
+
 @app.route("/api/bot/stop", methods=["POST"])
 @require_admin
 def bot_stop() -> ResponseReturnValue:

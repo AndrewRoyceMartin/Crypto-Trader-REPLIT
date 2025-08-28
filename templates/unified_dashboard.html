@@ -222,7 +222,73 @@
               </div>
             </div>
 
-
+            <!-- Strategy Sync Test Indicator -->
+            <div class="row mt-4" id="sync-test-section">
+                <div class="col-12">
+                    <div class="card card--hover" id="sync-indicator-card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">
+                                <span class="icon icon-refresh me-2"></span>Strategy Sync Status
+                            </h5>
+                            <div class="d-flex align-items-center gap-2">
+                                <span id="sync-status-badge" class="badge bg-secondary">
+                                    <span class="icon icon-circle me-1"></span>Unknown
+                                </span>
+                                <button class="btn btn-outline-primary btn-sm" id="btn-run-sync-test" title="Test sync between Enhanced Bollinger Bands strategy and live OKX positions">
+                                    <span class="icon icon-refresh me-1"></span>Test Sync
+                                </button>
+                                <small class="text-muted">
+                                    Last Check: <span id="sync-last-check">—</span>
+                                </small>
+                            </div>
+                        </div>
+                        <div class="card-body" id="sync-test-results" style="min-height: 120px;">
+                            <div class="text-center text-muted py-3" id="sync-placeholder">
+                                <span class="icon icon-sync me-2"></span>
+                                Click "Test Sync" to verify Enhanced Bollinger Bands strategy synchronization with live OKX positions
+                            </div>
+                            <div id="sync-details" style="display: none;">
+                                <div class="row">
+                                    <div class="col-md-3 text-center">
+                                        <div class="h4 mb-1 text-info" id="sync-total-pairs">0</div>
+                                        <div class="small text-muted">Pairs Tested</div>
+                                    </div>
+                                    <div class="col-md-3 text-center">
+                                        <div class="h4 mb-1 text-success" id="sync-synchronized">0</div>
+                                        <div class="small text-muted">Synchronized</div>
+                                    </div>
+                                    <div class="col-md-3 text-center">
+                                        <div class="h4 mb-1 text-warning" id="sync-out-of-sync">0</div>
+                                        <div class="small text-muted">Out of Sync</div>
+                                    </div>
+                                    <div class="col-md-3 text-center">
+                                        <div class="h4 mb-1 text-danger" id="sync-discrepancies">0</div>
+                                        <div class="small text-muted">Discrepancies</div>
+                                    </div>
+                                </div>
+                                <div id="sync-discrepancy-list" class="mt-3" style="display: none;">
+                                    <h6>Position Discrepancies:</h6>
+                                    <div class="table-responsive">
+                                        <table class="table table-sm">
+                                            <thead>
+                                                <tr>
+                                                    <th>Pair</th>
+                                                    <th>Strategy Qty</th>
+                                                    <th>Live Qty</th>
+                                                    <th>Difference</th>
+                                                    <th>Status</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="discrepancy-table-body">
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
         </section>
 

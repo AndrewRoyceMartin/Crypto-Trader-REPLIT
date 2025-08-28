@@ -7531,3 +7531,117 @@ window.generateDynamicColor = generateDynamicColor;
 window.addEventListener("load", function() {
     setTimeout(refreshHoldingsData, 1000);
 });
+
+// Sync Test functionality
+window.SyncTest = {
+    async runSyncTest() {
+        const button = document.getElementById('btn-run-sync-test');
+        const statusBadge = document.getElementById('sync-status-badge');
+        const lastCheck = document.getElementById('sync-last-check');
+        const placeholder = document.getElementById('sync-placeholder');
+        const details = document.getElementById('sync-details');
+        
+        try {
+            // Update UI to show loading
+            button.disabled = true;
+            button.innerHTML = '<span class="icon icon-refresh spinner-border spinner-border-sm me-1"></span>Testing...';
+            statusBadge.className = 'badge bg-warning';
+            statusBadge.innerHTML = '<span class="icon icon-circle me-1"></span>Testing';
+            
+            // Call sync test API
+            const response = await Utils.fetchJSON('/api/sync-test');
+            
+            if (!response) {
+                throw new Error('No response from sync test endpoint');
+            }
+            
+            // Update timestamp
+            lastCheck.textContent = new Date().toLocaleTimeString();
+            
+            // Hide placeholder and show details
+            placeholder.style.display = 'none';
+            details.style.display = 'block';
+            
+            // Update metrics
+            document.getElementById('sync-total-pairs').textContent = response.total_pairs_tested || 0;
+            
+            const discrepancies = response.discrepancies || [];
+            const synchronizedCount = (response.total_pairs_tested || 0) - discrepancies.length;
+            
+            document.getElementById('sync-synchronized').textContent = synchronizedCount;
+            document.getElementById('sync-out-of-sync').textContent = discrepancies.length;
+            document.getElementById('sync-discrepancies').textContent = discrepancies.length;
+            
+            // Update status badge
+            if (discrepancies.length === 0) {
+                statusBadge.className = 'badge bg-success';
+                statusBadge.innerHTML = '<span class="icon icon-check me-1"></span>Synchronized';
+            } else {
+                statusBadge.className = 'badge bg-danger';
+                statusBadge.innerHTML = '<span class="icon icon-warning me-1"></span>Out of Sync';
+            }
+            
+            // Update discrepancies table
+            this.updateDiscrepanciesTable(discrepancies);
+            
+        } catch (error) {
+            console.error('Sync test failed:', error);
+            statusBadge.className = 'badge bg-danger';
+            statusBadge.innerHTML = '<span class="icon icon-times me-1"></span>Error';
+            
+            // Show error message
+            placeholder.innerHTML = `
+                <span class="icon icon-warning me-2 text-danger"></span>
+                Sync test failed: ${error.message}
+            `;
+            placeholder.style.display = 'block';
+            details.style.display = 'none';
+            
+        } finally {
+            // Reset button
+            button.disabled = false;
+            button.innerHTML = '<span class="icon icon-refresh me-1"></span>Test Sync';
+        }
+    },
+    
+    updateDiscrepanciesTable(discrepancies) {
+        const discrepancyList = document.getElementById('sync-discrepancy-list');
+        const tableBody = document.getElementById('discrepancy-table-body');
+        
+        if (discrepancies.length === 0) {
+            discrepancyList.style.display = 'none';
+            return;
+        }
+        
+        // Show discrepancy list
+        discrepancyList.style.display = 'block';
+        
+        // Clear existing rows
+        tableBody.innerHTML = '';
+        
+        // Add discrepancy rows
+        discrepancies.forEach(disc => {
+            const row = document.createElement('tr');
+            const statusClass = Math.abs(disc.difference) > 0.001 ? 'text-danger' : 'text-warning';
+            const statusText = Math.abs(disc.difference) > 0.001 ? 'Major' : 'Minor';
+            
+            row.innerHTML = `
+                <td>${disc.pair}</td>
+                <td>${disc.strategy_qty.toFixed(6)}</td>
+                <td>${disc.live_qty.toFixed(6)}</td>
+                <td class="${statusClass}">${Math.abs(disc.difference).toFixed(6)}</td>
+                <td><span class="badge bg-${statusClass === 'text-danger' ? 'danger' : 'warning'}">${statusText}</span></td>
+            `;
+            
+            tableBody.appendChild(row);
+        });
+    }
+};
+
+// Set up sync test button event handler
+document.addEventListener('DOMContentLoaded', function() {
+    const syncButton = document.getElementById('btn-run-sync-test');
+    if (syncButton) {
+        syncButton.addEventListener('click', () => SyncTest.runSyncTest());
+    }
+});
