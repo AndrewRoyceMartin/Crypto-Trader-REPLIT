@@ -3448,13 +3448,23 @@ def api_available_positions() -> ResponseReturnValue:
             # 'BONK', 'WIF', 'FLOKI', 'JASMY'
         ]
 
-        # Process ALL major assets (including zero balances from the comprehensive list)
-        # Add counter for staggered loading progress logging
+        # BATCH PROCESSING: Process assets in groups of 5 with 2-second delays to prevent timeouts
+        # Split major assets into batches of 5 for manageable processing
+        batch_size = 5
         total_assets = len(major_crypto_assets)
         processed_count = 0
-
-        for symbol in major_crypto_assets:
-            processed_count += 1
+        
+        # Create batches of 5 assets each
+        asset_batches = [major_crypto_assets[i:i + batch_size] for i in range(0, len(major_crypto_assets), batch_size)]
+        total_batches = len(asset_batches)
+        
+        logger.info(f"Processing {total_assets} assets in {total_batches} batches of {batch_size} each")
+        
+        for batch_index, asset_batch in enumerate(asset_batches):
+            logger.info(f"Processing batch {batch_index + 1}/{total_batches}: {asset_batch}")
+            
+            for symbol in asset_batch:
+                processed_count += 1
             # Get balance from actual OKX data or default to zero
             balance_info = balance_data.get(symbol, {'total': 0, 'free': 0, 'used': 0})
 
@@ -3708,10 +3718,7 @@ def api_available_positions() -> ResponseReturnValue:
 
                     available_positions.append(available_position)
 
-                    # Log progress every 10 assets processed
-                    if processed_count % 10 == 0 or processed_count == total_assets:
-                        logger.info(f"Available positions progress: {processed_count}/{total_assets} assets processed")
-
+                    # Log progress and position additions
                     if total_balance > 0:
                         logger.info(f"Added available position: {symbol} with balance {total_balance}")
                     else:
@@ -3720,6 +3727,14 @@ def api_available_positions() -> ResponseReturnValue:
                 except Exception as symbol_error:
                     logger.debug(f"Error processing asset {symbol}: {symbol_error}")
                     continue
+            
+            # Log batch completion and add delay between batches to prevent API timeouts
+            logger.info(f"Batch {batch_index + 1}/{total_batches} complete: processed {processed_count}/{total_assets} assets")
+            
+            if batch_index < total_batches - 1:
+                logger.info(f"Waiting 2 seconds before next batch...")
+                import time
+                time.sleep(2.0)  # 2-second delay between batches
 
         # Sort positions: current holdings first, then by working calculations priority, then alphabetically
         def sort_priority(position):
