@@ -5747,7 +5747,7 @@ function createAvailablePositionRow(position) {
     const targetBuyPrice = parseFloat(position.target_buy_price || 0);
     const priceDifference = parseFloat(position.price_difference || 0);
     const priceDiffPercent = parseFloat(position.price_diff_percent || 0);
-    const buySignal = position.buy_signal || "WAIT";
+    const originalBuySignal = position.buy_signal || "WAIT";
     const daysSinceExit = position.days_since_exit || 0;
     
     // Entry confidence data
@@ -5756,7 +5756,23 @@ function createAvailablePositionRow(position) {
     const confidenceLevel = entryConfidence.level || "FAIR";
     const timingSignal = entryConfidence.timing_signal || "WAIT";
     
-    const buySignalClass = buySignal === "BUY READY" ? "text-success fw-bold" : "text-warning";
+    // CRITICAL FIX: Override buy signal based on timing signal from confidence analysis
+    let buySignal = originalBuySignal;
+    if (timingSignal === "WAIT") {
+        buySignal = "WAIT";
+    } else if (timingSignal === "AVOID") {
+        buySignal = "AVOID";
+    } else if (timingSignal === "STRONG_BUY") {
+        buySignal = "STRONG BUY";
+    } else if (timingSignal === "CAUTIOUS_BUY") {
+        buySignal = "CAUTIOUS BUY";
+    } else if (timingSignal === "BUY") {
+        buySignal = "BUY READY";
+    }
+    
+    const buySignalClass = (buySignal === "BUY READY" || buySignal === "STRONG BUY") ? "text-success fw-bold" : 
+                          (buySignal === "CAUTIOUS BUY") ? "text-warning fw-bold" :
+                          (buySignal === "WAIT") ? "text-muted" : "text-danger";
     const priceDiffClass = priceDifference < 0 ? "text-success" : "text-danger";
     
     // Styling functions
