@@ -3961,6 +3961,32 @@ def api_available_positions() -> ResponseReturnValue:
         
         logger.info(f"Processing {total_assets} assets (comprehensive mode - 68+ cryptocurrencies)")
         
+        # PERFORMANCE FIX: Batch fetch all prices at once to prevent rate limiting
+        batch_prices = {}
+        try:
+            # Add throttling delay before major API call
+            import time
+            time.sleep(0.1)  # 100ms delay to respect rate limits
+            
+            # Get all tickers in a single API call
+            if exchange.exchange:
+                all_tickers = exchange.exchange.fetch_tickers()
+                for symbol in major_crypto_assets:
+                    if symbol not in ['AUD', 'USD', 'EUR', 'GBP', 'USDT', 'USDC', 'DAI', 'BUSD']:
+                        # Try multiple ticker formats
+                        for ticker_symbol in [f"{symbol}/USDT", f"{symbol}/USD", f"{symbol}USDT"]:
+                            if ticker_symbol in all_tickers:
+                                ticker_data = all_tickers[ticker_symbol]
+                                batch_prices[symbol] = float(ticker_data.get('last', 0.0) or 0.0)
+                                break
+                logger.info(f"Batch fetched {len(batch_prices)} prices in single API call")
+        except Exception as batch_error:
+            logger.warning(f"Batch price fetch failed: {batch_error}")
+            # Rate limiting error handling
+            if "busy" in str(batch_error).lower() or "rate" in str(batch_error).lower():
+                logger.error("Rate limiting detected - consider reducing request frequency")
+                time.sleep(1.0)  # Extended delay for rate limiting recovery
+        
         for symbol in major_crypto_assets:
             processed_count += 1
             try:
@@ -3973,14 +3999,11 @@ def api_available_positions() -> ResponseReturnValue:
                         used_balance = float(balance_info.get('used', 0.0) or 0.0)
                         total_balance = float(balance_info.get('total', 0.0) or 0.0)
 
-                        # Get current price for this asset
+                        # Get current price for this asset using batched data
                         current_price = 0.0
                         if symbol not in ['AUD', 'USD', 'EUR', 'GBP', 'USDT', 'USDC', 'DAI', 'BUSD']:  # Skip fiat and stablecoins
-                            try:
-                                current_price = float(portfolio_service._get_live_okx_price(symbol) or 0.0)
-                            except Exception as price_error:
-                                logger.debug(f"Could not get live price for {symbol}: {price_error}")
-                                current_price = 0.0
+                            # Use batched price data to prevent rate limiting
+                            current_price = batch_prices.get(symbol, 0.0)
                         elif symbol in ['USDT', 'USDC', 'DAI', 'BUSD']:
                             current_price = 1.0  # Stablecoins pegged to USD
                         elif symbol == 'AUD':
@@ -4028,22 +4051,15 @@ def api_available_positions() -> ResponseReturnValue:
                     bb_distance_percent = 0.0
                     lower_band_price = 0.0
 
-                    # Enhanced BB analysis for comprehensive position tracking
-                    # Include ALL major tradeable assets for complete recalculation capability
-                    priority_assets = [
-                        # Tier 1: Large caps + current holdings ONLY (fast analysis)
-                        'BTC', 'ETH', 'SOL', 'ADA', 'AVAX', 'LINK', 'UNI', 'LTC', 'XRP',
-                        # Tier 2: Current holdings only  
-                        'GALA', 'TRX', 'PEPE', 'DOGE', 'ALGO', 'ARB', 'BICO'
-                        # Reduced from 40+ to 16 assets for much faster processing
-                    ]
-
-                    # PERFORMANCE FIX: Skip expensive BB analysis by default for faster loading
-                    # Only analyze BB for positions that already have meaningful balances
-                    current_price = current_price if 'current_price' in locals() else 0.0
-                    skip_bb_analysis = current_position_value < 50.0  # Skip BB for small/zero positions
+                    # PERFORMANCE FIX: Severely limit BB analysis to prevent rate limiting
+                    # Only analyze positions we currently hold (non-zero balances)
+                    current_holdings_only = ['GALA', 'TRX', 'PEPE', 'ALGO', 'ARB', 'BICO', 'BTC', 'SOL', 'LINK']
                     
-                    if (current_price > 0 and symbol in priority_assets and not skip_bb_analysis):
+                    # Skip BB analysis for zero/small positions to prevent API overload
+                    skip_bb_analysis = (current_position_value < 50.0 or 
+                                      symbol not in current_holdings_only)
+                    
+                    if (current_price > 0 and not skip_bb_analysis):
                         logger.info(f"Calculating BB opportunity analysis for {symbol} at ${current_price}")
 
                         # Ultra-fast processing for recalculate operations - REMOVED DELAY
