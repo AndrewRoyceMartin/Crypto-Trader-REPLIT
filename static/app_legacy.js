@@ -1787,8 +1787,17 @@ class TradingApp {
             significantHoldings.forEach(holding => {
                 const row = document.createElement('tr');
                 
-                // PnL color class
-                const pnlClass = holding.pnl_percent >= 0 ? 'text-success' : 'text-danger';
+                // Enhanced P&L color class with nuanced levels
+                const getEnhancedPnlClass = (pnlPercent) => {
+                    if (pnlPercent >= 10) return 'text-success fw-bold';       // Excellent gains (>10%): Bold bright green
+                    if (pnlPercent >= 3) return 'text-success';                // Good gains (3-10%): Green
+                    if (pnlPercent >= 0) return 'text-success opacity-75';     // Small gains (0-3%): Light green
+                    if (pnlPercent >= -3) return 'text-warning opacity-75';    // Small losses (0 to -3%): Light orange
+                    if (pnlPercent >= -10) return 'text-warning';              // Moderate losses (-3% to -10%): Orange
+                    return 'text-danger fw-bold';                              // Heavy losses (< -10%): Bold red
+                };
+                
+                const pnlClass = getEnhancedPnlClass(holding.pnl_percent || 0);
                 const pnlSign = holding.pnl_percent >= 0 ? '+' : '';
                 
                 // Get coin display info
@@ -3174,7 +3183,17 @@ class TradingApp {
                 const pnlNum = crypto.pnl || crypto.unrealized_pnl || 0;
                 const pp = crypto.pnl_percent || 0;
 
-                const pnlClass = pnlNum >= 0 ? 'text-success' : 'text-danger';
+                // Enhanced P&L color class with nuanced levels
+                const getEnhancedPnlClass = (pnlPercent) => {
+                    if (pnlPercent >= 10) return 'text-success fw-bold';       // Excellent gains (>10%): Bold bright green
+                    if (pnlPercent >= 3) return 'text-success';                // Good gains (3-10%): Green
+                    if (pnlPercent >= 0) return 'text-success opacity-75';     // Small gains (0-3%): Light green
+                    if (pnlPercent >= -3) return 'text-warning opacity-75';    // Small losses (0 to -3%): Light orange
+                    if (pnlPercent >= -10) return 'text-warning';              // Moderate losses (-3% to -10%): Orange
+                    return 'text-danger fw-bold';                              // Heavy losses (< -10%): Bold red
+                };
+                
+                const pnlClass = getEnhancedPnlClass(pp);
                 const pnlIcon = pnlNum >= 0 ? '↗' : '↘';
 
                 // Calculate dynamic display values
@@ -5771,23 +5790,60 @@ function createAvailablePositionRow(position) {
     
     const buySignal = position.buy_signal || "WAIT";
     
-    const buySignalClass = buySignal === "BUY READY" ? "text-success fw-bold" : "text-warning";
-    const priceDiffClass = priceDifference < 0 ? "text-success" : "text-danger";
+    const getBuySignalClass = (signal) => {
+        switch(signal) {
+            case "READY TO BUY":
+            case "BUY READY":
+            case "STRONG BUY":
+                return "text-success fw-bold";  // Bright green for ready to buy
+            case "CAUTIOUS BUY":
+                return "text-warning fw-bold";  // Bold orange for caution
+            case "MONITORING":
+            case "WAIT":
+                return "text-secondary";        // Gray for monitoring/waiting
+            case "AVOID":
+                return "text-danger";          // Red for avoid
+            default:
+                return "text-muted";
+        }
+    };
+    
+    const buySignalClass = getBuySignalClass(buySignal);
+    // Enhanced price difference coloring
+    const getPriceDiffClass = (diffPercent) => {
+        if (diffPercent <= -5) return "text-success fw-bold";    // Excellent discount (>5% below target)
+        if (diffPercent <= -2) return "text-success";           // Good discount (2-5% below target)
+        if (diffPercent <= 0) return "text-warning";            // Small discount (0-2% below target)
+        if (diffPercent <= 2) return "text-warning";            // Slightly above target
+        return "text-danger";                                   // Significantly above target
+    };
+    
+    const priceDiffClass = getPriceDiffClass(priceDiffPercent);
     
     // Styling functions
     const getConfidenceClass = (score) => {
-        if (score >= 90) return "text-success fw-bold";
-        if (score >= 75) return "text-success";
-        if (score >= 60) return "text-warning";
-        if (score >= 40) return "text-muted";
-        return "text-danger";
+        if (score >= 90) return "text-success fw-bold";  // 90-100: Excellent (bright green)
+        if (score >= 75) return "text-success";         // 75-89: Good (green)
+        if (score >= 60) return "text-warning";         // 60-74: Fair (orange)
+        if (score >= 40) return "text-warning";         // 40-59: Weak (orange) 
+        return "text-danger";                           // 0-39: Poor (red)
     };
     
     const getTimingSignalClass = (signal) => {
-        if (signal === "STRONG_BUY" || signal === "BUY") return "text-success fw-bold";
-        if (signal === "CAUTIOUS_BUY") return "text-warning fw-bold";
-        if (signal === "WAIT") return "text-muted";
-        return "text-danger";
+        switch(signal) {
+            case "STRONG_BUY":
+                return "text-success fw-bold";  // Bright green for strong buy
+            case "BUY":
+                return "text-success";          // Green for buy
+            case "CAUTIOUS_BUY":
+                return "text-warning fw-bold";  // Bold orange for caution
+            case "WAIT":
+                return "text-secondary";        // Gray for wait
+            case "AVOID":
+                return "text-danger";          // Red for avoid
+            default:
+                return "text-muted";
+        }
     };
     
     const getRiskLevelClass = (level) => {
@@ -5968,7 +6024,7 @@ function createAvailablePositionRow(position) {
     const botCriteriaCell = document.createElement('td');
     botCriteriaCell.className = 'text-center';
     
-    // Simple bot criteria logic
+    // Enhanced bot criteria logic with better colors
     const getBotBuyCriteriaStatus = () => {
         // Check if already owned (has significant balance)
         const hasSignificantBalance = currentBalance > 0 && (currentBalance * currentPrice) >= 100;
@@ -5976,17 +6032,34 @@ function createAvailablePositionRow(position) {
             return { status: "OWNED", class: "text-info fw-bold", tooltip: "Already in portfolio" };
         }
         
-        // Check for buy conditions based on timing signal
-        if (timingSignal === "BUY" && confidenceScore >= 60) {
-            return { status: "READY TO BUY", class: "text-success fw-bold", tooltip: "BUY signal with good confidence" };
+        // Check Bollinger Band triggers first (highest priority)
+        const bbAnalysis = position.bollinger_analysis || {};
+        if (bbAnalysis.signal === "BUY ZONE") {
+            return { status: "BOT WILL BUY", class: "text-success fw-bold bg-success bg-opacity-10", tooltip: "Price hit lower Bollinger Band - bot auto-buy triggered!" };
         }
         
+        // Check for strong buy conditions
+        if (timingSignal === "STRONG_BUY" && confidenceScore >= 75) {
+            return { status: "READY TO BUY", class: "text-success fw-bold", tooltip: "Strong buy signal with high confidence" };
+        }
+        
+        // Check for regular buy conditions  
+        if (timingSignal === "BUY" && confidenceScore >= 60) {
+            return { status: "READY TO BUY", class: "text-success fw-bold", tooltip: "Buy signal with good confidence" };
+        }
+        
+        // Check for cautious buy conditions
         if (timingSignal === "CAUTIOUS_BUY" && confidenceScore >= 50) {
-            return { status: "WATCH", class: "text-warning fw-bold", tooltip: "CAUTIOUS_BUY signal" };
+            return { status: "WATCH", class: "text-warning fw-bold", tooltip: "Cautious buy signal - monitoring for better entry" };
+        }
+        
+        // Check for avoid conditions
+        if (timingSignal === "AVOID" || confidenceScore < 30) {
+            return { status: "AVOID", class: "text-danger", tooltip: "Poor conditions - avoiding entry" };
         }
         
         // Default monitoring state
-        return { status: "MONITORING", class: "text-secondary", tooltip: "Monitoring conditions" };
+        return { status: "MONITORING", class: "text-secondary", tooltip: "Monitoring market conditions" };
     };
     
     // LEGACY CODE - This entire block below should be replaced with the simplified version above
