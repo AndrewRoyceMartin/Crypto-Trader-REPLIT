@@ -3156,6 +3156,36 @@ def api_current_holdings() -> ResponseReturnValue:
             pnl_amount = current_value - cost_basis
             pnl_percent = (pnl_amount / cost_basis * 100) if cost_basis > 0 else 0
 
+            # Calculate Bollinger Bands for actual target pricing
+            upper_band_price = price  # Default fallback
+            target_multiplier = 1.04  # 4% fallback
+            
+            try:
+                if symbol not in STABLES:
+                    # Get market data for Bollinger Band calculation
+                    candles = with_throttle(client.market_candles, f"{symbol}-USDT", bar="1H", limit=50)
+                    if candles and len(candles) >= 20:
+                        import pandas as pd
+                        from src.indicators.technical import TechnicalIndicators
+                        
+                        # Convert to DataFrame
+                        df = pd.DataFrame(candles, columns=['timestamp', 'open', 'high', 'low', 'close', 'volume'])
+                        df['close'] = df['close'].astype(float)
+                        
+                        # Calculate Bollinger Bands (20-period, 2.0 std dev)
+                        indicators = TechnicalIndicators()
+                        upper_band, middle_band, lower_band = indicators.bollinger_bands(df['close'], period=20, std_dev=2.0)
+                        
+                        # Get the latest upper band value
+                        if len(upper_band) > 0 and not pd.isna(upper_band.iloc[-1]):
+                            upper_band_price = float(upper_band.iloc[-1])
+                            if upper_band_price > price:  # Only use if it's above current price
+                                target_multiplier = upper_band_price / avg_entry_price if avg_entry_price > 0 else 1.04
+                        
+            except Exception as bb_error:
+                logger.debug(f"Could not calculate Bollinger Bands for {symbol}: {bb_error}")
+                # Keep fallback values
+
             holdings.append({
                 "symbol": symbol,
                 "name": symbol,
@@ -3172,6 +3202,8 @@ def api_current_holdings() -> ResponseReturnValue:
                 "unrealized_pnl": pnl_amount,  # Consistent with portfolio service
                 "unrealized_pnl_percent": pnl_percent,  # Consistent with portfolio service
                 "allocation_percent": float(h.get('allocation_percent', 0) or 0),
+                "upper_band_price": upper_band_price,  # Add Bollinger Band target
+                "target_multiplier": target_multiplier,  # Dynamic target multiplier
                 "is_live": True,
                 "source": "okx_portfolio_service"
             })

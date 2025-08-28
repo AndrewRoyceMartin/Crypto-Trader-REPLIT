@@ -5477,12 +5477,12 @@ function updateOpenPositionsTable(positions, totalValue = 0) {
             const currentPnlDollar = parseFloat(position.pnl_amount || 0);
             const currentPnlPercent = parseFloat(position.pnl_percent || 0);
             
-            // Target calculations - Use ACTUAL algorithm profit target (4% from Enhanced Bollinger Bands)
-            let targetMultiplier = 1.04; // 4% profit target from Enhanced Bollinger Bands strategy
+            // Target calculations - Use ACTUAL upper Bollinger Band prices instead of hardcoded 4%
+            let targetMultiplier = position.target_multiplier || 1.04; // Use dynamic Bollinger Band target or 4% fallback
+            let upperBandPrice = position.upper_band_price || currentPrice * 1.04; // Use actual upper band or fallback
             
-            // No hardcoded overrides - use the actual algorithm's take profit setting
-            // This matches the Enhanced Bollinger Bands strategy in production
-            
+            // Calculate target based on upper Bollinger Band price, not fixed percentage
+            // This reflects the real algorithmic exit strategy used in production
             const targetTotalValue = totalCostBasis * targetMultiplier;
             const targetPnlDollar = targetTotalValue - totalCostBasis;
             const targetPnlPercent = totalCostBasis > 0 ? (targetPnlDollar / totalCostBasis) * 100 : 0;
