@@ -3079,7 +3079,20 @@ class TradingApp {
         this.isUpdatingTables = true;
 
         try {
-            this.updateLoadingProgress(20, 'Fetching cryptocurrency data...');
+            // Start Holdings progress tracking with timer
+            const startTime = Date.now();
+            const elapsedTime = document.getElementById('holdings-elapsed-time');
+            const updateTimer = setInterval(() => {
+                const elapsed = Math.floor((Date.now() - startTime) / 1000);
+                if (elapsedTime) elapsedTime.textContent = `${elapsed}s`;
+            }, 1000);
+            
+            // Step 1: Initialize request
+            this.updateHoldingsProgress(5, 'Initializing request...', 0);
+            console.log('📊 Holdings refresh starting - loading data');
+            
+            // Step 2: OKX Connection
+            this.updateHoldingsProgress(15, 'Connecting to OKX API...', 0);
             
             // Abort any existing request
             if (this.portfolioAbortController) {
@@ -3087,6 +3100,8 @@ class TradingApp {
             }
             this.portfolioAbortController = new AbortController();
             
+            // Step 3: Fetch data
+            this.updateHoldingsProgress(25, 'Fetching portfolio data...', 0);
             const ts = Date.now();
             const response = await fetch(`/api/crypto-portfolio?_bypass_cache=${ts}&debug=1&currency=${this.selectedCurrency}`, {
                 cache: 'no-cache',
@@ -3098,17 +3113,25 @@ class TradingApp {
                 console.debug('API request failed:', response.status, response.statusText);
                 const errorText = await response.text();
                 console.debug('Error response body:', errorText);
+                clearInterval(updateTimer);
+                this.updateHoldingsProgress(100, 'Error occurred', 0);
                 this.hideLoadingProgress();
                 return;
             }
 
-            this.updateLoadingProgress(60, 'Processing market data...');
+            // Step 4: Processing data
+            this.updateHoldingsProgress(50, 'Processing market data...', 0);
             const data = await response.json();
+            
+            // Step 5: Validating data integrity
+            this.updateHoldingsProgress(70, 'Validating data integrity...', 0);
 
             const holdings = data.holdings || data.cryptocurrencies || [];
             const summary = data.summary || {};
 
             if (!holdings || holdings.length === 0) {
+                clearInterval(updateTimer);
+                this.updateHoldingsProgress(100, 'No positions found', 0);
                 if (this.displayEmptyPortfolioMessage) {
                     this.displayEmptyPortfolioMessage();
                 }
@@ -3120,6 +3143,9 @@ class TradingApp {
             if (data.price_validation?.failed_symbols?.length && this.displayPriceDataWarning) {
                 this.displayPriceDataWarning(data.price_validation.failed_symbols);
             }
+
+            // Step 6: Updating tables
+            this.updateHoldingsProgress(85, 'Updating table display...', holdings.length);
 
             // Use the new overview object for consistent data access
             const overview = data.overview || {};
@@ -3149,12 +3175,16 @@ class TradingApp {
             // Persist and render
             this.currentCryptoData = holdings;
 
-            this.updateLoadingProgress(80, 'Updating displays...');
+            // Step 7: Updating displays
+            this.updateHoldingsProgress(90, 'Updating crypto displays...', holdings.length);
             this.updateCryptoSymbols(holdings);
             this.updateCryptoTable(holdings);
 
             // Update holdings widgets/table - CONSOLIDATED update to prevent flashing
             this.updateAllTables(holdings);
+
+            // Step 8: Finalizing
+            this.updateHoldingsProgress(95, 'Finalizing summary...', holdings.length);
 
             // Small summary widget method (class-local) - use overview data
             this.updatePortfolioSummary({
@@ -3180,8 +3210,16 @@ class TradingApp {
                 console.log('Trades data available:', trades.length);
             }
 
-            this.updateLoadingProgress(100, 'Complete!');
-            setTimeout(() => this.hideLoadingProgress(), 1000);
+            // Step 9: Complete
+            this.updateHoldingsProgress(100, 'Complete!', holdings.length);
+            console.debug("Holdings table updated successfully");
+            clearInterval(updateTimer);
+            
+            // Hide progress after a brief delay
+            setTimeout(() => {
+                const progressStatus = document.getElementById('holdings-progress-status');
+                if (progressStatus) progressStatus.textContent = 'Ready';
+            }, 2000);
 
             // Update timestamp after successful holdings refresh
             const stamp = this.formatTimeOnly(Date.now());
@@ -3200,7 +3238,8 @@ class TradingApp {
                     stack: error.stack
                 });
             }
-            this.updateLoadingProgress(0, 'Error loading data');
+            clearInterval(updateTimer);
+            this.updateHoldingsProgress(100, 'Error occurred', 0);
             this.hideLoadingProgress();
         } finally {
             this.portfolioAbortController = null;
@@ -3408,6 +3447,38 @@ class TradingApp {
             progressText.textContent = message || `${percent}%`;
         }
         console.log(`Loading progress: ${percent}% - ${message}`);
+    }
+
+    updateHoldingsProgress(percent, stepMessage, processedCount = 0) {
+        // Update Holdings progress elements
+        const progressBar = document.getElementById('holdings-progress-bar');
+        const progressText = document.getElementById('holdings-progress-text');
+        const currentStep = document.getElementById('holdings-current-step');
+        const processedCountEl = document.getElementById('holdings-processed-count');
+        const progressStatus = document.getElementById('holdings-progress-status');
+
+        if (progressBar) {
+            progressBar.style.width = `${percent}%`;
+            progressBar.setAttribute('aria-valuenow', percent);
+        }
+        
+        if (progressText) {
+            progressText.textContent = `${percent}%`;
+        }
+        
+        if (currentStep) {
+            currentStep.textContent = stepMessage;
+        }
+        
+        if (processedCountEl) {
+            processedCountEl.textContent = processedCount;
+        }
+        
+        if (progressStatus) {
+            progressStatus.textContent = percent === 100 ? 'Complete' : 'Loading...';
+        }
+        
+        console.log(`Holdings progress: ${percent}% - ${stepMessage}`);
     }
     hideLoadingProgress() {
         const progressBar = document.getElementById('crypto-loading-progress');
