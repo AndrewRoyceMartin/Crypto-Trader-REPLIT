@@ -1,0 +1,156 @@
+        
+
+                Comprehensive Test Session: 28/08/2025, 16:18:39
+
+                Overall Success Rate: 42%
+
+                Total Execution Time: 260399ms
+
+                Categories Tested: 7
+            
+
+            
+            
+Detailed Test Logs:
+
+            
+
+                
+        
+=== CRITICAL CATEGORY ===
+Success Rate: 33%
+Execution Time: 166174ms
+Test Count: 3
+
+INDIVIDUAL TEST RESULTS:
+
+[FAIL] holdings_sync_enhanced (16:16:54)
+  ⏱️ Time: 155490.29999999702ms
+
+[PASS] price_freshness_realtime (16:17:04)
+  ⏱️ Time: 166172.30000000075ms
+
+[FAIL] recalculation_workflow_advanced (16:14:19)
+  ❌ Error: Critical: Recalculation button not found after DOM ready check
+  ⏱️ Time: 529.6999999992549ms
+
+==================================================
+
+=== PERFORMANCE CATEGORY ===
+Success Rate: 67%
+Execution Time: 204649ms
+Test Count: 3
+
+INDIVIDUAL TEST RESULTS:
+
+[FAIL] api_response_timing (16:17:43)
+  ⏱️ Time: 204648ms
+
+[PASS] basic_api_connectivity (16:14:43)
+  📄 Details: OKX Status: Connected ({"status":{"balance":{},"connected":true,"connection_type":"Live Trading","exchange_name":"OKX Exchange","initialized":true,"last_sync":"2025-08-28T06:14:44Z","market_status":"open","total_prices":0,"trading_mode":"Live Trading","trading_pairs":2383},"success":true})
+  ⏱️ Time: 24901.699999999255ms
+
+[PASS] basic_portfolio_data (16:14:43)
+  📄 Details: Found 9 holdings
+  ⏱️ Time: 25214.699999999255ms
+
+==================================================
+
+=== UI_INTERACTION CATEGORY ===
+Success Rate: 33%
+Execution Time: 26802ms
+Test Count: 3
+
+INDIVIDUAL TEST RESULTS:
+
+[FAIL] button_workflow_comprehensive (16:14:18)
+  ⏱️ Time: 16.100000001490116ms
+
+[FAIL] basic_button_functions (16:14:18)
+  📄 Details: Functionality: Normal Tests enabled, Enhanced Tests has icons, Export enabled, Export has handler, 2 buttons interactive | Failures: Enhanced Tests disabled (83% success)
+  ⏱️ Time: 15.600000001490116ms
+
+[PASS] basic_price_updates (16:14:45)
+  📄 Details: Price source: connected
+  ⏱️ Time: 26799.300000000745ms
+
+==================================================
+
+=== TRADING_BUTTONS CATEGORY ===
+Success Rate: 75%
+Execution Time: 20ms
+Test Count: 4
+
+INDIVIDUAL TEST RESULTS:
+
+[PASS] testATOExportButton (16:14:18)
+  📄 Details: Export functionality: enabled, has click handler, has tooltip, visible
+  ⏱️ Time: 12.800000000745058ms
+
+[PASS] testBuyButton (16:14:18)
+  📄 Details: Action button functionality: enabled, styled, has icon, focusable
+  ⏱️ Time: 12.199999999254942ms
+
+[FAIL] testSellButton (16:14:18)
+  📄 Details: Action button states: has icon, clickable
+  ⏱️ Time: 11.299999997019768ms
+
+[PASS] testTakeProfitButton (16:14:18)
+  📄 Details: 2 functional buttons with states: has events, styled
+  ⏱️ Time: 10.899999998509884ms
+
+==================================================
+
+=== STRATEGY_VALIDATION CATEGORY ===
+Success Rate: 50%
+Execution Time: 260383ms
+Test Count: 2
+
+INDIVIDUAL TEST RESULTS:
+
+[PASS] bollinger_strategy_priority (16:18:12)
+  ⏱️ Time: 234023.1000000015ms
+
+[PARTIAL] available_positions_data_integrity (16:18:39)
+  ⏱️ Time: 260379.79999999702ms
+
+==================================================
+
+=== DATA_INTEGRITY CATEGORY ===
+Success Rate: 33%
+Execution Time: 237026ms
+Test Count: 3
+
+INDIVIDUAL TEST RESULTS:
+
+[FAIL] holdings_sync_enhanced (16:16:14)
+  ⏱️ Time: 115809.89999999851ms
+
+[PASS] price_freshness_realtime (16:17:39)
+  ⏱️ Time: 200753.20000000298ms
+
+[FAIL] api_response_timing (16:18:15)
+  ⏱️ Time: 237024ms
+
+==================================================
+
+=== WORKFLOW_TESTS CATEGORY ===
+Success Rate: 0%
+Execution Time: 513ms
+Test Count: 2
+
+INDIVIDUAL TEST RESULTS:
+
+[FAIL] recalculation_workflow_advanced (16:14:19)
+  ❌ Error: Critical: Recalculation button not found after DOM ready check
+  ⏱️ Time: 512.9000000022352ms
+
+[FAIL] button_workflow_comprehensive (16:14:18)
+  ⏱️ Time: 2.5ms
+
+==================================================
+
+=== RECOMMENDATIONS ===
+- Overall system reliability needs attention
+- API response times are concerning
+- workflow_tests category requires immediate attention
