@@ -1,0 +1,21 @@
+Debug functions loaded.
+(index):426 DOM ready, Bootstrap: true Chart.js: true
+app_legacy.js?v=1756361427_1756362109175:3002 Loading progress: 20% - Fetching cryptocurrency data...
+/api/crypto-portfolio?_bypass_cache=1756362109875&debug=1&currency=USD:1  Failed to load resource: the server responded with a status of 500 ()Understand this error
+/api/current-holdings:1  Failed to load resource: the server responded with a status of 500 ()Understand this error
+/api/worst-performer:1  Failed to load resource: the server responded with a status of 500 ()Understand this error
+/api/asset-allocation:1  Failed to load resource: the server responded with a status of 500 ()Understand this error
+/api/equity-curve?timeframe=30d:1  Failed to load resource: the server responded with a status of 500 ()Understand this error
+/api/best-performer:1  Failed to load resource: the server responded with a status of 500 ()Understand this error
+/api/crypto-portfolio?currency=USD&ts=1756362109990:1  Failed to load resource: the server responded with a status of 500 ()Understand this error
+/api/drawdown-analysis?timeframe=30d:1  Failed to load resource: the server responded with a status of 500 ()Understand this error
+app_legacy.js?v=1756361427_1756362109175:7512 🧪 TESTING BOT CRITERIA LOGIC:
+app_legacy.js?v=1756361427_1756362109175:7530 Test 1: CAUTIOUS_BUY, Price: 0.92, Target: 1.00 (8% discount, 10% target) → WATCH (should be READY TO BUY)
+app_legacy.js?v=1756361427_1756362109175:7548 Test 2: BUY, Price: 0.97, Target: 1.00 (3% discount, 8% target) → MONITORING (should be MONITORING)
+app_legacy.js?v=1756361427_1756362109175:7555 Test 2 Debug: discount=3.0000000000000027%, targetPct=8%, managed=6.4%, watch=3.2%
+app_legacy.js?v=1756361427_1756362109175:1693 Holdings data received: Array(9)
+app_legacy.js?v=1756361427_1756362109175:2811 Table update too frequent, skipping...
+app_legacy.js?v=1756361427_1756362109175:7512 🧪 TESTING BOT CRITERIA LOGIC:
+app_legacy.js?v=1756361427_1756362109175:7530 Test 1: CAUTIOUS_BUY, Price: 0.92, Target: 1.00 (8% discount, 10% target) → WATCH (should be READY TO BUY)
+app_legacy.js?v=1756361427_1756362109175:7548 Test 2: BUY, Price: 0.97, Target: 1.00 (3% discount, 8% target) → MONITORING (should be MONITORING)
+app_legacy.js?v=1756361427_1756362109175:7555 Test 2 Debug: discount=3.0000000000000027%, targetPct=8%, managed=6.4%, watch=3.2%

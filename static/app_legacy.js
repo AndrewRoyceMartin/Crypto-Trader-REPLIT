@@ -5723,10 +5723,7 @@ async function fetchAndUpdateAvailablePositions() {
         const data = await response.json();
         console.debug("Available positions API response:", data);
         
-        // Run self-test on first load
-        if (typeof testBotCriteria === 'function') {
-            testBotCriteria();
-        }
+        // Production mode - self-test removed for clean console output
         
         if (data.success) {
             // Call the table rendering function
@@ -7507,53 +7504,7 @@ function buildAvailableRow(row) {
     };
 }
 
-// Self-test function for bot criteria logic
-function testBotCriteria() {
-    console.log("🧪 TESTING BOT CRITERIA LOGIC:");
-    
-    // Test Case 1: CAUTIOUS_BUY with 8% discount, 10% target
-    const test1 = {
-        current_price: 0.92,
-        target_buy_price: 1.00,
-        target_pct: 10,
-        entry_confidence: { timing_signal: 'CAUTIOUS_BUY', level: 'FAIR' }
-    };
-    const result1 = deriveBotCriteria({ 
-        price: 0.92, 
-        target: 1.00, 
-        timing: 'CAUTIOUS_BUY', 
-        holding: test1, 
-        confidence: 'FAIR', 
-        owned: false, 
-        isFiat: false 
-    });
-    console.log(`Test 1: CAUTIOUS_BUY, Price: 0.92, Target: 1.00 (8% discount, 10% target) → ${result1} (should be READY TO BUY)`);
-    
-    // Test Case 2: BUY with 3% discount, 8% target  
-    const test2 = {
-        current_price: 0.97,
-        target_buy_price: 1.00,
-        target_pct: 8,
-        entry_confidence: { timing_signal: 'BUY', level: 'FAIR' }
-    };
-    const result2 = deriveBotCriteria({ 
-        price: 0.97, 
-        target: 1.00, 
-        timing: 'BUY', 
-        holding: test2, 
-        confidence: 'FAIR', 
-        owned: false, 
-        isFiat: false 
-    });
-    console.log(`Test 2: BUY, Price: 0.97, Target: 1.00 (3% discount, 8% target) → ${result2} (should be MONITORING)`);
-    
-    // Debug calculations for Test 2
-    const discount2 = pctDiscount(0.97, 1.00);
-    const targetPct2 = getTargetPercent(test2);
-    const managed2 = Math.max(targetPct2 * 0.8, 6.0);
-    const watch2 = Math.max(targetPct2 * 0.4, 3.0);
-    console.log(`Test 2 Debug: discount=${discount2}%, targetPct=${targetPct2}%, managed=${managed2}%, watch=${watch2}%`);
-}
+// Production bot criteria logic - testing function removed for clean production environment
 
 // Dynamic color generation based on symbol hash
 function generateDynamicColor(symbol) {
