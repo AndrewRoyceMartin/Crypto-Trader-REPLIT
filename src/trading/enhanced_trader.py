@@ -109,14 +109,47 @@ class EnhancedTrader:
                         
                         # Check if position should exit immediately
                         gain_percent = ((current_price - avg_entry_price) / avg_entry_price) * 100
-                        if gain_percent >= 4.0:  # Above 4% primary target
-                            self.logger.warning(
-                                "⚠️ EXISTING POSITION ABOVE TARGET: %s at +%.2f%% (Target: 4.0%%) - Will exit on next signal",
+                        if gain_percent >= 6.0:  # Above 6% safety net - EXECUTE IMMEDIATE EXIT
+                            self.logger.error(
+                                "🚨 EXISTING POSITION ABOVE SAFETY NET: %s at +%.2f%% (Safety: 6.0%%) - EXECUTING IMMEDIATE EXIT",
                                 base_symbol, gain_percent
                             )
-                        elif gain_percent >= 6.0:  # Above 6% safety net
-                            self.logger.error(
-                                "🚨 EXISTING POSITION ABOVE SAFETY NET: %s at +%.2f%% (Safety: 6.0%%) - Will exit immediately",
+                            # CRITICAL FIX: Actually execute the exit trade
+                            try:
+                                # Create immediate sell signal for safety exit
+                                from ..strategies.enhanced_bollinger_strategy import Signal
+                                
+                                # Calculate exact sell parameters
+                                fill_price = current_price * 0.999  # Slight discount for immediate fill
+                                gross_pnl = quantity * (fill_price - avg_entry_price)
+                                fees = 0.001 * (fill_price + avg_entry_price) * quantity
+                                net_pnl = gross_pnl - fees
+                                
+                                safety_signal = Signal(
+                                    action='sell',
+                                    size=quantity,
+                                    confidence=0.95,  # High confidence for safety exit
+                                    metadata={
+                                        'event': 'SAFETY_TAKE_PROFIT_IMMEDIATE',
+                                        'pnl': net_pnl,
+                                        'gain_percent': gain_percent,
+                                        'exit_reason': 'Position above 6% safety threshold'
+                                    }
+                                )
+                                
+                                # Execute the safety exit immediately
+                                self._execute_enhanced_signal(safety_signal, symbol, current_price, datetime.now())
+                                self.logger.critical(
+                                    "✅ SAFETY EXIT EXECUTED: %s sold %.6f units at $%.4f for +%.2f%% profit",
+                                    base_symbol, quantity, fill_price, gain_percent
+                                )
+                                
+                            except Exception as exit_error:
+                                self.logger.error(f"❌ SAFETY EXIT FAILED for {base_symbol}: {exit_error}")
+                                
+                        elif gain_percent >= 4.0:  # Above 4% primary target
+                            self.logger.warning(
+                                "⚠️ EXISTING POSITION ABOVE TARGET: %s at +%.2f%% (Target: 4.0%%) - Will exit on next signal",
                                 base_symbol, gain_percent
                             )
                 else:
