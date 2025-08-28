@@ -477,7 +477,7 @@
     </script>
     
     <!-- Custom JS - ES6 modules with defer for optimal loading -->
-    <script type="module" defer src="{{ url_for('static', filename='app_legacy.js') }}?v={{ cache_version|default(0) }}"></script>
+    <script defer src="{{ url_for('static', filename='app_legacy.js') }}?v={{ cache_version|default(0) }}"></script>
 
     <script>
     // === GLOBAL ADMIN TOKEN HANDLING ===
