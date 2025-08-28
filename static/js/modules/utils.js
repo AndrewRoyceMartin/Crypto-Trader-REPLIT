@@ -77,36 +77,13 @@ export class AppUtils {
         const numericAmount = AppUtils.safeNum(amount, 0);
         const curr = currency || AppUtils.currentCurrency();
         
-        // Handle very small amounts with extended decimal places
-        if (Math.abs(numericAmount) < 0.000001 && numericAmount !== 0) {
-            return new Intl.NumberFormat('en-US', {
-                style: 'currency',
-                currency: curr,
-                minimumFractionDigits: 8,
-                maximumFractionDigits: 8
-            }).format(numericAmount);
-        }
-
-        // Handle small amounts (under $0.01) with more decimal places
-        if (Math.abs(numericAmount) < 0.01 && numericAmount !== 0) {
-            return new Intl.NumberFormat('en-US', {
-                style: 'currency',
-                currency: curr,
-                minimumFractionDigits: 4,
-                maximumFractionDigits: 6
-            }).format(numericAmount);
-        }
-        
-        if (curr === 'USD') {
-            return new Intl.NumberFormat('en-US', {
-                style: 'currency',
-                currency: 'USD',
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2
-            }).format(numericAmount);
-        }
-        
-        return `${numericAmount.toFixed(2)} ${curr}`;
+        // Always use 8 decimal places for all dollar amounts
+        return new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: curr,
+            minimumFractionDigits: 8,
+            maximumFractionDigits: 8
+        }).format(numericAmount);
     }
 
     static formatCryptoPrice(amount, currency = null) {

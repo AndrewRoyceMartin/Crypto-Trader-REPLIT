@@ -130,8 +130,8 @@ function fmtCurrency(n){
     return new Intl.NumberFormat('en-US', {
         style:'currency',
         currency: currentCurrency(),
-        minimumFractionDigits:2,
-        maximumFractionDigits:2
+        minimumFractionDigits:8,
+        maximumFractionDigits:8
     }).format(Number(n||0));
 }
 // Assign to namespace
@@ -326,28 +326,13 @@ class TradingApp {
     formatCurrency(amount, currency = null) {
         const numericAmount = Number(amount) || 0;
         
-        // Handle very small amounts with extended decimal places
-        if (Math.abs(numericAmount) < 0.000001 && numericAmount !== 0) {
-            return new Intl.NumberFormat('en-US', {
-                style: 'currency',
-                currency: currentCurrency(),
-                minimumFractionDigits: 8,
-                maximumFractionDigits: 8
-            }).format(numericAmount);
-        }
-
-        // Handle small amounts (under $0.01) with more decimal places
-        if (Math.abs(numericAmount) < 0.01 && numericAmount !== 0) {
-            return new Intl.NumberFormat('en-US', {
-                style: 'currency',
-                currency: currentCurrency(),
-                minimumFractionDigits: 4,
-                maximumFractionDigits: 6
-            }).format(numericAmount);
-        }
-
-        // Use global fmtCurrency for standard amounts
-        return fmtCurrency(numericAmount);
+        // Always use 8 decimal places for all dollar amounts
+        return new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: currentCurrency(),
+            minimumFractionDigits: 8,
+            maximumFractionDigits: 8
+        }).format(numericAmount);
     }
 
     // Special formatter for crypto prices with consistent precision
@@ -3197,8 +3182,8 @@ class TradingApp {
                 const daysHeld = '30';
 
                 // Calculate target values from cost basis
-                const targetValue = (totalCostBasis * 1.08).toLocaleString('en-US', {style: 'currency', currency: 'USD'});
-                const targetProfit = (totalCostBasis * 0.08).toLocaleString('en-US', {style: 'currency', currency: 'USD'});
+                const targetValue = (totalCostBasis * 1.08).toLocaleString('en-US', {style: 'currency', currency: 'USD', minimumFractionDigits: 8, maximumFractionDigits: 8});
+                const targetProfit = (totalCostBasis * 0.08).toLocaleString('en-US', {style: 'currency', currency: 'USD', minimumFractionDigits: 8, maximumFractionDigits: 8});
                 
                 // Get position status badge based on P&L
                 let positionStatus = '<span class="badge bg-secondary">FLAT</span>';
@@ -6161,10 +6146,10 @@ function createHoldingRow(holding) {
         const avgEntryPrice = costBasis / (quantity || 1); // Calculate avg entry from cost basis
         const cells = [
             { content: quantity.toFixed(6), class: '' }, // QTY HELD
-            { content: avgEntryPrice.toLocaleString('en-US', {style: 'currency', currency: 'USD'}), class: '' }, // ENTRY PRICE (formerly AVG ENTRY)
-            { content: currentPrice.toLocaleString('en-US', {style: 'currency', currency: 'USD'}), class: '' }, // CURRENT PRICE (formerly LIVE PRICE)
-            { content: currentValue.toLocaleString('en-US', {style: 'currency', currency: 'USD'}), class: '' }, // POSITION VALUE
-            { content: `${pnlSign}${pnl.toLocaleString('en-US', {style: 'currency', currency: 'USD'})}`, class: pnlClass }, // UNREALIZED $
+            { content: avgEntryPrice.toLocaleString('en-US', {style: 'currency', currency: 'USD', minimumFractionDigits: 8, maximumFractionDigits: 8}), class: '' }, // ENTRY PRICE (formerly AVG ENTRY)
+            { content: currentPrice.toLocaleString('en-US', {style: 'currency', currency: 'USD', minimumFractionDigits: 8, maximumFractionDigits: 8}), class: '' }, // CURRENT PRICE (formerly LIVE PRICE)
+            { content: currentValue.toLocaleString('en-US', {style: 'currency', currency: 'USD', minimumFractionDigits: 8, maximumFractionDigits: 8}), class: '' }, // POSITION VALUE
+            { content: `${pnlSign}${pnl.toLocaleString('en-US', {style: 'currency', currency: 'USD', minimumFractionDigits: 8, maximumFractionDigits: 8})}`, class: pnlClass }, // UNREALIZED $
             { content: `${pnlSign}${pnlPercent.toFixed(2)}%`, class: pnlClass }, // GAIN/LOSS %
             { content: calculateTargetValue(costBasis), class: 'text-success' }, // TARGET VALUE
             { content: calculateTargetProfit(costBasis), class: 'text-success' }, // TARGET PROFIT $
@@ -6191,13 +6176,13 @@ function createHoldingRow(holding) {
 /** Calculate target value based on 8% profit target from cost basis */
 function calculateTargetValue(costBasis) {
     const target = costBasis * 1.08; // 8% profit target from cost basis
-    return target.toLocaleString('en-US', {style: 'currency', currency: 'USD'});
+    return target.toLocaleString('en-US', {style: 'currency', currency: 'USD', minimumFractionDigits: 8, maximumFractionDigits: 8});
 }
 
 /** Calculate target profit in dollars based on 8% profit target from cost basis */
 function calculateTargetProfit(costBasis) {
     const profit = costBasis * 0.08; // 8% profit from cost basis
-    return profit.toLocaleString('en-US', {style: 'currency', currency: 'USD'});
+    return profit.toLocaleString('en-US', {style: 'currency', currency: 'USD', minimumFractionDigits: 8, maximumFractionDigits: 8});
 }
 
 /** Get position status based on trading bot state and holding data */
