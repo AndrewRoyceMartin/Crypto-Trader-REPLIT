@@ -6100,31 +6100,68 @@ function updateOpenPositionsTable(positions, totalValue = 0) {
 // Fetch and update available positions table
 async function fetchAndUpdateAvailablePositions() {
     const startTime = Date.now();
+    
+    // Get progress tracking elements
+    const progressBar = document.getElementById('available-progress-bar');
+    const progressText = document.getElementById('available-progress-text');
+    const currentStep = document.getElementById('available-current-step');
+    const processedCount = document.getElementById('available-processed-count');
+    const elapsedTime = document.getElementById('available-elapsed-time');
+    const progressStatus = document.getElementById('available-progress-status');
+    
+    // Initialize progress tracking
+    let updateProgressInterval;
+    function updateProgress(progress, step, processed = 0) {
+        if (progressBar) {
+            progressBar.style.width = `${progress}%`;
+            progressBar.setAttribute('aria-valuenow', progress);
+        }
+        if (progressText) progressText.textContent = `${progress}%`;
+        if (currentStep) currentStep.textContent = step;
+        if (processedCount) processedCount.textContent = processed;
+        if (elapsedTime) {
+            const elapsed = Math.round((Date.now() - startTime) / 1000);
+            elapsedTime.textContent = `${elapsed}s`;
+        }
+        if (progressStatus) progressStatus.textContent = step;
+    }
+    
+    // Start progress updates
+    updateProgressInterval = setInterval(() => {
+        if (elapsedTime) {
+            const elapsed = Math.round((Date.now() - startTime) / 1000);
+            elapsedTime.textContent = `${elapsed}s`;
+        }
+    }, 1000);
+    
     try {
+        // Step 1: Initialize request
+        updateProgress(10, 'Initializing request...', 0);
+        
+        // Step 2: Fetch data
+        updateProgress(20, 'Fetching cryptocurrency data...', 0);
         const response = await fetch('/api/available-positions', { 
             cache: 'no-cache',
             signal: AbortSignal.timeout(300000) // 5 minute timeout (increased for 68 positions)
         });
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         
+        // Step 3: Process response
+        updateProgress(60, 'Processing market data...', 0);
         const data = await response.json();
         console.debug("Available positions API response:", data);
         
-        // Production mode - self-test removed for clean console output
+        // Step 4: Update display
+        updateProgress(80, 'Updating displays...', 0);
         
         if (data.success) {
+            const positions = data.available_positions || [];
+            
             // Call the table rendering function
             // CONSOLIDATED: Use only one update method to prevent table flashing
             // FORCE USE OF UPDATED COLOR SYSTEM: Always use our improved updateAvailablePositionsTable
             // instead of external renderAvailableTable that doesn't have the enhanced colors
-            updateAvailablePositionsTable(data.available_positions || []);
-            
-            // Legacy fallback (disabled to force color improvements)
-            // if (window.renderAvailableTable && typeof window.renderAvailableTable === 'function') {
-            //     window.renderAvailableTable(data.available_positions || []);
-            // } else {
-            //     updateAvailablePositionsTable(data.available_positions || []);
-            // }
+            updateAvailablePositionsTable(positions);
             
             // Update mobile data labels and ensure proper table formatting
             const table = document.getElementById('available-table');
@@ -6133,10 +6170,18 @@ async function fetchAndUpdateAvailablePositions() {
                 // Ensure all v02 tables are properly initialized after dynamic updates
                 initializeV02Tables();
             }
+            
+            // Step 5: Complete
+            updateProgress(100, 'Complete!', positions.length);
+            
+            // Hide progress after a brief delay
+            setTimeout(() => {
+                if (progressStatus) progressStatus.textContent = 'Ready';
+            }, 2000);
+            
         } else {
             console.error("Available positions API error:", data.error);
-            // Only update if renderAvailableTable isn't available
-            // Always use our improved color system
+            updateProgress(100, 'Error occurred', 0);
             updateAvailablePositionsTable([]);
         }
     } catch (error) {
@@ -6145,17 +6190,24 @@ async function fetchAndUpdateAvailablePositions() {
         
         if (error.name === 'TimeoutError') {
             console.error('🚨 TIMEOUT: Available positions request took longer than 2 minutes');
+            updateProgress(100, 'Timeout error', 0);
         } else if (error.name === 'AbortError') {
             console.error('🚨 ABORTED: Available positions request was cancelled');
+            updateProgress(100, 'Request cancelled', 0);
         } else if (error.message.includes('HTTP')) {
             console.error('🚨 HTTP ERROR:', error.message);
+            updateProgress(100, `HTTP error: ${error.message}`, 0);
         } else {
             console.error('🚨 UNKNOWN ERROR:', error.message, error.stack);
+            updateProgress(100, 'Unknown error', 0);
         }
         
-        // Only update if renderAvailableTable isn't available
-        // Always use our improved color system
         updateAvailablePositionsTable([]);
+    } finally {
+        // Clean up progress interval
+        if (updateProgressInterval) {
+            clearInterval(updateProgressInterval);
+        }
     }
 }
 
