@@ -8039,18 +8039,23 @@ window.SyncTest = {
         const tableBody = document.getElementById('discrepancy-table-body');
         
         if (discrepancies.length === 0) {
-            discrepancyList.style.display = 'none';
+            if (discrepancyList) {
+                discrepancyList.style.display = 'none';
+            }
             return;
         }
         
         // Show discrepancy list
-        discrepancyList.style.display = 'block';
+        if (discrepancyList) {
+            discrepancyList.style.display = 'block';
+        }
         
         // Clear existing rows
-        tableBody.innerHTML = '';
-        
-        // Add discrepancy rows
-        discrepancies.forEach(disc => {
+        if (tableBody) {
+            tableBody.innerHTML = '';
+            
+            // Add discrepancy rows
+            discrepancies.forEach(disc => {
             const row = document.createElement('tr');
             const statusClass = Math.abs(disc.difference) > 0.001 ? 'text-danger' : 'text-warning';
             const statusText = Math.abs(disc.difference) > 0.001 ? 'Major' : 'Minor';
@@ -8063,8 +8068,11 @@ window.SyncTest = {
                 <td><span class="badge bg-${statusClass === 'text-danger' ? 'danger' : 'warning'}">${statusText}</span></td>
             `;
             
-            tableBody.appendChild(row);
-        });
+                if (tableBody) {
+                    tableBody.appendChild(row);
+                }
+            });
+        }
     }
 };
 
