@@ -1656,37 +1656,55 @@ class EnhancedTestRunner {
         // Add comprehensive error and test logs - ALL INDIVIDUAL TEST RESULTS
         if (results.categoryResults) {
             Object.entries(results.categoryResults).forEach(([category, categoryData]) => {
-            formattedData += `\\n=== ${category.toUpperCase()} CATEGORY ===\\n`;
-            formattedData += `Success Rate: ${categoryData.successRate}%\\n`;
-            formattedData += `Execution Time: ${categoryData.executionTime}ms\\n`;
-            formattedData += `Test Count: ${categoryData.testCount || 0}\\n`;
+            formattedData += `
+=== ${category.toUpperCase()} CATEGORY ===
+Success Rate: ${categoryData.successRate}%
+Execution Time: ${categoryData.executionTime}ms
+Test Count: ${categoryData.testCount || 0}
+`;
             
             if (categoryData.results && categoryData.results.size > 0) {
-                formattedData += `\\nINDIVIDUAL TEST RESULTS:\\n`;
+                formattedData += `
+INDIVIDUAL TEST RESULTS:
+`;
                 categoryData.results.forEach((result, testName) => {
                     const status = result.status || 'unknown';
                     const timestamp = result.timestamp ? new Date(result.timestamp).toLocaleTimeString() : 'N/A';
-                    formattedData += `\\n[${status.toUpperCase()}] ${testName} (${timestamp})\\n`;
+                    formattedData += `
+[${status.toUpperCase()}] ${testName} (${timestamp})`;
                     if (result.error) {
-                        formattedData += `  ❌ Error: ${result.error}\\n`;
+                        formattedData += `
+  ❌ Error: ${result.error}`;
                     }
                     if (result.details) {
-                        formattedData += `  Details: ${result.details}\\n`;
+                        formattedData += `
+  📄 Details: ${result.details}`;
                     }
                     if (result.executionTime) {
-                        formattedData += `  Time: ${result.executionTime}ms\\n`;
+                        formattedData += `
+  ⏱️ Time: ${result.executionTime}ms`;
                     }
+                    formattedData += `\n`;
                 });
+            } else {
+                formattedData += `
+No individual test results available for this category.
+`;
             }
-            formattedData += `\\n`;
+            formattedData += `
+${'='.repeat(50)}
+`;
             });
         }
         
         // Add any recommendations or issues
         if (results.recommendations && results.recommendations.length > 0) {
-            formattedData += `\\n=== RECOMMENDATIONS ===\\n`;
+            formattedData += `
+=== RECOMMENDATIONS ===
+`;
             results.recommendations.forEach(rec => {
-                formattedData += `- ${rec}\\n`;
+                formattedData += `- ${rec}
+`;
             });
         }
         
