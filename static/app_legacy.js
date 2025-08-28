@@ -610,9 +610,7 @@ class TradingApp {
         
         // IMMEDIATE INITIAL DATA LOAD (only once)
         this.debouncedUpdateDashboard(); // Overview refresh (/api/crypto-portfolio)
-        setTimeout(() => {
-            this.updateCryptoPortfolio(); // Holdings refresh  
-        }, 2000);
+        // Initial holdings refresh will be handled by the interval's setTimeout call
         
         // Single master update interval (90 seconds) 
         this.masterUpdateInterval = setInterval(() => {
