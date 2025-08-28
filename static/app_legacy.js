@@ -1,5 +1,8 @@
 // Trading System Web Interface JavaScript - Cleaned & Harmonized
 
+// Constants
+const MIN_POSITION_USD = 0.01; // Minimum position value to display in main tables
+
 // ===== ORGANIZED NAMESPACE ARCHITECTURE USING IIFE =====
 // 
 // This refactors 80+ global functions into organized namespaces to prevent
@@ -1730,13 +1733,13 @@ class TradingApp {
             // Filter holdings: only show positions worth >= $0.01 in Open Positions
             const significantHoldings = holdings.filter(holding => {
                 const currentValue = holding.current_value || 0;
-                return currentValue >= 0.01; // Only show positions worth 1 cent or more
+                return currentValue >= MIN_POSITION_USD; // Only show positions worth minimum threshold or more
             });
             
             console.log('Filtering positions:', {
                 total_holdings: holdings.length,
                 significant_holdings: significantHoldings.length,
-                filtered_out: holdings.filter(h => (h.current_value || 0) < 0.01).map(h => ({
+                filtered_out: holdings.filter(h => (h.current_value || 0) < MIN_POSITION_USD).map(h => ({
                     symbol: h.symbol,
                     value: h.current_value,
                     note: `${h.symbol} worth $${(h.current_value || 0).toFixed(8)} filtered to Available Positions`
@@ -1753,13 +1756,13 @@ class TradingApp {
                 const icon = document.createElement('i');
                 icon.className = 'fa-solid fa-circle-info me-2';
                 infoCell.appendChild(icon);
-                infoCell.appendChild(document.createTextNode('No positions above $0.01 threshold'));
+                infoCell.appendChild(document.createTextNode(`No positions above $${MIN_POSITION_USD.toFixed(2)} threshold`));
                 
                 const lineBreak = document.createElement('br');
                 infoCell.appendChild(lineBreak);
                 
                 const smallText = document.createElement('small');
-                smallText.textContent = 'Small positions (< $0.01) are available in the Available Positions section';
+                smallText.textContent = `Small positions (< $${MIN_POSITION_USD.toFixed(2)}) are available in the Available Positions section`;
                 infoCell.appendChild(smallText);
                 
                 infoRow.appendChild(infoCell);
@@ -3717,8 +3720,8 @@ class TradingApp {
             if (holdings.length === 0) return;
 
             if (this.pnlChart) {
-                const profitable = holdings.filter(h => (h.pnl || 0) > 0.01).length;
-                const losing = holdings.filter(h => (h.pnl || 0) < -0.01).length;
+                const profitable = holdings.filter(h => (h.pnl || 0) > MIN_POSITION_USD).length;
+                const losing = holdings.filter(h => (h.pnl || 0) < -MIN_POSITION_USD).length;
                 const breakeven = holdings.length - profitable - losing;
                 this.pnlChart.data.datasets[0].data = [profitable, breakeven, losing];
                 this.pnlChart.update('none');
@@ -4785,8 +4788,8 @@ function updatePortfolioSummaryUI(portfolioData) {
 }
 
 function updateHoldingsSummary(holdings) {
-    const active = holdings.filter(h => (h.current_value || 0) > 0.01);
-    const sold   = holdings.filter(h => (h.current_value || 0) <= 0.01);
+    const active = holdings.filter(h => (h.current_value || 0) > MIN_POSITION_USD);
+    const sold   = holdings.filter(h => (h.current_value || 0) <= MIN_POSITION_USD);
 
     updateElementSafely("holdings-total-assets", holdings.length);
     updateElementSafely("holdings-active-count", active.length);
@@ -5434,13 +5437,13 @@ function updateOpenPositionsTable(positions, totalValue = 0) {
             const quantity = parseFloat(position.quantity || 0);
             const currentValue = parseFloat(position.current_value || position.value || 0);
             // Show position if you actually own coins, even if value is tiny
-            return quantity > 0 && currentValue >= 0.0001; // Show positions worth at least 0.01 cents
+            return quantity > 0 && currentValue >= MIN_POSITION_USD; // Show positions worth at least minimum threshold
         });
         
         console.log('Filtering Open Positions:', {
             total_positions: positions.length,
             significant_positions: significantPositions.length,
-            filtered_out: positions.filter(p => parseFloat(p.current_value || p.value || 0) < 0.01).map(p => ({
+            filtered_out: positions.filter(p => parseFloat(p.current_value || p.value || 0) < MIN_POSITION_USD).map(p => ({
                 symbol: p.symbol,
                 value: parseFloat(p.current_value || p.value || 0),
                 note: `${p.symbol} worth $${(parseFloat(p.current_value || p.value || 0)).toFixed(8)} filtered to Available Positions`
@@ -5458,14 +5461,14 @@ function updateOpenPositionsTable(positions, totalValue = 0) {
             const icon = document.createElement('i');
             icon.className = 'fa-solid fa-circle-info me-2';
             cell.appendChild(icon);
-            cell.appendChild(document.createTextNode('No positions above $0.01 threshold'));
+            cell.appendChild(document.createTextNode(`No positions above $${MIN_POSITION_USD.toFixed(2)} threshold`));
             
             const br = document.createElement('br');
             cell.appendChild(br);
             
             const small = document.createElement('small');
             small.className = 'text-muted';
-            small.textContent = 'Small positions (< $0.01) are available in the Available Positions section';
+            small.textContent = `Small positions (< $${MIN_POSITION_USD.toFixed(2)}) are available in the Available Positions section`;
             cell.appendChild(small);
             
             row.appendChild(cell);
