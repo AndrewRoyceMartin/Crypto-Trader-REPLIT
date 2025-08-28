@@ -11,6 +11,7 @@ from typing import Dict, List, Optional
 from concurrent.futures import ThreadPoolExecutor
 
 from .enhanced_trader import EnhancedTrader
+from .confidence_trader import get_confidence_trader
 from ..config import Config
 from ..exchanges.base import BaseExchange
 
@@ -39,6 +40,10 @@ class MultiCurrencyTrader:
         self.running = False
         self.threads: List[threading.Thread] = []
         
+        # Initialize confidence-based trader for hybrid approach
+        self.confidence_trader = get_confidence_trader(config)
+        self.confidence_scan_interval = 300  # 5 minutes between confidence scans
+        
         # Initialize traders for each pair
         for pair in self.trading_pairs:
             trader = EnhancedTrader(config, exchange)
@@ -48,6 +53,7 @@ class MultiCurrencyTrader:
             
         self.logger.info(f"Multi-currency trader initialized for {len(self.trading_pairs)} pairs: {', '.join(self.trading_pairs)}")
         self.logger.info(f"Universal rebuy limit: ${config.get_float('strategy', 'rebuy_max_usd', 100.0):.2f}")
+        self.logger.info("🤖 HYBRID SYSTEM: Enhanced Bollinger Bands + Confidence-Based Auto-Purchasing ENABLED")
     
     def _get_available_trading_pairs(self) -> List[str]:
         """Get trading pairs dynamically from available positions with tradeable assets."""
@@ -132,8 +138,18 @@ class MultiCurrencyTrader:
             thread.daemon = True
             thread.start()
             self.threads.append(thread)
+        
+        # Start confidence-based trading thread (hybrid approach)
+        confidence_thread = threading.Thread(
+            target=self._run_confidence_scanner,
+            name="ConfidenceScanner"
+        )
+        confidence_thread.daemon = True
+        confidence_thread.start()
+        self.threads.append(confidence_thread)
             
-        self.logger.info(f"Started {len(self.threads)} trading threads")
+        self.logger.info(f"Started {len(self.threads)} trading threads (including confidence scanner)")
+        self.logger.critical("🚀 HYBRID TRADING SYSTEM ACTIVE: Bollinger Bands + Confidence Auto-Purchasing")
     
     def _trade_pair(self, pair: str, timeframe: str, delay: int = 0) -> None:
         """Trade a specific cryptocurrency pair."""
@@ -228,3 +244,36 @@ class MultiCurrencyTrader:
                     })
         
         return opportunities
+    
+    def _run_confidence_scanner(self) -> None:
+        """Run confidence-based scanning for automatic purchases in background."""
+        self.logger.info("🔍 Confidence scanner thread started - scanning for CAUTIOUS_BUY/STRONG_BUY signals")
+        last_scan_time = time.time()
+        
+        while self.running:
+            try:
+                current_time = time.time()
+                
+                # Run confidence scan every scan interval (5 minutes)
+                if current_time - last_scan_time >= self.confidence_scan_interval:
+                    self.logger.info("🎯 Running confidence-based opportunity scan...")
+                    
+                    opportunities_found, purchases_executed = self.confidence_trader.run_confidence_scan_cycle()
+                    
+                    if opportunities_found > 0:
+                        self.logger.info(
+                            "📈 CONFIDENCE SCAN RESULTS: %d opportunities found, %d purchases executed",
+                            opportunities_found, purchases_executed
+                        )
+                    
+                    last_scan_time = current_time
+                
+                # Sleep for 30 seconds before checking again
+                time.sleep(30)
+                
+            except Exception as e:
+                self.logger.error("Error in confidence scanner: %s", e)
+                # Wait longer on error to avoid spam
+                time.sleep(60)
+        
+        self.logger.info("🔍 Confidence scanner thread stopped")
