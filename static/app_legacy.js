@@ -114,6 +114,7 @@ async function fetchJSON(url, { method='GET', body, timeout=10000, headers={}, n
     const data = await res.json();
     return data;
   } catch (error) {
+    console.error(`❌ FETCH ERROR: ${url} failed:`, error);
     return null;
   } finally { clearTimeout(t); }
 }
