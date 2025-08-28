@@ -1405,7 +1405,8 @@ class EnhancedTestRunner {
                 status: successRate >= 80 ? 'excellent' : successRate >= 60 ? 'good' : 'needs_attention',
                 executionTime: Math.round(executionTime),
                 successRate: successRate,
-                testCount: categoryData.results.size
+                testCount: categoryData.results.size,
+                results: categoryData.results  // PRESERVE ALL INDIVIDUAL TEST RESULTS
             };
             
             totalSuccessRate += successRate;
@@ -1652,18 +1653,22 @@ class EnhancedTestRunner {
                 <pre class="mb-0" style="font-size: 12px; max-height: 400px; overflow-y: auto;">
         `;
         
-        // Add comprehensive error and test logs
+        // Add comprehensive error and test logs - ALL INDIVIDUAL TEST RESULTS
         if (results.categoryResults) {
             Object.entries(results.categoryResults).forEach(([category, categoryData]) => {
             formattedData += `\\n=== ${category.toUpperCase()} CATEGORY ===\\n`;
             formattedData += `Success Rate: ${categoryData.successRate}%\\n`;
             formattedData += `Execution Time: ${categoryData.executionTime}ms\\n`;
+            formattedData += `Test Count: ${categoryData.testCount || 0}\\n`;
             
             if (categoryData.results && categoryData.results.size > 0) {
+                formattedData += `\\nINDIVIDUAL TEST RESULTS:\\n`;
                 categoryData.results.forEach((result, testName) => {
-                    formattedData += `\\n[${result.status.toUpperCase()}] ${testName}\\n`;
+                    const status = result.status || 'unknown';
+                    const timestamp = result.timestamp ? new Date(result.timestamp).toLocaleTimeString() : 'N/A';
+                    formattedData += `\\n[${status.toUpperCase()}] ${testName} (${timestamp})\\n`;
                     if (result.error) {
-                        formattedData += `  Error: ${result.error}\\n`;
+                        formattedData += `  ❌ Error: ${result.error}\\n`;
                     }
                     if (result.details) {
                         formattedData += `  Details: ${result.details}\\n`;
