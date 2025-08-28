@@ -3659,7 +3659,7 @@ def api_available_positions() -> ResponseReturnValue:
                         'last_exit_price': 0,
                         'target_buy_price': target_price,
                         'price_difference': current_price - target_price,
-                        'price_diff_percent': ((current_price - target_price) / current_price * 100) if current_price > 0 else 0,
+                        'price_diff_percent': ((current_price - target_price) / target_price * 100) if target_price > 0 else 0,
                         'price_drop_from_exit': 0,
                         'last_trade_date': '',
                         'days_since_exit': 0,
