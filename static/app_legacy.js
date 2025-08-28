@@ -1675,6 +1675,15 @@ class TradingApp {
             if (!data.success || !data.holdings) return;
             
             console.log("Holdings data received:", data.holdings);
+        
+        // DEBUG: Check target multipliers
+        if (data.holdings && data.holdings.length > 0) {
+            console.log("TARGET DEBUG - First position:", {
+                symbol: data.holdings[0].symbol,
+                target_multiplier: data.holdings[0].target_multiplier,
+                calculated_percent: ((data.holdings[0].target_multiplier || 1.04) - 1) * 100
+            });
+        }
             
             // Update table via consolidated system to prevent flashing
             if (window.tradingApp) {
@@ -6160,7 +6169,7 @@ function createHoldingRow(holding) {
             { content: `${pnlSign}${pnlPercent.toFixed(2)}%`, class: pnlClass }, // GAIN/LOSS %
             { content: calculateTargetValue(costBasis, holding.target_multiplier), class: 'text-success' }, // TARGET VALUE
             { content: calculateTargetProfit(costBasis, holding.target_multiplier), class: 'text-success' }, // TARGET PROFIT $
-            { content: `+${((holding.target_multiplier || 1.04) - 1) * 100}%`, class: 'text-success' }, // TARGET PROFIT %
+            { content: `+${((holding.target_multiplier || 1.04) - 1) * 100}.0%`, class: 'text-success' }, // TARGET PROFIT %
             { content: getPositionStatus(holding), class: '' }, // POSITION
             { content: '<span class="badge bg-info">MONITOR</span>', class: '' } // ACTIONS
         ];
@@ -6189,6 +6198,7 @@ function calculateTargetValue(costBasis, targetMultiplier = 1.04) {
 /** Calculate target profit in dollars based on dynamic Bollinger Band target or 4% fallback */
 function calculateTargetProfit(costBasis, targetMultiplier = 1.04) {
     const profit = costBasis * (targetMultiplier - 1); // Calculate profit from target multiplier
+    console.log('TARGET DEBUG - calculateTargetProfit:', {costBasis, targetMultiplier, profit});
     return profit.toLocaleString('en-US', {style: 'currency', currency: 'USD', minimumFractionDigits: 8, maximumFractionDigits: 8});
 }
 
@@ -6897,6 +6907,15 @@ async function refreshHoldingsData() {
             // Use holdings first (more complete data), then fall back to all_positions
             const positions = data.holdings || data.all_positions || [];
             console.debug('Holdings data received:', positions);
+            
+            // DEBUG: Check target multipliers in fetched data
+            if (positions && positions.length > 0) {
+                console.log('TARGET DEBUG - Open Positions Data:', {
+                    symbol: positions[0].symbol,
+                    target_multiplier: positions[0].target_multiplier,
+                    calculated_percent: ((positions[0].target_multiplier || 1.04) - 1) * 100
+                });
+            }
             // Update table via main TradingApp system to prevent flashing
             if (window.tradingApp) {
                 window.tradingApp.currentCryptoData = positions;
