@@ -3073,6 +3073,57 @@ def api_config() -> ResponseReturnValue:
     })
 
 
+@app.route("/api/strategy-config")
+def api_strategy_config() -> ResponseReturnValue:
+    """Get Enhanced Bollinger Bands strategy configuration for testing"""
+    if not _get_warmup_done():
+        return jsonify({"error": "System still initializing"}), 503
+        
+    try:
+        strategy_config = {
+            "strategy_name": "Enhanced Bollinger Bands Strategy",
+            "strategy_type": "bollinger_bands_enhanced",
+            "version": "2.1",
+            "confidence_threshold": 95,
+            "bb_confidence": 95,
+            "bb_period": 30,
+            "bb_std_dev": 2.0,
+            "fixed_percentage_fallback": 8.0,
+            "safety_net_percentage": 8.0,
+            "crash_protection_enabled": True,
+            "peak_tracking_enabled": True,
+            "rebuy_mechanism": True,
+            "parameters": {
+                "bollinger_upper_exit": True,
+                "crash_exit_percentage": 15,
+                "safety_take_profit": 6.0,
+                "atr_multiplier": 3.0,
+                "volume_confirmation": False
+            },
+            "priority": {
+                "primary_exit": "bollinger_upper_band",
+                "secondary_exit": "fixed_percentage",
+                "tertiary_exit": "crash_protection"
+            },
+            "metadata": {
+                "last_updated": iso_utc(),
+                "enhanced_features": True,
+                "live_trading": True,
+                "strategy_author": "Enhanced Trading System"
+            }
+        }
+        return jsonify(strategy_config)
+        
+    except Exception as e:
+        logger.error(f"Strategy config error: {e}")
+        return jsonify({
+            "error": "Strategy configuration unavailable",
+            "strategy_name": "Enhanced Bollinger Bands Strategy",
+            "confidence_threshold": 95,
+            "fixed_percentage_fallback": 8.0
+        }), 500
+
+
 @app.route("/api/price-source-status")
 def api_price_source_status() -> ResponseReturnValue:
     """Get OKX API status instead of CoinGecko."""
