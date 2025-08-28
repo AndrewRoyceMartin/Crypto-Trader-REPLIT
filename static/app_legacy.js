@@ -568,17 +568,14 @@ class TradingApp {
     init() {
         this.setupEventListeners();
         this.initializeCharts();
-        this.startAutoUpdate();
         this.loadConfig();
-
-        // Initial fetches (handled by startAutoUpdate)
-        this.debouncedUpdateDashboard();
-        setTimeout(() => this.updateCryptoPortfolio(), 5000);
-
-        this.updateCryptoPortfolio();
         
         // Initialize footer uptime tracking
         this.startUptimeTracking();
+        
+        // CONSOLIDATED: Let startAutoUpdate handle all data fetching to prevent duplicates
+        // startAutoUpdate will trigger initial data loads and set up proper intervals
+        this.startAutoUpdate();
     }
 
     setupEventListeners() {
@@ -611,7 +608,13 @@ class TradingApp {
         // Clear any existing intervals first
         this.stopAutoUpdate();
         
-        // Single master update interval (90 seconds)
+        // IMMEDIATE INITIAL DATA LOAD (only once)
+        this.debouncedUpdateDashboard(); // Overview refresh (/api/crypto-portfolio)
+        setTimeout(() => {
+            this.updateCryptoPortfolio(); // Holdings refresh  
+        }, 2000);
+        
+        // Single master update interval (90 seconds) 
         this.masterUpdateInterval = setInterval(() => {
             // Main data refresh cycle
             this.debouncedUpdateDashboard(); // Overview refresh (/api/crypto-portfolio)
