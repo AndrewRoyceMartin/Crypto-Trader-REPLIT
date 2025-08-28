@@ -1912,25 +1912,6 @@ class TradingApp {
                 daysCell.textContent = daysHeld != null ? `${daysHeld}d` : '—';
                 row.appendChild(daysCell);
                 
-                // Actions cell
-                const actionsCell = document.createElement('td');
-                actionsCell.className = 'text-center';
-                const btnGroup = document.createElement('div');
-                btnGroup.className = 'btn-group btn-group-sm';
-                btnGroup.setAttribute('role', 'group');
-                
-                const ACTION_PCTS = [0.25, 0.5, 1.0]; // config
-                ACTION_PCTS.forEach(p => {
-                    const btn = document.createElement('button');
-                    btn.className = 'btn btn-outline-primary btn-xs px-2';
-                    btn.textContent = `${Math.round(p*100)}%`;
-                    // attach handler that uses (p * quantity)
-                    btn.onclick = () => sellPosition(holding.symbol, Math.round(p*100));
-                    btnGroup.appendChild(btn);
-                });
-                
-                actionsCell.appendChild(btnGroup);
-                row.appendChild(actionsCell);
                 
                 holdingsTableBody.appendChild(row);
             });
@@ -2959,14 +2940,6 @@ class TradingApp {
             badgeSpan.textContent = signal;
             signalCell.appendChild(badgeSpan);
 
-            const actionsCell = document.createElement('td');
-            actionsCell.className = 'text-center';
-            const viewButton = document.createElement('button');
-            viewButton.className = 'btn btn-sm btn-outline-primary';
-            viewButton.textContent = 'View';
-            viewButton.onclick = () => showCryptoChart(crypto.symbol);
-            viewButton.title = `View ${crypto.symbol} details`;
-            actionsCell.appendChild(viewButton);
 
             const targetBuyCell = document.createElement('td');
             targetBuyCell.className = 'text-end';
@@ -2983,7 +2956,7 @@ class TradingApp {
             row.appendChild(pnlCell);
             row.appendChild(updatedCell);
             row.appendChild(signalCell);
-            row.appendChild(actionsCell);
+
             row.appendChild(targetBuyCell);
 
             row.classList.add('table-row-hover');
@@ -5704,39 +5677,7 @@ function updateOpenPositionsTable(positions, totalValue = 0) {
                 row.appendChild(cell);
             });
             
-            // Action buttons cell
-            const actionsCell = document.createElement('td');
-            const btnGroup = document.createElement('div');
-            btnGroup.className = 'btn-group btn-group-sm';
-            btnGroup.setAttribute('role', 'group');
-            
-            const ACTION_PCTS = [0.25, 0.5, 1.0]; // config
-            const buttons = [];
-            
-            // Generate sell buttons from config
-            ACTION_PCTS.forEach(p => {
-                const pct = Math.round(p*100);
-                buttons.push({
-                    text: `${pct}%`,
-                    title: `Sell ${pct}%`,
-                    onclick: () => sellPosition(symbol, pct)
-                });
-            });
-            
-            // Add buy more button
-            buttons.push({ text: '+', title: 'Buy More', className: 'btn-outline-primary', onclick: () => buyMorePosition(symbol) });
-            
-            buttons.forEach(btnData => {
-                const btn = document.createElement('button');
-                btn.className = `btn ${btnData.className || 'btn-outline-success'} btn-xs`;
-                btn.textContent = btnData.text;
-                btn.title = btnData.title;
-                btn.onclick = btnData.onclick;
-                btnGroup.appendChild(btn);
-            });
-            
-            actionsCell.appendChild(btnGroup);
-            row.appendChild(actionsCell);
+
             
             positionsTableBody.appendChild(row);
         });
