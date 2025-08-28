@@ -377,7 +377,7 @@ class EnhancedTestRunner {
         }
     }
 
-    // Create test categories for optimized concurrent execution
+    // Create test categories for optimized concurrent execution - COMPREHENSIVE 25+ TESTS
     createTestCategories() {
         return {
             critical: [
@@ -394,6 +394,25 @@ class EnhancedTestRunner {
                 'testButtonWorkflowComprehensive',
                 'testBasicButtonFunctions',
                 'testBasicPriceUpdates'
+            ],
+            trading_buttons: [
+                'testATOExportButton',
+                'testBuyButton', 
+                'testSellButton',
+                'testTakeProfitButton'
+            ],
+            strategy_validation: [
+                'bollinger_strategy_priority',
+                'available_positions_data_integrity'
+            ],
+            data_integrity: [
+                'holdings_sync_enhanced',
+                'price_freshness_realtime',
+                'api_response_timing'
+            ],
+            workflow_tests: [
+                'recalculation_workflow_advanced',
+                'button_workflow_comprehensive'
             ]
         };
     }
