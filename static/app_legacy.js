@@ -5729,11 +5729,16 @@ async function fetchAndUpdateAvailablePositions() {
         if (data.success) {
             // Call the table rendering function
             // CONSOLIDATED: Use only one update method to prevent table flashing
-            if (window.renderAvailableTable && typeof window.renderAvailableTable === 'function') {
-                window.renderAvailableTable(data.available_positions || []);
-            } else {
-                updateAvailablePositionsTable(data.available_positions || []);
-            }
+            // FORCE USE OF UPDATED COLOR SYSTEM: Always use our improved updateAvailablePositionsTable
+            // instead of external renderAvailableTable that doesn't have the enhanced colors
+            updateAvailablePositionsTable(data.available_positions || []);
+            
+            // Legacy fallback (disabled to force color improvements)
+            // if (window.renderAvailableTable && typeof window.renderAvailableTable === 'function') {
+            //     window.renderAvailableTable(data.available_positions || []);
+            // } else {
+            //     updateAvailablePositionsTable(data.available_positions || []);
+            // }
             
             // Update mobile data labels and ensure proper table formatting
             const table = document.getElementById('available-table');
@@ -5745,9 +5750,8 @@ async function fetchAndUpdateAvailablePositions() {
         } else {
             console.error("Available positions API error:", data.error);
             // Only update if renderAvailableTable isn't available
-            if (!window.renderAvailableTable || typeof window.renderAvailableTable !== 'function') {
-                updateAvailablePositionsTable([]);
-            }
+            // Always use our improved color system
+            updateAvailablePositionsTable([]);
         }
     } catch (error) {
         const elapsed = Date.now() - startTime;
@@ -5764,9 +5768,8 @@ async function fetchAndUpdateAvailablePositions() {
         }
         
         // Only update if renderAvailableTable isn't available
-        if (!window.renderAvailableTable || typeof window.renderAvailableTable !== 'function') {
-            updateAvailablePositionsTable([]);
-        }
+        // Always use our improved color system
+        updateAvailablePositionsTable([]);
     }
 }
 
