@@ -236,11 +236,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize V02 table mobile labels on first load
     initializeV02Tables();
     
-    // Auto-load positions data after page loads (moved from separate DOMContentLoaded)
-    setTimeout(() => {
-        refreshHoldingsData();
-        // getPositionsStatus removed - function was undefined and not needed for core functionality
-    }, 500);
+    // Auto-load positions data after page loads - CONSOLIDATED to prevent duplicate calls
+    // Removed refreshHoldingsData() call here to prevent race condition with TradingApp refresh
+    // TradingApp will handle all data loading via its unified refresh system
 
     document.addEventListener('click', function(e) {
         // Safely check for view-toggle-btn elements with null protection
@@ -3157,6 +3155,8 @@ class TradingApp {
         if (this.updatingHoldingsTable) return;
         this.updatingHoldingsTable = true;
 
+        console.debug('TradingApp.updateHoldingsTable updating with', cryptos.length, 'positions');
+        
         try {
             tableBody.innerHTML = '';
 
@@ -4296,21 +4296,14 @@ async function updateHoldingsData() {
     return;
 }
 async function updatePositionsData() {
+    // CONSOLIDATED: Use TradingApp's unified refresh instead of separate API call
+    console.debug('updatePositionsData() delegating to TradingApp.updateCryptoPortfolio()');
     try {
-        const ts = Date.now();
-        const currency = window.tradingApp?.selectedCurrency || 'USD';
-        const response = await fetch(`/api/crypto-portfolio?currency=${currency}&ts=${ts}`, {
-            cache: 'no-cache',
-            signal: window.tradingApp?.portfolioAbortController?.signal
-        });
-        const data = await response.json();
-        const cryptos = data.holdings || data.cryptocurrencies || [];
-        if (cryptos.length > 0) {
-            window.tradingApp.updateHoldingsTable(cryptos);
-            window.tradingApp.updatePositionsSummary(cryptos);
+        if (window.tradingApp && window.tradingApp.updateCryptoPortfolio) {
+            await window.tradingApp.updateCryptoPortfolio();
         }
     } catch (error) {
-        console.debug('Error updating positions data:', error);
+        console.debug('Error delegating to TradingApp:', error);
     }
 }
 function filterTradesTable() {
@@ -5323,8 +5316,11 @@ function updateExposureMetrics(holdings) {
     // Stable/ Largest bars require matching IDs in the page to have effect.
 }
 function updatePositionTable(holdings) {
-    // DISABLED: This function conflicts with TradingApp.updateHoldingsTable
-    console.log('updatePositionTable() disabled to prevent table conflicts - using TradingApp.updateAllTables() instead');
+    // CONSOLIDATED: This function conflicts with TradingApp.updateHoldingsTable
+    console.debug('updatePositionTable() delegating to TradingApp to prevent conflicts');
+    if (window.tradingApp && window.tradingApp.updateAllTables) {
+        window.tradingApp.updateAllTables(holdings);
+    }
     return;
     
     // Original code commented out to prevent conflicts:
@@ -7063,17 +7059,26 @@ async function filterTradesByTimeframe() {
     await refreshTradesData();
 }
 
-// Function to refresh holdings data (called by refresh button)
+// CONSOLIDATED: Function to refresh holdings data (called by refresh button)
+// This now delegates to TradingApp to prevent race conditions
 async function refreshHoldingsData() {
     try {
+        console.debug('refreshHoldingsData() delegating to TradingApp for consistency');
+        
+        // Use TradingApp's unified refresh system to prevent race conditions
+        if (window.tradingApp && window.tradingApp.updateCryptoPortfolio) {
+            await window.tradingApp.updateCryptoPortfolio();
+            return;
+        }
+        
+        // Fallback for edge cases when TradingApp isn't ready
         const response = await fetch('/api/current-holdings', { cache: 'no-cache' });
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         
         const data = await response.json();
         if (data.success && (data.holdings || data.all_positions)) {
-            // Use holdings first (more complete data), then fall back to all_positions
             const positions = data.holdings || data.all_positions || [];
-            console.debug('Holdings data received:', positions);
+            console.debug('Fallback holdings data received:', positions.length, 'positions');
             
             // Target multiplier validation removed for production
             // Update table via main TradingApp system to prevent flashing
@@ -7527,10 +7532,11 @@ function generateDynamicColor(symbol) {
 // Make function globally available
 window.generateDynamicColor = generateDynamicColor;
 
-// Also refresh holdings on load as backup
-window.addEventListener("load", function() {
-    setTimeout(refreshHoldingsData, 1000);
-});
+// REMOVED: backup refreshHoldingsData call to prevent race condition
+// TradingApp handles all data loading via unified refresh system
+// window.addEventListener("load", function() {
+//     setTimeout(refreshHoldingsData, 1000);
+// });
 
 // Sync Test functionality
 window.SyncTest = {
