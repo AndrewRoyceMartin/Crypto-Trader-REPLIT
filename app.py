@@ -544,11 +544,16 @@ def _set_bot_state(**kv: Any) -> None:
 
 
 def _get_bot_running() -> bool:
-    """Thread-safe bot running state read."""
+    """Thread-safe bot running state read with aggressive state reset."""
     with _state_lock:
-        # BUGFIX: Force reset stuck state - always return False if no multi_currency_trader exists
-        if not globals().get('multi_currency_trader'):
+        # AGGRESSIVE BUGFIX: Force reset stuck state completely
+        multi_trader = globals().get('multi_currency_trader')
+        if not multi_trader or not hasattr(multi_trader, 'running') or not multi_trader.running:
+            # Force reset all state indicators
             bot_state["running"] = False
+            trading_state["active"] = False
+            trading_state["mode"] = "stopped"
+            logger.info("🔧 FORCED STATE RESET: Bot state cleared due to no active trader")
         return bot_state.get("running", False)
 
 
