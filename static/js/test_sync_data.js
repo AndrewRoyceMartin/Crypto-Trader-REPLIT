@@ -509,6 +509,12 @@ class EnhancedTestRunner {
         this.updateProgressElement('failed-count', progress.failedTests);
         this.updateProgressElement('elapsed-time', `${elapsedSeconds}s`);
         
+        // Update current endpoint display
+        if (currentTestName || progress.currentTest) {
+            const testDetails = this.getTestDetails(currentTestName || progress.currentTest);
+            this.updateProgressElement('current-endpoint', testDetails.endpoint);
+        }
+        
         // Update progress bar color based on success rate
         if (progressBar) {
             const successRate = progress.completedTests > 0 ? 
@@ -536,20 +542,31 @@ class EnhancedTestRunner {
     formatTestName(testName) {
         if (testName === '-' || !testName) return 'Waiting...';
         
-        // Convert test names to readable format
+        // Convert test names to readable format with detailed descriptions
         const nameMap = {
-            'holdings_sync_enhanced': 'Portfolio Sync Check',
-            'price_freshness_realtime': 'Live Price Updates',
-            'recalculation_workflow_advanced': 'Recalculation Workflow',
-            'trade_data_comprehensive': 'Trade History Validation',
-            'ui_responsiveness_enhanced': 'UI Performance Test',
-            'error_handling_comprehensive': 'Error Handling Check',
-            'button_workflow_comprehensive': 'Button Functions Test',
-            'table_validation_enhanced': 'Data Table Validation',
-            'API Connectivity': 'API Connection Test',
-            'Portfolio Data': 'Portfolio Data Check',
-            'Price Updates': 'Price Update Test',
-            'Button Functions': 'Button Test'
+            'holdings_sync_enhanced': 'Portfolio Sync Check - Validating OKX Holdings',
+            'price_freshness_realtime': 'Live Price Updates - Checking Real-time Data',
+            'recalculation_workflow_advanced': 'Recalculation Workflow - Testing Data Refresh',
+            'trade_data_comprehensive': 'Trade History - Validating Transaction Data',
+            'ui_responsiveness_enhanced': 'UI Performance - Testing Dashboard Response',
+            'error_handling_comprehensive': 'Error Handling - Checking API Failures',
+            'button_workflow_comprehensive': 'Button Functions - Testing UI Interactions',
+            'table_validation_enhanced': 'Data Tables - Validating Display Accuracy',
+            'api_response_timing': 'API Performance - Measuring Response Times',
+            'basic_api_connectivity': 'OKX Connectivity - Testing Exchange Connection',
+            'basic_portfolio_data': 'Portfolio Data - Fetching Account Information',
+            'basic_button_functions': 'Basic Buttons - Testing Core Functions',
+            'basic_price_updates': 'Price Updates - Checking Market Data',
+            'testATOExportButton': 'ATO Export - Testing Tax Report Function',
+            'testBuyButton': 'Buy Orders - Testing Purchase Functions',
+            'testSellButton': 'Sell Orders - Testing Sale Functions',
+            'testTakeProfitButton': 'Take Profit - Testing Exit Functions',
+            'bollinger_strategy_priority': 'Bollinger Bands - Testing Strategy Logic',
+            'available_positions_data_integrity': 'Available Positions - Validating Opportunity Data',
+            'API Connectivity': 'API Connection Test - Checking Exchange Access',
+            'Portfolio Data': 'Portfolio Data Check - Fetching Holdings',
+            'Price Updates': 'Price Update Test - Getting Live Prices',
+            'Button Functions': 'Button Test - UI Interaction Check'
         };
         
         return nameMap[testName] || testName
@@ -570,17 +587,93 @@ class EnhancedTestRunner {
     
     markTestStarted(testName) {
         this.progressTracking.currentTest = testName;
-        this.updateProgress(testName);
+        
+        // Enhanced console logging for progress tracking
+        const testDetails = this.getTestDetails(testName);
         console.log(`🔄 Test started: ${testName}`);
+        console.log(`📊 Test details: ${testDetails.description}`);
+        console.log(`🎯 Expected endpoint: ${testDetails.endpoint || 'Multiple endpoints'}`);
+        
+        this.updateProgress(testName);
+        this.updateTestStatus(testName, 'running');
     }
     
+    getTestDetails(testName) {
+        const testDetailsMap = {
+            'holdings_sync_enhanced': {
+                description: 'Validating portfolio synchronization with OKX exchange',
+                endpoint: '/api/crypto-portfolio',
+                category: 'Data Integrity'
+            },
+            'price_freshness_realtime': {
+                description: 'Checking real-time price updates and data freshness',
+                endpoint: '/api/current-holdings',
+                category: 'Price Data'
+            },
+            'api_response_timing': {
+                description: 'Measuring API response times and performance',
+                endpoint: 'Multiple endpoints',
+                category: 'Performance'
+            },
+            'basic_api_connectivity': {
+                description: 'Testing basic connection to OKX exchange',
+                endpoint: '/api/okx-status',
+                category: 'Connectivity'
+            },
+            'basic_portfolio_data': {
+                description: 'Fetching and validating portfolio account information',
+                endpoint: '/api/crypto-portfolio',
+                category: 'Portfolio'
+            },
+            'recalculation_workflow_advanced': {
+                description: 'Testing data refresh and recalculation workflows',
+                endpoint: '/api/available-positions',
+                category: 'Workflow'
+            },
+            'available_positions_data_integrity': {
+                description: 'Validating trading opportunity data accuracy',
+                endpoint: '/api/available-positions',
+                category: 'Trading Data'
+            },
+            'bollinger_strategy_priority': {
+                description: 'Testing Bollinger Bands strategy calculations',
+                endpoint: '/api/available-positions',
+                category: 'Strategy'
+            }
+        };
+        
+        return testDetailsMap[testName] || {
+            description: 'Running test validation',
+            endpoint: 'API endpoint',
+            category: 'General'
+        };
+    }
+    
+    updateTestStatus(testName, status) {
+        // Update progress status with more detailed information
+        const testDetails = this.getTestDetails(testName);
+        const statusElement = document.getElementById('progress-status');
+        if (statusElement) {
+            const statusText = status === 'running' ? 
+                `Testing ${testDetails.category} - ${testDetails.endpoint}` :
+                `${testDetails.category} test ${status}`;
+            statusElement.textContent = statusText;
+        }
+    }
+
     markTestCompleted(testName, success = true) {
         this.progressTracking.completedTests++;
         if (!success) {
             this.progressTracking.failedTests++;
         }
-        this.updateProgress();
+        
+        // Enhanced completion logging
+        const testDetails = this.getTestDetails(testName);
         console.log(`${success ? '✅' : '❌'} Test completed: ${testName}`);
+        console.log(`📋 Category: ${testDetails.category} | Endpoint: ${testDetails.endpoint}`);
+        
+        this.updateProgress();
+        this.updateTestStatus(testName, success ? 'passed' : 'failed');
     }
 
     // Execute individual test category with performance monitoring
