@@ -1062,6 +1062,13 @@ def crypto_portfolio_okx() -> ResponseReturnValue:
             okx_portfolio_data: dict[str, Any] = portfolio_service.get_portfolio_data_OKX_NATIVE_ONLY(currency=selected_currency)
 
         holdings_list = okx_portfolio_data['holdings']
+        
+        # Filter out holdings with less than $1 value
+        original_count = len(holdings_list)
+        holdings_list = [h for h in holdings_list if float(h.get('current_value', 0) or 0) >= 1.0]
+        filtered_count = original_count - len(holdings_list)
+        if filtered_count > 0:
+            logger.info(f"Filtered out {filtered_count} holdings with value < $1.00 (showing {len(holdings_list)} holdings)")
 
         overview = {
             "currency": selected_currency,
