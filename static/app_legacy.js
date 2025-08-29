@@ -6197,7 +6197,6 @@ async function fetchAndUpdateAvailablePositions() {
     try {
         // Step 1: Initialize request
         updateProgress(5, 'Initializing request...', 0);
-        console.log('📊 Available positions countdown expired - loading data');
         
         // Step 2: Starting API call
         updateProgress(10, 'Connecting to OKX API...', 0);
