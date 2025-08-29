@@ -758,7 +758,7 @@ class EnhancedTestRunner {
         // Data freshness monitoring
         const freshnessMonitor = setInterval(async () => {
             await this.monitorDataFreshness();
-        }, 15000); // Increased for slower production APIs
+        }, 15000); // CACHE_BUST_2024: Extended timeout for production API performance
 
         // Performance metrics monitoring
         const performanceMonitor = setInterval(async () => {
@@ -1522,7 +1522,7 @@ class EnhancedTestRunner {
             try {
                 // Realistic timeout for production API performance
                 const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout per endpoint
+                const timeoutId = setTimeout(() => controller.abort(), 15000); // UPDATED: Extended timeout for live trading APIs
                 
                 const response = await fetch(endpoint, { 
                     cache: 'no-store',
