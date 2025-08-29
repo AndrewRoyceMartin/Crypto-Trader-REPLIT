@@ -700,8 +700,7 @@ class TradingApp {
         this.updateRefreshTimestamp(); // Set initial timestamp for timer
         this.debouncedUpdateDashboard(); // Overview refresh (/api/crypto-portfolio)
         
-        // Start available countdown without redundant immediate refresh
-        this.startAvailableCountdown(5); // Start countdown (5s delay)
+        // No initial countdown - master interval handles available positions timing
         
         // Single master update interval (90 seconds) - RATE LIMIT FIX
         this.masterUpdateInterval = setInterval(() => {
