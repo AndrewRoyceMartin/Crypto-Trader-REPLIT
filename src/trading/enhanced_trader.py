@@ -584,8 +584,8 @@ class EnhancedTrader:
                 
                 self.logger.info(f"🔗 Using live exchange instance: {type(live_exchange).__name__}")
                 
-                # Place live market sell order on OKX
-                order_result = live_exchange.sell_market(trading_symbol, current_qty)
+                # Place live market sell order on OKX using simple place_order method
+                order_result = live_exchange.place_order(trading_symbol, 'sell', current_qty, 'market')
                 
                 if order_result and order_result.get('id'):
                     order_id = order_result['id']
@@ -723,8 +723,8 @@ class EnhancedTrader:
                 
                 self.logger.info(f"🔗 Using live exchange instance: {type(live_exchange).__name__}")
                 
-                # Place live market buy order on OKX
-                order_result = live_exchange.buy_market(trading_symbol, quantity)
+                # Place live market buy order on OKX using simple place_order method
+                order_result = live_exchange.place_order(trading_symbol, 'buy', quantity, 'market')
                 
                 if order_result and order_result.get('id'):
                     order_id = order_result['id']
