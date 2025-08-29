@@ -1,0 +1,59 @@
+📊 Initial holdings refresh starting immediately
+app_legacy.js?v=1756425074_1756427430338:2746 Sync test fetch failed: signal is aborted without reason
+refreshStrategyStatus @ app_legacy.js?v=1756425074_1756427430338:2746
+await in refreshStrategyStatus
+setupStrategyAccordion @ app_legacy.js?v=1756425074_1756427430338:2689
+setupEventListeners @ app_legacy.js?v=1756425074_1756427430338:696
+init @ app_legacy.js?v=1756425074_1756427430338:655
+TradingApp @ app_legacy.js?v=1756425074_1756427430338:384
+(anonymous) @ app_legacy.js?v=1756425074_1756427430338:282Understand this warning
+(index):624  GET https://arm-digital-grim-trader.replit.app/api/okx-status 500 (Internal Server Error)
+updateFooterStatus @ (index):624
+await in updateFooterStatus
+(anonymous) @ (index):1219Understand this error
+app_legacy.js?v=1756425074_1756427430338:4256  GET https://arm-digital-grim-trader.replit.app/api/crypto-portfolio?currency=USD&ts=1756427430436 500 (Internal Server Error)
+updatePerformanceCharts @ app_legacy.js?v=1756425074_1756427430338:4256
+(anonymous) @ app_legacy.js?v=1756425074_1756427430338:4212
+setTimeout
+initializeRealCharts @ app_legacy.js?v=1756425074_1756427430338:4211
+initializeCharts @ app_legacy.js?v=1756425074_1756427430338:4082
+init @ app_legacy.js?v=1756425074_1756427430338:656
+TradingApp @ app_legacy.js?v=1756425074_1756427430338:384
+(anonymous) @ app_legacy.js?v=1756425074_1756427430338:282Understand this error
+app_legacy.js?v=1756425074_1756427430338:6284  GET https://arm-digital-grim-trader.replit.app/api/available-positions 500 (Internal Server Error)
+fetchAndUpdateAvailablePositions @ app_legacy.js?v=1756425074_1756427430338:6284
+(anonymous) @ (index):1240
+setTimeout
+(anonymous) @ (index):1231Understand this error
+app_legacy.js?v=1756425074_1756427430338:6347 ❌ Error fetching available positions after 6131ms: Error: HTTP 500
+    at fetchAndUpdateAvailablePositions (app_legacy.js?v=1756425074_1756427430338:6288:33)
+fetchAndUpdateAvailablePositions @ app_legacy.js?v=1756425074_1756427430338:6347
+await in fetchAndUpdateAvailablePositions
+(anonymous) @ (index):1240
+setTimeout
+(anonymous) @ (index):1231Understand this error
+app_legacy.js?v=1756425074_1756427430338:6356 🚨 HTTP ERROR: HTTP 500
+fetchAndUpdateAvailablePositions @ app_legacy.js?v=1756425074_1756427430338:6356
+await in fetchAndUpdateAvailablePositions
+(anonymous) @ (index):1240
+setTimeout
+(anonymous) @ (index):1231Understand this error
+app_legacy.js?v=1756425074_1756427430338:1604  GET https://arm-digital-grim-trader.replit.app/api/drawdown-analysis?timeframe=30d 500 (Internal Server Error)
+updateDrawdownAnalysis @ app_legacy.js?v=1756425074_1756427430338:1604
+updateDashboard @ app_legacy.js?v=1756425074_1756427430338:926
+await in updateDashboard
+debouncedUpdateDashboard @ app_legacy.js?v=1756425074_1756427430338:2436
+startAutoUpdate @ app_legacy.js?v=1756425074_1756427430338:705
+init @ app_legacy.js?v=1756425074_1756427430338:667
+TradingApp @ app_legacy.js?v=1756425074_1756427430338:384
+(anonymous) @ app_legacy.js?v=1756425074_1756427430338:282Understand this error
+app_legacy.js?v=1756425074_1756427430338:1431  GET https://arm-digital-grim-trader.replit.app/api/equity-curve?timeframe=30d 500 (Internal Server Error)
+updateEquityCurve @ app_legacy.js?v=1756425074_1756427430338:1431
+updateDashboard @ app_legacy.js?v=1756425074_1756427430338:923
+await in updateDashboard
+debouncedUpdateDashboard @ app_legacy.js?v=1756425074_1756427430338:2436
+startAutoUpdate @ app_legacy.js?v=1756425074_1756427430338:705
+init @ app_legacy.js?v=1756425074_1756427430338:667
+TradingApp @ app_legacy.js?v=1756425074_1756427430338:384
+(anonymous) @ app_legacy.js?v=1756425074_1756427430338:282Understand this error
+app_legacy.js?v=1756425074_1756427430338:2487  GET https://arm-digital-grim-trader.replit.app/api/okx-status 500 (Internal Server Error)
