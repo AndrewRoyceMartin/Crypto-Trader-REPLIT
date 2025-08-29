@@ -584,6 +584,14 @@ class EnhancedTrader:
                 
                 self.logger.info(f"🔗 Using live exchange instance: {type(live_exchange).__name__}")
                 
+                # Validate minimum trade size for OKX (prevent API errors)
+                trade_value_usd = current_qty * current_price
+                min_trade_value = 5.0  # OKX minimum trade value ~$5 USD
+                
+                if trade_value_usd < min_trade_value:
+                    self.logger.warning(f"🚫 TRADE SIZE TOO SMALL: {base_symbol} trade value ${trade_value_usd:.2f} < minimum ${min_trade_value:.2f} - skipping to avoid API error")
+                    return False
+                
                 # Place live market sell order on OKX using simple place_order method
                 order_result = live_exchange.place_order(trading_symbol, 'sell', current_qty, 'market')
                 
@@ -722,6 +730,14 @@ class EnhancedTrader:
                     raise RuntimeError("No live exchange instance available for order execution")
                 
                 self.logger.info(f"🔗 Using live exchange instance: {type(live_exchange).__name__}")
+                
+                # Validate minimum trade size for OKX (prevent API errors)
+                trade_value_usd = quantity * current_price
+                min_trade_value = 5.0  # OKX minimum trade value ~$5 USD
+                
+                if trade_value_usd < min_trade_value:
+                    self.logger.warning(f"🚫 TRADE SIZE TOO SMALL: {base_symbol} trade value ${trade_value_usd:.2f} < minimum ${min_trade_value:.2f} - skipping to avoid API error")
+                    return False
                 
                 # Place live market buy order on OKX using simple place_order method
                 order_result = live_exchange.place_order(trading_symbol, 'buy', quantity, 'market')
