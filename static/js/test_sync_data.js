@@ -1522,7 +1522,7 @@ class EnhancedTestRunner {
             try {
                 // Realistic timeout for production API performance
                 const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 15000); // UPDATED: Extended timeout for live trading APIs
+                const timeoutId = setTimeout(() => controller.abort(), 15000); // TIMEOUT_FIX_V3: Extended timeout for live trading APIs
                 
                 const response = await fetch(endpoint, { 
                     cache: 'no-store',
