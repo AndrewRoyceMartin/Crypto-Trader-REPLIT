@@ -237,8 +237,7 @@ class ConfidenceBasedTrader:
                 inst_id=symbol_pair,
                 side="buy",
                 ord_type="market",
-                sz=str(amount_usd),  # For market buy, size is in quote currency (USDT)
-                tgt_ccy="quote_ccy"  # Specify we're using quote currency amount
+                sz=str(amount_usd)  # For market buy, size is in quote currency (USDT)
             )
             
             if order_response and order_response.get('code') == '0':

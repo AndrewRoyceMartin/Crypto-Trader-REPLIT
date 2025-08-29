@@ -472,22 +472,22 @@ class PortfolioService:
                              f"Processed: {okx_positions_processed}, Valid: {valid_positions}, "
                              f"Displayed: {displayed_positions}, Skipped: {okx_positions_skipped}")
             
-            # AUDIT: Value alignment verification (accounting for USDT cash added separately)
-            expected_total = okx_total_value_raw + cash_balance
-            value_difference = abs(expected_total - total_value)
+            # AUDIT: Value alignment verification (compare crypto-only values)
+            # Since USDT cash is intentionally excluded from display, compare like-with-like
+            crypto_only_difference = abs(okx_total_value_raw - total_value)
             
-            self.logger.warning(f"💰 VALUE AUDIT: OKX Positions: ${okx_total_value_raw:.2f}, "
-                             f"USDT Cash: ${cash_balance:.2f}, Expected: ${expected_total:.2f}, "
-                             f"Displayed: ${total_value:.2f}, Difference: ${value_difference:.2f}")
+            self.logger.warning(f"💰 VALUE AUDIT: OKX Crypto Positions: ${okx_total_value_raw:.2f}, "
+                             f"USDT Cash: ${cash_balance:.2f} (excluded from display), "
+                             f"Displayed Crypto Value: ${total_value:.2f}, Crypto Difference: ${crypto_only_difference:.2f}")
             
             # CRITICAL WARNINGS for data integrity issues
             if displayed_positions != valid_positions:
                 self.logger.error(f"🚨 CRITICAL: POSITION MISMATCH! Valid OKX positions: {valid_positions}, "
                                f"Displayed positions: {displayed_positions}")
             
-            if value_difference > 0.01:  # More than 1 cent difference
-                self.logger.error(f"🚨 CRITICAL: VALUE MISMATCH! Expected: ${expected_total:.2f}, "
-                               f"Displayed: ${total_value:.2f}, Difference: ${value_difference:.2f}")
+            if crypto_only_difference > 0.01:  # More than 1 cent difference in crypto values
+                self.logger.error(f"🚨 CRITICAL: CRYPTO VALUE MISMATCH! Expected crypto: ${okx_total_value_raw:.2f}, "
+                               f"Displayed crypto: ${total_value:.2f}, Difference: ${crypto_only_difference:.2f}")
             
             # AUDIT: Excluded positions summary
             if okx_positions_excluded:
@@ -495,14 +495,14 @@ class PortfolioService:
                 for exc in okx_positions_excluded:
                     self.logger.warning(f"   - {exc['symbol']}: {exc['reason']}, value: ${exc['okx_value']:.2f}")
             
-            # AUDIT: Final verification
+            # AUDIT: Final verification (using crypto-only comparison)
             position_match = displayed_positions == valid_positions
-            value_match = value_difference <= 0.01
+            crypto_value_match = crypto_only_difference <= 0.01
             
-            if position_match and value_match:
-                self.logger.info(f"✅ DATA INTEGRITY VERIFIED: 100% OKX alignment confirmed")
+            if position_match and crypto_value_match:
+                self.logger.info(f"✅ DATA INTEGRITY VERIFIED: Crypto portfolio alignment confirmed (USDT cash excluded by design)")
             else:
-                self.logger.error(f"❌ DATA INTEGRITY FAILED: Position match: {position_match}, Value match: {value_match}")
+                self.logger.error(f"❌ DATA INTEGRITY FAILED: Position match: {position_match}, Crypto value match: {crypto_value_match}")
             
             self.logger.info(f"OKX REAL PORTFOLIO: {len(holdings)} positions, "
                            f"total value ${total_value:.2f}, total P&L ${total_pnl:.2f} ({total_pnl_percent:.2f}%)")
