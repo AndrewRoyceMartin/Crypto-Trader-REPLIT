@@ -5565,9 +5565,17 @@ async function testBollingerBandsPrioritization() {
             testResults.validation_details.push(`⚠️ Bot status test failed: ${botError.message}`);
         }
         
-        // Test 4: Direct validation via sync test endpoint (if available)
+        // Test 4: Direct validation via sync test endpoint (with timeout)
         try {
-            const syncTestResponse = await fetch('/api/test-sync-data', { cache: 'no-store' });
+            const controller4 = new AbortController();
+            const timeoutId4 = setTimeout(() => controller4.abort(), 2000);
+            
+            const syncTestResponse = await fetch('/api/test-sync-data', { 
+                cache: 'no-store',
+                signal: controller4.signal 
+            });
+            clearTimeout(timeoutId4);
+            
             if (syncTestResponse.ok) {
                 const syncData = await syncTestResponse.json();
                 
