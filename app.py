@@ -3571,6 +3571,13 @@ def api_current_holdings() -> ResponseReturnValue:
                 "last_update": iso_utc()
             })
 
+        # Filter out holdings with less than $1 value
+        original_count = len(portfolio_holdings)
+        portfolio_holdings = [h for h in portfolio_holdings if float(h.get('current_value', 0) or 0) >= 1.0]
+        filtered_count = original_count - len(portfolio_holdings)
+        if filtered_count > 0:
+            logger.info(f"Current-holdings: Filtered out {filtered_count} holdings with value < $1.00 (showing {len(portfolio_holdings)} holdings)")
+
         from src.utils.okx_native import OKXNative, STABLES
         client = OKXNative.from_env()
         holdings, total_value = [], 0.0
