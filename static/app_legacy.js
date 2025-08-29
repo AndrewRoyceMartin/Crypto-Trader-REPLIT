@@ -271,11 +271,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize V02 table mobile labels on first load
     initializeV02Tables();
     
-    // Set up sync test button event handler (consolidated from duplicate listener)
-    const syncButton = document.getElementById('btn-run-sync-test');
-    if (syncButton) {
-        syncButton.addEventListener('click', () => SyncTest.runSyncTest());
-    }
+    // Sync test functionality moved to separate test-sync-data page
     
     // SAFEGUARD: Initialize TradingApp only once (consolidated from duplicate listener)
     if (!window.tradingApp) {
@@ -2677,13 +2673,7 @@ class TradingApp {
             });
         }
         
-        // Setup sync test button
-        const syncTestButton = document.getElementById('btn-run-sync-test');
-        if (syncTestButton) {
-            syncTestButton.addEventListener('click', () => {
-                this.runSyncTest();
-            });
-        }
+        // Sync test functionality moved to separate test-sync-data page
         
         // Initial load
         this.refreshStrategyStatus();
@@ -2724,28 +2714,8 @@ class TradingApp {
                 botStatus = { running: false, mode: 'error', active_pairs: 0 };
             }
             
-            try {
-                // Create timeout promise for sync test
-                const controller2 = new AbortController();
-                const timeoutId2 = setTimeout(() => controller2.abort(), 5000);
-                
-                const syncTestResponse = await fetch('/api/sync-test', { 
-                    signal: controller2.signal,
-                    headers: { 'Accept': 'application/json' }
-                });
-                clearTimeout(timeoutId2);
-                
-                if (syncTestResponse.ok) {
-                    syncData = await syncTestResponse.json();
-                } else {
-                    console.warn(`Sync test endpoint returned ${syncTestResponse.status}: ${syncTestResponse.statusText}`);
-                    // Use fallback sync data
-                    syncData = { sync_summary: { synchronized: 0, out_of_sync: 0, no_position: 0, strategy_only: 0 } };
-                }
-            } catch (syncError) {
-                console.warn('Sync test fetch failed:', syncError.message || syncError.name);
-                syncData = { sync_summary: { synchronized: 0, out_of_sync: 0, no_position: 0, strategy_only: 0 } };
-            }
+            // Sync test calls removed - functionality moved to separate test-sync-data page
+            syncData = { sync_summary: { synchronized: 0, out_of_sync: 0, no_position: 0, strategy_only: 0 } };
             
             // Update bot status badges and summary (with fallback data if needed)
             if (botStatus) {
@@ -2892,49 +2862,7 @@ class TradingApp {
         return row;
     }
     
-    async runSyncTest() {
-        const syncTestButton = document.getElementById('btn-run-sync-test');
-        if (!syncTestButton) return;
-        
-        const originalText = syncTestButton.innerHTML;
-        
-        try {
-            // Show loading state
-            syncTestButton.innerHTML = '<span class="icon icon-spinner fa-spin me-2"></span>Testing...';
-            syncTestButton.disabled = true;
-            
-            // Run sync test
-            const response = await fetch('/api/sync-test');
-            if (!response.ok) {
-                throw new Error('Sync test failed');
-            }
-            
-            const syncData = await response.json();
-            
-            // Fetch fresh bot status for update
-            const botStatusResponse = await fetch('/api/bot/status');
-            const botStatus = botStatusResponse.ok ? await botStatusResponse.json() : { supported_pairs: [] };
-            
-            // Update display with fresh sync data
-            this.updateSyncSummary(syncData);
-            this.updateStrategyPairsTable(botStatus, syncData);
-            
-            // Show success message briefly
-            syncTestButton.innerHTML = '<span class="icon icon-check me-2"></span>Test Complete';
-            setTimeout(() => {
-                syncTestButton.innerHTML = originalText;
-            }, 2000);
-            
-        } catch (error) {
-            console.error('Sync test error:', error);
-            syncTestButton.innerHTML = '<span class="icon icon-exclamation-triangle me-2"></span>Test Failed';
-            setTimeout(() => {
-                syncTestButton.innerHTML = originalText;
-            }, 2000);
-        } finally {
-            syncTestButton.disabled = false;
-        }
-    }
+    // Sync test functionality moved to separate test-sync-data page
     
     handleStrategyStatusError(error) {
         // Update badges to show error state
