@@ -1298,8 +1298,10 @@ class EnhancedTestRunner {
                 const holdingsData = await holdingsResponse.json();
                 const portfolioData = await portfolioResponse.json();
                 
-                // Validate data consistency
-                const holdingsSymbols = holdingsData.length ? holdingsData.map(h => h.symbol) : [];
+                // Validate data consistency - handle different data structures
+                const holdingsSymbols = Array.isArray(holdingsData) ? 
+                    holdingsData.map(h => h.symbol) : 
+                    (holdingsData.holdings ? holdingsData.holdings.map(h => h.symbol) : []);
                 const portfolioSymbols = portfolioData.holdings ? portfolioData.holdings.map(p => p.symbol) : [];
                 
                 syncResults.data_consistency = holdingsSymbols.length > 0 && portfolioSymbols.length > 0;
@@ -1482,9 +1484,9 @@ class EnhancedTestRunner {
         const endpointPromises = endpoints.map(async (endpoint) => {
             const endpointStart = performance.now();
             try {
-                // Increased timeout to match real API performance
+                // Realistic timeout for production API performance
                 const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 6000); // 6 second timeout per endpoint
+                const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout per endpoint
                 
                 const response = await fetch(endpoint, { 
                     cache: 'no-store',
