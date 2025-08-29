@@ -229,24 +229,27 @@ class ConfidenceBasedTrader:
             
             quantity = amount_usd / current_price
             
-            # Execute purchase via OKX
-            symbol_pair = f"{symbol}-USDT"
+            # Execute purchase via exchange adapter (same method as enhanced trader)
+            trading_symbol = f"{symbol}/USDT"
             
             self.logger.info(
                 "🚀 EXECUTING CONFIDENCE PURCHASE: %.6f %s at $%.4f (Total: $%.2f) - %s",
                 quantity, symbol, current_price, amount_usd, confidence_data['timing_signal']
             )
             
-            # Place market buy order
-            order_response = self.okx_client.place_order(
-                inst_id=symbol_pair,
-                side="buy",
-                ord_type="market",
-                sz=str(amount_usd)  # For market buy, size is in quote currency (USDT)
-            )
+            # Get the exchange adapter from portfolio service for proper authentication
+            portfolio_service = get_portfolio_service()
+            live_exchange = portfolio_service.exchange
             
-            if order_response and order_response.get('code') == '0':
-                order_id = order_response['data'][0]['ordId']
+            if not live_exchange:
+                self.logger.error("Cannot get exchange adapter for trading")
+                return False
+            
+            # Place market buy order using simple place_order method (same as enhanced trader)
+            order_response = live_exchange.place_order(trading_symbol, 'buy', quantity, 'market')
+            
+            if order_response and order_response.get('id'):
+                order_id = order_response['id']
                 
                 # Record purchase time for cooldown
                 self.last_purchase_times[symbol] = datetime.now(timezone.utc)
