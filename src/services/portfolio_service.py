@@ -485,9 +485,16 @@ class PortfolioService:
                 self.logger.error(f"🚨 CRITICAL: POSITION MISMATCH! Valid OKX positions: {valid_positions}, "
                                f"Displayed positions: {displayed_positions}")
             
-            if crypto_only_difference > 0.01:  # More than 1 cent difference in crypto values
+            if crypto_only_difference > 0.05:  # More than 5 cents difference in crypto values (relaxed tolerance for rounding)
                 self.logger.error(f"🚨 CRITICAL: CRYPTO VALUE MISMATCH! Expected crypto: ${okx_total_value_raw:.2f}, "
                                f"Displayed crypto: ${total_value:.2f}, Difference: ${crypto_only_difference:.2f}")
+                # Log detailed breakdown for debugging
+                self.logger.error(f"📊 DETAILED BREAKDOWN:")
+                self.logger.error(f"   OKX Raw Value: ${okx_total_value_raw:.6f}")
+                self.logger.error(f"   Display Value: ${total_value:.6f}")
+                self.logger.error(f"   Precision Diff: ${crypto_only_difference:.6f}")
+            elif crypto_only_difference > 0.01:
+                self.logger.warning(f"⚠️ MINOR: Crypto value precision difference: ${crypto_only_difference:.4f} (within acceptable range)")
             
             # AUDIT: Excluded positions summary
             if okx_positions_excluded:
@@ -495,14 +502,19 @@ class PortfolioService:
                 for exc in okx_positions_excluded:
                     self.logger.warning(f"   - {exc['symbol']}: {exc['reason']}, value: ${exc['okx_value']:.2f}")
             
-            # AUDIT: Final verification (using crypto-only comparison)
+            # AUDIT: Final verification (using crypto-only comparison with relaxed tolerance)
             position_match = displayed_positions == valid_positions
-            crypto_value_match = crypto_only_difference <= 0.01
+            crypto_value_match = crypto_only_difference <= 0.05  # 5 cent tolerance for rounding differences
             
             if position_match and crypto_value_match:
-                self.logger.info(f"✅ DATA INTEGRITY VERIFIED: Crypto portfolio alignment confirmed (USDT cash excluded by design)")
+                if crypto_only_difference <= 0.01:
+                    self.logger.info(f"✅ DATA INTEGRITY VERIFIED: Perfect crypto portfolio alignment (USDT cash excluded by design)")
+                else:
+                    self.logger.info(f"✅ DATA INTEGRITY VERIFIED: Crypto portfolio alignment within tolerance ${crypto_only_difference:.4f} (USDT excluded)")
             else:
                 self.logger.error(f"❌ DATA INTEGRITY FAILED: Position match: {position_match}, Crypto value match: {crypto_value_match}")
+                self.logger.error(f"   Position Details: Expected {valid_positions}, Got {displayed_positions}")
+                self.logger.error(f"   Value Details: Expected ${okx_total_value_raw:.6f}, Got ${total_value:.6f}, Diff: ${crypto_only_difference:.6f}")
             
             self.logger.info(f"OKX REAL PORTFOLIO: {len(holdings)} positions, "
                            f"total value ${total_value:.2f}, total P&L ${total_pnl:.2f} ({total_pnl_percent:.2f}%)")

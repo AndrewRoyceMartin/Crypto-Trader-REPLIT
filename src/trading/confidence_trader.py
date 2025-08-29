@@ -57,7 +57,12 @@ class ConfidenceBasedTrader:
                 self.logger.warning("Exchange not connected, cannot scan for opportunities")
                 return []
             
-            balance_data = exchange.exchange.fetch_balance()
+            # Safely access exchange balance data
+            try:
+                balance_data = exchange.exchange.fetch_balance() if exchange.exchange else {}
+            except Exception as e:
+                self.logger.error("Error fetching balance data: %s", e)
+                return []
             
             # Comprehensive list of major cryptocurrencies (same as available-positions endpoint)
             major_crypto_assets = [
@@ -182,7 +187,7 @@ class ConfidenceBasedTrader:
             try:
                 portfolio_service = get_portfolio_service()
                 exchange = portfolio_service.exchange
-                if exchange and exchange.is_connected():
+                if exchange and exchange.is_connected() and exchange.exchange:
                     balance_data = exchange.exchange.fetch_balance()
                     usdt_balance = float(balance_data.get('USDT', {}).get('free', 0) or 0)
                     
