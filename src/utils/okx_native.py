@@ -8,11 +8,10 @@ from typing import Any, Dict, List, Optional
 STABLES = {"USD", "USDT", "USDC"}
 
 def utc_iso() -> str:
-    # OKX expects ISO timestamp with 3-digit milliseconds (not 6-digit microseconds)
-    dt = datetime.now(timezone.utc)
-    # Get milliseconds (3 digits) instead of microseconds (6 digits)
-    milliseconds = int(dt.microsecond / 1000)
-    return dt.strftime('%Y-%m-%dT%H:%M:%S') + f'.{milliseconds:03d}Z'
+    # OKX requires ISO 8601 timestamps with only 3-digit milliseconds
+    now = datetime.now(timezone.utc)
+    # Format with 3-digit milliseconds
+    return now.strftime('%Y-%m-%dT%H:%M:%S.') + f"{int(now.microsecond / 1000):03d}Z"
 
 @dataclass
 class OKXCreds:
