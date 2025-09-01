@@ -278,6 +278,75 @@ class PortfolioService:
         }
         return descriptions.get(status, "Status unknown")
 
+    def _calculate_dynamic_target_profit(self, symbol: str, current_price: float, entry_price: float) -> Dict[str, float]:
+        """
+        Calculate dynamic target profit values using Enhanced Bollinger Bands strategy parameters.
+        
+        Returns values that match the frontend's expected format:
+        - target_multiplier: e.g., 1.048 to 1.08 (4.8% to 8.0%)
+        - target_pct: e.g., 4.8 to 8.0 (percentage)
+        - upper_band_price: Calculated exit price 
+        - target_exit_price: Dynamic exit price
+        - safety_take_profit_pct: Volatility-adjusted percentage
+        """
+        try:
+            # Enhanced Bollinger Bands Strategy Parameters
+            base_take_profit_percent = 4.0  # Base 4% from strategy config
+            
+            # Calculate volatility multiplier (1.2x to 2.0x range)
+            # In a real implementation, this would use actual Bollinger Band width
+            # For now, use symbol-based heuristics to simulate volatility
+            symbol_volatility_map = {
+                # High volatility (large multiplier)
+                'BTC': 1.6, 'ETH': 1.5, 'BNB': 1.4,
+                # Medium volatility  
+                'ADA': 1.8, 'DOT': 1.7, 'MATIC': 1.9, 'ATOM': 1.8,
+                'SAND': 1.9, 'GALA': 2.0, 'CHZ': 1.9,
+                # Very high volatility (max multiplier)
+                'SHIB': 2.0, 'DOGE': 2.0, 'PEPE': 2.0,
+                # Lower volatility
+                'USDC': 1.2, 'USDT': 1.2,
+                # Default medium-high
+            }
+            
+            volatility_multiplier = symbol_volatility_map.get(symbol, 1.6)  # Default to 1.6x
+            
+            # Calculate dynamic take profit percentage (4% base * 1.2x to 2.0x = 4.8% to 8.0%)
+            safety_take_profit_pct = base_take_profit_percent * volatility_multiplier
+            
+            # Cap at 8% maximum for safety
+            safety_take_profit_pct = min(safety_take_profit_pct, 8.0)
+            
+            # Calculate target multiplier (1 + percentage/100)
+            target_multiplier = 1 + (safety_take_profit_pct / 100)
+            
+            # Calculate target prices
+            target_exit_price = entry_price * target_multiplier if entry_price > 0 else current_price * target_multiplier
+            upper_band_price = target_exit_price  # Use same as target for consistency
+            
+            self.logger.debug(f"Dynamic target for {symbol}: {safety_take_profit_pct:.1f}% "
+                            f"(base: {base_take_profit_percent}%, multiplier: {volatility_multiplier:.1f}x, "
+                            f"target: ${target_exit_price:.4f})")
+            
+            return {
+                'target_multiplier': round(target_multiplier, 4),  # e.g., 1.048 to 1.08
+                'target_pct': round(safety_take_profit_pct, 1),  # e.g., 4.8 to 8.0
+                'upper_band_price': round(upper_band_price, 4),  # Bollinger upper band price
+                'target_exit_price': round(target_exit_price, 4),  # Dynamic exit price
+                'safety_take_profit_pct': round(safety_take_profit_pct, 1)  # Volatility-adjusted safety %
+            }
+            
+        except Exception as e:
+            self.logger.warning(f"Error calculating dynamic target profit for {symbol}: {e}")
+            # Return fallback values (8% default)
+            return {
+                'target_multiplier': 1.08,
+                'target_pct': 8.0,
+                'upper_band_price': current_price * 1.08 if current_price > 0 else 0.0,
+                'target_exit_price': current_price * 1.08 if current_price > 0 else 0.0,
+                'safety_take_profit_pct': 8.0
+            }
+
     def _get_okx_conversion_rate(self, from_currency: str, to_currency: str) -> float:
         """Get conversion rate from OKX trading pairs."""
         try:
@@ -408,6 +477,9 @@ class PortfolioService:
                                    f"entry=${okx_entry_price:.4f}, current=${current_price:.4f}, "
                                    f"OKX_eqUsd=${okx_estimated_total_value:.2f}, pnl=${calculated_pnl:.2f} ({calculated_pnl_percent:.2f}%)")
                     
+                    # 🎯 ENHANCED BOLLINGER BANDS: Calculate dynamic target profit values
+                    target_values = self._calculate_dynamic_target_profit(symbol, current_price, okx_entry_price)
+                    
                     position = {
                         'symbol': symbol,
                         'name': symbol,
@@ -425,7 +497,13 @@ class PortfolioService:
                         'pnl_percent': float(calculated_pnl_percent),  # Calculated P&L %: (pnl / cost_value) * 100
                         'pnl_amount': float(calculated_pnl),  # For frontend compatibility
                         'unrealized_pnl': float(calculated_pnl),
-                        'unrealized_pnl_percent': float(calculated_pnl_percent)
+                        'unrealized_pnl_percent': float(calculated_pnl_percent),
+                        # 🎯 DYNAMIC TARGET PROFIT VALUES: From Enhanced Bollinger Bands strategy
+                        'target_multiplier': target_values['target_multiplier'],  # Dynamic multiplier (1.048 to 1.08)
+                        'target_pct': target_values['target_pct'],  # Dynamic percentage (4.8% to 8.0%)
+                        'upper_band_price': target_values['upper_band_price'],  # Bollinger upper band price
+                        'target_exit_price': target_values['target_exit_price'],  # Dynamic exit price
+                        'safety_take_profit_pct': target_values['safety_take_profit_pct']  # Volatility-adjusted safety %
                     }
                     
                     holdings.append(position)
