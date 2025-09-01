@@ -4,6 +4,8 @@ import os, time, json, hmac, hashlib, base64, requests
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
+import threading
+import random
 
 STABLES = {"USD", "USDT", "USDC"}
 
@@ -31,6 +33,11 @@ class OKXCreds:
         )
 
 class OKXNative:
+    # Class-level rate limiting
+    _rate_limiter = threading.Lock()
+    _last_request_time = 0
+    _min_request_interval = 0.2  # 200ms between requests (5 req/sec max)
+    
     def __init__(self, creds: OKXCreds, timeout: int = 10):
         if not (creds.api_key and creds.secret_key and creds.passphrase):
             raise RuntimeError("OKX API credentials required")
@@ -38,6 +45,12 @@ class OKXNative:
         self.base_url = f"https://{creds.hostname}"
         self.session = requests.Session()
         self.timeout = timeout
+        self.request_stats = {
+            "total_requests": 0,
+            "failed_401": 0,
+            "rate_limited": 0,
+            "retries_used": 0
+        }
 
     # --- low-level helpers ---
     def _sign(self, ts: str, method: str, path: str, body: str = "") -> str:
@@ -54,33 +67,110 @@ class OKXNative:
             "Content-Type": "application/json",
         }
 
-    def _request(self, path: str, method: str = "GET", body: Optional[Dict[str, Any]] = None, timeout: Optional[int] = None) -> Dict[str, Any]:
+    def _rate_limit(self):
+        """Apply rate limiting to avoid hitting OKX throttle caps."""
+        with self._rate_limiter:
+            current_time = time.time()
+            time_since_last = current_time - self._last_request_time
+            if time_since_last < self._min_request_interval:
+                sleep_time = self._min_request_interval - time_since_last
+                time.sleep(sleep_time)
+            self._last_request_time = time.time()
+
+    def _request_with_retry(self, path: str, method: str = "GET", body: Optional[Dict[str, Any]] = None, timeout: Optional[int] = None, max_retries: int = 3) -> Dict[str, Any]:
+        """Make request with exponential backoff retry logic for transient 401s."""
         from app import with_throttle, logger
+        
+        self.request_stats["total_requests"] += 1
         tmo = timeout or self.timeout
-        ts = utc_iso()
-        body_str = json.dumps(body) if (body and method != "GET") else ""
-        sig = self._sign(ts, method, path, body_str)
-        headers = self._headers(ts, sig)
-        url = self.base_url + path
         
-        # Debug authentication for trade/account endpoints
-        if "/trade/" in path or "/account/" in path:
-            logger.info(f"OKX Authentication Debug for {path}:")
-            logger.info(f"  Timestamp: {ts}")
-            logger.info(f"  Method: {method}")
-            logger.info(f"  Path: {path}")
-            logger.info(f"  Body: '{body_str}'")
-            logger.info(f"  Signature Input: '{ts}{method}{path}{body_str}'")
-            logger.info(f"  API Key: {self.creds.api_key[:8]}...")
-            logger.info(f"  Passphrase: {self.creds.passphrase}")
-            logger.info(f"  Headers: {headers}")
+        for attempt in range(max_retries + 1):
+            try:
+                # Apply rate limiting
+                self._rate_limit()
+                
+                # Generate fresh timestamp for each attempt
+                ts = utc_iso()
+                body_str = json.dumps(body) if (body and method != "GET") else ""
+                sig = self._sign(ts, method, path, body_str)
+                headers = self._headers(ts, sig)
+                url = self.base_url + path
+                
+                # Debug authentication for trade/account endpoints on first attempt
+                if attempt == 0 and ("/trade/" in path or "/account/" in path):
+                    logger.info(f"OKX API Request [{attempt + 1}/{max_retries + 1}] for {path}:")
+                    logger.info(f"  Timestamp: {ts}")
+                    logger.info(f"  Method: {method}")
+                    logger.info(f"  Signature Input: '{ts}{method}{path}{body_str}'")
+                
+                if method == "GET":
+                    resp = with_throttle(self.session.get, url, headers=headers, timeout=tmo)
+                else:
+                    resp = with_throttle(self.session.post, url, headers=headers, data=body_str, timeout=tmo)
+                
+                resp.raise_for_status()
+                
+                # Log success after retries
+                if attempt > 0:
+                    logger.info(f"✅ OKX API success on attempt {attempt + 1} for {path}")
+                
+                return resp.json()
+                
+            except requests.exceptions.HTTPError as e:
+                if e.response.status_code == 401:
+                    self.request_stats["failed_401"] += 1
+                    
+                    # Log 401 patterns for analysis
+                    logger.warning(f"🔐 401 Unauthorized attempt {attempt + 1}/{max_retries + 1} for {path}")
+                    logger.warning(f"   Request stats: {self.request_stats}")
+                    
+                    if attempt < max_retries:
+                        # Exponential backoff: 1s, 2s, 4s
+                        backoff_time = (2 ** attempt) + random.uniform(0, 1)
+                        logger.info(f"⏳ Retrying in {backoff_time:.1f}s (exponential backoff)")
+                        time.sleep(backoff_time)
+                        self.request_stats["retries_used"] += 1
+                        continue
+                    else:
+                        logger.error(f"❌ All {max_retries + 1} attempts failed with 401 for {path}")
+                        raise
+                        
+                elif "busy" in str(e).lower() or "too many" in str(e).lower():
+                    self.request_stats["rate_limited"] += 1
+                    logger.warning(f"⚠️ Rate limit hit on attempt {attempt + 1} for {path}")
+                    
+                    if attempt < max_retries:
+                        # Longer backoff for rate limiting: 5s, 10s, 20s
+                        backoff_time = 5 * (2 ** attempt) + random.uniform(0, 2)
+                        logger.info(f"⏳ Rate limit backoff: {backoff_time:.1f}s")
+                        time.sleep(backoff_time)
+                        self.request_stats["retries_used"] += 1
+                        continue
+                    else:
+                        raise
+                else:
+                    # Other HTTP errors, don't retry
+                    logger.error(f"❌ HTTP {e.response.status_code} error for {path}: {e}")
+                    raise
+                    
+            except Exception as e:
+                # Network/timeout errors
+                if attempt < max_retries:
+                    backoff_time = (2 ** attempt) + random.uniform(0, 1)
+                    logger.warning(f"🌐 Network error attempt {attempt + 1}, retrying in {backoff_time:.1f}s: {e}")
+                    time.sleep(backoff_time)
+                    self.request_stats["retries_used"] += 1
+                    continue
+                else:
+                    logger.error(f"❌ Network error after {max_retries + 1} attempts for {path}: {e}")
+                    raise
         
-        if method == "GET":
-            resp = with_throttle(self.session.get, url, headers=headers, timeout=tmo)
-        else:
-            resp = with_throttle(self.session.post, url, headers=headers, data=body_str, timeout=tmo)
-        resp.raise_for_status()
-        return resp.json()
+        # This should never be reached
+        raise RuntimeError(f"Unexpected end of retry loop for {path}")
+
+    def _request(self, path: str, method: str = "GET", body: Optional[Dict[str, Any]] = None, timeout: Optional[int] = None) -> Dict[str, Any]:
+        """Legacy wrapper for backward compatibility."""
+        return self._request_with_retry(path, method, body, timeout)
 
     # --- public API ---
     @classmethod
@@ -143,20 +233,29 @@ class OKXNative:
         if begin_ms: q += f"&begin={begin_ms}"
         if end_ms:   q += f"&end={end_ms}"
         try:
-            data = self._request(q)
+            # Use retry logic for fills endpoint
+            data = self._request_with_retry(q, max_retries=3)
             if data.get("code") == "0":
                 from app import logger
-                logger.info(f"OKX fills API success: Retrieved {len(data.get('data', []))} fills")
+                fills_count = len(data.get('data', []))
+                logger.info(f"✅ OKX fills API success: Retrieved {fills_count} fills (stats: {self.request_stats})")
                 return data.get("data", [])
             else:
                 # Log the error details for debugging
                 from app import logger
-                logger.error(f"OKX fills API error: {data.get('msg', 'Unknown error')} (code: {data.get('code', 'N/A')})")
+                logger.error(f"❌ OKX fills API error: {data.get('msg', 'Unknown error')} (code: {data.get('code', 'N/A')})")
                 return []
         except Exception as e:
             from app import logger
-            logger.error(f"OKX fills API request failed: {e}")
+            logger.error(f"❌ OKX fills API request failed after retries: {e} (stats: {self.request_stats})")
             return []
+
+    def get_request_stats(self) -> Dict[str, Any]:
+        """Get request statistics for monitoring."""
+        return {
+            **self.request_stats,
+            "success_rate": (self.request_stats["total_requests"] - self.request_stats["failed_401"] - self.request_stats["rate_limited"]) / max(1, self.request_stats["total_requests"]) * 100
+        }
 
     def bills(self, begin_ms: int, end_ms: int, limit: int = 100) -> List[Dict[str, Any]]:
         q = f"/api/v5/account/bills?begin={begin_ms}&end={end_ms}&limit={limit}"
