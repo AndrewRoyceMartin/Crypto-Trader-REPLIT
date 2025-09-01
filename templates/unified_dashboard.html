@@ -427,6 +427,117 @@
             </div>
         </section>
 
+        <!-- SECTION 4: TRADE HISTORY -->
+        <section id="trades" class="mb-5">
+            <div class="card card--hover">
+                <div class="card-header">
+                    <h3 class="mb-0"><span class="icon icon-history me-2"></span>Trade History</h3>
+                    <div class="meta">
+                        <span class="icon icon-clock me-1"></span>
+                        Last updated: <span id="trades-last-updated">Loading...</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-3">
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-calendar"></i></span>
+                                <select id="trades-days-filter" class="form-select">
+                                    <option value="7">Last 7 Days</option>
+                                    <option value="30" selected>Last 30 Days</option>
+                                    <option value="90">Last 90 Days</option>
+                                    <option value="365">Last Year</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-list"></i></span>
+                                <select id="trades-limit-filter" class="form-select">
+                                    <option value="50">Show 50</option>
+                                    <option value="100" selected>Show 100</option>
+                                    <option value="250">Show 250</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6 text-end">
+                            <button id="refresh-trades" class="btn btn-outline-primary">
+                                <i class="fas fa-sync"></i> Refresh Trades
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Trade Summary Cards -->
+                    <div class="row mb-4">
+                        <div class="col-md-3">
+                            <div class="card border-primary">
+                                <div class="card-body text-center">
+                                    <h5 class="card-title text-primary mb-1">Total Trades</h5>
+                                    <h3 id="trades-total-count" class="mb-0">-</h3>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card border-info">
+                                <div class="card-body text-center">
+                                    <h5 class="card-title text-info mb-1">Total Volume</h5>
+                                    <h3 id="trades-total-volume" class="mb-0">$-</h3>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card border-warning">
+                                <div class="card-body text-center">
+                                    <h5 class="card-title text-warning mb-1">Total Fees</h5>
+                                    <h3 id="trades-total-fees" class="mb-0">$-</h3>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card border-secondary">
+                                <div class="card-body text-center">
+                                    <h5 class="card-title text-secondary mb-1">Data Source</h5>
+                                    <h6 id="trades-data-source" class="mb-0 text-muted">-</h6>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-v02 table-hover">
+                            <thead>
+                                <tr>
+                                    <th class="table-sortable" data-sort="timestamp">Date <span class="icon icon-sort text-muted"></span></th>
+                                    <th class="table-sortable" data-sort="symbol_clean">Symbol <span class="icon icon-sort text-muted"></span></th>
+                                    <th class="table-sortable text-center" data-sort="side">Side <span class="icon icon-sort text-muted"></span></th>
+                                    <th class="table-sortable text-end" data-sort="fillSz">Amount <span class="icon icon-sort text-muted"></span></th>
+                                    <th class="table-sortable text-end" data-sort="fillPx">Price <span class="icon icon-sort text-muted"></span></th>
+                                    <th class="table-sortable text-end" data-sort="trade_value_usd">Value <span class="icon icon-sort text-muted"></span></th>
+                                    <th class="table-sortable text-end" data-sort="net_pnl">P&L <span class="icon icon-sort text-muted"></span></th>
+                                    <th class="text-center">Source</th>
+                                </tr>
+                            </thead>
+                            <tbody id="trades-tbody">
+                                <tr>
+                                    <td colspan="8" class="text-center py-4">
+                                        <div class="card" style="border: 1px solid #e5e7eb; max-width: 400px; margin: 0 auto;">
+                                            <div class="card-body">
+                                                <div class="d-flex justify-content-center align-items-center mb-2">
+                                                    <i class="fas fa-spinner fa-spin me-2 text-primary"></i>
+                                                    <span class="fw-bold">Loading Trade History...</span>
+                                                </div>
+                                                <small class="text-muted">Fetching your trading data from OKX</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
 
     </main>
 
@@ -879,31 +990,84 @@
         const tbody = document.getElementById('trades-tbody');
         if (!tbody || !trades || trades.length === 0) {
             if (tbody) {
-                tbody.innerHTML = '<tr><td colspan="6" class="text-center py-3 text-muted">No trades</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="8" class="text-center py-3 text-muted">No trades available</td></tr>';
             }
             return;
         }
         
-        tbody.innerHTML = trades.slice(0, 20).map(trade => {
-            const pnlClass = safeNum(trade.pnl, 0) >= 0 ? 'text-success' : 'text-danger';
-            const pnlSign = safeNum(trade.pnl, 0) >= 0 ? '+' : '';
-            const sideClass = trade.side === 'BUY' ? 'text-success' : 'text-danger';
+        tbody.innerHTML = trades.map(trade => {
+            const pnlClass = safeNum(trade.net_pnl, 0) >= 0 ? 'text-success' : 'text-danger';
+            const pnlSign = safeNum(trade.net_pnl, 0) >= 0 ? '+' : '';
+            const sideClass = trade.side === 'buy' ? 'text-success' : 'text-danger';
+            const sideText = (trade.side || 'N/A').toUpperCase();
             
-            const date = trade.timestamp ? new Date(trade.timestamp).toLocaleDateString() : 'N/A';
+            const date = trade.timestamp ? new Date(parseInt(trade.timestamp)).toLocaleDateString() : 'N/A';
+            const time = trade.timestamp ? new Date(parseInt(trade.timestamp)).toLocaleTimeString() : '';
+            
+            const symbol = trade.symbol_clean || trade.symbol || 'N/A';
+            const amount = safeNum(trade.fillSz, 0);
+            const price = safeNum(trade.fillPx, 0);
+            const value = safeNum(trade.trade_value_usd, 0);
+            const pnl = safeNum(trade.net_pnl, 0);
+            
+            const sourceIcon = trade.source && trade.source.includes('Synthetic') ? 
+                '<i class="fas fa-calculator text-warning" title="Portfolio-based calculation"></i>' :
+                '<i class="fas fa-exchange-alt text-success" title="Live OKX data"></i>';
             
             return `
                 <tr>
-                    <td class="text-white">${date}</td>
-                    <td class="text-white"><strong>${trade.symbol || 'N/A'}</strong></td>
-                    <td class="${sideClass}">${trade.side || 'N/A'}</td>
-                    <td class="text-end">${safeNum(trade.quantity, 0).toFixed(6)}</td>
-                    <td class="text-end">$${safeNum(trade.price, 0).toFixed(4)}</td>
-                    <td class="text-end ${pnlClass}">
-                        ${pnlSign}$${Math.abs(safeNum(trade.pnl, 0)).toFixed(2)}
+                    <td>
+                        <div>${date}</div>
+                        <small class="text-muted">${time}</small>
                     </td>
+                    <td><strong>${symbol}</strong></td>
+                    <td class="text-center">
+                        <span class="badge ${sideClass === 'text-success' ? 'bg-success' : 'bg-danger'}">
+                            ${sideText}
+                        </span>
+                    </td>
+                    <td class="text-end">${amount.toFixed(6)}</td>
+                    <td class="text-end">$${price.toFixed(4)}</td>
+                    <td class="text-end">$${value.toFixed(2)}</td>
+                    <td class="text-end ${pnlClass}">
+                        ${pnlSign}$${Math.abs(pnl).toFixed(2)}
+                    </td>
+                    <td class="text-center">${sourceIcon}</td>
                 </tr>
             `;
         }).join('');
+    }
+
+    // Load trades data
+    async function loadTradesData(days = 30, limit = 100) {
+        try {
+            console.log(`📊 Loading trades data: ${days} days, ${limit} limit`);
+            const response = await fetch(`/api/comprehensive-trades?days=${days}&limit=${limit}`);
+            const data = await response.json();
+            
+            if (data.success && data.trades) {
+                console.log(`✅ Loaded ${data.trades.length} trades`);
+                
+                // Update summary cards
+                document.getElementById('trades-total-count').textContent = data.summary.total_trades || 0;
+                document.getElementById('trades-total-volume').textContent = `$${(data.summary.total_volume_usd || 0).toLocaleString()}`;
+                document.getElementById('trades-total-fees').textContent = `$${(data.summary.total_fees_usdt || 0).toFixed(4)}`;
+                document.getElementById('trades-data-source').textContent = data.summary.data_source || 'Unknown';
+                document.getElementById('trades-last-updated').textContent = new Date().toLocaleTimeString();
+                
+                // Render table
+                renderTradesTable(data.trades);
+                
+                return data;
+            } else {
+                throw new Error(data.error || 'Failed to load trades');
+            }
+        } catch (error) {
+            console.error('❌ Error loading trades:', error);
+            document.getElementById('trades-tbody').innerHTML = 
+                '<tr><td colspan="8" class="text-center py-3 text-danger">Error loading trades: ' + error.message + '</td></tr>';
+            return null;
+        }
     }
 
     /** Modern icon mapping -> Font Awesome 6 (solid) **/
@@ -1212,6 +1376,37 @@
             
             alert(`Sell order would be: ${percentage}% of ${symbol}`);
             console.log('Sell dialog:', { symbol, percentage });
+        });
+        
+        // Set up trades section handlers
+        document.getElementById('refresh-trades')?.addEventListener('click', function() {
+            const days = document.getElementById('trades-days-filter').value || 30;
+            const limit = document.getElementById('trades-limit-filter').value || 100;
+            loadTradesData(days, limit);
+        });
+        
+        document.getElementById('trades-days-filter')?.addEventListener('change', function() {
+            const days = this.value || 30;
+            const limit = document.getElementById('trades-limit-filter').value || 100;
+            loadTradesData(days, limit);
+        });
+        
+        document.getElementById('trades-limit-filter')?.addEventListener('change', function() {
+            const days = document.getElementById('trades-days-filter').value || 30;
+            const limit = this.value || 100;
+            loadTradesData(days, limit);
+        });
+        
+        // Set up navigation handling for trades section
+        document.addEventListener('click', function(e) {
+            if (e.target && e.target.getAttribute('href') === '#trades') {
+                // Load trades data when trades section is accessed
+                setTimeout(() => {
+                    const days = document.getElementById('trades-days-filter').value || 30;
+                    const limit = document.getElementById('trades-limit-filter').value || 100;
+                    loadTradesData(days, limit);
+                }, 100);
+            }
         });
         
         // Initial status fetch
