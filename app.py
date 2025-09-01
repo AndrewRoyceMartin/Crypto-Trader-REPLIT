@@ -1220,44 +1220,105 @@ def api_comprehensive_trades() -> ResponseReturnValue:
         except Exception as e:
             logger.warning(f"Portfolio service method failed: {e}")
         
-        # Method 2: DIRECT OKX API - Always pull directly from OKX 
-        logger.info("Now pulling data DIRECTLY from OKX API as requested")
+        # Method 2: WORKING OKX ADAPTER APPROACH - Use the proven working OKX connection
+        logger.info("Using WORKING OKX Adapter approach (Alternative Method)")
         try:
-            logger.info("Fetching comprehensive trade history DIRECTLY from OKX API")
+            # Use the working OKX adapter that's successfully connecting
+            from src.exchanges.okx_adapter import OKXAdapter
             
-            # Use OKX Native client for direct API access
-            from src.utils.okx_native import OKXNative
-            okx_native = OKXNative.from_env()
+            # Create OKX adapter with same config as portfolio service
+            import os
+            config = {
+                "sandbox": False,
+                "apiKey": os.getenv("OKX_API_KEY", ""),
+                "secret": os.getenv("OKX_SECRET_KEY", ""),
+                "password": os.getenv("OKX_PASSPHRASE", ""),
+            }
             
-            # Get trade fills directly from OKX for the specified time range
-            logger.info(f"Calling OKX fills API: begin={begin_ms}, end={end_ms}, limit={limit}")
-            okx_fills = okx_native.fills(begin_ms=begin_ms, end_ms=end_ms, limit=limit)
-            
-            logger.info(f"OKX API returned {len(okx_fills)} trade fills")
-            
-            # Convert all OKX fills to our format (includes spot trading)
-            for fill in okx_fills:
-                fills_data.append({
-                    'tradeId': fill.get('tradeId', ''),
-                    'instId': fill.get('instId', ''),
-                    'ordId': fill.get('ordId', ''),
-                    'clOrdId': fill.get('clOrdId', ''),
-                    'side': fill.get('side', ''),
-                    'fillSz': fill.get('fillSz', '0'),
-                    'fillPx': fill.get('fillPx', '0'),
-                    'ts': fill.get('ts', '0'),
-                    'fee': fill.get('fee', '0'),
-                    'feeCcy': fill.get('feeCcy', 'USDT'),
-                    'execType': fill.get('execType', 'T'),
-                    'posSide': fill.get('posSide', 'net'),
-                    'billId': fill.get('billId', ''),
-                    'tag': 'okx_native_api'
-                })
-            
-            logger.info(f"Added {len(okx_fills)} trades from OKX native API")
-            
+            adapter = OKXAdapter(config)
+            if adapter.connect():
+                logger.info("✅ Connected to OKX using working adapter method")
+                
+                # Try multiple working methods from the OKX adapter
+                all_trades = []
+                
+                # Method 2a: Try CCXT fetch_my_trades for major pairs
+                logger.info("🔄 Trying CCXT fetch_my_trades method...")
+                major_pairs = ['BTC/USDT', 'ETH/USDT', 'ADA/USDT', 'SOL/USDT', 'DOT/USDT', 'LINK/USDT']
+                
+                for symbol in major_pairs:
+                    try:
+                        if adapter.exchange:
+                            recent_trades = adapter.exchange.fetch_my_trades(
+                                symbol=symbol, 
+                                since=begin_ms,
+                                limit=min(10, limit)  # Smaller batches
+                            )
+                            
+                            for trade in recent_trades:
+                                all_trades.append({
+                                    'tradeId': trade.get('id', ''),
+                                    'instId': symbol.replace('/', '-'),
+                                    'ordId': trade.get('order', ''),
+                                    'clOrdId': '',
+                                    'side': trade.get('side', ''),
+                                    'fillSz': str(trade.get('amount', 0)),
+                                    'fillPx': str(trade.get('price', 0)),
+                                    'ts': str(int(trade.get('timestamp', 0))),
+                                    'fee': str((trade.get('fee', {}).get('cost', 0) or 0) * -1),
+                                    'feeCcy': trade.get('fee', {}).get('currency', 'USDT'),
+                                    'execType': 'T',
+                                    'posSide': 'net',
+                                    'billId': f"CCXT_{trade.get('id', '')}",
+                                    'tag': 'okx_adapter_ccxt'
+                                })
+                                
+                    except Exception as e:
+                        logger.debug(f"fetch_my_trades failed for {symbol}: {e}")
+                        continue
+                
+                # Method 2b: Try CCXT fetch_closed_orders
+                logger.info("🔄 Trying CCXT fetch_closed_orders method...")
+                for symbol in major_pairs:
+                    try:
+                        if adapter.exchange:
+                            orders = adapter.exchange.fetch_closed_orders(
+                                symbol=symbol,
+                                since=begin_ms,
+                                limit=min(10, limit)
+                            )
+                            
+                            for order in orders:
+                                if order.get('status') == 'closed' and order.get('filled', 0) > 0:
+                                    all_trades.append({
+                                        'tradeId': order.get('id', ''),
+                                        'instId': symbol.replace('/', '-'),
+                                        'ordId': order.get('id', ''),
+                                        'clOrdId': order.get('clientOrderId', ''),
+                                        'side': order.get('side', ''),
+                                        'fillSz': str(order.get('filled', 0)),
+                                        'fillPx': str(order.get('average', 0) or order.get('price', 0)),
+                                        'ts': str(int(order.get('timestamp', 0))),
+                                        'fee': str((order.get('fee', {}).get('cost', 0) or 0) * -1),
+                                        'feeCcy': order.get('fee', {}).get('currency', 'USDT'),
+                                        'execType': 'T',
+                                        'posSide': 'net',
+                                        'billId': f"ORDER_{order.get('id', '')}",
+                                        'tag': 'okx_adapter_orders'
+                                    })
+                                    
+                    except Exception as e:
+                        logger.debug(f"fetch_closed_orders failed for {symbol}: {e}")
+                        continue
+                
+                fills_data.extend(all_trades)
+                logger.info(f"✅ OKX Adapter retrieved {len(all_trades)} trades using working methods")
+                
+            else:
+                logger.warning("❌ OKX Adapter connection failed")
+                
         except Exception as e:
-            logger.warning(f"OKX native API method failed: {e}")
+            logger.warning(f"OKX adapter method failed: {e}")
         
         # Final result processing and logging
         if not fills_data:
