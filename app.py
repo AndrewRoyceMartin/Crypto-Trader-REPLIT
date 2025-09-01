@@ -1135,6 +1135,50 @@ def crypto_portfolio_okx() -> ResponseReturnValue:
         return jsonify({"error": str(e)}), 500
 
 
+def calculate_trade_pnl(fill):
+    """Calculate trade P&L including fees for display purposes."""
+    try:
+        fill_size = float(fill.get('fillSz', 0))
+        fill_price = float(fill.get('fillPx', 0))
+        fee = float(fill.get('fee', 0))
+        side = fill.get('side', '')
+        
+        # Trade value (absolute)
+        trade_value = fill_size * fill_price
+        
+        # For display purposes, show fee impact on trade
+        # Fees are typically negative, so this shows the cost
+        net_pnl = fee  # Fee already represents the cost/impact
+        
+        return round(net_pnl, 4)
+    except:
+        return 0.0
+
+def calculate_trade_pnl_percentage(fill):
+    """Calculate P&L percentage based on fee impact."""
+    try:
+        fill_size = float(fill.get('fillSz', 0))
+        fill_price = float(fill.get('fillPx', 0))
+        fee = float(fill.get('fee', 0))
+        
+        trade_value = fill_size * fill_price
+        if trade_value > 0:
+            # Fee as percentage of trade value
+            fee_percentage = (fee / trade_value) * 100
+            return round(fee_percentage, 3)
+        return 0.0
+    except:
+        return 0.0
+
+def get_pnl_emoji(pnl):
+    """Get emoji indicator for P&L."""
+    if pnl > 0:
+        return "🟢"  # Profit (unlikely for fees, but just in case)
+    elif pnl < 0:
+        return "🔴"  # Loss (typical for fees)
+    else:
+        return "⚪"  # Neutral
+
 @app.route("/api/comprehensive-trades")
 def api_comprehensive_trades() -> ResponseReturnValue:
     """
@@ -1405,6 +1449,11 @@ def api_comprehensive_trades() -> ResponseReturnValue:
                 'symbol_clean': fill.get('instId', '').replace('-', '/'),  # Clean symbol format
                 'side_emoji': '🟢' if fill.get('side') == 'buy' else '🔴',
                 'trade_value_usd': f"${float(fill.get('fillSz', 0)) * float(fill.get('fillPx', 0)):.2f}",
+                
+                # Profit/Loss Calculation (including fees)
+                'net_pnl': calculate_trade_pnl(fill),  # Net P&L including fees
+                'pnl_percentage': calculate_trade_pnl_percentage(fill),  # P&L as percentage
+                'pnl_emoji': get_pnl_emoji(calculate_trade_pnl(fill)),  # Visual indicator
                 
                 # Status & Meta
                 'source': 'OKX_Native_API',

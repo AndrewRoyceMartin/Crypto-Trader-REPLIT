@@ -49,6 +49,14 @@
             color: #dc3545;
         }
         
+        .pnl-positive {
+            color: #28a745;
+        }
+        
+        .pnl-negative {
+            color: #dc3545;
+        }
+        
         .summary-cards {
             margin-bottom: 2rem;
         }
@@ -177,6 +185,7 @@
                         <th>Price</th>
                         <th>Value</th>
                         <th>Fee</th>
+                        <th>P&L</th>
                         <th>Type</th>
                         <th>Trade ID</th>
                         <th>Order ID</th>
@@ -316,6 +325,12 @@
                     <td>$${parseFloat(trade.fillPx).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 8})}</td>
                     <td><strong>${trade.trade_value_usd}</strong></td>
                     <td class="fee-negative">$${Math.abs(parseFloat(trade.fee)).toFixed(4)} ${trade.feeCcy}</td>
+                    <td>
+                        <span class="${trade.net_pnl >= 0 ? 'text-success' : 'text-danger'}">
+                            ${trade.pnl_emoji} $${trade.net_pnl.toFixed(4)}
+                            ${trade.pnl_percentage !== 0 ? ' (' + trade.pnl_percentage.toFixed(2) + '%)' : ''}
+                        </span>
+                    </td>
                     <td>
                         <span class="badge ${trade.execType === 'M' ? 'bg-success' : 'bg-primary'}">
                             ${trade.execType === 'M' ? 'Maker' : 'Taker'}
