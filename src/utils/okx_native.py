@@ -8,7 +8,11 @@ from typing import Any, Dict, List, Optional
 STABLES = {"USD", "USDT", "USDC"}
 
 def utc_iso() -> str:
-    return datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%S.%fZ')
+    # OKX expects ISO timestamp with 3-digit milliseconds (not 6-digit microseconds)
+    dt = datetime.now(timezone.utc)
+    # Get milliseconds (3 digits) instead of microseconds (6 digits)
+    milliseconds = int(dt.microsecond / 1000)
+    return dt.strftime('%Y-%m-%dT%H:%M:%S') + f'.{milliseconds:03d}Z'
 
 @dataclass
 class OKXCreds:
@@ -52,13 +56,26 @@ class OKXNative:
         }
 
     def _request(self, path: str, method: str = "GET", body: Optional[Dict[str, Any]] = None, timeout: Optional[int] = None) -> Dict[str, Any]:
-        from app import with_throttle
+        from app import with_throttle, logger
         tmo = timeout or self.timeout
         ts = utc_iso()
         body_str = json.dumps(body) if (body and method != "GET") else ""
         sig = self._sign(ts, method, path, body_str)
         headers = self._headers(ts, sig)
         url = self.base_url + path
+        
+        # Debug authentication for trade/account endpoints
+        if "/trade/" in path or "/account/" in path:
+            logger.info(f"OKX Authentication Debug for {path}:")
+            logger.info(f"  Timestamp: {ts}")
+            logger.info(f"  Method: {method}")
+            logger.info(f"  Path: {path}")
+            logger.info(f"  Body: '{body_str}'")
+            logger.info(f"  Signature Input: '{ts}{method}{path}{body_str}'")
+            logger.info(f"  API Key: {self.creds.api_key[:8]}...")
+            logger.info(f"  Passphrase: {self.creds.passphrase}")
+            logger.info(f"  Headers: {headers}")
+        
         if method == "GET":
             resp = with_throttle(self.session.get, url, headers=headers, timeout=tmo)
         else:
@@ -129,6 +146,8 @@ class OKXNative:
         try:
             data = self._request(q)
             if data.get("code") == "0":
+                from app import logger
+                logger.info(f"OKX fills API success: Retrieved {len(data.get('data', []))} fills")
                 return data.get("data", [])
             else:
                 # Log the error details for debugging
