@@ -1161,76 +1161,146 @@ def api_comprehensive_trades() -> ResponseReturnValue:
         begin_ms = int(start_time.timestamp() * 1000)
         end_ms = int(end_time.timestamp() * 1000)
         
-        # Fetch fills (trade executions) from OKX with fallback
-        logger.info(f"Requesting OKX fills: begin={begin_ms}, end={end_ms}, limit={limit}")
+        # Use real OKX data - try multiple approaches for comprehensive trade data
+        logger.info(f"Fetching real OKX trade data: begin={begin_ms}, end={end_ms}, limit={limit}")
         fills_data = []
         
-# Check if OKX API is accessible and use fallback if not
+        try:
+            # Method 1: Use working portfolio service to get real trade data
+            from src.services.portfolio_service import get_portfolio_service
+            
+            # Get the working OKX exchange instance from portfolio service  
+            portfolio_service = get_portfolio_service()
+            okx_exchange = portfolio_service.exchange if hasattr(portfolio_service, 'exchange') else None
+            
+            if okx_exchange:
+                logger.info("Using working portfolio service exchange for real trade data")
+                # Get current portfolio to know which symbols to query
+                current_positions = portfolio_service.get_current_holdings()
+                
+                # Get trades for each symbol in the current portfolio
+                for position in current_positions:
+                    try:
+                        symbol = position.get('symbol', '')
+                        if symbol and '/' not in symbol:
+                            symbol = f"{symbol}/USDT"  # Convert to CCXT format
+                        
+                        if symbol:
+                            # Use CCXT fetch_my_trades for each symbol (this usually works)
+                            symbol_trades = okx_exchange.fetch_my_trades(
+                                symbol=symbol,
+                                since=begin_ms,
+                                limit=min(20, limit)  # Limit per symbol to avoid rate limits
+                            )
+                            
+                            # Convert to OKX fills format
+                            for trade in symbol_trades:
+                                fills_data.append({
+                                    'tradeId': trade.get('id', ''),
+                                    'instId': trade.get('symbol', '').replace('/', '-'),
+                                    'ordId': trade.get('order', ''),
+                                    'clOrdId': '',
+                                    'side': trade.get('side', ''),
+                                    'fillSz': str(trade.get('amount', 0)),
+                                    'fillPx': str(trade.get('price', 0)),
+                                    'ts': str(int(trade.get('timestamp', 0))),
+                                    'fee': str((trade.get('fee', {}).get('cost', 0) or 0) * -1),  # OKX fees are negative
+                                    'feeCcy': trade.get('fee', {}).get('currency', 'USDT'),
+                                    'execType': 'T' if trade.get('takerOrMaker') == 'taker' else 'M',
+                                    'posSide': 'net',
+                                    'billId': f"BILL_{trade.get('id', '')}",
+                                    'tag': ''
+                                })
+                    except Exception as e:
+                        logger.debug(f"Could not fetch trades for {symbol}: {e}")
+                        continue
+                
+                logger.info(f"Retrieved {len(fills_data)} real trades from portfolio symbols")
+            
+        except Exception as e:
+            logger.warning(f"Portfolio service method failed: {e}")
+        
+        # Method 2: Try using database stored trades if available
         if len(fills_data) == 0:
-            logger.warning("No trades returned from OKX API, using sample data for demonstration")
-            # Create sample trade data for demonstration
-            import time
-            
-            # Generate sample trades based on current portfolio
-            sample_trades = []
-            current_time = int(time.time() * 1000)
-            
-            # Sample BTC trade
-            sample_trades.append({
-                'tradeId': '12345001',
-                'instId': 'BTC-USDT',
-                'ordId': 'ORD_BTC_001',
-                'clOrdId': '',
-                'side': 'buy',
-                'fillSz': '0.0004',
-                'fillPx': '113264.46',
-                'ts': str(current_time - 86400000),  # 1 day ago
-                'fee': '-0.045',
-                'feeCcy': 'USDT',
-                'execType': 'T',
-                'posSide': 'net',
-                'billId': 'BILL_001',
-                'tag': ''
-            })
-            
-            # Sample ETH trade
-            sample_trades.append({
-                'tradeId': '12345002',
-                'instId': 'ETH-USDT',
-                'ordId': 'ORD_ETH_001',
-                'clOrdId': '',
-                'side': 'sell',
-                'fillSz': '2.5',
-                'fillPx': '3425.89',
-                'ts': str(current_time - 172800000),  # 2 days ago
-                'fee': '-3.426',
-                'feeCcy': 'USDT',
-                'execType': 'M',
-                'posSide': 'net',
-                'billId': 'BILL_002',
-                'tag': ''
-            })
-            
-            # Sample ALGO trade
-            sample_trades.append({
-                'tradeId': '12345003',
-                'instId': 'ALGO-USDT',
-                'ordId': 'ORD_ALGO_001',
-                'clOrdId': '',
-                'side': 'buy',
-                'fillSz': '393.9034',
-                'fillPx': '0.2525',
-                'ts': str(current_time - 259200000),  # 3 days ago
-                'fee': '-0.099',
-                'feeCcy': 'USDT',
-                'execType': 'T',
-                'posSide': 'net',
-                'billId': 'BILL_003',
-                'tag': ''
-            })
-            
-            fills_data = sample_trades
-            logger.info(f"Using {len(fills_data)} sample trades for demonstration")
+            try:
+                logger.info("Checking database for stored trade data")
+                from src.utils.database import DatabaseManager
+                
+                db = DatabaseManager()
+                # Get recent trades from database if any are stored
+                stored_trades = db.get_recent_trades(days=days, limit=limit)
+                
+                # Convert database trades to OKX format
+                for trade in stored_trades:
+                    fills_data.append({
+                        'tradeId': str(trade.get('id', '')),
+                        'instId': trade.get('symbol', '').replace('/', '-'),
+                        'ordId': trade.get('order_id', ''),
+                        'clOrdId': '',
+                        'side': trade.get('side', ''),
+                        'fillSz': str(trade.get('amount', 0)),
+                        'fillPx': str(trade.get('price', 0)),
+                        'ts': str(int(trade.get('timestamp', 0) * 1000)),  # Convert to ms
+                        'fee': str(trade.get('fee', 0) * -1),
+                        'feeCcy': 'USDT',
+                        'execType': 'T',
+                        'posSide': 'net',
+                        'billId': f"DB_{trade.get('id', '')}",
+                        'tag': 'database'
+                    })
+                
+                logger.info(f"Retrieved {len(fills_data)} stored trades from database")
+                
+            except Exception as e:
+                logger.warning(f"Database method failed: {e}")
+        
+        # Method 3: Try limited OKX CCXT methods that might work 
+        if len(fills_data) == 0:
+            try:
+                logger.info("Trying limited CCXT methods for major pairs")
+                
+                # Try major trading pairs that are likely to have recent activity
+                major_pairs = ['BTC/USDT', 'ETH/USDT', 'ADA/USDT', 'SOL/USDT', 'DOT/USDT']
+                
+                for symbol in major_pairs:
+                    try:
+                        if okx_exchange:
+                            recent_trades = okx_exchange.fetch_my_trades(
+                                symbol=symbol, 
+                                since=begin_ms,
+                                limit=5
+                            )
+                            
+                            for trade in recent_trades:
+                                fills_data.append({
+                                    'tradeId': trade.get('id', ''),
+                                    'instId': symbol.replace('/', '-'),
+                                    'ordId': trade.get('order', ''),
+                                    'clOrdId': '',
+                                    'side': trade.get('side', ''),
+                                    'fillSz': str(trade.get('amount', 0)),
+                                    'fillPx': str(trade.get('price', 0)),
+                                    'ts': str(int(trade.get('timestamp', 0))),
+                                    'fee': str((trade.get('fee', {}).get('cost', 0) or 0) * -1),
+                                    'feeCcy': 'USDT',
+                                    'execType': 'T' if trade.get('takerOrMaker') == 'taker' else 'M',
+                                    'posSide': 'net',
+                                    'billId': f"CCXT_{trade.get('id', '')}",
+                                    'tag': 'ccxt'
+                                })
+                    except Exception as e:
+                        logger.debug(f"No trades found for {symbol}: {e}")
+                        continue
+                
+                logger.info(f"Retrieved {len(fills_data)} trades from CCXT major pairs")
+                
+            except Exception as e:
+                logger.warning(f"CCXT major pairs method failed: {e}")
+        
+        # Method 3: If no real data available, show empty state instead of sample data
+        if len(fills_data) == 0:
+            logger.info("No real trade data available - returning empty result")
+            fills_data = []
         
         # Process and format trade data
         trades = []
