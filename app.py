@@ -1135,6 +1135,112 @@ def crypto_portfolio_okx() -> ResponseReturnValue:
         return jsonify({"error": str(e)}), 500
 
 
+@app.route("/api/comprehensive-trades")
+def api_comprehensive_trades() -> ResponseReturnValue:
+    """
+    Get comprehensive trade history using OKX native API fields.
+    Returns detailed trade information with all OKX API fields as shown in documentation.
+    """
+    try:
+        # Get query parameters
+        days = request.args.get('days', '7')  # Default to 7 days
+        limit = min(int(request.args.get('limit', '100')), 1000)  # Max 1000 trades
+        
+        logger.info(f"Fetching comprehensive trade history: {days} days, limit {limit}")
+        
+        from src.utils.okx_native import OKXNative
+        from datetime import datetime, timezone, timedelta
+        
+        # Initialize OKX native client
+        okx_client = OKXNative.from_env()
+        
+        # Calculate time range in milliseconds
+        end_time = datetime.now(timezone.utc)
+        start_time = end_time - timedelta(days=int(days))
+        
+        begin_ms = int(start_time.timestamp() * 1000)
+        end_ms = int(end_time.timestamp() * 1000)
+        
+        # Fetch fills (trade executions) from OKX
+        fills_data = okx_client.fills(begin_ms=begin_ms, end_ms=end_ms, limit=limit)
+        
+        # Process and format trade data
+        trades = []
+        for fill in fills_data:
+            # Convert OKX timestamp to readable format
+            fill_time = datetime.fromtimestamp(int(fill.get('ts', 0)) / 1000, tz=timezone.utc)
+            
+            trade = {
+                # Core Trade Information
+                'tradeId': fill.get('tradeId', ''),           # Trade ID
+                'instId': fill.get('instId', ''),             # Instrument ID (e.g., BTC-USDT)
+                'ordId': fill.get('ordId', ''),               # Order ID
+                'clOrdId': fill.get('clOrdId', ''),           # Client Order ID
+                'side': fill.get('side', ''),                 # buy or sell
+                'fillSz': fill.get('fillSz', '0'),            # Fill size (quantity)
+                'fillPx': fill.get('fillPx', '0'),            # Fill price
+                'fillTime': fill_time.strftime('%Y-%m-%d %H:%M:%S UTC'),  # Formatted time
+                'timestamp': fill.get('ts', ''),              # Original timestamp
+                
+                # Financial Details
+                'fee': fill.get('fee', '0'),                  # Trading fee
+                'feeCcy': fill.get('feeCcy', ''),             # Fee currency
+                'execType': fill.get('execType', ''),         # Execution type (T=taker, M=maker)
+                
+                # Position & Portfolio Impact
+                'posSide': fill.get('posSide', ''),           # Position side (long/short/net)
+                'billId': fill.get('billId', ''),             # Bill ID
+                'tag': fill.get('tag', ''),                   # Order tag
+                
+                # Calculated Fields
+                'notional_value': float(fill.get('fillSz', 0)) * float(fill.get('fillPx', 0)),  # Trade value
+                'symbol_clean': fill.get('instId', '').replace('-', '/'),  # Clean symbol format
+                'side_emoji': '🟢' if fill.get('side') == 'buy' else '🔴',
+                'trade_value_usd': f"${float(fill.get('fillSz', 0)) * float(fill.get('fillPx', 0)):.2f}",
+                
+                # Status & Meta
+                'source': 'OKX_Native_API',
+                'is_live': True
+            }
+            trades.append(trade)
+        
+        # Sort by timestamp (newest first)
+        trades.sort(key=lambda x: int(x.get('timestamp', 0)), reverse=True)
+        
+        # Calculate summary statistics
+        total_trades = len(trades)
+        buy_trades = len([t for t in trades if t.get('side') == 'buy'])
+        sell_trades = len([t for t in trades if t.get('side') == 'sell'])
+        total_volume = sum(float(t.get('fillSz', 0)) * float(t.get('fillPx', 0)) for t in trades)
+        total_fees = sum(float(t.get('fee', 0)) for t in trades if t.get('feeCcy') == 'USDT')
+        
+        response = {
+            'trades': trades,
+            'summary': {
+                'total_trades': total_trades,
+                'buy_trades': buy_trades,
+                'sell_trades': sell_trades,
+                'total_volume_usd': round(total_volume, 2),
+                'total_fees_usdt': round(abs(total_fees), 4),  # Fees are usually negative
+                'time_range': f"{start_time.strftime('%Y-%m-%d')} to {end_time.strftime('%Y-%m-%d')}",
+                'data_source': 'OKX Native API (Live)',
+                'last_updated': utc_iso()
+            },
+            'success': True
+        }
+        
+        logger.info(f"Retrieved {total_trades} trades, volume: ${total_volume:.2f}, fees: ${abs(total_fees):.4f}")
+        return _no_cache_json(response)
+        
+    except Exception as e:
+        logger.error(f"Error fetching comprehensive trades: {e}")
+        return jsonify({
+            'error': str(e),
+            'trades': [],
+            'summary': {},
+            'success': False
+        }), 500
+
 @app.route("/api/portfolio-overview")
 def api_portfolio_overview() -> ResponseReturnValue:
     """A small, reliable payload tailor-made for the Overview cards."""
@@ -1303,6 +1409,28 @@ def render_portfolio_page() -> str:
         logger.error(f"Error rendering portfolio page: {e}")
         return render_loading_skeleton(f"Portfolio Error: {e}", error=True)
 
+
+@app.route('/trades')
+def trades_page() -> str:
+    """Comprehensive trades table using OKX native API fields."""
+    start_warmup()
+
+    if _get_warmup_done() and not _get_warmup_error():
+        return render_trades_page()
+    elif _get_warmup_done() and _get_warmup_error():
+        return render_loading_skeleton(f"System Error: {_get_warmup_error()}", error=True)
+    else:
+        return render_loading_skeleton()
+
+def render_trades_page() -> str:
+    """Render the comprehensive trades table page."""
+    try:
+        from version import get_version
+        cache_version = int(time.time())
+        return render_template("trades.html", cache_version=cache_version, version=get_version())
+    except Exception as e:
+        logger.error(f"Error rendering trades page: {e}")
+        return render_loading_skeleton(f"Trades Error: {e}", error=True)
 
 @app.route('/performance')
 def performance() -> str:
