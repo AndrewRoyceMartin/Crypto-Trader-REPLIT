@@ -126,8 +126,19 @@ class OKXNative:
         q = f"/api/v5/trade/fills?limit={limit}"
         if begin_ms: q += f"&begin={begin_ms}"
         if end_ms:   q += f"&end={end_ms}"
-        data = self._request(q)
-        return data.get("data", []) if data.get("code") == "0" else []
+        try:
+            data = self._request(q)
+            if data.get("code") == "0":
+                return data.get("data", [])
+            else:
+                # Log the error details for debugging
+                from app import logger
+                logger.error(f"OKX fills API error: {data.get('msg', 'Unknown error')} (code: {data.get('code', 'N/A')})")
+                return []
+        except Exception as e:
+            from app import logger
+            logger.error(f"OKX fills API request failed: {e}")
+            return []
 
     def bills(self, begin_ms: int, end_ms: int, limit: int = 100) -> List[Dict[str, Any]]:
         q = f"/api/v5/account/bills?begin={begin_ms}&end={end_ms}&limit={limit}"
