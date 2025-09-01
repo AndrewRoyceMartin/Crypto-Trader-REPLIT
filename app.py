@@ -1220,52 +1220,48 @@ def api_comprehensive_trades() -> ResponseReturnValue:
         except Exception as e:
             logger.warning(f"Portfolio service method failed: {e}")
         
-        # Method 2: Try using database stored trades if available
-        if len(fills_data) == 0:
-            try:
-                logger.info("Checking database for stored trade data")
-                from src.utils.database import DatabaseManager
-                
-                db = DatabaseManager()
-                # Get recent trades from database if any are stored
-                stored_trades_df = db.get_trades()
-                
-                # Convert DataFrame to list of dictionaries if not empty
-                if not stored_trades_df.empty:
-                    stored_trades = stored_trades_df.to_dict('records')
-                else:
-                    stored_trades = []
-                
-                # Convert database trades to OKX format
-                for trade in stored_trades:
-                    # Handle timestamp conversion safely
-                    timestamp = trade.get('timestamp', 0)
-                    if hasattr(timestamp, 'timestamp'):  # pandas Timestamp
-                        timestamp_ms = int(timestamp.timestamp() * 1000)
-                    else:
-                        timestamp_ms = int(timestamp * 1000) if timestamp else 0
-                    
-                    fills_data.append({
-                        'tradeId': str(trade.get('id', '')),
-                        'instId': trade.get('symbol', '').replace('/', '-'),
-                        'ordId': trade.get('order_id', ''),
-                        'clOrdId': '',
-                        'side': trade.get('side', ''),
-                        'fillSz': str(trade.get('amount', 0)),
-                        'fillPx': str(trade.get('price', 0)),
-                        'ts': str(timestamp_ms),
-                        'fee': str(trade.get('fee', 0) * -1),
-                        'feeCcy': 'USDT',
-                        'execType': 'T',
-                        'posSide': 'net',
-                        'billId': f"DB_{trade.get('id', '')}",
-                        'tag': 'database'
-                    })
-                
-                logger.info(f"Retrieved {len(fills_data)} stored trades from database")
-                
-            except Exception as e:
-                logger.warning(f"Database method failed: {e}")
+        # Method 2: DIRECT OKX API - Always pull directly from OKX 
+        logger.info("Now pulling data DIRECTLY from OKX API as requested")
+        try:
+            logger.info("Fetching comprehensive trade history DIRECTLY from OKX API")
+            
+            # Use OKX Native client for direct API access
+            from src.utils.okx_native import OKXNative
+            okx_native = OKXNative.from_env()
+            
+            # Get trade fills directly from OKX for the specified time range
+            logger.info(f"Calling OKX fills API: begin={begin_ms}, end={end_ms}, limit={limit}")
+            okx_fills = okx_native.fills(begin_ms=begin_ms, end_ms=end_ms, limit=limit)
+            
+            logger.info(f"OKX API returned {len(okx_fills)} trade fills")
+            
+            # Convert all OKX fills to our format (includes spot trading)
+            for fill in okx_fills:
+                fills_data.append({
+                    'tradeId': fill.get('tradeId', ''),
+                    'instId': fill.get('instId', ''),
+                    'ordId': fill.get('ordId', ''),
+                    'clOrdId': fill.get('clOrdId', ''),
+                    'side': fill.get('side', ''),
+                    'fillSz': fill.get('fillSz', '0'),
+                    'fillPx': fill.get('fillPx', '0'),
+                    'ts': fill.get('ts', '0'),
+                    'fee': fill.get('fee', '0'),
+                    'feeCcy': fill.get('feeCcy', 'USDT'),
+                    'execType': fill.get('execType', 'T'),
+                    'posSide': fill.get('posSide', 'net'),
+                    'billId': fill.get('billId', ''),
+                    'tag': 'okx_native_api'
+                })
+            
+            logger.info(f"Added {len(okx_fills)} trades from OKX native API")
+            
+        except Exception as e:
+            logger.warning(f"OKX native API method failed: {e}")
+        
+        # Final result processing and logging
+        if not fills_data:
+            logger.info("No trade data available from OKX API")
         
         # Method 3: Try limited OKX CCXT methods that might work 
         if len(fills_data) == 0:
