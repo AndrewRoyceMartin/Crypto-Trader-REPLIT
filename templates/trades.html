@@ -115,6 +115,12 @@
                     Comprehensive Trade History
                 </h1>
                 <p class="text-muted">Complete trade data using OKX native API fields</p>
+                
+                <!-- Data Source Indicator -->
+                <div id="dataSourceIndicator" class="alert alert-info" style="display: none;">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong>Data Source:</strong> <span id="dataSourceText">Loading...</span>
+                </div>
             </div>
         </div>
 
@@ -230,6 +236,9 @@
                     tradesData = data.trades;
                     displaySummary(data.summary);
                     displayTrades(tradesData);
+                    
+                    // Show data source information
+                    updateDataSourceIndicator(data.summary);
                 } else {
                     showError(data.error || 'Failed to load trades');
                 }
@@ -490,6 +499,25 @@
                 displayTrades(tradesData);
             }
         });
+        
+        // Update data source indicator
+        function updateDataSourceIndicator(summary) {
+            const indicator = document.getElementById('dataSourceIndicator');
+            const text = document.getElementById('dataSourceText');
+            
+            if (summary.data_source && summary.data_source.includes('Synthetic')) {
+                indicator.className = 'alert alert-warning';
+                text.innerHTML = `<strong>Portfolio-Based Reconstruction:</strong> Trade history created from current positions due to API limitations. Shows ${summary.total_trades} inferred trades worth $${summary.total_volume_usd.toFixed(2)}.`;
+            } else if (summary.data_source) {
+                indicator.className = 'alert alert-success';
+                text.innerHTML = `<strong>Live OKX API:</strong> ${summary.total_trades} historical trades retrieved directly from exchange.`;
+            } else {
+                indicator.className = 'alert alert-info';
+                text.innerHTML = `<strong>Data Source:</strong> ${summary.data_source || 'Unknown'}`;
+            }
+            
+            indicator.style.display = 'block';
+        }
         
         // Auto-refresh every 30 seconds
         setInterval(() => {
