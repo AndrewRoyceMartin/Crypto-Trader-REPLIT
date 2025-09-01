@@ -1195,8 +1195,8 @@ def api_comprehensive_trades() -> ResponseReturnValue:
         from src.utils.okx_native import OKXNative
         from datetime import datetime, timezone, timedelta
         
-        # Initialize OKX native client
-        okx_client = OKXNative.from_env()
+        # Skip native OKX client initialization (causes 401 errors)
+        # okx_client = OKXNative.from_env()
         
         # Calculate time range in milliseconds
         end_time = datetime.now(timezone.utc)
@@ -1264,7 +1264,127 @@ def api_comprehensive_trades() -> ResponseReturnValue:
         except Exception as e:
             logger.warning(f"Portfolio service method failed: {e}")
         
-        # Method 2: WORKING OKX ADAPTER APPROACH - Use the proven working OKX connection
+        # Method 2: PER-SYMBOL COMPREHENSIVE RETRIEVAL - Target each portfolio position individually  
+        logger.info("🔄 Using Per-Symbol Comprehensive Retrieval for missing trades...")
+        try:
+            # Get portfolio positions to know which symbols to target
+            from src.services.portfolio_service import get_portfolio_service
+            portfolio_service = get_portfolio_service()
+            current_positions = portfolio_service.get_portfolio_data()
+            
+            missing_symbols = []
+            position_symbols = []
+            
+            # Extract symbols from current portfolio
+            for position in current_positions.get('holdings', []):
+                symbol_clean = position.get('symbol', '')
+                if symbol_clean and symbol_clean not in ['USDT', 'USD']:
+                    ccxt_symbol = f"{symbol_clean}/USDT"
+                    position_symbols.append(ccxt_symbol)
+                    
+                    # Check if we already have trades for this symbol
+                    has_trades = any(trade.get('symbol', '').replace('-', '/') == ccxt_symbol for trade in fills_data)
+                    if not has_trades:
+                        missing_symbols.append(ccxt_symbol)
+            
+            logger.info(f"📊 Portfolio analysis: {len(position_symbols)} positions, {len(missing_symbols)} missing trade symbols")
+            logger.info(f"🎯 Missing symbols: {', '.join(missing_symbols[:10])}")
+            
+            # Try to get historical trades for missing symbols using working exchange instance
+            if missing_symbols:
+                logger.info(f"🎯 Attempting historical retrieval for {len(missing_symbols)} missing symbols")
+                
+                # Try to access portfolio service's exchange instance
+                exchange_instance = None
+                if hasattr(portfolio_service, 'okx_adapter') and portfolio_service.okx_adapter:
+                    exchange_instance = portfolio_service.okx_adapter.exchange
+                    logger.info("✅ Using portfolio service exchange instance")
+                elif hasattr(portfolio_service, 'exchange') and portfolio_service.exchange:
+                    exchange_instance = portfolio_service.exchange
+                    logger.info("✅ Using portfolio service exchange directly")
+                else:
+                    logger.warning("❌ No exchange instance found in portfolio service")
+                
+                if exchange_instance:
+                
+                    logger.info(f"🔍 Starting historical trade retrieval for {len(missing_symbols)} missing symbols")
+                
+                    for symbol in missing_symbols[:15]:  # Limit to prevent rate limits
+                        try:
+                            # Use maximum time range to capture all historical trades
+                            historical_since = begin_ms - (730 * 24 * 60 * 60 * 1000)  # 2 years before start
+                            
+                            logger.info(f"🔍 Fetching ALL historical trades for {symbol} since {historical_since}")
+                            symbol_trades = exchange_instance.fetch_my_trades(
+                                symbol=symbol,
+                                since=historical_since,
+                                limit=100
+                            )
+                            
+                            logger.info(f"📈 {symbol}: Retrieved {len(symbol_trades)} historical trades")
+                            
+                            # If no trades found with fetch_my_trades, try fetch_orders
+                            if len(symbol_trades) == 0:
+                                try:
+                                    logger.info(f"🔄 Trying fetch_orders for {symbol} as backup method")
+                                    orders = exchange_instance.fetch_orders(
+                                        symbol=symbol,
+                                        since=historical_since,
+                                        limit=50
+                                    )
+                                    
+                                    # Convert filled orders to trade format
+                                    for order in orders:
+                                        if order.get('status') == 'closed' and order.get('filled', 0) > 0:
+                                            symbol_trades.append({
+                                                'id': f"order_{order.get('id', '')}",
+                                                'symbol': order.get('symbol', ''),
+                                                'side': order.get('side', ''),
+                                                'amount': order.get('filled', 0),
+                                                'price': order.get('average', 0) or order.get('price', 0),
+                                                'timestamp': order.get('timestamp', 0),
+                                                'fee': order.get('fee', {}),
+                                                'takerOrMaker': 'taker',
+                                                'order': order.get('id', '')
+                                            })
+                                    
+                                    logger.info(f"📈 {symbol}: Found {len(orders)} additional orders, {len([o for o in orders if o.get('status') == 'closed'])} filled")
+                                except Exception as order_e:
+                                    logger.debug(f"❌ fetch_orders failed for {symbol}: {order_e}")
+                            
+                            logger.info(f"📊 {symbol}: Final count {len(symbol_trades)} trades")
+                            
+                            # Convert to fills format
+                            for trade in symbol_trades:
+                                trade_id = f"hist_{trade.get('id', '')}"
+                                if trade_id not in [f.get('tradeId', '') for f in fills_data]:
+                                    fills_data.append({
+                                        'tradeId': trade_id,
+                                        'instId': trade.get('symbol', '').replace('/', '-'),
+                                        'ordId': trade.get('order', ''),
+                                        'clOrdId': '',
+                                        'side': trade.get('side', ''),
+                                        'fillSz': str(trade.get('amount', 0)),
+                                        'fillPx': str(trade.get('price', 0)),
+                                        'ts': str(int(trade.get('timestamp', 0))),
+                                        'fee': str((trade.get('fee', {}).get('cost', 0) or 0) * -1),
+                                        'feeCcy': trade.get('fee', {}).get('currency', 'USDT'),
+                                        'execType': 'T' if trade.get('takerOrMaker') == 'taker' else 'M',
+                                        'posSide': 'net',
+                                        'billId': f"HIST_{trade.get('id', '')}",
+                                        'tag': 'historical_per_symbol'
+                                    })
+                            
+                        except Exception as e:
+                            logger.debug(f"⚠️ Could not fetch trades for {symbol}: {e}")
+                            continue
+                    
+                    logger.info(f"✅ Per-symbol retrieval: {len(fills_data)} total trades after historical search")
+            
+        except Exception as e:
+            logger.warning(f"❌ Per-symbol comprehensive retrieval failed: {e}")
+        
+        # Method 4: WORKING OKX ADAPTER APPROACH - Use the proven working OKX connection
         logger.info("Using WORKING OKX Adapter approach (Alternative Method)")
         try:
             # Use the working OKX adapter that's successfully connecting
@@ -4529,12 +4649,14 @@ def api_available_positions() -> ResponseReturnValue:
 
                         try:
                             # Get historical price data for Bollinger Bands calculation
-                            from src.utils.okx_native import OKXNative
-                            okx_client = OKXNative.from_env()
+                            # Skip native OKX API calls that cause 401 errors
+                            # from src.utils.okx_native import OKXNative
+                            # okx_client = OKXNative.from_env()
 
-                            # Ultra-streamlined BB analysis - minimal data for maximum speed
-                            symbol_pair = f"{symbol}-USDT"
-                            candles = okx_client.candles(symbol_pair, bar="1D", limit=40)  # Use daily with fewer candles for speed
+                            # Skip BB analysis temporarily to avoid 401 errors
+                            candles = []  # Disable native API calls
+                            # symbol_pair = f"{symbol}-USDT"
+                            # candles = okx_client.candles(symbol_pair, bar="1D", limit=40)
                             
                             # NO fallback - if we can't get data quickly, skip it
                             # if not candles or len(candles) < 30:
