@@ -1176,10 +1176,10 @@ def api_comprehensive_trades() -> ResponseReturnValue:
             if okx_exchange:
                 logger.info("Using working portfolio service exchange for real trade data")
                 # Get current portfolio to know which symbols to query
-                current_positions = portfolio_service.get_current_holdings()
+                current_positions = portfolio_service.get_portfolio_data()
                 
                 # Get trades for each symbol in the current portfolio
-                for position in current_positions:
+                for position in current_positions.get('holdings', []):
                     try:
                         symbol = position.get('symbol', '')
                         if symbol and '/' not in symbol:
@@ -1228,10 +1228,23 @@ def api_comprehensive_trades() -> ResponseReturnValue:
                 
                 db = DatabaseManager()
                 # Get recent trades from database if any are stored
-                stored_trades = db.get_recent_trades(days=days, limit=limit)
+                stored_trades_df = db.get_trades()
+                
+                # Convert DataFrame to list of dictionaries if not empty
+                if not stored_trades_df.empty:
+                    stored_trades = stored_trades_df.to_dict('records')
+                else:
+                    stored_trades = []
                 
                 # Convert database trades to OKX format
                 for trade in stored_trades:
+                    # Handle timestamp conversion safely
+                    timestamp = trade.get('timestamp', 0)
+                    if hasattr(timestamp, 'timestamp'):  # pandas Timestamp
+                        timestamp_ms = int(timestamp.timestamp() * 1000)
+                    else:
+                        timestamp_ms = int(timestamp * 1000) if timestamp else 0
+                    
                     fills_data.append({
                         'tradeId': str(trade.get('id', '')),
                         'instId': trade.get('symbol', '').replace('/', '-'),
@@ -1240,7 +1253,7 @@ def api_comprehensive_trades() -> ResponseReturnValue:
                         'side': trade.get('side', ''),
                         'fillSz': str(trade.get('amount', 0)),
                         'fillPx': str(trade.get('price', 0)),
-                        'ts': str(int(trade.get('timestamp', 0) * 1000)),  # Convert to ms
+                        'ts': str(timestamp_ms),
                         'fee': str(trade.get('fee', 0) * -1),
                         'feeCcy': 'USDT',
                         'execType': 'T',
