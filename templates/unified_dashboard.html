@@ -1042,7 +1042,7 @@
     async function loadTradesData(days = 30, limit = 100) {
         try {
             console.log(`📊 Loading trades data: ${days} days, ${limit} limit`);
-            const response = await fetch(`/api/comprehensive-trades?days=${days}&limit=${limit}`);
+            const response = await fetch(`/api/trade-history?days=${days}&limit=${limit}`);
             const data = await response.json();
             
             if (data.success && data.trades) {
