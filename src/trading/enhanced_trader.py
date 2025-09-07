@@ -128,9 +128,10 @@ class EnhancedTrader:
                                 base_symbol, gain_percent, dynamic_safety_threshold
                             )
                             # CRITICAL FIX: Actually execute the exit trade
+                            safety_signal = None  # Initialize outside try block
                             try:
                                 # Create immediate sell signal for safety exit
-                                from ..strategies.enhanced_bollinger_strategy import Signal
+                                from ..strategies.base import Signal
                                 
                                 # Calculate exact sell parameters with dynamic fill price based on market conditions
                                 # Dynamic fill price discount based on volatility
@@ -274,21 +275,22 @@ class EnhancedTrader:
                             )
                             
                             # Create immediate exit signal with portfolio metadata
-                            from ..strategies.enhanced_bollinger_strategy import Signal
+                            from ..strategies.base import Signal
                             immediate_exit_signal = Signal(
                                 action='sell',
                                 size=1.0,  # Sell all position
-                                confidence=0.95,
-                                metadata={
-                                    'event': 'SAFETY_TAKE_PROFIT',
-                                    'pnl': (current_price - entry_price) * current_qty,
-                                    'gain_percent': gain_percent,
-                                    'dynamic_threshold': dynamic_safety_threshold,
-                                    'position_qty': current_qty,
-                                    'entry_price': entry_price,
-                                    'exit_price': current_price
-                                }
+                                price=current_price,
+                                confidence=0.95
                             )
+                            immediate_exit_signal.metadata = {
+                                'event': 'SAFETY_TAKE_PROFIT',
+                                'pnl': (current_price - entry_price) * current_qty,
+                                'gain_percent': gain_percent,
+                                'dynamic_threshold': dynamic_safety_threshold,
+                                'position_qty': current_qty,
+                                'entry_price': entry_price,
+                                'exit_price': current_price
+                            }
                             
                             # Execute immediate exit
                             self._execute_enhanced_signal(immediate_exit_signal, symbol, current_price, current_time)
@@ -622,7 +624,11 @@ class EnhancedTrader:
             time.sleep(0.5)
             
             # Verify position was actually closed by checking live portfolio
-            portfolio_service.refresh_portfolio_data()  # Force refresh
+            # Force refresh by clearing cache
+            if hasattr(portfolio_service, 'invalidate_cache'):
+                portfolio_service.invalidate_cache()
+            elif hasattr(portfolio_service, 'clear_cache'):
+                portfolio_service.clear_cache()
             portfolio_after = portfolio_service.get_portfolio_data()
             holdings_after = portfolio_after.get('holdings', [])
             
@@ -769,7 +775,11 @@ class EnhancedTrader:
             time.sleep(0.8)
             
             # Verify position was actually acquired by checking live portfolio
-            portfolio_service.refresh_portfolio_data()  # Force refresh
+            # Force refresh by clearing cache
+            if hasattr(portfolio_service, 'invalidate_cache'):
+                portfolio_service.invalidate_cache()
+            elif hasattr(portfolio_service, 'clear_cache'):
+                portfolio_service.clear_cache()
             portfolio_after = portfolio_service.get_portfolio_data()
             holdings_after = portfolio_after.get('holdings', [])
             

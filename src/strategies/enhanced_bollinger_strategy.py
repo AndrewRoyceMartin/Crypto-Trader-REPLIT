@@ -62,6 +62,9 @@ class EnhancedBollingerBandsStrategy(BaseStrategy):
             'equity': 10000.0  # Starting equity for tracking
         }
         
+        # Add volatility tracking
+        self.volatility_score = 50.0  # Default volatility score (0-100)
+        
         self.indicators = TechnicalIndicators()
         self.logger.info("Enhanced Bollinger Bands strategy initialized with crash protection")
     
@@ -70,6 +73,43 @@ class EnhancedBollingerBandsStrategy(BaseStrategy):
         risk_amount = portfolio_value * (signal.size if hasattr(signal, 'size') else self.position_size_percent / 100)
         position_size = risk_amount / current_price
         return position_size
+    
+    def calculate_bollinger_bands(self, data: pd.DataFrame) -> Optional[Dict]:
+        """Calculate Bollinger Bands for the given data."""
+        if data is None or len(data) < self.bb_period:
+            return None
+            
+        try:
+            # Calculate moving average
+            ma = data['close'].rolling(window=self.bb_period).mean()
+            
+            # Calculate standard deviation
+            std = data['close'].rolling(window=self.bb_period).std()
+            
+            # Calculate Bollinger Bands
+            upper_band = ma + (std * self.bb_std_dev)
+            lower_band = ma - (std * self.bb_std_dev)
+            
+            # Update volatility score based on band width
+            if len(upper_band) > 0 and len(lower_band) > 0:
+                latest_upper = upper_band.iloc[-1]
+                latest_lower = lower_band.iloc[-1]
+                latest_price = data['close'].iloc[-1]
+                
+                if not pd.isna(latest_upper) and not pd.isna(latest_lower) and latest_price > 0:
+                    band_width_percent = ((latest_upper - latest_lower) / latest_price) * 100
+                    # Normalize volatility score (wider bands = higher volatility)
+                    self.volatility_score = min(100.0, max(0.0, band_width_percent * 10))
+            
+            return {
+                'upper': upper_band,
+                'lower': lower_band,
+                'middle': ma,
+                'std': std
+            }
+        except Exception as e:
+            self.logger.error(f"Error calculating Bollinger Bands: {e}")
+            return None
     
     def generate_signals(self, data: pd.DataFrame) -> List[Signal]:
         """Generate enhanced trading signals with crash protection."""
