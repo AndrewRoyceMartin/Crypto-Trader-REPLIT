@@ -4649,13 +4649,13 @@ def api_available_positions() -> ResponseReturnValue:
             'REVV', 'PYR', 'QUICK', 'WAXP', 'STARL', 'SUPER', 'NFTX', 'RARI'
         ]
 
-        # FAST PROCESSING: Process all assets quickly without complex analysis
-        total_assets = len(major_crypto_assets)
+        # FAST PROCESSING: Process all OKX markets quickly without complex analysis
+        total_assets = len(all_okx_symbols) if 'all_okx_symbols' in locals() else len(major_crypto_assets)
         processed_count = 0
         added_count = 0
         skipped_count = 0
         
-        logger.info(f"Processing {total_assets} assets (comprehensive mode - 68+ cryptocurrencies)")
+        logger.info(f"Processing ALL OKX markets (complete coverage - 291+ cryptocurrencies)")
         
         # CIRCUIT BREAKER: Check if we're in rate limiting state
         rate_limit_key = "available_positions_rate_limit"
@@ -4673,8 +4673,9 @@ def api_available_positions() -> ResponseReturnValue:
                 'cooldown_remaining': remaining_cooldown
             }), 429
 
-        # STEP 1: Fetch all OKX available trading pairs first
-        okx_available_symbols = set()
+        # STEP 1: Get ALL OKX active trading pairs (complete market coverage)
+        all_okx_symbols = []
+        batch_prices = {}
         try:
             import time
             time.sleep(0.3)  # Throttle to prevent rate limits
@@ -4688,25 +4689,13 @@ def api_available_positions() -> ResponseReturnValue:
                         quote_symbol = market.get('quote')
                         # Only include USDT pairs for consistency
                         if quote_symbol == 'USDT' and base_symbol:
-                            okx_available_symbols.add(base_symbol)
+                            all_okx_symbols.append(base_symbol)
                             
-                logger.info(f"✅ Found {len(okx_available_symbols)} active OKX trading pairs")
-        except Exception as markets_error:
-            logger.warning(f"Could not fetch OKX markets: {markets_error}")
-            # Fallback to original asset list if markets fetch fails
-            okx_available_symbols = set(major_crypto_assets)
-
-        # STEP 2: Filter major_crypto_assets to ONLY include OKX-available tokens
-        okx_filtered_assets = [symbol for symbol in major_crypto_assets if symbol in okx_available_symbols or symbol in ['USDT', 'AUD', 'USD']]
-        logger.info(f"🔍 Filtered to {len(okx_filtered_assets)} OKX-available assets from {len(major_crypto_assets)} total")
-
-        # STEP 3: Batch fetch prices for OKX-available tokens only
-        batch_prices = {}
-        try:
-            # Get all tickers in a single API call
-            if exchange.exchange:
+                logger.info(f"🚀 Processing ALL {len(all_okx_symbols)} active OKX trading pairs (complete coverage)")
+                
+                # STEP 2: Batch fetch prices for ALL OKX tokens
                 all_tickers = exchange.exchange.fetch_tickers()
-                for symbol in okx_filtered_assets:
+                for symbol in all_okx_symbols:
                     if symbol not in ['AUD', 'USD', 'EUR', 'GBP', 'USDT', 'USDC', 'DAI', 'BUSD']:
                         # Try multiple ticker formats
                         for ticker_symbol in [f"{symbol}/USDT", f"{symbol}/USD", f"{symbol}USDT"]:
@@ -4714,11 +4703,14 @@ def api_available_positions() -> ResponseReturnValue:
                                 ticker_data = all_tickers[ticker_symbol]
                                 batch_prices[symbol] = float(ticker_data.get('last', 0.0) or 0.0)
                                 break
-                logger.info(f"📊 Batch fetched {len(batch_prices)} prices for OKX-available tokens")
-        except Exception as batch_error:
-            logger.warning(f"Batch price fetch failed: {batch_error}")
+                logger.info(f"📊 Batch fetched {len(batch_prices)} prices for ALL OKX tokens")
+                
+        except Exception as markets_error:
+            logger.warning(f"Could not fetch ALL OKX markets: {markets_error}")
+            # Fallback to original curated list if full market fetch fails
+            all_okx_symbols = major_crypto_assets
             # Rate limiting error handling with circuit breaker
-            if "busy" in str(batch_error).lower() or "rate" in str(batch_error).lower():
+            if "busy" in str(markets_error).lower() or "rate" in str(markets_error).lower():
                 logger.error("🚨 RATE LIMITING DETECTED - Activating circuit breaker")
                 # Set circuit breaker for 2 minutes
                 cooldown_end_time = current_time + 120  # 2 minutes
@@ -4732,7 +4724,7 @@ def api_available_positions() -> ResponseReturnValue:
                 }), 429
             time.sleep(2.0)  # Extended delay for other errors
         
-        for symbol in okx_filtered_assets:
+        for symbol in all_okx_symbols:
             # TIMEOUT CHECK: Every 10 symbols
             if processed_count % 10 == 0:
                 check_timeout()
@@ -5054,7 +5046,7 @@ def api_available_positions() -> ResponseReturnValue:
 
         # Final debug logging
         elapsed_time = time.time() - start_time
-        logger.warning(f"🔍 OKX FILTERED: {len(available_positions)} positions, elapsed time: {elapsed_time:.2f}s, added: {added_count}, skipped: {skipped_count}, OKX markets: {len(okx_available_symbols)}")
+        logger.warning(f"🚀 ALL OKX MARKETS: {len(available_positions)} positions, elapsed time: {elapsed_time:.2f}s, added: {added_count}, skipped: {skipped_count}, total OKX pairs: {len(all_okx_symbols)}")
         
         # Check for timeout issues
         if elapsed_time > 30:
