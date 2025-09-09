@@ -265,8 +265,8 @@ class EntryConfidenceAnalyzer:
             if len(df) >= 14:
                 rsi = self._calculate_rsi(df['price'].values, 14)
                 filters['rsi_oversold'] = {
-                    'passed': rsi < 30.0,
-                    'value': round(rsi, 1),
+                    'passed': bool(rsi < 30.0),
+                    'value': round(float(rsi), 1),
                     'threshold': 30.0,
                     'description': 'RSI below 30 indicates oversold conditions'
                 }
@@ -277,8 +277,8 @@ class EntryConfidenceAnalyzer:
                 current_volume = df['volume'].iloc[-1]
                 volume_multiplier = current_volume / avg_volume if avg_volume > 0 else 0
                 filters['volume_confirmation'] = {
-                    'passed': volume_multiplier >= 1.2,
-                    'value': round(volume_multiplier, 2),
+                    'passed': bool(volume_multiplier >= 1.2),
+                    'value': round(float(volume_multiplier), 2),
                     'threshold': 1.2,
                     'description': 'Current volume should be 1.2x above 20-day average'
                 }
@@ -293,9 +293,9 @@ class EntryConfidenceAnalyzer:
                 higher_tf_ok = (distance_from_sma > -10.0 and sma_50_slope > -2.0)
                 
                 filters['higher_timeframe_support'] = {
-                    'passed': higher_tf_ok,
-                    'sma_distance': round(distance_from_sma, 1),
-                    'sma_slope': round(sma_50_slope, 2),
+                    'passed': bool(higher_tf_ok),
+                    'sma_distance': round(float(distance_from_sma), 1),
+                    'sma_slope': round(float(sma_50_slope), 2),
                     'description': 'Price within 10% of SMA50 and not in severe downtrend'
                 }
             
@@ -319,9 +319,9 @@ class EntryConfidenceAnalyzer:
                 regime_ok = (above_sma_10 or sma_alignment) and price_change_10d > -15.0
                 
                 filters['market_regime'] = {
-                    'passed': regime_ok,
-                    'price_vs_sma10': round(((current_price_val/sma_10.iloc[-1]-1)*100), 1),
-                    'price_change_10d': round(price_change_10d, 1),
+                    'passed': bool(regime_ok),
+                    'price_vs_sma10': round(float((current_price_val/sma_10.iloc[-1]-1)*100), 1),
+                    'price_change_10d': round(float(price_change_10d), 1),
                     'description': 'Market not in severe downtrend (within 15% of 10-day high)'
                 }
             
@@ -333,19 +333,19 @@ class EntryConfidenceAnalyzer:
                 at_lower_band = current_price <= bb_lower.iloc[-1]
                 
                 filters['bollinger_band_position'] = {
-                    'passed': at_lower_band,
-                    'lower_band': round(bb_lower.iloc[-1], 6),
-                    'current_price': current_price,
+                    'passed': bool(at_lower_band),
+                    'lower_band': round(float(bb_lower.iloc[-1]), 6),
+                    'current_price': float(current_price),
                     'description': 'Price at or below lower Bollinger Band (oversold)'
                 }
             
             # Calculate total confirmations
             total_confirmations = sum(1 for f in filters.values() if f.get('passed', False))
             filters['summary'] = {
-                'total_confirmations': total_confirmations,
-                'total_filters': len(filters) - 1,  # Subtract summary itself
+                'total_confirmations': int(total_confirmations),
+                'total_filters': int(len(filters) - 1),  # Subtract summary itself
                 'minimum_required': 4,
-                'meets_requirements': total_confirmations >= 4
+                'meets_requirements': bool(total_confirmations >= 4)
             }
             
             return filters
