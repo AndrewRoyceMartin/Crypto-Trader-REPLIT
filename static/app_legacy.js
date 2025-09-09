@@ -7094,9 +7094,151 @@ async function showConfidenceDetails(symbol) {
                                     </div>
                                 </div>
                                 
+                                <!-- ENHANCED FILTERS SECTION -->
+                                ${info.enhanced_filters && Object.keys(info.enhanced_filters).length > 1 ? `
+                                <div class="card mb-3">
+                                    <div class="card-header">
+                                        <h6 class="mb-0">🎯 Enhanced Entry Confirmation Filters</h6>
+                                        <small class="text-muted">New Enhanced Strategy - Requires ${info.enhanced_filters.summary?.minimum_required || 4} of ${info.enhanced_filters.summary?.total_filters || 6} confirmations</small>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row mb-3">
+                                            <div class="col-12">
+                                                <div class="alert ${info.enhanced_filters.summary?.meets_requirements ? 'alert-success' : 'alert-warning'} text-center">
+                                                    <h5 class="mb-1">
+                                                        <i class="fas ${info.enhanced_filters.summary?.meets_requirements ? 'fa-check-circle' : 'fa-exclamation-triangle'}"></i>
+                                                        ${info.enhanced_filters.summary?.total_confirmations || 0}/${info.enhanced_filters.summary?.total_filters || 6} Confirmations Passed
+                                                    </h5>
+                                                    <small>${info.enhanced_filters.summary?.meets_requirements ? 
+                                                        'HIGH PROBABILITY SETUP - All requirements met!' : 
+                                                        'INSUFFICIENT CONFIRMATIONS - Trade rejected by enhanced strategy'}</small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="row">
+                                            ${info.enhanced_filters.rsi_oversold ? `
+                                            <div class="col-md-6 mb-3">
+                                                <div class="d-flex align-items-center justify-content-between">
+                                                    <div>
+                                                        <strong class="${info.enhanced_filters.rsi_oversold.passed ? 'text-success' : 'text-danger'}">
+                                                            <i class="fas ${info.enhanced_filters.rsi_oversold.passed ? 'fa-check-circle' : 'fa-times-circle'}"></i>
+                                                            RSI Oversold
+                                                        </strong>
+                                                        <br><small class="text-muted">${info.enhanced_filters.rsi_oversold.description}</small>
+                                                    </div>
+                                                    <div class="text-end">
+                                                        <span class="badge ${info.enhanced_filters.rsi_oversold.passed ? 'bg-success' : 'bg-danger'}">
+                                                            ${info.enhanced_filters.rsi_oversold.value}
+                                                        </span>
+                                                        <br><small class="text-muted">< ${info.enhanced_filters.rsi_oversold.threshold}</small>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            ` : ''}
+                                            
+                                            ${info.enhanced_filters.volume_confirmation ? `
+                                            <div class="col-md-6 mb-3">
+                                                <div class="d-flex align-items-center justify-content-between">
+                                                    <div>
+                                                        <strong class="${info.enhanced_filters.volume_confirmation.passed ? 'text-success' : 'text-danger'}">
+                                                            <i class="fas ${info.enhanced_filters.volume_confirmation.passed ? 'fa-check-circle' : 'fa-times-circle'}"></i>
+                                                            Volume Confirmation
+                                                        </strong>
+                                                        <br><small class="text-muted">${info.enhanced_filters.volume_confirmation.description}</small>
+                                                    </div>
+                                                    <div class="text-end">
+                                                        <span class="badge ${info.enhanced_filters.volume_confirmation.passed ? 'bg-success' : 'bg-danger'}">
+                                                            ${info.enhanced_filters.volume_confirmation.value}x
+                                                        </span>
+                                                        <br><small class="text-muted">> ${info.enhanced_filters.volume_confirmation.threshold}x</small>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            ` : ''}
+                                            
+                                            ${info.enhanced_filters.higher_timeframe_support ? `
+                                            <div class="col-md-6 mb-3">
+                                                <div class="d-flex align-items-center justify-content-between">
+                                                    <div>
+                                                        <strong class="${info.enhanced_filters.higher_timeframe_support.passed ? 'text-success' : 'text-danger'}">
+                                                            <i class="fas ${info.enhanced_filters.higher_timeframe_support.passed ? 'fa-check-circle' : 'fa-times-circle'}"></i>
+                                                            Higher Timeframe Support
+                                                        </strong>
+                                                        <br><small class="text-muted">${info.enhanced_filters.higher_timeframe_support.description}</small>
+                                                    </div>
+                                                    <div class="text-end">
+                                                        <small class="text-muted">
+                                                            SMA50: ${info.enhanced_filters.higher_timeframe_support.sma_distance}%<br>
+                                                            Slope: ${info.enhanced_filters.higher_timeframe_support.sma_slope}%
+                                                        </small>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            ` : ''}
+                                            
+                                            ${info.enhanced_filters.support_level_proximity ? `
+                                            <div class="col-md-6 mb-3">
+                                                <div class="d-flex align-items-center justify-content-between">
+                                                    <div>
+                                                        <strong class="${info.enhanced_filters.support_level_proximity.passed ? 'text-success' : 'text-danger'}">
+                                                            <i class="fas ${info.enhanced_filters.support_level_proximity.passed ? 'fa-check-circle' : 'fa-times-circle'}"></i>
+                                                            Support Level Proximity
+                                                        </strong>
+                                                        <br><small class="text-muted">${info.enhanced_filters.support_level_proximity.description}</small>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            ` : ''}
+                                            
+                                            ${info.enhanced_filters.market_regime ? `
+                                            <div class="col-md-6 mb-3">
+                                                <div class="d-flex align-items-center justify-content-between">
+                                                    <div>
+                                                        <strong class="${info.enhanced_filters.market_regime.passed ? 'text-success' : 'text-danger'}">
+                                                            <i class="fas ${info.enhanced_filters.market_regime.passed ? 'fa-check-circle' : 'fa-times-circle'}"></i>
+                                                            Market Regime Filter
+                                                        </strong>
+                                                        <br><small class="text-muted">${info.enhanced_filters.market_regime.description}</small>
+                                                    </div>
+                                                    <div class="text-end">
+                                                        <small class="text-muted">
+                                                            vs SMA10: ${info.enhanced_filters.market_regime.price_vs_sma10}%<br>
+                                                            10d change: ${info.enhanced_filters.market_regime.price_change_10d}%
+                                                        </small>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            ` : ''}
+                                            
+                                            ${info.enhanced_filters.bollinger_band_position ? `
+                                            <div class="col-md-6 mb-3">
+                                                <div class="d-flex align-items-center justify-content-between">
+                                                    <div>
+                                                        <strong class="${info.enhanced_filters.bollinger_band_position.passed ? 'text-success' : 'text-danger'}">
+                                                            <i class="fas ${info.enhanced_filters.bollinger_band_position.passed ? 'fa-check-circle' : 'fa-times-circle'}"></i>
+                                                            Bollinger Band Position
+                                                        </strong>
+                                                        <br><small class="text-muted">${info.enhanced_filters.bollinger_band_position.description}</small>
+                                                    </div>
+                                                    <div class="text-end">
+                                                        <small class="text-muted">
+                                                            Lower Band: $${info.enhanced_filters.bollinger_band_position.lower_band}<br>
+                                                            Current: $${info.enhanced_filters.bollinger_band_position.current_price}
+                                                        </small>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            ` : ''}
+                                        </div>
+                                    </div>
+                                </div>
+                                ` : ''}
+
                                 <div class="card">
                                     <div class="card-header">
-                                        <h6 class="mb-0">Detailed Analysis Breakdown</h6>
+                                        <h6 class="mb-0">Legacy Analysis Breakdown</h6>
+                                        <small class="text-muted">Traditional indicators (for reference)</small>
                                     </div>
                                     <div class="card-body">
                                         <div class="row">

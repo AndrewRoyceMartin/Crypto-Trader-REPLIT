@@ -104,6 +104,7 @@ class EntryConfidenceAnalyzer:
                     'volume_analysis': round(volume_score, 1),
                     'support_resistance': round(support_resistance_score, 1)
                 },
+                'enhanced_filters': self._get_enhanced_filter_breakdown(df, current_price),
                 'entry_recommendation': self._get_entry_recommendation(composite_score),
                 'risk_level': self._assess_risk_level(volatility_score, momentum_score),
                 'calculated_at': datetime.now().isoformat()
@@ -252,20 +253,135 @@ class EntryConfidenceAnalyzer:
         except Exception as e:
             self.logger.debug(f"Support level analysis error: {e}")
             return True
-                elif 0.2 <= bb_position <= 0.8:  # Middle range
-                    scores.append(60)
-                else:  # Near upper band
-                    scores.append(40)
+    
+    def _get_enhanced_filter_breakdown(self, df: pd.DataFrame, current_price: float) -> dict:
+        """
+        ENHANCED: Return detailed breakdown of all 6 enhanced confirmation filters for frontend display.
+        """
+        try:
+            filters = {}
             
-            # Moving Average Convergence
+            # FILTER 1: RSI Oversold Confirmation
+            if len(df) >= 14:
+                rsi = self._calculate_rsi(df['price'].values, 14)
+                filters['rsi_oversold'] = {
+                    'passed': rsi < 30.0,
+                    'value': round(rsi, 1),
+                    'threshold': 30.0,
+                    'description': 'RSI below 30 indicates oversold conditions'
+                }
+            
+            # FILTER 2: Volume Confirmation
+            if 'volume' in df.columns and len(df) >= 20:
+                avg_volume = df['volume'].tail(20).mean()
+                current_volume = df['volume'].iloc[-1]
+                volume_multiplier = current_volume / avg_volume if avg_volume > 0 else 0
+                filters['volume_confirmation'] = {
+                    'passed': volume_multiplier >= 1.2,
+                    'value': round(volume_multiplier, 2),
+                    'threshold': 1.2,
+                    'description': 'Current volume should be 1.2x above 20-day average'
+                }
+            
+            # FILTER 3: Higher Timeframe Support
+            if len(df) >= 100:
+                sma_50 = df['price'].rolling(window=50).mean()
+                current_price_val = df['price'].iloc[-1]
+                sma_50_current = sma_50.iloc[-1]
+                distance_from_sma = ((current_price_val - sma_50_current) / sma_50_current) * 100
+                sma_50_slope = (sma_50.iloc[-1] - sma_50.iloc[-10]) / sma_50.iloc[-10] * 100
+                higher_tf_ok = (distance_from_sma > -10.0 and sma_50_slope > -2.0)
+                
+                filters['higher_timeframe_support'] = {
+                    'passed': higher_tf_ok,
+                    'sma_distance': round(distance_from_sma, 1),
+                    'sma_slope': round(sma_50_slope, 2),
+                    'description': 'Price within 10% of SMA50 and not in severe downtrend'
+                }
+            
+            # FILTER 4: Support Level Proximity
             if len(df) >= 50:
-                ma_score = self._calculate_ma_score(df['price'].values, current_price)
-                scores.append(ma_score)
+                near_support = self._check_support_proximity(df, current_price)
+                filters['support_level_proximity'] = {
+                    'passed': near_support,
+                    'description': 'Price within 2% of significant support level'
+                }
             
-            return np.mean(scores) if scores else 50.0
+            # FILTER 5: Market Regime Filter
+            if len(df) >= 30:
+                sma_10 = df['price'].rolling(window=10).mean()
+                sma_30 = df['price'].rolling(window=30).mean()
+                current_price_val = df['price'].iloc[-1]
+                
+                above_sma_10 = current_price_val > sma_10.iloc[-1] * 0.95
+                sma_alignment = sma_10.iloc[-1] > sma_30.iloc[-1] * 0.98
+                price_change_10d = (current_price_val - df['price'].iloc[-10]) / df['price'].iloc[-10] * 100
+                regime_ok = (above_sma_10 or sma_alignment) and price_change_10d > -15.0
+                
+                filters['market_regime'] = {
+                    'passed': regime_ok,
+                    'price_vs_sma10': round(((current_price_val/sma_10.iloc[-1]-1)*100), 1),
+                    'price_change_10d': round(price_change_10d, 1),
+                    'description': 'Market not in severe downtrend (within 15% of 10-day high)'
+                }
+            
+            # FILTER 6: Bollinger Band Position
+            if len(df) >= 20:
+                sma_20 = df['price'].rolling(window=20).mean()
+                std_20 = df['price'].rolling(window=20).std()
+                bb_lower = sma_20 - (2 * std_20)
+                at_lower_band = current_price <= bb_lower.iloc[-1]
+                
+                filters['bollinger_band_position'] = {
+                    'passed': at_lower_band,
+                    'lower_band': round(bb_lower.iloc[-1], 6),
+                    'current_price': current_price,
+                    'description': 'Price at or below lower Bollinger Band (oversold)'
+                }
+            
+            # Calculate total confirmations
+            total_confirmations = sum(1 for f in filters.values() if f.get('passed', False))
+            filters['summary'] = {
+                'total_confirmations': total_confirmations,
+                'total_filters': len(filters) - 1,  # Subtract summary itself
+                'minimum_required': 4,
+                'meets_requirements': total_confirmations >= 4
+            }
+            
+            return filters
             
         except Exception as e:
-            self.logger.debug(f"Technical score calculation error: {e}")
+            self.logger.error(f"Enhanced filter breakdown error: {e}")
+            return {'error': 'Unable to calculate enhanced filters'}
+    
+    def _calculate_ma_score(self, prices: np.ndarray, current_price: float) -> float:
+        """Calculate moving average score."""
+        try:
+            ma_20 = np.mean(prices[-20:])
+            ma_50 = np.mean(prices[-50:]) if len(prices) >= 50 else ma_20
+            
+            score = 50
+            
+            # Price above both MAs
+            if current_price > ma_20 and current_price > ma_50:
+                score += 20
+            # Price above 20 MA but below 50 MA
+            elif current_price > ma_20:
+                score += 10
+            # Price below both MAs
+            else:
+                score -= 10
+            
+            # MA alignment (20 above 50 is bullish)
+            if ma_20 > ma_50:
+                score += 10
+            else:
+                score -= 5
+            
+            return max(0, min(100, score))
+            
+        except Exception as e:
+            self.logger.debug(f"MA score calculation error: {e}")
             return 50.0
     
     def _calculate_volatility_score(self, df: pd.DataFrame, current_price: float) -> float:
