@@ -4673,17 +4673,40 @@ def api_available_positions() -> ResponseReturnValue:
                 'cooldown_remaining': remaining_cooldown
             }), 429
 
-        # PERFORMANCE FIX: Batch fetch all prices at once to prevent rate limiting
+        # STEP 1: Fetch all OKX available trading pairs first
+        okx_available_symbols = set()
+        try:
+            import time
+            time.sleep(0.3)  # Throttle to prevent rate limits
+            
+            if exchange.exchange:
+                # Get all OKX spot trading pairs
+                markets = exchange.exchange.fetch_markets()
+                for market in markets:
+                    if market.get('type') == 'spot' and market.get('active', False):
+                        base_symbol = market.get('base')
+                        quote_symbol = market.get('quote')
+                        # Only include USDT pairs for consistency
+                        if quote_symbol == 'USDT' and base_symbol:
+                            okx_available_symbols.add(base_symbol)
+                            
+                logger.info(f"✅ Found {len(okx_available_symbols)} active OKX trading pairs")
+        except Exception as markets_error:
+            logger.warning(f"Could not fetch OKX markets: {markets_error}")
+            # Fallback to original asset list if markets fetch fails
+            okx_available_symbols = set(major_crypto_assets)
+
+        # STEP 2: Filter major_crypto_assets to ONLY include OKX-available tokens
+        okx_filtered_assets = [symbol for symbol in major_crypto_assets if symbol in okx_available_symbols or symbol in ['USDT', 'AUD', 'USD']]
+        logger.info(f"🔍 Filtered to {len(okx_filtered_assets)} OKX-available assets from {len(major_crypto_assets)} total")
+
+        # STEP 3: Batch fetch prices for OKX-available tokens only
         batch_prices = {}
         try:
-            # AGGRESSIVE THROTTLING: Much longer delay to prevent rate limiting
-            import time
-            time.sleep(0.5)  # 500ms delay to respect rate limits
-            
             # Get all tickers in a single API call
             if exchange.exchange:
                 all_tickers = exchange.exchange.fetch_tickers()
-                for symbol in major_crypto_assets:
+                for symbol in okx_filtered_assets:
                     if symbol not in ['AUD', 'USD', 'EUR', 'GBP', 'USDT', 'USDC', 'DAI', 'BUSD']:
                         # Try multiple ticker formats
                         for ticker_symbol in [f"{symbol}/USDT", f"{symbol}/USD", f"{symbol}USDT"]:
@@ -4691,7 +4714,7 @@ def api_available_positions() -> ResponseReturnValue:
                                 ticker_data = all_tickers[ticker_symbol]
                                 batch_prices[symbol] = float(ticker_data.get('last', 0.0) or 0.0)
                                 break
-                logger.info(f"Batch fetched {len(batch_prices)} prices in single API call")
+                logger.info(f"📊 Batch fetched {len(batch_prices)} prices for OKX-available tokens")
         except Exception as batch_error:
             logger.warning(f"Batch price fetch failed: {batch_error}")
             # Rate limiting error handling with circuit breaker
@@ -4709,7 +4732,7 @@ def api_available_positions() -> ResponseReturnValue:
                 }), 429
             time.sleep(2.0)  # Extended delay for other errors
         
-        for symbol in major_crypto_assets:
+        for symbol in okx_filtered_assets:
             # TIMEOUT CHECK: Every 10 symbols
             if processed_count % 10 == 0:
                 check_timeout()
@@ -4730,6 +4753,8 @@ def api_available_positions() -> ResponseReturnValue:
                         if symbol not in ['AUD', 'USD', 'EUR', 'GBP', 'USDT', 'USDC', 'DAI', 'BUSD']:  # Skip fiat and stablecoins
                             # Use batched price data to prevent rate limiting
                             current_price = batch_prices.get(symbol, 0.0)
+                            
+                                    
                         elif symbol in ['USDT', 'USDC', 'DAI', 'BUSD']:
                             current_price = 1.0  # Stablecoins pegged to USD
                         elif symbol == 'AUD':
@@ -5029,7 +5054,7 @@ def api_available_positions() -> ResponseReturnValue:
 
         # Final debug logging
         elapsed_time = time.time() - start_time
-        logger.warning(f"🔍 DEBUG: FAST MODE - {len(available_positions)} positions, elapsed time: {elapsed_time:.2f}s, added: {added_count}, skipped: {skipped_count}")
+        logger.warning(f"🔍 OKX FILTERED: {len(available_positions)} positions, elapsed time: {elapsed_time:.2f}s, added: {added_count}, skipped: {skipped_count}, OKX markets: {len(okx_available_symbols)}")
         
         # Check for timeout issues
         if elapsed_time > 30:
