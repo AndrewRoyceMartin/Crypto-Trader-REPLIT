@@ -996,19 +996,32 @@
         }
         
         tbody.innerHTML = trades.map(trade => {
-            const pnlClass = safeNum(trade.pnl, 0) >= 0 ? 'text-success' : 'text-danger';
-            const pnlSign = safeNum(trade.pnl, 0) >= 0 ? '+' : '';
-            const sideClass = (trade.side || trade.action || '').toLowerCase() === 'buy' ? 'text-success' : 'text-danger';
-            const sideText = (trade.side || trade.action || 'N/A').toUpperCase();
-            
-            const date = trade.timestamp ? new Date(trade.timestamp).toLocaleDateString() : 'N/A';
-            const time = trade.timestamp ? new Date(trade.timestamp).toLocaleTimeString() : '';
-            
-            const symbol = (trade.symbol || 'N/A').replace('/USDT', '');
-            const amount = safeNum(trade.quantity, 0);
-            const price = safeNum(trade.price, 0);
-            const value = safeNum(trade.total_value, 0);
-            const pnl = safeNum(trade.pnl, 0);
+            try {
+                const pnlClass = safeNum(trade.pnl, 0) >= 0 ? 'text-success' : 'text-danger';
+                const pnlSign = safeNum(trade.pnl, 0) >= 0 ? '+' : '';
+                const sideClass = (trade.side || trade.action || '').toLowerCase() === 'buy' ? 'text-success' : 'text-danger';
+                const sideText = (trade.side || trade.action || 'N/A').toUpperCase();
+                
+                // Safe date parsing
+                let date = 'N/A';
+                let time = '';
+                try {
+                    if (trade.timestamp) {
+                        const tradeDate = new Date(trade.timestamp);
+                        if (!isNaN(tradeDate.getTime())) {
+                            date = tradeDate.toLocaleDateString();
+                            time = tradeDate.toLocaleTimeString();
+                        }
+                    }
+                } catch (dateError) {
+                    console.warn('Date parsing error for trade:', trade.id, dateError);
+                }
+                
+                const symbol = (trade.symbol || 'N/A').replace('/USDT', '');
+                const amount = safeNum(trade.quantity, 0);
+                const price = safeNum(trade.price, 0);
+                const value = safeNum(trade.total_value, 0);
+                const pnl = safeNum(trade.pnl, 0);
             
             const sourceIcon = trade.source && trade.source.includes('Synthetic') ? 
                 '<i class="fas fa-calculator text-warning" title="Portfolio-based calculation"></i>' :
@@ -1035,6 +1048,10 @@
                     <td class="text-center">${sourceIcon}</td>
                 </tr>
             `;
+            } catch (error) {
+                console.error('Error rendering trade:', trade, error);
+                return `<tr><td colspan="8" class="text-center text-warning">Error rendering trade ${trade.id || 'unknown'}</td></tr>`;
+            }
         }).join('');
     }
 
@@ -1048,19 +1065,44 @@
             if (data.success && data.trades) {
                 console.log(`✅ Loaded ${data.trades.length} trades`);
                 
-                // Calculate summary from trades data
-                const totalVolume = data.trades.reduce((sum, trade) => sum + (trade.total_value || 0), 0);
-                const totalFees = data.trades.reduce((sum, trade) => sum + (trade.fee || 0), 0);
+                // Calculate summary from trades data with safe operations
+                let totalVolume = 0;
+                let totalFees = 0;
+                try {
+                    totalVolume = data.trades.reduce((sum, trade) => sum + (parseFloat(trade.total_value) || 0), 0);
+                    totalFees = data.trades.reduce((sum, trade) => sum + (parseFloat(trade.fee) || 0), 0);
+                } catch (calcError) {
+                    console.warn('Error calculating trade summaries:', calcError);
+                }
                 
-                // Update summary cards
-                document.getElementById('trades-total-count').textContent = data.total_count || data.trades.length || 0;
-                document.getElementById('trades-total-volume').textContent = `$${totalVolume.toLocaleString()}`;
-                document.getElementById('trades-total-fees').textContent = `$${totalFees.toFixed(4)}`;
-                document.getElementById('trades-data-source').textContent = 'Live OKX Data';
-                document.getElementById('trades-last-updated').textContent = new Date().toLocaleTimeString();
+                // Update summary cards safely
+                try {
+                    const countElement = document.getElementById('trades-total-count');
+                    const volumeElement = document.getElementById('trades-total-volume');
+                    const feesElement = document.getElementById('trades-total-fees');
+                    const sourceElement = document.getElementById('trades-data-source');
+                    const updatedElement = document.getElementById('trades-last-updated');
+                    
+                    if (countElement) countElement.textContent = data.total_count || data.trades.length || 0;
+                    if (volumeElement) volumeElement.textContent = `$${totalVolume.toLocaleString()}`;
+                    if (feesElement) feesElement.textContent = `$${totalFees.toFixed(4)}`;
+                    if (sourceElement) sourceElement.textContent = 'Live OKX Data';
+                    if (updatedElement) updatedElement.textContent = new Date().toLocaleTimeString();
+                } catch (uiError) {
+                    console.warn('Error updating trade summary UI:', uiError);
+                }
                 
-                // Render table
-                renderTradesTable(data.trades);
+                // Render table safely
+                try {
+                    renderTradesTable(data.trades);
+                    console.log(`✅ Successfully rendered ${data.trades.length} trades`);
+                } catch (renderError) {
+                    console.error('Error rendering trades table:', renderError);
+                    const tbody = document.getElementById('trades-tbody');
+                    if (tbody) {
+                        tbody.innerHTML = '<tr><td colspan="8" class="text-center py-3 text-warning">Error rendering trades table</td></tr>';
+                    }
+                }
                 
                 return data;
             } else {
@@ -1068,8 +1110,10 @@
             }
         } catch (error) {
             console.error('❌ Error loading trades:', error);
-            document.getElementById('trades-tbody').innerHTML = 
-                '<tr><td colspan="8" class="text-center py-3 text-danger">Error loading trades: ' + error.message + '</td></tr>';
+            const tbody = document.getElementById('trades-tbody');
+            if (tbody) {
+                tbody.innerHTML = '<tr><td colspan="8" class="text-center py-3 text-danger">Error loading trades: ' + (error.message || 'Unknown error') + '</td></tr>';
+            }
             return null;
         }
     }
