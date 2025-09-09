@@ -518,7 +518,7 @@
                                 </tr>
                             </thead>
                             <tbody id="trades-tbody">
-                                <tr>
+                                <tr id="trades-loading-row">
                                     <td colspan="8" class="text-center py-4">
                                         <div class="card" style="border: 1px solid #e5e7eb; max-width: 400px; margin: 0 auto;">
                                             <div class="card-body">
@@ -526,7 +526,15 @@
                                                     <i class="fas fa-spinner fa-spin me-2 text-primary"></i>
                                                     <span class="fw-bold">Loading Trade History...</span>
                                                 </div>
-                                                <small class="text-muted">Fetching your trading data from OKX</small>
+                                                <div class="text-center mb-2">
+                                                    <small class="text-muted" id="trades-progress-status">Fetching your trading data from OKX</small>
+                                                </div>
+                                                <div class="progress mb-2" style="height: 12px; width: 300px; margin: 0 auto;">
+                                                    <div id="trades-progress-bar" class="progress-bar progress-bar-striped progress-bar-animated bg-primary" 
+                                                         role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+                                                        <span id="trades-progress-text">0%</span>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
                                     </td>
@@ -1059,8 +1067,20 @@
     async function loadTradesData(days = 30, limit = 100) {
         try {
             console.log(`📊 Loading trades data: ${days} days, ${limit} limit`);
+            
+            // Show loading row and initialize progress
+            const loadingRow = document.getElementById('trades-loading-row');
+            if (loadingRow) loadingRow.style.display = '';
+            updateTradesProgress(5, 'Initializing request...');
+            
+            updateTradesProgress(15, 'Connecting to OKX API...');
+            updateTradesProgress(25, 'Fetching trade data...');
+            
             const response = await fetch(`/api/trade-history?days=${days}&limit=${limit}`);
+            updateTradesProgress(50, 'Processing trade records...');
+            
             const data = await response.json();
+            updateTradesProgress(70, 'Validating data integrity...');
             
             if (data.success && data.trades) {
                 console.log(`✅ Loaded ${data.trades.length} trades`);
@@ -1094,8 +1114,17 @@
                 
                 // Render table safely
                 try {
+                    updateTradesProgress(85, 'Updating table display...');
                     renderTradesTable(data.trades);
+                    updateTradesProgress(95, 'Finalizing trades data...');
                     console.log(`✅ Successfully rendered ${data.trades.length} trades`);
+                    
+                    // Complete progress and hide loading
+                    updateTradesProgress(100, 'Complete!');
+                    setTimeout(() => {
+                        const loadingRow = document.getElementById('trades-loading-row');
+                        if (loadingRow) loadingRow.style.display = 'none';
+                    }, 500);
                 } catch (renderError) {
                     console.error('Error rendering trades table:', renderError);
                     const tbody = document.getElementById('trades-tbody');
@@ -1116,6 +1145,28 @@
             }
             return null;
         }
+    }
+
+    // Progress bar update function for trades
+    function updateTradesProgress(percentage, statusText) {
+        const progressBar = document.getElementById('trades-progress-bar');
+        const progressText = document.getElementById('trades-progress-text');
+        const progressStatus = document.getElementById('trades-progress-status');
+        
+        if (progressBar) {
+            progressBar.style.width = `${percentage}%`;
+            progressBar.setAttribute('aria-valuenow', percentage);
+        }
+        
+        if (progressText) {
+            progressText.textContent = `${percentage}%`;
+        }
+        
+        if (progressStatus && statusText) {
+            progressStatus.textContent = statusText;
+        }
+        
+        console.log(`Trades progress: ${percentage}% - ${statusText}`);
     }
 
     /** Modern icon mapping -> Font Awesome 6 (solid) **/
