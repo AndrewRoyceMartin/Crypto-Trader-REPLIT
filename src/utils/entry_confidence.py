@@ -303,7 +303,7 @@ class EntryConfidenceAnalyzer:
             if len(df) >= 50:
                 near_support = self._check_support_proximity(df, current_price)
                 filters['support_level_proximity'] = {
-                    'passed': near_support,
+                    'passed': bool(near_support),
                     'description': 'Price within 2% of significant support level'
                 }
             
