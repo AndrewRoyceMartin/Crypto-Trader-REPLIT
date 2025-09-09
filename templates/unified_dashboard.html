@@ -519,21 +519,34 @@
                             </thead>
                             <tbody id="trades-tbody">
                                 <tr id="trades-loading-row">
-                                    <td colspan="8" class="text-center py-4">
-                                        <div class="card" style="border: 1px solid #e5e7eb; max-width: 400px; margin: 0 auto;">
-                                            <div class="card-body">
-                                                <div class="d-flex justify-content-center align-items-center mb-2">
-                                                    <i class="fas fa-spinner fa-spin me-2 text-primary"></i>
-                                                    <span class="fw-bold">Loading Trade History...</span>
+                                    <td colspan="8" class="py-3">
+                                        <div class="bg-light rounded p-3">
+                                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                                <div class="d-flex align-items-center">
+                                                    <i class="fas fa-chart-line me-2 text-primary"></i>Trade History Progress
                                                 </div>
-                                                <div class="text-center mb-2">
-                                                    <small class="text-muted" id="trades-progress-status">Fetching your trading data from OKX</small>
+                                                <div class="text-end">
+                                                    <small class="text-muted" id="trades-progress-status">Loading...</small>
                                                 </div>
-                                                <div class="progress mb-2" style="height: 12px;">
-                                                    <div id="trades-progress-bar" class="progress-bar progress-bar-striped progress-bar-animated bg-primary" 
-                                                         role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
-                                                        <span id="trades-progress-text">0%</span>
-                                                    </div>
+                                            </div>
+                                            <div class="row text-center mb-2 small text-muted">
+                                                <div class="col-4 text-start">
+                                                    <span>Current Step:</span><br>
+                                                    <span class="text-primary fw-bold" id="trades-current-step">Initializing...</span>
+                                                </div>
+                                                <div class="col-4">
+                                                    <span>Processed</span><br>
+                                                    <span class="fw-bold" id="trades-processed">0</span>
+                                                </div>
+                                                <div class="col-4 text-end">
+                                                    <span>Elapsed</span><br>
+                                                    <span class="fw-bold" id="trades-elapsed">0s</span>
+                                                </div>
+                                            </div>
+                                            <div class="progress mb-2" style="height: 12px;">
+                                                <div id="trades-progress-bar" class="progress-bar progress-bar-striped progress-bar-animated bg-primary" 
+                                                     role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+                                                    <span id="trades-progress-text">0%</span>
                                                 </div>
                                             </div>
                                         </div>
@@ -1152,6 +1165,9 @@
         const progressBar = document.getElementById('trades-progress-bar');
         const progressText = document.getElementById('trades-progress-text');
         const progressStatus = document.getElementById('trades-progress-status');
+        const currentStep = document.getElementById('trades-current-step');
+        const processed = document.getElementById('trades-processed');
+        const elapsed = document.getElementById('trades-elapsed');
         
         if (progressBar) {
             progressBar.style.width = `${percentage}%`;
@@ -1162,8 +1178,28 @@
             progressText.textContent = `${percentage}%`;
         }
         
-        if (progressStatus && statusText) {
-            progressStatus.textContent = statusText;
+        if (progressStatus) {
+            progressStatus.textContent = percentage === 100 ? 'Complete!' : 'Loading...';
+        }
+        
+        if (currentStep && statusText) {
+            currentStep.textContent = statusText;
+        }
+        
+        if (processed) {
+            // Update processed count based on progress
+            const maxProcessed = 10; // Simulated max items
+            const processedCount = Math.floor((percentage / 100) * maxProcessed);
+            processed.textContent = processedCount.toString();
+        }
+        
+        if (elapsed) {
+            // Calculate elapsed time from start (simulated)
+            if (!window.tradesStartTime) {
+                window.tradesStartTime = Date.now();
+            }
+            const elapsedSeconds = Math.floor((Date.now() - window.tradesStartTime) / 1000);
+            elapsed.textContent = `${elapsedSeconds}s`;
         }
         
         console.log(`Trades progress: ${percentage}% - ${statusText}`);
