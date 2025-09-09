@@ -341,6 +341,40 @@
                             <i class="fas fa-calculator me-1"></i>Recalculate
                         </button>
                     </div>
+                    <!-- Filter Row -->
+                    <div class="row mt-3 align-items-center">
+                        <div class="col-md-4">
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text">
+                                    <i class="fas fa-search"></i>
+                                </span>
+                                <input type="text" 
+                                       id="position-filter" 
+                                       class="form-control" 
+                                       placeholder="Search by symbol (e.g., BTC, ETH, BICO)..."
+                                       onkeyup="filterAvailablePositions()">
+                                <button class="btn btn-outline-secondary" 
+                                        id="clear-filter-btn" 
+                                        onclick="clearPositionFilter()" 
+                                        style="display: none;"
+                                        title="Clear filter">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <select id="balance-filter" class="form-select form-select-sm" onchange="filterAvailablePositions()">
+                                <option value="">All Positions</option>
+                                <option value="with-balance">With Balance Only</option>
+                                <option value="zero-balance">Zero Balance Only</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <small class="text-muted">
+                                Showing <span id="filtered-count">0</span> of <span id="total-count">0</span> positions
+                            </small>
+                        </div>
+                    </div>
                 </div>
                 <div class="card-body p-0">
                     <div class="table-responsive">
@@ -925,8 +959,121 @@
         return isNaN(num) ? defaultValue : num;
     }
 
+    // Filter functions for Available Positions
+    let allPositionsData = []; // Store original data for filtering
+    
+    function filterAvailablePositions() {
+        const searchTerm = document.getElementById('position-filter').value.toLowerCase();
+        const balanceFilter = document.getElementById('balance-filter').value;
+        const clearBtn = document.getElementById('clear-filter-btn');
+        
+        // Show/hide clear button
+        if (searchTerm || balanceFilter) {
+            clearBtn.style.display = 'block';
+        } else {
+            clearBtn.style.display = 'none';
+        }
+        
+        // Filter the data
+        let filteredPositions = allPositionsData.filter(position => {
+            // Text search filter
+            const matchesSearch = searchTerm === '' || 
+                position.symbol.toLowerCase().includes(searchTerm);
+            
+            // Balance filter
+            let matchesBalance = true;
+            if (balanceFilter === 'with-balance') {
+                matchesBalance = position.current_balance > 0;
+            } else if (balanceFilter === 'zero-balance') {
+                matchesBalance = position.current_balance === 0;
+            }
+            
+            return matchesSearch && matchesBalance;
+        });
+        
+        // Update counter
+        document.getElementById('filtered-count').textContent = filteredPositions.length;
+        document.getElementById('total-count').textContent = allPositionsData.length;
+        
+        // Re-render table with filtered data
+        renderAvailableTableFiltered(filteredPositions);
+    }
+    
+    function clearPositionFilter() {
+        document.getElementById('position-filter').value = '';
+        document.getElementById('balance-filter').value = '';
+        document.getElementById('clear-filter-btn').style.display = 'none';
+        
+        // Show all positions
+        document.getElementById('filtered-count').textContent = allPositionsData.length;
+        renderAvailableTableFiltered(allPositionsData);
+    }
+    
+    function renderAvailableTableFiltered(positions) {
+        const tbody = document.getElementById('available-tbody');
+        if (!tbody) return;
+        
+        if (!positions || positions.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="10" class="text-center py-4 text-muted">No positions match your filter criteria.</td></tr>';
+            return;
+        }
+        
+        let html = '';
+        positions.forEach(position => {
+            html += generatePositionRow(position);
+        });
+        
+        tbody.innerHTML = html;
+    }
+    
+    function generatePositionRow(position) {
+        // Generate a single table row for a position
+        const balanceColor = position.current_balance > 0 ? 'text-success fw-bold' : 'text-muted';
+        const priceClass = position.current_price > 0 ? '' : 'text-danger';
+        const diffClass = position.price_diff_percent < 0 ? 'text-success' : 'text-warning';
+        
+        return `
+            <tr>
+                <td><strong>${position.symbol}</strong></td>
+                <td class="text-end ${balanceColor}">${position.current_balance.toFixed(2)}</td>
+                <td class="text-end ${priceClass}">$${position.current_price.toFixed(4)}</td>
+                <td class="text-end">$${(position.target_buy_price || 0).toFixed(4)}</td>
+                <td class="text-end ${diffClass}">${position.price_diff_percent.toFixed(2)}%</td>
+                <td class="text-center">
+                    <span class="badge bg-${position.entry_confidence?.level === 'STRONG' ? 'success' : position.entry_confidence?.level === 'FAIR' ? 'warning' : 'secondary'} text-uppercase">
+                        ${position.entry_confidence?.level || 'N/A'}
+                    </span>
+                </td>
+                <td class="text-center">
+                    <span class="badge bg-primary text-uppercase">${position.entry_confidence?.timing_signal || 'N/A'}</span>
+                </td>
+                <td class="text-center">
+                    <span class="badge bg-${position.entry_confidence?.risk_level === 'LOW' ? 'success' : position.entry_confidence?.risk_level === 'MODERATE' ? 'warning' : 'danger'} text-uppercase">
+                        ${position.entry_confidence?.risk_level || 'N/A'}
+                    </span>
+                </td>
+                <td class="text-center">
+                    <span class="badge bg-info text-uppercase">${position.buy_signal || 'N/A'}</span>
+                </td>
+                <td class="text-center">
+                    <button class="btn btn-outline-success btn-sm" onclick="buyPosition('${position.symbol}')" title="Buy ${position.symbol}">
+                        <i class="fas fa-shopping-cart"></i>
+                    </button>
+                </td>
+            </tr>
+        `;
+    }
+
     function renderAvailableTable(positions) {
         console.debug("renderAvailableTable called with:", positions);
+        
+        // Store original data for filtering
+        allPositionsData = positions || [];
+        
+        // Update counters
+        document.getElementById('filtered-count').textContent = allPositionsData.length;
+        document.getElementById('total-count').textContent = allPositionsData.length;
+        
         const tbody = document.getElementById('available-tbody');
         if (!tbody) {
             console.error("available-tbody element not found!");
