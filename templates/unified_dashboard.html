@@ -996,19 +996,19 @@
         }
         
         tbody.innerHTML = trades.map(trade => {
-            const pnlClass = safeNum(trade.net_pnl, 0) >= 0 ? 'text-success' : 'text-danger';
-            const pnlSign = safeNum(trade.net_pnl, 0) >= 0 ? '+' : '';
-            const sideClass = trade.side === 'buy' ? 'text-success' : 'text-danger';
-            const sideText = (trade.side || 'N/A').toUpperCase();
+            const pnlClass = safeNum(trade.pnl, 0) >= 0 ? 'text-success' : 'text-danger';
+            const pnlSign = safeNum(trade.pnl, 0) >= 0 ? '+' : '';
+            const sideClass = (trade.side || trade.action || '').toLowerCase() === 'buy' ? 'text-success' : 'text-danger';
+            const sideText = (trade.side || trade.action || 'N/A').toUpperCase();
             
-            const date = trade.timestamp ? new Date(parseInt(trade.timestamp)).toLocaleDateString() : 'N/A';
-            const time = trade.timestamp ? new Date(parseInt(trade.timestamp)).toLocaleTimeString() : '';
+            const date = trade.timestamp ? new Date(trade.timestamp).toLocaleDateString() : 'N/A';
+            const time = trade.timestamp ? new Date(trade.timestamp).toLocaleTimeString() : '';
             
-            const symbol = trade.symbol_clean || trade.symbol || 'N/A';
-            const amount = safeNum(trade.fillSz, 0);
-            const price = safeNum(trade.fillPx, 0);
-            const value = safeNum(trade.trade_value_usd, 0);
-            const pnl = safeNum(trade.net_pnl, 0);
+            const symbol = (trade.symbol || 'N/A').replace('/USDT', '');
+            const amount = safeNum(trade.quantity, 0);
+            const price = safeNum(trade.price, 0);
+            const value = safeNum(trade.total_value, 0);
+            const pnl = safeNum(trade.pnl, 0);
             
             const sourceIcon = trade.source && trade.source.includes('Synthetic') ? 
                 '<i class="fas fa-calculator text-warning" title="Portfolio-based calculation"></i>' :
@@ -1048,11 +1048,15 @@
             if (data.success && data.trades) {
                 console.log(`✅ Loaded ${data.trades.length} trades`);
                 
+                // Calculate summary from trades data
+                const totalVolume = data.trades.reduce((sum, trade) => sum + (trade.total_value || 0), 0);
+                const totalFees = data.trades.reduce((sum, trade) => sum + (trade.fee || 0), 0);
+                
                 // Update summary cards
-                document.getElementById('trades-total-count').textContent = data.summary.total_trades || 0;
-                document.getElementById('trades-total-volume').textContent = `$${(data.summary.total_volume_usd || 0).toLocaleString()}`;
-                document.getElementById('trades-total-fees').textContent = `$${(data.summary.total_fees_usdt || 0).toFixed(4)}`;
-                document.getElementById('trades-data-source').textContent = data.summary.data_source || 'Unknown';
+                document.getElementById('trades-total-count').textContent = data.total_count || data.trades.length || 0;
+                document.getElementById('trades-total-volume').textContent = `$${totalVolume.toLocaleString()}`;
+                document.getElementById('trades-total-fees').textContent = `$${totalFees.toFixed(4)}`;
+                document.getElementById('trades-data-source').textContent = 'Live OKX Data';
                 document.getElementById('trades-last-updated').textContent = new Date().toLocaleTimeString();
                 
                 // Render table
