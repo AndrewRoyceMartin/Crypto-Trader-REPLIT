@@ -114,27 +114,144 @@ class EntryConfidenceAnalyzer:
             return self._create_basic_confidence(symbol, current_price)
     
     def _calculate_technical_score(self, df: pd.DataFrame, current_price: float) -> float:
-        """Calculate technical analysis score (0-100)."""
+        """
+        ENHANCED: Calculate technical analysis score using new multiple confirmation filters.
+        
+        Uses the same enhanced criteria as the Bollinger strategy:
+        - RSI oversold confirmation
+        - Volume confirmation 
+        - Higher timeframe support
+        - Support level proximity
+        - Market regime filter
+        - Bollinger Band position
+        """
         try:
-            scores = []
+            # Apply the same enhanced filters as the Bollinger strategy
+            confirmations = []
             
-            # RSI Analysis (30-70 is good, oversold/overbought areas)
+            # FILTER 1: RSI Oversold Confirmation (RSI < 30)
             if len(df) >= 14:
                 rsi = self._calculate_rsi(df['price'].values, 14)
-                if 30 <= rsi <= 40:  # Oversold recovery
-                    scores.append(85)
-                elif 40 <= rsi <= 60:  # Neutral zone
-                    scores.append(70)
-                elif 60 <= rsi <= 70:  # Getting overbought
-                    scores.append(50)
-                else:  # Extreme zones
-                    scores.append(30)
+                rsi_oversold = rsi < 30.0
+                confirmations.append(("RSI_Oversold", rsi_oversold))
+                self.logger.debug(f"RSI Analysis: {rsi:.1f} (oversold < 30.0) = {rsi_oversold}")
             
-            # Bollinger Bands Analysis
+            # FILTER 2: Volume Confirmation (1.2x above average)
+            if 'volume' in df.columns and len(df) >= 20:
+                avg_volume = df['volume'].tail(20).mean()
+                current_volume = df['volume'].iloc[-1]
+                volume_confirmed = current_volume >= (avg_volume * 1.2)
+                confirmations.append(("Volume_Confirmed", volume_confirmed))
+                self.logger.debug(f"Volume: Current={current_volume:.0f}, Avg={avg_volume:.0f}, "
+                                f"Multiplier={current_volume/avg_volume:.1f}x = {volume_confirmed}")
+            
+            # FILTER 3: Higher Timeframe Support (50-SMA analysis)
+            if len(df) >= 100:
+                sma_50 = df['price'].rolling(window=50).mean()
+                current_price_val = df['price'].iloc[-1]
+                sma_50_current = sma_50.iloc[-1]
+                
+                # Not more than 10% below SMA50
+                distance_from_sma = ((current_price_val - sma_50_current) / sma_50_current) * 100
+                sma_50_slope = (sma_50.iloc[-1] - sma_50.iloc[-10]) / sma_50.iloc[-10] * 100
+                
+                higher_tf_ok = (distance_from_sma > -10.0 and sma_50_slope > -2.0)
+                confirmations.append(("Higher_TF_Support", higher_tf_ok))
+                self.logger.debug(f"Higher TF: Distance from SMA50={distance_from_sma:.1f}%, "
+                                f"slope={sma_50_slope:.2f}% = {higher_tf_ok}")
+            
+            # FILTER 4: Support Level Proximity (within 2% of support)
+            if len(df) >= 50:
+                near_support = self._check_support_proximity(df, current_price)
+                confirmations.append(("Near_Support", near_support))
+            
+            # FILTER 5: Market Regime Filter (not in severe downtrend)
+            if len(df) >= 30:
+                sma_10 = df['price'].rolling(window=10).mean()
+                sma_30 = df['price'].rolling(window=30).mean()
+                current_price_val = df['price'].iloc[-1]
+                
+                above_sma_10 = current_price_val > sma_10.iloc[-1] * 0.95
+                sma_alignment = sma_10.iloc[-1] > sma_30.iloc[-1] * 0.98
+                price_change_10d = (current_price_val - df['price'].iloc[-10]) / df['price'].iloc[-10] * 100
+                not_severe_downtrend = price_change_10d > -15.0
+                
+                regime_ok = (above_sma_10 or sma_alignment) and not_severe_downtrend
+                confirmations.append(("Market_Regime_OK", regime_ok))
+                self.logger.debug(f"Market Regime: Price vs SMA10={(current_price_val/sma_10.iloc[-1]-1)*100:.1f}%, "
+                                f"10d change={price_change_10d:.1f}% = {regime_ok}")
+            
+            # FILTER 6: Bollinger Band Position (at lower band)
             if len(df) >= 20:
-                bb_position = self._calculate_bollinger_position(df['price'].values, current_price)
-                if bb_position < 0.2:  # Near lower band (potential bounce)
-                    scores.append(80)
+                # Calculate Bollinger Bands
+                sma_20 = df['price'].rolling(window=20).mean()
+                std_20 = df['price'].rolling(window=20).std()
+                bb_lower = sma_20 - (2 * std_20)
+                
+                at_lower_band = current_price <= bb_lower.iloc[-1]
+                confirmations.append(("Bollinger_Band", at_lower_band))
+                self.logger.debug(f"Bollinger Band: Price={current_price:.4f}, Lower={bb_lower.iloc[-1]:.4f} = {at_lower_band}")
+            
+            # COUNT CONFIRMATIONS - Apply same strict requirements as Bollinger strategy
+            confirmed_filters = [name for name, passed in confirmations if passed]
+            total_confirmations = len(confirmed_filters)
+            minimum_confirmations = 4  # Same as enhanced strategy
+            
+            if total_confirmations >= minimum_confirmations:
+                # HIGH PROBABILITY SETUP - Scale score based on confirmations
+                base_score = 75.0  # Minimum for high probability
+                bonus_score = (total_confirmations - minimum_confirmations) * 5.0  # 5 points per extra confirmation
+                final_score = min(95.0, base_score + bonus_score)
+                
+                self.logger.info(f"🎯 HIGH PROBABILITY TECHNICAL SETUP: {total_confirmations}/6 confirmations = {final_score:.1f}%")
+                self.logger.info(f"   ✅ Confirmed filters: {', '.join(confirmed_filters)}")
+                return final_score
+            else:
+                # INSUFFICIENT CONFIRMATIONS - Much lower score 
+                failed_filters = [name for name, passed in confirmations if not passed]
+                penalty_score = max(20.0, 60.0 - (minimum_confirmations - total_confirmations) * 10.0)
+                
+                self.logger.debug(f"❌ INSUFFICIENT CONFIRMATIONS: Only {total_confirmations}/{len(confirmations)} = {penalty_score:.1f}%")
+                self.logger.debug(f"   Failed filters: {', '.join(failed_filters)}")
+                return penalty_score
+            
+        except Exception as e:
+            self.logger.error(f"Technical score calculation error: {e}")
+            return 40.0  # Conservative fallback
+    
+    def _check_support_proximity(self, df: pd.DataFrame, current_price: float) -> bool:
+        """Check if current price is near a significant support level."""
+        try:
+            # Find recent swing lows (potential support levels)
+            low_prices = df['low'].tail(50).values if 'low' in df.columns else df['price'].tail(50).values
+            
+            # Identify significant lows (lowest points in local windows)
+            support_levels = []
+            window_size = 5
+            
+            for i in range(window_size, len(low_prices) - window_size):
+                if low_prices[i] == min(low_prices[i-window_size:i+window_size+1]):
+                    support_levels.append(low_prices[i])
+            
+            if not support_levels:
+                return True  # No clear support levels found, don't penalize
+            
+            # Check if current price is within 2% of any support level
+            support_tolerance = 0.02  # 2%
+            
+            for support in support_levels:
+                distance = abs(current_price - support) / support
+                if distance <= support_tolerance:
+                    self.logger.debug(f"Support Level: Found near support at ${support:.6f} "
+                                    f"(distance: {distance*100:.1f}%)")
+                    return True
+            
+            self.logger.debug(f"Support Level: No support found within {support_tolerance*100}% of ${current_price:.6f}")
+            return False
+            
+        except Exception as e:
+            self.logger.debug(f"Support level analysis error: {e}")
+            return True
                 elif 0.2 <= bb_position <= 0.8:  # Middle range
                     scores.append(60)
                 else:  # Near upper band
