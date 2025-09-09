@@ -48,6 +48,16 @@ function filterAvailablePositions() {
             showRow = false;
         } else if (botCriteriaFilter === 'excellent-confidence' && confidenceScore < 85) {
             showRow = false;
+        } else if (botCriteriaFilter === 'strong-buy' && buySignal !== 'STRONG_BUY') {
+            showRow = false;
+        } else if (botCriteriaFilter === 'buy' && buySignal !== 'BUY') {
+            showRow = false;
+        } else if (botCriteriaFilter === 'cautious-buy' && buySignal !== 'CAUTIOUS_BUY') {
+            showRow = false;
+        } else if (botCriteriaFilter === 'wait' && buySignal !== 'WAIT') {
+            showRow = false;
+        } else if (botCriteriaFilter === 'avoid' && buySignal !== 'AVOID') {
+            showRow = false;
         }
         
         // Show/hide row

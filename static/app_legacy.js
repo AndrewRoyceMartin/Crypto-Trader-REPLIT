@@ -6450,7 +6450,7 @@ function createAvailablePositionRow(position) {
     row.setAttribute('data-symbol', symbol);
     row.setAttribute('data-has-balance', currentBalance > 0 ? 'true' : 'false');
     row.setAttribute('data-confidence-score', confidenceScore);
-    row.setAttribute('data-buy-signal', buySignal);
+    row.setAttribute('data-buy-signal', timingSignal);
     
     // Symbol cell with icon
     const symbolCell = document.createElement('td');
