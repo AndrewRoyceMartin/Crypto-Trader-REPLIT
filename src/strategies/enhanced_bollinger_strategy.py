@@ -357,7 +357,7 @@ class EnhancedBollingerBandsStrategy(BaseStrategy):
         return None
     
     def _check_entry_opportunities(self, px: float, bb_up: float, bb_lo: float, atr: float, data: pd.DataFrame) -> Optional[Signal]:
-        """Check for entry opportunities including rebuy logic for ANY cryptocurrency."""
+        """ENHANCED: Check for entry opportunities with multiple confirmation filters for higher probability trades."""
         if self.position_state['position_qty'] > 0.0:
             return None  # Already in position
         
@@ -365,19 +365,237 @@ class EnhancedBollingerBandsStrategy(BaseStrategy):
         if self.position_state['rebuy_armed'] and self.rebuy_dynamic:
             self.position_state['rebuy_price'] = self._compute_rebuy_price(data, px)
         
-        # Check rebuy conditions first (applies to ALL currencies)
+        # Check rebuy conditions first (applies to ALL currencies with same strict criteria)
         if self.position_state['rebuy_armed']:
             rebuy_signal = self._check_rebuy_conditions(px, atr)
             if rebuy_signal:
                 self.logger.info(f"Rebuy signal generated with ${self.rebuy_max_usd:.2f} limit for any cryptocurrency")
                 return rebuy_signal
         
-        # Check baseline mean-reversion entry (applies to ALL currencies)
-        if px <= bb_lo:
-            self.logger.info(f"New entry signal at lower Bollinger Band for any cryptocurrency")
-            return self._create_entry_signal(px, atr, 'BASELINE_ENTRY')
+        # ENHANCED ENTRY CRITERIA: Require MULTIPLE confirmations for new entries
+        # Only buy when we have the BEST possible setup for maximum profit potential
         
+        # PRIMARY FILTER: Must be at or below lower Bollinger Band
+        at_lower_band = px <= bb_lo
+        if not at_lower_band:
+            return None  # Reject immediately if not oversold on Bollinger Bands
+        
+        # ENHANCED FILTER 1: RSI Oversold Confirmation
+        rsi_oversold = self._check_rsi_oversold(data)
+        
+        # ENHANCED FILTER 2: Volume Confirmation
+        volume_confirmed = self._check_volume_confirmation(data)
+        
+        # ENHANCED FILTER 3: Multiple Timeframe Trend Analysis
+        higher_tf_support = self._check_higher_timeframe_support(data)
+        
+        # ENHANCED FILTER 4: Support/Resistance Level Confirmation  
+        near_support = self._check_support_level(data, px)
+        
+        # ENHANCED FILTER 5: Market Regime Filter (avoid buying in strong downtrends)
+        market_regime_ok = self._check_market_regime(data)
+        
+        # COUNT CONFIRMATIONS - Only buy on HIGHEST probability setups
+        confirmations = [
+            ("Bollinger_Band", at_lower_band),
+            ("RSI_Oversold", rsi_oversold), 
+            ("Volume_Confirmed", volume_confirmed),
+            ("Higher_TF_Support", higher_tf_support),
+            ("Near_Support", near_support),
+            ("Market_Regime_OK", market_regime_ok)
+        ]
+        
+        confirmed_filters = [name for name, passed in confirmations if passed]
+        total_confirmations = len(confirmed_filters)
+        
+        # STRICT REQUIREMENTS: Need at least 4 out of 6 confirmations for entry
+        minimum_confirmations = 4
+        
+        if total_confirmations >= minimum_confirmations:
+            # Calculate dynamic confidence based on how many filters passed
+            confidence_boost = min(0.95, 0.65 + (total_confirmations - minimum_confirmations) * 0.075)
+            
+            self.logger.critical(f"🎯 HIGH PROBABILITY ENTRY DETECTED: {total_confirmations}/6 confirmations passed")
+            self.logger.critical(f"   ✅ Confirmed filters: {', '.join(confirmed_filters)}")
+            self.logger.critical(f"   📊 Entry confidence: {confidence_boost:.1%}")
+            
+            signal = self._create_entry_signal(px, atr, 'HIGH_PROBABILITY_ENTRY')
+            signal.confidence = confidence_boost
+            signal.metadata['confirmations'] = total_confirmations
+            signal.metadata['confirmed_filters'] = confirmed_filters
+            
+            return signal
+        else:
+            # Log rejected entry for analysis
+            failed_filters = [name for name, passed in confirmations if not passed]
+            self.logger.debug(f"❌ Entry rejected: Only {total_confirmations}/{len(confirmations)} confirmations")
+            self.logger.debug(f"   Failed filters: {', '.join(failed_filters)}")
+            
         return None
+    
+    def _check_rsi_oversold(self, data: pd.DataFrame) -> bool:
+        """Check if RSI indicates oversold conditions (RSI < 30)."""
+        try:
+            if len(data) < 14:
+                return False
+                
+            # Calculate RSI using close prices
+            close_prices = data['close'].values
+            rsi = self._calculate_rsi(close_prices)
+            
+            # RSI below 30 indicates oversold condition
+            oversold_threshold = 30.0
+            is_oversold = rsi < oversold_threshold
+            
+            self.logger.debug(f"RSI Analysis: {rsi:.1f} (oversold < {oversold_threshold})")
+            return is_oversold
+            
+        except Exception as e:
+            self.logger.debug(f"RSI calculation error: {e}")
+            return False
+    
+    def _check_volume_confirmation(self, data: pd.DataFrame) -> bool:
+        """Check if current volume is above average (indicates institutional interest)."""
+        try:
+            if 'volume' not in data.columns or len(data) < 20:
+                return True  # If no volume data, don't penalize
+                
+            # Calculate 20-period average volume
+            avg_volume = data['volume'].tail(20).mean()
+            current_volume = data['volume'].iloc[-1]
+            
+            # Current volume should be at least 1.2x average for confirmation
+            volume_multiplier = 1.2
+            volume_confirmed = current_volume >= (avg_volume * volume_multiplier)
+            
+            self.logger.debug(f"Volume Analysis: Current={current_volume:.0f}, Avg={avg_volume:.0f}, "
+                            f"Multiplier={current_volume/avg_volume:.1f}x (need >{volume_multiplier:.1f}x)")
+            return volume_confirmed
+            
+        except Exception as e:
+            self.logger.debug(f"Volume analysis error: {e}")
+            return True  # Don't penalize if volume data unavailable
+    
+    def _check_higher_timeframe_support(self, data: pd.DataFrame) -> bool:
+        """Check if higher timeframe shows support for the trade."""
+        try:
+            if len(data) < 100:
+                return True  # Not enough data, don't penalize
+                
+            # Analyze longer-term trend using 50-period SMA
+            sma_50 = data['close'].rolling(window=50).mean()
+            current_price = data['close'].iloc[-1]
+            sma_50_current = sma_50.iloc[-1]
+            
+            # Check if we're not too far below the 50 SMA (within 10%)
+            distance_from_sma = ((current_price - sma_50_current) / sma_50_current) * 100
+            max_distance_below = -10.0  # Not more than 10% below SMA
+            
+            # Also check if longer-term trend is not severely down
+            sma_50_slope = (sma_50.iloc[-1] - sma_50.iloc[-10]) / sma_50.iloc[-10] * 100
+            max_downtrend = -2.0  # Not more than 2% decline in SMA over 10 periods
+            
+            higher_tf_ok = (distance_from_sma > max_distance_below and sma_50_slope > max_downtrend)
+            
+            self.logger.debug(f"Higher TF Analysis: Distance from SMA50={distance_from_sma:.1f}% "
+                            f"(max {max_distance_below}%), SMA slope={sma_50_slope:.2f}% (max {max_downtrend}%)")
+            return higher_tf_ok
+            
+        except Exception as e:
+            self.logger.debug(f"Higher timeframe analysis error: {e}")
+            return True
+    
+    def _check_support_level(self, data: pd.DataFrame, current_price: float) -> bool:
+        """Check if current price is near a significant support level."""
+        try:
+            if len(data) < 50:
+                return True  # Not enough data
+                
+            # Find recent swing lows (potential support levels)
+            low_prices = data['low'].tail(50).values
+            
+            # Identify significant lows (lowest points in local windows)
+            support_levels = []
+            window_size = 5
+            
+            for i in range(window_size, len(low_prices) - window_size):
+                if low_prices[i] == min(low_prices[i-window_size:i+window_size+1]):
+                    support_levels.append(low_prices[i])
+            
+            if not support_levels:
+                return True  # No clear support levels found
+            
+            # Check if current price is within 2% of any support level
+            support_tolerance = 0.02  # 2%
+            
+            for support in support_levels:
+                distance = abs(current_price - support) / support
+                if distance <= support_tolerance:
+                    self.logger.debug(f"Support Level: Found near support at ${support:.6f} "
+                                    f"(distance: {distance*100:.1f}%)")
+                    return True
+            
+            self.logger.debug(f"Support Level: No support found within {support_tolerance*100}% of ${current_price:.6f}")
+            return False
+            
+        except Exception as e:
+            self.logger.debug(f"Support level analysis error: {e}")
+            return True
+    
+    def _check_market_regime(self, data: pd.DataFrame) -> bool:
+        """Check overall market regime to avoid buying in strong downtrends."""
+        try:
+            if len(data) < 30:
+                return True  # Not enough data
+                
+            # Calculate short and medium term moving averages
+            sma_10 = data['close'].rolling(window=10).mean()
+            sma_30 = data['close'].rolling(window=30).mean()
+            current_price = data['close'].iloc[-1]
+            
+            # Check current price relative to moving averages
+            above_sma_10 = current_price > sma_10.iloc[-1] * 0.95  # Within 5% of 10 SMA
+            sma_alignment = sma_10.iloc[-1] > sma_30.iloc[-1] * 0.98  # 10 SMA not too far below 30 SMA
+            
+            # Check for not being in severe downtrend
+            price_change_10d = (current_price - data['close'].iloc[-10]) / data['close'].iloc[-10] * 100
+            not_severe_downtrend = price_change_10d > -15.0  # Not down more than 15% in 10 periods
+            
+            regime_ok = (above_sma_10 or sma_alignment) and not_severe_downtrend
+            
+            self.logger.debug(f"Market Regime: Price vs SMA10={(current_price/sma_10.iloc[-1]-1)*100:.1f}%, "
+                            f"10d change={price_change_10d:.1f}%, regime_ok={regime_ok}")
+            return regime_ok
+            
+        except Exception as e:
+            self.logger.debug(f"Market regime analysis error: {e}")
+            return True
+    
+    def _calculate_rsi(self, prices: np.ndarray, period: int = 14) -> float:
+        """Calculate RSI indicator."""
+        try:
+            if len(prices) < period + 1:
+                return 50.0  # Neutral RSI if not enough data
+                
+            deltas = np.diff(prices)
+            gains = np.where(deltas > 0, deltas, 0)
+            losses = np.where(deltas < 0, -deltas, 0)
+            
+            # Calculate average gains and losses
+            avg_gain = np.mean(gains[-period:])
+            avg_loss = np.mean(losses[-period:])
+            
+            if avg_loss == 0:
+                return 100.0  # All gains, max RSI
+            
+            rs = avg_gain / avg_loss
+            rsi = 100 - (100 / (1 + rs))
+            
+            return rsi
+            
+        except Exception as e:
+            self.logger.debug(f"RSI calculation error: {e}")
+            return 50.0
     
     def _check_rebuy_conditions(self, px: float, atr: float) -> Optional[Signal]:
         """Check if rebuy conditions are met."""
@@ -420,10 +638,16 @@ class EnhancedBollingerBandsStrategy(BaseStrategy):
         # Risk-based position sizing using real OKX entry price
         risk_per_unit = max(1e-12, px * self.stop_loss_percent / 100)
         
-        # Apply rebuy limit for rebuy trades
+        # Apply rebuy limit for rebuy trades, or scale normal trades based on confidence
         if 'REBUY' in event_type:
             dollars = min(self.rebuy_max_usd, self.position_size_percent / 100 * self.position_state['equity'])
             self.logger.info(f"Rebuy trade limited to ${dollars:.2f} (max: ${self.rebuy_max_usd:.2f})")
+        elif 'HIGH_PROBABILITY' in event_type:
+            # Scale position size based on confidence for high probability entries
+            base_dollars = self.position_size_percent / 100 * self.position_state['equity']
+            confidence_multiplier = 1.5  # Increase size for high confidence trades
+            dollars = min(base_dollars * confidence_multiplier, 150.0)  # Cap at $150 for high prob trades
+            self.logger.info(f"High probability trade: ${dollars:.2f} (confidence multiplier: {confidence_multiplier}x)")
         else:
             dollars = self.position_size_percent / 100 * self.position_state['equity']
         
