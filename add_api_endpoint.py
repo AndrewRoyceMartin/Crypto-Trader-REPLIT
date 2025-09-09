@@ -53,7 +53,7 @@ def get_available_positions():
                 # Check if current balance is zero or very small
                 current_balance = current_balances.get(symbol, {}).get('total', 0)
                 
-                if current_balance == 0 or current_balance < 0.000001:
+                if current_balance == 0 or current_balance < 0.01:
                     # This is a sold-out position - find last sell trade
                     last_sell_trades = [t for t in sorted_trades if str(t.get('side', '')).upper() == 'SELL']
                     

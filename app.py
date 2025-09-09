@@ -4997,9 +4997,14 @@ def api_available_positions() -> ResponseReturnValue:
 
                     # FIXED: Add ALL tradeable positions to Available Positions with real data
                     # Available Positions should show comprehensive view of all assets
-                    available_positions.append(available_position)
-                    logger.debug(f"✅ Added position: {symbol} ({position_type}) with balance {total_balance}")
-                    added_count += 1
+                    # Filter out dust positions (less than $0.01 equivalent)
+                    if total_balance == 0 or total_balance * current_price >= 0.01:
+                        available_positions.append(available_position)
+                        logger.debug(f"✅ Added position: {symbol} ({position_type}) with balance {total_balance}")
+                        added_count += 1
+                    else:
+                        logger.debug(f"🗑️ Filtered dust position: {symbol} balance {total_balance} = ${total_balance * current_price:.6f}")
+                        skipped_count += 1
 
             except Exception as symbol_error:
                 logger.warning(f"❌ SKIPPING {symbol}: {symbol_error}")
