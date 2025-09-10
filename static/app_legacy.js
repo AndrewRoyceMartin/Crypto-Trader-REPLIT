@@ -1837,12 +1837,73 @@ class TradingApp {
         }
     }
     
-    // Add the missing updateAvailablePositions method
+    // 🔄 SEQUENTIAL AUTOMATIC REFRESH: More conservative batch processing for background updates
     async updateAvailablePositions() {
         try {
-            await fetchAndUpdateAvailablePositions();
+            // Use a special automatic refresh function with longer delays
+            await this.fetchAndUpdateAvailablePositionsAutomatic();
         } catch (error) {
-            console.debug('Available positions update failed:', error);
+            console.debug('Available positions automatic update failed:', error);
+        }
+    }
+
+    // 🚀 AUTOMATIC REFRESH: Conservative batch loading for background updates
+    async fetchAndUpdateAvailablePositionsAutomatic() {
+        console.log('📊 Starting automatic available positions refresh (conservative mode)');
+        
+        let allPositions = [];
+        let batchNumber = 0;
+        let hasMoreBatches = true;
+        const batchSize = 25; // Smaller batches for automatic refresh
+        
+        while (hasMoreBatches && batchNumber < 12) { // Max 12 batches for safety
+            try {
+                const response = await fetch(`/api/available-positions?batch_size=${batchSize}&batch_number=${batchNumber}`, { 
+                    cache: 'no-cache',
+                    signal: AbortSignal.timeout(30000) // 30s timeout per batch for automatic refresh
+                });
+                
+                if (!response.ok) {
+                    console.warn(`❌ Automatic batch ${batchNumber + 1} failed: HTTP ${response.status}`);
+                    break; // Stop on first error for automatic refresh
+                }
+                
+                const batchData = await response.json();
+                
+                // Add positions from this batch
+                if (batchData.available_positions) {
+                    allPositions = allPositions.concat(batchData.available_positions);
+                }
+                
+                // Check if more batches are available
+                hasMoreBatches = batchData.batch_info?.has_more_batches || false;
+                batchNumber++;
+                
+                console.log(`✅ Automatic batch ${batchNumber} loaded: ${allPositions.length} total positions`);
+                
+                // 🐌 CONSERVATIVE DELAYS: Longer waits for automatic refresh
+                if (hasMoreBatches) {
+                    await new Promise(resolve => setTimeout(resolve, 1500)); // 1.5 second delay
+                }
+                
+            } catch (error) {
+                console.warn(`❌ Automatic batch ${batchNumber + 1} error:`, error.message);
+                break; // Stop on any error
+            }
+        }
+        
+        // Update table with accumulated results
+        if (allPositions.length > 0) {
+            console.log(`✅ Automatic refresh complete: ${allPositions.length} positions loaded`);
+            updateAvailablePositionsTable(allPositions);
+            
+            // Update mobile data labels
+            const table = document.getElementById('available-table');
+            if (table) {
+                v02ApplyDataLabels(table);
+            }
+        } else {
+            console.warn('⚠️ Automatic refresh failed: No positions loaded');
         }
     }
     
@@ -6231,9 +6292,9 @@ async function fetchAndUpdateAvailablePositions() {
             const progressPercent = Math.min(15 + (batchNumber * 15), 85);
             updateProgress(progressPercent, `Loaded batch ${batchNumber} (${allPositions.length} total positions)...`, 0);
             
-            // Small delay between batches to prevent API overload
+            // 🚀 SEQUENTIAL PROCESSING: Wait between batches to prevent API overload
             if (hasMoreBatches) {
-                await new Promise(resolve => setTimeout(resolve, 200));
+                await new Promise(resolve => setTimeout(resolve, 800)); // 800ms delay for automatic refresh
             }
         }
         
