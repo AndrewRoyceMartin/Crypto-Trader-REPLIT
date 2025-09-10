@@ -229,6 +229,15 @@
                 <button class="test-button" id="run-dom-test" onclick="runDOMTest()">
                     <i class="fas fa-window-maximize me-2"></i>Run DOM Tests
                 </button>
+                <button class="test-button" id="run-ml-test" onclick="runMLTest()">
+                    <i class="fas fa-robot me-2"></i>Run ML Tests
+                </button>
+                <button class="test-button" id="run-datetime-test" onclick="runDatetimeTest()">
+                    <i class="fas fa-clock me-2"></i>Run Datetime Tests
+                </button>
+                <button class="test-button" id="run-hybrid-test" onclick="runHybridTest()">
+                    <i class="fas fa-brain me-2"></i>Run Hybrid Signal Tests
+                </button>
                 <button class="test-button" id="clear-output" onclick="clearOutput()">
                     <i class="fas fa-trash me-2"></i>Clear Output
                 </button>
@@ -286,6 +295,25 @@
                     <div class="col-md-3">
                         <h6><span class="status-indicator status-pending" id="backtest-status"></span>Backtest Files</h6>
                         <small class="text-muted">Historical data</small>
+                    </div>
+                </div>
+                <hr>
+                <div class="row">
+                    <div class="col-md-3">
+                        <h6><span class="status-indicator status-pending" id="datetime-status"></span>Datetime Safety</h6>
+                        <small class="text-muted">/api/trades timezone fix</small>
+                    </div>
+                    <div class="col-md-3">
+                        <h6><span class="status-indicator status-pending" id="predictor-status"></span>ML Predictor</h6>
+                        <small class="text-muted">Return prediction model</small>
+                    </div>
+                    <div class="col-md-3">
+                        <h6><span class="status-indicator status-pending" id="regression-status"></span>Regression Tests</h6>
+                        <small class="text-muted">Unit test validation</small>
+                    </div>
+                    <div class="col-md-3">
+                        <h6><span class="status-indicator status-pending" id="api-status"></span>API Stability</h6>
+                        <small class="text-muted">JSON serialization</small>
                     </div>
                 </div>
             </div>
@@ -354,7 +382,7 @@ function clearOutput() {
     updateProgress(0, 'Ready to run tests');
     
     // Reset all status indicators
-    const statuses = ['env', 'okx', 'auth', 'ml', 'hybrid', 'logging', 'dom', 'backtest'];
+    const statuses = ['env', 'okx', 'auth', 'ml', 'hybrid', 'logging', 'dom', 'backtest', 'datetime', 'predictor', 'regression', 'api'];
     statuses.forEach(status => updateStatus(status + '-status', 'pending'));
 }
 
@@ -411,12 +439,14 @@ async function runFullTest() {
     
     // Run the full comprehensive test and extract results
     const testSteps = [
-        { step: 'env', name: 'Environment Check', progress: 20 },
-        { step: 'okx', name: 'OKX Public API', progress: 30 },
-        { step: 'auth', name: 'OKX Authentication', progress: 45 },
-        { step: 'ml', name: 'ML Model Loading', progress: 60 },
-        { step: 'hybrid', name: 'Hybrid Signal Generation', progress: 75 },
-        { step: 'logging', name: 'Signal Logging', progress: 85 },
+        { step: 'env', name: 'Environment Check', progress: 15 },
+        { step: 'okx', name: 'OKX Public API', progress: 25 },
+        { step: 'auth', name: 'OKX Authentication', progress: 35 },
+        { step: 'ml', name: 'ML Model Loading', progress: 45 },
+        { step: 'predictor', name: 'ML Predictor', progress: 55 },
+        { step: 'hybrid', name: 'Hybrid Signal Generation', progress: 65 },
+        { step: 'datetime', name: 'Datetime Safety', progress: 75 },
+        { step: 'api', name: 'API Stability', progress: 85 },
         { step: 'dom', name: 'DOM Validation', progress: 95 }
     ];
     
@@ -488,6 +518,107 @@ async function runDOMTest() {
     if (testRunning) return;
     appendOutput('\n🖥️ Running DOM validation tests...');
     await runCommand('python -c "from tests.e2e_system_check import check_dom_http; check_dom_http(); print(\'DOM tests passed\')"', 'DOM Tests');
+}
+
+async function runMLTest() {
+    if (testRunning) return;
+    
+    setTestRunning(true);
+    appendOutput('\n🤖 Running ML model tests...');
+    updateProgress(20, 'Testing ML predictor...');
+    
+    // Test ML predictor
+    const predictorResult = await runCommand(
+        'python3 -c "from src.ml.predictor import predict_buy_return; result = predict_buy_return(75.0, 0.8); print(f\'✅ ML Predictor test: {result:.4f}\')"',
+        'ML Predictor Test'
+    );
+    
+    if (predictorResult) {
+        updateStatus('predictor-status', 'pass');
+        updateProgress(60, 'Testing model loading...');
+        
+        // Test model file exists
+        const modelResult = await runCommand(
+            'python3 -c "from pathlib import Path; p = Path(\'src/models/buy_regression_model.pkl\'); print(f\'✅ Model file: {p.exists()} ({p.stat().st_size if p.exists() else 0} bytes)\')"',
+            'Model File Check'
+        );
+        
+        if (modelResult) {
+            updateStatus('ml-status', 'pass');
+            appendOutput('✅ All ML tests passed!');
+        } else {
+            updateStatus('ml-status', 'fail');
+        }
+    } else {
+        updateStatus('predictor-status', 'fail');
+        updateStatus('ml-status', 'fail');
+    }
+    
+    updateProgress(100, 'ML tests completed');
+    setTestRunning(false);
+}
+
+async function runDatetimeTest() {
+    if (testRunning) return;
+    
+    setTestRunning(true);
+    appendOutput('\n🕒 Running datetime safety tests...');
+    updateProgress(30, 'Testing /api/trades endpoint...');
+    
+    // Test /api/trades endpoint
+    const tradesResult = await runCommand(
+        'python3 -c "import requests; r = requests.get(\'http://127.0.0.1:5000/api/trades\'); print(f\'✅ /api/trades: {r.status_code} - {len(r.json().get(\\\"trades\\\", []))} trades\')"',
+        'API Trades Endpoint Test'
+    );
+    
+    if (tradesResult) {
+        updateStatus('api-status', 'pass');
+        updateProgress(70, 'Running regression tests...');
+        
+        // Run pytest
+        const pytestResult = await runCommand(
+            'pytest -q tests/test_trades_datetime.py',
+            'Datetime Regression Test'
+        );
+        
+        if (pytestResult) {
+            updateStatus('datetime-status', 'pass');
+            updateStatus('regression-status', 'pass');
+            appendOutput('✅ All datetime tests passed!');
+        } else {
+            updateStatus('regression-status', 'fail');
+        }
+    } else {
+        updateStatus('api-status', 'fail');
+        updateStatus('datetime-status', 'fail');
+    }
+    
+    updateProgress(100, 'Datetime tests completed');
+    setTestRunning(false);
+}
+
+async function runHybridTest() {
+    if (testRunning) return;
+    
+    setTestRunning(true);
+    appendOutput('\n🧠 Running hybrid signal system tests...');
+    updateProgress(25, 'Testing hybrid signal calculation...');
+    
+    // Test hybrid signal system
+    const hybridResult = await runCommand(
+        'python3 -c "from src.utils.hybrid_signal_system import calculate_hybrid_signal; indicators = {\'confidence_score\': 75.0, \'ml_probability\': 0.8, \'rsi\': 30, \'volatility\': 15}; result = calculate_hybrid_signal(75.0, indicators); print(f\'✅ Hybrid test: Score={result[\\\"hybrid_score\\\"]} Signal={result[\\\"final_signal\\\"]}\')"',
+        'Hybrid Signal System Test'
+    );
+    
+    if (hybridResult) {
+        updateStatus('hybrid-status', 'pass');
+        updateProgress(100, 'Hybrid signal tests completed');
+        appendOutput('✅ Hybrid signal system operational!');
+    } else {
+        updateStatus('hybrid-status', 'fail');
+    }
+    
+    setTestRunning(false);
 }
 
 // Auto-refresh status every 30 seconds
