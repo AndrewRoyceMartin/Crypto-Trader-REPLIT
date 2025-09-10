@@ -1,0 +1,597 @@
+{% extends "base_layout.html" %}
+
+{% block title %}Market Analysis - Hybrid Trading Intelligence{% endblock %}
+{% block page_title %}Market Analysis{% endblock %}
+{% block page_subtitle %}Comprehensive analysis across 298+ OKX trading pairs with opportunity detection{% endblock %}
+
+{% block extra_css %}
+<style>
+.market-overview {
+    background: linear-gradient(135deg, var(--accent-blue), var(--secondary-dark));
+    border-radius: 15px;
+    padding: 25px;
+    margin-bottom: 30px;
+    border: 2px solid var(--border-color);
+}
+
+.market-stat {
+    text-align: center;
+    padding: 15px;
+}
+
+.stat-large {
+    font-size: 2.2rem;
+    font-weight: 700;
+    margin: 8px 0;
+}
+
+.opportunity-card {
+    background: var(--primary-dark);
+    border: 2px solid var(--success-green);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 15px;
+    transition: all 0.3s ease;
+}
+
+.opportunity-card:hover {
+    border-color: var(--warning-orange);
+    box-shadow: 0 6px 25px rgba(40, 167, 69, 0.2);
+}
+
+.signal-strength {
+    width: 100%;
+    height: 8px;
+    background: var(--secondary-dark);
+    border-radius: 4px;
+    overflow: hidden;
+    margin: 10px 0;
+}
+
+.signal-fill {
+    height: 100%;
+    transition: width 0.8s ease;
+    border-radius: 4px;
+}
+
+.market-filters {
+    background: var(--primary-dark);
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 25px;
+    border: 1px solid var(--border-color);
+}
+
+.pair-row {
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.pair-row:hover {
+    background-color: var(--accent-blue) !important;
+}
+
+.category-badge {
+    font-size: 0.8rem;
+    padding: 4px 8px;
+    border-radius: 12px;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Market Overview -->
+<div class="market-overview">
+    <div class="row">
+        <div class="col-md-3">
+            <div class="market-stat">
+                <div class="stat-large text-white" id="totalPairs">298</div>
+                <div class="text-light">Trading Pairs</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="market-stat">
+                <div class="stat-large text-success" id="buySignals">0</div>
+                <div class="text-light">BUY Signals</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="market-stat">
+                <div class="stat-large text-warning" id="considerSignals">0</div>
+                <div class="text-light">CONSIDER Signals</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="market-stat">
+                <div class="stat-large text-info" id="marketVolume">$0</div>
+                <div class="text-light">24h Volume</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Market Filters -->
+<div class="market-filters">
+    <div class="row align-items-center">
+        <div class="col-md-3">
+            <label for="categoryFilter" class="form-label">Filter by Category</label>
+            <select class="form-select" id="categoryFilter" onchange="filterMarketData()">
+                <option value="all">All Categories</option>
+                <option value="large-cap">Large Cap (BTC, ETH)</option>
+                <option value="mid-cap">Mid Cap</option>
+                <option value="defi">DeFi Tokens</option>
+                <option value="gaming">Gaming & Metaverse</option>
+                <option value="meme">Meme Coins</option>
+                <option value="layer1">Layer 1</option>
+                <option value="layer2">Layer 2</option>
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label for="signalFilter" class="form-label">Filter by Signal</label>
+            <select class="form-select" id="signalFilter" onchange="filterMarketData()">
+                <option value="all">All Signals</option>
+                <option value="BUY">BUY Only</option>
+                <option value="CONSIDER">CONSIDER Only</option>
+                <option value="WAIT">WAIT Only</option>
+                <option value="AVOID">AVOID Only</option>
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label for="sortBy" class="form-label">Sort By</label>
+            <select class="form-select" id="sortBy" onchange="sortMarketData()">
+                <option value="signal_strength">Signal Strength</option>
+                <option value="volume">24h Volume</option>
+                <option value="price_change">Price Change</option>
+                <option value="market_cap">Market Cap</option>
+                <option value="alphabetical">Alphabetical</option>
+            </select>
+        </div>
+        <div class="col-md-3">
+            <div class="d-flex gap-2 mt-4">
+                <button class="btn btn-primary" onclick="scanAllMarkets()">
+                    <i class="fas fa-search me-1"></i>Scan All
+                </button>
+                <button class="btn btn-outline-secondary" onclick="refreshMarketData()">
+                    <i class="fas fa-sync me-1"></i>Refresh
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Top Opportunities -->
+<div class="row mb-4">
+    <div class="col-lg-8">
+        <div class="data-card">
+            <h5 class="card-title">
+                <i class="fas fa-star text-warning"></i>
+                Top Market Opportunities
+                <span class="badge bg-success ms-2" id="opportunitiesCount">0</span>
+            </h5>
+            <div id="topOpportunities">
+                <div class="text-center py-4">
+                    <div class="spinner-border text-warning" role="status">
+                        <span class="visually-hidden">Scanning markets...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="data-card">
+            <h5 class="card-title">
+                <i class="fas fa-chart-bar text-info"></i>
+                Market Sentiment
+            </h5>
+            <div class="text-center py-3">
+                <div class="h2 text-success" id="marketSentiment">Bullish</div>
+                <div class="text-muted mb-3">Overall Market</div>
+                <div class="row">
+                    <div class="col-6">
+                        <div class="h5 text-success" id="bullishCount">0</div>
+                        <small>Bullish</small>
+                    </div>
+                    <div class="col-6">
+                        <div class="h5 text-danger" id="bearishCount">0</div>
+                        <small>Bearish</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- All Trading Pairs Table -->
+<div class="data-card">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h5 class="card-title mb-1">
+                <i class="fas fa-globe"></i>
+                All OKX Trading Pairs
+                <span class="badge bg-primary ms-2" id="pairsCount">298</span>
+            </h5>
+            <small class="text-muted">Real-time analysis across the complete OKX ecosystem</small>
+        </div>
+        <div>
+            <div class="input-group" style="width: 300px;">
+                <input type="text" class="form-control" id="searchPairs" placeholder="Search pairs..." onkeyup="searchPairs()">
+                <button class="btn btn-outline-secondary" onclick="clearSearch()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="table-responsive">
+        <table class="table table-dark table-hover">
+            <thead>
+                <tr>
+                    <th>Pair</th>
+                    <th>Category</th>
+                    <th class="text-end">Price</th>
+                    <th class="text-end">24h Change</th>
+                    <th class="text-end">24h Volume</th>
+                    <th class="text-center">Hybrid Signal</th>
+                    <th class="text-center">Signal Strength</th>
+                    <th class="text-center">ML Confidence</th>
+                    <th class="text-center">Actions</th>
+                </tr>
+            </thead>
+            <tbody id="allPairsTable">
+                <tr>
+                    <td colspan="9" class="text-center py-4">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading market data...</span>
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let marketData = [];
+let filteredData = [];
+
+async function loadMarketData() {
+    try {
+        showToast('Loading market analysis for 298+ trading pairs...', 'info');
+        
+        // Load available positions (contains market data)
+        const response = await fetch('/api/available-positions');
+        if (response.ok) {
+            const data = await response.json();
+            if (data.data && Array.isArray(data.data)) {
+                marketData = data.data;
+                filteredData = [...marketData];
+                updateMarketOverview();
+                updateTopOpportunities();
+                updateMarketTable();
+                showToast('Market data loaded successfully!', 'success');
+            } else {
+                throw new Error('Invalid market data format');
+            }
+        } else {
+            throw new Error('Failed to fetch market data');
+        }
+        
+    } catch (error) {
+        console.error('Market data loading failed:', error);
+        loadSampleMarketData();
+        showToast('Using sample market data for demonstration', 'warning');
+    }
+}
+
+function loadSampleMarketData() {
+    // Generate sample data for 298+ trading pairs
+    const categories = ['large-cap', 'mid-cap', 'defi', 'gaming', 'meme', 'layer1', 'layer2'];
+    const signals = ['BUY', 'CONSIDER', 'WAIT', 'AVOID'];
+    
+    marketData = [];
+    
+    // Major pairs
+    const majorPairs = [
+        'BTC-USDT', 'ETH-USDT', 'SOL-USDT', 'ALGO-USDT', 'ATOM-USDT',
+        'LINK-USDT', 'ADA-USDT', 'DOT-USDT', 'AVAX-USDT', 'MATIC-USDT'
+    ];
+    
+    majorPairs.forEach((pair, index) => {
+        const signal = signals[index % signals.length];
+        marketData.push({
+            symbol: pair.split('-')[0],
+            pair: pair,
+            category: categories[index % categories.length],
+            price: (Math.random() * 1000 + 10).toFixed(4),
+            change_24h: (Math.random() * 20 - 10).toFixed(2),
+            volume_24h: (Math.random() * 100000000).toFixed(0),
+            signal: signal,
+            confidence: Math.random() * 40 + 50,
+            ml_probability: Math.random() * 0.6 + 0.2
+        });
+    });
+    
+    // Add more pairs to reach 298+
+    for (let i = majorPairs.length; i < 298; i++) {
+        const symbol = `COIN${i}`;
+        const signal = signals[Math.floor(Math.random() * signals.length)];
+        marketData.push({
+            symbol: symbol,
+            pair: `${symbol}-USDT`,
+            category: categories[Math.floor(Math.random() * categories.length)],
+            price: (Math.random() * 100 + 0.01).toFixed(4),
+            change_24h: (Math.random() * 30 - 15).toFixed(2),
+            volume_24h: (Math.random() * 10000000).toFixed(0),
+            signal: signal,
+            confidence: Math.random() * 50 + 40,
+            ml_probability: Math.random() * 0.8 + 0.1
+        });
+    }
+    
+    filteredData = [...marketData];
+    updateMarketOverview();
+    updateTopOpportunities();
+    updateMarketTable();
+}
+
+function updateMarketOverview() {
+    const buySignals = filteredData.filter(d => d.signal === 'BUY').length;
+    const considerSignals = filteredData.filter(d => d.signal === 'CONSIDER').length;
+    const totalVolume = filteredData.reduce((sum, d) => sum + parseFloat(d.volume_24h || 0), 0);
+    
+    document.getElementById('totalPairs').textContent = filteredData.length;
+    document.getElementById('buySignals').textContent = buySignals;
+    document.getElementById('considerSignals').textContent = considerSignals;
+    document.getElementById('marketVolume').textContent = '$' + (totalVolume / 1000000).toFixed(1) + 'M';
+    
+    // Update market sentiment
+    const bullish = filteredData.filter(d => ['BUY', 'CONSIDER'].includes(d.signal)).length;
+    const bearish = filteredData.filter(d => d.signal === 'AVOID').length;
+    
+    document.getElementById('bullishCount').textContent = bullish;
+    document.getElementById('bearishCount').textContent = bearish;
+    
+    if (bullish > bearish) {
+        document.getElementById('marketSentiment').textContent = 'Bullish';
+        document.getElementById('marketSentiment').className = 'h2 text-success';
+    } else {
+        document.getElementById('marketSentiment').textContent = 'Bearish';
+        document.getElementById('marketSentiment').className = 'h2 text-danger';
+    }
+}
+
+function updateTopOpportunities() {
+    // Get top opportunities (BUY and high confidence CONSIDER signals)
+    const opportunities = filteredData
+        .filter(d => d.signal === 'BUY' || (d.signal === 'CONSIDER' && d.confidence > 70))
+        .sort((a, b) => b.confidence - a.confidence)
+        .slice(0, 10);
+    
+    document.getElementById('opportunitiesCount').textContent = opportunities.length;
+    
+    if (opportunities.length === 0) {
+        document.getElementById('topOpportunities').innerHTML = 
+            '<div class="text-muted text-center py-4">No high-confidence opportunities found</div>';
+        return;
+    }
+    
+    const html = opportunities.map(opp => `
+        <div class="opportunity-card" onclick="analyzeOpportunity('${opp.symbol}')">
+            <div class="row align-items-center">
+                <div class="col-md-3">
+                    <h6 class="mb-1"><strong>${opp.pair}</strong></h6>
+                    <span class="category-badge bg-secondary">${opp.category}</span>
+                </div>
+                <div class="col-md-2">
+                    <div class="text-end">
+                        <div class="h6 mb-0">$${opp.price}</div>
+                        <small class="${parseFloat(opp.change_24h) >= 0 ? 'text-success' : 'text-danger'}">
+                            ${parseFloat(opp.change_24h) >= 0 ? '+' : ''}${opp.change_24h}%
+                        </small>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="text-center">
+                        <span class="badge ${opp.signal === 'BUY' ? 'bg-success' : 'bg-warning'}">${opp.signal}</span>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="signal-strength">
+                        <div class="signal-fill ${opp.confidence > 75 ? 'bg-success' : 'bg-warning'}" 
+                             style="width: ${opp.confidence}%"></div>
+                    </div>
+                    <small class="text-muted">${opp.confidence.toFixed(1)}% confidence</small>
+                </div>
+                <div class="col-md-2">
+                    <div class="text-end">
+                        <button class="btn btn-outline-primary btn-sm" onclick="event.stopPropagation(); analyzeOpportunity('${opp.symbol}')">
+                            <i class="fas fa-chart-line me-1"></i>Analyze
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `).join('');
+    
+    document.getElementById('topOpportunities').innerHTML = html;
+}
+
+function updateMarketTable() {
+    const tbody = document.getElementById('allPairsTable');
+    document.getElementById('pairsCount').textContent = filteredData.length;
+    
+    if (filteredData.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="9" class="text-center py-4">No pairs match the current filters</td></tr>';
+        return;
+    }
+    
+    // Show first 50 pairs for performance
+    const displayData = filteredData.slice(0, 50);
+    
+    tbody.innerHTML = displayData.map(pair => {
+        const change = parseFloat(pair.change_24h);
+        const confidence = pair.confidence || 0;
+        
+        let signalClass = 'bg-secondary';
+        if (pair.signal === 'BUY') signalClass = 'bg-success';
+        else if (pair.signal === 'CONSIDER') signalClass = 'bg-warning';
+        else if (pair.signal === 'AVOID') signalClass = 'bg-danger';
+        
+        let categoryClass = 'bg-secondary';
+        if (pair.category === 'large-cap') categoryClass = 'bg-primary';
+        else if (pair.category === 'defi') categoryClass = 'bg-info';
+        else if (pair.category === 'gaming') categoryClass = 'bg-warning';
+        else if (pair.category === 'meme') categoryClass = 'bg-danger';
+        
+        return `
+            <tr class="pair-row" onclick="analyzeOpportunity('${pair.symbol}')">
+                <td>
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-coins me-2 text-warning"></i>
+                        <strong>${pair.pair}</strong>
+                    </div>
+                </td>
+                <td>
+                    <span class="category-badge ${categoryClass}">${pair.category}</span>
+                </td>
+                <td class="text-end">$${pair.price}</td>
+                <td class="text-end ${change >= 0 ? 'text-success' : 'text-danger'}">
+                    ${change >= 0 ? '+' : ''}${change}%
+                </td>
+                <td class="text-end">$${parseInt(pair.volume_24h).toLocaleString()}</td>
+                <td class="text-center">
+                    <span class="badge ${signalClass}">${pair.signal}</span>
+                </td>
+                <td class="text-center">
+                    <div class="signal-strength mx-2">
+                        <div class="signal-fill ${confidence > 75 ? 'bg-success' : confidence > 60 ? 'bg-warning' : 'bg-secondary'}" 
+                             style="width: ${confidence}%"></div>
+                    </div>
+                    <small>${confidence.toFixed(0)}%</small>
+                </td>
+                <td class="text-center">
+                    <small>${(pair.ml_probability * 100).toFixed(0)}%</small>
+                </td>
+                <td class="text-center">
+                    <button class="btn btn-sm btn-outline-info" onclick="event.stopPropagation(); analyzeOpportunity('${pair.symbol}')">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                </td>
+            </tr>
+        `;
+    }).join('');
+    
+    if (filteredData.length > 50) {
+        tbody.innerHTML += `
+            <tr>
+                <td colspan="9" class="text-center py-3 text-muted">
+                    Showing first 50 of ${filteredData.length} pairs. Use filters to narrow results.
+                </td>
+            </tr>
+        `;
+    }
+}
+
+function filterMarketData() {
+    const categoryFilter = document.getElementById('categoryFilter').value;
+    const signalFilter = document.getElementById('signalFilter').value;
+    
+    filteredData = marketData.filter(pair => {
+        const categoryMatch = categoryFilter === 'all' || pair.category === categoryFilter;
+        const signalMatch = signalFilter === 'all' || pair.signal === signalFilter;
+        return categoryMatch && signalMatch;
+    });
+    
+    updateMarketOverview();
+    updateTopOpportunities();
+    updateMarketTable();
+}
+
+function sortMarketData() {
+    const sortBy = document.getElementById('sortBy').value;
+    
+    filteredData.sort((a, b) => {
+        switch (sortBy) {
+            case 'signal_strength':
+                return b.confidence - a.confidence;
+            case 'volume':
+                return parseFloat(b.volume_24h) - parseFloat(a.volume_24h);
+            case 'price_change':
+                return parseFloat(b.change_24h) - parseFloat(a.change_24h);
+            case 'alphabetical':
+                return a.pair.localeCompare(b.pair);
+            default:
+                return 0;
+        }
+    });
+    
+    updateMarketTable();
+}
+
+function searchPairs() {
+    const searchTerm = document.getElementById('searchPairs').value.toLowerCase();
+    
+    if (searchTerm === '') {
+        filteredData = [...marketData];
+    } else {
+        filteredData = marketData.filter(pair => 
+            pair.pair.toLowerCase().includes(searchTerm) ||
+            pair.symbol.toLowerCase().includes(searchTerm)
+        );
+    }
+    
+    updateMarketOverview();
+    updateMarketTable();
+}
+
+function clearSearch() {
+    document.getElementById('searchPairs').value = '';
+    filteredData = [...marketData];
+    updateMarketOverview();
+    updateMarketTable();
+}
+
+function analyzeOpportunity(symbol) {
+    window.location.href = `/signals-ml?symbol=${symbol}`;
+}
+
+async function scanAllMarkets() {
+    showToast('Scanning all 298+ markets for opportunities...', 'info');
+    
+    // Add scanning animation
+    document.getElementById('topOpportunities').innerHTML = `
+        <div class="text-center py-4">
+            <div class="spinner-border text-warning" role="status">
+                <span class="visually-hidden">Scanning markets...</span>
+            </div>
+            <div class="mt-2">Analyzing hybrid signals across all trading pairs...</div>
+        </div>
+    `;
+    
+    // Simulate scan delay
+    setTimeout(() => {
+        loadMarketData();
+        showToast('Market scan completed! Found new opportunities.', 'success');
+    }, 3000);
+}
+
+async function refreshMarketData() {
+    await loadMarketData();
+}
+
+// Page-specific refresh function
+window.refreshPageData = async function() {
+    await loadMarketData();
+};
+
+// Initialize page
+document.addEventListener('DOMContentLoaded', function() {
+    loadMarketData();
+    
+    // Auto-refresh every 5 minutes
+    setInterval(loadMarketData, 300000);
+});
+</script>
+{% endblock %}

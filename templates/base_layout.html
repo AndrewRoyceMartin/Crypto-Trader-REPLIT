@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="admin-token" content="{{ ADMIN_TOKEN|default('') }}">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>{% block title %}Hybrid Trading Intelligence Platform{% endblock %}</title>
+    
+    <!-- Core CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    
+    <!-- Chart.js for visualizations -->
+    <script defer src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <style>
+    /* Modern Multi-Page Navigation */
+    :root {
+        --primary-dark: #1a1a2e;
+        --secondary-dark: #16213e;
+        --accent-blue: #0f3460;
+        --success-green: #28a745;
+        --warning-orange: #fd7e14;
+        --danger-red: #dc3545;
+        --text-light: #e9ecef;
+        --border-color: #495057;
+    }
+
+    body {
+        background: linear-gradient(135deg, var(--primary-dark) 0%, var(--secondary-dark) 100%);
+        color: var(--text-light);
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        min-height: 100vh;
+    }
+
+    /* Navigation Sidebar */
+    .sidebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        height: 100vh;
+        width: 280px;
+        background: var(--primary-dark);
+        border-right: 2px solid var(--border-color);
+        z-index: 1000;
+        transition: transform 0.3s ease;
+    }
+
+    .sidebar-header {
+        padding: 20px;
+        border-bottom: 1px solid var(--border-color);
+        background: var(--accent-blue);
+    }
+
+    .sidebar-brand {
+        font-size: 1.2rem;
+        font-weight: 600;
+        color: white;
+        text-decoration: none;
+    }
+
+    .nav-section {
+        padding: 15px 0;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .nav-section-title {
+        padding: 0 20px 10px;
+        font-size: 0.85rem;
+        color: #adb5bd;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .nav-item {
+        margin: 2px 15px;
+    }
+
+    .nav-link {
+        display: flex;
+        align-items: center;
+        padding: 12px 15px;
+        color: var(--text-light);
+        text-decoration: none;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+        position: relative;
+    }
+
+    .nav-link:hover {
+        background: var(--accent-blue);
+        color: white;
+        transform: translateX(5px);
+    }
+
+    .nav-link.active {
+        background: var(--success-green);
+        color: white;
+        box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
+    }
+
+    .nav-link i {
+        width: 20px;
+        margin-right: 12px;
+        text-align: center;
+    }
+
+    .nav-badge {
+        margin-left: auto;
+        background: var(--warning-orange);
+        color: white;
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+
+    /* Main Content Area */
+    .main-content {
+        margin-left: 280px;
+        min-height: 100vh;
+        background: var(--secondary-dark);
+    }
+
+    .content-header {
+        background: var(--primary-dark);
+        padding: 20px 30px;
+        border-bottom: 2px solid var(--border-color);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .page-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        margin: 0;
+        color: white;
+    }
+
+    .page-subtitle {
+        color: #adb5bd;
+        font-size: 0.9rem;
+        margin: 0;
+    }
+
+    .header-controls {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+    }
+
+    .content-body {
+        padding: 30px;
+    }
+
+    /* Trading Controls Panel */
+    .trading-controls {
+        background: var(--accent-blue);
+        border-radius: 10px;
+        padding: 15px;
+        margin-bottom: 20px;
+        border: 1px solid var(--border-color);
+    }
+
+    .control-btn {
+        border: none;
+        padding: 8px 16px;
+        border-radius: 6px;
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.85rem;
+        transition: all 0.3s ease;
+        margin-right: 10px;
+    }
+
+    .control-btn.start { background: var(--success-green); color: white; }
+    .control-btn.stop { background: var(--danger-red); color: white; }
+    .control-btn.export { background: var(--warning-orange); color: white; }
+    .control-btn.refresh { background: var(--accent-blue); color: white; border: 1px solid var(--border-color); }
+
+    .control-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+
+    /* Status Indicators */
+    .status-indicator {
+        display: inline-flex;
+        align-items: center;
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+
+    .status-indicator.online {
+        background: rgba(40, 167, 69, 0.2);
+        color: var(--success-green);
+        border: 1px solid var(--success-green);
+    }
+
+    .status-indicator.trading {
+        background: rgba(253, 126, 20, 0.2);
+        color: var(--warning-orange);
+        border: 1px solid var(--warning-orange);
+    }
+
+    /* Cards and Data Displays */
+    .data-card {
+        background: var(--primary-dark);
+        border: 1px solid var(--border-color);
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 20px;
+        transition: all 0.3s ease;
+    }
+
+    .data-card:hover {
+        border-color: var(--accent-blue);
+        box-shadow: 0 4px 20px rgba(15, 52, 96, 0.3);
+    }
+
+    .card-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin-bottom: 15px;
+        color: white;
+        display: flex;
+        align-items: center;
+    }
+
+    .card-title i {
+        margin-right: 10px;
+        color: var(--success-green);
+    }
+
+    /* Mobile Responsiveness */
+    @media (max-width: 768px) {
+        .sidebar {
+            transform: translateX(-100%);
+        }
+
+        .sidebar.mobile-open {
+            transform: translateX(0);
+        }
+
+        .main-content {
+            margin-left: 0;
+        }
+
+        .content-header {
+            padding: 15px 20px;
+        }
+
+        .content-body {
+            padding: 20px;
+        }
+
+        .mobile-nav-toggle {
+            display: block !important;
+        }
+    }
+
+    .mobile-nav-toggle {
+        display: none;
+        background: var(--accent-blue);
+        border: none;
+        color: white;
+        padding: 10px;
+        border-radius: 6px;
+    }
+
+    /* Utility Classes */
+    .text-success { color: var(--success-green) !important; }
+    .text-warning { color: var(--warning-orange) !important; }
+    .text-danger { color: var(--danger-red) !important; }
+    .bg-dark-card { background: var(--primary-dark); }
+    </style>
+
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- Navigation Sidebar -->
+    <nav class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <a href="{{ url_for('dashboard') }}" class="sidebar-brand">
+                <i class="fas fa-chart-line me-2"></i>
+                Hybrid Trading AI
+            </a>
+        </div>
+
+        <!-- Core Navigation -->
+        <div class="nav-section">
+            <div class="nav-section-title">Core Features</div>
+            <div class="nav-item">
+                <a href="{{ url_for('dashboard') }}" class="nav-link" data-page="dashboard">
+                    <i class="fas fa-tachometer-alt"></i>
+                    Dashboard
+                    <span class="nav-badge">Live</span>
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="{{ url_for('signals_ml') }}" class="nav-link" data-page="signals">
+                    <i class="fas fa-brain"></i>
+                    Signals & ML
+                    <span class="nav-badge">AI</span>
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="{{ url_for('backtest_results') }}" class="nav-link" data-page="backtest">
+                    <i class="fas fa-chart-bar"></i>
+                    Backtest Results
+                    <span class="nav-badge">3.8%</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- Portfolio & Analysis -->
+        <div class="nav-section">
+            <div class="nav-section-title">Portfolio & Analysis</div>
+            <div class="nav-item">
+                <a href="{{ url_for('portfolio_advanced') }}" class="nav-link" data-page="portfolio">
+                    <i class="fas fa-wallet"></i>
+                    Portfolio Analytics
+                    <span class="nav-badge">26+</span>
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="{{ url_for('market_analysis') }}" class="nav-link" data-page="market">
+                    <i class="fas fa-globe"></i>
+                    Market Analysis
+                    <span class="nav-badge">298</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- Tools & Settings -->
+        <div class="nav-section">
+            <div class="nav-section-title">Tools</div>
+            <div class="nav-item">
+                <a href="/api/export-ato-tax" class="nav-link" target="_blank">
+                    <i class="fas fa-file-export"></i>
+                    Export ATO Tax
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="{{ url_for('test_sync_data') }}" class="nav-link">
+                    <i class="fas fa-sync"></i>
+                    System Test
+                </a>
+            </div>
+        </div>
+
+        <!-- Status Panel -->
+        <div class="nav-section">
+            <div class="nav-section-title">System Status</div>
+            <div style="padding: 0 20px;">
+                <div class="status-indicator online mb-2">
+                    <i class="fas fa-circle me-2"></i>
+                    OKX Connected
+                </div>
+                <div class="status-indicator trading">
+                    <i class="fas fa-robot me-2"></i>
+                    Monitoring
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Content Header -->
+        <div class="content-header">
+            <div>
+                <h1 class="page-title">{% block page_title %}Dashboard{% endblock %}</h1>
+                <p class="page-subtitle">{% block page_subtitle %}Real-time hybrid trading intelligence{% endblock %}</p>
+            </div>
+            <div class="header-controls">
+                <button class="mobile-nav-toggle" onclick="toggleMobileNav()">
+                    <i class="fas fa-bars"></i>
+                </button>
+                
+                <!-- Global Trading Controls -->
+                <div class="trading-controls">
+                    <button class="control-btn start" onclick="startTrading()">
+                        <i class="fas fa-play me-1"></i> Start
+                    </button>
+                    <button class="control-btn stop" onclick="stopTrading()">
+                        <i class="fas fa-stop me-1"></i> Stop
+                    </button>
+                    <button class="control-btn refresh" onclick="refreshData()">
+                        <i class="fas fa-sync me-1"></i> Refresh
+                    </button>
+                    <button class="control-btn export" onclick="exportPortfolio()">
+                        <i class="fas fa-download me-1"></i> Export
+                    </button>
+                </div>
+
+                <!-- Status Indicators -->
+                <div class="status-indicator online" id="systemStatus">
+                    <i class="fas fa-circle me-2"></i>
+                    System Online
+                </div>
+            </div>
+        </div>
+
+        <!-- Page Content -->
+        <div class="content-body">
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+
+    <!-- Core JavaScript -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+    // Navigation Management
+    function setActiveNav() {
+        const currentPath = window.location.pathname;
+        const navLinks = document.querySelectorAll('.nav-link');
+        
+        navLinks.forEach(link => {
+            link.classList.remove('active');
+            if (link.getAttribute('href') === currentPath) {
+                link.classList.add('active');
+            }
+        });
+    }
+
+    function toggleMobileNav() {
+        const sidebar = document.getElementById('sidebar');
+        sidebar.classList.toggle('mobile-open');
+    }
+
+    // Trading Controls (preserved from original)
+    async function startTrading() {
+        try {
+            showToast('Starting trading bot...', 'info');
+            const response = await fetch('/api/bot/start', { method: 'POST' });
+            const result = await response.json();
+            
+            if (result.success) {
+                showToast('Trading bot started successfully!', 'success');
+                updateSystemStatus('trading');
+            } else {
+                showToast('Failed to start trading: ' + result.message, 'error');
+            }
+        } catch (error) {
+            showToast('Error starting trading: ' + error.message, 'error');
+        }
+    }
+
+    async function stopTrading() {
+        try {
+            showToast('Stopping trading bot...', 'info');
+            const response = await fetch('/api/stop_trading', { method: 'POST' });
+            const result = await response.json();
+            
+            if (result.success) {
+                showToast('Trading bot stopped successfully!', 'success');
+                updateSystemStatus('monitoring');
+            } else {
+                showToast('Failed to stop trading: ' + result.message, 'error');
+            }
+        } catch (error) {
+            showToast('Error stopping trading: ' + error.message, 'error');
+        }
+    }
+
+    async function refreshData() {
+        try {
+            showToast('Refreshing data...', 'info');
+            
+            // Trigger page refresh for now - can be enhanced per page
+            if (typeof window.refreshPageData === 'function') {
+                await window.refreshPageData();
+            } else {
+                window.location.reload();
+            }
+            
+            showToast('Data refreshed successfully!', 'success');
+        } catch (error) {
+            showToast('Error refreshing data: ' + error.message, 'error');
+        }
+    }
+
+    async function exportPortfolio() {
+        try {
+            showToast('Exporting portfolio data...', 'info');
+            const response = await fetch('/api/export-portfolio');
+            
+            if (response.ok) {
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'portfolio_export.csv';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+                
+                showToast('Portfolio exported successfully!', 'success');
+            } else {
+                throw new Error('Export failed');
+            }
+        } catch (error) {
+            showToast('Error exporting portfolio: ' + error.message, 'error');
+        }
+    }
+
+    function updateSystemStatus(status) {
+        const statusEl = document.getElementById('systemStatus');
+        statusEl.className = 'status-indicator ' + status;
+        
+        const statusText = {
+            'online': 'System Online',
+            'trading': 'Trading Active',
+            'monitoring': 'Monitoring'
+        };
+        
+        statusEl.innerHTML = `<i class="fas fa-circle me-2"></i>${statusText[status] || status}`;
+    }
+
+    // Toast Notification System
+    function showToast(message, type = 'info') {
+        // Create toast container if it doesn't exist
+        let container = document.querySelector('.toast-container');
+        if (!container) {
+            container = document.createElement('div');
+            container.className = 'toast-container position-fixed top-0 end-0 p-3';
+            document.body.appendChild(container);
+        }
+
+        // Create toast element
+        const toast = document.createElement('div');
+        toast.className = `toast align-items-center text-bg-${type === 'error' ? 'danger' : type === 'success' ? 'success' : 'primary'} border-0`;
+        toast.setAttribute('role', 'alert');
+        
+        toast.innerHTML = `
+            <div class="d-flex">
+                <div class="toast-body">${message}</div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        `;
+
+        container.appendChild(toast);
+        
+        // Initialize and show toast
+        const bsToast = new bootstrap.Toast(toast);
+        bsToast.show();
+        
+        // Auto-remove after hiding
+        toast.addEventListener('hidden.bs.toast', () => {
+            toast.remove();
+        });
+    }
+
+    // Initialize on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        setActiveNav();
+        
+        // Auto-refresh system status
+        setInterval(async () => {
+            try {
+                const response = await fetch('/api/status');
+                const status = await response.json();
+                
+                if (status.active) {
+                    updateSystemStatus('trading');
+                } else if (status.warmup) {
+                    updateSystemStatus('monitoring');
+                } else {
+                    updateSystemStatus('online');
+                }
+            } catch (error) {
+                console.error('Status check failed:', error);
+            }
+        }, 30000); // Check every 30 seconds
+    });
+    </script>
+
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

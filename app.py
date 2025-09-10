@@ -20,7 +20,7 @@ from collections import OrderedDict
 from functools import wraps
 
 from flask import (
-    Flask, jsonify, request, render_template, make_response, Response, send_from_directory
+    Flask, jsonify, request, render_template, make_response, Response, send_from_directory, redirect, url_for
 )
 from flask.typing import ResponseReturnValue
 
@@ -3547,6 +3547,129 @@ def get_hybrid_signal():
 
 # Additional helper functions and imports
 
+
+# ===== NEW MULTI-PAGE FRONTEND ROUTES =====
+
+@app.route("/")
+@app.route("/dashboard")
+def dashboard() -> str:
+    """Main dashboard page with portfolio overview and hybrid signal preview."""
+    return render_template('dashboard.html', ADMIN_TOKEN=ADMIN_TOKEN)
+
+@app.route("/signals-ml")
+def signals_ml() -> str:
+    """Signals & ML analysis page with hybrid scoring and confidence analysis."""
+    return render_template('signals_ml.html', ADMIN_TOKEN=ADMIN_TOKEN)
+
+@app.route("/backtest-results")
+def backtest_results() -> str:
+    """Backtest results page displaying P&L analysis and performance metrics."""
+    return render_template('backtest_results.html', ADMIN_TOKEN=ADMIN_TOKEN)
+
+@app.route("/portfolio-advanced")
+def portfolio_advanced() -> str:
+    """Advanced portfolio analytics with 26+ positions and performance tracking."""
+    return render_template('portfolio_advanced.html', ADMIN_TOKEN=ADMIN_TOKEN)
+
+@app.route("/market-analysis")
+def market_analysis() -> str:
+    """Market analysis page for 298+ OKX trading pairs with opportunity scanning."""
+    return render_template('market_analysis.html', ADMIN_TOKEN=ADMIN_TOKEN)
+
+# Legacy route compatibility
+@app.route("/unified")
+def unified_dashboard_legacy() -> str:
+    """Legacy route redirecting to new dashboard."""
+    return redirect(url_for('dashboard'))
+
+# ===== BACKTEST API ENDPOINTS =====
+
+@app.route('/api/run-backtest', methods=['POST'])
+@require_admin
+def api_run_backtest() -> ResponseReturnValue:
+    """Run the hybrid signal backtest system."""
+    try:
+        logger.info("Running hybrid signal backtest via API")
+        
+        import subprocess
+        import os
+        
+        # Run the backtest script
+        script_path = os.path.join(os.path.dirname(__file__), 'ml', 'backtest.py')
+        result = subprocess.run(['python3', script_path], 
+                              capture_output=True, text=True, timeout=60)
+        
+        if result.returncode == 0:
+            return jsonify({
+                "success": True,
+                "message": "Backtest completed successfully",
+                "output": result.stdout[-1000:] if result.stdout else "",  # Last 1000 chars
+                "timestamp": iso_utc()
+            })
+        else:
+            return jsonify({
+                "success": False,
+                "message": "Backtest failed",
+                "error": result.stderr[-1000:] if result.stderr else "",
+                "timestamp": iso_utc()
+            }), 500
+            
+    except subprocess.TimeoutExpired:
+        return jsonify({
+            "success": False,
+            "message": "Backtest timed out",
+            "timestamp": iso_utc()
+        }), 500
+    except Exception as e:
+        logger.error(f"Backtest API error: {e}")
+        return jsonify({
+            "success": False,
+            "message": str(e),
+            "timestamp": iso_utc()
+        }), 500
+
+# ===== PORTFOLIO ANALYTICS ENHANCEMENTS =====
+
+@app.route('/api/rebalance-portfolio', methods=['POST'])
+@require_admin
+def api_rebalance_portfolio() -> ResponseReturnValue:
+    """Analyze portfolio for rebalancing opportunities."""
+    try:
+        logger.info("Analyzing portfolio rebalancing opportunities")
+        
+        # Get current portfolio data
+        portfolio_service = get_portfolio_service()
+        portfolio_data = portfolio_service.get_portfolio_data()
+        
+        # Simple rebalancing analysis
+        holdings = portfolio_data.get('holdings', [])
+        total_value = sum(float(h.get('current_value', 0)) for h in holdings)
+        
+        recommendations = []
+        for holding in holdings[:5]:  # Top 5 holdings
+            allocation = float(holding.get('current_value', 0)) / total_value * 100
+            if allocation > 25:  # Over 25% allocation
+                recommendations.append({
+                    "symbol": holding.get('symbol'),
+                    "current_allocation": round(allocation, 2),
+                    "recommended_action": "REDUCE",
+                    "reason": "Over-allocated position"
+                })
+        
+        return jsonify({
+            "success": True,
+            "recommendations": recommendations,
+            "total_positions": len(holdings),
+            "analysis_timestamp": iso_utc()
+        })
+        
+    except Exception as e:
+        logger.error(f"Portfolio rebalance analysis error: {e}")
+        return jsonify({
+            "success": False,
+            "error": str(e),
+            "timestamp": iso_utc()
+        }), 500
 
 # Main application configuration and startup
 if __name__ == '__main__':
