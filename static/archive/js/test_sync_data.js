@@ -1254,7 +1254,7 @@ class EnhancedTestRunner {
         try {
             // BUG FIX: Do NOT call enhanced=true for standard tests!
             // Call basic test system without enhanced parameter
-            const response = await fetch('/api/test-sync-data', {
+            const response = await fetch('/api/sync-test', {
                 method: 'GET',
                 cache: 'no-store'
             });
@@ -5123,7 +5123,7 @@ async function testBollingerBandsPrioritization() {
         
         // Test 4: Direct validation via sync test endpoint (if available)
         try {
-            const syncTestResponse = await fetch('/api/test-sync-data', { cache: 'no-store' });
+            const syncTestResponse = await fetch('/api/sync-test', { cache: 'no-store' });
             if (syncTestResponse.ok) {
                 const syncData = await syncTestResponse.json();
                 
