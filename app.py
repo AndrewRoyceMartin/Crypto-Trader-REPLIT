@@ -3825,14 +3825,26 @@ def api_trades() -> ResponseReturnValue:
                 # Sort by timestamp descending (newest first)
                 df = df.sort_values('timestamp', ascending=False)
 
-                # Convert to records and format (simplified)
+                # Convert to records and format (normalized)
                 for _, row in df.head(500).iterrows():  # Limit to last 500 signals
-                    # Always use string timestamps to avoid comparison issues
-                    ts_str = str(row.get('timestamp', datetime.now(UTC).isoformat()))
+                    # Normalize all timestamps to UTC-aware datetime, then to ISO Z
+                    ts_value = row.get('timestamp')
+                    if pd.isna(ts_value):
+                        normalized_dt = datetime.now(UTC)
+                    elif isinstance(ts_value, pd.Timestamp):
+                        normalized_dt = ts_value.tz_convert(UTC) if ts_value.tz else ts_value.tz_localize(UTC)
+                    elif isinstance(ts_value, datetime):
+                        normalized_dt = ts_value.astimezone(UTC) if ts_value.tzinfo else ts_value.replace(tzinfo=UTC)
+                    else:
+                        try:
+                            normalized_dt = pd.to_datetime(ts_value, utc=True)
+                        except:
+                            normalized_dt = datetime.now(UTC)
 
                     signals_data.append({
                         'id': len(signals_data) + 1,
-                        'timestamp': ts_str.replace('+00:00', 'Z'),
+                        'timestamp': normalized_dt.isoformat().replace('+00:00', 'Z'),
+                        'datetime_obj': normalized_dt,  # Keep for sorting
                         'date': str(row.get('date', datetime.now(UTC).strftime('%Y-%m-%d'))),
                         'time': str(row.get('timestamp', datetime.now(UTC))).split('T')[1][:8] if 'T' in str(row.get('timestamp', '')) else '00:00:00',
                         'symbol': row.get('symbol', 'N/A'),
@@ -3884,6 +3896,7 @@ def api_trades() -> ResponseReturnValue:
                         db_trades.append({
                             'id': f"portfolio_{trade_counter}",
                             'timestamp': trade_time.isoformat().replace('+00:00', 'Z'),
+                            'datetime_obj': trade_time,  # Keep for sorting
                             'date': trade_time.strftime('%Y-%m-%d'),
                             'time': trade_time.strftime('%H:%M:%S'),
                             'symbol': symbol,
@@ -3911,11 +3924,13 @@ def api_trades() -> ResponseReturnValue:
             logger.warning(f"Could not load executed trades: {e}")
             logger.exception("Full error details:")
 
-        # Combine data and sort (simple string-based approach)
+        # Combine data and sort by actual datetime objects
         all_trades = signals_data + db_trades
 
-        # Simple sort by timestamp strings (no datetime comparison)
-        all_trades_sorted = sorted(all_trades, key=lambda x: str(x.get('timestamp', '')), reverse=True)
+        # Sort by datetime objects for proper chronological ordering
+        all_trades_sorted = sorted(all_trades, 
+                                 key=lambda x: x.get('datetime_obj', datetime.min.replace(tzinfo=UTC)), 
+                                 reverse=True)
 
         # Calculate summary stats
         total_signals = len([t for t in all_trades_sorted if t['signal_type'] == 'SIGNAL'])
@@ -3927,13 +3942,20 @@ def api_trades() -> ResponseReturnValue:
         (datetime.now(UTC) - timedelta(hours=24)).isoformat()
         recent_trades = [t for t in all_trades_sorted[:50]]  # Just take recent 50 trades
 
-        # Ensure all timestamps are strings for JSON transport
+        # Clean up and ensure JSON serialization safety
         for trade in all_trades_sorted:
+            # Remove the sorting helper field
+            trade.pop('datetime_obj', None)
+            
+            # Ensure timestamp is always a proper ISO Z string
             ts = trade.get('timestamp')
-            if isinstance(ts, datetime):
-                trade['timestamp'] = ts.isoformat().replace('+00:00', 'Z')
-            elif ts and not isinstance(ts, str):
-                trade['timestamp'] = str(ts)
+            if isinstance(ts, (datetime, pd.Timestamp)):
+                if isinstance(ts, pd.Timestamp):
+                    ts = ts.to_pydatetime()
+                trade['timestamp'] = ts.astimezone(UTC).isoformat().replace('+00:00', 'Z')
+            elif not isinstance(ts, str) or 'Z' not in str(ts):
+                # Fallback for any malformed timestamps
+                trade['timestamp'] = datetime.now(UTC).isoformat().replace('+00:00', 'Z')
 
         # Calculate confidence average safely
         confidence_scores = [t.get('confidence', 0) for t in all_trades_sorted if t.get('confidence') is not None]
