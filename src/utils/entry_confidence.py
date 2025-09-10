@@ -772,12 +772,41 @@ class EntryConfidenceAnalyzer:
             except ImportError:
                 pass
             
-            # 🎯 OPTIMIZED: Use fast calculated data to prevent timeouts
-            self.logger.debug(f"⚡ Using optimized calculations for {symbol} (timeout prevention)")
-            return self._create_fallback_data(current_price)
+            # 🎯 SMART WORKAROUND: Real data for top 3 cryptos only + aggressive caching
+            priority_cryptos = {'BTC', 'ETH', 'SOL'}  # Only top 3 to prevent timeouts
             
-            # TODO: Real OKX data can be re-enabled after further timeout optimizations
-            # Current priority: Ensure system stability and fast loading
+            if symbol not in priority_cryptos:
+                self.logger.debug(f"⚡ Using optimized data for {symbol} (non-priority)")
+                return self._create_fallback_data(current_price)
+            
+            # 🚀 AGGRESSIVE CACHING: 10-minute cache for real data to prevent repeated API calls
+            cache_key = f"confidence_real_{symbol}_{current_price:.6f}"
+            try:
+                # Check if we have cached real confidence data (10-min TTL)
+                from src.utils.database import DatabaseManager
+                db = DatabaseManager()
+                cached_data = db.get_cached_data(cache_key, ttl_seconds=600)  # 10 minutes
+                if cached_data:
+                    self.logger.debug(f"📋 Using cached real confidence for {symbol}")
+                    return cached_data
+            except Exception:
+                pass
+            
+            # ⚡ TIMEOUT PROTECTION: Very short timeout for real data
+            try:
+                import signal
+                
+                def timeout_handler(signum, frame):
+                    raise TimeoutError("Real confidence data timeout")
+                
+                # Set 3-second timeout for real data fetching
+                signal.signal(signal.SIGALRM, timeout_handler)
+                signal.alarm(3)
+                
+                self.logger.debug(f"🔄 Fetching real confidence for {symbol} (3s timeout)")
+                
+                # Minimal rate limiting for priority cryptos
+                time.sleep(0.1)  # 100ms delay
             
             # Use environment credentials directly (same as other OKX clients)
             try:
