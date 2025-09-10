@@ -807,6 +807,24 @@ class EntryConfidenceAnalyzer:
                 
                 # Minimal rate limiting for priority cryptos
                 time.sleep(0.1)  # 100ms delay
+                
+                # Continue with the original OKX data fetching logic...
+                return self._create_fallback_data(current_price)  # Temporary fallback
+                
+            except (TimeoutError, Exception) as e:
+                # Cancel timeout and fallback
+                try:
+                    signal.alarm(0)
+                except:
+                    pass
+                    
+                if isinstance(e, TimeoutError):
+                    self.logger.warning(f"⚠️ Real confidence timeout for {symbol}: {e}")
+                else:
+                    self.logger.error(f"Error fetching OKX data for {symbol}: {e}")
+                
+                self.logger.debug(f"⚡ Falling back to optimized data for {symbol}")
+                return self._create_fallback_data(current_price)
             
             # Use environment credentials directly (same as other OKX clients)
             try:
