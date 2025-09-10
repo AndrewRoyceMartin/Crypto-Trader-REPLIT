@@ -64,10 +64,9 @@ def compute_actions(index, prices, bb_up, bb_dn, prob, regime,
 
         upper_touch = p >= bb_up[i]
         crash_exit = p < (rolling_high[i] - crash_k * sigma_price[i])
-        if pos == 1:
-            if (upper_touch and pr < 0.55) or pr < 0.45 or crash_exit:
-                pos = 0
-                actions.append({"timestamp": str(index[i]), "action": "SELL", "size_hint": 1.0})
-                anchor = None
+        if pos == 1 and ((upper_touch and pr < 0.55) or pr < 0.45 or crash_exit):
+            pos = 0
+            actions.append({"timestamp": str(index[i]), "action": "SELL", "size_hint": 1.0})
+            anchor = None
 
     return actions

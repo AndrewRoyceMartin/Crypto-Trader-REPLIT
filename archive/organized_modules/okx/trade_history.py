@@ -1,28 +1,29 @@
 # okx/trade_history.py
 
-import requests
-import pandas as pd
-import time
-import hmac
-import hashlib
 import base64
+import hashlib
+import hmac
 import os
+import time
 from datetime import datetime
-from typing import Dict, Optional
+
+import pandas as pd
+import requests
+
 
 class OKXTradeHistory:
     def __init__(self):
         self.base_url = "https://www.okx.com"
         self.creds = self._load_creds()
 
-    def _load_creds(self) -> Dict:
+    def _load_creds(self) -> dict:
         return {
             "api_key": os.getenv("OKX_API_KEY", ""),
             "secret_key": os.getenv("OKX_SECRET_KEY", ""),
             "passphrase": os.getenv("OKX_PASSPHRASE", "")
         }
 
-    def _headers(self, method: str, path: str, body: str = "") -> Dict:
+    def _headers(self, method: str, path: str, body: str = "") -> dict:
         ts = datetime.utcnow().isoformat(timespec='milliseconds') + "Z"
         msg = f"{ts}{method}{path}{body}"
         sign = base64.b64encode(hmac.new(
@@ -73,20 +74,20 @@ class OKXTradeHistory:
 
                 records = data["data"]
                 all_records.extend(records)
-                
+
                 print(f"   📋 Page {page + 1}: Fetched {len(records)} trades (total: {len(all_records)})")
 
                 last_trade_id = records[-1].get("tradeId")
                 if not last_trade_id:
-                    print(f"   ⚠️ No tradeId found - stopping pagination")
+                    print("   ⚠️ No tradeId found - stopping pagination")
                     break
 
                 before_id = last_trade_id
                 page += 1
-                
+
                 if page < max_pages:  # Don't delay after the last request
                     time.sleep(delay_sec)  # Rate limit protection
-                    
+
             except Exception as e:
                 print(f"   ❌ Error on page {page + 1}: {e}")
                 break
@@ -96,7 +97,7 @@ class OKXTradeHistory:
             return pd.DataFrame()
 
         print(f"✅ Total {instType} trades retrieved: {len(all_records)}")
-        
+
         df = pd.DataFrame(all_records)
 
         # Format columns with enhanced data
@@ -107,7 +108,7 @@ class OKXTradeHistory:
         df["side"] = df["side"].str.upper()
         df["fee"] = df["fee"].astype(float)
         df["feeCcy"] = df["feeCcy"]
-        
+
         # Sort by timestamp (newest first)
         df = df.sort_values("timestamp", ascending=False)
 
@@ -126,15 +127,15 @@ class OKXTradeHistory:
     def get_comprehensive_historical_trades(self, max_pages: int = 10) -> pd.DataFrame:
         """
         Get comprehensive historical trade data across all instrument types using pagination.
-        
+
         Args:
             max_pages: Maximum pages per instrument type (100 trades per page)
         """
         all_trades = []
         instrument_types = ["SPOT", "MARGIN", "SWAP", "FUTURES"]
-        
+
         print(f"🔍 Fetching comprehensive historical trades ({max_pages} pages max per type)...")
-        
+
         for inst_type in instrument_types:
             print(f"\n📊 Processing {inst_type} trades:")
             df = self.get_all_trade_fills(inst_type, max_pages=max_pages, delay_sec=0.3)
@@ -144,7 +145,7 @@ class OKXTradeHistory:
                 print(f"   ✅ {inst_type}: {len(df)} trades added")
             else:
                 print(f"   ⚪ {inst_type}: No trades found")
-        
+
         if all_trades:
             combined_df = pd.concat(all_trades, ignore_index=True)
             combined_df = combined_df.sort_values("timestamp", ascending=False)
@@ -154,16 +155,16 @@ class OKXTradeHistory:
             print("\n⚠️ No historical trades found across all instrument types")
             return pd.DataFrame()
 
-    def get_historical_trade_summary(self, max_pages: int = 10) -> Dict:
+    def get_historical_trade_summary(self, max_pages: int = 10) -> dict:
         """Get comprehensive summary of historical trades with pagination"""
         df = self.get_comprehensive_historical_trades(max_pages)
-        
+
         if df.empty:
             return {
                 "total_trades": 0,
                 "message": "No historical trades found"
             }
-        
+
         # Enhanced analytics with historical data
         summary = {
             "total_historical_trades": len(df),
@@ -193,26 +194,26 @@ class OKXTradeHistory:
                 "most_active_day": df["timestamp"].dt.date.value_counts().head(1).to_dict()
             }
         }
-        
+
         return summary
 
-    def analyze_historical_performance(self, max_pages: int = 10) -> Dict:
+    def analyze_historical_performance(self, max_pages: int = 10) -> dict:
         """
         Comprehensive historical trading performance analysis.
         This provides audit-proof analysis of all historical trades.
         """
         df = self.get_comprehensive_historical_trades(max_pages)
-        
+
         if df.empty:
             return {"error": "No historical trades found for analysis"}
-        
+
         # Calculate trading patterns by pair
         pair_analysis = {}
         for pair in df["instId"].unique():
             pair_trades = df[df["instId"] == pair].copy()
             buys = pair_trades[pair_trades["side"] == "BUY"]
             sells = pair_trades[pair_trades["side"] == "SELL"]
-            
+
             pair_analysis[pair] = {
                 "total_trades": len(pair_trades),
                 "buy_count": len(buys),
@@ -221,7 +222,7 @@ class OKXTradeHistory:
                 "avg_buy_price": buys["price"].mean() if len(buys) > 0 else 0,
                 "avg_sell_price": sells["price"].mean() if len(sells) > 0 else 0
             }
-        
+
         analysis = {
             "analysis_period": {
                 "from": df["timestamp"].min().isoformat(),
@@ -254,12 +255,12 @@ class OKXTradeHistory:
             },
             "pair_breakdown": pair_analysis
         }
-        
+
         return analysis
 
     # Legacy methods for backward compatibility
-    def get_trade_fills(self, instType: str = "SPOT", limit: int = 100, 
-                       begin: Optional[str] = None, end: Optional[str] = None) -> pd.DataFrame:
+    def get_trade_fills(self, instType: str = "SPOT", limit: int = 100,
+                       begin: str | None = None, end: str | None = None) -> pd.DataFrame:
         """Legacy method - use get_all_trade_fills() for complete history"""
         full_df = self.get_all_trade_fills(instType, max_pages=1)
         return full_df.head(limit) if not full_df.empty else full_df

@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
-import os, ccxt
+import os
+
+import ccxt
+
 
 def env_first(*keys):
     for k in keys:
@@ -37,26 +40,26 @@ def test_endpoint(name, hostname):
             'password': passwd,
             'hostname': hostname,  # This is the key parameter!
         })
-        
+
         # Force live trading mode
         ex.set_sandbox_mode(False)
         if ex.headers:
             ex.headers.pop('x-simulated-trading', None)
-        
+
         print(f"Hostname: {hostname}")
         print(f"Sandbox mode: {getattr(ex, 'sandboxMode', False)}")
         print(f"Headers: {ex.headers}")
-        
+
         # Try private API call
         bal = ex.fetch_balance()
         print(f"✅ {name.upper()} SUCCESS - Balance fetched")
-        
+
         # Show some balance details
         if 'USDT' in bal:
             print(f"USDT free: {bal['USDT']['free']}")
         if 'BTC' in bal:
             print(f"BTC free: {bal['BTC']['free']}")
-        
+
         return True, hostname
     except Exception as e:
         error_msg = str(e)
@@ -89,7 +92,7 @@ for endpoint, works in results.items():
 if working_endpoint:
     print(f"\n🎯 WORKING ENDPOINT FOUND: {working_endpoint}")
     print(f"Use this in your CCXT configuration: hostname='{working_endpoint}'")
-    
+
     # Generate the fix code
     print("\n=== IMPLEMENTATION FIX ===")
     print("Add this to your OKX adapter:")

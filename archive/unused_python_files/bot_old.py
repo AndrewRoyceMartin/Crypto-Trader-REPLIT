@@ -5,21 +5,21 @@
 # min-notional/amount checks, partial-fill handling for IOC, timeframe-aligned sleep,
 # VWAP tracking for multi-leg positions (optional scaling-in), IOC retries with price nudging.
 
+import csv
+import math
 import os
 import sys
-import time
-import math
 import threading
+import time
 import traceback
-import csv
 from dataclasses import dataclass, replace
-from itertools import product
-from typing import Dict, List, Tuple, Optional, Literal, cast
 from http.server import BaseHTTPRequestHandler, HTTPServer
+from itertools import product
+from typing import Literal, cast
 
+import ccxt
 import numpy as np
 import pandas as pd
-import ccxt
 
 SYD = "Australia/Sydney"
 
@@ -73,13 +73,13 @@ def make_exchange(name: str) -> ccxt.Exchange:
         api_key = _getenv("OKX_API_KEY")
         api_secret = _getenv("OKX_API_SECRET", "OKX_SECRET_KEY")            # both supported
         passphrase = _getenv("OKX_API_PASSPHRASE", "OKX_PASSPHRASE")        # both supported
-        
+
         # 🌍 Regional endpoint support (2024 OKX update)
         hostname = _getenv("OKX_HOSTNAME", "OKX_REGION")  # Allow override
         if not hostname:
             # Auto-detect based on environment or use default
             hostname = "www.okx.com"  # Default global endpoint
-        
+
         ex = ccxt.okx({
             'enableRateLimit': True,
             'hostname': hostname,  # Regional endpoint support
@@ -127,7 +127,7 @@ P = Params()
 # HTTP health server (tiny)
 # ==============================
 class HealthHandler(BaseHTTPRequestHandler):
-    def do_GET(self):  # noqa: N802
+    def do_GET(self):
         msg = b'{"status":"ok"}'
         self.send_response(200)
         self.send_header("Content-Type", "application/json")
@@ -148,7 +148,7 @@ def start_health_server():
 TRADES_CSV = os.getenv("TRADES_CSV", "trades.csv")
 HEARTBEAT_FILE = os.getenv("HEARTBEAT_FILE", "heartbeat.txt")
 
-def append_trade_csv(row: Dict[str, object]):
+def append_trade_csv(row: dict[str, object]):
     file_exists = os.path.exists(TRADES_CSV)
     with open(TRADES_CSV, "a", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=[
@@ -167,7 +167,7 @@ def heartbeat():
 # ==============================
 # Data / indicators
 # ==============================
-def _df_from_ohlcv(ohlcv: List[List[float]]) -> pd.DataFrame:
+def _df_from_ohlcv(ohlcv: list[list[float]]) -> pd.DataFrame:
     # Build then rename; avoids earlier "columns" kwarg stub confusion
     df = pd.DataFrame(ohlcv)
     if df.shape[1] >= 6:
@@ -188,19 +188,19 @@ def fetch_history(ex: ccxt.Exchange, symbol: str, timeframe: str, limit: int) ->
     o = ex.fetch_ohlcv(symbol, timeframe=timeframe, limit=limit)  # type: ignore[no-untyped-call]
     if not o:
         raise RuntimeError(f"No OHLCV for {symbol} {timeframe}")
-    df = _df_from_ohlcv(cast(List[List[float]], o))
+    df = _df_from_ohlcv(cast(list[list[float]], o))
     df["ts"] = pd.to_datetime(df["ts"], unit="ms", utc=True).dt.tz_convert(SYD)
     df = df.sort_values("ts").set_index("ts")
     return df
 
-def bollinger(close: pd.Series, window: int, k: float) -> Tuple[pd.Series, pd.Series, pd.Series]:
+def bollinger(close: pd.Series, window: int, k: float) -> tuple[pd.Series, pd.Series, pd.Series]:
     # ensure close is a true Series (not a DataFrame)
     close_s = pd.Series(close.to_numpy(), index=close.index, name=getattr(close, "name", "close"))
     ma = close_s.rolling(window).mean()
     sd = close_s.rolling(window).std(ddof=0)
     up = ma + k * sd
     lo = ma - k * sd
-    return cast(Tuple[pd.Series, pd.Series, pd.Series], (ma, up, lo))
+    return cast(tuple[pd.Series, pd.Series, pd.Series], (ma, up, lo))
 
 def infer_bars_per_year(idx: pd.Index) -> float:
     try:
@@ -218,7 +218,7 @@ def infer_bars_per_year(idx: pd.Index) -> float:
 # ==============================
 # Backtest
 # ==============================
-def backtest(df: pd.DataFrame, P: Params) -> Dict[str, float]:
+def backtest(df: pd.DataFrame, P: Params) -> dict[str, float]:
     df = df.copy()
     # Rebuild strongly-typed Series to satisfy pyright
     close_series = pd.Series(df["close"].to_numpy(), index=df.index, name="close")
@@ -231,7 +231,7 @@ def backtest(df: pd.DataFrame, P: Params) -> Dict[str, float]:
 
     eq_cash = P.start_equity
     pos, entry = 0.0, 0.0
-    curve: List[Dict[str, object]] = []
+    curve: list[dict[str, object]] = []
     trades = 0
 
     for ts, r in df.iterrows():
@@ -251,10 +251,8 @@ def backtest(df: pd.DataFrame, P: Params) -> Dict[str, float]:
             take = real_entry_price * (1 + P.tp)
             hit_stop = lw <= stop
             hit_take = (hi >= take) or (hi >= bb_up)
-            fill_px: Optional[float] = None
-            if hit_stop and hit_take:
-                fill_px = stop * (1 - P.slip)
-            elif hit_stop:
+            fill_px: float | None = None
+            if (hit_stop and hit_take) or hit_stop:
                 fill_px = stop * (1 - P.slip)
             elif hit_take:
                 tgt = max(take, bb_up)
@@ -304,8 +302,8 @@ def optimize_params(
     sl_grid=(0.0075, 0.01, 0.0125, 0.015),
     min_trades: int = 8,
     top_n: int = 15
-) -> List[Dict[str, float]]:
-    results: List[Dict[str, float]] = []
+) -> list[dict[str, float]]:
+    results: list[dict[str, float]] = []
     for k, tp, sl in product(k_grid, tp_grid, sl_grid):
         Pk = replace(P, k=k, tp=tp, sl=sl)
         m = backtest(df, Pk)
@@ -319,8 +317,8 @@ def try_timeframes(
     symbol: str,
     P: Params,
     tfs=("30m", "1h", "2h", "4h")
-) -> Dict[str, List[Dict[str, float]]]:
-    out: Dict[str, List[Dict[str, float]]] = {}
+) -> dict[str, list[dict[str, float]]]:
+    out: dict[str, list[dict[str, float]]] = {}
     for tf in tfs:
         limit = max(5 * P.band_window, 200)
         df = fetch_history(ex, symbol, tf, limit)
@@ -373,7 +371,7 @@ def get_market(ex: ccxt.Exchange, symbol: str) -> dict:
 def get_minimums(
     ex: ccxt.Exchange,
     symbol: str
-) -> Tuple[Optional[float], Optional[float], Optional[float], float]:
+) -> tuple[float | None, float | None, float | None, float]:
     m = get_market(ex, symbol)
     limits = m.get("limits", {}) or {}
     amt_min = (limits.get("amount", {}) or {}).get("min")
@@ -381,7 +379,7 @@ def get_minimums(
     price_min = (limits.get("price", {}) or {}).get("min")
     prec = (m.get("precision", {}) or {}).get("amount", 8)
     step = 10 ** (-(int(prec) if isinstance(prec, int) else 8))
-    return cast(Optional[float], amt_min), cast(Optional[float], cost_min), cast(Optional[float], price_min), float(step)
+    return cast(float | None, amt_min), cast(float | None, cost_min), cast(float | None, price_min), float(step)
 
 def _safe_float(x: object, default: float = 0.0) -> float:
     try:
@@ -393,7 +391,7 @@ def _safe_float(x: object, default: float = 0.0) -> float:
 
 def adjust_qty_for_minimums(
     ex: ccxt.Exchange, symbol: str, qty: float, price: float
-) -> Tuple[float, str]:
+) -> tuple[float, str]:
     amt_min, cost_min, _pm, step = get_minimums(ex, symbol)
     q = max(0.0, float(qty))
     note = ""
@@ -433,7 +431,7 @@ def place_limit_ioc_and_get_fill(
     filled = _safe_float(order.get("filled"))
     avg = order.get("average")
     if avg is None:
-        trades = cast(List[dict], order.get("trades") or [])
+        trades = cast(list[dict], order.get("trades") or [])
         if trades:
             fsum = 0.0
             csum = 0.0
@@ -446,7 +444,7 @@ def place_limit_ioc_and_get_fill(
             if fsum > 0:
                 avg = csum / fsum
                 filled = fsum
-    avg_price = float(avg) if isinstance(avg, (int, float)) else (price_p if filled > 0 else 0.0)
+    avg_price = float(avg) if isinstance(avg, int | float) else (price_p if filled > 0 else 0.0)
     remaining = _safe_float(order.get("remaining"), max(0.0, qty_p - filled))
     status = str(order.get("status") or "unknown")
     return {"id": oid, "filled": filled, "avg_price": avg_price, "remaining": remaining, "status": status, "raw": order}
@@ -454,12 +452,12 @@ def place_limit_ioc_and_get_fill(
 def ioc_with_retries(
     ex: ccxt.Exchange, symbol: str, side: OrderSide, qty: float, ref_px: float,
     retries: int = IOC_RETRIES, bps: float = PRICE_NUDGE_BPS
-) -> Tuple[float, float, List[dict]]:
+) -> tuple[float, float, list[dict]]:
     """
     Tries IOC up to (1 + retries) times, nudging price each attempt.
     Returns: (total_filled_qty, vwap_price, list_of_order_summaries)
     """
-    orders: List[dict] = []
+    orders: list[dict] = []
     remaining = max(0.0, qty)
     filled_sum = 0.0
     cost_sum = 0.0
@@ -590,7 +588,6 @@ def live_paper_loop_okx(symbol: str, P: Params):
                     filled, vwap, orders = ioc_with_retries(ex, symbol, 'sell', state.position_qty, px)
                     if filled > 0:
                         # Calculate P&L using real OKX entry price for accuracy
-                        original_realize_pnl = realize_pnl_on_sell  # Store original function
                         def calculate_real_pnl(state_obj, filled_qty, sell_price, params):
                             # Use real OKX entry price for P&L calculation
                             real_entry = real_okx_entry if symbol == "PEPE/USDT" else state_obj.entry_price
@@ -599,7 +596,7 @@ def live_paper_loop_okx(symbol: str, P: Params):
                             net_pnl = gross_pnl - fees
                             state_obj.equity += net_pnl
                             return net_pnl
-                        
+
                         pnl = calculate_real_pnl(state, filled, vwap, P)
                         append_trade_csv({
                             "ts": ts, "symbol": symbol, "side": "sell", "qty": f"{filled:.8f}",

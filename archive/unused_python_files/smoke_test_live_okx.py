@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
-import os, ccxt
+import os
+
+import ccxt
+
 
 def env_first(*keys):
     for k in keys:

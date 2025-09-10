@@ -11,19 +11,19 @@ from __future__ import annotations
 
 import logging
 import time
-from datetime import date, datetime, timedelta, timezone
-from typing import Any, Dict, List, Optional, TypedDict, Union
+from datetime import UTC, date, datetime, timedelta
+from typing import Any, TypedDict
 
 import pandas as pd
 
 from ..data.manager import DataManager
-from ..strategies.base import BaseStrategy
-from ..risk.manager import RiskManager
 from ..exchanges.kraken_adapter import KrakenAdapter
+from ..risk.manager import RiskManager
+from ..strategies.base import BaseStrategy
 
 
 class TradeRecord(TypedDict, total=False):
-    timestamp: Union[datetime, str]
+    timestamp: datetime | str
     symbol: str
     action: str
     size: float
@@ -59,25 +59,25 @@ class LiveTrader:
         self.risk_manager = RiskManager(config)
 
         # Trading state
-        self.orders: List[Dict[str, Any]] = []
-        self.trade_history: List[TradeRecord] = []
+        self.orders: list[dict[str, Any]] = []
+        self.trade_history: list[TradeRecord] = []
         self.running = False
 
         # Safety checks
         self.max_daily_trades = 50
         self.daily_trade_count = 0
-        self.last_trade_date: Optional[date] = None
+        self.last_trade_date: date | None = None
 
     # -------------------------------------------------------------------------
     # Helpers
     # -------------------------------------------------------------------------
-    def _to_aware_utc(self, ts: Any) -> Optional[datetime]:
+    def _to_aware_utc(self, ts: Any) -> datetime | None:
         """
         Convert a datetime or ISO string (with optional trailing 'Z') to a
         timezone-aware UTC datetime. Returns None if parsing fails.
         """
         if isinstance(ts, datetime):
-            return ts if ts.tzinfo else ts.replace(tzinfo=timezone.utc)
+            return ts if ts.tzinfo else ts.replace(tzinfo=UTC)
 
         if isinstance(ts, str):
             s = ts.strip()
@@ -87,7 +87,7 @@ class LiveTrader:
                 dt = datetime.fromisoformat(s)
             except ValueError:
                 return None
-            return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
+            return dt if dt.tzinfo else dt.replace(tzinfo=UTC)
 
         return None
 
@@ -170,7 +170,7 @@ class LiveTrader:
 
                     # Check risk limits
                     portfolio_value = self._get_portfolio_value()
-                    
+
                     # Get USDT balance for risk check
                     try:
                         from ..services.portfolio_service import get_portfolio_service
@@ -264,7 +264,7 @@ class LiveTrader:
             return False
 
         # Throttle: avoid too many recent trades on the same symbol in last hour
-        now_utc = datetime.now(timezone.utc)
+        now_utc = datetime.now(UTC)
         recent = 0
         for t in self.trade_history:
             if t.get('symbol') != symbol:
@@ -317,7 +317,7 @@ class LiveTrader:
 
             # Record order
             trade_record: TradeRecord = {
-                'timestamp': datetime.now(timezone.utc),
+                'timestamp': datetime.now(UTC),
                 'symbol': symbol,
                 'action': getattr(signal, "action", "buy"),
                 'size': position_size_units,
@@ -355,9 +355,9 @@ class LiveTrader:
                     side='sell' if getattr(signal, "action", "buy") == 'buy' else 'buy',
                     amount=position_size,
                     order_type='stop_loss',
-                    price=float(getattr(signal, "stop_loss")),
+                    price=float(signal.stop_loss),
                 )
-                self.logger.info("Stop loss set: %s @ %s", stop_order.get('id', ''), getattr(signal, "stop_loss"))
+                self.logger.info("Stop loss set: %s @ %s", stop_order.get('id', ''), signal.stop_loss)
 
             if getattr(signal, "take_profit", None):
                 tp_order = self.exchange.place_order(
@@ -365,9 +365,9 @@ class LiveTrader:
                     side='sell' if getattr(signal, "action", "buy") == 'buy' else 'buy',
                     amount=position_size,
                     order_type='take_profit',
-                    price=float(getattr(signal, "take_profit")),
+                    price=float(signal.take_profit),
                 )
-                self.logger.info("Take profit set: %s @ %s", tp_order.get('id', ''), getattr(signal, "take_profit"))
+                self.logger.info("Take profit set: %s @ %s", tp_order.get('id', ''), signal.take_profit)
 
         except Exception as e:
             self.logger.warning("Failed to set stop orders: %s", str(e))
@@ -393,7 +393,7 @@ class LiveTrader:
         """Get current portfolio value (USD) - FIXED: Use OKX total if available."""
         try:
             balance = self.exchange.get_balance()
-            
+
             # FIXED: Check if OKX provides total portfolio value directly
             if hasattr(balance, 'info') and balance.info:
                 # Look for OKX total portfolio value in response
@@ -404,7 +404,7 @@ class LiveTrader:
 
             # Fallback to manual calculation if OKX total not available
             total_value = 0.0
-            free_balances: Dict[str, float] = balance.get('free', {}) or {}
+            free_balances: dict[str, float] = balance.get('free', {}) or {}
             for currency, amount in free_balances.items():
                 amt = float(amount)
                 if currency.upper() == 'USD':
@@ -440,7 +440,7 @@ class LiveTrader:
     # -------------------------------------------------------------------------
     # Admin
     # -------------------------------------------------------------------------
-    def get_open_orders(self) -> List[Dict[str, Any]]:
+    def get_open_orders(self) -> list[dict[str, Any]]:
         """Get open orders."""
         try:
             return list(self.exchange.get_open_orders())
@@ -448,7 +448,7 @@ class LiveTrader:
             self.logger.error("Error getting open orders: %s", str(e))
             return []
 
-    def cancel_all_orders(self, symbol: Optional[str] = None) -> None:
+    def cancel_all_orders(self, symbol: str | None = None) -> None:
         """Cancel all open orders."""
         try:
             open_orders = self.exchange.get_open_orders(symbol)
@@ -467,7 +467,7 @@ class LiveTrader:
 
             # Close all positions (simplified - best-effort)
             balance = self.exchange.get_balance()
-            free_balances: Dict[str, float] = balance.get('free', {}) or {}
+            free_balances: dict[str, float] = balance.get('free', {}) or {}
 
             for currency, amount in free_balances.items():
                 if currency.upper() == 'USD':

@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
-import os, ccxt
+import os
+
+import ccxt
+
 
 def env_first(*keys):
     for k in keys:
@@ -31,23 +34,23 @@ def test_exchange_type(exchange_name, constructor):
             'secret': secret,
             'password': passwd,
         })
-        
+
         # Force live trading mode
         ex.set_sandbox_mode(False)
         if ex.headers:
             ex.headers.pop('x-simulated-trading', None)
-        
+
         print(f"Sandbox mode: {getattr(ex, 'sandboxMode', False)}")
         print(f"Headers: {ex.headers}")
         print(f"Base URL: {ex.urls.get('api', {}).get('rest', 'unknown')}")
-        
+
         # Try private call
         bal = ex.fetch_balance()
         print(f"✅ {exchange_name} SUCCESS - Balance fetched")
         print(f"USDT free: {bal.get('USDT', {}).get('free', 'N/A')}")
         return True
     except Exception as e:
-        print(f"❌ {exchange_name} FAILED: {str(e)}")
+        print(f"❌ {exchange_name} FAILED: {e!s}")
         return False
 
 # Test both okx and myokx (if available)

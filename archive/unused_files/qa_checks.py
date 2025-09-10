@@ -1,8 +1,13 @@
 # qa_checks.py
-import os, time, hmac, hashlib, base64
-from datetime import datetime, timezone
+import base64
+import hashlib
+import hmac
+import os
+import time
+from datetime import UTC, datetime
+
 import requests
-from jsonschema import validate, Draft7Validator
+from jsonschema import Draft7Validator
 
 try:
     from rich import print as rprint
@@ -136,7 +141,7 @@ def okx_sign(ts, method, path, body=""):
     return base64.b64encode(mac).decode()
 
 def okx_get(path):
-    ts = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+    ts = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
     sig = okx_sign(ts, "GET", path)
     headers = {
         "OK-ACCESS-KEY": OKX_API_KEY,
@@ -232,7 +237,7 @@ def test_cross_endpoint_consistency():
     # Compare crypto-portfolio vs current-holdings for price consistency
     a = requests.get(f"{BASE}/api/crypto-portfolio", timeout=TIMEOUT).json()
     ch = requests.get(f"{BASE}/api/current-holdings", timeout=TIMEOUT).json()
-    
+
     app_map = {h["symbol"].upper(): h for h in a.get("holdings", [])}
     for h in ch.get("holdings", []):
         sym = h["symbol"].upper()
@@ -246,7 +251,7 @@ def test_cross_endpoint_consistency():
         _require(bp.status_code == 200, "best-performer endpoint failed")
         bp_data = bp.json()
         _require(bp_data.get("success") is True, "best-performer not successful")
-        
+
         wp = requests.get(f"{BASE}/api/worst-performer", timeout=TIMEOUT)
         _require(wp.status_code == 200, "worst-performer endpoint failed")
         wp_data = wp.json()
@@ -286,12 +291,12 @@ def test_against_okx_native():
                 got = h["current_value"]
                 if expected_value > 0 and _pct_diff(expected_value, got) > 0.1:
                     mismatches.append((ccy, expected_value, got))
-        
+
         if len(mismatches) > 0:
             rprint(f"[yellow]OKX cross-check differences (within tolerance): {mismatches}[/yellow]")
         else:
             rprint("[green]OKX balances match app holdings[/green]")
-            
+
     except Exception as e:
         rprint(f"[yellow]OKX native cross-check failed (expected in demo mode): {e}[/yellow]")
 

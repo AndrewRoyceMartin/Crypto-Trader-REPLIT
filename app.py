@@ -4,35 +4,44 @@ Main Flask application entry point for deployment.
 Ultra-fast boot: bind port immediately, defer all heavy work to background.
 """
 
+import base64
+import hashlib
+import hmac
+import logging
 import os
 import sys
-import logging
 import threading
 import time
-import requests
-import hmac
-import hashlib
-import base64
 import warnings
-from datetime import datetime, timedelta, timezone
-from typing import Any, Optional, Iterator, TypedDict
 from collections import OrderedDict
+from collections.abc import Iterator
+from datetime import UTC, datetime, timedelta
 from functools import wraps
+from typing import Any, TypedDict
 
+import requests
 from flask import (
-    Flask, jsonify, request, render_template, make_response, Response, send_from_directory, redirect, url_for
-)
-from src.utils.safe_shims import (
-    get_bollinger_target_price as safe_get_boll_target,
-    get_state_store as safe_get_state_store,
-    try_clear_cache,
-    try_invalidate_cache,
-    try_fetch_my_trades,
+    Flask,
+    Response,
+    jsonify,
+    make_response,
+    redirect,
+    render_template,
+    request,
+    send_from_directory,
+    url_for,
 )
 from flask.typing import ResponseReturnValue
 
 # Top-level imports only (satisfies linter)
 from src.services.portfolio_service import get_portfolio_service as _get_ps
+from src.utils.safe_shims import (
+    get_bollinger_target_price as safe_get_boll_target,
+    get_state_store as safe_get_state_store,
+    try_clear_cache,
+    try_fetch_my_trades,
+    try_invalidate_cache,
+)
 
 # Only suppress specific pkg_resources deprecation warning
 # - all other warnings will show
@@ -62,7 +71,7 @@ try:
     # Default to EST/EDT, user can change
     LOCAL_TZ = pytz.timezone('America/New_York')
 except ImportError:
-    LOCAL_TZ = timezone.utc  # Fallback to UTC if pytz not available
+    LOCAL_TZ = UTC  # Fallback to UTC if pytz not available
 
 # Admin authentication
 ADMIN_TOKEN = os.getenv("ADMIN_TOKEN", "")
@@ -93,10 +102,10 @@ class WarmupState(TypedDict, total=False):
 
 class BotState(TypedDict, total=False):
     running: bool
-    mode: Optional[str]
-    symbol: Optional[str]
-    timeframe: Optional[str]
-    started_at: Optional[str]
+    mode: str | None
+    symbol: str | None
+    timeframe: str | None
+    started_at: str | None
 
 
 # === UTC DateTime Helpers ===
@@ -104,12 +113,12 @@ class BotState(TypedDict, total=False):
 
 def utcnow() -> datetime:
     """Get current UTC datetime with timezone awareness."""
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
-def iso_utc(dt: Optional[datetime] = None) -> str:
+def iso_utc(dt: datetime | None = None) -> str:
     """Canonical RFC3339 timestamp formatter with Z suffix."""
-    d = (dt or utcnow()).astimezone(timezone.utc)
+    d = (dt or utcnow()).astimezone(UTC)
     # RFC3339 with Z
     return d.replace(microsecond=0).isoformat().replace("+00:00", "Z")
 
@@ -303,7 +312,6 @@ def get_stable_target_price(symbol: str, current_price: float) -> float:
                 return bollinger_data['lower_band_price'] * 0.98  # Slight buffer below lower band
         except Exception as e:
             logger.error(f"Bollinger target price calculation failed: {e}")
-            pass
         # Fallback to volatility-adjusted target
         return current_price * (0.92 if current_price > 1000 else 0.88)  # Larger discount for smaller coins
     except Exception as e:
@@ -316,7 +324,6 @@ def get_stable_target_price(symbol: str, current_price: float) -> float:
                 return bollinger_data['lower_band_price'] * 0.98
         except Exception as e:
             logger.error(f"Safe Bollinger target calculation failed: {e}")
-            pass
         return current_price * (0.92 if current_price > 1000 else 0.88)
 
 
@@ -464,7 +471,7 @@ def cache_put_price(sym: str, value: Any) -> None:
         _cache_prune(_price_cache)
 
 
-def cache_get_price(sym: str) -> Optional[Any]:
+def cache_get_price(sym: str) -> Any | None:
     with _cache_lock:
         k = _cache_key("price", sym)
         item = _price_cache.get(k)
@@ -485,7 +492,7 @@ def cache_put_ohlcv(sym: str, tf: str, data: Any) -> None:
         _cache_prune(_ohlcv_cache)
 
 
-def cache_get_ohlcv(sym: str, tf: str) -> Optional[Any]:
+def cache_get_ohlcv(sym: str, tf: str) -> Any | None:
     with _cache_lock:
         k = _cache_key("ohlcv", sym, tf)
         item = _ohlcv_cache.get(k)
@@ -556,11 +563,11 @@ def _get_bot_running() -> bool:
     global multi_currency_trader
     with _state_lock:
         logger.info("🔍 STATE DEBUG: Starting comprehensive state analysis...")
-        
+
         # Get actual multi-currency trader instance
         multi_trader = globals().get('multi_currency_trader')
         logger.info(f"🔍 TRADER INSTANCE: {multi_trader is not None}")
-        
+
         actual_trader_running = False
         if multi_trader:
             has_running_attr = hasattr(multi_trader, 'running')
@@ -569,21 +576,20 @@ def _get_bot_running() -> bool:
             logger.info(f"🔍 TRADER STATE: has_running={has_running_attr}, value={running_value}, final={actual_trader_running}")
         else:
             logger.info("🔍 TRADER STATE: No trader instance found")
-        
+
         # Check legacy bot_state
         legacy_running = bot_state.get("running", False)
         logger.info(f"🔍 LEGACY STATE: bot_state['running'] = {legacy_running}")
         logger.info(f"🔍 LEGACY STATE: full bot_state = {dict(bot_state)}")
-        
+
         # Check trading_state
         trading_active = trading_state.get("active", False)
         trading_mode = trading_state.get("mode", "unknown")
         logger.info(f"🔍 TRADING STATE: active={trading_active}, mode={trading_mode}")
         logger.info(f"🔍 TRADING STATE: full trading_state = {dict(trading_state)}")
-        
+
         # Check StateStore system for persisted state
         store_running = False
-        store_error = None
         try:
             from src.utils.safe_shims import get_state_store as get_state_store
             state_store = safe_get_state_store()
@@ -592,9 +598,9 @@ def _get_bot_running() -> bool:
             logger.info(f"🔍 STORE STATE: status={store_bot_state.get('status')}, running={store_running}")
             logger.info(f"🔍 STORE STATE: full store_bot_state = {store_bot_state}")
         except Exception as e:
-            store_error = str(e)
+            str(e)
             logger.info(f"🔍 STORE STATE: ERROR - {e}")
-        
+
         # Check for any .state.json file
         import os
         state_file_exists = os.path.exists('.state.json')
@@ -602,19 +608,19 @@ def _get_bot_running() -> bool:
         if state_file_exists:
             try:
                 import json
-                with open('.state.json', 'r') as f:
+                with open('.state.json') as f:
                     file_state = json.load(f)
                 logger.info(f"🔍 FILE STATE: content = {file_state}")
             except Exception as e:
                 logger.info(f"🔍 FILE STATE: read error = {e}")
-        
+
         # SUMMARY
-        logger.info(f"🔍 STATE SUMMARY:")
+        logger.info("🔍 STATE SUMMARY:")
         logger.info(f"  Actual Trader Running: {actual_trader_running}")
         logger.info(f"  Legacy State Running: {legacy_running}")
         logger.info(f"  Store State Running: {store_running}")
         logger.info(f"  Trading State Active: {trading_active}")
-        
+
         # DECISION LOGIC WITH DEBUGGING
         if actual_trader_running:
             logger.info("🔍 DECISION: Actual trader is running - returning TRUE")
@@ -661,7 +667,7 @@ portfolio_initialized = False
 
 def cache_put(sym: str, tf: str, df: Any) -> None:
     """DISABLED - No caching, always fetch live OKX data."""
-    pass  # Disabled to ensure always live data
+    # Disabled to ensure always live data
 
 
 def get_portfolio_summary() -> dict[str, Any]:
@@ -694,7 +700,7 @@ def get_portfolio_summary() -> dict[str, Any]:
         }
 
 
-def cache_get(sym: str, tf: str) -> Optional[Any]:
+def cache_get(sym: str, tf: str) -> Any | None:
     """DISABLED - Always return None to force live OKX data fetch."""
     return None  # Always force live data fetch
 
@@ -719,7 +725,7 @@ def convert_numpy_types(obj):
         return {key: convert_numpy_types(value) for key, value in obj.items()}
     elif isinstance(obj, list):
         return [convert_numpy_types(item) for item in obj]
-    elif isinstance(obj, (np.integer, np.floating, np.ndarray)):
+    elif isinstance(obj, np.integer | np.floating | np.ndarray):
         if isinstance(obj, np.ndarray):
             return obj.tolist()
         else:
@@ -895,7 +901,7 @@ def background_warmup() -> None:
         )
 
 
-def get_df(symbol: str, timeframe: str) -> Optional[list[dict[str, float]]]:
+def get_df(symbol: str, timeframe: str) -> list[dict[str, float]] | None:
     df = cache_get_ohlcv(symbol, timeframe)
     if df is not None:
         return df
@@ -940,14 +946,14 @@ app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
 def custom_static(filename):
     """Custom static file handler with cache busting for JavaScript files."""
     response = make_response(send_from_directory(app.static_folder, filename))
-    
+
     # Add aggressive no-cache headers for JavaScript files
     if filename.endswith('.js'):
         response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0'
         response.headers['Pragma'] = 'no-cache'
         response.headers['Expires'] = '0'
         response.headers['ETag'] = ''
-    
+
     return response
 
 # Register the real OKX endpoint directly without circular import
@@ -967,7 +973,7 @@ def api_status() -> ResponseReturnValue:
     try:
         # Simple uptime calculation
         up = 60  # Default to 1 minute if we can't calculate
-        
+
         payload = {
             "status": "running",
             "warmup": True,
@@ -979,7 +985,7 @@ def api_status() -> ResponseReturnValue:
             "app_runtime_human": "1 minute"
         }
         return _no_cache_json(payload)
-        
+
     except Exception as e:
         logger.error(f"Status endpoint error: {e}")
         return _no_cache_json({"status": "error", "message": str(e)}, 500)
@@ -996,7 +1002,7 @@ def api_okx_status() -> ResponseReturnValue:
             }
         }
         return _no_cache_json(payload)
-        
+
     except Exception as e:
         logger.error(f"OKX status endpoint error: {e}")
         return _no_cache_json({"status": {"connected": False}, "error": str(e)}, 500)
@@ -1012,7 +1018,7 @@ def api_bot_status() -> ResponseReturnValue:
             "timestamp": iso_utc()
         }
         return _no_cache_json(payload)
-        
+
     except Exception as e:
         logger.error(f"Bot status endpoint error: {e}")
         return _no_cache_json({"running": False, "error": str(e)}, 500)
@@ -1025,22 +1031,22 @@ def coin_metadata(symbol: str) -> ResponseReturnValue:
         symbol = symbol.upper().strip()
         if not symbol:
             return jsonify({"error": "Symbol is required"}), 400
-            
+
         # Try to get metadata from OKX native client
         client = get_okx_native_client()
-        
+
         # Try to fetch ticker to validate symbol exists
         try:
             okx_symbol = f"{symbol}-USDT"
             ticker_data = client.ticker(okx_symbol)
-            
+
             if ticker_data:
                 # Generate consistent color from symbol hash
                 hash_val = 0
                 for char in symbol:
                     hash_val = ord(char) + ((hash_val << 5) - hash_val)
                 hue = abs(hash_val) % 360
-                
+
                 return jsonify({
                     "icon": f"https://www.okx.com/cdn/oksupport/asset/currency/icon/{symbol.lower()}.png",
                     "name": symbol,  # Could be enhanced with full names from OKX API
@@ -1050,13 +1056,13 @@ def coin_metadata(symbol: str) -> ResponseReturnValue:
                 })
         except Exception as okx_error:
             logger.debug(f"OKX metadata failed for {symbol}: {okx_error}")
-        
+
         # Fallback response
         hash_val = 0
         for char in symbol:
             hash_val = ord(char) + ((hash_val << 5) - hash_val)
         hue = abs(hash_val) % 360
-        
+
         return jsonify({
             "icon": "fa-solid fa-coins",
             "name": symbol,
@@ -1064,7 +1070,7 @@ def coin_metadata(symbol: str) -> ResponseReturnValue:
             "type": "font",
             "source": "fallback"
         })
-        
+
     except Exception as e:
         logger.error(f"Coin metadata error for {symbol}: {e}")
         return jsonify({"error": "Failed to fetch coin metadata"}), 500
@@ -1092,9 +1098,7 @@ def crypto_portfolio_okx() -> ResponseReturnValue:
             # Fallback if force_refresh not supported on this install
             try:
                 if (hasattr(portfolio_service, "invalidate_cache")
-                        and callable(portfolio_service.invalidate_cache)):
-                    portfolio_service
-                elif (hasattr(portfolio_service, "clear_cache")
+                        and callable(portfolio_service.invalidate_cache)) or (hasattr(portfolio_service, "clear_cache")
                         and callable(portfolio_service.clear_cache)):
                     portfolio_service
                 elif hasattr(portfolio_service, "exchange"):
@@ -1107,7 +1111,7 @@ def crypto_portfolio_okx() -> ResponseReturnValue:
             okx_portfolio_data: dict[str, Any] = portfolio_service.get_portfolio_data_OKX_NATIVE_ONLY(currency=selected_currency)
 
         holdings_list = okx_portfolio_data['holdings']
-        
+
         # Filter out holdings with less than $1 value
         original_count = len(holdings_list)
         holdings_list = [h for h in holdings_list if float(h.get('current_value', 0) or 0) >= 1.0]
@@ -1183,16 +1187,16 @@ def crypto_portfolio_okx() -> ResponseReturnValue:
 def calculate_trade_pnl(fill):
     """Calculate trade P&L including fees for display purposes."""
     try:
-        fill_size = float(fill.get('fillSz', 0))
-        fill_price = float(fill.get('fillPx', 0))
+        float(fill.get('fillSz', 0))
+        float(fill.get('fillPx', 0))
         fee = float(fill.get('fee', 0))
-        
+
         # Trade value (absolute)
-        
+
         # For display purposes, show fee impact on trade
         # Fees are typically negative, so this shows the cost
         net_pnl = fee  # Fee already represents the cost/impact
-        
+
         return round(net_pnl, 4)
     except Exception as e:
         logger.error(f"Unhandled exception: {e}")
@@ -1201,8 +1205,8 @@ def calculate_trade_pnl(fill):
 def calculate_trade_pnl_percentage(fill):
     """Calculate P&L percentage based on fee impact."""
     try:
-        fill_size = float(fill.get('fillSz', 0))
-        fill_price = float(fill.get('fillPx', 0))
+        float(fill.get('fillSz', 0))
+        float(fill.get('fillPx', 0))
         fee = float(fill.get('fee', 0))
         if trade_value > 0:
             # Fee as percentage of trade value
@@ -1232,50 +1236,49 @@ def api_comprehensive_trades() -> ResponseReturnValue:
         # Get query parameters
         days = request.args.get('days', '7')  # Default to 7 days
         limit = min(int(request.args.get('limit', '100')), 1000)  # Max 1000 trades
-        
+
         logger.info(f"Fetching comprehensive trade history: {days} days, limit {limit}")
-        
-        from src.utils.okx_native import OKXNative
-        from datetime import datetime, timezone, timedelta
-        
+
+        from datetime import datetime, timedelta
+
         # Skip native OKX client initialization (causes 401 errors)
         # okx_client = OKXNative.from_env()
-        
+
         # Calculate time range in milliseconds
-        end_time = datetime.now(timezone.utc)
+        end_time = datetime.now(UTC)
         start_time = end_time - timedelta(days=int(days))
-        
+
         begin_ms = int(start_time.timestamp() * 1000)
-        
-        # ENHANCED: Use dedicated comprehensive trade retrieval system  
-        logger.info(f"🚀 ENHANCED: Using dedicated comprehensive trade methods for complete historical coverage")
+
+        # ENHANCED: Use dedicated comprehensive trade retrieval system
+        logger.info("🚀 ENHANCED: Using dedicated comprehensive trade methods for complete historical coverage")
         fills_data = []
-        
+
         # Method 1: Try dedicated comprehensive trade retrieval system
         try:
             from src.exchanges.okx_trade_methods import OKXTradeRetrieval
             logger.info("Attempting comprehensive trade retrieval using dedicated methods...")
-            
+
             # Use portfolio service exchange for consistency
-            portfolio_service = get_portfolio_service() 
+            portfolio_service = get_portfolio_service()
             if hasattr(portfolio_service, 'exchange') and portfolio_service.exchange:
                 trade_retrieval = OKXTradeRetrieval(portfolio_service.exchange, logger)
-                
+
                 # Get comprehensive trades for all symbols
                 comprehensive_trades = trade_retrieval.get_trades_comprehensive(
                     symbol=None,  # All symbols
                     limit=min(limit * 5, 500),  # Higher limit for comprehensive retrieval
                     since=begin_ms
                 )
-                
+
                 logger.info(f"✅ Comprehensive trade retrieval returned {len(comprehensive_trades)} trades")
                 fills_data.extend(comprehensive_trades)
-                
+
                 # If still missing trades, try specific symbols with known positions
                 if len(fills_data) < 10:  # If very few trades captured
                     missing_symbols = ['NEAR/USDT', 'CHZ/USDT', 'SAND/USDT', 'ARB/USDT', 'ALGO/USDT', 'BICO/USDT', 'COMP/USDT', 'OP/USDT', 'ATOM/USDT', 'NMR/USDT', 'GALA/USDT', 'TRX/USDT']
                     logger.info(f"🔍 Low trade count, trying specific symbols: {missing_symbols}")
-                    
+
                     for symbol in missing_symbols:
                         try:
                             symbol_trades = trade_retrieval.get_trades_comprehensive(
@@ -1290,41 +1293,41 @@ def api_comprehensive_trades() -> ResponseReturnValue:
                             logger.warning(f"Symbol-specific retrieval failed for {symbol}: {symbol_e}")
             else:
                 logger.warning("Portfolio service exchange not available for comprehensive retrieval")
-                
+
         except Exception as comp_e:
             logger.warning(f"Comprehensive trade retrieval failed: {comp_e}")
-        
+
         # Method 2: PROVEN WORKING APPROACH - Use the exact same connection that fetches portfolio
         logger.info(f"Current trades captured: {len(fills_data)}, using PROVEN portfolio service connection...")
-        
+
         try:
             # Use the EXACT SAME working connection that successfully gets portfolio data
             from src.services.portfolio_service import get_portfolio_service
-            
-            # Get the working OKX exchange instance from portfolio service  
+
+            # Get the working OKX exchange instance from portfolio service
             portfolio_service = get_portfolio_service()
             okx_exchange = portfolio_service.exchange if hasattr(portfolio_service, 'exchange') else None
-            
+
             if okx_exchange:
                 logger.info("Using working portfolio service exchange for real trade data")
                 # Get current portfolio to know which symbols to query
                 current_positions = portfolio_service.get_portfolio_data()
-                
+
                 # Get trades for each symbol in the current portfolio
                 for position in current_positions.get('holdings', []):
                     try:
                         symbol = position.get('symbol', '')
                         if symbol and '/' not in symbol:
                             symbol = f"{symbol}/USDT"  # Convert to CCXT format
-                        
+
                         if symbol:
                             # Use CCXT fetch_my_trades for each symbol (this usually works)
-                            symbol_trades = try_fetch_my_trades(okx_exchange, 
+                            symbol_trades = try_fetch_my_trades(okx_exchange,
                                 symbol=symbol,
                                 since=begin_ms,
                                 limit=min(20, limit)  # Limit per symbol to avoid rate limits
                             )
-                            
+
                             # Convert to OKX fills format
                             for trade in symbol_trades:
                                 fills_data.append({
@@ -1346,42 +1349,42 @@ def api_comprehensive_trades() -> ResponseReturnValue:
                     except Exception as e:
                         logger.debug(f"Could not fetch trades for {symbol}: {e}")
                         continue
-                
+
                 logger.info(f"Retrieved {len(fills_data)} real trades from portfolio symbols")
-            
+
         except Exception as e:
             logger.warning(f"Portfolio service method failed: {e}")
-        
-        # Method 2: PER-SYMBOL COMPREHENSIVE RETRIEVAL - Target each portfolio position individually  
+
+        # Method 2: PER-SYMBOL COMPREHENSIVE RETRIEVAL - Target each portfolio position individually
         logger.info("🔄 Using Per-Symbol Comprehensive Retrieval for missing trades...")
         try:
             # Get portfolio positions to know which symbols to target
             from src.services.portfolio_service import get_portfolio_service
             portfolio_service = get_portfolio_service()
             current_positions = portfolio_service.get_portfolio_data()
-            
+
             missing_symbols = []
             position_symbols = []
-            
+
             # Extract symbols from current portfolio
             for position in current_positions.get('holdings', []):
                 symbol_clean = position.get('symbol', '')
                 if symbol_clean and symbol_clean not in ['USDT', 'USD']:
                     ccxt_symbol = f"{symbol_clean}/USDT"
                     position_symbols.append(ccxt_symbol)
-                    
+
                     # Check if we already have trades for this symbol
                     has_trades = any(trade.get('symbol', '').replace('-', '/') == ccxt_symbol for trade in fills_data)
                     if not has_trades:
                         missing_symbols.append(ccxt_symbol)
-            
+
             logger.info(f"📊 Portfolio analysis: {len(position_symbols)} positions, {len(missing_symbols)} missing trade symbols")
             logger.info(f"🎯 Missing symbols: {', '.join(missing_symbols[:10])}")
-            
+
             # Try to get historical trades for missing symbols using working exchange instance
             if missing_symbols:
                 logger.info(f"🎯 Attempting historical retrieval for {len(missing_symbols)} missing symbols")
-                
+
                 # Try to access portfolio service's exchange instance
                 exchange_instance = None
                 if hasattr(portfolio_service, 'okx_adapter') and portfolio_service.okx_adapter:
@@ -1392,35 +1395,35 @@ def api_comprehensive_trades() -> ResponseReturnValue:
                     logger.info("✅ Using portfolio service exchange directly")
                 else:
                     logger.warning("❌ No exchange instance found in portfolio service")
-                
+
                 if exchange_instance:
-                
+
                     logger.info(f"🔍 Starting historical trade retrieval for {len(missing_symbols)} missing symbols")
-                
+
                     for symbol in missing_symbols[:15]:  # Limit to prevent rate limits
                         try:
                             # Use maximum time range to capture all historical trades
                             historical_since = begin_ms - (730 * 24 * 60 * 60 * 1000)  # 2 years before start
-                            
+
                             logger.info(f"🔍 Fetching ALL historical trades for {symbol} since {historical_since}")
-                            symbol_trades = try_fetch_my_trades(exchange_instance, 
+                            symbol_trades = try_fetch_my_trades(exchange_instance,
                                 symbol=symbol,
                                 since=historical_since,
                                 limit=100
                             )
-                            
+
                             logger.info(f"📈 {symbol}: Retrieved {len(symbol_trades)} historical trades")
-                            
+
                             # Debug specific missing trades for key symbols
                             if symbol in ['NEAR/USDT', 'CHZ/USDT', 'SAND/USDT', 'ARB/USDT', 'ALGO/USDT', 'BICO/USDT'] and len(symbol_trades) == 0:
                                 logger.warning(f"🔍 {symbol} DEBUGGING: No trades found despite known positions")
                                 logger.warning(f"🔍 Search parameters: since={historical_since}, limit=100")
                                 logger.warning(f"🔍 Exchange instance type: {type(exchange_instance)}")
-                                
+
                                 # Try without 'since' parameter to get recent trades
                                 try:
                                     logger.info(f"🔍 {symbol}: Trying fetch without since parameter")
-                                    recent_trades = try_fetch_my_trades(exchange_instance, 
+                                    recent_trades = try_fetch_my_trades(exchange_instance,
                                         symbol=symbol,
                                         limit=20
                                     )
@@ -1430,29 +1433,29 @@ def api_comprehensive_trades() -> ResponseReturnValue:
                                         logger.info(f"✅ {symbol}: Added {len(recent_trades)} from recent search")
                                 except Exception as recent_e:
                                     logger.warning(f"❌ {symbol} recent search failed: {recent_e}")
-                                
+
                                 # Try alternative date range - maybe the specific date range is the issue
                                 try:
-                                    from datetime import datetime, timezone
+                                    from datetime import datetime
                                     # Try specific date range around the known NEAR trade (29/08/2025)
-                                    aug_29_start = int(datetime(2025, 8, 29, 0, 0, 0, tzinfo=timezone.utc).timestamp() * 1000)
-                                    aug_30_end = int(datetime(2025, 8, 30, 23, 59, 59, tzinfo=timezone.utc).timestamp() * 1000)
-                                    
+                                    aug_29_start = int(datetime(2025, 8, 29, 0, 0, 0, tzinfo=UTC).timestamp() * 1000)
+                                    aug_30_end = int(datetime(2025, 8, 30, 23, 59, 59, tzinfo=UTC).timestamp() * 1000)
+
                                     logger.info(f"🔍 NEAR/USDT: Trying specific date range {aug_29_start} to {aug_30_end}")
-                                    specific_trades = try_fetch_my_trades(exchange_instance, 
+                                    specific_trades = try_fetch_my_trades(exchange_instance,
                                         symbol='NEAR/USDT',
                                         since=aug_29_start,
                                         limit=50
                                     )
                                     logger.info(f"📊 NEAR/USDT specific date search: {len(specific_trades)} trades found")
-                                    
+
                                     # Add any found trades to the main results
                                     if specific_trades:
                                         symbol_trades.extend(specific_trades)
                                         logger.info(f"✅ NEAR/USDT: Added {len(specific_trades)} trades from specific date search")
                                 except Exception as specific_e:
                                     logger.warning(f"❌ NEAR/USDT specific date search failed: {specific_e}")
-                            
+
                             # If no trades found with fetch_my_trades, try fetch_orders
                             if len(symbol_trades) == 0:
                                 try:
@@ -1462,7 +1465,7 @@ def api_comprehensive_trades() -> ResponseReturnValue:
                                         since=historical_since,
                                         limit=50
                                     )
-                                    
+
                                     # Convert filled orders to trade format
                                     for order in orders:
                                         if order.get('status') == 'closed' and order.get('filled', 0) > 0:
@@ -1477,13 +1480,13 @@ def api_comprehensive_trades() -> ResponseReturnValue:
                                                 'takerOrMaker': 'taker',
                                                 'order': order.get('id', '')
                                             })
-                                    
+
                                     logger.info(f"📈 {symbol}: Found {len(orders)} additional orders, {len([o for o in orders if o.get('status') == 'closed'])} filled")
                                 except Exception as order_e:
                                     logger.debug(f"❌ fetch_orders failed for {symbol}: {order_e}")
-                            
+
                             logger.info(f"📊 {symbol}: Final count {len(symbol_trades)} trades")
-                            
+
                             # Convert to fills format
                             for trade in symbol_trades:
                                 trade_id = f"hist_{trade.get('id', '')}"
@@ -1504,59 +1507,58 @@ def api_comprehensive_trades() -> ResponseReturnValue:
                                         'billId': f"HIST_{trade.get('id', '')}",
                                         'tag': 'historical_per_symbol'
                                     })
-                            
+
                         except Exception as e:
                             logger.debug(f"⚠️ Could not fetch trades for {symbol}: {e}")
                             continue
-                    
+
                     logger.info(f"✅ Per-symbol retrieval: {len(fills_data)} total trades after historical search")
-            
+
         except Exception as e:
             logger.warning(f"❌ Per-symbol comprehensive retrieval failed: {e}")
-        
+
         # Method 4: WORKING OKX ADAPTER APPROACH - Use the proven working OKX connection
         logger.info("🚀 FIXED: Working OKX Adapter approach with proper variable scope")
         try:
             # Use the working OKX adapter that's successfully connecting
-            from src.exchanges.okx_adapter import OKXAdapter
-            
             # Create OKX adapter with same config as portfolio service
             import os
+
+            from src.exchanges.okx_adapter import OKXAdapter
             config = {
                 "sandbox": False,
                 "apiKey": os.getenv("OKX_API_KEY", ""),
                 "secret": os.getenv("OKX_SECRET_KEY", ""),
                 "password": os.getenv("OKX_PASSPHRASE", ""),
             }
-            
+
             adapter = OKXAdapter(config)
             if adapter.connect():
                 logger.info("✅ Connected to OKX using working adapter method")
-                
+
                 # Define all symbols with known positions FIRST to fix variable scope bug
                 all_known_symbols = [
                     'BTC/USDT', 'ETH/USDT', 'ADA/USDT', 'SOL/USDT', 'DOT/USDT', 'LINK/USDT',
-                    'NEAR/USDT', 'CHZ/USDT', 'SAND/USDT', 'ARB/USDT', 'ALGO/USDT', 'BICO/USDT', 
+                    'NEAR/USDT', 'CHZ/USDT', 'SAND/USDT', 'ARB/USDT', 'ALGO/USDT', 'BICO/USDT',
                     'COMP/USDT', 'OP/USDT', 'ATOM/USDT', 'NMR/USDT', 'GALA/USDT', 'TRX/USDT', 'ICP/USDT'
                 ]
-                
+
                 # Initialize working_adapter_trades list BEFORE using it
                 working_adapter_trades = []
-                all_trades = []  # Initialize all_trades for closed orders
-                
+
                 # Method 2a: Try CCXT fetch_my_trades for all known symbols
                 logger.info(f"🔄 Trying CCXT fetch_my_trades for {len(all_known_symbols)} symbols including NEAR/USDT...")
                 logger.info(f"📋 Searching symbols: {all_known_symbols}")
-                
+
                 for symbol in all_known_symbols:
                     try:
                         if adapter.exchange:
-                            recent_trades = adapter.try_fetch_my_trades(exchange, 
-                                symbol=symbol, 
+                            recent_trades = adapter.try_fetch_my_trades(exchange,
+                                symbol=symbol,
                                 since=begin_ms,
                                 limit=min(50, limit)  # Increase batch size to capture more trades
                             )
-                            
+
                             for trade in recent_trades:
                                 working_adapter_trades.append({
                                     'tradeId': trade.get('id', ''),
@@ -1574,11 +1576,11 @@ def api_comprehensive_trades() -> ResponseReturnValue:
                                     'billId': f"CCXT_{trade.get('id', '')}",
                                     'tag': 'okx_adapter_ccxt'
                                 })
-                                
+
                     except Exception as e:
                         logger.debug(f"fetch_my_trades failed for {symbol}: {e}")
                         continue
-                
+
                 # Method 2b: Try CCXT fetch_closed_orders
                 logger.info("🔄 Trying CCXT fetch_closed_orders method...")
                 for symbol in all_known_symbols:
@@ -1589,7 +1591,7 @@ def api_comprehensive_trades() -> ResponseReturnValue:
                                 since=begin_ms,
                                 limit=min(50, limit)  # Increase batch size for orders
                             )
-                            
+
                             for order in orders:
                                 if order.get('status') == 'closed' and order.get('filled', 0) > 0:
                                     working_adapter_trades.append({
@@ -1608,41 +1610,40 @@ def api_comprehensive_trades() -> ResponseReturnValue:
                                         'billId': f"ORDER_{order.get('id', '')}",
                                         'tag': 'okx_adapter_orders'
                                     })
-                                    
+
                     except Exception as e:
                         logger.debug(f"fetch_closed_orders failed for {symbol}: {e}")
                         continue
-                
+
                 fills_data.extend(working_adapter_trades)
                 logger.info(f"✅ OKX Adapter retrieved {len(working_adapter_trades)} trades using working methods")
-                
+
             else:
                 logger.warning("❌ OKX Adapter connection failed")
-                
+
         except Exception as e:
             logger.warning(f"OKX adapter method failed: {e}")
-        
+
         # Final result processing and logging
         if not fills_data:
             logger.info("No trade data available from OKX API")
-        
-        # Method 3: Try limited OKX CCXT methods that might work 
+
+        # Method 3: Try limited OKX CCXT methods that might work
         if len(fills_data) == 0:
             try:
                 logger.info("Trying limited CCXT methods for major pairs")
-                
+
                 # Try major trading pairs that are likely to have recent activity
-                major_pairs = ['BTC/USDT', 'ETH/USDT', 'ADA/USDT', 'SOL/USDT', 'DOT/USDT']
-                
+
                 for symbol in all_known_symbols:
                     try:
                         if okx_exchange:
-                            recent_trades = try_fetch_my_trades(okx_exchange, 
-                                symbol=symbol, 
+                            recent_trades = try_fetch_my_trades(okx_exchange,
+                                symbol=symbol,
                                 since=begin_ms,
                                 limit=5
                             )
-                            
+
                             for trade in recent_trades:
                                 fills_data.append({
                                     'tradeId': trade.get('id', ''),
@@ -1663,38 +1664,38 @@ def api_comprehensive_trades() -> ResponseReturnValue:
                     except Exception as e:
                         logger.debug(f"No trades found for {symbol}: {e}")
                         continue
-                
+
                 logger.info(f"Retrieved {len(fills_data)} trades from CCXT major pairs")
-                
+
             except Exception as e:
                 logger.warning(f"CCXT major pairs method failed: {e}")
-        
+
         # Method 3: SYNTHETIC SOLUTION - Create trade history from current portfolio positions
         if len(fills_data) == 0:
             logger.info("🎯 SOLUTION: Creating synthetic trade history from current portfolio positions")
-            
+
             try:
                 from src.services.portfolio_service import get_portfolio_service
                 portfolio_service = get_portfolio_service()
                 portfolio_data = portfolio_service.get_portfolio_data()
-                
+
                 logger.info(f"📊 Creating synthetic trades from {len(portfolio_data.get('holdings', []))} current positions")
-                
+
                 # Create synthetic trade entries for each current position
                 synthetic_count = 0
                 total_synthetic_value = 0
-                
+
                 for position in portfolio_data.get('holdings', []):
                     # Skip positions with no entry price (like PEPE with 0 entry)
                     entry_price = float(position.get('entry_price', 0))
                     current_value = float(position.get('current_value', 0))
-                    
+
                     if entry_price > 0 and current_value > 5:  # Only positions worth >$5
                         # Calculate original investment value
                         quantity = float(position.get('quantity', 0))
                         symbol = position.get('symbol', '')
                         original_investment = entry_price * quantity
-                        
+
                         # Create synthetic buy trade representing the position entry
                         synthetic_trade = {
                             'tradeId': f"pos_entry_{symbol}_{int(datetime.utcnow().timestamp())}",
@@ -1716,25 +1717,25 @@ def api_comprehensive_trades() -> ResponseReturnValue:
                             'fillTime': int((datetime.utcnow() - timedelta(days=20)).timestamp() * 1000),
                             'source': 'Portfolio-Based (Synthetic)'
                         }
-                        
+
                         fills_data.append(synthetic_trade)
                         synthetic_count += 1
                         total_synthetic_value += original_investment
-                        
+
                         logger.info(f"✅ Synthetic trade: {symbol} {quantity:.4f} @ ${entry_price:.4f} = ${original_investment:.2f}")
-                
+
                 logger.info(f"🎯 SYNTHETIC SUCCESS: Created {synthetic_count} trades worth ${total_synthetic_value:.2f} from portfolio positions")
-                
+
             except Exception as synth_e:
                 logger.error(f"❌ Synthetic trade creation failed: {synth_e}")
                 fills_data = []
-        
+
         # Process and format trade data
         trades = []
         for fill in fills_data:
             # Convert OKX timestamp to readable format
-            fill_time = datetime.fromtimestamp(int(fill.get('ts', 0)) / 1000, tz=timezone.utc)
-            
+            fill_time = datetime.fromtimestamp(int(fill.get('ts', 0)) / 1000, tz=UTC)
+
             trade = {
                 # Core Trade Information
                 'tradeId': fill.get('tradeId', ''),           # Trade ID
@@ -1746,48 +1747,48 @@ def api_comprehensive_trades() -> ResponseReturnValue:
                 'fillPx': fill.get('fillPx', '0'),            # Fill price
                 'fillTime': fill_time.strftime('%Y-%m-%d %H:%M:%S UTC'),  # Formatted time
                 'timestamp': fill.get('ts', ''),              # Original timestamp
-                
+
                 # Financial Details
                 'fee': fill.get('fee', '0'),                  # Trading fee
                 'feeCcy': fill.get('feeCcy', ''),             # Fee currency
                 'execType': fill.get('execType', ''),         # Execution type (T=taker, M=maker)
-                
+
                 # Position & Portfolio Impact
                 'posSide': fill.get('posSide', ''),           # Position side (long/short/net)
                 'billId': fill.get('billId', ''),             # Bill ID
                 'tag': fill.get('tag', ''),                   # Order tag
-                
+
                 # Calculated Fields
                 'notional_value': float(fill.get('fillSz', 0)) * float(fill.get('fillPx', 0)),  # Trade value
                 'symbol_clean': fill.get('instId', '').replace('-', '/'),  # Clean symbol format
                 'side_emoji': '🟢' if fill.get('side') == 'buy' else '🔴',
                 'trade_value_usd': f"${float(fill.get('fillSz', 0)) * float(fill.get('fillPx', 0)):.2f}",
-                
+
                 # Profit/Loss Calculation (including fees)
                 'net_pnl': calculate_trade_pnl(fill),  # Net P&L including fees
                 'pnl_percentage': calculate_trade_pnl_percentage(fill),  # P&L as percentage
                 'pnl_emoji': get_pnl_emoji(calculate_trade_pnl(fill)),  # Visual indicator
-                
-                # Status & Meta  
+
+                # Status & Meta
                 'source': fill.get('source', 'OKX_Native_API'),  # Use original source
                 'is_live': True
             }
             trades.append(trade)
-        
+
         # Sort by timestamp (newest first)
         trades.sort(key=lambda x: int(x.get('timestamp', 0)), reverse=True)
-        
+
         # Calculate summary statistics
         total_trades = len(trades)
         buy_trades = len([t for t in trades if t.get('side') == 'buy'])
         sell_trades = len([t for t in trades if t.get('side') == 'sell'])
         total_volume = sum(float(t.get('fillSz', 0)) * float(t.get('fillPx', 0)) for t in trades)
         total_fees = sum(float(t.get('fee', 0)) for t in trades if t.get('feeCcy') == 'USDT')
-        
+
         # Determine data source for UI labeling
         has_synthetic = any(t.get('source', '').find('Synthetic') >= 0 or t.get('tag', '').find('synthetic') >= 0 for t in trades)
         data_source = "Portfolio-Based (Synthetic)" if has_synthetic else "OKX Native API (Live)"
-        
+
         response = {
             'trades': trades,
             'summary': {
@@ -1798,14 +1799,14 @@ def api_comprehensive_trades() -> ResponseReturnValue:
                 'total_fees_usdt': round(abs(total_fees), 4),  # Fees are usually negative
                 'time_range': f"{start_time.strftime('%Y-%m-%d')} to {end_time.strftime('%Y-%m-%d')}",
                 'data_source': data_source,
-                'last_updated': datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%S.%fZ')
+                'last_updated': datetime.now(UTC).strftime('%Y-%m-%dT%H:%M:%S.%fZ')
             },
             'success': True
         }
-        
+
         logger.info(f"Retrieved {total_trades} trades, volume: ${total_volume:.2f}, fees: ${abs(total_fees):.4f}")
         return _no_cache_json(response)
-        
+
     except Exception as e:
         logger.error(f"Error fetching comprehensive trades: {e}")
         return jsonify({
@@ -1828,13 +1829,10 @@ def api_portfolio_overview() -> ResponseReturnValue:
             data = portfolio_service.get_portfolio_data(currency=selected_currency, force_refresh=True)
         except TypeError:
             try:
-                if hasattr(portfolio_service, "invalidate_cache"):
-                    portfolio_service
-                elif hasattr(portfolio_service, "clear_cache"):
+                if hasattr(portfolio_service, "invalidate_cache") or hasattr(portfolio_service, "clear_cache"):
                     portfolio_service
             except (AttributeError, RuntimeError) as e:
                 logger.debug(f"Cache clearing operation failed: {e}")
-                pass
             data = portfolio_service.get_portfolio_data(currency=selected_currency)
 
         holdings = data.get('holdings', []) or []
@@ -2042,8 +2040,7 @@ def render_full_dashboard() -> str:
     """Render the unified trading dashboard using templates."""
     try:
         import os
-        import stat
-        
+
         # Use file modification time + current time for aggressive cache busting
         js_file_path = os.path.join('static', 'app_legacy.js')
         try:
@@ -2052,13 +2049,13 @@ def render_full_dashboard() -> str:
         except Exception as e:
             logger.debug(f"Could not get file modification time: {e}")
             cache_version = int(time.time() * 1000)  # Fallback with milliseconds
-            
+
         response = make_response(render_template("unified_dashboard.html",
                                                cache_version=cache_version,
                                                version="v2.0",
                                                ADMIN_TOKEN=ADMIN_TOKEN,
                                                config={'ADMIN_TOKEN': ADMIN_TOKEN}))
-        
+
         # Add aggressive no-cache headers
         response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0'
         response.headers['Pragma'] = 'no-cache'
@@ -2186,7 +2183,7 @@ def bot_status() -> ResponseReturnValue:
             ts = str(started_at).replace('Z', '+00:00')
             dt = datetime.fromisoformat(ts)
             if dt.tzinfo is None:
-                dt = dt.replace(tzinfo=timezone.utc)
+                dt = dt.replace(tzinfo=UTC)
             runtime_sec = max(0, int((datetime.now(dt.tzinfo) - dt).total_seconds()))
         except (ValueError, TypeError, KeyError) as e:
             logger.debug(f"Error parsing runtime timestamp: {e}")
@@ -2229,12 +2226,12 @@ def bot_start() -> ResponseReturnValue:
     try:
         # 🚀 ULTIMATE BYPASS: Completely skip state checking to test automated execution
         logger.info("🚀 ULTIMATE BYPASS: Skipping ALL state checks to force automated trading test")
-        
+
         # Force clear any existing state but don't check it
         bot_state["running"] = False
         trading_state["active"] = False
         trading_state["mode"] = "stopped"
-        
+
         # Clear any existing trader without state validation
         if multi_currency_trader:
             try:
@@ -2242,9 +2239,8 @@ def bot_start() -> ResponseReturnValue:
                     multi_currency_trader.stop()
             except Exception as e:
                 logger.debug(f"Error stopping multi-currency trader: {e}")
-                pass
             multi_currency_trader = None
-        
+
         logger.info("🎯 BYPASS COMPLETE: Proceeding to force-start automated trading regardless of state")
 
         data = request.get_json() or {}
@@ -2257,11 +2253,11 @@ def bot_start() -> ResponseReturnValue:
 
         # 🎯 FORCE START: Initialize trader regardless of any state conflicts
         logger.info("🎯 FORCE START: Initializing MultiCurrencyTrader with complete state bypass")
-        
+
         # Import and initialize multi-currency trader
-        from src.trading.multi_currency_trader import MultiCurrencyTrader
         from src.config import Config
         from src.exchanges.okx_adapter import OKXAdapter
+        from src.trading.multi_currency_trader import MultiCurrencyTrader
 
         config = Config()
         # Convert Config object to dict for OKXAdapter
@@ -2375,7 +2371,7 @@ def bot_start() -> ResponseReturnValue:
     except Exception as e:
         logger.error(f"Failed to start multi-currency bot: {e}")
         _set_bot_state(running=False)  # Reset state on failure
-        return jsonify({"error": f"Failed to start multi-currency trading: {str(e)}"}), 500
+        return jsonify({"error": f"Failed to start multi-currency trading: {e!s}"}), 500
 
 
 @app.route("/api/sync-test")
@@ -2386,7 +2382,7 @@ def api_sync_test() -> ResponseReturnValue:
         portfolio_service = get_portfolio_service()
         portfolio_data = portfolio_service.get_portfolio_data()
         live_holdings = {h.get('symbol', ''): h for h in portfolio_data.get('holdings', [])}
-        
+
         sync_results = {
             "timestamp": iso_utc(),
             "total_pairs_tested": 0,
@@ -2402,7 +2398,7 @@ def api_sync_test() -> ResponseReturnValue:
                 "okx_only": 0
             }
         }
-        
+
         # Check if multi-currency trader is available
         global multi_currency_trader
         if not multi_currency_trader or not hasattr(multi_currency_trader, 'traders'):
@@ -2411,38 +2407,38 @@ def api_sync_test() -> ResponseReturnValue:
                 "error": "Multi-currency trader not initialized or not running"
             })
             return _no_cache_json(sync_results)
-        
+
         # Test sync for each trading pair
         for pair, trader in multi_currency_trader.traders.items():
             base_symbol = pair.split('/')[0]
             sync_results["total_pairs_tested"] += 1
-            
+
             # Get strategy position state
             strategy_state = {}
             if hasattr(trader, 'strategy') and hasattr(trader.strategy, 'position_state'):
                 strategy_state = trader.strategy.position_state.copy()
-            
+
             # Get live OKX position
             live_position = live_holdings.get(base_symbol, {})
-            
+
             # Compare positions
             strategy_qty = float(strategy_state.get('position_qty', 0))
             live_qty = float(live_position.get('quantity', 0))
-            
+
             # Determine sync status for this pair
             pair_sync_status = "unknown"
             discrepancy_details = None
-            
+
             if strategy_qty == 0 and live_qty == 0:
                 pair_sync_status = "no_position"
                 sync_results["sync_summary"]["no_position"] += 1
             elif abs(strategy_qty - live_qty) < 0.00001:  # Very small threshold for float comparison
-                pair_sync_status = "synchronized"  
+                pair_sync_status = "synchronized"
                 sync_results["sync_summary"]["synchronized"] += 1
             else:
                 pair_sync_status = "out_of_sync"
                 sync_results["sync_summary"]["out_of_sync"] += 1
-                
+
                 # Record discrepancy details
                 discrepancy_details = {
                     "pair": pair,
@@ -2453,7 +2449,7 @@ def api_sync_test() -> ResponseReturnValue:
                     "live_entry": float(live_position.get('avg_entry_price', 0))
                 }
                 sync_results["discrepancies"].append(discrepancy_details)
-            
+
             # Check for positions that exist only in strategy or only in OKX
             if strategy_qty > 0 and live_qty == 0:
                 pair_sync_status = "strategy_only"
@@ -2461,7 +2457,7 @@ def api_sync_test() -> ResponseReturnValue:
             elif strategy_qty == 0 and live_qty > 0:
                 pair_sync_status = "okx_only"
                 sync_results["sync_summary"]["okx_only"] += 1
-            
+
             # Record pair details
             sync_results["pairs"][pair] = {
                 "sync_status": pair_sync_status,
@@ -2481,27 +2477,27 @@ def api_sync_test() -> ResponseReturnValue:
                 "trader_running": getattr(trader, 'running', False),
                 "last_update": trader.last_update_time.isoformat() if hasattr(trader, 'last_update_time') and trader.last_update_time else None
             }
-            
+
             # Record last sync time if available
             if hasattr(trader, 'last_update_time') and trader.last_update_time:
                 sync_results["last_sync_times"][pair] = trader.last_update_time.isoformat()
-        
+
         # Determine overall sync status
-        total_pairs = sync_results["total_pairs_tested"]
-        synchronized = sync_results["sync_summary"]["synchronized"]  
+        sync_results["total_pairs_tested"]
+        synchronized = sync_results["sync_summary"]["synchronized"]
         out_of_sync = sync_results["sync_summary"]["out_of_sync"]
         strategy_only = sync_results["sync_summary"]["strategy_only"]
         okx_only = sync_results["sync_summary"]["okx_only"]
-        
+
         if out_of_sync > 0 or strategy_only > 0 or okx_only > 0:
             sync_results["sync_status"] = "issues_detected"
         elif synchronized > 0:
             sync_results["sync_status"] = "synchronized"
         else:
             sync_results["sync_status"] = "no_active_positions"
-            
+
         return _no_cache_json(sync_results)
-        
+
     except Exception as e:
         logger.error(f"Sync test error: {e}")
         return jsonify({
@@ -2573,19 +2569,19 @@ def api_trade_history() -> ResponseReturnValue:
         # Get parameters
         timeframe = request.args.get('timeframe', '7d')
         limit = min(int(request.args.get('limit', '50')), 200)  # Max 200 trades
-        
+
         logger.info(f"Trade history request: timeframe={timeframe}, limit={limit}")
 
         # Use the new OKX trade history module
         try:
             from okx.trade_history import OKXTradeHistory
-            
+
             trade_history = OKXTradeHistory()
-            
+
             # Get trade fills from OKX native API
             logger.info("Fetching trades from OKX trade fills API...")
             df = trade_history.get_all_trade_fills(instType="SPOT", max_pages=3)
-            
+
             all_trades = []
             if not df.empty:
                 # Convert DataFrame to list of trade dictionaries
@@ -2610,11 +2606,11 @@ def api_trade_history() -> ResponseReturnValue:
                         'source': 'okx_native_api'
                     }
                     all_trades.append(formatted_trade)
-                
+
                 logger.info(f"Successfully retrieved {len(all_trades)} trades from OKX native API")
             else:
                 logger.warning("No trades found in OKX trade fills API")
-                
+
         except Exception as okx_error:
             logger.error(f"OKX native trade history failed: {okx_error}")
             all_trades = []
@@ -2626,7 +2622,7 @@ def api_trade_history() -> ResponseReturnValue:
                 service = get_portfolio_service()
                 if service and hasattr(service, 'exchange') and service.exchange:
                     exchange = service.exchange.exchange
-                    
+
                     # Get recent trades via CCXT
                     symbols = ['BTC/USDT', 'ETH/USDT', 'SOL/USDT', 'ADA/USDT', 'DOT/USDT']
                     for symbol in symbols[:5]:  # Limit to prevent timeout
@@ -2638,7 +2634,7 @@ def api_trade_history() -> ResponseReturnValue:
                                     'trade_number': len(all_trades) + 1,
                                     'symbol': trade.get('symbol', ''),
                                     'type': 'Trade',
-                                    'transaction_type': 'Trade', 
+                                    'transaction_type': 'Trade',
                                     'action': trade.get('side', '').upper(),
                                     'side': trade.get('side', '').upper(),
                                     'quantity': float(trade.get('amount', 0)),
@@ -2656,7 +2652,7 @@ def api_trade_history() -> ResponseReturnValue:
                         except Exception as symbol_error:
                             logger.debug(f"Failed to fetch trades for {symbol}: {symbol_error}")
                             continue
-                            
+
             except Exception as ccxt_error:
                 logger.warning(f"CCXT fallback failed: {ccxt_error}")
 
@@ -2682,7 +2678,7 @@ def api_trade_history() -> ResponseReturnValue:
     except Exception as e:
         logger.error(f"Trade history error: {e}")
         return jsonify({
-            "error": f"Failed to fetch trade history: {str(e)}",
+            "error": f"Failed to fetch trade history: {e!s}",
             "trades": [],
             "count": 0,
             "timeframe": request.args.get('timeframe', '7d')
@@ -2733,17 +2729,17 @@ def filter_trades_by_timeframe(trades: list[dict[str, Any]], timeframe: str) -> 
 
                 # Parse the cleaned timestamp
                 trade_time = datetime.fromisoformat(timestamp_str)
-                
+
                 # Convert to UTC if timezone naive
                 if trade_time.tzinfo is None:
-                    trade_time = trade_time.replace(tzinfo=timezone.utc)
-                
+                    trade_time = trade_time.replace(tzinfo=UTC)
+
                 trade_timestamp = trade_time.timestamp() * 1000  # Convert to milliseconds
-                
+
             except (ValueError, TypeError) as e:
                 logger.warning(f"Could not parse timestamp '{original_timestamp}': {e}")
                 continue  # Skip trades with unparseable timestamps
-        elif isinstance(trade_timestamp, (int, float)):
+        elif isinstance(trade_timestamp, int | float):
             # Handle numeric timestamps (assume milliseconds)
             if trade_timestamp < 1e10:  # Likely seconds, convert to milliseconds
                 trade_timestamp = trade_timestamp * 1000
@@ -2806,7 +2802,7 @@ def api_best_performer() -> ResponseReturnValue:
 
                 # Calculate combined score (24h weight 70%, 7d weight 30%)
                 score = (price_24h * 0.7) + (price_7d * 0.3)
-                
+
                 if score > best_score:
                     best_score = score
                     best_performer = {
@@ -2920,12 +2916,12 @@ def api_equity_curve() -> ResponseReturnValue:
     try:
         from src.utils.okx_native import OKXNative
         client = OKXNative.from_env()
-        
+
         timeframe = request.args.get('timeframe', '30d')
         logger.info(f"Generating equity curve for timeframe: {timeframe}")
-        
+
         # Calculate date range
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         if timeframe == '7d':
             start_date = now - timedelta(days=7)
         elif timeframe == '30d':
@@ -2934,26 +2930,26 @@ def api_equity_curve() -> ResponseReturnValue:
             start_date = now - timedelta(days=90)
         else:
             start_date = now - timedelta(days=30)
-            
+
         # Get account balance history
         equity_data = []
         try:
             # Get historical balance data from OKX
             bills = client.account_bills(begin=int(start_date.timestamp() * 1000))
-            
+
             # Process bills to calculate daily equity
             daily_balances = {}
             for bill in bills:
                 timestamp = int(bill.get('ts', 0))
-                date_key = datetime.fromtimestamp(timestamp / 1000, timezone.utc).strftime('%Y-%m-%d')
-                
+                date_key = datetime.fromtimestamp(timestamp / 1000, UTC).strftime('%Y-%m-%d')
+
                 if date_key not in daily_balances:
                     daily_balances[date_key] = 0
-                    
+
                 # Add balance changes
                 bal_change = float(bill.get('balChg', 0))
                 daily_balances[date_key] += bal_change
-                
+
             # Convert to equity curve format
             for date_str, balance in sorted(daily_balances.items()):
                 equity_data.append({
@@ -2961,27 +2957,27 @@ def api_equity_curve() -> ResponseReturnValue:
                     'value': abs(balance),
                     'timestamp': date_str
                 })
-                
+
         except Exception as e:
             logger.warning(f"Failed to get equity curve from bills: {e}")
             # Fallback to current portfolio value
             portfolio_service = get_portfolio_service()
             portfolio_data = portfolio_service.get_portfolio_data()
             current_value = portfolio_data.get('total_current_value', 0)
-            
+
             equity_data = [{
                 'date': now.strftime('%Y-%m-%d'),
                 'value': current_value,
                 'timestamp': now.strftime('%Y-%m-%d')
             }]
-            
+
         return jsonify({
             "success": True,
             "equity_curve": equity_data,
             "timeframe": timeframe,
             "last_update": iso_utc()
         })
-        
+
     except Exception as e:
         logger.error(f"Equity curve error: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
@@ -2994,15 +2990,15 @@ def api_drawdown_analysis() -> ResponseReturnValue:
         # Get portfolio historical data
         portfolio_service = get_portfolio_service()
         portfolio_data = portfolio_service.get_portfolio_data()
-        
+
         # Calculate basic drawdown metrics
         total_value = portfolio_data.get('total_current_value', 0)
         total_pnl = portfolio_data.get('total_pnl', 0)
-        
+
         # Simple drawdown calculation
         peak_value = total_value - total_pnl  # Original investment
         current_drawdown = (total_pnl / peak_value * 100) if peak_value > 0 else 0
-        
+
         drawdown_data = {
             "current_drawdown": current_drawdown,
             "max_drawdown": current_drawdown,  # Simplified for now
@@ -3010,13 +3006,13 @@ def api_drawdown_analysis() -> ResponseReturnValue:
             "current_value": total_value,
             "recovery_factor": 1.0 if current_drawdown >= 0 else 0.0
         }
-        
+
         return jsonify({
             "success": True,
             "drawdown_analysis": drawdown_data,
             "last_update": iso_utc()
         })
-        
+
     except Exception as e:
         logger.error(f"Drawdown analysis error: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
@@ -3030,12 +3026,12 @@ def api_performance_analytics() -> ResponseReturnValue:
         # Get portfolio data
         portfolio_service = get_portfolio_service()
         portfolio_data = portfolio_service.get_portfolio_data()
-        
+
         # Calculate performance metrics
         total_value = portfolio_data.get('total_current_value', 0)
         total_pnl = portfolio_data.get('total_pnl', 0)
         total_invested = total_value - total_pnl
-        
+
         performance_metrics = {
             "total_return_percent": (total_pnl / total_invested * 100) if total_invested > 0 else 0,
             "total_invested": total_invested,
@@ -3045,13 +3041,13 @@ def api_performance_analytics() -> ResponseReturnValue:
             "win_rate": 50.0,  # Simplified for now
             "sharpe_ratio": 1.0  # Simplified for now
         }
-        
+
         return jsonify({
             "success": True,
             "performance_analytics": performance_metrics,
             "last_update": iso_utc()
         })
-        
+
     except Exception as e:
         logger.error(f"Performance analytics error: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
@@ -3106,12 +3102,12 @@ def api_portfolio_analytics_alt() -> ResponseReturnValue:
         # Get portfolio data
         portfolio_service = get_portfolio_service()
         portfolio_data = portfolio_service.get_portfolio_data()
-        
+
         # Calculate analytics
         total_value = portfolio_data.get('total_current_value', 0)
         total_pnl = portfolio_data.get('total_pnl', 0)
         total_invested = total_value - total_pnl
-        
+
         analytics = {
             "total_return_percent": (total_pnl / total_invested * 100) if total_invested > 0 else 0,
             "total_invested": total_invested,
@@ -3123,13 +3119,13 @@ def api_portfolio_analytics_alt() -> ResponseReturnValue:
             "max_drawdown": -10.0,
             "volatility": 15.0
         }
-        
+
         return jsonify({
             "success": True,
             "analytics": analytics,
             "last_update": iso_utc()
         })
-        
+
     except Exception as e:
         logger.error(f"Portfolio analytics alt error: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
@@ -3140,7 +3136,7 @@ def api_portfolio_history() -> ResponseReturnValue:
     """Get portfolio history."""
     try:
         timeframe = request.args.get('timeframe', '30d')
-        
+
         # Mock portfolio history data
         history = {
             "timeframe": timeframe,
@@ -3156,13 +3152,13 @@ def api_portfolio_history() -> ResponseReturnValue:
                 "percent_change": -5.06
             }
         }
-        
+
         return jsonify({
             "success": True,
             "history": history,
             "last_update": iso_utc()
         })
-        
+
     except Exception as e:
         logger.error(f"Portfolio history error: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
@@ -3176,10 +3172,10 @@ def api_asset_allocation() -> ResponseReturnValue:
         portfolio_service = get_portfolio_service()
         portfolio_data = portfolio_service.get_portfolio_data()
         holdings = portfolio_data.get('holdings', [])
-        
+
         # Calculate allocation
         total_value = sum(float(h.get('current_value', 0)) for h in holdings)
-        
+
         allocations = []
         for holding in holdings[:10]:  # Top 10 holdings
             value = float(holding.get('current_value', 0))
@@ -3189,7 +3185,7 @@ def api_asset_allocation() -> ResponseReturnValue:
                     "value": value,
                     "percentage": (value / total_value * 100) if total_value > 0 else 0
                 })
-        
+
         return jsonify({
             "success": True,
             "allocation": {
@@ -3199,7 +3195,7 @@ def api_asset_allocation() -> ResponseReturnValue:
             },
             "last_update": iso_utc()
         })
-        
+
     except Exception as e:
         logger.error(f"Asset allocation error: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
@@ -3213,36 +3209,36 @@ def api_available_positions() -> ResponseReturnValue:
         currency = request.args.get('currency', 'USD')
         batch_size = int(request.args.get('batch_size', 25))
         batch_number = int(request.args.get('batch_number', 0))
-        
+
         logger.warning(f"🔍 DEBUG: Available positions API called with currency: {currency}")
-        
+
         # Calculate batch range
         start_idx = batch_number * batch_size
         end_idx = start_idx + batch_size
-        
+
         logger.info(f"🔄 BATCH {batch_number + 1}: Processing {batch_size} cryptocurrencies (batch loading)")
-        
+
         # Get portfolio service and OKX data
         portfolio_service = get_portfolio_service()
         portfolio_data = portfolio_service.get_portfolio_data()
         holdings = portfolio_data.get('holdings', [])
-        
+
         # Get all OKX trading pairs
         exchange = portfolio_service.exchange.exchange if portfolio_service and portfolio_service.exchange else None
         if not exchange:
             return jsonify({"error": "Exchange not available"}), 500
-            
+
         # Get all markets and active symbols
         markets = exchange.load_markets()
-        active_symbols = [symbol for symbol, market in markets.items() 
+        active_symbols = [symbol for symbol, market in markets.items()
                          if market.get('active', False) and 'USDT' in symbol and market.get('type') == 'spot']
-        
+
         logger.info(f"🚀 Found {len(active_symbols)} active OKX trading pairs (processing in batches)")
         logger.info(f"📊 BATCH {batch_number + 1}: Processing symbols {start_idx+1}-{min(end_idx, len(active_symbols))} of {len(active_symbols)}")
-        
+
         # Get batch of symbols
         batch_symbols = active_symbols[start_idx:end_idx]
-        
+
         # Get ticker data for batch
         all_tickers = {}
         try:
@@ -3251,49 +3247,49 @@ def api_available_positions() -> ResponseReturnValue:
             logger.info(f"📊 Batch fetched {len(tickers)} prices for batch {batch_number + 1}")
         except Exception as e:
             logger.warning(f"Failed to fetch batch tickers: {e}")
-        
+
         positions = []
         added_count = 0
         skipped_count = 0
-        
+
         for symbol in batch_symbols:
             try:
                 base_currency = symbol.split('/')[0] if '/' in symbol else symbol.replace('-USDT', '')
-                
+
                 # Get current holding data
                 current_holding = next((h for h in holdings if h.get('symbol') == base_currency), None)
                 current_balance = float(current_holding.get('balance', 0)) if current_holding else 0
                 current_value = float(current_holding.get('current_value', 0)) if current_holding else 0
-                
+
                 # Flag positions under $100 as potential buy-back candidates
                 is_buyback_candidate = current_value < 100 and current_value > 0.01
-                
+
                 # Skip positions over $100 (focus on smaller positions that could be increased)
                 if current_value >= 100:
                     logger.debug(f"⏭️ SKIPPING: {base_currency} worth ${current_value:.2f} (over $100 threshold, not a buy-back candidate)")
                     skipped_count += 1
                     continue
-                
+
                 # Log buy-back candidates
                 if is_buyback_candidate:
                     logger.info(f"💰 BUY-BACK CANDIDATE: {base_currency} worth ${current_value:.2f} (under $100 - could be increased)")
                 elif current_value <= 0.01:
                     logger.debug(f"🔍 ZERO POSITION: {base_currency} worth ${current_value:.2f} (available for new entry)")
-                
+
                 # Get price data
                 ticker_data = all_tickers.get(symbol, {})
                 current_price = float(ticker_data.get('last', 0))
-                
+
                 if current_price <= 0:
                     skipped_count += 1
                     continue
-                
+
                 # Calculate target buy price (3% below current)
                 target_buy_price = current_price * 0.97
-                
+
                 # Use ML-Enhanced Confidence Analyzer
                 from src.utils.ml_enhanced_confidence import MLEnhancedConfidenceAnalyzer
-                
+
                 analyzer = MLEnhancedConfidenceAnalyzer()
                 confidence_result = analyzer.analyze_entry_confidence(
                     symbol=base_currency,
@@ -3301,11 +3297,11 @@ def api_available_positions() -> ResponseReturnValue:
                     volume_24h=float(ticker_data.get('baseVolume', 0)),
                     price_change_24h=float(ticker_data.get('percentage', 0))
                 )
-                
+
                 # Determine buy signal based on confidence and other factors
                 confidence_score = confidence_result.get('score', 50)
                 timing_signal = confidence_result.get('timing_signal', 'WAIT')
-                
+
                 # Enhanced buy signal logic with buy-back candidate detection
                 buy_signal = "MONITORING"
                 if is_buyback_candidate and confidence_score >= 60:
@@ -3320,11 +3316,11 @@ def api_available_positions() -> ResponseReturnValue:
                     buy_signal = "FAIR OPPORTUNITY"
                 elif timing_signal == 'AVOID':
                     buy_signal = "AVOID"
-                
+
                 # Calculate additional metrics
                 price_diff = current_price - target_buy_price
                 price_diff_percent = (price_diff / current_price * 100) if current_price > 0 else 0
-                
+
                 # Bollinger Bands analysis placeholder
                 bollinger_analysis = {
                     "signal": "NO DATA",
@@ -3332,15 +3328,15 @@ def api_available_positions() -> ResponseReturnValue:
                     "lower_band_price": 0,
                     "strategy": "Standard"
                 }
-                
+
                 # Try to get BB analysis if available
                 try:
                     logger.info(f"Calculating BB opportunity analysis for {base_currency} at ${current_price}")
                     # This is a placeholder - could integrate actual BB calculation
                 except Exception as bb_error:
                     logger.debug(f"BB analysis failed for {base_currency}: {bb_error}")
-                
-                # Determine position classification  
+
+                # Determine position classification
                 position_type = "zero_balance"
                 if current_balance < 0.01:
                     position_type = "zero_balance"
@@ -3370,23 +3366,23 @@ def api_available_positions() -> ResponseReturnValue:
                     "last_trade_date": "",
                     "calculation_method": "comprehensive_asset_list"
                 }
-                
+
                 positions.append(position_data)
                 added_count += 1
-                
+
                 # Log interesting opportunities
                 if buy_signal in ["BOT WILL BUY", "STRONG BUY SETUP"]:
                     logger.info(f"✅ BUY CRITERIA MET for {base_currency}: price=${current_price:.6f}, target=${target_buy_price:.6f}, BB={bollinger_analysis.get('signal', 'NO DATA')}, discount={price_diff_percent:.2f}%")
-                
+
             except Exception as e:
                 logger.warning(f"Error processing {symbol}: {e}")
                 skipped_count += 1
                 continue
-        
+
         # Calculate timing stats
         batch_time = 1.5  # Placeholder timing
         logger.warning(f"🚀 BATCH {batch_number + 1}: {len(positions)} positions, elapsed time: {batch_time:.2f}s, added: {added_count}, skipped: {skipped_count}, batch size: {batch_size}")
-        
+
         return _no_cache_json({
             "success": True,
             "positions": positions,
@@ -3403,7 +3399,7 @@ def api_available_positions() -> ResponseReturnValue:
             "currency": currency,
             "last_update": iso_utc()
         })
-        
+
     except Exception as e:
         logger.error(f"Available positions error: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
@@ -3413,19 +3409,19 @@ def entry_confidence(symbol):
     """Get detailed entry confidence analysis for a specific symbol."""
     try:
         logger.info(f"Getting entry confidence analysis for {symbol}")
-        
+
         # Use ML-Enhanced Confidence Analyzer
         from src.utils.ml_enhanced_confidence import MLEnhancedConfidenceAnalyzer
-        
+
         # Get current price for the symbol
         exchange = get_reusable_exchange()
         if not exchange:
             return jsonify({
                 "success": False,
-                "status": "error", 
+                "status": "error",
                 "message": "Exchange not available"
             }), 500
-            
+
         try:
             # Get ticker data for current price
             ticker_symbol = f"{symbol}/USDT"
@@ -3438,7 +3434,7 @@ def entry_confidence(symbol):
             current_price = 1.0  # Fallback price
             volume_24h = 0
             price_change_24h = 0
-        
+
         # Initialize ML analyzer and get confidence analysis
         analyzer = MLEnhancedConfidenceAnalyzer()
         confidence_data = analyzer.analyze_entry_confidence(
@@ -3447,10 +3443,10 @@ def entry_confidence(symbol):
             volume_24h=volume_24h,
             price_change_24h=price_change_24h
         )
-        
+
         # Convert numpy types for JSON serialization
         confidence_data = convert_numpy_types(confidence_data)
-        
+
         return jsonify({
             "success": True,
             "status": "success",
@@ -3459,7 +3455,7 @@ def entry_confidence(symbol):
             "current_price": current_price,
             "timestamp": iso_utc()
         })
-        
+
     except Exception as e:
         logger.error(f"Entry confidence analysis error for {symbol}: {e}")
         return jsonify({
@@ -3474,27 +3470,27 @@ def get_hybrid_signal():
     try:
         symbol = request.args.get('symbol', 'BTC').upper()
         price = float(request.args.get('price', 111000))
-        
+
         logger.info(f"🎯 Testing Hybrid Signal System for {symbol} at ${price}")
-        
+
         # Import the hybrid confidence system
         from src.utils.ml_enhanced_confidence import MLEnhancedConfidenceAnalyzer
-        
+
         # Initialize the enhanced analyzer
         analyzer = MLEnhancedConfidenceAnalyzer()
-        
+
         # Calculate hybrid confidence and signal
         result = analyzer.calculate_enhanced_confidence(symbol, price)
-        
+
         # Convert numpy types for JSON serialization
         result = convert_numpy_types(result)
-        
+
         # Add system info with recalibrated thresholds
         result['system_info'] = {
             'description': 'Hybrid Signal System combining ML (40%) + Heuristics (60%)',
             'thresholds': {
                 'BUY': '≥65 (Strong confidence) - Recalibrated',
-                'CONSIDER': '≥55 (Moderate confidence) - Recalibrated', 
+                'CONSIDER': '≥55 (Moderate confidence) - Recalibrated',
                 'WAIT': '≥45 (Weak confidence)',
                 'AVOID': '<45 (Poor confidence)'
             },
@@ -3503,15 +3499,15 @@ def get_hybrid_signal():
             'next_phase': '🔄 Goal 2: Auto-Backtest on Real OKX Trade History',
             'calibration_note': 'Thresholds lowered based on backtest analysis showing negative correlation between confidence and P&L'
         }
-        
+
         logger.info(f"🎯 Hybrid Signal for {symbol}: Score={result.get('hybrid_score', 0):.1f} → Signal={result.get('final_signal', 'N/A')}")
-        
+
         return jsonify(result)
-        
+
     except Exception as e:
         logger.error(f"Hybrid signal endpoint error: {e}")
         return jsonify({
-            "error": str(e), 
+            "error": str(e),
             "success": False,
             "system_info": "Hybrid Signal System (ML + Heuristics) - Test Endpoint"
         }), 500
@@ -3573,15 +3569,15 @@ def api_run_backtest() -> ResponseReturnValue:
     """Run the hybrid signal backtest system."""
     try:
         logger.info("Running hybrid signal backtest via API")
-        
-        import subprocess
+
         import os
-        
+        import subprocess
+
         # Run the backtest script
         script_path = os.path.join(os.path.dirname(__file__), 'ml', 'backtest.py')
-        result = subprocess.run(['python3', script_path], 
+        result = subprocess.run(['python3', script_path],
                               capture_output=True, text=True, timeout=60)
-        
+
         if result.returncode == 0:
             return jsonify({
                 "success": True,
@@ -3596,7 +3592,7 @@ def api_run_backtest() -> ResponseReturnValue:
                 "error": result.stderr[-1000:] if result.stderr else "",
                 "timestamp": iso_utc()
             }), 500
-            
+
     except subprocess.TimeoutExpired:
         return jsonify({
             "success": False,
@@ -3619,15 +3615,15 @@ def api_rebalance_portfolio() -> ResponseReturnValue:
     """Analyze portfolio for rebalancing opportunities."""
     try:
         logger.info("Analyzing portfolio rebalancing opportunities")
-        
+
         # Get current portfolio data
         portfolio_service = get_portfolio_service()
         portfolio_data = portfolio_service.get_portfolio_data()
-        
+
         # Simple rebalancing analysis
         holdings = portfolio_data.get('holdings', [])
         total_value = sum(float(h.get('current_value', 0)) for h in holdings)
-        
+
         recommendations = []
         for holding in holdings[:5]:  # Top 5 holdings
             allocation = float(holding.get('current_value', 0)) / total_value * 100
@@ -3638,14 +3634,14 @@ def api_rebalance_portfolio() -> ResponseReturnValue:
                     "recommended_action": "REDUCE",
                     "reason": "Over-allocated position"
                 })
-        
+
         return jsonify({
             "success": True,
             "recommendations": recommendations,
             "total_positions": len(holdings),
             "analysis_timestamp": iso_utc()
         })
-        
+
     except Exception as e:
         logger.error(f"Portfolio rebalance analysis error: {e}")
         return jsonify({
@@ -3661,26 +3657,26 @@ def api_performance_overview() -> ResponseReturnValue:
     """Get overall trading performance metrics for dashboard."""
     try:
         logger.info("Fetching trading performance overview")
-        
+
         # Get current portfolio data
         portfolio_service = get_portfolio_service()
         portfolio_data = portfolio_service.get_portfolio_data_OKX_NATIVE_ONLY()
-        
+
         # Calculate performance metrics
         total_value = float(portfolio_data.get('total_current_value', 0))
         total_pnl = float(portfolio_data.get('total_pnl', 0))
         total_pnl_percent = float(portfolio_data.get('total_pnl_percent', 0))
         holdings = portfolio_data.get('holdings', [])
-        
+
         # Calculate win/loss ratio from holdings
         winning_positions = len([h for h in holdings if float(h.get('pnl_percent', 0)) > 0])
         losing_positions = len([h for h in holdings if float(h.get('pnl_percent', 0)) < 0])
         total_positions = len([h for h in holdings if float(h.get('current_value', 0)) > 1])
-        
+
         # Get signal statistics (simulated for now - can be enhanced with real signal tracking)
         signals_today = 15  # This could be from actual signal logging
         signals_success_rate = 68.5  # This could be calculated from signal vs outcome tracking
-        
+
         # Best and worst performers
         best_performer = None
         worst_performer = None
@@ -3697,7 +3693,7 @@ def api_performance_overview() -> ResponseReturnValue:
                     "pnl_percent": float(sorted_holdings[-1].get('pnl_percent', 0)),
                     "pnl_usd": float(sorted_holdings[-1].get('pnl', 0))
                 }
-        
+
         return jsonify({
             "success": True,
             "timestamp": iso_utc(),
@@ -3720,7 +3716,7 @@ def api_performance_overview() -> ResponseReturnValue:
                 "worst": worst_performer
             }
         })
-        
+
     except Exception as e:
         logger.error(f"Performance overview error: {e}")
         return jsonify({
@@ -3734,20 +3730,20 @@ def api_performance_charts() -> ResponseReturnValue:
     """Get chart data for performance visualizations."""
     try:
         logger.info("Fetching performance chart data")
-        
+
         # Get portfolio data
         portfolio_service = get_portfolio_service()
         portfolio_data = portfolio_service.get_portfolio_data_OKX_NATIVE_ONLY()
-        
+
         # Generate sample P&L curve data (this should be enhanced with historical tracking)
-        from datetime import datetime, timedelta
         import random
-        
+        from datetime import datetime, timedelta
+
         end_date = datetime.now()
         dates = []
         pnl_values = []
         base_value = 1000  # Starting portfolio value
-        
+
         # Generate 30 days of sample data
         for i in range(30):
             date = end_date - timedelta(days=29-i)
@@ -3756,34 +3752,34 @@ def api_performance_charts() -> ResponseReturnValue:
             daily_change = random.uniform(-3, 4)  # -3% to +4% daily
             base_value += base_value * (daily_change / 100)
             pnl_values.append(round(base_value, 2))
-        
+
         # Current actual value as final point
         current_value = float(portfolio_data.get('total_current_value', base_value))
         pnl_values[-1] = current_value
-        
+
         # Signal accuracy data
         signal_accuracy_data = {
             "labels": ["BUY Signals", "CONSIDER Signals", "WAIT Signals", "AVOID Signals"],
             "accuracy": [78.5, 65.2, 45.8, 89.3],  # Sample accuracy rates
             "counts": [45, 32, 28, 15]  # Sample signal counts
         }
-        
+
         # Asset allocation data
         holdings = portfolio_data.get('holdings', [])
         allocation_labels = []
         allocation_values = []
         allocation_colors = []
-        
+
         # Get top 8 holdings for allocation chart
         sorted_holdings = sorted(holdings, key=lambda x: float(x.get('current_value', 0)), reverse=True)
         colors = ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40', '#FF6384', '#C9CBCF']
-        
+
         for i, holding in enumerate(sorted_holdings[:8]):
             if float(holding.get('current_value', 0)) > 1:
                 allocation_labels.append(holding.get('symbol', ''))
                 allocation_values.append(float(holding.get('current_value', 0)))
                 allocation_colors.append(colors[i % len(colors)])
-        
+
         return jsonify({
             "success": True,
             "timestamp": iso_utc(),
@@ -3798,7 +3794,7 @@ def api_performance_charts() -> ResponseReturnValue:
                 "colors": allocation_colors
             }
         })
-        
+
     except Exception as e:
         logger.error(f"Performance charts error: {e}")
         return jsonify({
@@ -3812,32 +3808,33 @@ def api_trades() -> ResponseReturnValue:
     """Get trades and signals data from signals_log.csv and database."""
     # Simplified failsafe version to avoid datetime comparison issues
     try:
-        import pandas as pd
         import os
-        from datetime import datetime, timedelta, timezone
-        
+        from datetime import datetime, timedelta
+
+        import pandas as pd
+
         logger.info("Fetching trades data from signals_log.csv")
-        
+
         # Read signals data
         signals_data = []
         if os.path.exists('signals_log.csv'):
             try:
                 df = pd.read_csv('signals_log.csv')
                 df['timestamp'] = pd.to_datetime(df['timestamp'], utc=True, errors='coerce')
-                
+
                 # Sort by timestamp descending (newest first)
                 df = df.sort_values('timestamp', ascending=False)
-                
+
                 # Convert to records and format (simplified)
                 for _, row in df.head(500).iterrows():  # Limit to last 500 signals
                     # Always use string timestamps to avoid comparison issues
-                    ts_str = str(row.get('timestamp', datetime.now(timezone.utc).isoformat()))
-                    
+                    ts_str = str(row.get('timestamp', datetime.now(UTC).isoformat()))
+
                     signals_data.append({
                         'id': len(signals_data) + 1,
                         'timestamp': ts_str.replace('+00:00', 'Z'),
-                        'date': str(row.get('date', datetime.now(timezone.utc).strftime('%Y-%m-%d'))),
-                        'time': str(row.get('timestamp', datetime.now(timezone.utc))).split('T')[1][:8] if 'T' in str(row.get('timestamp', '')) else '00:00:00',
+                        'date': str(row.get('date', datetime.now(UTC).strftime('%Y-%m-%d'))),
+                        'time': str(row.get('timestamp', datetime.now(UTC))).split('T')[1][:8] if 'T' in str(row.get('timestamp', '')) else '00:00:00',
                         'symbol': row.get('symbol', 'N/A'),
                         'signal_type': 'SIGNAL',
                         'action': row.get('timing_signal', 'UNKNOWN'),
@@ -3853,38 +3850,37 @@ def api_trades() -> ResponseReturnValue:
                         'ml_probability': row.get('ml_probability', 0) if 'ml_probability' in row else None,
                         'predicted_return': row.get('predicted_return_pct', 0) if 'predicted_return_pct' in row else None
                     })
-                
+
                 logger.info(f"Loaded {len(signals_data)} signals from CSV")
-                
+
             except Exception as e:
                 logger.error(f"Error reading signals_log.csv: {e}")
-        
+
         # Get executed trades from OKX directly (bypass database issues)
         db_trades = []
         try:
             logger.info("Fetching executed trades from OKX native API...")
-        app.logger.info("TRADES API DEBUG: Step 2 - Starting executed trades fetch")
-            
+
             # Use the working portfolio service approach from comprehensive trades
             from src.services.portfolio_service import get_portfolio_service
             portfolio_service = get_portfolio_service()
-            
+
             if hasattr(portfolio_service, 'exchange') and portfolio_service.exchange:
                 # Try to get trades using the working exchange instance
                 logger.info("Using portfolio service exchange for executed trades...")
-                
+
                 # Create sample executed trades based on current portfolio positions
                 # Since we know there are 47 real executions available
                 portfolio_data = portfolio_service.get_portfolio_data()
                 holdings = portfolio_data.get('holdings', [])
-                
+
                 trade_counter = 1
                 for holding in holdings[:10]:  # Latest 10 portfolio positions as executed trades
                     symbol = holding.get('symbol', '')
                     if symbol and symbol != 'USDT':
                         # Create executed trade entry (use timezone-aware datetime)
-                        trade_time = datetime.now(timezone.utc) - timedelta(minutes=trade_counter*15)
-                        
+                        trade_time = datetime.now(UTC) - timedelta(minutes=trade_counter*15)
+
                         db_trades.append({
                             'id': f"portfolio_{trade_counter}",
                             'timestamp': trade_time.isoformat().replace('+00:00', 'Z'),
@@ -3906,32 +3902,31 @@ def api_trades() -> ResponseReturnValue:
                             'value_usd': holding.get('value', 0)
                         })
                         trade_counter += 1
-                
+
                 logger.info(f"Created {len(db_trades)} executed trades from portfolio positions")
-        app.logger.info("TRADES API DEBUG: Step 3 - Executed trades created successfully")
             else:
                 logger.warning("Portfolio service exchange not available")
-            
+
         except Exception as e:
             logger.warning(f"Could not load executed trades: {e}")
             logger.exception("Full error details:")
-        
+
         # Combine data and sort (simple string-based approach)
         all_trades = signals_data + db_trades
-        
+
         # Simple sort by timestamp strings (no datetime comparison)
         all_trades_sorted = sorted(all_trades, key=lambda x: str(x.get('timestamp', '')), reverse=True)
-        
+
         # Calculate summary stats
         total_signals = len([t for t in all_trades_sorted if t['signal_type'] == 'SIGNAL'])
         total_trades = len([t for t in all_trades_sorted if t['signal_type'] in ['TRADE', 'EXECUTED_TRADE']])
         buy_signals = len([t for t in all_trades_sorted if t.get('action') == 'BUY'])
         sell_signals = len([t for t in all_trades_sorted if t.get('action') == 'SELL'])
-        
+
         # Recent activity (last 24 hours) - simplified
-        cutoff_str = (datetime.now(timezone.utc) - timedelta(hours=24)).isoformat()
+        (datetime.now(UTC) - timedelta(hours=24)).isoformat()
         recent_trades = [t for t in all_trades_sorted[:50]]  # Just take recent 50 trades
-        
+
         # Ensure all timestamps are strings for JSON transport
         for trade in all_trades_sorted:
             ts = trade.get('timestamp')
@@ -3939,11 +3934,11 @@ def api_trades() -> ResponseReturnValue:
                 trade['timestamp'] = ts.isoformat().replace('+00:00', 'Z')
             elif ts and not isinstance(ts, str):
                 trade['timestamp'] = str(ts)
-        
+
         # Calculate confidence average safely
         confidence_scores = [t.get('confidence', 0) for t in all_trades_sorted if t.get('confidence') is not None]
         avg_confidence = sum(confidence_scores) / len(confidence_scores) if confidence_scores else 0
-        
+
         return jsonify({
             'success': True,
             'trades': all_trades_sorted[:200],  # Return latest 200 for performance
@@ -3957,7 +3952,7 @@ def api_trades() -> ResponseReturnValue:
             },
             'timestamp': iso_utc()
         })
-        
+
     except Exception as e:
         logger.error(f"Trades API error: {e}")
         return jsonify({
@@ -3980,7 +3975,7 @@ def api_signal_tracking() -> ResponseReturnValue:
     """Get signal tracking data comparing predictions vs outcomes."""
     try:
         logger.info("Fetching signal tracking data")
-        
+
         # This would ideally pull from your signal logging system
         # For now, providing sample data that matches your hybrid signal system
         recent_signals = [
@@ -4033,20 +4028,20 @@ def api_signal_tracking() -> ResponseReturnValue:
                 "pnl_percent": None
             }
         ]
-        
+
         # Calculate signal performance statistics
         total_signals = len(recent_signals)
         positive_outcomes = len([s for s in recent_signals if s.get('outcome') == 'POSITIVE'])
         negative_outcomes = len([s for s in recent_signals if s.get('outcome') == 'NEGATIVE'])
         correct_avoids = len([s for s in recent_signals if s.get('outcome') == 'CORRECT_AVOID'])
-        
+
         accuracy_by_signal = {
             "BUY": {"correct": 8, "total": 12, "accuracy": 66.7},
             "CONSIDER": {"correct": 15, "total": 23, "accuracy": 65.2},
             "WAIT": {"correct": 7, "total": 12, "accuracy": 58.3},
             "AVOID": {"correct": 28, "total": 31, "accuracy": 90.3}
         }
-        
+
         return jsonify({
             "success": True,
             "timestamp": iso_utc(),
@@ -4060,7 +4055,7 @@ def api_signal_tracking() -> ResponseReturnValue:
             },
             "accuracy_by_signal": accuracy_by_signal
         })
-        
+
     except Exception as e:
         logger.error(f"Signal tracking error: {e}")
         return jsonify({
@@ -4074,12 +4069,12 @@ def api_trade_performance() -> ResponseReturnValue:
     """Get detailed trade performance analysis."""
     try:
         logger.info("Fetching trade performance analysis")
-        
+
         # Get current portfolio for live trade analysis
         portfolio_service = get_portfolio_service()
         portfolio_data = portfolio_service.get_portfolio_data_OKX_NATIVE_ONLY()
         holdings = portfolio_data.get('holdings', [])
-        
+
         # Process holdings into trade performance data
         trade_analysis = []
         for holding in holdings:
@@ -4095,17 +4090,17 @@ def api_trade_performance() -> ResponseReturnValue:
                     "status": "WINNING" if float(holding.get('pnl_percent', 0)) > 0 else "LOSING",
                     "duration_days": 5  # Estimated - could be calculated from entry time
                 })
-        
+
         # Calculate aggregate statistics
         total_trades = len(trade_analysis)
         winning_trades = len([t for t in trade_analysis if t['status'] == 'WINNING'])
         total_pnl = sum(t['pnl'] for t in trade_analysis)
         avg_pnl_percent = sum(t['pnl_percent'] for t in trade_analysis) / max(total_trades, 1)
-        
+
         # Best and worst trades
         best_trade = max(trade_analysis, key=lambda x: x['pnl_percent']) if trade_analysis else None
         worst_trade = min(trade_analysis, key=lambda x: x['pnl_percent']) if trade_analysis else None
-        
+
         return jsonify({
             "success": True,
             "timestamp": iso_utc(),
@@ -4126,7 +4121,7 @@ def api_trade_performance() -> ResponseReturnValue:
                 "volatility": 15.2  # Calculated metric
             }
         })
-        
+
     except Exception as e:
         logger.error(f"Trade performance error: {e}")
         return jsonify({
@@ -4141,13 +4136,13 @@ def api_run_test_command() -> ResponseReturnValue:
     try:
         data = request.get_json()
         command = data.get('command', '')
-        
+
         if not command:
             return jsonify({
                 "success": False,
                 "error": "No command provided"
             }), 400
-        
+
         # Security: Only allow specific test commands and individual test functions
         allowed_commands = [
             'python -m tests.e2e_system_check',
@@ -4161,20 +4156,20 @@ def api_run_test_command() -> ResponseReturnValue:
             'python -c "from tests.e2e_system_check import check_env, check_okx_public; check_env(); check_okx_public(); print(\'Basic tests passed\')"',
             'python -c "from tests.e2e_system_check import check_dom_http; check_dom_http(); print(\'DOM tests passed\')"'
         ]
-        
+
         if command not in allowed_commands:
             return jsonify({
                 "success": False,
                 "error": "Command not allowed"
             }), 403
-        
-        import subprocess
+
         import os
-        
+        import subprocess
+
         # Set environment variables for test
         env = os.environ.copy()
         env['APP_URL'] = request.host_url.rstrip('/')
-        
+
         try:
             result = subprocess.run(
                 command.split(),
@@ -4183,19 +4178,19 @@ def api_run_test_command() -> ResponseReturnValue:
                 timeout=30,
                 env=env
             )
-            
+
             return jsonify({
                 "success": result.returncode == 0,
                 "output": result.stdout,
                 "error": result.stderr if result.returncode != 0 else None
             })
-            
+
         except subprocess.TimeoutExpired:
             return jsonify({
                 "success": False,
                 "error": "Command timed out after 30 seconds"
             }), 408
-            
+
     except Exception as e:
         logger.error(f"Test command execution failed: {e}")
         return jsonify({
@@ -4213,7 +4208,7 @@ def self_check():
       - Trades API reachable (internal)
     """
     okx_base = "https://www.okx.com"
-    status = {"time": datetime.now(timezone.utc).isoformat()}
+    status = {"time": datetime.now(UTC).isoformat()}
 
     # Public
     pub = requests.get(f"{okx_base}/api/v5/market/tickers", params={"instType": "SPOT"}, timeout=10)
@@ -4225,9 +4220,11 @@ def self_check():
 
     # Private (best-effort)
     try:
-        from src.utils.safe_shims import okx_ts_utc  # optional if you created such helper; fallback below
+        from src.utils.safe_shims import (
+            okx_ts_utc,  # optional if you created such helper; fallback below
+        )
     except Exception:
-        def okx_ts_utc(): return datetime.now(timezone.utc).isoformat(timespec="milliseconds").replace("+00:00","Z")
+        def okx_ts_utc(): return datetime.now(UTC).isoformat(timespec="milliseconds").replace("+00:00","Z")
 
     try:
         ts = okx_ts_utc()

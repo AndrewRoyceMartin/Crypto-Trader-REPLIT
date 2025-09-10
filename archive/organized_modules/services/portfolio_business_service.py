@@ -2,24 +2,22 @@
 Portfolio Business Service
 Handles portfolio calculations, P&L analysis, and asset allocation logic
 """
-from typing import Dict, Any, List, Optional
 import logging
-from datetime import datetime, timezone
-import time
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
 class PortfolioBusinessService:
     """Business logic for portfolio management and calculations."""
-    
+
     def __init__(self):
         self.logger = logger
-    
-    def get_portfolio_summary(self) -> Dict[str, Any]:
+
+    def get_portfolio_summary(self) -> dict[str, Any]:
         """Get portfolio summary for status endpoint."""
         try:
             from src.services.portfolio_service import get_portfolio_service as _get_ps
-            
+
             portfolio_service = _get_ps()
             if not portfolio_service:
                 return {
@@ -29,7 +27,7 @@ class PortfolioBusinessService:
                     "error": "Service not available"
                 }
 
-            portfolio_data: Dict[str, Any] = portfolio_service.get_portfolio_data()
+            portfolio_data: dict[str, Any] = portfolio_service.get_portfolio_data()
             return {
                 "total_value": portfolio_data.get('total_current_value', 0.0),
                 "daily_pnl": portfolio_data.get('total_pnl', 0.0),
@@ -45,12 +43,12 @@ class PortfolioBusinessService:
                 "daily_pnl_percent": 0.0,
                 "error": "Portfolio data unavailable"
             }
-    
-    def calculate_portfolio_overview(self, portfolio_data: Dict[str, Any], 
-                                   currency: str = "USD") -> Dict[str, Any]:
+
+    def calculate_portfolio_overview(self, portfolio_data: dict[str, Any],
+                                   currency: str = "USD") -> dict[str, Any]:
         """Calculate comprehensive portfolio overview with analytics."""
         holdings_list = portfolio_data.get('holdings', [])
-        
+
         overview = {
             "currency": currency,
             "total_value": float(portfolio_data.get('total_current_value', 0)),
@@ -73,13 +71,13 @@ class PortfolioBusinessService:
             "is_live": True,
             "connected": True
         }
-        
+
         return overview
-    
-    def calculate_asset_allocation(self, holdings: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+
+    def calculate_asset_allocation(self, holdings: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """Calculate asset allocation percentages and data."""
         total_value = sum(float(pos.get('market_value', 0) or pos.get('current_value', 0)) for pos in holdings)
-        
+
         allocation_data = []
         for position in holdings:
             market_value = float(position.get('market_value', 0) or position.get('current_value', 0))
@@ -92,12 +90,12 @@ class PortfolioBusinessService:
                     "quantity": float(position.get('quantity', 0)),
                     "current_price": float(position.get('current_price', 0))
                 })
-        
+
         # Sort by allocation percentage descending
         allocation_data.sort(key=lambda x: x['allocation_percent'], reverse=True)
         return allocation_data
-    
-    def analyze_performance_metrics(self, holdings: List[Dict[str, Any]]) -> Dict[str, Any]:
+
+    def analyze_performance_metrics(self, holdings: list[dict[str, Any]]) -> dict[str, Any]:
         """Analyze portfolio performance metrics."""
         if not holdings:
             return {
@@ -108,18 +106,18 @@ class PortfolioBusinessService:
                 "profitable_count": 0,
                 "losing_count": 0
             }
-        
+
         # Find best and worst performers
         profitable = [h for h in holdings if float(h.get('pnl_percent', 0) or 0) > 0]
         losing = [h for h in holdings if float(h.get('pnl_percent', 0) or 0) < 0]
-        
+
         best_performer = max(holdings, key=lambda x: float(x.get('pnl_percent', 0) or 0)) if holdings else None
         worst_performer = min(holdings, key=lambda x: float(x.get('pnl_percent', 0) or 0)) if holdings else None
-        
+
         # Calculate concentration risk (top 3 holdings percentage)
         sorted_holdings = sorted(holdings, key=lambda x: x.get('allocation_percent', 0), reverse=True)
         concentration_risk = sum(h.get('allocation_percent', 0) for h in sorted_holdings[:3])
-        
+
         return {
             "best_performer": {
                 'symbol': best_performer.get('symbol', 'N/A'),
@@ -136,13 +134,13 @@ class PortfolioBusinessService:
             "profitable_count": len(profitable),
             "losing_count": len(losing)
         }
-    
-    def format_portfolio_response(self, portfolio_data: Dict[str, Any], 
-                                overview: Dict[str, Any], 
-                                currency: str = "USD") -> Dict[str, Any]:
+
+    def format_portfolio_response(self, portfolio_data: dict[str, Any],
+                                overview: dict[str, Any],
+                                currency: str = "USD") -> dict[str, Any]:
         """Format complete portfolio response payload."""
         holdings_list = portfolio_data.get('holdings', [])
-        
+
         payload = {
             "holdings": holdings_list,
             "summary": {
@@ -167,11 +165,11 @@ class PortfolioBusinessService:
             "currency": currency,
             "overview": overview
         }
-        
+
         # Add refresh timing
         import os
         refresh_seconds = int(os.getenv("UI_REFRESH_MS", "6000")) // 1000
         payload["overview"]["next_refresh_in_seconds"] = refresh_seconds
         payload["next_refresh_in_seconds"] = refresh_seconds
-        
+
         return payload

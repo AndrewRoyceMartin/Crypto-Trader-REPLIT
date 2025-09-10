@@ -4,16 +4,15 @@ Test script to verify the $100 rebuy mechanism limit works correctly.
 """
 
 import sys
-import pandas as pd
-import numpy as np
 from datetime import datetime
-from src.config import Config
+
 from src.strategies.enhanced_bollinger_strategy import EnhancedBollingerBandsStrategy
+
 
 def test_rebuy_limit():
     """Test that rebuy trades are limited to $100 maximum."""
     print("Testing Rebuy Mechanism with $100 limit...")
-    
+
     # Create a simple config object that mimics the interface
     class MockConfig:
         def get_int(self, section, key, default=None):
@@ -25,7 +24,7 @@ def test_rebuy_limit():
                 ('strategy', 'fast_low_window_min'): 5,
             }
             return defaults.get((section, key), default)
-        
+
         def get_float(self, section, key, default=None):
             defaults = {
                 ('trading', 'position_size_percent'): 5.0,
@@ -40,7 +39,7 @@ def test_rebuy_limit():
                 ('trading', 'slip'): 0.001,
             }
             return defaults.get((section, key), default)
-        
+
         def get_bool(self, section, key, default=None):
             defaults = {
                 ('strategy', 'rebuy_dynamic'): True,
@@ -48,45 +47,45 @@ def test_rebuy_limit():
                 ('strategy', 'fast_failsafe'): True,
             }
             return defaults.get((section, key), default)
-        
+
         def get_str(self, section, key, default=None):
             defaults = {
                 ('strategy', 'fast_tf'): '1m',
                 ('strategy', 'rebuy_mode'): 'confirmation',
             }
             return defaults.get((section, key), default)
-    
+
     config = MockConfig()
-    
+
     # Initialize strategy
     strategy = EnhancedBollingerBandsStrategy(config)
-    
+
     # Set up position state with high equity to test limit
     strategy.position_state['equity'] = 50000.0  # $50,000 portfolio
     strategy.position_state['rebuy_armed'] = True
     strategy.position_state['rebuy_price'] = 100.0
     strategy.position_state['rebuy_ready_at'] = datetime.now()
-    
+
     # Create test price data
     test_price = 105.0  # Price above rebuy level (confirmation mode)
     test_atr = 2.0
-    
+
     print(f"Portfolio equity: ${strategy.position_state['equity']:,.2f}")
     print(f"Normal position size would be: {strategy.position_size_percent}% = ${strategy.position_size_percent/100 * strategy.position_state['equity']:,.2f}")
     print(f"Rebuy max limit: ${strategy.rebuy_max_usd:.2f}")
-    
+
     # Test rebuy signal creation
     print("\nTesting REBUY signal creation...")
     rebuy_signal = strategy._create_entry_signal(test_price, test_atr, 'REBUY_CONFIRMATION')
-    
+
     if rebuy_signal:
         trade_value = rebuy_signal.size * rebuy_signal.price
-        print(f"✓ Rebuy signal created:")
+        print("✓ Rebuy signal created:")
         print(f"  - Price: ${rebuy_signal.price:.2f}")
         print(f"  - Quantity: {rebuy_signal.size:.6f}")
         print(f"  - Trade value: ${trade_value:.2f}")
         print(f"  - Limited: {rebuy_signal.metadata.get('rebuy_limited', False)}")
-        
+
         if trade_value <= strategy.rebuy_max_usd + 1:  # Allow small rounding
             print(f"✓ PASS: Rebuy trade value ${trade_value:.2f} is within limit ${strategy.rebuy_max_usd:.2f}")
         else:
@@ -95,24 +94,24 @@ def test_rebuy_limit():
     else:
         print("✗ FAIL: No rebuy signal created")
         return False
-    
+
     # Test normal entry signal for comparison
     print("\nTesting normal BASELINE signal creation...")
     strategy.position_state['rebuy_armed'] = False  # Disable rebuy
     normal_signal = strategy._create_entry_signal(test_price, test_atr, 'BASELINE_ENTRY')
-    
+
     if normal_signal:
         normal_trade_value = normal_signal.size * normal_signal.price
-        print(f"✓ Normal signal created:")
+        print("✓ Normal signal created:")
         print(f"  - Price: ${normal_signal.price:.2f}")
         print(f"  - Quantity: {normal_signal.size:.6f}")
         print(f"  - Trade value: ${normal_trade_value:.2f}")
-        
+
         if normal_trade_value > strategy.rebuy_max_usd:
             print(f"✓ PASS: Normal trade ${normal_trade_value:.2f} > rebuy limit ${strategy.rebuy_max_usd:.2f} (as expected)")
         else:
             print(f"⚠ WARNING: Normal trade ${normal_trade_value:.2f} <= rebuy limit ${strategy.rebuy_max_usd:.2f}")
-    
+
     print("\n" + "="*60)
     print("✓ Rebuy mechanism with $100 limit implemented successfully!")
     print("="*60)

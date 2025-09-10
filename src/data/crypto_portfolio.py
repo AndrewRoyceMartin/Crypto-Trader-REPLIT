@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Cryptocurrency Portfolio Management System
 Lightweight portfolio manager that displays real OKX account data.
@@ -11,8 +10,8 @@ from __future__ import annotations
 
 import json
 import logging
-from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from datetime import UTC, datetime
+from typing import Any
 
 
 class CryptoPortfolioManager:
@@ -21,7 +20,7 @@ class CryptoPortfolioManager:
     def __init__(
         self,
         initial_value_per_crypto: float = 10.0,
-        assets: Optional[List[Dict[str, Any]]] = None,
+        assets: list[dict[str, Any]] | None = None,
     ) -> None:
         """
         Args:
@@ -32,7 +31,7 @@ class CryptoPortfolioManager:
         self.initial_value: float = float(initial_value_per_crypto)
 
         # Asset universe (symbol/name/rank)
-        self.crypto_list: List[Dict[str, Any]] = (
+        self.crypto_list: list[dict[str, Any]] = (
             assets if assets is not None else self._default_assets()
         )
 
@@ -51,7 +50,7 @@ class CryptoPortfolioManager:
     # -------------------------
     # Setup / Seeding
     # -------------------------
-    def _default_assets(self) -> List[Dict[str, Any]]:
+    def _default_assets(self) -> list[dict[str, Any]]:
         """Minimal default list; replace with your full universe if desired."""
         base = [
             {"symbol": "BTC", "name": "Bitcoin", "rank": 1},
@@ -103,7 +102,7 @@ class CryptoPortfolioManager:
                 "current_value": current_value,       # qty * current_price
                 "pnl": current_value - self.initial_value,
                 "pnl_percent": ((current_value - self.initial_value) / self.initial_value) * 100.0,
-                "initial_investment_date": datetime.now(timezone.utc).isoformat(),
+                "initial_investment_date": datetime.now(UTC).isoformat(),
                 "total_invested": self.initial_value,
                 "total_realized_pnl": 0.0,
                 "trade_count": 0,
@@ -112,11 +111,11 @@ class CryptoPortfolioManager:
     # -------------------------
     # Summaries / Data
     # -------------------------
-    def get_portfolio_data(self) -> Dict[str, Dict[str, Any]]:
+    def get_portfolio_data(self) -> dict[str, dict[str, Any]]:
         """Return the raw portfolio data mapping symbol -> fields."""
         return self.portfolio_data
 
-    def get_portfolio_summary(self) -> Dict[str, Any]:
+    def get_portfolio_summary(self) -> dict[str, Any]:
         """Aggregate summary across all assets."""
         total_initial = sum(v.get("initial_value", 0.0) for v in self.portfolio_data.values())
         total_current = sum(v.get("current_value", 0.0) for v in self.portfolio_data.values())
@@ -145,10 +144,10 @@ class CryptoPortfolioManager:
             "largest_positions": [(s, d.get("name", s), d.get("current_value", 0.0)) for s, d in largest_positions],
         }
 
-    def get_portfolio_performance(self) -> List[Dict[str, Any]]:
+    def get_portfolio_performance(self) -> list[dict[str, Any]]:
         """Per-asset performance rows, sorted by accumulated P&L% descending."""
-        rows: List[Dict[str, Any]] = []
-        now = datetime.now(timezone.utc)
+        rows: list[dict[str, Any]] = []
+        now = datetime.now(UTC)
 
         for symbol, c in self.portfolio_data.items():
             # Parse initial timestamp
@@ -196,16 +195,16 @@ class CryptoPortfolioManager:
         rows.sort(key=lambda r: r.get("accumulated_pnl_percent", 0.0), reverse=True)
         return rows
 
-    def get_current_positions(self) -> List[Dict[str, Any]]:
+    def get_current_positions(self) -> list[dict[str, Any]]:
         """
         Current positions with derived targets.
         NOTE (Option A): includes 'target_buy_price' so 'target_buy' is used (no Pyright warning).
         """
-        positions: List[Dict[str, Any]] = []
+        positions: list[dict[str, Any]] = []
         total_val = sum(float(v.get("current_value", 0.0)) for v in self.portfolio_data.values())
         total_val = total_val if total_val > 0 else 1.0  # avoid /0
 
-        now_iso = datetime.now(timezone.utc).isoformat()
+        now_iso = datetime.now(UTC).isoformat()
 
         for s, h in self.portfolio_data.items():
             qty = float(h.get("quantity", 0.0))
@@ -280,7 +279,7 @@ class CryptoPortfolioManager:
                 for sym, hist in self.price_history.items()
             },
             "cash_balance": self.cash_balance,
-            "last_updated": datetime.now(timezone.utc).isoformat(),
+            "last_updated": datetime.now(UTC).isoformat(),
         }
         with open(filepath, "w", encoding="utf-8") as f:
             json.dump(state, f, indent=2)
@@ -292,7 +291,7 @@ class CryptoPortfolioManager:
         Return False if file missing or invalid (keeps current state).
         """
         try:
-            with open(filepath, "r", encoding="utf-8") as f:
+            with open(filepath, encoding="utf-8") as f:
                 state = json.load(f)
             p = state.get("portfolio_data")
             if isinstance(p, dict):

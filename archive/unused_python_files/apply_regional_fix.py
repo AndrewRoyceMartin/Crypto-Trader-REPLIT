@@ -15,22 +15,22 @@ print()
 # Test the fix using our updated adapter
 try:
     from src.exchanges.okx_adapter_spot import make_okx_spot
-    
+
     print("Creating OKX connection with regional endpoint...")
     ex = make_okx_spot()
-    
-    print(f"✅ Connection created successfully")
+
+    print("✅ Connection created successfully")
     print(f"Hostname: {getattr(ex, 'hostname', 'default')}")
     print(f"Sandbox mode: {getattr(ex, 'sandboxMode', False)}")
     print(f"Headers: {ex.headers}")
     print()
-    
+
     print("Testing API connection...")
     balance = ex.fetch_balance()
-    
+
     print("🎉 SUCCESS! OKX connection working with regional endpoint!")
     print(f"Account has {len([k for k, v in balance.items() if isinstance(v, dict) and v.get('total', 0) > 0])} assets")
-    
+
     # Show some key balances
     for symbol in ['USDT', 'BTC', 'ETH']:
         if symbol in balance and isinstance(balance[symbol], dict):
@@ -38,14 +38,14 @@ try:
             total = balance[symbol].get('total', 0)
             if total > 0:
                 print(f"{symbol}: {free} free, {total} total")
-    
+
     print("\n✅ Regional endpoint fix successful!")
     print("The system is now ready for live trading.")
-    
+
 except Exception as e:
     error_msg = str(e)
     print(f"❌ Still having issues: {error_msg}")
-    
+
     if "50110" in error_msg:
         print("\n💡 IP whitelist issue - your key works but IP is blocked")
         print("Add 34.148.21.249 to your OKX API key whitelist")
@@ -55,4 +55,4 @@ except Exception as e:
     else:
         print(f"\n💡 Different error: {error_msg}")
 
-print(f"\n🔧 To make this permanent, add OKX_HOSTNAME=app.okx.com to your Replit Secrets")
+print("\n🔧 To make this permanent, add OKX_HOSTNAME=app.okx.com to your Replit Secrets")

@@ -3,29 +3,24 @@ Web interface for the algorithmic trading system.
 Provides a dashboard for monitoring and controlling trading operations.
 """
 
-from flask import Flask, render_template, jsonify, request
-import json
-import logging
-import requests
-from datetime import datetime, timedelta
-import threading
 import os
-import numpy as np
+import threading
+from datetime import datetime, timedelta
 
-from src.config import Config
-from src.utils.logging import setup_logging
-from src.utils.database import DatabaseManager
+import numpy as np
+from flask import Flask, jsonify, render_template, request
+from version import get_version
+
 from src.backtesting.engine import BacktestEngine
-from src.trading.paper_trader import PaperTrader
-from src.trading.live_trader import LiveTrader
-from src.strategies.enhanced_bollinger_strategy import EnhancedBollingerBandsStrategy
-from src.trading.enhanced_trader import EnhancedTrader
-from src.exchanges.okx_adapter import OKXAdapter  # (kept for future use)
-from src.exchanges.kraken_adapter import KrakenAdapter  # (kept for future use)
+from src.config import Config
 from src.data.crypto_portfolio import CryptoPortfolioManager
 from src.services.portfolio_service import get_portfolio_service
+from src.strategies.enhanced_bollinger_strategy import EnhancedBollingerBandsStrategy
+from src.trading.live_trader import LiveTrader
+from src.trading.paper_trader import PaperTrader
+from src.utils.database import DatabaseManager
 from src.utils.email_service import email_service
-from version import get_version
+from src.utils.logging import setup_logging
 
 # -----------------------------------------------------------------------------
 # Flask app
@@ -72,30 +67,30 @@ def initialize_system():
     global config, db_manager, crypto_portfolio, _initialized
     if _initialized:
         return
-        
+
     config = Config()
     setup_logging(config.get("logging", "level", "INFO"))
     db_manager = DatabaseManager()
-    
+
     # Initialize OKX Exchange Portfolio Service
     try:
-        portfolio_service = get_portfolio_service()
+        get_portfolio_service()
         app.logger.info("✅ SUCCESS: Simulated OKX Exchange connected and portfolio initialized")
         app.logger.info("Portfolio now draws data from Simulated OKX Exchange with live prices")
     except Exception as e:
-        app.logger.error(f"❌ FAILED: Could not initialize OKX portfolio service: {str(e)}")
+        app.logger.error(f"❌ FAILED: Could not initialize OKX portfolio service: {e!s}")
         raise
-    
+
     # Keep legacy crypto_portfolio for compatibility (but OKX service is primary)
     crypto_portfolio = CryptoPortfolioManager(initial_value_per_crypto=10.0)
-    
+
     _initialized = True
     app.logger.info("Trading system initialized with Simulated OKX Exchange")
 
 def start_portfolio_updates():
     """Start background thread to update crypto portfolio prices."""
     global portfolio_update_thread
-    
+
     def update_prices():
         import time
         while True:
@@ -108,7 +103,7 @@ def start_portfolio_updates():
             except Exception as e:
                 app.logger.error(f"Error updating portfolio prices: {e}")
                 time.sleep(60)
-    
+
     if portfolio_update_thread is None or not portfolio_update_thread.is_alive():
         portfolio_update_thread = threading.Thread(target=update_prices, daemon=True)
         portfolio_update_thread.start()
@@ -161,16 +156,16 @@ def start_portfolio_trader_thread(mode: str, timeframe: str):
     """Start portfolio trader for multiple assets in a separate background thread."""
     global current_trader, trading_thread
     initialize_system()
-    
+
     # Get all crypto symbols from portfolio
     portfolio_data = crypto_portfolio.get_portfolio_data()
     symbols = []
-    for symbol in portfolio_data.keys():
+    for symbol in portfolio_data:
         if '/' not in symbol:
             symbols.append(f"{symbol}/USDT")
         else:
             symbols.append(symbol)
-    
+
     strategy = EnhancedBollingerBandsStrategy(config)
 
     with state_lock:
@@ -194,23 +189,23 @@ def start_portfolio_trader_thread(mode: str, timeframe: str):
         try:
             # Start trading for each symbol in parallel
             import concurrent.futures
-            
+
             def trade_single_asset(symbol):
                 try:
                     current_trader.start_trading(symbol, timeframe)
                 except Exception as e:
                     app.logger.error(f"Portfolio trading error for {symbol}: {e}")
-            
+
             # Use ThreadPoolExecutor to trade multiple assets simultaneously
             with concurrent.futures.ThreadPoolExecutor(max_workers=min(20, len(symbols))) as executor:
                 futures = []
                 for symbol in symbols[:10]:  # Start with top 10 assets to avoid overwhelming
                     future = executor.submit(trade_single_asset, symbol)
                     futures.append(future)
-                
+
                 # Wait for all to complete or until stopped
                 concurrent.futures.wait(futures, timeout=None)
-                
+
         except Exception as e:
             app.logger.error("Portfolio trading thread error: %s", e)
         finally:
@@ -240,18 +235,18 @@ def dashboard():
         accept_header = request.headers.get('Accept', '')
         user_agent = request.headers.get('User-Agent', '').lower()
         is_health_check = (
-            'application/json' in accept_header or 
+            'application/json' in accept_header or
             request.args.get('health') == 'true' or
             ('curl' in user_agent and 'text/html' not in accept_header) or
             'httpx' in user_agent or
             'python-requests' in user_agent or
             'deployment' in user_agent
         )
-        
+
         if is_health_check:
             # Initialize system to ensure components are ready
             initialize_system()
-            
+
             # Comprehensive health check response for deployment
             health_status = {
                 "status": "ok",
@@ -268,7 +263,7 @@ def dashboard():
                 "environment": os.environ.get("FLASK_ENV", "production")
             }
             return jsonify(health_status), 200
-        
+
         # For regular browser requests, serve the dashboard
         import time
         cache_version = int(time.time())
@@ -277,7 +272,7 @@ def dashboard():
         # Fallback health check response for any errors
         app.logger.error(f"Error in root route: {e}")
         return jsonify({
-            "status": "ok", 
+            "status": "ok",
             "app": "trading-system",
             "error": str(e),
             "timestamp": datetime.now().isoformat()
@@ -347,11 +342,11 @@ def get_status():
         positions_data = positions_df.to_dict("records") if not positions_df.empty else []
         with state_lock:
             status_copy = dict(trading_status)
-        
+
         # Calculate server uptime
         current_time = datetime.now()
         server_uptime_seconds = int((current_time - server_start_time).total_seconds())
-        
+
         return jsonify(
             {
                 "trading_status": status_copy,
@@ -383,9 +378,9 @@ def get_portfolio_history():
         initialize_system()
         days = request.args.get('days', 30, type=int)
         mode = request.args.get('mode', trading_status["mode"])
-        
+
         portfolio_history = db_manager.get_portfolio_history(mode=mode, days=days)
-        
+
         if not portfolio_history.empty:
             history_data = [
                 {
@@ -393,7 +388,7 @@ def get_portfolio_history():
                     "value": row["total_value"],
                     "cash": row.get("cash", 0),
                     "positions_value": row.get("positions_value", 0)
-                } 
+                }
                 for _, row in portfolio_history.iterrows()
             ]
         else:
@@ -406,13 +401,13 @@ def get_portfolio_history():
                 "cash": portfolio_data["cash"],
                 "positions_value": portfolio_data["positions_value"]
             }]
-        
+
         return jsonify({
             "history": history_data,
             "period_days": days,
             "mode": mode
         })
-        
+
     except Exception as e:
         app.logger.error("Error getting portfolio history: %s", e)
         return jsonify({"error": str(e)}), 500
@@ -422,21 +417,21 @@ def get_crypto_portfolio():
     """Get detailed cryptocurrency portfolio data from Simulated OKX Exchange."""
     try:
         initialize_system()
-        
-        # Get portfolio service instance  
+
+        # Get portfolio service instance
         portfolio_service = get_portfolio_service()
-        
+
         # Get portfolio data from OKX exchange
         okx_portfolio_data = portfolio_service.get_portfolio_data()
-        
+
         # Convert to expected frontend format
         holdings_list = okx_portfolio_data['holdings']
-        
+
         app.logger.info(f"Retrieved OKX portfolio: {len(holdings_list)} holdings, total value: ${okx_portfolio_data['total_current_value']:.2f}")
-        
-        # Get recent trades from OKX exchange  
+
+        # Get recent trades from OKX exchange
         recent_trades = portfolio_service.get_trade_history(limit=50)
-        
+
         return jsonify({
             "holdings": holdings_list,
             "recent_trades": recent_trades,
@@ -458,7 +453,7 @@ def get_crypto_portfolio():
                 "cash_balance": okx_portfolio_data['cash_balance']
             }
         })
-        
+
     except Exception as e:
         app.logger.error("Error getting OKX portfolio: %s", e)
         # Fallback to legacy system if OKX fails
@@ -471,7 +466,7 @@ def get_okx_status():
         initialize_system()
         portfolio_service = get_portfolio_service()
         exchange_status = portfolio_service.get_exchange_status()
-        
+
         return jsonify({
             'success': True,
             'status': exchange_status
@@ -492,15 +487,15 @@ def get_okx_status():
 def get_price_source_status():
     """Get live price data source connection status with connection uptime."""
     global connection_start_time, last_successful_connection
-    
+
     try:
         initialize_system()
         if not crypto_portfolio:
             return jsonify({"error": "Crypto portfolio not initialized"}), 500
-            
+
         api_status = crypto_portfolio.get_api_status()
         current_time = datetime.now()
-        
+
         # Track connection state changes
         if api_status.get('status') == 'connected':
             if connection_start_time is None:
@@ -512,7 +507,7 @@ def get_price_source_status():
             # Connection lost - reset connection timer
             connection_start_time = None
             connection_uptime_seconds = 0
-        
+
         # Add connection timing information to the status
         enhanced_status = api_status.copy()
         enhanced_status.update({
@@ -521,7 +516,7 @@ def get_price_source_status():
             'last_successful_connection': last_successful_connection.isoformat() if last_successful_connection else None,
             'server_uptime_seconds': int((current_time - server_start_time).total_seconds())
         })
-        
+
         return jsonify({
             'success': True,
             'status': enhanced_status
@@ -550,7 +545,7 @@ def get_exchange_rates():
     try:
         # Initialize system if needed
         initialize_system()
-        
+
         # Use OKX exchange rates for authentic currency conversion
         if crypto_portfolio and hasattr(crypto_portfolio.exchange, 'get_currency_conversion_rates'):
             try:
@@ -567,24 +562,24 @@ def get_exchange_rates():
             exchange_rates = {
                 "USD": 1.0,
                 "EUR": 0.92,  # USD to EUR
-                "GBP": 0.79,  # USD to GBP  
+                "GBP": 0.79,  # USD to GBP
                 "AUD": 1.52   # USD to AUD
             }
             source = "fallback"
-        
+
         return jsonify({
             "rates": exchange_rates,
             "base": "USD",
             "source": source,
             "timestamp": datetime.now().isoformat()
         })
-        
+
     except Exception as e:
         app.logger.error("Error getting OKX exchange rates: %s", e)
         # Return fallback rates on error
         return jsonify({
             "rates": {"USD": 1.0, "EUR": 0.92, "GBP": 0.79, "AUD": 1.52},
-            "base": "USD", 
+            "base": "USD",
             "source": "fallback",
             "error": str(e),
             "timestamp": datetime.now().isoformat()
@@ -600,7 +595,7 @@ def debug_currency():
             "exchange_exists": hasattr(portfolio_service, 'exchange') if portfolio_service else False,
             "method_exists": hasattr(portfolio_service.exchange, 'get_currency_conversion_rates') if portfolio_service and hasattr(portfolio_service, 'exchange') else False
         }
-        
+
         if portfolio_service and hasattr(portfolio_service.exchange, 'get_currency_conversion_rates'):
             try:
                 rates = portfolio_service.exchange.get_currency_conversion_rates()
@@ -609,7 +604,7 @@ def debug_currency():
             except Exception as e:
                 debug_info["okx_error"] = str(e)
                 debug_info["okx_call_successful"] = False
-        
+
         return jsonify(debug_info)
     except Exception as e:
         return jsonify({"error": str(e)})
@@ -621,20 +616,20 @@ def update_live_prices():
         initialize_system()
         if not crypto_portfolio:
             return jsonify({"error": "Crypto portfolio not initialized"}), 500
-        
+
         # Get list of symbols to update (default: all)
         data = request.get_json() or {}
         symbols = data.get('symbols', None)
-        
+
         updated_prices = crypto_portfolio.update_live_prices(symbols)
-        
+
         return jsonify({
             'success': True,
             'message': f'Updated {len(updated_prices)} cryptocurrency prices',
             'updated_symbols': list(updated_prices.keys()),
             'updated_prices': updated_prices
         })
-        
+
     except Exception as e:
         app.logger.error("Error updating live prices: %s", e)
         return jsonify({
@@ -649,27 +644,27 @@ def rebalance_crypto_portfolio():
         initialize_system()
         if not crypto_portfolio:
             return jsonify({"error": "Crypto portfolio not initialized"}), 500
-        
+
         # Clear all trades and positions from database since we're rebalancing
         if db_manager:
             db_manager.reset_all_trades(mode='paper')  # Clear paper trading data
             db_manager.reset_all_positions(mode='paper')  # Clear paper trading positions
             db_manager.reset_portfolio_snapshots(mode='paper')  # Clear portfolio history
-        
+
         # CRITICAL FIX: Do NOT rebalance quantities - this prevents P&L calculations
         # Keep original quantities fixed for buy-and-hold P&L tracking
         app.logger.info("Portfolio rebalance requested, but quantities remain FIXED for accurate P&L tracking")
-        
+
         # Only update prices, never modify quantities in a buy-and-hold system
         crypto_portfolio.update_live_prices()
-        
+
         # The P&L will now show real gains/losses since initial $10 investments
         app.logger.info("Portfolio prices updated with FIXED quantities - P&L will reflect market performance")
-        
+
         crypto_portfolio.save_portfolio_state()
-        
+
         return jsonify({"success": True, "message": "Portfolio rebalanced successfully"})
-        
+
     except Exception as e:
         app.logger.error("Error rebalancing portfolio: %s", e)
         return jsonify({"success": False, "error": str(e)}), 500
@@ -691,21 +686,21 @@ def paper_trade_buy():
         data = request.get_json()
         symbol = data.get('symbol')
         amount = float(data.get('amount', 0))
-        
+
         if not symbol or amount <= 0:
             return jsonify({"success": False, "error": "Invalid symbol or amount"}), 400
-        
+
         if not crypto_portfolio:
             return jsonify({"success": False, "error": "Portfolio not initialized"}), 500
-        
+
         # Get current price
         portfolio_data = crypto_portfolio.get_portfolio_data()
         if symbol not in portfolio_data:
             return jsonify({"success": False, "error": f"Symbol {symbol} not found in portfolio"}), 400
-        
+
         current_price = portfolio_data[symbol]['current_price']
         quantity = amount / current_price
-        
+
         # Record the trade
         trade_data = {
             'timestamp': datetime.now(),
@@ -720,10 +715,10 @@ def paper_trade_buy():
             'pnl': 0,
             'mode': 'paper'
         }
-        
+
         if db_manager:
             db_manager.save_trade(trade_data)
-        
+
         return jsonify({
             "success": True,
             "message": f"Paper bought {quantity:.6f} {symbol} at ${current_price:.4f}",
@@ -735,7 +730,7 @@ def paper_trade_buy():
                 "total_cost": amount
             }
         })
-        
+
     except Exception as e:
         app.logger.error(f"Error in paper buy trade: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
@@ -748,21 +743,21 @@ def paper_trade_sell():
         data = request.get_json()
         symbol = data.get('symbol')
         quantity = float(data.get('quantity', 0))
-        
+
         if not symbol or quantity <= 0:
             return jsonify({"success": False, "error": "Invalid symbol or quantity"}), 400
-        
+
         if not crypto_portfolio:
             return jsonify({"success": False, "error": "Portfolio not initialized"}), 500
-        
+
         # Get current price
         portfolio_data = crypto_portfolio.get_portfolio_data()
         if symbol not in portfolio_data:
             return jsonify({"success": False, "error": f"Symbol {symbol} not found in portfolio"}), 400
-        
+
         current_price = portfolio_data[symbol]['current_price']
         total_value = quantity * current_price
-        
+
         # Record the trade
         trade_data = {
             'timestamp': datetime.now(),
@@ -777,10 +772,10 @@ def paper_trade_sell():
             'pnl': 0,  # Calculate based on average buy price if available
             'mode': 'paper'
         }
-        
+
         if db_manager:
             db_manager.save_trade(trade_data)
-        
+
         return jsonify({
             "success": True,
             "message": f"Paper sold {quantity:.6f} {symbol} at ${current_price:.4f}",
@@ -792,7 +787,7 @@ def paper_trade_sell():
                 "total_value": total_value
             }
         })
-        
+
     except Exception as e:
         app.logger.error(f"Error in paper sell trade: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
@@ -804,19 +799,19 @@ def api_portfolio_performance():
         initialize_system()
         if crypto_portfolio is None:
             return jsonify({"error": "Crypto portfolio not initialized"}), 500
-        
+
         performance_data = crypto_portfolio.get_portfolio_performance()
-        
+
         # Calculate summary statistics
         total_invested = sum(p["total_invested"] for p in performance_data)
         total_current_value = sum(p["current_value"] for p in performance_data)
         total_pnl = sum(p["total_accumulated_pnl"] for p in performance_data)
         avg_return = (total_pnl / total_invested) * 100 if total_invested > 0 else 0
-        
+
         # Count winning vs losing positions
         winners = [p for p in performance_data if p["accumulated_pnl_percent"] > 0]
         losers = [p for p in performance_data if p["accumulated_pnl_percent"] < 0]
-        
+
         return jsonify({
             "performance": performance_data,
             "summary": {
@@ -841,7 +836,7 @@ def api_current_positions():
         # Get real OKX portfolio data
         portfolio_service = get_portfolio_service()
         portfolio_data = portfolio_service.get_portfolio_data()
-        
+
         # Transform holdings into positions format for the table
         positions = []
         for holding in portfolio_data.get('holdings', []):
@@ -866,11 +861,11 @@ def api_current_positions():
                     "is_live": holding.get('is_live', True)
                 }
                 positions.append(position)
-        
+
         # Calculate summary
         total_position_value = sum(p["market_value"] for p in positions)
         total_unrealized_pnl = sum(p["unrealized_pnl"] for p in positions)
-        
+
         return jsonify({
             "positions": positions,
             "summary": {
@@ -892,16 +887,16 @@ def export_crypto_portfolio():
         initialize_system()
         if not crypto_portfolio:
             return jsonify({"error": "Crypto portfolio not initialized"}), 500
-        
+
         import csv
         from io import StringIO
-        
+
         output = StringIO()
         writer = csv.writer(output)
-        
+
         # Write header
         writer.writerow(['Rank', 'Symbol', 'Name', 'Quantity', 'Current Price', 'Current Value', 'Initial Value', 'PnL', 'PnL %'])
-        
+
         # Write data
         portfolio_data = crypto_portfolio.get_portfolio_data()
         for symbol, data in sorted(portfolio_data.items(), key=lambda x: x[1]['rank']):
@@ -916,16 +911,16 @@ def export_crypto_portfolio():
                 round(data['pnl'], 2),
                 round(data['pnl_percent'], 2)
             ])
-        
+
         output.seek(0)
-        
+
         from flask import Response
         return Response(
             output.getvalue(),
             mimetype='text/csv',
             headers={'Content-Disposition': 'attachment; filename=crypto_portfolio.csv'}
         )
-        
+
     except Exception as e:
         app.logger.error("Error exporting portfolio: %s", e)
         return jsonify({"error": str(e)}), 500
@@ -935,31 +930,31 @@ def get_crypto_chart(symbol):
     """Return price history for a specific cryptocurrency."""
     try:
         initialize_system()
-        
+
         # Get duration parameter (default to 1 day)
         duration = request.args.get('duration', '1d')
-        
+
         # Convert duration to hours
         duration_map = {
             '1h': 1,
-            '4h': 4, 
+            '4h': 4,
             '1d': 24,
             '7d': 168,  # 7 * 24
             '30d': 720  # 30 * 24
         }
         hours = duration_map.get(duration, 24)
-        
+
         if crypto_portfolio:
             try:
                 portfolio_data = crypto_portfolio.get_portfolio_data()
                 if symbol in portfolio_data:
                     crypto_data = portfolio_data[symbol]
-                    
+
                     # For now, bypass stored history and generate duration-specific patterns
                     # This ensures each time period shows dramatically different data
                     # TODO: Replace with real historical data from exchange APIs later
                     historical_data = []  # Force use of generated patterns
-                    
+
                     if False:  # Disabled: historical_data:
                         # Extract actual prices from historical data
                         price_history = [point["price"] for point in historical_data]
@@ -968,28 +963,23 @@ def get_crypto_chart(symbol):
                         current_price = crypto_data.get('current_price', 100)
                         price_history = []
                         base_price = current_price / (1 + (crypto_data.get('pnl_percent', 0) / 100))
-                        
+
                         # Generate realistic price fluctuations leading to current state
                         # Adjust data points based on duration for realistic granularity
                         if hours <= 1:
                             data_points = 60  # 1 minute intervals for 1 hour
-                            base_volatility = 0.005  # Lower volatility for shorter periods
                         elif hours <= 4:
-                            data_points = 48  # 5 minute intervals for 4 hours  
-                            base_volatility = 0.008
+                            data_points = 48  # 5 minute intervals for 4 hours
                         elif hours <= 24:
                             data_points = 72  # 20 minute intervals for 1 day
-                            base_volatility = 0.015
                         elif hours <= 168:  # 7 days
                             data_points = 84  # 2 hour intervals for 7 days
-                            base_volatility = 0.025
                         else:  # 30 days
                             data_points = 120  # 6 hour intervals for 30 days
-                            base_volatility = 0.035
-                        
+
                         # Create dramatically different patterns for each duration
                         pnl_percent = crypto_data.get('pnl_percent', 0)
-                        
+
                         if duration == '1h':
                             # Minute-by-minute micro movements - tight range
                             range_factor = 0.02  # 2% total range
@@ -999,14 +989,14 @@ def get_crypto_chart(symbol):
                                 micro_trend = (pnl_percent / 100) * progress / 24  # 1/24th of daily trend
                                 noise = np.sin(progress * 8 * np.pi) * range_factor * 0.3  # Fast oscillations
                                 random_walk = np.random.normal(0, 0.002)  # Very small random movements
-                                
+
                                 if i == 0:
                                     price = base_price
                                 else:
                                     price = base_price * (1 + micro_trend + noise + random_walk * i * 0.001)
-                                
+
                                 price_history.append(max(price, base_price * 0.98))
-                        
+
                         elif duration == '4h':
                             # 4-hour intraday pattern - short term trends
                             range_factor = 0.06  # 6% total range
@@ -1016,14 +1006,14 @@ def get_crypto_chart(symbol):
                                 intraday_trend = (pnl_percent / 100) * progress / 6  # 1/6th of daily trend
                                 wave = np.sin(progress * 3 * np.pi) * range_factor * 0.4  # Medium waves
                                 random_component = np.random.normal(0, 0.008)
-                                
+
                                 if i == 0:
                                     price = base_price
                                 else:
                                     price = base_price * (1 + intraday_trend + wave + random_component * i * 0.002)
-                                
+
                                 price_history.append(max(price, base_price * 0.94))
-                        
+
                         elif duration == '1d':
                             # Daily pattern - normal volatility
                             range_factor = 0.15  # 15% total range
@@ -1032,14 +1022,14 @@ def get_crypto_chart(symbol):
                                 daily_trend = (pnl_percent / 100) * progress  # Full daily trend
                                 volatility_wave = np.sin(progress * 2 * np.pi) * range_factor * 0.3
                                 random_component = np.random.normal(0, 0.015)
-                                
+
                                 if i == 0:
                                     price = base_price
                                 else:
                                     price = base_price * (1 + daily_trend + volatility_wave + random_component * i * 0.003)
-                                
+
                                 price_history.append(max(price, base_price * 0.85))
-                        
+
                         elif duration == '7d':
                             # Weekly pattern - larger swings with cycles
                             range_factor = 0.35  # 35% total range
@@ -1050,14 +1040,14 @@ def get_crypto_chart(symbol):
                                 major_cycle = np.sin(progress * 4 * np.pi) * range_factor * 0.3  # 2 major waves per week
                                 minor_cycle = np.sin(progress * 14 * np.pi) * range_factor * 0.1  # Daily fluctuations
                                 random_component = np.random.normal(0, 0.025)
-                                
+
                                 if i == 0:
                                     price = base_price
                                 else:
                                     price = base_price * (1 + weekly_trend + major_cycle + minor_cycle + random_component * i * 0.005)
-                                
+
                                 price_history.append(max(price, base_price * 0.65))
-                        
+
                         else:  # 30d
                             # Monthly pattern - major trends and corrections
                             range_factor = 0.6  # 60% total range
@@ -1069,21 +1059,21 @@ def get_crypto_chart(symbol):
                                 correction_cycle = np.sin(progress * 8 * np.pi) * range_factor * 0.15  # Weekly corrections
                                 market_noise = np.sin(progress * 30 * np.pi) * range_factor * 0.05  # Daily noise
                                 random_component = np.random.normal(0, 0.035)
-                                
+
                                 if i == 0:
                                     price = base_price
                                 else:
                                     price = base_price * (1 + monthly_trend + major_trend + correction_cycle + market_noise + random_component * i * 0.008)
-                                
+
                                 price_history.append(max(price, base_price * 0.4))
-                    
+
                     # Generate meaningful time-based labels based on duration
                     time_labels = []
                     if len(price_history) > 0:
                         data_points = len(price_history)
                         for i in range(data_points):
                             time_ago = (data_points - i - 1) * (hours / data_points)
-                            
+
                             if time_ago == 0:
                                 time_labels.append("Now")
                             elif duration == '1h':
@@ -1122,7 +1112,7 @@ def get_crypto_chart(symbol):
                                     time_labels.append(f"{weeks_ago}w ago")
                     else:
                         time_labels = ["No data"]
-                    
+
                     chart_data = {
                         'symbol': symbol,
                         'name': crypto_data.get('name', symbol),
@@ -1133,7 +1123,7 @@ def get_crypto_chart(symbol):
                     }
                     return jsonify(chart_data)
             except Exception as e:
-                app.logger.error(f"Error accessing portfolio data for {symbol}: {str(e)}")
+                app.logger.error(f"Error accessing portfolio data for {symbol}: {e!s}")
                 # Try to create fallback data
                 return jsonify({
                     'symbol': symbol,
@@ -1157,7 +1147,7 @@ def get_portfolio_data():
         if crypto_portfolio:
             summary = crypto_portfolio.get_portfolio_summary()
             chart_data = crypto_portfolio.get_portfolio_chart_data(hours=24)
-            
+
             return {
                 "total_value": summary["total_current_value"],
                 "cash": summary["total_current_value"] * 0.1,  # Assume 10% cash
@@ -1166,7 +1156,7 @@ def get_portfolio_data():
                 "total_return": summary["total_pnl_percent"] / 100,
                 "chart_data": chart_data,
             }
-        
+
         # Fallback to trading system portfolio
         if current_trader and hasattr(current_trader, "get_portfolio_value"):
             if trading_status["mode"] == "paper":
@@ -1220,24 +1210,24 @@ def start_trading():
         symbol = data.get("symbol", "BTC/USDT")
         timeframe = data.get("timeframe", "1h")
         trading_mode = data.get("trading_mode", "single")  # "single" or "portfolio"
-        
+
         if trading_status["is_running"]:
             return jsonify({"error": "Trading is already running"}), 400
         if mode == "live" and not data.get("confirmation", False):
             return jsonify({"error": "Live trading requires explicit confirmation"}), 400
-        
+
         if trading_mode == "portfolio":
             # Start portfolio-wide trading
             if not crypto_portfolio:
                 return jsonify({"error": "Crypto portfolio not initialized"}), 500
-            
+
             start_portfolio_trader_thread(mode, timeframe)
             return jsonify({"success": True, "message": f"{mode.title()} portfolio trading started for {len(crypto_portfolio.get_portfolio_data())} assets"})
         else:
             # Start single asset trading
             start_trader_thread(mode, symbol, timeframe)
             return jsonify({"success": True, "message": f"{mode.title()} trading started for {symbol}"})
-            
+
     except ValueError as ve:
         return jsonify({"error": str(ve)}), 400
     except Exception as e:
@@ -1269,14 +1259,14 @@ def run_backtest():
         mode = data.get("mode", "single")  # "single" or "portfolio"
 
         strategy = EnhancedBollingerBandsStrategy(config)
-        
+
         if mode == "portfolio":
             # Run portfolio-wide backtest
             from src.backtesting.multi_asset_engine import MultiAssetBacktestEngine
-            
+
             if not crypto_portfolio:
                 return jsonify({"error": "Crypto portfolio not initialized"}), 500
-            
+
             multi_engine = MultiAssetBacktestEngine(config, strategy)
             results = multi_engine.run_portfolio_backtest(
                 crypto_portfolio, days=days, timeframe=timeframe
@@ -1286,13 +1276,10 @@ def run_backtest():
             engine = BacktestEngine(config, strategy)
             end_date = datetime.now()
             start_date = end_date - timedelta(days=days)
-            
+
             # Ensure symbol has proper format for trading pairs
-            if '/' not in symbol:
-                trading_symbol = f"{symbol}/USDT"
-            else:
-                trading_symbol = symbol
-            
+            trading_symbol = f"{symbol}/USDT" if '/' not in symbol else symbol
+
             results = engine.run_backtest(symbol=trading_symbol, start_date=start_date, end_date=end_date, timeframe=timeframe)
 
         # Clean up infinite and NaN values for JSON serialization
@@ -1312,7 +1299,7 @@ def run_backtest():
                 return round(obj, 6)
             else:
                 return obj
-        
+
         cleaned_results = clean_float_values(results)
 
         if mode == "portfolio":
@@ -1344,13 +1331,13 @@ def run_backtest():
                 "win_rate": cleaned_results.get("win_rate", 0),
                 "mode": "backtest",
             }
-        
+
         db_manager.save_strategy_performance(performance_data)
-        
+
         # Store backtest results in global status for frontend display
         global backtest_results
         backtest_results = cleaned_results
-        
+
         return jsonify({"success": True, "results": cleaned_results})
     except ValueError as ve:
         return jsonify({"error": str(ve)}), 400
@@ -1376,15 +1363,15 @@ def get_positions():
     try:
         mode = request.args.get("mode", trading_status["mode"])
         positions_df = db_manager.get_positions(mode=mode)
-        
+
         if positions_df.empty:
             return jsonify([])
-            
+
         # Enrich positions with current crypto portfolio data
         if crypto_portfolio:
             portfolio_data = crypto_portfolio.get_portfolio_data()
             positions_list = positions_df.to_dict("records")
-            
+
             for position in positions_list:
                 symbol = position['symbol']
                 if symbol in portfolio_data:
@@ -1399,7 +1386,7 @@ def get_positions():
                     # Fallback if symbol not in portfolio
                     position['current_price'] = position.get('avg_price', 0)
                     position['market_value'] = position['size'] * position['current_price']
-            
+
             return jsonify(positions_list)
         else:
             return jsonify(positions_df.to_dict("records"))
@@ -1451,18 +1438,18 @@ def update_email_settings():
         enabled = data.get('enabled')
         recipient_email = data.get('recipient_email')
         sender_email = data.get('sender_email')
-        
+
         success = email_service.update_email_settings(
             enabled=enabled,
-            recipient_email=recipient_email, 
+            recipient_email=recipient_email,
             sender_email=sender_email
         )
-        
+
         if success:
             return jsonify({"success": True, "message": "Email settings updated successfully"})
         else:
             return jsonify({"success": False, "error": "Failed to update email settings"}), 500
-            
+
     except Exception as e:
         app.logger.error("Error updating email settings: %s", e)
         return jsonify({"error": str(e)}), 500
@@ -1479,14 +1466,14 @@ def test_email():
             'total_value': 50,
             'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         }
-        
+
         success = email_service.send_trade_notification(test_trade_data)
-        
+
         if success:
             return jsonify({"success": True, "message": "Test email sent successfully!"})
         else:
             return jsonify({"success": False, "error": "Failed to send test email. Check your email settings and SendGrid API key."}), 500
-            
+
     except Exception as e:
         app.logger.error("Error sending test email: %s", e)
         return jsonify({"error": str(e)}), 500
@@ -1498,10 +1485,10 @@ def get_price_validation_status():
         initialize_system()
         if not crypto_portfolio:
             return jsonify({"error": "Crypto portfolio not initialized"}), 500
-        
+
         validation_status = crypto_portfolio.get_price_validation_status()
         return jsonify(validation_status)
-        
+
     except Exception as e:
         app.logger.error("Error getting price validation status: %s", e)
         return jsonify({"error": str(e)}), 500
@@ -1513,10 +1500,10 @@ def acknowledge_price_warning():
         initialize_system()
         if not crypto_portfolio:
             return jsonify({"error": "Crypto portfolio not initialized"}), 500
-        
+
         crypto_portfolio.price_api.acknowledge_warning()
         return jsonify({"success": True, "message": "Price warning acknowledged"})
-        
+
     except Exception as e:
         app.logger.error("Error acknowledging price warning: %s", e)
         return jsonify({"error": str(e)}), 500
@@ -1526,14 +1513,14 @@ def emergency_stop():
     """Emergency stop with price validation check."""
     try:
         global current_trader
-        
+
         # Check if prices are live before allowing trading operations
         initialize_system()
         if crypto_portfolio:
             validation_status = crypto_portfolio.get_price_validation_status()
             if not validation_status.get('connection_status', {}).get('connected', False):
                 app.logger.warning("Emergency stop called during price API disconnection")
-        
+
         if current_trader and hasattr(current_trader, "emergency_stop"):
             current_trader.emergency_stop()
         elif current_trader:
@@ -1553,11 +1540,11 @@ def export_ato_tax_statement():
         initialize_system()
         if not crypto_portfolio:
             return jsonify({"error": "Crypto portfolio not initialized"}), 500
-            
-        from datetime import datetime, timedelta
-        from io import StringIO
+
         import csv
-        
+        from datetime import datetime
+        from io import StringIO
+
         # Get trading history for actual buy/sell transactions
         trades_data = []
         if db_manager:
@@ -1571,15 +1558,15 @@ def export_ato_tax_statement():
             except Exception as e:
                 print(f"Error getting trades data: {e}")
                 trades_data = []
-        
+
         # Prepare ATO-compliant CSV
         output = StringIO()
         writer = csv.writer(output)
-        
+
         # ATO Capital Gains Tax Header Information
         current_date = datetime.now().strftime('%Y-%m-%d')
         tax_year = datetime.now().year if datetime.now().month >= 7 else datetime.now().year - 1
-        
+
         # Header section with taxpayer information - ATO Compliant Format
         writer.writerow(['AUSTRALIAN TAXATION OFFICE (ATO) - CRYPTOCURRENCY INCOME & EXPENDITURE STATEMENT'])
         writer.writerow(['Generated for Tax Return Preparation - Individual/Business Use'])
@@ -1593,34 +1580,34 @@ def export_ato_tax_statement():
         writer.writerow(['Asset Classification:', 'Cryptocurrency/Digital Currency'])
         writer.writerow(['Record Keeping Method:', 'FIFO (First In, First Out)'])
         writer.writerow([''])
-        
+
         # ATO Compliance Notice
         writer.writerow(['ATO COMPLIANCE NOTICE'])
         writer.writerow(['This statement contains transaction records for cryptocurrency trading activities.'])
         writer.writerow(['Records maintained in accordance with ATO requirements for digital currency transactions.'])
         writer.writerow(['All amounts shown in Australian Dollars (AUD).'])
         writer.writerow([''])
-        
+
         # SECTION 1: DETAILED TRANSACTION RECORDS (ATO Required)
         writer.writerow(['SECTION 1: DETAILED TRANSACTION RECORDS'])
         writer.writerow(['All cryptocurrency transactions for income and expenditure assessment'])
         writer.writerow([''])
-        writer.writerow(['Date (YYYY-MM-DD)', 'Time', 'Transaction Type', 'Cryptocurrency', 'Quantity', 
-                        'AUD Value Per Unit', 'Total AUD Value', 'Transaction Fee (AUD)', 'Net AUD Amount', 
+        writer.writerow(['Date (YYYY-MM-DD)', 'Time', 'Transaction Type', 'Cryptocurrency', 'Quantity',
+                        'AUD Value Per Unit', 'Total AUD Value', 'Transaction Fee (AUD)', 'Net AUD Amount',
                         'Purpose/Description', 'Exchange/Platform', 'Wallet Address/Reference'])
-        
+
         # Process all trades for detailed transaction record
         transaction_count = 0
         total_purchases = 0
         total_sales = 0
         total_income = 0
         total_expenses = 0
-        
+
         # Track for capital gains calculations
         buy_trades = {}  # Track purchases for cost base
         sell_trades = []  # Track sales for capital gains
         total_capital_gain = 0
-        
+
         for trade in trades_data:
             # Handle both dict and DataFrame row access
             if hasattr(trade, 'get'):
@@ -1637,9 +1624,9 @@ def export_ato_tax_statement():
                 size = float(trade.size)
                 price = float(trade.price)
                 timestamp = str(trade.timestamp)
-            
+
             total_value = size * price
-            
+
             # Extract date and time components for ATO compliance
             try:
                 if isinstance(timestamp, str):
@@ -1651,15 +1638,15 @@ def export_ato_tax_statement():
             except:
                 date_str = str(timestamp)[:10] if timestamp else 'Unknown'
                 time_str = 'Unknown'
-            
+
             # Calculate fees and net amounts (assuming 0.1% transaction fee for ATO reporting)
             transaction_fee = total_value * 0.001  # 0.1% fee
             net_amount = total_value - transaction_fee if action == 'buy' else total_value - transaction_fee
-            
+
             # Write detailed transaction record
             writer.writerow([
                 date_str,
-                time_str, 
+                time_str,
                 action.upper(),
                 symbol,
                 f'{size:.8f}',
@@ -1671,9 +1658,9 @@ def export_ato_tax_statement():
                 'Paper Trading Platform',
                 'Portfolio Management System'
             ])
-            
+
             transaction_count += 1
-            
+
             if action == 'buy':
                 # Track for capital gains
                 if symbol not in buy_trades:
@@ -1686,16 +1673,16 @@ def export_ato_tax_statement():
                 })
                 total_purchases += total_value
                 total_expenses += total_value
-                
+
             elif action == 'sell':
                 total_sales += total_value
                 total_income += total_value
                 # Calculate capital gain using FIFO method
-                if symbol in buy_trades and buy_trades[symbol]:
+                if buy_trades.get(symbol):
                     remaining_to_sell = size
                     sale_proceeds = total_value
                     cost_base = 0
-                    
+
                     while remaining_to_sell > 0 and buy_trades[symbol]:
                         buy_trade = buy_trades[symbol][0]
                         if buy_trade['quantity'] <= remaining_to_sell:
@@ -1710,10 +1697,10 @@ def export_ato_tax_statement():
                             buy_trade['quantity'] -= remaining_to_sell
                             buy_trade['total_cost'] *= (1 - proportion)
                             remaining_to_sell = 0
-                    
+
                     capital_gain = sale_proceeds - cost_base
                     total_capital_gain += capital_gain
-                    
+
                     sell_trades.append({
                         'symbol': symbol,
                         'sale_date': timestamp,
@@ -1723,20 +1710,20 @@ def export_ato_tax_statement():
                         'quantity': size,
                         'sale_price': price
                     })
-                    
+
                 total_sales += total_value
-        
+
         # Add summary rows after transactions
         writer.writerow([''])
         writer.writerow(['TRANSACTION SUMMARY'])
         writer.writerow(['Total Number of Transactions:', f'{transaction_count}'])
         writer.writerow([''])
-        
+
         # SECTION 2: INCOME AND EXPENDITURE SUMMARY (ATO Required)
         writer.writerow(['SECTION 2: INCOME AND EXPENDITURE SUMMARY'])
         writer.writerow(['For Australian Tax Office Assessment'])
         writer.writerow([''])
-        
+
         # Income section
         writer.writerow(['INCOME ITEMS'])
         writer.writerow(['Description', 'Amount (AUD)', 'Tax Treatment'])
@@ -1746,8 +1733,8 @@ def export_ato_tax_statement():
             writer.writerow(['Sale of Cryptocurrency Assets', '$0.00', 'No sales recorded'])
         writer.writerow(['Total Gross Income', f'${total_income:,.2f}', ''])
         writer.writerow([''])
-        
-        # Expenditure section  
+
+        # Expenditure section
         writer.writerow(['EXPENDITURE ITEMS'])
         writer.writerow(['Description', 'Amount (AUD)', 'Deductibility'])
         writer.writerow(['Purchase of Cryptocurrency Assets', f'${total_purchases:,.2f}', 'Cost Base for CGT'])
@@ -1755,7 +1742,7 @@ def export_ato_tax_statement():
         writer.writerow(['Transaction Fees', f'${total_fees:,.2f}', 'Added to cost base/deducted from proceeds'])
         writer.writerow(['Total Expenditure', f'${total_expenses + total_fees:,.2f}', ''])
         writer.writerow([''])
-        
+
         # Net position
         net_position = total_income - total_expenses
         writer.writerow(['NET FINANCIAL POSITION'])
@@ -1763,16 +1750,16 @@ def export_ato_tax_statement():
         writer.writerow(['Total Expenditure', f'${total_expenses:,.2f}'])
         writer.writerow(['Net Position', f'${net_position:,.2f}'])
         writer.writerow([''])
-        
+
         # SECTION 3: CAPITAL GAINS TAX CALCULATIONS
         writer.writerow(['SECTION 3: CAPITAL GAINS TAX CALCULATIONS'])
         writer.writerow(['FIFO Method Applied - Australian Tax Office Compliant'])
         writer.writerow([''])
         writer.writerow(['Total Realized Capital Gains/Losses:', f'${total_capital_gain:,.2f}'])
-        writer.writerow(['Number of Buy Transactions:', len([t for t in trades_data if hasattr(t, 'get') and t.get('action', '').lower() == 'buy' or hasattr(t, 'action') and str(t.action).lower() == 'buy'])])
+        writer.writerow(['Number of Buy Transactions:', len([t for t in trades_data if (hasattr(t, 'get') and t.get('action', '').lower() == 'buy') or (hasattr(t, 'action') and str(t.action).lower() == 'buy')])])
         writer.writerow(['Number of Sell Transactions:', len(sell_trades)])
         writer.writerow([''])
-        
+
         # SECTION 4: ATO COMPLIANCE NOTES AND TAX IMPLICATIONS
         writer.writerow(['SECTION 4: ATO COMPLIANCE NOTES'])
         writer.writerow([''])
@@ -1783,7 +1770,7 @@ def export_ato_tax_statement():
         writer.writerow(['• Record Keeping: 5-year retention period for all transaction records'])
         writer.writerow(['• Discount Eligibility: 50% CGT discount may apply for assets held >12 months'])
         writer.writerow([''])
-        
+
         writer.writerow(['IMPORTANT ATO REQUIREMENTS:'])
         writer.writerow(['• Declare all cryptocurrency disposals in tax return'])
         writer.writerow(['• Include both gains and losses in CGT calculations'])
@@ -1791,7 +1778,7 @@ def export_ato_tax_statement():
         writer.writerow(['• Obtain independent professional tax advice for complex situations'])
         writer.writerow(['• Report in AUD using exchange rate at time of transaction'])
         writer.writerow([''])
-        
+
         writer.writerow(['RECORD KEEPING COMPLIANCE:'])
         writer.writerow(['• Date of each transaction'])
         writer.writerow(['• Type of transaction (buy/sell/trade)'])
@@ -1801,7 +1788,7 @@ def export_ato_tax_statement():
         writer.writerow(['• Exchange or platform used'])
         writer.writerow(['• Copy of transaction records and receipts'])
         writer.writerow([''])
-        
+
         if sell_trades:
             # Detailed capital gains table for sales
             writer.writerow(['DETAILED CAPITAL GAINS TRANSACTIONS'])
@@ -1817,16 +1804,16 @@ def export_ato_tax_statement():
                 'Holding Period',
                 'CGT Discount Eligible'
             ])
-            
+
             # Sort by capital gain (highest first)
             sell_trades_sorted = sorted(sell_trades, key=lambda x: x['capital_gain'], reverse=True)
-            
+
             for trade in sell_trades_sorted:
                 # Calculate holding period (estimate based on trade timing)
                 holding_period_days = 30  # Placeholder - could be calculated from actual buy/sell dates
                 cgt_discount_eligible = "Yes (>12 months)" if holding_period_days > 365 else "No (<12 months)"
                 gain_percent = (trade['capital_gain'] / trade['cost_base'] * 100) if trade['cost_base'] > 0 else 0
-                
+
                 writer.writerow([
                     trade['symbol'],
                     trade['sale_date'],
@@ -1839,7 +1826,7 @@ def export_ato_tax_statement():
                     f'{holding_period_days} days',
                     cgt_discount_eligible
                 ])
-        
+
         # All buy transactions for reference
         writer.writerow([''])
         writer.writerow(['ALL BUY TRANSACTIONS (ACQUISITIONS)'])
@@ -1851,7 +1838,7 @@ def export_ato_tax_statement():
             'Total Cost (AUD)',
             'Status'
         ])
-        
+
         buy_transactions = [t for t in trades_data if t.get('action', '').lower() == 'buy']
         for trade in buy_transactions:
             symbol = trade.get('symbol', '').replace('/USDT', '').replace('/USD', '')
@@ -1863,8 +1850,8 @@ def export_ato_tax_statement():
                 f'${float(trade.get("size", 0)) * float(trade.get("price", 0)):.2f}',
                 'Purchase'
             ])
-        
-        # All sell transactions for reference  
+
+        # All sell transactions for reference
         writer.writerow([''])
         writer.writerow(['ALL SELL TRANSACTIONS (DISPOSALS)'])
         writer.writerow([
@@ -1875,7 +1862,7 @@ def export_ato_tax_statement():
             'Total Proceeds (AUD)',
             'Status'
         ])
-        
+
         sell_transactions = [t for t in trades_data if t.get('action', '').lower() == 'sell']
         for trade in sell_transactions:
             symbol = trade.get('symbol', '').replace('/USDT', '').replace('/USD', '')
@@ -1887,7 +1874,7 @@ def export_ato_tax_statement():
                 f'${float(trade.get("size", 0)) * float(trade.get("price", 0)):.2f}',
                 'Sale'
             ])
-        
+
         # Footer with compliance information
         writer.writerow([''])
         writer.writerow(['COMPLIANCE NOTES'])
@@ -1901,18 +1888,18 @@ def export_ato_tax_statement():
         writer.writerow(['This statement is for record-keeping purposes only.'])
         writer.writerow(['Consult a qualified tax advisor for official tax advice.'])
         writer.writerow(['ARM Digital Enterprises assumes no liability for tax reporting accuracy.'])
-        
+
         output.seek(0)
-        
+
         from flask import Response
         filename = f'ATO_CGT_Statement_{tax_year}_{current_date}_ARM_Digital.csv'
-        
+
         return Response(
             output.getvalue(),
             mimetype='text/csv',
             headers={'Content-Disposition': f'attachment; filename={filename}'}
         )
-        
+
     except Exception as e:
         app.logger.error("Error exporting ATO tax statement: %s", e)
         return jsonify({"success": False, "error": str(e)}), 500
@@ -1924,7 +1911,7 @@ def get_crypto_news():
         # Create simulated crypto news for demonstration
         # In production, replace with real news APIs like NewsAPI.org
         current_time = datetime.now()
-        
+
         fake_news = [
             {
                 "title": "Bitcoin Breaks $45,000 Resistance, Eyes $50,000 Target",
@@ -1957,13 +1944,13 @@ def get_crypto_news():
                 "source": "WhaleAlert"
             }
         ]
-        
+
         return jsonify({
             "status": "success",
             "articles": fake_news,
             "message": "Demo news feed - Connect NewsAPI.org for live data"
         })
-        
+
     except Exception as e:
         app.logger.error("Error fetching crypto news: %s", e)
         return jsonify({"error": str(e)}), 500

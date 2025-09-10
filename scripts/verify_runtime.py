@@ -1,5 +1,9 @@
 # scripts/verify_runtime.py
-import sys, json, os, requests
+import json
+import os
+import sys
+
+import requests
 
 BASE = os.getenv("APP_BASE_URL", "http://127.0.0.1:5000")
 

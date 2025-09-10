@@ -2,10 +2,10 @@
 State Observers
 Observer pattern implementation for state change notifications
 """
-from typing import Callable, Any, Dict, List, Optional
 import logging
 from abc import ABC, abstractmethod
-from datetime import datetime
+from collections.abc import Callable
+from typing import Any
 
 from .store import StateChange
 
@@ -13,19 +13,18 @@ logger = logging.getLogger(__name__)
 
 class StateObserver(ABC):
     """Abstract base class for state observers."""
-    
+
     @abstractmethod
     def on_state_changed(self, change: StateChange) -> None:
         """Handle state change notification."""
-        pass
 
 class LoggingObserver(StateObserver):
     """Observer that logs state changes."""
-    
+
     def __init__(self, log_level: int = logging.DEBUG):
         self.logger = logger
         self.log_level = log_level
-    
+
     def on_state_changed(self, change: StateChange) -> None:
         """Log state change."""
         self.logger.log(
@@ -35,10 +34,10 @@ class LoggingObserver(StateObserver):
 
 class CallbackObserver(StateObserver):
     """Observer that calls a callback function."""
-    
+
     def __init__(self, callback: Callable[[StateChange], None]):
         self.callback = callback
-    
+
     def on_state_changed(self, change: StateChange) -> None:
         """Call the callback function."""
         try:
@@ -48,11 +47,11 @@ class CallbackObserver(StateObserver):
 
 class PathObserver(StateObserver):
     """Observer that only watches specific state paths."""
-    
-    def __init__(self, paths: List[str], callback: Callable[[StateChange], None]):
+
+    def __init__(self, paths: list[str], callback: Callable[[StateChange], None]):
         self.paths = set(paths)
         self.callback = callback
-    
+
     def on_state_changed(self, change: StateChange) -> None:
         """Handle state change if path matches."""
         if any(change.path.startswith(path) for path in self.paths):
@@ -63,21 +62,21 @@ class PathObserver(StateObserver):
 
 class PerformanceObserver(StateObserver):
     """Observer that tracks performance metrics."""
-    
+
     def __init__(self):
         self.change_count = 0
         self.last_change = None
-        self.frequent_paths: Dict[str, int] = {}
-    
+        self.frequent_paths: dict[str, int] = {}
+
     def on_state_changed(self, change: StateChange) -> None:
         """Track performance metrics."""
         self.change_count += 1
         self.last_change = change.timestamp
-        
+
         path = change.path.split('.')[0]  # Top-level path
         self.frequent_paths[path] = self.frequent_paths.get(path, 0) + 1
-    
-    def get_stats(self) -> Dict[str, Any]:
+
+    def get_stats(self) -> dict[str, Any]:
         """Get performance statistics."""
         return {
             "total_changes": self.change_count,
@@ -86,7 +85,7 @@ class PerformanceObserver(StateObserver):
         }
 
 # Global observer registry
-_observers: List[StateObserver] = []
+_observers: list[StateObserver] = []
 
 def add_observer(observer: StateObserver) -> None:
     """Add a global state observer."""
@@ -107,13 +106,10 @@ def state_changed(change: StateChange) -> None:
             logger.error(f"Observer notification failed: {e}")
 
 # Convenience decorators
-def observe_state_changes(paths: Optional[List[str]] = None):
+def observe_state_changes(paths: list[str] | None = None):
     """Decorator to observe state changes."""
     def decorator(func: Callable[[StateChange], None]):
-        if paths:
-            observer = PathObserver(paths, func)
-        else:
-            observer = CallbackObserver(func)
+        observer = PathObserver(paths, func) if paths else CallbackObserver(func)
         add_observer(observer)
         return func
     return decorator

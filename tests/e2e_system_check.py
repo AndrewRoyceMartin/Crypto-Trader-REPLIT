@@ -5,33 +5,32 @@ and optional DOM/UI checks (HTTP-only and Playwright JS mode).
 Run: python -m tests.e2e_system_check
 """
 
+import base64
+import hashlib
+import hmac
+import json
 import os
 import sys
-import time
-import json
-import base64
-import hmac
-import hashlib
-from datetime import datetime, timezone
-from typing import Dict, List, Tuple
+from datetime import UTC, datetime
 
-import requests
-import pandas as pd
 import numpy as np
+import pandas as pd
+import requests
 from bs4 import BeautifulSoup  # HTTP DOM parsing (no JS)
+
 
 # -------- Auto-Configuration --------
 def auto_populate_environment():
     """Automatically detect and populate environment variables"""
     print("🔧 Auto-populating environment variables...")
-    
+
     # Auto-detect OKX credentials from various possible sources
     possible_keys = [
         ("OKX_API_KEY", ["OKX_API_KEY", "OKEX_API_KEY", "API_KEY"]),
         ("OKX_SECRET_KEY", ["OKX_SECRET_KEY", "OKEX_SECRET_KEY", "SECRET_KEY", "OKX_SECRET"]),
         ("OKX_PASSPHRASE", ["OKX_PASSPHRASE", "OKEX_PASSPHRASE", "PASSPHRASE", "OKX_PASS"])
     ]
-    
+
     populated = {}
     for target_key, possible_names in possible_keys:
         for name in possible_names:
@@ -42,7 +41,7 @@ def auto_populate_environment():
                 break
         else:
             populated[target_key] = "❌ Not found"
-    
+
     # Auto-detect app URL for DOM checks
     app_urls = ["http://127.0.0.1:5000", "http://localhost:5000", "https://localhost:5000"]
     if not os.getenv("APP_URL"):
@@ -57,15 +56,15 @@ def auto_populate_environment():
                 continue
         else:
             populated["APP_URL"] = "❌ No responding server found"
-    
+
     # Auto-populate DOM selectors from actual app
     dom_count = len(get_app_dom_selectors())
     populated["DOM_SELECTORS"] = f"✓ Auto-populated {dom_count} dashboard elements"
-    
+
     # Print auto-population results
     for key, status in populated.items():
         print(f"   {key}: {status}")
-    
+
     return populated
 
 # -------- Configuration --------
@@ -87,38 +86,38 @@ def get_app_dom_selectors():
         ".sidebar",                             # Navigation sidebar
         ".main-content",                        # Main content area
         ".content-header",                      # Page header
-        
+
         # Portfolio dashboard elements
         "#okx-portfolio-value",                 # Main portfolio value
         "#okx-pnl-amount",                      # P&L amount
         "#okx-holdings-count",                  # Holdings count
         "#okx-pnl-percent",                     # P&L percentage
-        
+
         # Navigation elements
         ".nav-link",                           # Navigation links
         ".trading-controls",                   # Trading control buttons
         ".status-indicator",                   # System status indicators
-        
+
         # Data cards and tables
         ".data-card",                          # Main data cards
         ".table-responsive",                   # Responsive tables
         "#holdingsTable",                      # Holdings table
         "#portfolioPositionsTable",           # Portfolio positions
-        
+
         # Interactive elements
         "#btn-bot-toggle",                     # Bot toggle button
         "#currency-selector",                  # Currency selector
         ".btn-refresh",                        # Refresh buttons
-        
+
         # Charts and visualizations
         "canvas",                              # Chart.js canvases
         ".chart-container",                    # Chart containers
-        
+
         # System test elements
         "#test-progress",                      # Test progress bar
         "#test-output",                        # Test output area
         ".test-step",                          # Individual test steps
-        
+
         # Generic fallbacks
         "body",                                # Page body
         "main"                                 # Main content
@@ -132,7 +131,7 @@ DOM_CHECK_JS = os.getenv("DOM_CHECK_JS", "false").lower() in {"1","true","yes"}
 
 # -------- Console helpers --------
 def okx_ts_utc() -> str:
-    return datetime.now(timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z")
+    return datetime.now(UTC).isoformat(timespec="milliseconds").replace("+00:00", "Z")
 
 def assert_true(cond: bool, msg: str):
     if not cond:
@@ -148,7 +147,7 @@ def red(s: str) -> str:
     return f"\033[91m{s}\033[0m"
 
 # -------- OKX auth helpers --------
-def okx_headers(method: str, path: str, body: str = "") -> Dict[str, str]:
+def okx_headers(method: str, path: str, body: str = "") -> dict[str, str]:
     ts = okx_ts_utc()
     secret = os.getenv("OKX_SECRET_KEY", "")
     msg = f"{ts}{method}{path}{body}"
@@ -165,7 +164,7 @@ def okx_headers(method: str, path: str, body: str = "") -> Dict[str, str]:
 def check_env() -> None:
     print("1) Checking env secrets...")
     required_keys = ["OKX_API_KEY", "OKX_SECRET_KEY", "OKX_PASSPHRASE"]
-    
+
     for key in required_keys:
         val = os.getenv(key, "").strip()
         assert_true(bool(val), f"Missing env secret: {key}")
@@ -176,10 +175,10 @@ def check_env() -> None:
             assert_true(len(val) >= 20, f"OKX_SECRET_KEY seems too short: {len(val)} chars")
         elif key == "OKX_PASSPHRASE":
             assert_true(len(val) >= 3, f"OKX_PASSPHRASE seems too short: {len(val)} chars")
-    
+
     print(green("   ✓ Secrets present and validated"))
 
-def check_okx_public() -> Dict:
+def check_okx_public() -> dict:
     print("2) Checking OKX public API (live market/tickers)...")
     url = f"{OKX_BASE}/api/v5/market/tickers"
     r = requests.get(url, params={"instType": "SPOT"}, timeout=TIMEOUT)
@@ -214,7 +213,7 @@ def fetch_candles(inst_id: str, bar="1H", limit=50) -> pd.DataFrame:
     df["date"] = pd.to_datetime(df["ts"], unit="ms", utc=True)
     return df.sort_values("date")
 
-def check_candles_real() -> Dict[str, pd.DataFrame]:
+def check_candles_real() -> dict[str, pd.DataFrame]:
     print("3) Fetching real candles for test symbols...")
     out = {}
     for sym in TEST_SYMBOLS:
@@ -222,7 +221,7 @@ def check_candles_real() -> Dict[str, pd.DataFrame]:
         assert_true(df["price"].nunique() > 1, f"Constant prices detected for {sym}")
         assert_true(df["vol"].sum() > 0, f"Zero volume series for {sym}")
         last_dt = df["date"].iloc[-1]
-        age_min = (datetime.now(timezone.utc) - last_dt).total_seconds() / 60.0
+        age_min = (datetime.now(UTC) - last_dt).total_seconds() / 60.0
         assert_true(age_min <= 120, f"Stale candles for {sym}, age(min)={age_min:.1f}")
         out[sym] = df
     print(green("   ✓ Real candles OK"))
@@ -240,7 +239,7 @@ def check_okx_private_fills() -> pd.DataFrame:
     print(green("   ✓ Private API OK (authenticated)"))
     return pd.DataFrame(data.get("data", []))
 
-def load_model() -> Tuple[object, List[str]]:
+def load_model() -> tuple[object, list[str]]:
     print("5) Loading regression model...")
     try:
         import joblib
@@ -252,7 +251,7 @@ def load_model() -> Tuple[object, List[str]]:
     print(green("   ✓ Model loaded"))
     return model, ["confidence_score", "ml_probability"]
 
-def run_model_inference(model, candles: Dict[str, pd.DataFrame]) -> Dict:
+def run_model_inference(model, candles: dict[str, pd.DataFrame]) -> dict:
     if model is None:
         return {
             "symbol": TEST_SYMBOLS[0],
@@ -265,7 +264,7 @@ def run_model_inference(model, candles: Dict[str, pd.DataFrame]) -> Dict:
             "momentum_5": 0.0,
         }
     print("6) Running hybrid score with real features...")
-    def simple_indicators(df: pd.DataFrame) -> Dict[str, float]:
+    def simple_indicators(df: pd.DataFrame) -> dict[str, float]:
         prices = df["price"].values
         deltas = np.diff(prices) if len(prices) > 1 else np.array([0.0])
         gains = np.maximum(deltas, 0)
@@ -285,11 +284,11 @@ def run_model_inference(model, candles: Dict[str, pd.DataFrame]) -> Dict:
     if ind["momentum_5"] > 0: confidence_score += 10
 
     ml_probability = min(max(ind["momentum_5"] / 10.0, 0.0), 1.0)
-    
+
     # Create feature vector with 4 features to match model expectations
     volatility = df_btc["price"].pct_change().std() * 100 if len(df_btc) > 1 else 1.0
     volume_ratio = df_btc["vol"].iloc[-1] / df_btc["vol"].mean() if len(df_btc) > 1 else 1.0
-    
+
     X = np.array([[confidence_score, ml_probability, volatility, volume_ratio]], dtype=float)
     pred_return = float(model.predict(X)[0])
 
@@ -317,7 +316,7 @@ def run_model_inference(model, candles: Dict[str, pd.DataFrame]) -> Dict:
     print(green("   ✓ Hybrid inference succeeded"))
     return result
 
-def append_signal_log(entry: Dict) -> None:
+def append_signal_log(entry: dict) -> None:
     print("7) Appending to signals_log.csv ...")
     row = {
         "timestamp": datetime.utcnow().isoformat(),
@@ -363,17 +362,17 @@ def check_dom_http() -> None:
     assert_true(r.status_code == 200, f"App URL status {r.status_code}")
     html = r.text
     soup = BeautifulSoup(html, "html.parser")
-    
+
     found_elements = 0
     missing_elements = []
-    
+
     for sel in DOM_SELECTORS:
         found = soup.select_one(sel)
         if found is not None:
             found_elements += 1
         else:
             missing_elements.append(sel)
-    
+
     # Report results
     if found_elements > 0:
         print(green(f"   ✓ Found {found_elements}/{len(DOM_SELECTORS)} dashboard elements"))
@@ -381,7 +380,7 @@ def check_dom_http() -> None:
             print(yellow(f"   • Missing elements: {', '.join(missing_elements[:3])}{'...' if len(missing_elements) > 3 else ''}"))
     else:
         assert_true(False, f"No dashboard elements found. Missing: {', '.join(missing_elements[:5])}")
-    
+
     # Require at least 30% of elements to be present for a realistic dashboard
     success_rate = found_elements / len(DOM_SELECTORS)
     assert_true(success_rate >= 0.3, f"Dashboard completeness too low: {success_rate:.1%} (need ≥30%)")
@@ -425,11 +424,11 @@ def main():
         # Auto-populate environment variables first
         auto_populated = auto_populate_environment()
         print()
-        
+
         check_env()
         check_okx_public()
         candles = check_candles_real()
-        
+
         # Try private API check with error details
         try:
             _fills = check_okx_private_fills()
@@ -439,7 +438,7 @@ def main():
                 print(yellow("   ⚠️  Continuing with other tests..."))
             else:
                 raise
-        
+
         model, _ = load_model()
         result = run_model_inference(model, candles)
         append_signal_log(result)
@@ -450,16 +449,16 @@ def main():
         print("\n" + green("🎉 SYSTEM TEST COMPLETED SUCCESSFULLY!"))
         print("\n📊 Final Test Results:")
         print(json.dumps(result, indent=2))
-        
+
         # Print auto-population summary
-        print(f"\n🔧 Environment Auto-Population Summary:")
+        print("\n🔧 Environment Auto-Population Summary:")
         for key, status in auto_populated.items():
             print(f"   {key}: {status}")
-        
+
         sys.exit(0)
     except Exception as e:
         print("\n" + red("❌ SYSTEM TEST FAILED"))
-        print(red(f"Error: {str(e)}"))
+        print(red(f"Error: {e!s}"))
         print(red(f"Type: {type(e).__name__}"))
         sys.exit(1)
 

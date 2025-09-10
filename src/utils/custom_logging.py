@@ -6,14 +6,14 @@ import logging
 import logging.handlers
 import os
 from datetime import datetime
-from typing import Optional, Any
+from typing import Any
 
 
-def setup_logging(level: str = 'INFO', log_file: str = 'trading.log', 
+def setup_logging(level: str = 'INFO', log_file: str = 'trading.log',
                  max_file_size: int = 10485760, backup_count: int = 5):
     """
     Set up logging configuration for the trading system.
-    
+
     Args:
         level: Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
         log_file: Log file path
@@ -22,47 +22,47 @@ def setup_logging(level: str = 'INFO', log_file: str = 'trading.log',
     """
     # Convert string level to logging constant
     numeric_level = getattr(logging, level.upper(), logging.INFO)
-    
+
     # Create logs directory if it doesn't exist
     log_dir = os.path.dirname(log_file) if os.path.dirname(log_file) else 'logs'
     if log_dir and not os.path.exists(log_dir):
         os.makedirs(log_dir, exist_ok=True)
-    
+
     # Configure root logger
     root_logger = logging.getLogger()
     root_logger.setLevel(numeric_level)
-    
+
     # Clear existing handlers
     for handler in root_logger.handlers[:]:
         root_logger.removeHandler(handler)
-    
+
     # Create formatter
     formatter = logging.Formatter(
         '%(asctime)s - %(name)s - %(levelname)s - %(message)s',
         datefmt='%Y-%m-%d %H:%M:%S'
     )
-    
+
     # Console handler
     console_handler = logging.StreamHandler()
     console_handler.setLevel(numeric_level)
     console_handler.setFormatter(formatter)
     root_logger.addHandler(console_handler)
-    
+
     # File handler with rotation
     if log_file:
         file_handler = logging.handlers.RotatingFileHandler(
-            log_file, 
-            maxBytes=max_file_size, 
+            log_file,
+            maxBytes=max_file_size,
             backupCount=backup_count
         )
         file_handler.setLevel(numeric_level)
         file_handler.setFormatter(formatter)
         root_logger.addHandler(file_handler)
-    
+
     # Set specific logger levels
     logging.getLogger('ccxt').setLevel(logging.WARNING)  # Reduce ccxt verbosity
     logging.getLogger('urllib3').setLevel(logging.WARNING)  # Reduce requests verbosity
-    
+
     # Log startup message
     logger = logging.getLogger(__name__)
     logger.info(f"Logging initialized - Level: {level}, File: {log_file}")
@@ -71,10 +71,10 @@ def setup_logging(level: str = 'INFO', log_file: str = 'trading.log',
 def get_trading_logger(name: str) -> logging.Logger:
     """
     Get a logger instance for trading components.
-    
+
     Args:
         name: Logger name (usually __name__)
-        
+
     Returns:
         Configured logger instance
     """
@@ -83,14 +83,14 @@ def get_trading_logger(name: str) -> logging.Logger:
 
 class TradingLogFilter(logging.Filter):
     """Custom log filter for trading-specific messages."""
-    
+
     def filter(self, record):
         """
         Filter log records for trading relevance.
-        
+
         Args:
             record: Log record
-            
+
         Returns:
             True if record should be logged
         """
@@ -101,29 +101,29 @@ class TradingLogFilter(logging.Filter):
             skip_modules = ['ccxt.base', 'urllib3.connectionpool']
             if any(module in record.name for module in skip_modules):
                 return False
-        
+
         return True
 
 
 def setup_trade_logger(log_file: str = 'trades.log') -> logging.Logger:
     """
     Set up a dedicated logger for trade execution.
-    
+
     Args:
         log_file: Trade log file path
-        
+
     Returns:
         Trade logger instance
     """
     trade_logger = logging.getLogger('trading.trades')
     trade_logger.setLevel(logging.INFO)
-    
+
     # Create trade-specific formatter
     trade_formatter = logging.Formatter(
         '%(asctime)s - TRADE - %(message)s',
         datefmt='%Y-%m-%d %H:%M:%S'
     )
-    
+
     # Create file handler for trades
     trade_handler = logging.handlers.RotatingFileHandler(
         log_file,
@@ -132,19 +132,19 @@ def setup_trade_logger(log_file: str = 'trades.log') -> logging.Logger:
     )
     trade_handler.setLevel(logging.INFO)
     trade_handler.setFormatter(trade_formatter)
-    
+
     # Avoid duplicate logs in root logger
     trade_logger.propagate = False
     trade_logger.addHandler(trade_handler)
-    
+
     return trade_logger
 
 
-def log_trade_execution(logger: logging.Logger, action: str, symbol: str, 
-                       size: float, price: float, order_id: Optional[str] = None):
+def log_trade_execution(logger: logging.Logger, action: str, symbol: str,
+                       size: float, price: float, order_id: str | None = None):
     """
     Log trade execution with standardized format.
-    
+
     Args:
         logger: Logger instance
         action: Trade action (BUY/SELL)
@@ -156,15 +156,15 @@ def log_trade_execution(logger: logging.Logger, action: str, symbol: str,
     message = f"{action} {size:.6f} {symbol} @ ${price:.2f}"
     if order_id:
         message += f" (Order: {order_id})"
-    
+
     logger.info(message)
 
 
-def log_portfolio_update(logger: logging.Logger, portfolio_value: float, 
+def log_portfolio_update(logger: logging.Logger, portfolio_value: float,
                         cash: float, positions: dict):
     """
     Log portfolio status update.
-    
+
     Args:
         logger: Logger instance
         portfolio_value: Total portfolio value
@@ -175,11 +175,11 @@ def log_portfolio_update(logger: logging.Logger, portfolio_value: float,
     logger.info(message)
 
 
-def log_signal_generation(logger: logging.Logger, symbol: str, action: str, 
+def log_signal_generation(logger: logging.Logger, symbol: str, action: str,
                          confidence: float, price: float):
     """
     Log signal generation.
-    
+
     Args:
         logger: Logger instance
         symbol: Trading symbol
@@ -191,11 +191,11 @@ def log_signal_generation(logger: logging.Logger, symbol: str, action: str,
     logger.info(message)
 
 
-def log_risk_event(logger: logging.Logger, event_type: str, message: str, 
+def log_risk_event(logger: logging.Logger, event_type: str, message: str,
                   severity: str = 'WARNING'):
     """
     Log risk management events.
-    
+
     Args:
         logger: Logger instance
         event_type: Type of risk event
@@ -203,7 +203,7 @@ def log_risk_event(logger: logging.Logger, event_type: str, message: str,
         severity: Event severity (INFO, WARNING, ERROR, CRITICAL)
     """
     log_message = f"RISK-{event_type}: {message}"
-    
+
     if severity == 'CRITICAL':
         logger.critical(log_message)
     elif severity == 'ERROR':
@@ -216,30 +216,30 @@ def log_risk_event(logger: logging.Logger, event_type: str, message: str,
 
 class PerformanceLogger:
     """Logger for performance metrics and timing."""
-    
+
     def __init__(self, name: str = 'performance'):
         """
         Initialize performance logger.
-        
+
         Args:
             name: Logger name
         """
         self.logger = logging.getLogger(f'trading.{name}')
         self.timers: dict[str, Any] = {}
-    
+
     def start_timer(self, operation: str):
         """
         Start timing an operation.
-        
+
         Args:
             operation: Operation name
         """
         self.timers[operation] = datetime.now()
-    
+
     def end_timer(self, operation: str, log_level: str = 'DEBUG'):
         """
         End timing an operation and log the duration.
-        
+
         Args:
             operation: Operation name
             log_level: Logging level for the timing message
@@ -247,9 +247,9 @@ class PerformanceLogger:
         if operation in self.timers:
             duration = datetime.now() - self.timers[operation]
             duration_ms = duration.total_seconds() * 1000
-            
+
             message = f"{operation} completed in {duration_ms:.2f}ms"
-            
+
             if log_level == 'INFO':
                 self.logger.info(message)
             elif log_level == 'WARNING':
@@ -258,13 +258,13 @@ class PerformanceLogger:
                 self.logger.error(message)
             else:
                 self.logger.debug(message)
-            
+
             del self.timers[operation]
-    
+
     def log_metric(self, metric_name: str, value: float, unit: str = ''):
         """
         Log a performance metric.
-        
+
         Args:
             metric_name: Metric name
             value: Metric value
@@ -273,5 +273,5 @@ class PerformanceLogger:
         message = f"METRIC - {metric_name}: {value:.4f}"
         if unit:
             message += f" {unit}"
-        
+
         self.logger.info(message)

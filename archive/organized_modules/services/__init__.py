@@ -4,8 +4,8 @@ Provides clean separation between business logic and application logic
 """
 
 __all__ = [
-    'PortfolioBusinessService',
-    'TradingBusinessService', 
+    'AuthenticationService',
     'MarketDataService',
-    'AuthenticationService'
+    'PortfolioBusinessService',
+    'TradingBusinessService'
 ]

@@ -1,0 +1,11 @@
+{
+  "pythonVersion": "3.11",
+  "typeCheckingMode": "standard",
+  "exclude": [
+    "**/.venv",
+    "archive",
+    "logs"
+  ],
+  "reportMissingImports": true,
+  "reportMissingTypeStubs": false
+}

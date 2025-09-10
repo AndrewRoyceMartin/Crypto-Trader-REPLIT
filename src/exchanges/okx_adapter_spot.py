@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 OKX Spot adapter (ccxt-based)
 
@@ -13,7 +12,6 @@ Reads env vars (both common variants supported):
 from __future__ import annotations
 
 import os
-import typing as t
 
 import ccxt  # type: ignore
 
@@ -38,7 +36,7 @@ def _get_okx_creds() -> dict:
     }
 
 
-def make_okx_spot(demo: t.Optional[bool] = None) -> ccxt.okx:
+def make_okx_spot(demo: bool | None = None) -> ccxt.okx:
     """
     Build a ccxt.okx client configured for SPOT trading.
     If demo is None, it reads OKX_DEMO env (default True).
@@ -47,10 +45,10 @@ def make_okx_spot(demo: t.Optional[bool] = None) -> ccxt.okx:
         demo = _env_bool("OKX_DEMO", False)  # Default to live trading
 
     creds = _get_okx_creds()
-    
+
     # 🌍 Regional endpoint support (2024 OKX update)
     hostname = os.getenv("OKX_HOSTNAME") or os.getenv("OKX_REGION") or "www.okx.com"
-    
+
     ex = ccxt.okx({
         "enableRateLimit": True,
         "hostname": hostname,  # Regional endpoint support
@@ -70,7 +68,7 @@ def make_okx_spot(demo: t.Optional[bool] = None) -> ccxt.okx:
     return ex
 
 
-def spot_summary(ex: ccxt.okx, symbol: t.Optional[str] = None) -> dict:
+def spot_summary(ex: ccxt.okx, symbol: str | None = None) -> dict:
     """
     Return a small summary: markets count, balance snapshot, and a ticker.
     """

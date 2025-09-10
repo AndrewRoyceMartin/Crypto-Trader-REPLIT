@@ -5,13 +5,14 @@ Data manager for handling OHLCV data retrieval and caching.
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timedelta, timezone
-from typing import Optional, Any, Hashable, cast, Dict, List
+from collections.abc import Hashable
+from datetime import UTC, datetime, timedelta
+from typing import Any, cast
 
 import pandas as pd
 
-from .cache import DataCache
 from ..exchanges.base import BaseExchange
+from .cache import DataCache
 
 
 class DataManager:
@@ -26,7 +27,7 @@ class DataManager:
             cache_enabled: Whether to enable caching
         """
         self.exchange: BaseExchange = exchange
-        self.cache: Optional[DataCache] = DataCache() if cache_enabled else None
+        self.cache: DataCache | None = DataCache() if cache_enabled else None
         self.logger = logging.getLogger(__name__)
 
     # ---------------------------
@@ -37,8 +38,8 @@ class DataManager:
         symbol: str,
         timeframe: str,
         limit: int = 100,
-        start_time: Optional[datetime] = None,
-        end_time: Optional[datetime] = None,
+        start_time: datetime | None = None,
+        end_time: datetime | None = None,
     ) -> pd.DataFrame:
         """
         Get OHLCV data with optional time filtering and cache.
@@ -95,7 +96,7 @@ class DataManager:
                 cache_put_ohlcv(symbol, timeframe, df)
             except ImportError:
                 pass
-                
+
             if self.cache is not None:
                 self.cache.set(cache_key, cast(pd.DataFrame, df))
 
@@ -122,7 +123,7 @@ class DataManager:
         if start_utc >= end_utc:
             return self._empty_df()
 
-        all_chunks: List[pd.DataFrame] = []
+        all_chunks: list[pd.DataFrame] = []
         max_candles = 1000
         minutes_per_bar = max(1, self._timeframe_to_minutes(timeframe))
         days_per_request = max(1, (max_candles * minutes_per_bar) // (24 * 60))
@@ -171,7 +172,7 @@ class DataManager:
                 updated = cast(pd.DataFrame, pd.concat([cached, latest], axis=0))
                 updated = updated[~updated.index.duplicated(keep="last")].sort_index()
 
-                cutoff = datetime.now(timezone.utc) - timedelta(days=30)
+                cutoff = datetime.now(UTC) - timedelta(days=30)
                 updated = updated[updated.index >= cutoff]
 
                 if self.cache is not None:
@@ -214,16 +215,13 @@ class DataManager:
         # Already a DatetimeIndex
         if isinstance(out.index, pd.DatetimeIndex):
             idx = cast(pd.DatetimeIndex, out.index)
-            if idx.tz is None:
-                idx = idx.tz_localize("UTC")
-            else:
-                idx = idx.tz_convert("UTC")
+            idx = idx.tz_localize("UTC") if idx.tz is None else idx.tz_convert("UTC")
             out.index = idx
             out = out.sort_index()
             return self._normalize_ohlcv_columns(out)
 
         # Try to build index from a timestamp-like column
-        ts_col: Optional[str] = None
+        ts_col: str | None = None
         for cand in ("ts", "timestamp", "date", "time"):
             if cand in out.columns:
                 ts_col = cand
@@ -246,10 +244,7 @@ class DataManager:
             out = out[~out.index.isna()]
 
             idx2 = cast(pd.DatetimeIndex, out.index)
-            if idx2.tz is None:
-                idx2 = idx2.tz_localize("UTC")
-            else:
-                idx2 = idx2.tz_convert("UTC")
+            idx2 = idx2.tz_localize("UTC") if idx2.tz is None else idx2.tz_convert("UTC")
             out.index = idx2
 
             out = out.sort_index()
@@ -264,11 +259,11 @@ class DataManager:
         if df.empty:
             return self._empty_df()
 
-        cols_list: List[str] = [str(c) for c in list(df.columns)]
-        cols_lower: List[str] = [c.lower() for c in cols_list]
-        mapping: Dict[Hashable, str] = {}
+        cols_list: list[str] = [str(c) for c in list(df.columns)]
+        cols_lower: list[str] = [c.lower() for c in cols_list]
+        mapping: dict[Hashable, str] = {}
 
-        def _map_to(target: str, candidates: List[str]) -> None:
+        def _map_to(target: str, candidates: list[str]) -> None:
             for cand in candidates:
                 if cand in cols_lower:
                     i = cols_lower.index(cand)
@@ -310,16 +305,16 @@ class DataManager:
     def _to_utc_ts(self, dt: datetime) -> datetime:
         """Ensure a timezone-aware UTC datetime."""
         if dt.tzinfo is None:
-            return dt.replace(tzinfo=timezone.utc)
-        return dt.astimezone(timezone.utc)
+            return dt.replace(tzinfo=UTC)
+        return dt.astimezone(UTC)
 
     def _cache_key(
         self,
         symbol: str,
         timeframe: str,
-        limit: Optional[int],
-        start: Optional[datetime],
-        end: Optional[datetime],
+        limit: int | None,
+        start: datetime | None,
+        end: datetime | None,
     ) -> str:
         """Build a stable cache key for a price request."""
         lim = str(limit) if limit is not None else "all"

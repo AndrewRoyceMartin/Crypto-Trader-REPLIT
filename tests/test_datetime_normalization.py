@@ -1,13 +1,15 @@
 # tests/test_datetime_normalization.py
-from datetime import datetime, timezone
-from src.utils.datetime_utils import parse_timestamp, ensure_aware, sort_by_timestamp_utc
+from datetime import UTC, datetime
+
+from src.utils.datetime_utils import ensure_aware, parse_timestamp, sort_by_timestamp_utc
+
 
 def test_parse_timestamp_variants():
     samples = [
         "2025-09-10T03:04:56.587593Z",          # ISO Z
         "2025-09-10 03:04:56.587593",           # naive ISO-like
         datetime(2025, 9, 10, 3, 4, 56, 587593),  # naive dt
-        datetime(2025, 9, 10, 3, 4, 56, 587593, tzinfo=timezone.utc),  # aware
+        datetime(2025, 9, 10, 3, 4, 56, 587593, tzinfo=UTC),  # aware
         1694315096587,  # epoch ms
         1694315096,     # epoch s
     ]
@@ -23,7 +25,7 @@ def test_sort_mixed_timestamps_no_crash():
         {"timestamp": "2025-09-10T03:04:56Z", "id": 1},
         {"timestamp": "2025-09-09 03:04:56.587593", "id": 2},  # naive
         {"timestamp": 1694230000000, "id": 3},                 # ms
-        {"timestamp": datetime(2025, 9, 11, 1, 0, 0, tzinfo=timezone.utc), "id": 4},
+        {"timestamp": datetime(2025, 9, 11, 1, 0, 0, tzinfo=UTC), "id": 4},
     ]
     sorted_rows = sort_by_timestamp_utc(rows)
     # Ensure sorted desc and tz-aware

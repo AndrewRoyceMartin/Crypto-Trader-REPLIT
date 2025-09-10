@@ -2,8 +2,8 @@
 Portfolio Management Module
 Handles portfolio data, calculations, and management using business services
 """
-from typing import Dict, Any, Optional
 import logging
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +18,7 @@ def get_portfolio_business_service():
         _portfolio_business_service = PortfolioBusinessService()
     return _portfolio_business_service
 
-def get_portfolio_summary() -> Dict[str, Any]:
+def get_portfolio_summary() -> dict[str, Any]:
     """Get portfolio summary for status endpoint using business service."""
     try:
         business_service = get_portfolio_business_service()
@@ -32,7 +32,7 @@ def get_portfolio_summary() -> Dict[str, Any]:
             "error": "Portfolio data unavailable"
         }
 
-def calculate_portfolio_overview(portfolio_data: Dict[str, Any], currency: str = "USD") -> Dict[str, Any]:
+def calculate_portfolio_overview(portfolio_data: dict[str, Any], currency: str = "USD") -> dict[str, Any]:
     """Calculate portfolio overview using business service."""
     try:
         business_service = get_portfolio_business_service()

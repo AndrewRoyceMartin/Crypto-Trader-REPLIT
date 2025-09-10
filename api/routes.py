@@ -2,11 +2,10 @@
 API Routes Module
 Handles all Flask routes and API endpoints
 """
-from flask import Blueprint, request, jsonify, render_template, Response
-from typing import Any, Dict
 import logging
 import time
-from datetime import datetime
+
+from flask import Blueprint, jsonify
 
 # Create API blueprint
 api_bp = Blueprint('api', __name__)
@@ -16,7 +15,8 @@ logger = logging.getLogger(__name__)
 # Import shared utilities and services
 try:
     from portfolio.manager import get_portfolio_summary
-    from trading.bot import get_bot_status, get_bot_state
+
+    from trading.bot import get_bot_state, get_bot_status
 except ImportError:
     # Fallback for development
     pass
@@ -25,13 +25,15 @@ except ImportError:
 def api_status():
     """Get system status and portfolio summary."""
     try:
-        from .core import get_uptime_seconds, iso_utc
         from portfolio.manager import get_portfolio_summary
+
         from trading.bot import get_bot_status
-        
+
+        from .core import get_uptime_seconds
+
         portfolio_summary = get_portfolio_summary()
         bot_status = get_bot_status()
-        
+
         return jsonify({
             "status": "connected",
             "timestamp": time.time(),

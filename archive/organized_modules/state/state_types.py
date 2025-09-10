@@ -2,16 +2,17 @@
 State Type Definitions
 Defines all state interfaces and enums for type safety
 """
-from typing import TypedDict, Optional, List, Any, Dict
-from enum import Enum
 from datetime import datetime
+from enum import Enum
+from typing import Any, TypedDict
+
 
 class BotStatus(Enum):
     """Bot running status."""
     STOPPED = "stopped"
     STARTING = "starting"
     RUNNING = "running"
-    STOPPING = "stopping" 
+    STOPPING = "stopping"
     ERROR = "error"
 
 class WarmupStatus(Enum):
@@ -40,40 +41,40 @@ class ConnectionStatus(Enum):
 class BotState(TypedDict, total=False):
     """Bot state interface."""
     status: BotStatus
-    mode: Optional[TradingMode]
-    symbol: Optional[str]
-    timeframe: Optional[str]
-    started_at: Optional[datetime]
-    error_message: Optional[str]
+    mode: TradingMode | None
+    symbol: str | None
+    timeframe: str | None
+    started_at: datetime | None
+    error_message: str | None
     runtime_seconds: int
-    active_pairs: List[str]
+    active_pairs: list[str]
 
 class WarmupState(TypedDict, total=False):
     """System warmup state interface."""
     status: WarmupStatus
     started: bool
     completed: bool
-    error_message: Optional[str]
-    loaded_symbols: List[str]
-    start_time: Optional[datetime]
+    error_message: str | None
+    loaded_symbols: list[str]
+    start_time: datetime | None
     progress_percent: int
 
 class TradingState(TypedDict, total=False):
     """Trading operation state interface."""
     mode: TradingMode
     active: bool
-    strategy: Optional[str]
-    start_time: Optional[datetime]
+    strategy: str | None
+    start_time: datetime | None
     trade_count: int
-    last_signal: Optional[str]
-    performance: Dict[str, Any]
+    last_signal: str | None
+    performance: dict[str, Any]
 
 class ConnectionState(TypedDict, total=False):
     """Exchange connection state interface."""
     status: ConnectionStatus
-    last_ping: Optional[datetime]
+    last_ping: datetime | None
     error_count: int
-    last_error: Optional[str]
+    last_error: str | None
     api_calls_today: int
     rate_limit_remaining: int
 
@@ -81,7 +82,7 @@ class CacheState(TypedDict, total=False):
     """Cache state interface."""
     price_cache_size: int
     ohlcv_cache_size: int
-    last_cleanup: Optional[datetime]
+    last_cleanup: datetime | None
     hit_rate_percent: float
 
 class AppState(TypedDict, total=False):

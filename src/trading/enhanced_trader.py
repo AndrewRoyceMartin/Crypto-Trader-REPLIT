@@ -7,16 +7,17 @@ from __future__ import annotations
 
 import logging
 import time
-from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional, Sequence, TypedDict, cast
+from collections.abc import Sequence
+from datetime import UTC, datetime
+from typing import Any, TypedDict, cast
 
 import pandas as pd
 
-from ..strategies.enhanced_bollinger_strategy import EnhancedBollingerBandsStrategy
-from ..data.manager import DataManager
-from ..risk.manager import RiskManager
-from ..exchanges.base import BaseExchange
 from ..config import Config
+from ..data.manager import DataManager
+from ..exchanges.base import BaseExchange
+from ..risk.manager import RiskManager
+from ..strategies.enhanced_bollinger_strategy import EnhancedBollingerBandsStrategy
 
 
 class TradeRecord(TypedDict, total=False):
@@ -27,8 +28,8 @@ class TradeRecord(TypedDict, total=False):
     price: float
     confidence: float
     event_type: str
-    stop_loss: Optional[float]
-    take_profit: Optional[float]
+    stop_loss: float | None
+    take_profit: float | None
     equity_after: float
     pnl: float
 
@@ -49,11 +50,11 @@ class EnhancedTrader:
         self.logger.info("Using Enhanced Bollinger Bands Strategy with crash protection")
 
         self.running: bool = False
-        self.trade_history: List[TradeRecord] = []
+        self.trade_history: list[TradeRecord] = []
         self.equity: float = config.get_float('backtesting', 'initial_capital', 10000.0)
 
         # Defensive defaults for position state
-        self.position_state: Dict[str, Any] = (
+        self.position_state: dict[str, Any] = (
             self.strategy.get_position_state()  # type: ignore[attr-defined]
             if hasattr(self.strategy, 'get_position_state') else
             {
@@ -65,21 +66,21 @@ class EnhancedTrader:
                 'rebuy_ready_at': None,
             }
         )
-        self.last_update_time: Optional[datetime] = None
+        self.last_update_time: datetime | None = None
 
     def _sync_with_portfolio(self, symbol: str) -> None:
         """Sync trader position state with actual OKX portfolio holdings."""
         try:
             # Import here to avoid circular imports
             from ..services.portfolio_service import get_portfolio_service
-            
+
             portfolio_service = get_portfolio_service()
             portfolio_data = portfolio_service.get_portfolio_data()
             holdings = portfolio_data.get('holdings', [])
-            
+
             # Extract base symbol (e.g., SOL from SOL/USDT)
             base_symbol = symbol.split('/')[0] if '/' in symbol else symbol
-            
+
             # Find matching position in portfolio
             matching_position = None
             for holding in holdings:
@@ -87,12 +88,12 @@ class EnhancedTrader:
                 if holding_symbol == base_symbol:
                     matching_position = holding
                     break
-            
+
             if matching_position:
                 quantity = float(matching_position.get('quantity', 0) or 0)
                 avg_entry_price = float(matching_position.get('avg_entry_price', 0) or 0)
                 current_price = float(matching_position.get('current_price', 0) or 0)
-                
+
                 # Only sync if we have valid data and a real position
                 if quantity > 0 and avg_entry_price > 0:
                     # Update strategy position state
@@ -101,15 +102,15 @@ class EnhancedTrader:
                         self.strategy.position_state['entry_price'] = avg_entry_price
                         self.strategy.position_state['peak_since_entry'] = max(avg_entry_price, current_price)
                         self.strategy.position_state['rebuy_armed'] = False  # Reset rebuy for existing positions
-                        
+
                         self.logger.critical(
                             "🔄 PORTFOLIO SYNC: %s position found - Qty: %.8f, Entry: $%.4f, Current: $%.4f",
                             base_symbol, quantity, avg_entry_price, current_price
                         )
-                        
+
                         # Check if position should exit immediately using dynamic safety threshold
                         gain_percent = ((current_price - avg_entry_price) / avg_entry_price) * 100
-                        
+
                         # Dynamic safety threshold based on market volatility
                         try:
                             # For high volatility markets, use higher safety threshold
@@ -117,11 +118,11 @@ class EnhancedTrader:
                             if hasattr(self.strategy, 'volatility_score') and self.strategy.volatility_score:
                                 # Use existing volatility score if available
                                 volatility_multiplier = max(1.0, min(2.0, self.strategy.volatility_score / 50.0))
-                            
+
                             dynamic_safety_threshold = 4.0 * volatility_multiplier  # Base 4%, adjust for volatility
                         except:
                             dynamic_safety_threshold = 6.0  # Fallback to conservative 6%
-                            
+
                         if gain_percent >= dynamic_safety_threshold:  # Dynamic safety net
                             self.logger.error(
                                 "🚨 EXISTING POSITION ABOVE DYNAMIC SAFETY NET: %s at +%.2f%% (Dynamic Safety: %.1f%%) - EXECUTING IMMEDIATE EXIT",
@@ -132,30 +133,30 @@ class EnhancedTrader:
                             try:
                                 # Create immediate sell signal for safety exit
                                 from ..strategies.base import Signal
-                                
+
                                 # Calculate exact sell parameters with dynamic fill price based on market conditions
                                 # Dynamic fill price discount based on volatility
                                 try:
                                     # For high volatility, use larger discount to ensure fill
                                     if hasattr(self.strategy, 'volatility_score') and self.strategy.volatility_score:
-                                        fill_discount = max(0.0005, min(0.002, self.strategy.volatility_score / 10000))  
+                                        fill_discount = max(0.0005, min(0.002, self.strategy.volatility_score / 10000))
                                     else:
                                         fill_discount = 0.001  # Default 0.1% discount
                                 except:
                                     fill_discount = 0.001  # Conservative fallback
-                                    
+
                                 fill_price = current_price * (1 - fill_discount)
                                 gross_pnl = quantity * (fill_price - avg_entry_price)
                                 fees = 0.001 * (fill_price + avg_entry_price) * quantity
-                                net_pnl = gross_pnl - fees
-                                
+                                gross_pnl - fees
+
                                 safety_signal = Signal(
                                     action='sell',
                                     price=fill_price,
                                     size=quantity,
                                     confidence=0.95  # High confidence for safety exit
                                 )
-                                
+
                                 # Execute the safety exit immediately WITH VERIFICATION
                                 exit_success = self._execute_verified_exit(safety_signal, symbol, base_symbol, current_price, datetime.now(), quantity, gain_percent)
                                 if exit_success:
@@ -169,25 +170,25 @@ class EnhancedTrader:
                                         self.logger.info(f"📊 POSITION STATE RESET: {base_symbol} set to FLAT after verified exit")
                                 else:
                                     self.logger.error(f"❌ SAFETY EXIT VERIFICATION FAILED: {base_symbol} position remains active")
-                                
+
                             except Exception as exit_error:
                                 self.logger.error(f"❌ SAFETY EXIT FAILED for {base_symbol}: {exit_error}")
-                                
+
                                 # RETRY LOGIC: Attempt exit verification up to 3 times
                                 retry_count = 0
                                 max_retries = 3
                                 retry_success = False
-                                
+
                                 while retry_count < max_retries and not retry_success:
                                     retry_count += 1
                                     self.logger.warning(f"🔄 RETRY ATTEMPT {retry_count}/{max_retries}: {base_symbol} exit verification")
-                                    
+
                                     try:
                                         import time
                                         time.sleep(2)  # Wait before retry
-                                        
+
                                         retry_success = self._execute_verified_exit(safety_signal, symbol, base_symbol, current_price, datetime.now(), quantity, gain_percent)
-                                        
+
                                         if retry_success:
                                             self.logger.info(f"✅ RETRY SUCCESS: {base_symbol} exit verified on attempt {retry_count}")
                                             # Reset strategy position state after successful retry
@@ -197,14 +198,14 @@ class EnhancedTrader:
                                             break
                                         else:
                                             self.logger.warning(f"❌ RETRY {retry_count} FAILED: {base_symbol} exit still unsuccessful")
-                                            
+
                                     except Exception as retry_error:
                                         self.logger.error(f"❌ RETRY {retry_count} EXCEPTION: {base_symbol} - {retry_error}")
-                                
+
                                 if not retry_success:
                                     self.logger.critical(f"🚨 ALL RETRIES EXHAUSTED: {base_symbol} position may still be active - MANUAL INTERVENTION REQUIRED")
                                     # Keep strategy position state active since exit failed
-                                
+
                         elif gain_percent >= 4.0:  # Above 4% primary target
                             self.logger.warning(
                                 "⚠️ EXISTING POSITION ABOVE TARGET: %s at +%.2f%% (Target: 4.0%%) - Will exit on next signal",
@@ -214,7 +215,7 @@ class EnhancedTrader:
                     self.logger.info("📊 PORTFOLIO SYNC: %s - No significant position found", base_symbol)
             else:
                 self.logger.info("📊 PORTFOLIO SYNC: %s - Symbol not found in portfolio", base_symbol)
-                
+
         except Exception as e:
             self.logger.error("Failed to sync with portfolio for %s: %s", symbol, e)
             # Continue trading even if sync fails - don't break the system
@@ -234,7 +235,7 @@ class EnhancedTrader:
                 try:
                     # 🚀 CRITICAL FIX: Sync with portfolio every iteration to detect existing positions
                     self._sync_with_portfolio(symbol)
-                    
+
                     data = self._safe_get_ohlcv(symbol, timeframe, limit=100)
                     if data is None or data.empty:
                         self.logger.warning("No data available, waiting...")
@@ -247,16 +248,16 @@ class EnhancedTrader:
                         continue
 
                     current_price = float(data["close"].iloc[-1])
-                    current_time = datetime.now(timezone.utc)
-                    
+                    current_time = datetime.now(UTC)
+
                     # 🔍 EXISTING POSITION EXIT CHECK: Check if we have a position that needs immediate exit
                     base_symbol = symbol.split('/')[0] if '/' in symbol else symbol
                     current_qty = self.position_state.get('position_qty', 0.0)
                     entry_price = self.position_state.get('entry_price', 0.0)
-                    
+
                     if current_qty > 0.0 and entry_price > 0.0:
                         gain_percent = ((current_price - entry_price) / entry_price) * 100
-                        
+
                         # Dynamic safety net threshold (volatility-adjusted)
                         bb_analysis = self.strategy.calculate_bollinger_bands(data)
                         if bb_analysis and len(bb_analysis['upper']) > 0:
@@ -267,13 +268,13 @@ class EnhancedTrader:
                             dynamic_safety_threshold = 4.0 * volatility_multiplier  # Base 4% adjusted for volatility
                         else:
                             dynamic_safety_threshold = 6.0  # Conservative fallback
-                        
+
                         if gain_percent >= dynamic_safety_threshold:
                             self.logger.critical(
                                 "🚨 EXISTING POSITION ABOVE DYNAMIC SAFETY NET: %s at +%.2f%% (Dynamic Safety: %.1f%%) - EXECUTING IMMEDIATE EXIT",
                                 base_symbol, gain_percent, dynamic_safety_threshold
                             )
-                            
+
                             # Create immediate exit signal with portfolio metadata
                             from ..strategies.base import Signal
                             immediate_exit_signal = Signal(
@@ -291,7 +292,7 @@ class EnhancedTrader:
                                 'entry_price': entry_price,
                                 'exit_price': current_price
                             }
-                            
+
                             # Execute immediate exit
                             self._execute_enhanced_signal(immediate_exit_signal, symbol, current_price, current_time)
                             continue  # Skip normal signal processing after exit
@@ -357,7 +358,7 @@ class EnhancedTrader:
         self.running = False
         self.logger.info("Enhanced trading stop requested")
 
-    def _safe_get_ohlcv(self, symbol: str, timeframe: str, limit: int) -> Optional[pd.DataFrame]:
+    def _safe_get_ohlcv(self, symbol: str, timeframe: str, limit: int) -> pd.DataFrame | None:
         try:
             df = self.data_manager.get_ohlcv(symbol, timeframe, limit=limit)
             if not isinstance(df, pd.DataFrame):
@@ -403,7 +404,7 @@ class EnhancedTrader:
 
         return True
 
-    def _validate_rebuy_timing(self, position_state: Dict[str, Any]) -> bool:
+    def _validate_rebuy_timing(self, position_state: dict[str, Any]) -> bool:
         ready = position_state.get('rebuy_ready_at')
         if not ready:
             return True
@@ -417,9 +418,9 @@ class EnhancedTrader:
                 return False
 
             if ready_dt.tzinfo is None:
-                ready_dt = ready_dt.replace(tzinfo=timezone.utc)
+                ready_dt = ready_dt.replace(tzinfo=UTC)
 
-            if datetime.now(timezone.utc) < ready_dt:
+            if datetime.now(UTC) < ready_dt:
                 self.logger.debug("Rebuy cooldown not elapsed (ready at %s)", ready_dt.isoformat())
                 return False
 
@@ -451,10 +452,10 @@ class EnhancedTrader:
                 total_cost = position_size_dollars + fees
                 if total_cost <= self.equity and position_size_units > 0:
                     base_symbol = symbol.split('/')[0] if '/' in symbol else symbol
-                    
+
                     # Use verified purchase system to prevent inverse phantom positions
                     purchase_success = self._execute_verified_purchase(signal, symbol, base_symbol, current_price, timestamp, position_size_units, position_size_dollars)
-                    
+
                     if purchase_success:
                         # Only update equity and record trade if purchase was verified
                         self.equity -= total_cost
@@ -481,29 +482,29 @@ class EnhancedTrader:
             elif action == 'sell':
                 # For strategy-generated exits, use verification system
                 base_symbol = symbol.split('/')[0] if '/' in symbol else symbol
-                
+
                 # Check if this is a strategy exit signal
                 if event_type in ['CRASH_EXIT', 'STOP_LOSS', 'SAFETY_TAKE_PROFIT', 'BOLLINGER_EXIT']:
                     self.logger.warning(f"🔍 STRATEGY EXIT DETECTED: {event_type} for {base_symbol} - Using verification system")
-                    
+
                     # 🚀 EXECUTE LIVE ORDER: Call verification system to place actual trade
                     try:
                         pnl_val = float(metadata.get('pnl', 0.0))
                         gain_percent = float(metadata.get('gain_percent', 0.0))
-                        
+
                         # Execute verified exit with live OKX order placement
                         exit_success = self._execute_verified_exit(signal, symbol, base_symbol, current_price, timestamp, position_size_units, gain_percent)
-                        
+
                         if exit_success:
                             self.logger.critical(f"✅ STRATEGY EXIT EXECUTED: {event_type} for {base_symbol} - Live order placed successfully")
                         else:
                             self.logger.error(f"❌ STRATEGY EXIT FAILED: {event_type} for {base_symbol} - Live order placement failed")
-                            
+
                     except Exception as exec_error:
                         self.logger.error(f"❌ STRATEGY EXIT EXCEPTION: {event_type} for {base_symbol} - {exec_error}")
-                    
+
                     return
-                
+
                 # Regular sell signal processing (non-strategy exits)
                 pnl_val = float(metadata.get('pnl', 0.0))
                 sale_proceeds = position_size_units * current_price
@@ -535,73 +536,73 @@ class EnhancedTrader:
         """Execute exit order with proper verification to prevent phantom positions."""
         try:
             self.logger.info(f"🔄 VERIFIED EXIT START: {base_symbol} - Attempting to sell {quantity:.6f} units")
-            
+
             # Get event type for logging
             metadata = getattr(signal, "metadata", {}) or {}
             event_type = str(metadata.get("event", "UNKNOWN_EXIT"))
-            
+
             # Import portfolio service to verify positions before/after
             from ..services.portfolio_service import get_portfolio_service
             portfolio_service = get_portfolio_service()
-            
+
             # Get current portfolio state BEFORE exit attempt
             portfolio_before = portfolio_service.get_portfolio_data()
             holdings_before = portfolio_before.get('holdings', [])
-            
+
             # Find current position
             position_before = None
             for holding in holdings_before:
                 if holding.get('symbol') == base_symbol:
                     position_before = holding
                     break
-            
+
             if not position_before:
                 self.logger.warning(f"⚠️ VERIFICATION WARNING: {base_symbol} position not found in live portfolio before exit")
                 return False
-            
+
             current_qty = position_before.get('quantity', 0.0)
             if current_qty < 0.001:  # Account for floating point precision
                 self.logger.warning(f"⚠️ VERIFICATION WARNING: {base_symbol} position quantity too small: {current_qty}")
                 return False
-            
+
             self.logger.info(f"📊 PRE-EXIT POSITION: {base_symbol} holds {current_qty:.6f} units at ${position_before.get('current_price', 0.0):.4f}")
-            
+
             # 🚀 LIVE TRADING MODE: Execute actual OKX order placement
             import time
-            
+
             self.logger.info(f"🎯 EXECUTING LIVE EXIT ORDER: {base_symbol} sell {current_qty:.6f} @ ${current_price:.4f}")
-            
+
             # Execute actual live sell order using OKX adapter
             try:
                 # Get the trading symbol (e.g., SOL/USDT)
                 trading_symbol = f"{base_symbol}/USDT"
-                
+
                 # Get exchange instance from portfolio service for live trading
                 from ..services.portfolio_service import get_portfolio_service
                 portfolio_service = get_portfolio_service()
                 live_exchange = portfolio_service.exchange
-                
+
                 if not live_exchange:
                     raise RuntimeError("No live exchange instance available for order execution")
-                
+
                 self.logger.info(f"🔗 Using live exchange instance: {type(live_exchange).__name__}")
-                
+
                 # Validate minimum trade size for OKX (prevent API errors)
                 trade_value_usd = current_qty * current_price
                 min_trade_value = 5.0  # OKX minimum trade value ~$5 USD
-                
+
                 if trade_value_usd < min_trade_value:
                     self.logger.warning(f"🚫 TRADE SIZE TOO SMALL: {base_symbol} trade value ${trade_value_usd:.2f} < minimum ${min_trade_value:.2f} - skipping to avoid API error")
                     return False
-                
+
                 # Place live market sell order on OKX using simple place_order method
                 order_result = live_exchange.place_order(trading_symbol, 'sell', current_qty, 'market')
-                
+
                 if order_result and order_result.get('id'):
                     order_id = order_result['id']
                     filled_amount = order_result.get('filled', current_qty)
                     avg_price = order_result.get('average', current_price)
-                    
+
                     self.logger.critical(
                         f"✅ LIVE EXIT ORDER EXECUTED: {base_symbol} - Order ID: {order_id}, "
                         f"Filled: {filled_amount:.6f} @ ${avg_price:.4f}"
@@ -611,18 +612,18 @@ class EnhancedTrader:
                 else:
                     self.logger.error(f"❌ LIVE EXIT ORDER FAILED: {base_symbol} - No order ID returned")
                     order_success = False
-                    
+
             except Exception as order_error:
                 self.logger.error(f"❌ LIVE EXIT ORDER EXCEPTION: {base_symbol} - {order_error}")
                 order_success = False
-            
+
             if not order_success:
                 self.logger.error(f"❌ EXIT ORDER FAILED: {base_symbol} - Simulated order rejection")
                 return False
-            
+
             # Wait a moment for settlement
             time.sleep(0.5)
-            
+
             # Verify position was actually closed by checking live portfolio
             # Force refresh by clearing cache
             if hasattr(portfolio_service, 'invalidate_cache'):
@@ -631,30 +632,30 @@ class EnhancedTrader:
                 portfolio_service.clear_cache()
             portfolio_after = portfolio_service.get_portfolio_data()
             holdings_after = portfolio_after.get('holdings', [])
-            
+
             # Check if position still exists
             position_after = None
             for holding in holdings_after:
                 if holding.get('symbol') == base_symbol:
                     position_after = holding
                     break
-            
+
             if position_after:
                 remaining_qty = position_after.get('quantity', 0.0)
                 if remaining_qty > 0.001:  # Position still exists
                     self.logger.error(f"❌ EXIT VERIFICATION FAILED: {base_symbol} still holds {remaining_qty:.6f} units after exit attempt")
                     return False
-            
+
             # Success! Position was closed
             pnl_val = float(metadata.get('pnl', 0.0))
             self.logger.critical(f"✅ EXIT VERIFIED SUCCESSFUL: {base_symbol} position closed, PnL: ${pnl_val:.2f} (+{gain_percent:.2f}%)")
-            
+
             # Record the successful exit trade
             sale_proceeds = current_qty * current_price
             fees = sale_proceeds * 0.001
             net_proceeds = sale_proceeds - fees
             self.equity += net_proceeds
-            
+
             record: TradeRecord = {
                 'timestamp': timestamp,
                 'symbol': symbol,
@@ -667,9 +668,9 @@ class EnhancedTrader:
                 'equity_after': self.equity,
             }
             self.trade_history.append(record)
-            
+
             return True
-            
+
         except Exception as e:
             self.logger.error(f"❌ VERIFIED EXIT EXCEPTION: {base_symbol} - {e}")
             return False
@@ -678,81 +679,79 @@ class EnhancedTrader:
         """Execute buy order with proper verification to prevent inverse phantom positions."""
         try:
             self.logger.info(f"🔄 VERIFIED PURCHASE START: {base_symbol} - Attempting to buy {quantity:.6f} units for ${cost_dollars:.2f}")
-            
+
             # Get event type for logging
             metadata = getattr(signal, "metadata", {}) or {}
-            event_type = str(metadata.get("event", "UNKNOWN_BUY"))
-            
+            str(metadata.get("event", "UNKNOWN_BUY"))
+
             # Import portfolio service to verify positions before/after
             from ..services.portfolio_service import get_portfolio_service
             portfolio_service = get_portfolio_service()
-            
+
             # Get current portfolio state BEFORE purchase attempt
             portfolio_before = portfolio_service.get_portfolio_data()
             holdings_before = portfolio_before.get('holdings', [])
-            
+
             # Check current position (if any)
-            position_before = None
             current_qty_before = 0.0
             for holding in holdings_before:
                 if holding.get('symbol') == base_symbol:
-                    position_before = holding
                     current_qty_before = holding.get('quantity', 0.0)
                     break
-            
+
             # Check available USDT balance
             usdt_balance = 0.0
             for holding in holdings_before:
                 if holding.get('symbol') == 'USDT':
                     usdt_balance = holding.get('quantity', 0.0)
                     break
-            
+
             # Also check cash balance from portfolio service directly
             cash_balance = portfolio_before.get('cash_balance', 0.0)
             usdt_balance = max(usdt_balance, cash_balance)  # Use the larger value
-            
+
             if usdt_balance < cost_dollars:
                 self.logger.error(f"⚠️ INSUFFICIENT FUNDS: Need ${cost_dollars:.2f}, have ${usdt_balance:.2f} USDT")
                 return False
-            
+
             self.logger.info(f"📊 PRE-PURCHASE STATE: {base_symbol} qty={current_qty_before:.6f}, USDT=${usdt_balance:.2f}")
-            
+
             # 🚀 LIVE TRADING MODE: Execute actual OKX order placement
             import time
-            
+
             self.logger.info(f"🎯 EXECUTING LIVE BUY ORDER: {base_symbol} buy {quantity:.6f} @ ${current_price:.4f} (${cost_dollars:.2f})")
-            
+
             # Execute actual live buy order using OKX adapter
             try:
                 # Get the trading symbol (e.g., SOL/USDT)
                 trading_symbol = f"{base_symbol}/USDT"
-                
+
                 # Get exchange instance from portfolio service for live trading
                 from ..services.portfolio_service import get_portfolio_service
                 portfolio_service = get_portfolio_service()
                 live_exchange = portfolio_service.exchange
-                
+
                 if not live_exchange:
                     raise RuntimeError("No live exchange instance available for order execution")
-                
+
                 self.logger.info(f"🔗 Using live exchange instance: {type(live_exchange).__name__}")
-                
+
                 # Validate minimum trade size for OKX (prevent API errors)
                 trade_value_usd = quantity * current_price
                 min_trade_value = 5.0  # OKX minimum trade value ~$5 USD
-                
+
                 if trade_value_usd < min_trade_value:
                     self.logger.warning(f"🚫 TRADE SIZE TOO SMALL: {base_symbol} trade value ${trade_value_usd:.2f} < minimum ${min_trade_value:.2f} - skipping to avoid API error")
                     return False
-                
+
                 # Place live market buy order on OKX using simple place_order method
                 order_result = live_exchange.place_order(trading_symbol, 'buy', quantity, 'market')
-                
+
                 if order_result and order_result.get('id'):
                     order_id = order_result['id']
                     filled_amount = order_result.get('filled', quantity)
                     avg_price = order_result.get('average', current_price)
-                    
+
                     self.logger.critical(
                         f"✅ LIVE BUY ORDER EXECUTED: {base_symbol} - Order ID: {order_id}, "
                         f"Filled: {filled_amount:.6f} @ ${avg_price:.4f}"
@@ -762,18 +761,18 @@ class EnhancedTrader:
                 else:
                     self.logger.error(f"❌ LIVE BUY ORDER FAILED: {base_symbol} - No order ID returned")
                     order_success = False
-                    
+
             except Exception as order_error:
                 self.logger.error(f"❌ LIVE BUY ORDER EXCEPTION: {base_symbol} - {order_error}")
                 order_success = False
-            
+
             if not order_success:
                 self.logger.error(f"❌ BUY ORDER FAILED: {base_symbol} - Simulated order rejection")
                 return False
-            
+
             # Wait a moment for settlement
             time.sleep(0.8)
-            
+
             # Verify position was actually acquired by checking live portfolio
             # Force refresh by clearing cache
             if hasattr(portfolio_service, 'invalidate_cache'):
@@ -782,29 +781,27 @@ class EnhancedTrader:
                 portfolio_service.clear_cache()
             portfolio_after = portfolio_service.get_portfolio_data()
             holdings_after = portfolio_after.get('holdings', [])
-            
+
             # Check if position was created/increased
-            position_after = None
             current_qty_after = 0.0
             for holding in holdings_after:
                 if holding.get('symbol') == base_symbol:
-                    position_after = holding
                     current_qty_after = holding.get('quantity', 0.0)
                     break
-            
+
             # Verify purchase actually happened
             quantity_increase = current_qty_after - current_qty_before
             min_expected_qty = quantity * 0.95  # Allow for 5% slippage/fees
-            
+
             if quantity_increase < min_expected_qty:
                 self.logger.error(f"❌ BUY VERIFICATION FAILED: {base_symbol} qty increase {quantity_increase:.6f} < expected {min_expected_qty:.6f}")
                 return False
-            
+
             # Success! Position was acquired
             self.logger.critical(f"✅ BUY VERIFIED SUCCESSFUL: {base_symbol} acquired {quantity_increase:.6f} units (total: {current_qty_after:.6f})")
-            
+
             return True
-            
+
         except Exception as e:
             self.logger.error(f"❌ VERIFIED PURCHASE EXCEPTION: {base_symbol} - {e}")
             return False
@@ -833,7 +830,7 @@ class EnhancedTrader:
         if bool(position_state.get('rebuy_armed', False)):
             rebuy_price = float(position_state.get('rebuy_price', 0.0) or 0.0)
             ready_raw = position_state.get('rebuy_ready_at')
-            ready_dt: Optional[datetime] = None
+            ready_dt: datetime | None = None
             if isinstance(ready_raw, str):
                 try:
                     ready_dt = datetime.fromisoformat(ready_raw.replace('Z', '+00:00'))
@@ -843,9 +840,9 @@ class EnhancedTrader:
                 ready_dt = ready_raw
 
             if ready_dt is not None and ready_dt.tzinfo is None:
-                ready_dt = ready_dt.replace(tzinfo=timezone.utc)
+                ready_dt = ready_dt.replace(tzinfo=UTC)
 
-            status = "READY" if (ready_dt is not None and datetime.now(timezone.utc) >= ready_dt) else "COOLDOWN"
+            status = "READY" if (ready_dt is not None and datetime.now(UTC) >= ready_dt) else "COOLDOWN"
             self.logger.debug("Rebuy armed: Price=$%.2f, Status=%s", rebuy_price, status)
 
     def _log_enhanced_status(self, symbol: str, current_price: float, timestamp: datetime) -> None:
@@ -870,7 +867,7 @@ class EnhancedTrader:
         self.logger.info(" | ".join(parts))
 
     def _get_sleep_duration(self, timeframe: str) -> int:
-        timeframe_map: Dict[str, int] = {
+        timeframe_map: dict[str, int] = {
             '1m': 60,
             '5m': 300,
             '15m': 900,
@@ -881,7 +878,7 @@ class EnhancedTrader:
         }
         return timeframe_map.get(timeframe, 3600)
 
-    def get_trading_statistics(self) -> Dict[str, Any]:
+    def get_trading_statistics(self) -> dict[str, Any]:
         if not self.trade_history:
             return {
                 'total_trades': 0,
@@ -909,7 +906,7 @@ class EnhancedTrader:
         else:
             event_series = pd.Series(dtype='str')
 
-        total_trades = int(len(trades_df))
+        total_trades = len(trades_df)
         buy_trades = int(((action_series == 'buy').astype(int)).sum())
         sell_trades = int(((action_series == 'sell').astype(int)).sum())
 
@@ -926,7 +923,7 @@ class EnhancedTrader:
                 total_pnl = float(pnl_series.sum())
 
         # Defensive copy of position state
-        position_state: Dict[str, Any] = {}
+        position_state: dict[str, Any] = {}
         if hasattr(self.strategy, 'get_position_state'):
             try:
                 position_state = dict(self.strategy.get_position_state())  # type: ignore[attr-defined]

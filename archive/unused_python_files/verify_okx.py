@@ -1,4 +1,7 @@
-import os, ccxt
+import os
+
+import ccxt
+
 
 def env(name: str) -> str | None:
     return os.getenv(name)

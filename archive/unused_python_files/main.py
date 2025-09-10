@@ -13,8 +13,8 @@ from __future__ import annotations
 import argparse
 import os
 import sys
-from typing import Literal, Sequence
-
+from collections.abc import Sequence
+from typing import Literal
 
 Mode = Literal["web", "live", "backtest"]
 
@@ -22,15 +22,16 @@ Mode = Literal["web", "live", "backtest"]
 def run_backtest() -> None:
     """Run backtesting mode using bot.py implementation."""
     # Local import to keep startup fast and avoid import cycles
-    from bot import run_backtest as bot_backtest  # noqa: WPS433 (local import on purpose)
+    from bot import run_backtest as bot_backtest
     bot_backtest()
 
 
 def run_live() -> None:
     """Run live trading backtesting and optimization."""
-    from bot import run_backtest, run_optimize
     import sys
-    
+
+    from bot import run_backtest, run_optimize
+
     arg = sys.argv[2].lower() if len(sys.argv) > 2 else ""
     if arg == "opt":
         run_optimize()
@@ -42,9 +43,9 @@ def run_web() -> None:
     """Run web interface mode."""
     # Try both common module names to avoid import/name churn
     try:
-        from app import app, initialize_system  # noqa: WPS433
+        from app import app, initialize_system
     except Exception:
-        from web_interface import app, initialize_system  # type: ignore[no-redef]  # noqa: WPS433
+        from web_interface import app, initialize_system  # type: ignore[no-redef]
 
     initialize_system()
     port_str = os.environ.get("PORT", "5000")

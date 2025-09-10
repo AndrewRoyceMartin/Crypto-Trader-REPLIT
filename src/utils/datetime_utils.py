@@ -1,11 +1,10 @@
 # src/utils/datetime_utils.py
 from __future__ import annotations
 
-from dataclasses import dataclass
-from datetime import datetime, timezone
-from typing import Iterable, Mapping, Any, List, Union, Optional
-
 import re
+from collections.abc import Iterable, Mapping
+from datetime import UTC, datetime
+from typing import Any
 
 _ISO_Z_RE = re.compile(r"Z$")
 
@@ -13,10 +12,10 @@ def ensure_aware(dt: datetime) -> datetime:
     """Return a UTC-aware datetime. Convert naive -> UTC, aware -> UTC."""
     if dt.tzinfo is None:
         # Treat naive as UTC (app default). If your system wants local->UTC, change here.
-        return dt.replace(tzinfo=timezone.utc)
-    return dt.astimezone(timezone.utc)
+        return dt.replace(tzinfo=UTC)
+    return dt.astimezone(UTC)
 
-def parse_timestamp(value: Union[str, int, float, datetime]) -> datetime:
+def parse_timestamp(value: str | int | float | datetime) -> datetime:
     """
     Parse many timestamp formats into UTC-aware datetime:
     - datetime (naive or aware)
@@ -26,12 +25,12 @@ def parse_timestamp(value: Union[str, int, float, datetime]) -> datetime:
     if isinstance(value, datetime):
         return ensure_aware(value)
 
-    if isinstance(value, (int, float)):
+    if isinstance(value, int | float):
         # Heuristic: treat >1e12 as ms, otherwise seconds
         ts = float(value)
         if ts > 1e12:
-            return datetime.fromtimestamp(ts / 1000.0, tz=timezone.utc)
-        return datetime.fromtimestamp(ts, tz=timezone.utc)
+            return datetime.fromtimestamp(ts / 1000.0, tz=UTC)
+        return datetime.fromtimestamp(ts, tz=UTC)
 
     if isinstance(value, str):
         s = value.strip()
@@ -57,17 +56,17 @@ def parse_timestamp(value: Union[str, int, float, datetime]) -> datetime:
                     continue
 
     # Fallback: now (UTC) to avoid crashes, but better to raise in dev:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 def normalize_records_timestamp_key(
     rows: Iterable[Mapping[str, Any]],
     key: str = "timestamp",
-    out_key: Optional[str] = None,
-) -> List[dict]:
+    out_key: str | None = None,
+) -> list[dict]:
     """
     Return new list with rows' `key` coerced to UTC-aware datetime (stored back or into out_key).
     """
-    out: List[dict] = []
+    out: list[dict] = []
     target_key = out_key or key
     for r in rows:
         d = dict(r)
@@ -75,11 +74,11 @@ def normalize_records_timestamp_key(
         if value is not None:
             d[target_key] = parse_timestamp(value)
         else:
-            d[target_key] = datetime.now(timezone.utc)  # fallback for None values
+            d[target_key] = datetime.now(UTC)  # fallback for None values
         out.append(d)
     return out
 
-def sort_by_timestamp_utc(rows: Iterable[Mapping[str, Any]], key: str = "timestamp", reverse: bool = True) -> List[dict]:
+def sort_by_timestamp_utc(rows: Iterable[Mapping[str, Any]], key: str = "timestamp", reverse: bool = True) -> list[dict]:
     """Sort rows by UTC-aware timestamp descending by default."""
     nr = normalize_records_timestamp_key(rows, key=key)
     return sorted(nr, key=lambda r: r[key], reverse=reverse)

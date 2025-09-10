@@ -1,26 +1,24 @@
 """
 Core API utilities and shared functions
 """
-from flask import Flask, Blueprint
-from typing import Any, Dict, Optional
 import logging
-import threading
-import time
 import os
-from datetime import datetime, timezone
+import threading
+from datetime import UTC, datetime
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
 # State management
 _state_lock = threading.RLock()
-bot_state: Dict[str, Any] = {"running": False}
-warmup: Dict[str, Any] = {"done": False, "error": ""}
-trading_state: Dict[str, Any] = {}
-server_start_time = datetime.now(timezone.utc)
+bot_state: dict[str, Any] = {"running": False}
+warmup: dict[str, Any] = {"done": False, "error": ""}
+trading_state: dict[str, Any] = {}
+server_start_time = datetime.now(UTC)
 
 def get_uptime_seconds() -> int:
     """Get server uptime in seconds."""
-    return int((datetime.now(timezone.utc) - server_start_time).total_seconds())
+    return int((datetime.now(UTC) - server_start_time).total_seconds())
 
 def humanize_seconds(seconds: int) -> str:
     """Convert seconds to human readable format."""
@@ -33,10 +31,10 @@ def humanize_seconds(seconds: int) -> str:
         minutes = (seconds % 3600) // 60
         return f"{hours}h {minutes}m"
 
-def iso_utc(dt: Optional[datetime] = None) -> str:
+def iso_utc(dt: datetime | None = None) -> str:
     """Convert datetime to ISO UTC string."""
     if dt is None:
-        dt = datetime.now(timezone.utc)
+        dt = datetime.now(UTC)
     return dt.isoformat().replace('+00:00', 'Z')
 
 # Admin authentication

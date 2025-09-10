@@ -2,43 +2,44 @@
 Database utilities for storing trading data and state.
 """
 
-import sqlite3
-import pandas as pd
 import json
 import logging
-from datetime import datetime
-from typing import Dict, List, Optional, Any
 import os
+import sqlite3
 from contextlib import contextmanager
+from datetime import datetime
+from typing import Any
+
+import pandas as pd
 
 
 class DatabaseManager:
     """Database manager for trading system data storage."""
-    
+
     def __init__(self, db_path: str = 'trading.db'):
         """
         Initialize database manager.
-        
+
         Args:
             db_path: Path to SQLite database file
         """
         self.db_path = db_path
         self.logger = logging.getLogger(__name__)
-        
+
         # Create database directory if needed
         db_dir = os.path.dirname(db_path)
         if db_dir and not os.path.exists(db_dir):
             os.makedirs(db_dir, exist_ok=True)
-        
+
         # Initialize database
         self._init_database()
-    
+
     def _init_database(self):
         """Initialize database tables."""
         try:
             with self.get_connection() as conn:
                 cursor = conn.cursor()
-                
+
                 # Trades table
                 cursor.execute('''
                     CREATE TABLE IF NOT EXISTS trades (
@@ -57,7 +58,7 @@ class DatabaseManager:
                         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                     )
                 ''')
-                
+
                 # Positions table
                 cursor.execute('''
                     CREATE TABLE IF NOT EXISTS positions (
@@ -74,7 +75,7 @@ class DatabaseManager:
                         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                     )
                 ''')
-                
+
                 # Portfolio snapshots table with real OKX data fields
                 cursor.execute('''
                     CREATE TABLE IF NOT EXISTS portfolio_snapshots (
@@ -92,7 +93,7 @@ class DatabaseManager:
                         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                     )
                 ''')
-                
+
                 # Signals table
                 cursor.execute('''
                     CREATE TABLE IF NOT EXISTS signals (
@@ -108,7 +109,7 @@ class DatabaseManager:
                         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                     )
                 ''')
-                
+
                 # Strategy performance table
                 cursor.execute('''
                     CREATE TABLE IF NOT EXISTS strategy_performance (
@@ -126,7 +127,7 @@ class DatabaseManager:
                         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                     )
                 ''')
-                
+
                 # System state table
                 cursor.execute('''
                     CREATE TABLE IF NOT EXISTS system_state (
@@ -135,25 +136,25 @@ class DatabaseManager:
                         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                     )
                 ''')
-                
+
                 # Create indexes for better performance
                 cursor.execute('CREATE INDEX IF NOT EXISTS idx_trades_symbol ON trades(symbol)')
                 cursor.execute('CREATE INDEX IF NOT EXISTS idx_trades_timestamp ON trades(timestamp)')
                 cursor.execute('CREATE INDEX IF NOT EXISTS idx_positions_symbol ON positions(symbol)')
                 cursor.execute('CREATE INDEX IF NOT EXISTS idx_signals_timestamp ON signals(timestamp)')
-                
+
                 conn.commit()
                 self.logger.info("Database initialized successfully")
-                
+
         except Exception as e:
-            self.logger.error(f"Error initializing database: {str(e)}")
+            self.logger.error(f"Error initializing database: {e!s}")
             raise
-    
+
     @contextmanager
     def get_connection(self):
         """
         Get database connection with automatic cleanup.
-        
+
         Yields:
             SQLite connection object
         """
@@ -165,29 +166,29 @@ class DatabaseManager:
         except Exception as e:
             if conn:
                 conn.rollback()
-            self.logger.error(f"Database error: {str(e)}")
+            self.logger.error(f"Database error: {e!s}")
             raise
         finally:
             if conn:
                 conn.close()
-    
-    def save_trade(self, trade_data: Dict) -> int:
+
+    def save_trade(self, trade_data: dict) -> int:
         """
         Save trade to database.
-        
+
         Args:
             trade_data: Trade data dictionary
-            
+
         Returns:
             Trade ID
         """
         try:
             with self.get_connection() as conn:
                 cursor = conn.cursor()
-                
+
                 cursor.execute('''
-                    INSERT INTO trades 
-                    (timestamp, symbol, action, size, price, commission, order_id, 
+                    INSERT INTO trades
+                    (timestamp, symbol, action, size, price, commission, order_id,
                      strategy, confidence, pnl, mode)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ''', (
@@ -203,28 +204,28 @@ class DatabaseManager:
                     trade_data.get('pnl'),
                     trade_data.get('mode', 'paper')
                 ))
-                
+
                 trade_id = cursor.lastrowid
                 conn.commit()
-                
+
                 self.logger.debug(f"Trade saved with ID: {trade_id}")
                 return trade_id or 0
-                
+
         except Exception as e:
-            self.logger.error(f"Error saving trade: {str(e)}")
+            self.logger.error(f"Error saving trade: {e!s}")
             raise
-    
-    def get_trades(self, symbol: Optional[str] = None, start_date: Optional[datetime] = None, 
-                  end_date: Optional[datetime] = None, mode: Optional[str] = None) -> pd.DataFrame:
+
+    def get_trades(self, symbol: str | None = None, start_date: datetime | None = None,
+                  end_date: datetime | None = None, mode: str | None = None) -> pd.DataFrame:
         """
         Get trades from database.
-        
+
         Args:
             symbol: Optional symbol filter
             start_date: Optional start date filter
             end_date: Optional end date filter
             mode: Optional mode filter (paper, live, backtest)
-            
+
         Returns:
             DataFrame with trades
         """
@@ -232,53 +233,53 @@ class DatabaseManager:
             with self.get_connection() as conn:
                 query = 'SELECT * FROM trades WHERE 1=1'
                 params = []
-                
+
                 if symbol:
                     query += ' AND symbol = ?'
                     params.append(symbol)
-                
+
                 if start_date:
                     query += ' AND timestamp >= ?'
                     params.append(start_date.isoformat())
-                
+
                 if end_date:
                     query += ' AND timestamp <= ?'
                     params.append(end_date.isoformat())
-                
+
                 if mode:
                     query += ' AND mode = ?'
                     params.append(mode)
-                
+
                 query += ' ORDER BY timestamp DESC'
-                
+
                 df = pd.read_sql_query(query, conn, params=params)
-                
+
                 if not df.empty:
                     df['timestamp'] = pd.to_datetime(df['timestamp'])
-                
+
                 return df
-                
+
         except Exception as e:
-            self.logger.error(f"Error getting trades: {str(e)}")
+            self.logger.error(f"Error getting trades: {e!s}")
             return pd.DataFrame()
-    
-    def save_position(self, position_data: Dict) -> int:
+
+    def save_position(self, position_data: dict) -> int:
         """
         Save position to database.
-        
+
         Args:
             position_data: Position data dictionary
-            
+
         Returns:
             Position ID
         """
         try:
             with self.get_connection() as conn:
                 cursor = conn.cursor()
-                
+
                 cursor.execute('''
                     INSERT OR REPLACE INTO positions
-                    (symbol, size, avg_price, entry_time, stop_loss, take_profit, 
+                    (symbol, size, avg_price, entry_time, stop_loss, take_profit,
                      unrealized_pnl, status, mode)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ''', (
@@ -292,24 +293,24 @@ class DatabaseManager:
                     position_data.get('status', 'open'),
                     position_data.get('mode', 'paper')
                 ))
-                
+
                 position_id = cursor.lastrowid
                 conn.commit()
-                
+
                 return int(position_id or 0)
-                
+
         except Exception as e:
-            self.logger.error(f"Error saving position: {str(e)}")
+            self.logger.error(f"Error saving position: {e!s}")
             raise
-    
-    def get_positions(self, status: str = 'open', mode: Optional[str] = None) -> pd.DataFrame:
+
+    def get_positions(self, status: str = 'open', mode: str | None = None) -> pd.DataFrame:
         """
         Get positions from database.
-        
+
         Args:
             status: Position status filter
             mode: Optional mode filter
-            
+
         Returns:
             DataFrame with positions
         """
@@ -317,38 +318,38 @@ class DatabaseManager:
             with self.get_connection() as conn:
                 query = 'SELECT * FROM positions WHERE status = ?'
                 params = [status]
-                
+
                 if mode:
                     query += ' AND mode = ?'
                     params.append(mode)
-                
+
                 query += ' ORDER BY entry_time DESC'
-                
+
                 df = pd.read_sql_query(query, conn, params=params)
-                
+
                 if not df.empty:
                     df['entry_time'] = pd.to_datetime(df['entry_time'])
-                
+
                 return df
-                
+
         except Exception as e:
-            self.logger.error(f"Error getting positions: {str(e)}")
+            self.logger.error(f"Error getting positions: {e!s}")
             return pd.DataFrame()
-    
-    def save_portfolio_snapshot(self, snapshot_data: Dict):
+
+    def save_portfolio_snapshot(self, snapshot_data: dict):
         """
         Save portfolio snapshot to database.
-        
+
         Args:
             snapshot_data: Portfolio snapshot data
         """
         try:
             with self.get_connection() as conn:
                 cursor = conn.cursor()
-                
+
                 cursor.execute('''
                     INSERT INTO portfolio_snapshots
-                    (timestamp, total_value, cash, positions_value, daily_pnl, 
+                    (timestamp, total_value, cash, positions_value, daily_pnl,
                      total_return, mode)
                     VALUES (?, ?, ?, ?, ?, ?, ?)
                 ''', (
@@ -360,63 +361,63 @@ class DatabaseManager:
                     snapshot_data.get('total_return', 0),
                     snapshot_data.get('mode', 'paper')
                 ))
-                
+
                 conn.commit()
-                
+
         except Exception as e:
-            self.logger.error(f"Error saving portfolio snapshot: {str(e)}")
-    
-    def get_portfolio_history(self, mode: Optional[str] = None, days: int = 30) -> pd.DataFrame:
+            self.logger.error(f"Error saving portfolio snapshot: {e!s}")
+
+    def get_portfolio_history(self, mode: str | None = None, days: int = 30) -> pd.DataFrame:
         """
         Get portfolio history.
-        
+
         Args:
             mode: Optional mode filter
             days: Number of days to retrieve
-            
+
         Returns:
             DataFrame with portfolio history
         """
         try:
             with self.get_connection() as conn:
-                query = '''
-                    SELECT * FROM portfolio_snapshots 
-                    WHERE timestamp >= datetime('now', '-{} days')
-                '''.format(days)
-                
+                query = f'''
+                    SELECT * FROM portfolio_snapshots
+                    WHERE timestamp >= datetime('now', '-{days} days')
+                '''
+
                 params = []
-                
+
                 if mode:
                     query += ' AND mode = ?'
                     params.append(mode)
-                
+
                 query += ' ORDER BY timestamp'
-                
+
                 df = pd.read_sql_query(query, conn, params=params)
-                
+
                 if not df.empty:
                     df['timestamp'] = pd.to_datetime(df['timestamp'])
-                
+
                 return df
-                
+
         except Exception as e:
-            self.logger.error(f"Error getting portfolio history: {str(e)}")
+            self.logger.error(f"Error getting portfolio history: {e!s}")
             return pd.DataFrame()
-    
-    def save_signal(self, signal_data: Dict) -> int:
+
+    def save_signal(self, signal_data: dict) -> int:
         """
         Save trading signal to database.
-        
+
         Args:
             signal_data: Signal data dictionary
-            
+
         Returns:
             Signal ID
         """
         try:
             with self.get_connection() as conn:
                 cursor = conn.cursor()
-                
+
                 cursor.execute('''
                     INSERT INTO signals
                     (timestamp, symbol, action, price, confidence, strategy, executed, mode)
@@ -431,20 +432,20 @@ class DatabaseManager:
                     signal_data.get('executed', False),
                     signal_data.get('mode', 'paper')
                 ))
-                
+
                 signal_id = cursor.lastrowid
                 conn.commit()
-                
+
                 return signal_id
-                
+
         except Exception as e:
-            self.logger.error(f"Error saving signal: {str(e)}")
+            self.logger.error(f"Error saving signal: {e!s}")
             raise
-    
+
     def update_signal_execution(self, signal_id: int, executed: bool = True):
         """
         Update signal execution status.
-        
+
         Args:
             signal_id: Signal ID
             executed: Execution status
@@ -452,27 +453,27 @@ class DatabaseManager:
         try:
             with self.get_connection() as conn:
                 cursor = conn.cursor()
-                
+
                 cursor.execute('''
                     UPDATE signals SET executed = ? WHERE id = ?
                 ''', (executed, signal_id))
-                
+
                 conn.commit()
-                
+
         except Exception as e:
-            self.logger.error(f"Error updating signal execution: {str(e)}")
-    
-    def save_strategy_performance(self, performance_data: Dict):
+            self.logger.error(f"Error updating signal execution: {e!s}")
+
+    def save_strategy_performance(self, performance_data: dict):
         """
         Save strategy performance metrics.
-        
+
         Args:
             performance_data: Performance data dictionary
         """
         try:
             with self.get_connection() as conn:
                 cursor = conn.cursor()
-                
+
                 cursor.execute('''
                     INSERT INTO strategy_performance
                     (strategy_name, symbol, start_date, end_date, total_return,
@@ -490,45 +491,45 @@ class DatabaseManager:
                     performance_data.get('win_rate', 0),
                     performance_data.get('mode', 'backtest')
                 ))
-                
+
                 conn.commit()
-                
+
         except Exception as e:
-            self.logger.error(f"Error saving strategy performance: {str(e)}")
-    
-    def get_system_state(self, key: str) -> Optional[Any]:
+            self.logger.error(f"Error saving strategy performance: {e!s}")
+
+    def get_system_state(self, key: str) -> Any | None:
         """
         Get system state value.
-        
+
         Args:
             key: State key
-            
+
         Returns:
             State value or None
         """
         try:
             with self.get_connection() as conn:
                 cursor = conn.cursor()
-                
+
                 cursor.execute('SELECT value FROM system_state WHERE key = ?', (key,))
                 result = cursor.fetchone()
-                
+
                 if result:
                     try:
                         return json.loads(result['value'])
                     except json.JSONDecodeError:
                         return result['value']
-                
+
                 return None
-                
+
         except Exception as e:
-            self.logger.error(f"Error getting system state: {str(e)}")
+            self.logger.error(f"Error getting system state: {e!s}")
             return None
-    
+
     def set_system_state(self, key: str, value: Any):
         """
         Set system state value.
-        
+
         Args:
             key: State key
             value: State value
@@ -536,101 +537,98 @@ class DatabaseManager:
         try:
             with self.get_connection() as conn:
                 cursor = conn.cursor()
-                
+
                 # Convert value to JSON string if not already a string
-                if isinstance(value, (dict, list)):
-                    value_str = json.dumps(value)
-                else:
-                    value_str = str(value)
-                
+                value_str = json.dumps(value) if isinstance(value, dict | list) else str(value)
+
                 cursor.execute('''
                     INSERT OR REPLACE INTO system_state (key, value, updated_at)
                     VALUES (?, ?, ?)
                 ''', (key, value_str, datetime.now()))
-                
+
                 conn.commit()
-                
+
         except Exception as e:
-            self.logger.error(f"Error setting system state: {str(e)}")
-    
+            self.logger.error(f"Error setting system state: {e!s}")
+
     def cleanup_old_data(self, days_to_keep: int = 90):
         """
         Clean up old data from database.
-        
+
         Args:
             days_to_keep: Number of days of data to keep
         """
         try:
             with self.get_connection() as conn:
                 cursor = conn.cursor()
-                
+
                 cutoff_date = datetime.now() - pd.Timedelta(days=days_to_keep)
-                
+
                 # Clean up old trades (except live trades)
                 cursor.execute('''
-                    DELETE FROM trades 
+                    DELETE FROM trades
                     WHERE timestamp < ? AND mode != 'live'
                 ''', (cutoff_date,))
-                
+
                 # Clean up old portfolio snapshots
                 cursor.execute('''
-                    DELETE FROM portfolio_snapshots 
+                    DELETE FROM portfolio_snapshots
                     WHERE timestamp < ?
                 ''', (cutoff_date,))
-                
+
                 # Clean up old signals
                 cursor.execute('''
-                    DELETE FROM signals 
+                    DELETE FROM signals
                     WHERE timestamp < ?
                 ''', (cutoff_date,))
-                
+
                 conn.commit()
-                
+
                 self.logger.info(f"Cleaned up data older than {days_to_keep} days")
-                
+
         except Exception as e:
-            self.logger.error(f"Error cleaning up old data: {str(e)}")
-    
-    def get_database_stats(self) -> Dict:
+            self.logger.error(f"Error cleaning up old data: {e!s}")
+
+    def get_database_stats(self) -> dict:
         """
         Get database statistics.
-        
+
         Returns:
             Database statistics dictionary
         """
         try:
             with self.get_connection() as conn:
                 cursor = conn.cursor()
-                
+
                 stats = {}
-                
+
                 # Count records in each table
                 # Using explicit SQL queries to avoid dynamic string construction
                 table_queries = {
                     'trades': 'SELECT COUNT(*) as count FROM trades',
-                    'positions': 'SELECT COUNT(*) as count FROM positions', 
+                    'positions': 'SELECT COUNT(*) as count FROM positions',
                     'portfolio_snapshots': 'SELECT COUNT(*) as count FROM portfolio_snapshots',
                     'signals': 'SELECT COUNT(*) as count FROM signals',
                     'strategy_performance': 'SELECT COUNT(*) as count FROM strategy_performance'
                 }
-                
+
                 for table_name, query in table_queries.items():
                     cursor.execute(query)
                     result = cursor.fetchone()
                     stats[f'{table_name}_count'] = result['count']
-                
+
                 # Database file size
                 if os.path.exists(self.db_path):
                     stats['file_size_mb'] = os.path.getsize(self.db_path) / (1024 * 1024)
-                
+
                 return stats
-                
+
         except Exception as e:
-            self.logger.error(f"Error getting database stats: {str(e)}")
+            self.logger.error(f"Error getting database stats: {e!s}")
             return {}
-    
 
-    
 
-    
+
+
+
 

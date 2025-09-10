@@ -4,14 +4,14 @@ Debug OKX Trade History - Test different methods to fetch recent trades
 """
 
 import os
-import sys
-import ccxt
 from datetime import datetime, timedelta
-import json
+
+import ccxt
+
 
 def test_okx_trade_methods():
     """Test different OKX methods to find recent trades."""
-    
+
     try:
         # Initialize OKX exchange
         exchange = ccxt.okx({
@@ -21,10 +21,10 @@ def test_okx_trade_methods():
             'sandbox': False,
             'enableRateLimit': True
         })
-        
+
         print("=== OKX Trade History Debug Test ===")
         print(f"Connected to OKX: {exchange.id}")
-        
+
         # Test 1: fetch_my_trades with no parameters
         print("\n1. Testing fetch_my_trades()...")
         try:
@@ -36,7 +36,7 @@ def test_okx_trade_methods():
                 print(f"   Timestamp: {latest['datetime']}")
         except Exception as e:
             print(f"   Error: {e}")
-        
+
         # Test 2: fetch_my_trades for specific symbols
         symbols = ['PEPE/USDT', 'BTC/USDT']
         for symbol in symbols:
@@ -49,9 +49,9 @@ def test_okx_trade_methods():
                     print(f"   Latest: {latest['side']} {latest['amount']} @ {latest['price']} on {latest['datetime']}")
             except Exception as e:
                 print(f"   Error: {e}")
-        
+
         # Test 3: fetch_orders (all orders)
-        print(f"\n3. Testing fetch_orders()...")
+        print("\n3. Testing fetch_orders()...")
         try:
             orders = exchange.fetch_orders(limit=20)
             print(f"   Result: {len(orders)} orders found")
@@ -61,9 +61,9 @@ def test_okx_trade_methods():
                 print(f"   Status: {latest['status']} - {latest['datetime']}")
         except Exception as e:
             print(f"   Error: {e}")
-            
+
         # Test 4: fetch_closed_orders
-        print(f"\n4. Testing fetch_closed_orders()...")
+        print("\n4. Testing fetch_closed_orders()...")
         try:
             closed = exchange.fetch_closed_orders(limit=20)
             print(f"   Result: {len(closed)} closed orders found")
@@ -73,9 +73,9 @@ def test_okx_trade_methods():
                 print(f"   Status: {latest['status']} - {latest['datetime']}")
         except Exception as e:
             print(f"   Error: {e}")
-            
+
         # Test 5: fetch_orders with time range (last 7 days)
-        print(f"\n5. Testing fetch_orders with time range...")
+        print("\n5. Testing fetch_orders with time range...")
         try:
             since = int((datetime.now() - timedelta(days=7)).timestamp() * 1000)
             orders = exchange.fetch_orders(since=since, limit=50)
@@ -85,9 +85,9 @@ def test_okx_trade_methods():
                     print(f"   - {order['symbol']} {order['side']} {order['amount']} @ {order['price']} ({order['status']}) - {order['datetime']}")
         except Exception as e:
             print(f"   Error: {e}")
-            
+
         # Test 6: Check account info
-        print(f"\n6. Testing account balance...")
+        print("\n6. Testing account balance...")
         try:
             balance = exchange.fetch_balance()
             print(f"   Balance keys: {list(balance.keys())}")
@@ -96,13 +96,13 @@ def test_okx_trade_methods():
                     print(f"   {key}: {value}")
         except Exception as e:
             print(f"   Error: {e}")
-            
+
         print("\n=== Test Complete ===")
-        
+
     except Exception as e:
         print(f"OKX connection failed: {e}")
         return False
-        
+
     return True
 
 if __name__ == "__main__":

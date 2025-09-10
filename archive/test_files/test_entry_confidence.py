@@ -3,25 +3,26 @@
 Test script to verify Predictive Entry Point Confidence Indicator functionality
 """
 
+
 import requests
-import json
+
 
 def test_entry_confidence():
     """Test entry confidence calculation for individual symbols and batch analysis."""
-    
+
     print("🎯 Predictive Entry Point Confidence Indicator Test")
     print("=" * 70)
-    
+
     # Test individual symbol confidence
     print("\n🔍 Testing Individual Symbol Analysis:")
     print("-" * 50)
-    
+
     test_symbols = ['BTC', 'ETH', 'SOL', 'GALA', 'PEPE']
-    
+
     for symbol in test_symbols:
         try:
             response = requests.get(f"http://localhost:5000/api/entry-confidence/{symbol}")
-            
+
             if response.status_code == 200:
                 data = response.json()
                 if data['status'] == 'success':
@@ -31,7 +32,7 @@ def test_entry_confidence():
                     print(f"   Timing Signal: {info['timing_signal']}")
                     print(f"   Risk Level: {info['risk_level']}")
                     print(f"   Recommendation: {info['entry_recommendation']}")
-                    
+
                     breakdown = info['breakdown']
                     print(f"   Technical Analysis: {breakdown['technical_analysis']}/100")
                     print(f"   Volatility Assessment: {breakdown['volatility_assessment']}/100")
@@ -42,36 +43,36 @@ def test_entry_confidence():
                     print(f"   ❌ Error: {data.get('message', 'Unknown error')}")
             else:
                 print(f"   ❌ HTTP Error: {response.status_code}")
-                
+
         except Exception as e:
             print(f"   ❌ Exception: {e}")
-    
+
     # Test batch analysis
-    print(f"\n\n📊 Testing Batch Analysis:")
+    print("\n\n📊 Testing Batch Analysis:")
     print("-" * 50)
-    
+
     try:
         response = requests.get("http://localhost:5000/api/entry-confidence-batch")
-        
+
         if response.status_code == 200:
             data = response.json()
             if data['status'] == 'success':
                 results = data['data']
                 summary = data['summary']
-                
+
                 print(f"Analyzed {data['analyzed_symbols']} symbols")
-                print(f"")
-                print(f"📈 Summary:")
+                print("")
+                print("📈 Summary:")
                 print(f"   Excellent Entries (90-100): {summary['excellent_entries']}")
                 print(f"   Good Entries (75-89): {summary['good_entries']}")
                 print(f"   Fair Entries (60-74): {summary['fair_entries']}")
                 print(f"   Weak Entries (<60): {summary['weak_entries']}")
-                
-                print(f"\n🏆 Top 5 Entry Opportunities:")
+
+                print("\n🏆 Top 5 Entry Opportunities:")
                 for i, result in enumerate(results[:5], 1):
                     print(f"   {i}. {result['symbol']}: {result['confidence_score']}/100 ({result['timing_signal']})")
-                
-                print(f"\n⚠️  Symbols to Avoid:")
+
+                print("\n⚠️  Symbols to Avoid:")
                 weak_entries = [r for r in results if r['confidence_score'] < 50]
                 for result in weak_entries[-3:]:  # Show worst 3
                     print(f"   • {result['symbol']}: {result['confidence_score']}/100 ({result['timing_signal']})")
@@ -79,44 +80,44 @@ def test_entry_confidence():
                 print(f"❌ Error: {data.get('message', 'Unknown error')}")
         else:
             print(f"❌ HTTP Error: {response.status_code}")
-            
+
     except Exception as e:
         print(f"❌ Exception: {e}")
-    
+
     # Test Available Positions integration
-    print(f"\n\n🎪 Testing Available Positions Integration:")
+    print("\n\n🎪 Testing Available Positions Integration:")
     print("-" * 50)
-    
+
     try:
         response = requests.get("http://localhost:5000/api/available-positions")
-        
+
         if response.status_code == 200:
             data = response.json()
             positions = data.get('available_positions', [])
-            
+
             # Check if confidence data is included
             confidence_enabled_positions = [p for p in positions if 'entry_confidence' in p]
-            
+
             print(f"Total positions: {len(positions)}")
             print(f"Positions with confidence data: {len(confidence_enabled_positions)}")
-            
+
             if confidence_enabled_positions:
-                print(f"\n📋 Sample Positions with Confidence:")
+                print("\n📋 Sample Positions with Confidence:")
                 for i, pos in enumerate(confidence_enabled_positions[:5], 1):
                     conf = pos['entry_confidence']
                     print(f"   {i}. {pos['symbol']}: ${pos['current_price']:.6f} | Confidence: {conf['score']}/100 ({conf['level']}) | Signal: {conf['timing_signal']}")
             else:
-                print(f"⚠️  No positions found with confidence data")
+                print("⚠️  No positions found with confidence data")
         else:
             print(f"❌ HTTP Error: {response.status_code}")
-            
+
     except Exception as e:
         print(f"❌ Exception: {e}")
-    
-    print(f"\n\n🎯 Feature Summary:")
+
+    print("\n\n🎯 Feature Summary:")
     print("=" * 70)
     print("✅ Individual Symbol Analysis - Detailed confidence breakdown")
-    print("✅ Batch Analysis - Compare multiple assets simultaneously") 
+    print("✅ Batch Analysis - Compare multiple assets simultaneously")
     print("✅ Available Positions Integration - Confidence data in trading interface")
     print("✅ Multi-factor Analysis - Technical, volatility, momentum, volume, S/R")
     print("✅ Risk Assessment - Categorized risk levels for position sizing")

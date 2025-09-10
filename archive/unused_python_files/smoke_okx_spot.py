@@ -7,7 +7,6 @@ Minimal OKX spot smoke test:
 - Shows a tiny spot account summary
 """
 
-import os
 import sys
 import traceback
 

@@ -2,26 +2,27 @@
 State Migration Adapter
 Provides backward compatibility with existing state management
 """
-from typing import Any, Optional, Dict
-import threading
+import contextlib
 import logging
-from datetime import datetime, timezone
+import threading
+from datetime import UTC, datetime
+from typing import Any
 
+from .state_types import BotStatus, TradingMode, WarmupStatus
 from .store import get_state_store
-from .state_types import BotStatus, WarmupStatus, TradingMode
 
 logger = logging.getLogger(__name__)
 
 class StateMigrationAdapter:
     """Adapter to maintain backward compatibility with legacy state management."""
-    
+
     def __init__(self):
         self.store = get_state_store()
         self._legacy_lock = threading.RLock()
-    
+
     # Legacy bot_state compatibility
     @property
-    def bot_state(self) -> Dict[str, Any]:
+    def bot_state(self) -> dict[str, Any]:
         """Legacy bot_state dictionary interface."""
         bot_state = self.store.get_bot_state()
         return {
@@ -31,10 +32,10 @@ class StateMigrationAdapter:
             "timeframe": bot_state.get('timeframe'),
             "started_at": bot_state.get('started_at')
         }
-    
+
     # Legacy warmup compatibility
     @property
-    def warmup(self) -> Dict[str, Any]:
+    def warmup(self) -> dict[str, Any]:
         """Legacy warmup dictionary interface."""
         warmup_state = self.store.get_warmup_state()
         return {
@@ -42,10 +43,10 @@ class StateMigrationAdapter:
             "completed": warmup_state.get('completed', False),
             "error": warmup_state.get('error_message')
         }
-    
+
     # Legacy trading_state compatibility
     @property
-    def trading_state(self) -> Dict[str, Any]:
+    def trading_state(self) -> dict[str, Any]:
         """Legacy trading_state dictionary interface."""
         trading_state = self.store.get_trading_state()
         return {
@@ -55,16 +56,16 @@ class StateMigrationAdapter:
             "start_time": trading_state.get('start_time').isoformat() if trading_state.get('start_time') and hasattr(trading_state.get('start_time'), 'isoformat') else None,
             "type": None  # Legacy field
         }
-    
+
     # Thread-safe state updates (legacy interface)
     def _set_bot_state(self, **kwargs) -> None:
         """Thread-safe bot state update (legacy interface)."""
         with self._legacy_lock:
             updates = {}
-            
+
             if 'running' in kwargs:
                 updates['status'] = BotStatus.RUNNING if kwargs['running'] else BotStatus.STOPPED
-            if 'mode' in kwargs and kwargs['mode']:
+            if kwargs.get('mode'):
                 try:
                     updates['mode'] = TradingMode(kwargs['mode'])
                 except ValueError:
@@ -75,20 +76,20 @@ class StateMigrationAdapter:
                 updates['timeframe'] = kwargs['timeframe']
             if 'started_at' in kwargs:
                 updates['started_at'] = kwargs['started_at']
-                
+
             if updates:
                 self.store.set_bot_state(**updates)
-    
+
     def _set_warmup(self, **kwargs) -> None:
         """Thread-safe warmup state update (legacy interface)."""
         with self._legacy_lock:
             updates = {}
-            
+
             if 'started' in kwargs:
                 updates['started'] = kwargs['started']
                 if kwargs['started']:
                     updates['status'] = WarmupStatus.IN_PROGRESS
-                    updates['start_time'] = datetime.now(timezone.utc)
+                    updates['start_time'] = datetime.now(UTC)
             if 'completed' in kwargs:
                 updates['completed'] = kwargs['completed']
                 if kwargs['completed']:
@@ -98,15 +99,15 @@ class StateMigrationAdapter:
                 updates['error_message'] = kwargs['error']
                 if kwargs['error']:
                     updates['status'] = WarmupStatus.FAILED
-                    
+
             if updates:
                 self.store.set_warmup_state(**updates)
-    
+
     def _set_trading_state(self, **kwargs) -> None:
         """Thread-safe trading state update (legacy interface)."""
         with self._legacy_lock:
             updates = {}
-            
+
             if 'mode' in kwargs:
                 if kwargs['mode'] == "stopped":
                     updates['active'] = False
@@ -122,39 +123,37 @@ class StateMigrationAdapter:
                 updates['strategy'] = kwargs['strategy']
             if 'start_time' in kwargs:
                 if isinstance(kwargs['start_time'], str):
-                    try:
+                    with contextlib.suppress(ValueError):
                         updates['start_time'] = datetime.fromisoformat(kwargs['start_time'].replace('Z', '+00:00'))
-                    except ValueError:
-                        pass
                 else:
                     updates['start_time'] = kwargs['start_time']
-                    
+
             if updates:
                 self.store.set_trading_state(**updates)
-    
+
     # Legacy getter methods
     def _get_bot_running(self) -> bool:
         """Get bot running status (legacy interface)."""
         return self.store.get_state('bot.status') == BotStatus.RUNNING
-    
+
     def _get_warmup_done(self) -> bool:
         """Get warmup completion status (legacy interface)."""
         return self.store.get_state('warmup.completed') or False
-    
-    def _get_warmup_error(self) -> Optional[str]:
+
+    def _get_warmup_error(self) -> str | None:
         """Get warmup error (legacy interface)."""
         return self.store.get_state('warmup.error_message')
 
 # Global migration adapter instance
-_migration_adapter: Optional[StateMigrationAdapter] = None
+_migration_adapter: StateMigrationAdapter | None = None
 _adapter_lock = threading.RLock()
 
 def get_migration_adapter() -> StateMigrationAdapter:
     """Get global migration adapter instance."""
     global _migration_adapter
-    
+
     with _adapter_lock:
         if _migration_adapter is None:
             _migration_adapter = StateMigrationAdapter()
-        
+
         return _migration_adapter

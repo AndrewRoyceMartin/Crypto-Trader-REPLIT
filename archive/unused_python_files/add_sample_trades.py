@@ -1,19 +1,18 @@
 #!/usr/bin/env python3
 """Add sample trades to demonstrate the trading system with real OKX cost basis."""
 
-import sys
-import os
 import sqlite3
-from datetime import datetime, timezone, timedelta
+from datetime import UTC, datetime, timedelta
+
 
 def add_sample_trades():
     """Add sample trades that align with the real OKX PEPE position."""
-    
+
     # Connect to the trading database
     db_path = 'trading.db'
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
-    
+
     # Ensure trades table exists
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS trades (
@@ -30,10 +29,10 @@ def add_sample_trades():
             pnl REAL DEFAULT 0
         )
     ''')
-    
+
     # Real OKX data: 6,016,268.09 PEPE at $0.000008 avg entry price = $48.13 total cost
-    base_date = datetime.now(timezone.utc) - timedelta(days=30)
-    
+    base_date = datetime.now(UTC) - timedelta(days=30)
+
     # Sample trades that would result in the current PEPE position
     sample_trades = [
         {
@@ -73,10 +72,10 @@ def add_sample_trades():
             'pnl': 0
         }
     ]
-    
+
     # Clear existing trades for PEPE
     cursor.execute('DELETE FROM trades WHERE symbol = ?', ('PEPE',))
-    
+
     # Insert sample trades
     for trade in sample_trades:
         cursor.execute('''
@@ -94,22 +93,22 @@ def add_sample_trades():
             trade['confidence'],
             trade['pnl']
         ))
-    
+
     # Commit and close
     conn.commit()
-    
+
     # Verify the trades were added
     cursor.execute('SELECT COUNT(*) FROM trades WHERE symbol = ?', ('PEPE',))
     count = cursor.fetchone()[0]
-    
+
     cursor.execute('SELECT SUM(size) FROM trades WHERE symbol = ? AND action = ?', ('PEPE', 'BUY'))
     total_quantity = cursor.fetchone()[0]
-    
+
     conn.close()
-    
+
     print(f"✅ Added {count} sample trades for PEPE")
     print(f"✅ Total quantity: {total_quantity:,.2f} PEPE")
-    print(f"✅ Matches OKX position: 6,016,268.09 PEPE")
+    print("✅ Matches OKX position: 6,016,268.09 PEPE")
     return True
 
 if __name__ == '__main__':

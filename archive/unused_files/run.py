@@ -1,17 +1,15 @@
 \
-import os, json, math, argparse, warnings, time
-from dataclasses import dataclass
+import os; import json; import math; import argparse; import warnings; import time
 import numpy as np
 import pandas as pd
 import yaml
-from typing import List, Optional, Tuple
 
 warnings.filterwarnings("ignore")
 
 def ensure_dir(p):
     os.makedirs(p, exist_ok=True)
 
-def find_datetime_col(df: pd.DataFrame) -> Optional[str]:
+def find_datetime_col(df: pd.DataFrame) -> str | None:
     candidates = ["timestamp", "time", "date", "datetime"]
     for c in candidates:
         if c in df.columns:
@@ -22,7 +20,10 @@ def to_datetime_utc(s):
     return pd.to_datetime(s, utc=True)
 
 def set_seed(seed: int = 1337):
-    import random, numpy as np, os
+    import os
+    import random
+
+    import numpy as np
     random.seed(seed)
     np.random.seed(seed)
     try:
@@ -66,7 +67,7 @@ def fetch_ohlcv_ccxt(exchange_id: str, symbol: str, timeframe: str,
     df = df.set_index("timestamp").sort_index()
     return df
 
-def load_onchain_csvs(paths: List[str]) -> pd.DataFrame:
+def load_onchain_csvs(paths: list[str]) -> pd.DataFrame:
     if not paths:
         return pd.DataFrame()
     frames = []
@@ -132,7 +133,6 @@ def make_sequences(X: np.ndarray, y: np.ndarray, lookback: int):
     return np.array(xs), np.array(ys)
 
 def build_lstm(input_shape, units=64, dropout=0.2, lr=1e-3):
-    import tensorflow as tf
     from tensorflow.keras import layers, models, optimizers
     model = models.Sequential([
         layers.Input(shape=input_shape),
@@ -205,8 +205,8 @@ def run(cfg):
 
     splits, test_slice = time_series_splits(len(df), cfg["walkforward"]["test_size_ratio"], cfg["walkforward"]["n_splits"])
 
-    from sklearn.preprocessing import RobustScaler
     from sklearn.metrics import mean_absolute_error, mean_squared_error
+    from sklearn.preprocessing import RobustScaler
 
     lcfg = cfg["lstm"]
     lookback = int(lcfg.get("lookback", 64))
@@ -249,7 +249,6 @@ def run(cfg):
         if len(Xtr_seq) < 50 or len(Xva_seq) < 10:
             continue
 
-        import tensorflow as tf
         from tensorflow.keras.callbacks import EarlyStopping
         model = build_lstm(
             input_shape=(Xtr_seq.shape[1], Xtr_seq.shape[2]),
@@ -269,7 +268,6 @@ def run(cfg):
         lstm_val = val_pred.copy()
 
         best_w, best_mae = 0.5, 1e9
-        from sklearn.metrics import mean_absolute_error
         for w in np.linspace(0,1,21):
             ens = w * lstm_val + (1-w) * bb_val
             mae = mean_absolute_error(df["y"].values[val_idx_range], ens)
@@ -299,7 +297,6 @@ def run(cfg):
 
     Xtr_seq, ytr_seq = make_sequences2(X_train_s, y_train_s, lookback)
 
-    import tensorflow as tf
     model = build_lstm(input_shape=(Xtr_seq.shape[1], Xtr_seq.shape[2]),
                        units=lcfg.get("units",64), dropout=lcfg.get("dropout",0.2),
                        lr=lcfg.get("learning_rate",1e-3))
@@ -308,7 +305,7 @@ def run(cfg):
 
     X_test = X[test_start:test_end]
     y_test = y[test_start:test_end]
-    prices_test = prices[test_start:test_end]
+    prices[test_start:test_end]
 
     X_test_s = xs.transform(X_test)
     def make_sequences3(Xm, ym, lb):
@@ -432,7 +429,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--config", type=str, default="config.yaml")
     args = ap.parse_args()
-    with open(args.config, "r") as f:
+    with open(args.config) as f:
         cfg = yaml.safe_load(f)
     run(cfg)
 

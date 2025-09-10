@@ -1,0 +1,12 @@
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+exclude = ["archive", "logs", ".pythonlibs", "**/__pycache__"]
+
+[tool.ruff.lint]
+select = ["E","F","I","W","UP","B","PIE","RUF","SIM"]
+ignore = ["E501"]  # already constrained by 100; relax if needed
+
+[tool.ruff.lint.isort]
+combine-as-imports = true
+known-first-party = ["src"]

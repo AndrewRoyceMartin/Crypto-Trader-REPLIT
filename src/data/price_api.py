@@ -3,16 +3,16 @@ Real-time cryptocurrency price data integration using CoinGecko API.
 Provides live price feeds for accurate portfolio valuation.
 """
 
-import requests
-import time
 import logging
-from typing import Dict, List, Optional
+import time
 from datetime import datetime, timedelta
-import json
+
+import requests
+
 
 class CryptoPriceAPI:
     """Real-time cryptocurrency price data from CoinGecko API."""
-    
+
     def __init__(self):
         self.base_url = "https://api.coingecko.com/api/v3"
         self.logger = logging.getLogger(__name__)
@@ -20,7 +20,7 @@ class CryptoPriceAPI:
         self.cache_duration = 300  # Cache for 5 minutes to reduce API calls
         self.last_request_time = 0
         self.request_delay = 60.0  # Rate limit: Check once per minute to avoid API limits
-        
+
         # Price validation and fallback system
         self.last_known_prices = {}  # Store last known good prices with timestamps
         self.connection_status = {
@@ -31,11 +31,11 @@ class CryptoPriceAPI:
             'warning_issued': False
         }
         self.max_price_age = timedelta(hours=24)  # Maximum age for fallback prices
-        
+
         # CoinGecko coin IDs for our cryptocurrencies
         self.coin_mapping = {
             "BTC": "bitcoin",
-            "ETH": "ethereum", 
+            "ETH": "ethereum",
             "SOL": "solana",
             "XRP": "ripple",
             "DOGE": "dogecoin",
@@ -123,7 +123,7 @@ class CryptoPriceAPI:
             "SXP": "solar",
             "HARD": "kava-lend",
             "SUN": "sun-token",
-            "ICX": "icon", 
+            "ICX": "icon",
             "ONT": "ontology",
             # ADDITIONAL MAPPINGS FOR MISSING TOKENS
             "TLM": "alien-worlds",
@@ -170,7 +170,6 @@ class CryptoPriceAPI:
             "MKR": "maker",
             "SNX": "havven",
             "CRV": "curve-dao-token",
-            "UMA": "uma",
             "ENJN": "enjincoin",
             "GALA": "gala",
             # Additional missing mappings from logs
@@ -185,38 +184,37 @@ class CryptoPriceAPI:
             "AUDIO": "audius",
             "REVV": "revv",
             "AMP": "amp-token",
-            "ZEC": "zcash",
             "XLM": "stellar"
         }
-    
+
     def _rate_limit(self):
         """Enforce rate limiting to respect API limits."""
         current_time = time.time()
         time_since_last = current_time - self.last_request_time
-        
+
         if time_since_last < self.request_delay:
             sleep_time = self.request_delay - time_since_last
             time.sleep(sleep_time)
-        
+
         self.last_request_time = time.time()
-    
+
     def _is_cache_valid(self, cache_key: str) -> bool:
         """DISABLED - Always return False to force live data fetch."""
         return False  # Force live data every time
-    
-    def get_price(self, symbol: str) -> Optional[float]:
+
+    def get_price(self, symbol: str) -> float | None:
         """Get current price for a single cryptocurrency."""
         cache_key = f"price_{symbol}"
-        
+
         # Return cached data if valid
         if self._is_cache_valid(cache_key):
             return self.cache[cache_key]['price']
-        
+
         coin_id = self.coin_mapping.get(symbol)
         if not coin_id:
             self.logger.warning(f"No mapping found for symbol: {symbol}")
             return None
-        
+
         try:
             self._rate_limit()
             url = f"{self.base_url}/simple/price"
@@ -224,13 +222,13 @@ class CryptoPriceAPI:
                 'ids': coin_id,
                 'vs_currencies': 'usd'
             }
-            
+
             response = requests.get(url, params=params, timeout=10)
             response.raise_for_status()
-            
+
             data = response.json()
             price = data.get(coin_id, {}).get('usd')
-            
+
             if price:
                 # Cache the result
                 self.cache[cache_key] = {
@@ -239,15 +237,15 @@ class CryptoPriceAPI:
                 }
                 self.logger.info(f"Retrieved live price for {symbol}: ${price:.6f}")
                 return price
-            
+
         except requests.exceptions.RequestException as e:
             self.logger.error(f"API request failed for {symbol}: {e}")
         except Exception as e:
             self.logger.error(f"Error getting price for {symbol}: {e}")
-        
+
         return None
-    
-    def get_connection_status(self) -> Dict:
+
+    def get_connection_status(self) -> dict:
         """Get current connection status and validation information."""
         return {
             'connected': self.connection_status['connected'],
@@ -256,51 +254,51 @@ class CryptoPriceAPI:
             'consecutive_failures': self.connection_status.get('consecutive_failures', 0),
             'warning_issued': self.connection_status.get('warning_issued', False)
         }
-    
+
     def acknowledge_warning(self):
         """Acknowledge price validation warning."""
         self.connection_status['warning_issued'] = False
         self.logger.info("Price validation warning acknowledged by user")
-    
-    def get_multiple_prices(self, symbols: List[str]) -> Dict[str, Dict]:
+
+    def get_multiple_prices(self, symbols: list[str]) -> dict[str, dict]:
         """
         Get current prices for multiple cryptocurrencies with robust validation.
-        
+
         Returns:
             Dict mapping symbols to price data with validation status
         """
-        current_time = time.time()
+        time.time()
         current_datetime = datetime.now()
-        
+
         # Check cache for individual symbols first
         cached_results = {}
         uncached_symbols = []
-        
+
         for symbol in symbols:
             cache_key = f"price_{symbol}"
             if self._is_cache_valid(cache_key):
                 cached_results[symbol] = self.cache[cache_key]
             else:
                 uncached_symbols.append(symbol)
-        
+
         # If all symbols are cached, return cached results
         if not uncached_symbols:
             return cached_results
-        
+
         # Map uncached symbols to coin IDs
         coin_ids = []
         symbol_mapping = {}
-        
+
         for symbol in uncached_symbols:
             coin_id = self.coin_mapping.get(symbol)
             if coin_id:
                 coin_ids.append(coin_id)
                 symbol_mapping[coin_id] = symbol
-        
+
         if not coin_ids:
             # Only return cached results if available
             return cached_results
-        
+
         try:
             self._rate_limit()
             url = f"{self.base_url}/simple/price"
@@ -308,17 +306,17 @@ class CryptoPriceAPI:
                 'ids': ','.join(coin_ids),
                 'vs_currencies': 'usd'
             }
-            
+
             response = requests.get(url, params=params, timeout=15)
             response.raise_for_status()
-            
+
             data = response.json()
             fresh_prices = {}
-            
+
             for coin_id, price_data in data.items():
                 symbol = symbol_mapping.get(coin_id)
                 price = price_data.get('usd')
-                
+
                 if symbol and price is not None:
                     price_info = {
                         'price': price,
@@ -326,20 +324,20 @@ class CryptoPriceAPI:
                         'timestamp': current_datetime.isoformat(),
                         'source': 'CoinGecko_API'
                     }
-                    
+
                     fresh_prices[symbol] = price_info
-                    
+
                     # Update last known good price
                     self.last_known_prices[symbol] = {
                         'price': price,
                         'timestamp': current_datetime,
                         'source': 'CoinGecko_API'
                     }
-                    
+
                     # Cache individual price
                     cache_key = f"price_{symbol}"
                     self.cache[cache_key] = price_info
-            
+
             # Update connection status on success
             self.connection_status.update({
                 'connected': True,
@@ -347,12 +345,12 @@ class CryptoPriceAPI:
                 'last_error': None,
                 'consecutive_failures': 0
             })
-            
+
             self.logger.info(f"Retrieved live prices for {len(fresh_prices)} cryptocurrencies")
-            
+
             # Combine cached and fresh results
             all_results = {**cached_results, **fresh_prices}
-            
+
             # Handle any symbols that failed to fetch with fallback prices
             for symbol in uncached_symbols:
                 if symbol not in fresh_prices:
@@ -366,12 +364,12 @@ class CryptoPriceAPI:
                     }
                     all_results[symbol] = fallback_data
                     self.logger.warning(f"Using fallback price for unmapped symbol {symbol}: ${fallback_price}")
-            
+
             return all_results
-            
+
         except requests.exceptions.RequestException as e:
             self.logger.error(f"API request failed for multiple prices: {e}")
-            
+
             # Update connection status on failure
             self.connection_status.update({
                 'connected': False,
@@ -379,19 +377,19 @@ class CryptoPriceAPI:
                 'consecutive_failures': self.connection_status.get('consecutive_failures', 0) + 1,
                 'warning_issued': True
             })
-            
+
             # Return cached results plus fallback prices
             fallback_results = {}
             for symbol in uncached_symbols:
                 fallback_data = self._get_fallback_price_for_symbol(symbol)
                 if fallback_data:
                     fallback_results[symbol] = fallback_data
-            
+
             return {**cached_results, **fallback_results}
-            
+
         except Exception as e:
             self.logger.error(f"Error getting multiple prices: {e}")
-            
+
             # Update connection status
             self.connection_status.update({
                 'connected': False,
@@ -399,15 +397,15 @@ class CryptoPriceAPI:
                 'consecutive_failures': self.connection_status.get('consecutive_failures', 0) + 1,
                 'warning_issued': True
             })
-            
+
             return cached_results
-    
-    def _get_fallback_price_for_symbol(self, symbol: str) -> Optional[Dict]:
+
+    def _get_fallback_price_for_symbol(self, symbol: str) -> dict | None:
         """Get fallback price for a single symbol."""
         if symbol in self.last_known_prices:
             last_price_data = self.last_known_prices[symbol]
             price_age = datetime.now() - last_price_data['timestamp']
-            
+
             if price_age <= self.max_price_age:
                 return {
                     'price': last_price_data['price'],
@@ -416,20 +414,20 @@ class CryptoPriceAPI:
                     'source': f"Last_Known_{last_price_data['source']}",
                     'age_hours': round(price_age.total_seconds() / 3600, 1)
                 }
-        
+
         self.logger.warning(f"No valid fallback price available for {symbol}")
         return None
-    
-    def test_connection(self) -> Dict[str, any]:
+
+    def test_connection(self) -> dict[str, any]:
         """Test API connection and return status information."""
         try:
             self._rate_limit()
             url = f"{self.base_url}/ping"
-            
+
             start_time = time.time()
             response = requests.get(url, timeout=10)
             response_time = time.time() - start_time
-            
+
             if response.status_code == 200:
                 return {
                     'status': 'connected',
@@ -445,7 +443,7 @@ class CryptoPriceAPI:
                     'error': f"HTTP {response.status_code}",
                     'api_provider': 'CoinGecko'
                 }
-                
+
         except requests.exceptions.RequestException as e:
             return {
                 'status': 'error',
@@ -455,24 +453,24 @@ class CryptoPriceAPI:
         except Exception as e:
             return {
                 'status': 'error',
-                'error': f"Unexpected error: {str(e)}",
+                'error': f"Unexpected error: {e!s}",
                 'api_provider': 'CoinGecko'
             }
-    
-    def get_market_data(self, symbol: str) -> Optional[Dict]:
+
+    def get_market_data(self, symbol: str) -> dict | None:
         """Get detailed market data for a cryptocurrency."""
         coin_id = self.coin_mapping.get(symbol)
         if not coin_id:
             return None
-        
+
         cache_key = f"market_{symbol}"
-        
+
         # Return cached data if valid (longer cache for market data)
         if cache_key in self.cache:
             cache_time = self.cache[cache_key].get('timestamp', 0)
             if (time.time() - cache_time) < 300:  # 5 minute cache
                 return self.cache[cache_key]['data']
-        
+
         try:
             self._rate_limit()
             url = f"{self.base_url}/coins/{coin_id}"
@@ -483,13 +481,13 @@ class CryptoPriceAPI:
                 'community_data': 'false',
                 'developer_data': 'false'
             }
-            
+
             response = requests.get(url, params=params, timeout=15)
             response.raise_for_status()
-            
+
             data = response.json()
             market_data = data.get('market_data', {})
-            
+
             result = {
                 'symbol': symbol,
                 'name': data.get('name'),
@@ -501,15 +499,15 @@ class CryptoPriceAPI:
                 'volume_24h': market_data.get('total_volume', {}).get('usd'),
                 'last_updated': data.get('last_updated')
             }
-            
+
             # Cache the result
             self.cache[cache_key] = {
                 'data': result,
                 'timestamp': time.time()
             }
-            
+
             return result
-            
+
         except Exception as e:
             self.logger.error(f"Error getting market data for {symbol}: {e}")
             return None

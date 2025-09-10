@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
-import os, ccxt
+import os
+
+import ccxt
+
 
 def env_first(*keys):
     for k in keys:
@@ -29,16 +32,16 @@ def test_mode(mode_name, sandbox_mode):
         'secret': secret,
         'password': passwd,
     })
-    
+
     # Set mode
     ex.set_sandbox_mode(sandbox_mode)
     if ex.headers:
         ex.headers.pop('x-simulated-trading', None)
-    
+
     print(f"Sandbox mode: {getattr(ex, 'sandboxMode', False)}")
     print(f"Headers: {ex.headers}")
     print(f"Base URL: {ex.urls.get('api', {}).get('rest', 'unknown')}")
-    
+
     try:
         # Try private call
         bal = ex.fetch_balance()
@@ -46,7 +49,7 @@ def test_mode(mode_name, sandbox_mode):
         print(f"USDT free: {bal.get('USDT', {}).get('free', 'N/A')}")
         return True
     except Exception as e:
-        print(f"❌ {mode_name} FAILED: {str(e)}")
+        print(f"❌ {mode_name} FAILED: {e!s}")
         return False
 
 # Test both modes

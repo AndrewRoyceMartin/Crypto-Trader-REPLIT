@@ -1,9 +1,9 @@
 # loaders/ohlcv_loader.py
 
-import os
-import pandas as pd
-from typing import List, Dict
 from concurrent.futures import ThreadPoolExecutor
+
+import pandas as pd
+
 
 def fetch_ohlcv_for_symbol(symbol: str, days: int = 7) -> pd.DataFrame:
     """
@@ -11,7 +11,7 @@ def fetch_ohlcv_for_symbol(symbol: str, days: int = 7) -> pd.DataFrame:
     Assumes symbol like 'BTC', 'ETH' – appends '-USDT'.
     """
     try:
-        from src.utils.okx_native import OKXNative, OKXCreds
+        from src.utils.okx_native import OKXCreds, OKXNative
         creds = OKXCreds.from_env()
         client = OKXNative(creds)
 
@@ -40,7 +40,7 @@ def fetch_ohlcv_for_symbol(symbol: str, days: int = 7) -> pd.DataFrame:
         print(f"[ERROR] Failed to fetch OHLCV for {symbol}: {e}")
         return pd.DataFrame()
 
-def load_all_ohlcv_parallel(symbols: List[str], days: int = 7, max_workers: int = 10) -> Dict[str, pd.DataFrame]:
+def load_all_ohlcv_parallel(symbols: list[str], days: int = 7, max_workers: int = 10) -> dict[str, pd.DataFrame]:
     """
     Load OHLCV data for multiple symbols in parallel using threading.
     """

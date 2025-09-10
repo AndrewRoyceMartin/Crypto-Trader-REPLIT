@@ -1,8 +1,9 @@
+
 import numpy as np
 import pandas as pd
-from typing import Dict
 
-def calculate_buy_confidence(df: pd.DataFrame, current_price: float) -> Dict:
+
+def calculate_buy_confidence(df: pd.DataFrame, current_price: float) -> dict:
     """
     Enhanced buy prediction model using 6-factor technical analysis:
     RSI(14), Bollinger Bands, Volume Surge, Momentum, Volatility, Support Proximity

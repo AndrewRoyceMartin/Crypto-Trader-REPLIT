@@ -2,17 +2,16 @@
 Trading Bot Module
 Handles bot state management and trading logic using business services
 """
-from typing import Dict, Any, Optional
-import threading
-import time
 import logging
+import threading
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
 # Bot state management
 _state_lock = threading.RLock()
-bot_state: Dict[str, Any] = {"running": False}
-warmup: Dict[str, Any] = {"done": False, "error": ""}
+bot_state: dict[str, Any] = {"running": False}
+warmup: dict[str, Any] = {"done": False, "error": ""}
 
 # Initialize trading business service
 _trading_business_service = None
@@ -25,23 +24,23 @@ def get_trading_business_service():
         _trading_business_service = TradingBusinessService()
     return _trading_business_service
 
-def get_bot_status() -> Dict[str, Any]:
+def get_bot_status() -> dict[str, Any]:
     """Get current bot status with runtime stats."""
     try:
         with _state_lock:
             state_copy = bot_state.copy()
-        
+
         # Use business service for runtime calculations
         business_service = get_trading_business_service()
         runtime_stats = business_service.get_bot_runtime_stats(state_copy)
-        
+
         running = runtime_stats["running"]
         mode = (
             state_copy.get("mode") or (
                 "stopped" if not running else "unknown"
             )
         )
-        
+
         return {
             "running": running,
             "mode": mode,
@@ -61,7 +60,7 @@ def get_bot_status() -> Dict[str, Any]:
             "state": {}
         }
 
-def calculate_entry_confidence(symbol: str, current_price: float, bb_analysis: Dict[str, Any]) -> Dict[str, Any]:
+def calculate_entry_confidence(symbol: str, current_price: float, bb_analysis: dict[str, Any]) -> dict[str, Any]:
     """Calculate entry confidence using business service."""
     try:
         business_service = get_trading_business_service()
@@ -74,7 +73,7 @@ def calculate_entry_confidence(symbol: str, current_price: float, bb_analysis: D
             "timing_signal": "WAIT"
         }
 
-def get_bot_state() -> Dict[str, Any]:
+def get_bot_state() -> dict[str, Any]:
     """Get bot state dictionary."""
     with _state_lock:
         return bot_state.copy()

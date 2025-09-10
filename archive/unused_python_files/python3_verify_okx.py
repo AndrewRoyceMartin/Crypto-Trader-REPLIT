@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
-import os, time, ccxt
+import os
+
+import ccxt
+
 
 def make_okx():
     ex = ccxt.okx({

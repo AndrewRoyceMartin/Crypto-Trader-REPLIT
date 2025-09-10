@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
-import os, ccxt
+import os
+
+import ccxt
+
 
 def env_first(*keys):
     for k in keys:
@@ -37,23 +40,23 @@ def test_subdomain(name, base_url):
             'secret': secret,
             'password': passwd,
         })
-        
+
         # Force live trading mode
         ex.set_sandbox_mode(False)
         if ex.headers:
             ex.headers.pop('x-simulated-trading', None)
-        
+
         # Override the base URL
         if 'urls' not in ex.urls:
             ex.urls = {'api': {}}
         if 'api' not in ex.urls:
             ex.urls['api'] = {}
-        
+
         # Try different URL patterns
         ex.urls['api']['rest'] = f"https://{base_url}/api/v5"
-        
+
         print(f"Testing URL: {ex.urls['api']['rest']}")
-        
+
         # Try private call
         bal = ex.fetch_balance()
         print(f"✅ {name.upper()} SUCCESS - Balance fetched")

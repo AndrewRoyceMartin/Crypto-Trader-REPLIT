@@ -3,6 +3,7 @@ import importlib
 import re
 from pathlib import Path
 
+
 def test_app_imports_ok():
     # Ensure app imports after patch (no undefined names/import errors)
     mod = importlib.import_module("app")

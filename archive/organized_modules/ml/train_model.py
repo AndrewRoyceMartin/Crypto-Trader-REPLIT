@@ -1,25 +1,25 @@
 # ml/train_model.py
 
-import pandas as pd
-import xgboost as xgb
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
-import numpy as np
 import joblib
-from prepare_dataset import load_signal_data, label_profitability
+import numpy as np
+import xgboost as xgb
+from prepare_dataset import label_profitability, load_signal_data
+from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
+from sklearn.model_selection import train_test_split
+
 
 def train_model():
     df = load_signal_data("../signals_log.csv")
-    
+
     # For small datasets, use horizon=1 to get more samples
     df = label_profitability(df, horizon=1)
-    
+
     print(f"📊 Dataset size after labeling: {len(df)} samples")
-    
+
     if len(df) == 0:
         print("❌ No data available for training")
         return
-    
+
     features = ["rsi", "volatility", "confidence_score"]
     if "volume_ratio" in df.columns:
         # Convert boolean to numeric
@@ -28,7 +28,7 @@ def train_model():
 
     X = df[features]
     y = df["pnl_pct"]  # Switch to continuous P&L percentage target
-    
+
     print(f"📊 Features: {features}")
     print(f"📊 Target P&L% stats: Mean={y.mean():.2f}%, Std={y.std():.2f}%, Min={y.min():.2f}%, Max={y.max():.2f}%")
     print(f"📊 Positive P&L samples: {(y > 0).sum()}/{len(y)} ({(y > 0).mean():.1%})")
@@ -48,24 +48,24 @@ def train_model():
         n_estimators=20,  # More trees for better regression performance
         learning_rate=0.1
     )
-    
+
     model.fit(X_train, y_train)
 
     preds = model.predict(X_test)
-    
+
     # Regression evaluation metrics
     mae = mean_absolute_error(y_test, preds)
     mse = mean_squared_error(y_test, preds)
     rmse = np.sqrt(mse)
     r2 = r2_score(y_test, preds)
-    
-    print(f"🎯 Regression Performance:")
+
+    print("🎯 Regression Performance:")
     print(f"   MAE (Mean Absolute Error): {mae:.2f}%")
     print(f"   RMSE (Root Mean Squared Error): {rmse:.2f}%")
     print(f"   R² Score: {r2:.3f}")
-    
+
     # Show prediction vs actual comparison
-    print(f"📈 Sample Predictions vs Actual:")
+    print("📈 Sample Predictions vs Actual:")
     for i in range(min(5, len(y_test))):
         if hasattr(y_test, 'iloc'):
             actual = y_test.iloc[i]

@@ -6,7 +6,7 @@ print()
 
 # Check all OKX environment variables
 okx_vars = [
-    'OKX_API_KEY', 'OKX_SECRET_KEY', 'OKX_API_SECRET', 
+    'OKX_API_KEY', 'OKX_SECRET_KEY', 'OKX_API_SECRET',
     'OKX_PASSPHRASE', 'OKX_API_PASSPHRASE',
     'OKX_DEMO', 'OKX_USE_DEMO'
 ]
@@ -34,7 +34,7 @@ def env_first(*keys):
     return None
 
 api_key = env_first("OKX_API_KEY")
-secret = env_first("OKX_API_SECRET", "OKX_SECRET_KEY")  
+secret = env_first("OKX_API_SECRET", "OKX_SECRET_KEY")
 passwd = env_first("OKX_API_PASSPHRASE", "OKX_PASSPHRASE")
 
 print(f"Final API Key: {api_key[:8] if api_key else 'NONE'}...{api_key[-4:] if api_key else ''}")

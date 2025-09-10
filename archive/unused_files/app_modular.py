@@ -4,12 +4,11 @@ Modular Flask application entry point.
 Demonstrates the new modular architecture with api/, portfolio/, and trading/ modules.
 """
 
+import logging
 import os
 import sys
-import logging
-import threading
-import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
+
 from flask import Flask, jsonify
 
 # Set up logging
@@ -22,15 +21,15 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Global state for the modular app
-server_start_time = datetime.now(timezone.utc)
+server_start_time = datetime.now(UTC)
 
 def create_app() -> Flask:
     """Create and configure the Flask application."""
     app = Flask(__name__)
-    
+
     # Configure app
     app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-key-change-in-production')
-    
+
     # Register blueprints
     try:
         from api.routes import api_bp
@@ -38,15 +37,15 @@ def create_app() -> Flask:
         logger.info("Registered API blueprint")
     except ImportError as e:
         logger.warning(f"Could not import API blueprint: {e}")
-    
+
     # Health check endpoint
     @app.route('/health')
     def health():
         return jsonify({
-            "status": "healthy", 
-            "uptime": int((datetime.now(timezone.utc) - server_start_time).total_seconds())
+            "status": "healthy",
+            "uptime": int((datetime.now(UTC) - server_start_time).total_seconds())
         })
-    
+
     # Root endpoint
     @app.route('/')
     def index():
@@ -56,7 +55,7 @@ def create_app() -> Flask:
         except Exception as e:
             logger.error(f"Template error: {e}")
             return jsonify({"message": "Trading Dashboard", "status": "running"})
-    
+
     return app
 
 def initialize_system() -> bool:
@@ -66,13 +65,13 @@ def initialize_system() -> bool:
         from src.utils.database import DatabaseManager
         _ = DatabaseManager()
         logger.info("Database initialized")
-        
+
         # Initialize portfolio service
         from src.services.portfolio_service import get_portfolio_service
         portfolio_service = get_portfolio_service()
         if portfolio_service:
             logger.info("Portfolio service initialized")
-        
+
         return True
     except Exception as e:
         logger.error(f"System initialization failed: {e}")
@@ -83,17 +82,17 @@ app = create_app()
 
 if __name__ == '__main__':
     logger.info("Starting modular trading application...")
-    
+
     # Initialize system
     if initialize_system():
         logger.info("System initialization completed")
     else:
         logger.error("System initialization failed")
         sys.exit(1)
-    
+
     # Start the application
     port = int(os.getenv('PORT', 5000))
     debug = os.getenv('DEBUG', 'False').lower() == 'true'
-    
+
     logger.info(f"Starting Flask server on port {port}")
     app.run(host='0.0.0.0', port=port, debug=debug)

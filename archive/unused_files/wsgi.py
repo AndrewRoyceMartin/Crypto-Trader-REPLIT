@@ -4,6 +4,7 @@ This file is required for proper deployment on Replit Autoscale.
 """
 
 import os
+
 from app import app, initialize_system
 
 # Initialize the trading system on module import
