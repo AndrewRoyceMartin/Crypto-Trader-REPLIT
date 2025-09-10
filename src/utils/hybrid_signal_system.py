@@ -104,18 +104,19 @@ def calculate_hybrid_signal(confidence_score: float, indicators: dict[str, Any])
 def _get_ml_prediction(indicators: dict[str, Any]) -> float:
     """Get ML prediction probability for the given indicators."""
     try:
-        from ml.model_predictor import predict_buy_opportunity
+        from src.ml.predictor import predict_buy_return
 
-        # Prepare ML features from indicators
-        ml_features = {
-            'rsi': indicators.get('rsi_14', indicators.get('rsi', 50.0)),
-            'volatility': indicators.get('volatility_7', indicators.get('volatility', 10.0)),
-            'confidence_score': indicators.get('composite_confidence', indicators.get('confidence_score', 50.0)),
-            'volume_ratio': 1 if indicators.get('volume_ratio', 1.0) > 1.2 else 0
-        }
+        # Extract confidence score and ML probability from indicators
+        confidence_score = indicators.get('composite_confidence', indicators.get('confidence_score', 50.0))
+        ml_probability = indicators.get('ml_probability', 0.5)
 
-        # Get ML prediction
-        probability = predict_buy_opportunity(ml_features)
+        # Get predicted return and convert to probability
+        predicted_return = predict_buy_return(confidence_score, ml_probability)
+        
+        # Convert return prediction to probability (0-1 range)
+        # Positive returns → higher probability, negative → lower
+        probability = max(0.1, min(0.9, 0.5 + predicted_return * 10))
+        
         return probability
 
     except Exception as e:
