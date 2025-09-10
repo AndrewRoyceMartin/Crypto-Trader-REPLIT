@@ -1812,7 +1812,7 @@ class TradingApp {
     
     async updateCurrentHoldings() {
         try {
-            const response = await fetch('/api/current-holdings', { cache: 'no-cache' });
+            const response = await fetch('/api/crypto-portfolio', { cache: 'no-cache' });
             if (!response.ok) return;
             const data = await response.json();
             
@@ -4416,7 +4416,9 @@ class TradingApp {
     async exportATOTax() {
         try {
             this.showToast('Preparing ATO tax export...', 'info');
-            const response = await fetch('/api/export/ato', {
+            // REMOVED: /api/export/ato endpoint no longer exists
+        console.warn('⚠️ ATO export functionality has been removed');
+        return; // const response = await fetch('/api/export/ato', {
                 method: 'GET',
                 headers: { 'Accept': 'text/csv' }
             });
@@ -4953,7 +4955,9 @@ async function executeTakeProfit() {
     window.tradingApp.showToast('Executing take profit trades...', 'info');
     
     try {
-        const data = await fetchJSON('/api/execute-take-profit', {
+        // REMOVED: execute-take-profit endpoint no longer exists
+        console.warn('⚠️ Execute take profit functionality has been removed');
+        return; // const data = await fetchJSON('/api/execute-take-profit', {
             method: 'POST'
         });
         
@@ -7652,7 +7656,9 @@ async function recalculatePositions() {
         }
         
         // Call recalculation API with correct header format
-        const response = await fetch('/api/recalculate-positions', {
+        // REMOVED: recalculate-positions endpoint no longer exists
+        console.warn('⚠️ Recalculate positions functionality has been removed');
+        return; // const response = await fetch('/api/recalculate-positions', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -7798,7 +7804,9 @@ async function stopAllTrading() {
 async function executeSellOrder(symbol, percentage) {
     try {
         const normalizedSymbol = toOkxInst(symbol);
-        const response = await fetch("/api/sell", {
+        // REMOVED: /api/sell endpoint no longer exists - use Enhanced Bollinger Bands strategy
+        console.warn('⚠️ Direct sell API has been removed - trading handled by Enhanced Bollinger Bands strategy');
+        return; // const response = await fetch("/api/sell", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ symbol: normalizedSymbol, percentage: percentage }),
@@ -7824,7 +7832,9 @@ async function executeSellOrder(symbol, percentage) {
 async function executeBuyOrder(symbol, amount) {
     try {
         const normalizedSymbol = toOkxInst(symbol);
-        const response = await fetch("/api/buy", {
+        // REMOVED: /api/buy endpoint no longer exists - use Enhanced Bollinger Bands strategy
+        console.warn('⚠️ Direct buy API has been removed - trading handled by Enhanced Bollinger Bands strategy');
+        return; // const response = await fetch("/api/buy", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ symbol: normalizedSymbol, amount: amount }),
@@ -8015,7 +8025,7 @@ async function refreshHoldingsData() {
         }
         
         // Fallback for edge cases when TradingApp isn't ready
-        const response = await fetch('/api/current-holdings', { cache: 'no-cache' });
+        const response = await fetch('/api/crypto-portfolio', { cache: 'no-cache' });
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         
         const data = await response.json();
@@ -8219,7 +8229,7 @@ function showCryptoChart(symbol) {
 async function loadCryptoDetails(symbol) {
     try {
         // Load position information
-        const positionResponse = await fetch(`/api/current-holdings`);
+        const positionResponse = await fetch(`/api/crypto-portfolio`);
         const positionData = await positionResponse.json();
         const position = positionData.holdings?.find(h => h.symbol === symbol);
         

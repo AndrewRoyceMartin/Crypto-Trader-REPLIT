@@ -1632,14 +1632,19 @@
         
         // Set up other button handlers
         document.getElementById('btn-ato-export')?.addEventListener('click', function() {
-            window.open('/api/export/ato', '_blank');
+            // REMOVED: ATO export endpoint no longer exists
+            alert('⚠️ ATO export functionality has been removed');
+            // window.open('/api/export/ato', '_blank');
         });
         
         document.getElementById('btn-take-profit')?.addEventListener('click', async function() {
             if (confirm('Execute take profit for all positions above 2% profit?')) {
                 try {
                     const token = getAdminToken();
-                    const response = await fetch('/api/execute-take-profit', {
+                    // REMOVED: execute-take-profit endpoint no longer exists
+                    alert('⚠️ Execute take profit functionality has been removed');
+                    return;
+                    // const response = await fetch('/api/execute-take-profit', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -1781,7 +1786,10 @@
                 headers['X-Admin-Token'] = adminToken;
             }
             
-            const response = await fetch('/api/recalculate-positions', {
+            // REMOVED: recalculate-positions endpoint no longer exists
+            alert('⚠️ Recalculate positions functionality has been removed');
+            return;
+            // const response = await fetch('/api/recalculate-positions', {
                 method: 'POST',
                 headers: headers,
                 cache: 'no-cache'
@@ -1862,7 +1870,7 @@
             
             // Test 2: Holdings API
             console.log('Testing holdings API...');
-            const holdingsResponse = await fetch('/api/current-holdings');
+            const holdingsResponse = await fetch('/api/crypto-portfolio');
             results.push({
                 test: 'Holdings API', 
                 status: holdingsResponse.ok ? 'PASS' : 'FAIL',
@@ -1880,7 +1888,7 @@
             
             // Test 4: Trade History API
             console.log('Testing trade history API...');
-            const tradesResponse = await fetch('/api/recent-trades');
+            const tradesResponse = await fetch('/api/comprehensive-trades');
             const tradesData = await tradesResponse.json();
             results.push({
                 test: 'Trade History API',
@@ -1890,7 +1898,9 @@
             
             // Test 5: Buy API Authentication  
             console.log('Testing buy API authentication...');
-            const buyResponse = await fetch('/api/buy', {
+            // REMOVED: Direct buy API no longer exists - use Enhanced Bollinger Bands strategy
+            console.log('⚠️ Direct buy API has been removed');
+            // const buyResponse = await fetch('/api/buy', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({symbol: 'BTC', amount: 1})
@@ -1927,7 +1937,9 @@
         console.log('🔍 Running Trading Diagnostics...');
         
         try {
-            const response = await fetch('/api/diagnose-trading', {
+            // REMOVED: diagnose-trading endpoint no longer exists
+            console.log('⚠️ Trading diagnostics endpoint has been removed');
+            // const response = await fetch('/api/diagnose-trading', {
                 method: 'GET',
                 headers: {
                     'X-Admin-Token': 'replit-agent-secret' // Add admin token
