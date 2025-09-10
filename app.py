@@ -3944,7 +3944,7 @@ def api_trade_performance() -> ResponseReturnValue:
             if float(holding.get('current_value', 0)) > 1:  # Only significant positions
                 trade_analysis.append({
                     "symbol": holding.get('symbol'),
-                    "entry_price": float(holding.get('entry_price', 0)),
+                    "entry_price": float(holding.get('avg_entry_price', holding.get('entry_price', 0))),
                     "current_price": float(holding.get('current_price', 0)),
                     "quantity": float(holding.get('quantity', 0)),
                     "current_value": float(holding.get('current_value', 0)),
