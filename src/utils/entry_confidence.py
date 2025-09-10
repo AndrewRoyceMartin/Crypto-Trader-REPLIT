@@ -752,55 +752,103 @@ class EntryConfidenceAnalyzer:
             return "VERY_HIGH"
     
     def _fetch_market_data(self, symbol: str, days: int = 30, current_price: float = None) -> List[Dict]:
-        """Fetch historical market data for analysis."""
+        """Fetch REAL historical market data from OKX API."""
         try:
-            # Use current price as base for realistic synthetic data
-            base_price = current_price if current_price else 1.0  # Use actual current price
-            data = []
+            # Import OKX native client for real data
+            from src.utils.okx_native import OKXNative
             
-            for i in range(days):
-                # Simulate realistic price movement
-                change = np.random.normal(0, 0.02)  # 2% daily volatility
-                base_price *= (1 + change)
+            # Convert symbol to OKX format (e.g., ALGO -> ALGO-USDT)
+            inst_id = f"{symbol}-USDT" if not symbol.endswith('-USDT') else symbol
+            
+            # Initialize OKX client
+            okx_client = OKXNative()
+            
+            # Fetch real historical candle data (daily candles)
+            candles_data = okx_client.candles(inst_id, bar="1D", limit=days)
+            
+            if not candles_data:
+                self.logger.warning(f"No real OKX data for {symbol}, using current price fallback")
+                # Fallback: create minimal realistic data based on current price
+                if current_price:
+                    return [{
+                        'date': datetime.now().isoformat(),
+                        'price': current_price,
+                        'volume': 100000,  # Reasonable default
+                        'high': current_price * 1.02,
+                        'low': current_price * 0.98,
+                        'open': current_price,
+                        'close': current_price
+                    }]
+                return []
+            
+            # Convert OKX candle data to our format
+            data = []
+            for candle in candles_data:
+                # OKX candle format: [timestamp, open, high, low, close, volume, volumeCcy, volCcyQuote, confirm]
+                timestamp = int(candle[0])
+                open_price = float(candle[1])
+                high_price = float(candle[2])
+                low_price = float(candle[3])
+                close_price = float(candle[4])
+                volume = float(candle[5])
                 
-                # Simulate volume
-                volume = np.random.uniform(1000, 5000)
-                
-                date = datetime.now() - timedelta(days=days-i)
+                # Convert timestamp to datetime
+                date = datetime.fromtimestamp(timestamp / 1000.0)
                 
                 data.append({
                     'date': date.isoformat(),
-                    'price': base_price,
-                    'volume': volume
+                    'price': close_price,  # Use close price for analysis
+                    'volume': volume,
+                    'high': high_price,
+                    'low': low_price,
+                    'open': open_price,
+                    'close': close_price
                 })
             
+            # Sort by date (oldest first)
+            data.sort(key=lambda x: x['date'])
+            
+            self.logger.info(f"✅ Fetched {len(data)} real OKX candles for {symbol}")
             return data
             
         except Exception as e:
-            self.logger.error(f"Error fetching market data for {symbol}: {e}")
+            self.logger.error(f"Error fetching REAL OKX data for {symbol}: {e}")
+            # Emergency fallback using current price if available
+            if current_price:
+                self.logger.warning(f"Using current price fallback for {symbol}")
+                return [{
+                    'date': datetime.now().isoformat(),
+                    'price': current_price,
+                    'volume': 100000,
+                    'high': current_price * 1.02,
+                    'low': current_price * 0.98,
+                    'open': current_price,
+                    'close': current_price
+                }]
             return []
     
     def _create_basic_confidence(self, symbol: str, current_price: float) -> Dict:
-        """Create basic confidence assessment when data is limited."""
+        """Create basic confidence assessment when real OKX data is unavailable."""
         # Conservative assessment for unknown conditions
-        basic_score = 55.0
+        basic_score = 50.0  # More conservative when no real data
         
         return {
             'symbol': symbol,
             'confidence_score': basic_score,
-            'confidence_level': "FAIR",
-            'timing_signal': "CAUTIOUS_BUY",
+            'confidence_level': "WEAK",
+            'timing_signal': "WAIT",  # More conservative without real data
+            'suggested_target_price': current_price * 0.97,  # 3% discount without real data
             'breakdown': {
-                'technical_analysis': 50.0,
-                'volatility_assessment': 55.0,
-                'momentum_indicators': 50.0,
-                'volume_analysis': 50.0,
-                'support_resistance': 50.0
+                'technical_analysis': 45.0,  # Lower without real data
+                'volatility_assessment': 50.0,
+                'momentum_indicators': 45.0,
+                'volume_analysis': 45.0,
+                'support_resistance': 45.0
             },
-            'entry_recommendation': "Limited data available. Use conservative position sizing.",
-            'risk_level': "MODERATE",
+            'entry_recommendation': "⚠️ No real market data available. Exercise extreme caution.",
+            'risk_level': "HIGH",  # Higher risk without real data
             'calculated_at': datetime.now().isoformat(),
-            'note': "Analysis based on limited data"
+            'note': "⚠️ FALLBACK: No real OKX data available for analysis"
         }
 
 # Global instance
