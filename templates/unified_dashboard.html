@@ -207,7 +207,7 @@
             <div class="stat-strip" id="top-kpis">
               <div class="kpi" id="kpi-equity" data-tone="primary">
                 <div class="kpi__label">Equity</div>
-                <div class="kpi__value" data-kpi-value>—</div>
+                <div class="kpi__value" id="crypto-current-value" data-kpi-value>—</div>
                 <div class="kpi__delta flat" data-kpi-delta>0.0%</div>
                 <!-- tiny inline sparkline (optional) -->
                 <svg class="kpi__spark" viewBox="0 0 100 24" preserveAspectRatio="none" aria-hidden="true">
@@ -217,17 +217,17 @@
 
               <div class="kpi" id="kpi-upnl">
                 <div class="kpi__label">Unrealised P&L</div>
-                <div class="kpi__value" data-kpi-value>—</div>
-                <div class="kpi__delta flat" data-kpi-delta>0.0%</div>
+                <div class="kpi__value" id="crypto-total-pnl" data-kpi-value>—</div>
+                <div class="kpi__delta flat" id="crypto-pnl-percent" data-kpi-delta>0.0%</div>
                 <svg class="kpi__spark" viewBox="0 0 100 24" preserveAspectRatio="none" aria-hidden="true">
                   <polyline points="0,14 20,12 40,10 60,11 80,9 100,12" fill="none" stroke="currentColor" stroke-width="2" opacity=".6"/>
                 </svg>
               </div>
 
               <div class="kpi" id="kpi-exposure">
-                <div class="kpi__label">Exposure</div>
-                <div class="kpi__value" data-kpi-value>—</div>
-                <div class="kpi__delta flat" data-kpi-delta>0.0%</div>
+                <div class="kpi__label">Holdings Count</div>
+                <div class="kpi__value" id="crypto-total-count" data-kpi-value>—</div>
+                <div class="kpi__delta flat" data-kpi-delta>Assets</div>
                 <svg class="kpi__spark" viewBox="0 0 100 24" preserveAspectRatio="none" aria-hidden="true">
                   <polyline points="0,16 20,15 40,14 60,15 80,16 100,15" fill="none" stroke="currentColor" stroke-width="2" opacity=".6"/>
                 </svg>
