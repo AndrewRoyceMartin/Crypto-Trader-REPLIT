@@ -655,9 +655,19 @@ class TradingPerformanceDashboard {
     }
 }
 
-// Initialize dashboard when page loads
+// Initialize dashboard when page loads - wait for Chart.js
 document.addEventListener('DOMContentLoaded', () => {
-    window.performanceDashboard = new TradingPerformanceDashboard();
+    // Wait for Chart.js to load before initializing dashboard
+    function initializeDashboard() {
+        if (typeof Chart !== 'undefined') {
+            console.log('🎯 Chart.js loaded - initializing Trading Performance Dashboard');
+            window.performanceDashboard = new TradingPerformanceDashboard();
+        } else {
+            console.log('⏳ Waiting for Chart.js to load...');
+            setTimeout(initializeDashboard, 100);
+        }
+    }
+    initializeDashboard();
 });
 </script>
 {% endblock %}
