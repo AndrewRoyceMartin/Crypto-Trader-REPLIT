@@ -1,0 +1,182 @@
+Patch (drop-in replacement for the bottom <script> block)
+
+In templates/unified_dashboard.html, replace everything from:
+
+<!-- Bootstrap JS - load before custom JS to ensure availability -->
+
+
+to the end of file with the block below.
+
+<!-- Bootstrap (load first) -->
+<script defer src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- Cache-busted custom JS (main renderer owns table updates) -->
+<script defer src="{{ url_for('static', filename='app_legacy.js') }}?v={{ cache_version|default(0) }}"></script>
+<script defer src="{{ url_for('static', filename='filter_positions.js') }}?v={{ cache_version|default(0) }}"></script>
+
+<script>
+/**
+ * Minimal page orchestrator.
+ * Why: Prevents conflicts with app_legacy.js renderers while wiring the new API routes.
+ */
+
+(function () {
+  // --- Admin token handling (unchanged) ---
+  let adminToken = localStorage.getItem('admin-token') || null;
+  function getAdminToken() {
+    if (!adminToken) {
+      adminToken = prompt('Please enter admin token for bot control:');
+      if (adminToken) localStorage.setItem('admin-token', adminToken);
+    }
+    return adminToken;
+  }
+  function clearAdminToken() {
+    adminToken = null;
+    localStorage.removeItem('admin-token');
+  }
+
+  // --- Small helpers ---
+  const qs  = (sel) => document.querySelector(sel);
+  const qsa = (sel) => Array.from(document.querySelectorAll(sel));
+  const setText = (sel, val) => { const el = qs(sel); if (el) el.textContent = val; };
+
+  async function fetchJSON(url, opts = {}) {
+    const res = await fetch(url, { cache: 'no-store', ...opts });
+    if (!res.ok) throw new Error(`${url} -> ${res.status}`);
+    return res.json();
+  }
+
+  // --- New API endpoints (server-backed) ---
+  // overview numbers (currency, totals, pnl, timings)
+  async function loadOverview() {
+    try {
+      const data = await fetchJSON('/api/portfolio-overview'); // live overview
+      const ov = data?.overview || {};
+      setText('#overview-last-update', ov.last_update || new Date().toLocaleTimeString());
+      // Ex: populate some obvious counters if present
+      setText('#total-assets',       ov.total_assets ?? '0');
+      setText('#profitable-assets',  ov.profitable_positions ?? '0');
+      setText('#losing-assets',      ov.losing_positions ?? '0');
+      // let app_legacy.js own complex DOM rendering; this only preps basic stats
+    } catch (e) {
+      console.warn('loadOverview failed', e);
+    }
+  }
+
+  // holdings & available positions (OKX live)
+  async function loadPortfolio() {
+    try {
+      // Respect currency selector if present
+      const sel = qs('#currency-selector');
+      const currency = sel ? sel.value : 'USD';
+      const url = `/api/crypto-portfolio?currency=${encodeURIComponent(currency)}`;
+      const data = await fetchJSON(url);
+      // hand off to app_legacy.js if available
+      if (window.tradingApp?.updateCryptoPortfolioDOM) {
+        window.tradingApp.updateCryptoPortfolioDOM(data);
+      }
+      // timing labels
+      setText('#positions-last-update', new Date().toLocaleTimeString());
+      setText('#available-last-update', new Date().toLocaleTimeString());
+    } catch (e) {
+      console.warn('loadPortfolio failed', e);
+    }
+  }
+
+  // trade fills (prefer comprehensive, fallback to trade-history)
+  async function loadTrades() {
+    const tryEndpoints = ['/api/comprehensive-trades', '/api/trade-history?timeframe=7d&limit=100'];
+    let payload = null, used = null;
+    for (const ep of tryEndpoints) {
+      try {
+        payload = await fetchJSON(ep);
+        used = ep;
+        break;
+      } catch (e) { /* try next */ }
+    }
+    if (!payload) {
+      console.warn('No trades from either endpoint');
+      return;
+    }
+    // hand off to app_legacy.js
+    if (window.tradingApp?.updateTradesDOM) {
+      window.tradingApp.updateTradesDOM(payload);
+    }
+    setText('#trades-last-updated', new Date().toLocaleTimeString());
+    console.log('Trades loaded via', used);
+  }
+
+  // coin icon/color (call per visible row; example utility for app_legacy.js)
+  window.getCoinMeta = async function(symbol) {
+    try {
+      return await fetchJSON(`/api/coin-metadata/${encodeURIComponent(symbol)}`);
+    } catch {
+      return { icon: 'fa-solid fa-coins', name: symbol, color: 'hsl(210,60%,50%)', type: 'font', source: 'fallback' };
+    }
+  };
+
+  // currency switching -> hard refresh portfolio
+  function initCurrencyChange() {
+    const sel = qs('#currency-selector');
+    if (!sel) return;
+    sel.addEventListener('change', () => {
+      localStorage.removeItem('portfolioData'); // clear any client cache
+      loadPortfolio();
+    });
+  }
+
+  // bot toggle (kept – uses /api/bot/status + /api/bot/start/stop)
+  async function toggleBot() {
+    const btn = qs('#bot-status-top');
+    if (!btn) return;
+    const old = btn.textContent;
+    try {
+      const st = await fetchJSON('/api/bot/status');
+      const running = !!st.running;
+      btn.textContent = running ? 'START BOT' : 'STOP BOT';
+      const endpoint = running ? '/api/bot/stop' : '/api/bot/start';
+      const headers = { 'Content-Type': 'application/json' };
+      const token = getAdminToken();
+      if (token) headers['X-Admin-Token'] = token;
+
+      const body = running ? null : JSON.stringify({ mode: 'live', strategy: 'enhanced_bollinger' });
+      const res = await fetch(endpoint, { method: 'POST', headers, body });
+      if (res.status === 401) {
+        clearAdminToken();
+        btn.textContent = old;
+        alert('Invalid admin token.');
+      }
+    } catch (e) {
+      btn.textContent = old;
+      console.warn('toggleBot failed', e);
+    }
+  }
+  window.toggleBot = toggleBot;
+
+  // Init: only orchestrate; renderers live in app_legacy.js
+  document.addEventListener('DOMContentLoaded', function () {
+    console.log('DOM ready, Bootstrap:', !!window.bootstrap, 'Chart.js:', !!window.Chart);
+    initCurrencyChange();
+    loadOverview();
+    loadPortfolio();
+    loadTrades();
+
+    // periodic refresh (align with server refresh hints, default every 6s)
+    setInterval(loadOverview, 6000);
+    setInterval(loadPortfolio, 6000);
+    setInterval(loadTrades,    15000);
+  });
+})();
+</script>
+
+Why this fixes the page
+
+Uses the current server endpoints (/api/portfolio-overview, /api/crypto-portfolio, /api/comprehensive-trades with fallback) instead of any legacy routes.
+
+Stops inline renderers from overwriting app_legacy.js updates (single source of truth).
+
+Switches icon source to /api/coin-metadata/<symbol> (OKX CDN or deterministic fallback), so symbols render even if an external icon is unavailable.
+
+Keeps your bot controls working against /api/bot/status and /api/bot/start|stop.
+
+Adds cache-busting (already passed as ?v={{ cache_version }} from Flask).
