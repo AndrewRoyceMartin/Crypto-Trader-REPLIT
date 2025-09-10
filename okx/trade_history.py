@@ -111,7 +111,8 @@ class OKXTradeHistory:
         # Sort by timestamp (newest first)
         df = df.sort_values("timestamp", ascending=False)
 
-        return df[["timestamp", "instId", "side", "price", "size", "value_usd", "fee", "feeCcy", "tradeId", "ordId"]]
+        selected_df = df[["timestamp", "instId", "side", "price", "size", "value_usd", "fee", "feeCcy", "tradeId", "ordId"]]
+        return selected_df
 
     def save_all_trades_to_csv(self, filename: str = "okx_trade_history_full.csv", **kwargs) -> None:
         """Save complete trade history to CSV file using pagination"""
@@ -217,8 +218,8 @@ class OKXTradeHistory:
                 "buy_count": len(buys),
                 "sell_count": len(sells),
                 "total_volume": pair_trades["value_usd"].sum(),
-                "avg_buy_price": buys["price"].mean() if not buys.empty else 0,
-                "avg_sell_price": sells["price"].mean() if not sells.empty else 0
+                "avg_buy_price": buys["price"].mean() if len(buys) > 0 else 0,
+                "avg_sell_price": sells["price"].mean() if len(sells) > 0 else 0
             }
         
         analysis = {
@@ -260,7 +261,8 @@ class OKXTradeHistory:
     def get_trade_fills(self, instType: str = "SPOT", limit: int = 100, 
                        begin: Optional[str] = None, end: Optional[str] = None) -> pd.DataFrame:
         """Legacy method - use get_all_trade_fills() for complete history"""
-        return self.get_all_trade_fills(instType, max_pages=1)[:limit]
+        full_df = self.get_all_trade_fills(instType, max_pages=1)
+        return full_df.head(limit) if not full_df.empty else full_df
 
     def save_trades_to_csv(self, filename: str = "okx_trade_history.csv") -> None:
         """Legacy method - use save_all_trades_to_csv() for complete history"""
