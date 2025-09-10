@@ -772,14 +772,15 @@ class EntryConfidenceAnalyzer:
             except ImportError:
                 pass
             
-            # 🎯 TEMPORARY: Disable real OKX data to fix timeouts (show intelligent pricing works)
-            self.logger.debug(f"⚡ Using fast optimized data for {symbol} (timeout prevention)")
-            return self._create_fallback_data(current_price)
+            # 🎯 SELECTIVE REAL DATA: Only fetch for top 10 cryptocurrencies (optimized)
+            top_priority = {'BTC', 'ETH', 'SOL', 'ALGO', 'DOGE', 'ADA', 'LINK', 'AVAX', 'DOT', 'UNI'}
             
-            # TODO: Re-enable selective real OKX data once timeout issue is resolved
-            # top_priority = {'BTC', 'ETH', 'SOL', 'ALGO', 'DOGE'}
-            # if symbol not in top_priority:
-            #     return self._create_fallback_data(current_price)
+            if symbol not in top_priority:
+                self.logger.debug(f"⚡ Using optimized data for {symbol} (non-priority)")
+                return self._create_fallback_data(current_price)
+            
+            # Minimal rate limiting for top 10 only  
+            time.sleep(0.3)  # 300ms between requests = 3.33 req/sec
             
             # Use environment credentials directly (same as other OKX clients)
             try:
