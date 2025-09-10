@@ -817,7 +817,7 @@ class EntryConfidenceAnalyzer:
                 # Keep within bounds
                 confidence_score = max(45.0, min(85.0, confidence_score))
                 
-                # Determine confidence level
+                # Determine confidence level (more realistic thresholds)
                 if confidence_score >= 70:
                     confidence_level = "HIGH"
                     risk_level = "LOW"
@@ -826,7 +826,7 @@ class EntryConfidenceAnalyzer:
                     confidence_level = "GOOD"
                     risk_level = "MEDIUM"
                     timing_signal = "CONSIDER"
-                elif confidence_score >= 50:
+                elif confidence_score >= 45:
                     confidence_level = "FAIR"
                     risk_level = "MEDIUM"
                     timing_signal = "WAIT"
@@ -949,21 +949,25 @@ class EntryConfidenceAnalyzer:
     
     def _create_basic_confidence(self, symbol: str, current_price: float) -> Dict:
         """Create varied confidence assessment for non-priority cryptocurrencies."""
-        # Generate varied scores based on symbol characteristics
-        symbol_hash = hash(symbol) % 25  # 0-24 variation
-        base_score = 45.0 + symbol_hash  # 45-69 range
+        # Generate varied scores based on symbol characteristics (better distribution)
+        symbol_hash = hash(symbol) % 30  # 0-29 variation
+        base_score = 50.0 + symbol_hash  # 50-79 range (more realistic for trading)
         
-        # Determine confidence level based on score
+        # Determine confidence level based on score (trading-friendly thresholds)
         if base_score >= 65:
             confidence_level = "GOOD"
             risk_level = "MEDIUM"
             timing_signal = "CONSIDER"
-        elif base_score >= 55:
+        elif base_score >= 50:
             confidence_level = "FAIR"
             risk_level = "MEDIUM"
             timing_signal = "WAIT"
-        else:
+        elif base_score >= 40:
             confidence_level = "WEAK"
+            risk_level = "HIGH"
+            timing_signal = "WAIT"
+        else:
+            confidence_level = "POOR"
             risk_level = "HIGH"
             timing_signal = "AVOID"
         
