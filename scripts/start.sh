@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Start pyright fixer in background (non-blocking)
+echo "🧹 Starting pyright fixer in background..."
+./scripts/run_pyright_fixer.sh &
+
 # Start the app in background
 echo "Starting app..."
 python -m gunicorn app:app -b 0.0.0.0:5000 --timeout 120 &

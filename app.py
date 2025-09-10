@@ -10,6 +10,7 @@ import hmac
 import json
 import logging
 import os
+import subprocess
 import sys
 import threading
 import time
@@ -881,6 +882,7 @@ def background_warmup() -> None:
     )
     try:
         # ping OKX quickly
+        logger.info("🔥 Starting streamlined warmup...")
         from src.utils.okx_native import OKXNative
         client = OKXNative.from_env()
         _ = with_throttle(client.ticker, "BTC-USDT")  # connectivity check
