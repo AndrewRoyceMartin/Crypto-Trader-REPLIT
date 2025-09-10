@@ -490,14 +490,25 @@ class TradingDashboard {
     async loadHoldings() {
         try {
             const response = await fetch('/api/trade-performance');
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            
             const data = await response.json();
             
-            if (data.success) {
+            if (data.success && data.trades) {
                 this.updateHoldingsTable(data.trades);
                 this.updateRiskMetrics(data.trade_summary);
+                console.log('✅ Holdings loaded successfully:', data.trades.length, 'positions');
+            } else {
+                console.warn('⚠️ Holdings data missing or unsuccessful:', data);
             }
         } catch (error) {
-            console.error('❌ Error loading holdings:', error);
+            console.error('❌ Error loading holdings:', {
+                message: error.message,
+                stack: error.stack,
+                name: error.name
+            });
         }
     }
 
@@ -548,16 +559,18 @@ class TradingDashboard {
             return;
         }
 
-        tbody.innerHTML = signals.slice(0, 5).map(signal => `
+        tbody.innerHTML = signals.slice(0, 5).map(signal => {
+            const hybridScore = (signal.hybrid_score || 0);
+            return `
             <tr>
-                <td><strong>${signal.symbol}</strong></td>
-                <td><span class="signal-badge signal-${signal.signal}">${signal.signal}</span></td>
-                <td><span class="ml-confidence">${signal.hybrid_score.toFixed(1)}%</span></td>
+                <td><strong>${signal.symbol || 'N/A'}</strong></td>
+                <td><span class="signal-badge signal-${signal.signal || 'WAIT'}">${signal.signal || 'WAIT'}</span></td>
+                <td><span class="ml-confidence">${hybridScore.toFixed(1)}%</span></td>
                 <td class="${signal.pnl_percent !== null ? (signal.pnl_percent >= 0 ? 'text-success' : 'text-danger') : 'text-muted'}">
-                    ${signal.outcome.replace('_', ' ')}
+                    ${(signal.outcome || 'pending').replace('_', ' ')}
                 </td>
             </tr>
-        `).join('');
+        `;}).join('');
     }
 
     updateHoldingsTable(trades) {
@@ -569,18 +582,26 @@ class TradingDashboard {
         }
 
         tbody.innerHTML = trades.slice(0, 10).map(trade => {
-            const pnlClass = trade.pnl_percent >= 0 ? 'text-success' : 'text-danger';
-            const trendIcon = trade.pnl_percent >= 0 ? 'fa-arrow-up text-success' : 'fa-arrow-down text-danger';
+            // Safely handle potentially undefined values
+            const quantity = (trade.quantity || 0);
+            const entryPrice = (trade.entry_price || 0);
+            const currentPrice = (trade.current_price || 0);
+            const marketValue = (trade.market_value || 0);
+            const pnlUsd = (trade.pnl_usd || 0);
+            const pnlPercent = (trade.pnl_percent || 0);
+            
+            const pnlClass = pnlPercent >= 0 ? 'text-success' : 'text-danger';
+            const trendIcon = pnlPercent >= 0 ? 'fa-arrow-up text-success' : 'fa-arrow-down text-danger';
             
             return `
                 <tr>
-                    <td><strong>${trade.symbol}</strong></td>
-                    <td class="text-end">${trade.quantity.toFixed(4)}</td>
-                    <td class="text-end">$${trade.entry_price.toFixed(4)}</td>
-                    <td class="text-end">$${trade.current_price.toFixed(4)}</td>
-                    <td class="text-end">$${trade.market_value.toFixed(2)}</td>
-                    <td class="text-end ${pnlClass}">$${trade.pnl_usd.toFixed(2)}</td>
-                    <td class="text-end ${pnlClass}">${trade.pnl_percent.toFixed(2)}%</td>
+                    <td><strong>${trade.symbol || 'N/A'}</strong></td>
+                    <td class="text-end">${quantity.toFixed(4)}</td>
+                    <td class="text-end">$${entryPrice.toFixed(4)}</td>
+                    <td class="text-end">$${currentPrice.toFixed(4)}</td>
+                    <td class="text-end">$${marketValue.toFixed(2)}</td>
+                    <td class="text-end ${pnlClass}">$${pnlUsd.toFixed(2)}</td>
+                    <td class="text-end ${pnlClass}">${pnlPercent.toFixed(2)}%</td>
                     <td class="text-center"><i class="fas ${trendIcon}"></i></td>
                 </tr>
             `;
@@ -592,20 +613,24 @@ class TradingDashboard {
         const worstEl = document.getElementById('worstPerformer');
 
         if (performers.best) {
+            const bestPnlPercent = (performers.best.pnl_percent || 0);
+            const bestPnlUsd = (performers.best.pnl_usd || 0);
             bestEl.innerHTML = `
-                <div class="h4 text-success mb-1">${performers.best.symbol}</div>
-                <div class="text-success h5 mb-1">+${performers.best.pnl_percent.toFixed(2)}%</div>
-                <small class="text-muted">$${performers.best.pnl_usd.toFixed(2)} profit</small>
+                <div class="h4 text-success mb-1">${performers.best.symbol || 'N/A'}</div>
+                <div class="text-success h5 mb-1">+${bestPnlPercent.toFixed(2)}%</div>
+                <small class="text-muted">$${bestPnlUsd.toFixed(2)} profit</small>
             `;
         } else {
             bestEl.innerHTML = '<p class="text-muted mb-0">No profit positions</p>';
         }
 
         if (performers.worst) {
+            const worstPnlPercent = (performers.worst.pnl_percent || 0);
+            const worstPnlUsd = (performers.worst.pnl_usd || 0);
             worstEl.innerHTML = `
-                <div class="h4 text-danger mb-1">${performers.worst.symbol}</div>
-                <div class="text-danger h5 mb-1">${performers.worst.pnl_percent.toFixed(2)}%</div>
-                <small class="text-muted">$${performers.worst.pnl_usd.toFixed(2)} loss</small>
+                <div class="h4 text-danger mb-1">${performers.worst.symbol || 'N/A'}</div>
+                <div class="text-danger h5 mb-1">${worstPnlPercent.toFixed(2)}%</div>
+                <small class="text-muted">$${worstPnlUsd.toFixed(2)} loss</small>
             `;
         } else {
             worstEl.innerHTML = '<p class="text-muted mb-0">No loss positions</p>';
