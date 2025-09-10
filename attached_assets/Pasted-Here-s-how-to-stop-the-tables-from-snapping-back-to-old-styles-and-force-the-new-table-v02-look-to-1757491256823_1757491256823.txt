@@ -1,0 +1,105 @@
+Here’s how to stop the tables from “snapping back” to old styles and force the new table-v02 look to win consistently.
+
+Plan (quick)
+
+Make table-v02 CSS higher-specificity and self-contained (no dependency on legacy rules).
+
+Neutralize Bootstrap/legacy collisions (e.g., .table class) at runtime.
+
+Ensure CSS load order: new table-v02 styles loaded after Bootstrap and any legacy CSS.
+
+Below is a safe drop-in patch: add the CSS block to your {% block extra_css %} (it can replace your current table styles), and add the tiny JS sanitizer at the end of the file.
+
+1) Strong, self-contained table-v02 styling (paste inside your {% block extra_css %})
+<style>
+/* --- Table v02: robust, bootstrap-proof styles --- */
+
+/* Fallbacks if not defined in :root */
+:root {
+  --v02-head-bg: #6c7ae0;
+  --v02-head-fg: #ffffff;
+  --v02-row-hover: rgba(108, 122, 224, 0.12);
+  --v02-row-alt: rgba(255,255,255,0.02);
+  --v02-border: rgba(255,255,255,0.12);
+  --v02-fg: #e5e7eb;
+}
+
+/* Increase specificity with a parent scope to beat older rules */
+.dashboard-section .table-v02,
+.dashboard-section .table-v02--compact {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  color: var(--v02-fg);
+  background: transparent;
+  /* In case bootstrap's table overrides fonts/line-height */
+  font: 500 13px/1.45 system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+}
+
+/* Prevent .table (Bootstrap) rules from leaking if present by mistake */
+.dashboard-section .table-v02.table,
+.dashboard-section .table-v02--compact.table {
+  /* neutralize bootstrap table background/borders */
+  background-color: transparent !important;
+  border-color: var(--v02-border) !important;
+}
+
+/* Head */
+.dashboard-section .table-v02 thead th,
+.dashboard-section .table-v02--compact thead th {
+  background: var(--v02-head-bg);
+  color: var(--v02-head-fg);
+  padding: 10px 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  border-bottom: 1px solid var(--v02-border);
+  white-space: nowrap;
+}
+
+/* Body rows */
+.dashboard-section .table-v02 tbody tr,
+.dashboard-section .table-v02--compact tbody tr {
+  border-bottom: 1px solid var(--v02-border);
+  background: transparent;
+}
+.dashboard-section .table-v02 tbody tr:nth-child(even),
+.dashboard-section .table-v02--compact tbody tr:nth-child(even) {
+  background: var(--v02-row-alt);
+}
+.dashboard-section .table-v02 tbody tr:hover,
+.dashboard-section .table-v02--compact tbody tr:hover {
+  background: var(--v02-row-hover);
+}
+
+/* Cells */
+.dashboard-section .table-v02 th, 
+.dashboard-section .table-v02 td,
+.dashboard-section .table-v02--compact th,
+.dashboard-section .table-v02--compact td {
+  padding: 10px 12px;
+  vertical-align: middle;
+}
+
+/* Compact variant */
+.dashboard-section .table-v02--compact th,
+.dashboard-section .table-v02--compact td {
+  padding: 8px 10px;
+  font-size: 12px;
+}
+
+/* Header accent color via CSS var inline on table (you already set style="--v02-head-bg:#6c7ae0;") */
+.dashboard-section .table-v02[style*="--v02-head-bg"] thead th,
+.dashboard-section .table-v02--compact[style*="--v02-head-bg"] thead th {
+  background: var(--v02-head-bg) !important;
+}
+
+/* Utility aligns – don’t rely on Bootstrap .text-end/.text-center if legacy CSS overrides */
+.t-right { text-align: right !important; }
+.t-center { text-align: center !important; }
+</style>
+
+
+Keep your existing dashboard styles above this block if you want; this block only targets .table-v02 so it won’t disturb cards/charts.
