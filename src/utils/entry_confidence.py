@@ -130,12 +130,12 @@ class EntryConfidenceAnalyzer:
             # Apply the same enhanced filters as the Bollinger strategy
             confirmations = []
             
-            # FILTER 1: RSI Oversold Confirmation (RSI < 30)
+            # FILTER 1: RSI Oversold Confirmation (RSI < 45) - More practical threshold
             if len(df) >= 14:
                 rsi = self._calculate_rsi(df['price'].values, 14)
-                rsi_oversold = rsi < 30.0
+                rsi_oversold = rsi < 45.0  # Relaxed from 30 to 45 for more opportunities
                 confirmations.append(("RSI_Oversold", rsi_oversold))
-                self.logger.debug(f"RSI Analysis: {rsi:.1f} (oversold < 30.0) = {rsi_oversold}")
+                self.logger.debug(f"RSI Analysis: {rsi:.1f} (oversold < 45.0) = {rsi_oversold}")
             
             # FILTER 2: Volume Confirmation (1.2x above average)
             if 'volume' in df.columns and len(df) >= 20:
@@ -196,12 +196,12 @@ class EntryConfidenceAnalyzer:
             # COUNT CONFIRMATIONS - Apply same strict requirements as Bollinger strategy
             confirmed_filters = [name for name, passed in confirmations if passed]
             total_confirmations = len(confirmed_filters)
-            minimum_confirmations = 4  # Same as enhanced strategy
+            minimum_confirmations = 3  # Relaxed from 4 to 3 for more practical opportunities
             
             if total_confirmations >= minimum_confirmations:
-                # HIGH PROBABILITY SETUP - Scale score based on confirmations
-                base_score = 75.0  # Minimum for high probability
-                bonus_score = (total_confirmations - minimum_confirmations) * 5.0  # 5 points per extra confirmation
+                # HIGH PROBABILITY SETUP - Scale score based on confirmations  
+                base_score = 70.0  # Lowered from 75 to 70 for more accessible scoring
+                bonus_score = (total_confirmations - minimum_confirmations) * 6.0  # Increased from 5 to 6 points per extra confirmation
                 final_score = min(95.0, base_score + bonus_score)
                 
                 self.logger.info(f"🎯 HIGH PROBABILITY TECHNICAL SETUP: {total_confirmations}/6 confirmations = {final_score:.1f}%")
@@ -584,11 +584,11 @@ class EntryConfidenceAnalyzer:
             if confidence_score >= 85:
                 # EXCELLENT: 5-6 confirmations passed
                 return "STRONG_BUY"
-            elif confidence_score >= 75:
-                # HIGH PROBABILITY: 4+ confirmations passed (meets enhanced criteria)
+            elif confidence_score >= 70:
+                # HIGH PROBABILITY: 3+ confirmations passed (meets enhanced criteria)
                 return "BUY"
-            elif confidence_score >= 65:
-                # MODERATE: 3 confirmations + some additional factors
+            elif confidence_score >= 60:
+                # MODERATE: 2-3 confirmations + some additional factors
                 if bollinger_zone:
                     return "CAUTIOUS_BUY"  # At Bollinger Band gives slight boost
                 else:
@@ -604,9 +604,9 @@ class EntryConfidenceAnalyzer:
             pass
             
         # Fallback for score-based decisions
-        if confidence_score >= 75:
+        if confidence_score >= 70:
             return "BUY"  # Meets enhanced minimum requirement
-        elif confidence_score >= 65:
+        elif confidence_score >= 60:
             return "CAUTIOUS_BUY"
         elif confidence_score >= 50:
             return "WAIT"
@@ -650,17 +650,17 @@ class EntryConfidenceAnalyzer:
         try:
             prices = df['price'].values
             
-            # 3-day vs 7-day momentum analysis (core algorithm)
-            recent_avg = np.mean(prices[-3:]) if len(prices) >= 3 else current_price
-            week_avg = np.mean(prices[-7:]) if len(prices) >= 7 else current_price
+            # 7-day vs 14-day momentum analysis (expanded for better predictions)
+            recent_avg = np.mean(prices[-7:]) if len(prices) >= 7 else current_price
+            week_avg = np.mean(prices[-14:]) if len(prices) >= 14 else current_price
             short_momentum = (recent_avg - week_avg) / week_avg * 100 if week_avg > 0 else 0
             
-            # 14-day medium-term momentum
-            two_week_avg = np.mean(prices[-14:]) if len(prices) >= 14 else current_price
-            medium_momentum = (current_price - two_week_avg) / two_week_avg * 100 if two_week_avg > 0 else 0
+            # 30-day long-term momentum (expanded analysis)
+            month_avg = np.mean(prices[-30:]) if len(prices) >= 30 else current_price
+            long_momentum = (current_price - month_avg) / month_avg * 100 if month_avg > 0 else 0
             
-            # Support level calculation
-            support_level = np.min(prices[-14:]) if len(prices) >= 14 else current_price * 0.95
+            # Support level calculation (extended to 30-day for better analysis)
+            support_level = np.min(prices[-30:]) if len(prices) >= 30 else current_price * 0.95
             
             # Bollinger Bands lower band (strong support)
             if len(prices) >= 20:
