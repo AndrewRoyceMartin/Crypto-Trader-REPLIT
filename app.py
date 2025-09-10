@@ -4202,7 +4202,7 @@ def api_run_test_command() -> ResponseReturnValue:
 @app.route("/api/self-check", methods=["GET"])
 def self_check():
     okx_base = "https://www.okx.com"
-    status = {"time": datetime.now(timezone.utc).isoformat()}
+    status = {"time": datetime.now(UTC).isoformat()}
     healthy_parts = []
 
     # --- Public OKX health ---
@@ -4226,7 +4226,7 @@ def self_check():
 
     # --- Private OKX sanity (auth only, data may be empty) ---
     try:
-        ts = datetime.now(timezone.utc).isoformat(timespec="milliseconds").replace("+00:00","Z")
+        ts = datetime.now(UTC).isoformat(timespec="milliseconds").replace("+00:00","Z")
         path = "/api/v5/trade/fills"
         msg = f"{ts}GET{path}"
         sig = base64.b64encode(hmac.new(os.getenv("OKX_SECRET_KEY","").encode(), msg.encode(), hashlib.sha256).digest()).decode()

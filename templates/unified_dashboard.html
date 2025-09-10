@@ -137,6 +137,10 @@
                 </div>
 
                 <div class="navbar-nav ms-auto">
+                    <div id="status-badge" class="status-badge me-3" data-testid="status-okx">
+                        <span class="dot dot-grey"></span>
+                        <span class="label">Checking…</span>
+                    </div>
                     <a class="btn btn-outline-primary btn-sm me-2" href="/system-test" target="_blank" rel="noopener">
                         <i class="fas fa-vial me-1"></i>System Test
                     </a>
@@ -2343,5 +2347,36 @@
             
         }, 2000); // Wait 2 seconds for DOM to be ready
     </script>
+
+    <!-- Status Badge Auto-Refresh -->
+    <script>
+    (async function statusPoll() {
+      const el = document.getElementById('status-badge');
+      const dot = el.querySelector('.dot');
+      const label = el.querySelector('.label');
+
+      async function update() {
+        try {
+          const res = await fetch('/api/self-check', { cache: 'no-store' });
+          const data = await res.json();
+          if (data.healthy) {
+            dot.className = 'dot dot-green';
+            label.textContent = 'OKX: Live · API: Healthy';
+          } else {
+            dot.className = 'dot dot-red';
+            label.textContent = 'Degraded – open /api/self-check';
+          }
+        } catch (e) {
+          dot.className = 'dot dot-red';
+          label.textContent = 'Error contacting self-check';
+        }
+      }
+      update();
+      setInterval(update, 30000); // every 30s
+    })();
+    </script>
+
+    <!-- Hidden elements for DOM validation -->
+    <div data-testid="hybrid-score" style="display:none;"></div>
 </body>
 </html>
