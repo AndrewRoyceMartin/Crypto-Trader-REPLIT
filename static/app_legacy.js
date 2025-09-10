@@ -4418,14 +4418,16 @@ class TradingApp {
             this.showToast('Preparing ATO tax export...', 'info');
             // REMOVED: /api/export/ato endpoint no longer exists
         console.warn('⚠️ ATO export functionality has been removed');
-        return; // const response = await fetch('/api/export/ato', {
+        return;
+        /* const response = await fetch('/api/export/ato', {
                 method: 'GET',
                 headers: { 'Accept': 'text/csv' }
-            });
+            }); 
             if (!response.ok) {
                 const errorText = await response.text();
                 throw new Error(`Export failed: ${response.statusText} - ${errorText}`);
             }
+            */
             const blob = await response.blob();
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -4957,9 +4959,10 @@ async function executeTakeProfit() {
     try {
         // REMOVED: execute-take-profit endpoint no longer exists
         console.warn('⚠️ Execute take profit functionality has been removed');
-        return; // const data = await fetchJSON('/api/execute-take-profit', {
+        return;
+        /* const data = await fetchJSON('/api/execute-take-profit', {
             method: 'POST'
-        });
+        }); */
         
         if (data.success) {
             const trades = data.executed_trades || [];
@@ -7658,14 +7661,15 @@ async function recalculatePositions() {
         // Call recalculation API with correct header format
         // REMOVED: recalculate-positions endpoint no longer exists
         console.warn('⚠️ Recalculate positions functionality has been removed');
-        return; // const response = await fetch('/api/recalculate-positions', {
+        return;
+        /* const response = await fetch('/api/recalculate-positions', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'X-Admin-Token': adminToken
             },
             body: JSON.stringify({ force_refresh: true })
-        });
+        }); */
         
         if (!response.ok) {
             throw new Error(`Recalculation failed: ${response.status}`);
@@ -7806,12 +7810,13 @@ async function executeSellOrder(symbol, percentage) {
         const normalizedSymbol = toOkxInst(symbol);
         // REMOVED: /api/sell endpoint no longer exists - use Enhanced Bollinger Bands strategy
         console.warn('⚠️ Direct sell API has been removed - trading handled by Enhanced Bollinger Bands strategy');
-        return; // const response = await fetch("/api/sell", {
+        return;
+        /* const response = await fetch("/api/sell", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ symbol: normalizedSymbol, percentage: percentage }),
             cache: "no-store"
-        });
+        }); */
         const data = await response.json();
         
         if (data.success) {
@@ -7834,12 +7839,13 @@ async function executeBuyOrder(symbol, amount) {
         const normalizedSymbol = toOkxInst(symbol);
         // REMOVED: /api/buy endpoint no longer exists - use Enhanced Bollinger Bands strategy
         console.warn('⚠️ Direct buy API has been removed - trading handled by Enhanced Bollinger Bands strategy');
-        return; // const response = await fetch("/api/buy", {
+        return;
+        /* const response = await fetch("/api/buy", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ symbol: normalizedSymbol, amount: amount }),
             cache: "no-store"
-        });
+        }); */
         const data = await response.json();
         
         if (data.success) {

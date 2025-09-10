@@ -1644,13 +1644,13 @@
                     // REMOVED: execute-take-profit endpoint no longer exists
                     alert('⚠️ Execute take profit functionality has been removed');
                     return;
-                    // const response = await fetch('/api/execute-take-profit', {
+                    /* const response = await fetch('/api/execute-take-profit', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
                             'X-Admin-Token': token
                         }
-                    });
+                    }); */
                     
                     if (response.status === 401) {
                         alert('Admin authentication required for take profit execution.');
@@ -1939,13 +1939,15 @@
         try {
             // REMOVED: diagnose-trading endpoint no longer exists
             console.log('⚠️ Trading diagnostics endpoint has been removed');
-            // const response = await fetch('/api/diagnose-trading', {
+            return;
+            /* const response = await fetch('/api/diagnose-trading', {
                 method: 'GET',
                 headers: {
-                    'X-Admin-Token': 'replit-agent-secret' // Add admin token
+                    'X-Admin-Token': 'replit-agent-secret'
                 }
-            });
+            }); */
             
+            /*
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
@@ -1988,6 +1990,7 @@
                 console.error('❌ Diagnostic failed:', data.error);
                 alert('Diagnostic test failed: ' + data.error);
             }
+            */
             
         } catch (error) {
             console.error('❌ Diagnostic error:', error);
