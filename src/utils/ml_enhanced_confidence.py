@@ -131,7 +131,7 @@ class MLEnhancedConfidenceAnalyzer(EntryConfidenceAnalyzer):
     
     def analyze_entry_confidence(self, symbol: str, current_price: float, 
                                 volume_24h: float = 0, price_change_24h: float = 0,
-                                target_price: float = None) -> Dict[str, Any]:
+                                target_price: Optional[float] = None) -> Dict[str, Any]:
         """
         Analyze entry confidence for a trading position with ML integration.
         
@@ -313,7 +313,13 @@ class MLEnhancedConfidenceAnalyzer(EntryConfidenceAnalyzer):
                 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
                 if project_root not in sys.path:
                     sys.path.append(project_root)
-                from logger.signal_logger import log_buy_signal
+                # Try to import signal logger - it's optional
+                try:
+                    from logger.signal_logger import log_buy_signal
+                except ImportError:
+                    # Signal logging not available
+                    self.logger.debug("Signal logging not available")
+                    return
             except (ImportError, AttributeError):
                 # Signal logging not available
                 self.logger.debug("Signal logging not available")
