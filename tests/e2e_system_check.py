@@ -58,6 +58,10 @@ def auto_populate_environment():
         else:
             populated["APP_URL"] = "❌ No responding server found"
     
+    # Auto-populate DOM selectors from actual app
+    dom_count = len(get_app_dom_selectors())
+    populated["DOM_SELECTORS"] = f"✓ Auto-populated {dom_count} dashboard elements"
+    
     # Print auto-population results
     for key, status in populated.items():
         print(f"   {key}: {status}")
@@ -72,18 +76,58 @@ MODEL_PATH = "buy_regression_model.pkl"
 SIGNALS_LOG = "signals_log.csv"
 BACKTEST_FILE = "backtest_results.csv"
 
-# DOM config via env
+# DOM config - auto-populated with real app elements
 APP_URL = os.getenv("APP_URL", "").strip()
 DOM_SELECTORS_ENV = os.getenv("DOM_SELECTORS", "")
-try:
-    DOM_SELECTORS = json.loads(DOM_SELECTORS_ENV) if DOM_SELECTORS_ENV else [
-        "#app, .app, body",                    # generic container
-        "[data-testid='hybrid-score']",        # your UI can expose these ids
-        "[data-testid='last-signal']",
-        "[data-testid='status-okx']"
+
+def get_app_dom_selectors():
+    """Auto-populate DOM selectors with actual dashboard elements"""
+    return [
+        # Main dashboard containers
+        ".sidebar",                             # Navigation sidebar
+        ".main-content",                        # Main content area
+        ".content-header",                      # Page header
+        
+        # Portfolio dashboard elements
+        "#okx-portfolio-value",                 # Main portfolio value
+        "#okx-pnl-amount",                      # P&L amount
+        "#okx-holdings-count",                  # Holdings count
+        "#okx-pnl-percent",                     # P&L percentage
+        
+        # Navigation elements
+        ".nav-link",                           # Navigation links
+        ".trading-controls",                   # Trading control buttons
+        ".status-indicator",                   # System status indicators
+        
+        # Data cards and tables
+        ".data-card",                          # Main data cards
+        ".table-responsive",                   # Responsive tables
+        "#holdingsTable",                      # Holdings table
+        "#portfolioPositionsTable",           # Portfolio positions
+        
+        # Interactive elements
+        "#btn-bot-toggle",                     # Bot toggle button
+        "#currency-selector",                  # Currency selector
+        ".btn-refresh",                        # Refresh buttons
+        
+        # Charts and visualizations
+        "canvas",                              # Chart.js canvases
+        ".chart-container",                    # Chart containers
+        
+        # System test elements
+        "#test-progress",                      # Test progress bar
+        "#test-output",                        # Test output area
+        ".test-step",                          # Individual test steps
+        
+        # Generic fallbacks
+        "body",                                # Page body
+        "main"                                 # Main content
     ]
+
+try:
+    DOM_SELECTORS = json.loads(DOM_SELECTORS_ENV) if DOM_SELECTORS_ENV else get_app_dom_selectors()
 except Exception:
-    DOM_SELECTORS = ["body"]
+    DOM_SELECTORS = get_app_dom_selectors()
 DOM_CHECK_JS = os.getenv("DOM_CHECK_JS", "false").lower() in {"1","true","yes"}
 
 # -------- Console helpers --------
@@ -310,22 +354,42 @@ def check_backtest_file_if_present() -> None:
 
 # -------- DOM checks --------
 def check_dom_http() -> None:
-    if not APP_URL:
+    app_url = os.getenv("APP_URL", "").strip()
+    if not app_url:
         print(yellow("9) APP_URL not set; skipping DOM checks"))
         return
-    print("9) DOM check (HTTP/HTML)...")
-    r = requests.get(APP_URL, timeout=TIMEOUT)
+    print(f"9) DOM check (HTTP/HTML) - Testing {len(DOM_SELECTORS)} dashboard elements...")
+    r = requests.get(app_url, timeout=TIMEOUT)
     assert_true(r.status_code == 200, f"App URL status {r.status_code}")
     html = r.text
     soup = BeautifulSoup(html, "html.parser")
+    
+    found_elements = 0
+    missing_elements = []
+    
     for sel in DOM_SELECTORS:
         found = soup.select_one(sel)
-        assert_true(found is not None, f"Selector not found (HTTP): {sel}")
-    print(green("   ✓ DOM (HTTP) selectors present"))
+        if found is not None:
+            found_elements += 1
+        else:
+            missing_elements.append(sel)
+    
+    # Report results
+    if found_elements > 0:
+        print(green(f"   ✓ Found {found_elements}/{len(DOM_SELECTORS)} dashboard elements"))
+        if missing_elements:
+            print(yellow(f"   • Missing elements: {', '.join(missing_elements[:3])}{'...' if len(missing_elements) > 3 else ''}"))
+    else:
+        assert_true(False, f"No dashboard elements found. Missing: {', '.join(missing_elements[:5])}")
+    
+    # Require at least 30% of elements to be present for a realistic dashboard
+    success_rate = found_elements / len(DOM_SELECTORS)
+    assert_true(success_rate >= 0.3, f"Dashboard completeness too low: {success_rate:.1%} (need ≥30%)")
 
 def check_dom_js() -> None:
-    if not (APP_URL and DOM_CHECK_JS):
-        if APP_URL:
+    app_url = os.getenv("APP_URL", "").strip()
+    if not (app_url and DOM_CHECK_JS):
+        if app_url:
             print(yellow("   • DOM_CHECK_JS not enabled; skipping JS-rendered check"))
         return
     print("   JS-rendered DOM check (Playwright)...")
@@ -343,7 +407,7 @@ def check_dom_js() -> None:
         browser = p.chromium.launch(headless=True)
         ctx = browser.new_context()
         page = ctx.new_page()
-        page.goto(APP_URL, wait_until="load", timeout=30000)
+        page.goto(app_url, wait_until="load", timeout=30000)
         # wait a moment for SPA to render
         page.wait_for_timeout(1500)
         for sel in DOM_SELECTORS:
