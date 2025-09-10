@@ -1860,7 +1860,7 @@ class TradingApp {
             try {
                 const response = await fetch(`/api/available-positions?batch_size=${batchSize}&batch_number=${batchNumber}`, { 
                     cache: 'no-cache',
-                    signal: AbortSignal.timeout(30000) // 30s timeout per batch for automatic refresh
+                    signal: AbortSignal.timeout(90000) // 90s timeout per batch for automatic refresh
                 });
                 
                 if (!response.ok) {
