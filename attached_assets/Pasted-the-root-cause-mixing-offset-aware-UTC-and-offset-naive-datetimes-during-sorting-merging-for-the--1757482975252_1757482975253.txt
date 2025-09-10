@@ -1,0 +1,218 @@
+the root cause: mixing offset-aware (UTC) and offset-naive datetimes during sorting/merging for the Trades API. Below is a drop-in fix + tests to make the whole pipeline timezone-safe end-to-end (OKX fills, portfolio positions, CSV signals, API sorting & DOM).
+
+Plan (quick)
+
+Add a small datetime utility that parses anything → UTC-aware.
+
+Use it in your trades construction + API sorting.
+
+Harden CSV/DB loaders to coerce timestamps to UTC aware.
+
+Add pytest to prove no more “naive vs aware” crashes.
+
+1) New helper – make everything UTC aware
+src/utils/datetime_utils.py
+# src/utils/datetime_utils.py
+from __future__ import annotations
+
+from dataclasses import dataclass
+from datetime import datetime, timezone
+from typing import Iterable, Mapping, Any, List, Union, Optional
+
+import re
+
+_ISO_Z_RE = re.compile(r"Z$")
+
+def ensure_aware(dt: datetime) -> datetime:
+    """Return a UTC-aware datetime. Convert naive -> UTC, aware -> UTC."""
+    if dt.tzinfo is None:
+        # Treat naive as UTC (app default). If your system wants local->UTC, change here.
+        return dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(timezone.utc)
+
+def parse_timestamp(value: Union[str, int, float, datetime]) -> datetime:
+    """
+    Parse many timestamp formats into UTC-aware datetime:
+    - datetime (naive or aware)
+    - ISO 8601 strings with/without 'Z'
+    - epoch seconds or ms (int/float)
+    """
+    if isinstance(value, datetime):
+        return ensure_aware(value)
+
+    if isinstance(value, (int, float)):
+        # Heuristic: treat >1e12 as ms, otherwise seconds
+        ts = float(value)
+        if ts > 1e12:
+            return datetime.fromtimestamp(ts / 1000.0, tz=timezone.utc)
+        return datetime.fromtimestamp(ts, tz=timezone.utc)
+
+    if isinstance(value, str):
+        s = value.strip()
+        # Add 'Z' if it looks like iso without tz
+        if _ISO_Z_RE.search(s) is None and re.search(r"[TZ:+-]", s) is None:
+            # No TZ info – treat as UTC
+            try:
+                dt = datetime.fromisoformat(s)
+                return ensure_aware(dt)
+            except ValueError:
+                pass
+        # Robust parse paths
+        try:
+            # Python 3.11+: fromisoformat handles most ISO (with offset)
+            dt = datetime.fromisoformat(s.replace("Z", "+00:00"))
+            return ensure_aware(dt)
+        except ValueError:
+            # Last resort: try several common formats
+            for fmt in ("%Y-%m-%d %H:%M:%S.%f", "%Y-%m-%d %H:%M:%S"):
+                try:
+                    return ensure_aware(datetime.strptime(s, fmt))
+                except ValueError:
+                    continue
+
+    # Fallback: now (UTC) to avoid crashes, but better to raise in dev:
+    return datetime.now(timezone.utc)
+
+def normalize_records_timestamp_key(
+    rows: Iterable[Mapping[str, Any]],
+    key: str = "timestamp",
+    out_key: Optional[str] = None,
+) -> List[dict]:
+    """
+    Return new list with rows' `key` coerced to UTC-aware datetime (stored back or into out_key).
+    """
+    out: List[dict] = []
+    target_key = out_key or key
+    for r in rows:
+        d = dict(r)
+        d[target_key] = parse_timestamp(d.get(key))
+        out.append(d)
+    return out
+
+def sort_by_timestamp_utc(rows: Iterable[Mapping[str, Any]], key: str = "timestamp", reverse: bool = True) -> List[dict]:
+    """Sort rows by UTC-aware timestamp descending by default."""
+    nr = normalize_records_timestamp_key(rows, key=key)
+    return sorted(nr, key=lambda r: r[key], reverse=reverse)
+
+2) Patch your Trades API to normalize before merging/sorting
+
+Where: your Flask/FastAPI handler that returns /api/trades.
+
+# app.py (or wherever you build response for /api/trades)
+from datetime import timezone, datetime
+from src.utils.datetime_utils import normalize_records_timestamp_key, sort_by_timestamp_utc
+
+@app.route("/api/trades")
+def api_trades():
+    # --- gather sources (examples) ---
+    # signals: from CSV / DB
+    signals = load_signals()  # list[dict], contains 'timestamp' strings
+    # executed trades: from OKX fills or portfolio positions
+    executed = load_executed_trades()  # list[dict], 'timestamp' may be epoch ms/ISO/etc.
+
+    # --- normalize to UTC-aware ---
+    signals_norm = normalize_records_timestamp_key(signals, key="timestamp")
+    executed_norm = normalize_records_timestamp_key(executed, key="timestamp")
+
+    # --- merge & sort (now safe) ---
+    merged = signals_norm + executed_norm
+    merged_sorted = sort_by_timestamp_utc(merged, key="timestamp", reverse=True)
+
+    summary = {
+        "total": len(merged_sorted),
+        "signals": sum(1 for r in merged_sorted if r.get("signal_type") == "SIGNAL"),
+        "executed": sum(1 for r in merged_sorted if r.get("signal_type") == "EXECUTED_TRADE"),
+        "latest_ts": merged_sorted[0]["timestamp"].isoformat() if merged_sorted else None,
+    }
+
+    return jsonify({"success": True, "trades": merged_sorted, "summary": summary})
+
+
+If you create executed trades from portfolio positions, ensure their timestamps are created as:
+
+from datetime import datetime, timezone
+executed_trade["timestamp"] = datetime.now(timezone.utc)  # AWARE
+
+3) Make loaders timezone-safe
+
+CSV signals loader example (coerce to UTC):
+
+# wherever you load signals_log.csv
+import pandas as pd
+from src.utils.datetime_utils import ensure_aware
+
+def load_signals() -> list[dict]:
+    df = pd.read_csv("signals_log.csv", dtype=str)
+    # If you store ISO strings, keep as strings and normalize later in API
+    # OR coerce here:
+    if "timestamp" in df.columns:
+        df["timestamp"] = pd.to_datetime(df["timestamp"], utc=True, errors="coerce")
+        # Convert back to iso for transport (API normalizer still handles it)
+        df["timestamp"] = df["timestamp"].dt.tz_convert("UTC").dt.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+    return df.to_dict("records")
+
+
+OKX fills already come as epoch ms; convert to aware when you build dicts:
+
+from datetime import datetime, timezone
+fill_ts = int(fill["ts"])  # ms
+ts_aware = datetime.fromtimestamp(fill_ts / 1000.0, tz=timezone.utc)
+trade["timestamp"] = ts_aware
+
+4) Tests – prove it’s fixed
+tests/test_datetime_normalization.py
+# tests/test_datetime_normalization.py
+from datetime import datetime, timezone
+from src.utils.datetime_utils import parse_timestamp, ensure_aware, sort_by_timestamp_utc
+
+def test_parse_timestamp_variants():
+    samples = [
+        "2025-09-10T03:04:56.587593Z",          # ISO Z
+        "2025-09-10 03:04:56.587593",           # naive ISO-like
+        datetime(2025, 9, 10, 3, 4, 56, 587593),  # naive dt
+        datetime(2025, 9, 10, 3, 4, 56, 587593, tzinfo=timezone.utc),  # aware
+        1694315096587,  # epoch ms
+        1694315096,     # epoch s
+    ]
+    for s in samples:
+        dt = parse_timestamp(s)
+        assert dt.tzinfo is not None
+        assert dt.tzinfo.utcoffset(dt).total_seconds() == 0
+
+def test_sort_mixed_timestamps_no_crash():
+    rows = [
+        {"timestamp": "2025-09-10T03:04:56Z", "id": 1},
+        {"timestamp": "2025-09-09 03:04:56.587593", "id": 2},  # naive
+        {"timestamp": 1694230000000, "id": 3},                 # ms
+        {"timestamp": datetime(2025, 9, 11, 1, 0, 0, tzinfo=timezone.utc), "id": 4},
+    ]
+    sorted_rows = sort_by_timestamp_utc(rows)
+    # Ensure sorted desc and tz-aware
+    assert sorted_rows[0]["id"] == 4
+    for r in sorted_rows:
+        assert isinstance(r["timestamp"], datetime)
+        assert r["timestamp"].tzinfo is not None
+
+def test_ensure_aware_naive_to_utc():
+    naive = datetime(2025, 9, 10, 0, 0, 0)
+    aware = ensure_aware(naive)
+    assert aware.tzinfo is not None
+    assert aware.tzinfo.utcoffset(aware).total_seconds() == 0
+
+
+Run:
+
+pytest -q
+
+5) (Optional) Harden the e2e test you already have
+
+In your tests/e2e_system_check.py, before returning the Trades payload, assert all outgoing records have UTC ISO strings:
+
+# After merged_sorted created
+for r in merged_sorted:
+    ts = r["timestamp"]
+    # normalize for transport
+    if isinstance(ts, str):
+        assert ts.endswith("Z") or ts.endswith("+00:00")
+    else:
+        r["timestamp"] = ts.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")

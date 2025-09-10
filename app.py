@@ -3816,7 +3816,8 @@ def api_trades() -> ResponseReturnValue:
     try:
         import pandas as pd
         import os
-        from datetime import datetime, timedelta
+        from datetime import datetime, timedelta, timezone
+        from src.utils.datetime_utils import normalize_records_timestamp_key, sort_by_timestamp_utc
         
         logger.info("Fetching trades data from signals_log.csv")
         
@@ -3825,18 +3826,23 @@ def api_trades() -> ResponseReturnValue:
         if os.path.exists('signals_log.csv'):
             try:
                 df = pd.read_csv('signals_log.csv')
-                df['timestamp'] = pd.to_datetime(df['timestamp'])
+                df['timestamp'] = pd.to_datetime(df['timestamp'], utc=True, errors='coerce')
                 
                 # Sort by timestamp descending (newest first)
                 df = df.sort_values('timestamp', ascending=False)
                 
                 # Convert to records and format
                 for _, row in df.head(500).iterrows():  # Limit to last 500 signals
+                    # Use timezone-aware timestamp for transport
+                    ts_aware = row['timestamp']
+                    if pd.isna(ts_aware):
+                        ts_aware = datetime.now(timezone.utc)
+                    
                     signals_data.append({
                         'id': len(signals_data) + 1,
-                        'timestamp': row['timestamp'].isoformat(),
-                        'date': row['timestamp'].strftime('%Y-%m-%d'),
-                        'time': row['timestamp'].strftime('%H:%M:%S'),
+                        'timestamp': ts_aware.isoformat().replace('+00:00', 'Z'),
+                        'date': ts_aware.strftime('%Y-%m-%d'),
+                        'time': ts_aware.strftime('%H:%M:%S'),
                         'symbol': row.get('symbol', 'N/A'),
                         'signal_type': 'SIGNAL',
                         'action': row.get('timing_signal', 'UNKNOWN'),
@@ -3880,12 +3886,12 @@ def api_trades() -> ResponseReturnValue:
                 for holding in holdings[:10]:  # Latest 10 portfolio positions as executed trades
                     symbol = holding.get('symbol', '')
                     if symbol and symbol != 'USDT':
-                        # Create executed trade entry (use naive datetime to match signals)
-                        trade_time = datetime.now() - timedelta(minutes=trade_counter*15)
+                        # Create executed trade entry (use timezone-aware datetime)
+                        trade_time = datetime.now(timezone.utc) - timedelta(minutes=trade_counter*15)
                         
                         db_trades.append({
                             'id': f"portfolio_{trade_counter}",
-                            'timestamp': trade_time.isoformat(),
+                            'timestamp': trade_time.isoformat().replace('+00:00', 'Z'),
                             'date': trade_time.strftime('%Y-%m-%d'),
                             'time': trade_time.strftime('%H:%M:%S'),
                             'symbol': symbol,
@@ -3913,39 +3919,41 @@ def api_trades() -> ResponseReturnValue:
             logger.warning(f"Could not load executed trades: {e}")
             logger.exception("Full error details:")
         
-        # Combine and sort all data (fix datetime sorting issues)
+        # Combine data with timezone-safe sorting
         all_trades = signals_data + db_trades
         
-        # Sort safely without datetime comparison issues
-        def safe_sort_key(trade):
-            try:
-                timestamp = trade.get('timestamp', '')
-                # Convert to string for safe sorting
-                return str(timestamp)
-            except:
-                return '1970-01-01T00:00:00Z'
-        
-        all_trades.sort(key=safe_sort_key, reverse=True)
+        # Use timezone-safe sorting utility
+        all_trades_sorted = sort_by_timestamp_utc(all_trades, key="timestamp", reverse=True)
         
         # Calculate summary stats
-        total_signals = len([t for t in all_trades if t['signal_type'] == 'SIGNAL'])
-        total_trades = len([t for t in all_trades if t['signal_type'] in ['TRADE', 'EXECUTED_TRADE']])
-        buy_signals = len([t for t in all_trades if t.get('action') == 'BUY'])
-        sell_signals = len([t for t in all_trades if t.get('action') == 'SELL'])
+        total_signals = len([t for t in all_trades_sorted if t['signal_type'] == 'SIGNAL'])
+        total_trades = len([t for t in all_trades_sorted if t['signal_type'] in ['TRADE', 'EXECUTED_TRADE']])
+        buy_signals = len([t for t in all_trades_sorted if t.get('action') == 'BUY'])
+        sell_signals = len([t for t in all_trades_sorted if t.get('action') == 'SELL'])
         
-        # Recent activity (last 24 hours) - simplified to avoid timezone issues
-        recent_trades = all_trades  # For now, consider all trades as recent for summary
+        # Recent activity (last 24 hours) using timezone-aware comparison
+        cutoff = datetime.now(timezone.utc) - timedelta(hours=24)
+        recent_trades = [t for t in all_trades_sorted if t.get('timestamp') and t['timestamp'] >= cutoff.isoformat()]
+        
+        # Convert timestamps back to ISO strings for JSON transport
+        for trade in all_trades_sorted:
+            if isinstance(trade.get('timestamp'), datetime):
+                trade['timestamp'] = trade['timestamp'].isoformat().replace('+00:00', 'Z')
+        
+        # Calculate confidence average safely
+        confidence_scores = [t.get('confidence', 0) for t in all_trades_sorted if t.get('confidence') is not None]
+        avg_confidence = sum(confidence_scores) / len(confidence_scores) if confidence_scores else 0
         
         return jsonify({
             'success': True,
-            'trades': all_trades[:200],  # Return latest 200 for performance
+            'trades': all_trades_sorted[:200],  # Return latest 200 for performance
             'summary': {
                 'total_signals': total_signals,
                 'total_trades': total_trades,
                 'buy_signals': buy_signals,
                 'sell_signals': sell_signals,
                 'recent_24h': len(recent_trades),
-                'avg_confidence': sum(float(t.get('confidence', 0)) for t in all_trades if t.get('confidence') and str(t.get('confidence', '')).replace('.', '').isdigit()) / max(len([t for t in all_trades if t.get('confidence') and str(t.get('confidence', '')).replace('.', '').isdigit()]), 1)
+                'avg_confidence': avg_confidence
             },
             'timestamp': iso_utc()
         })
