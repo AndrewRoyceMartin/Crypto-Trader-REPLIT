@@ -15,7 +15,7 @@ import time
 import warnings
 from collections import OrderedDict
 from collections.abc import Iterator
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime, timedelta, timezone
 from functools import wraps
 from typing import Any, TypedDict
 
@@ -3810,25 +3810,25 @@ except Exception:
     # Minimal inline fallback (keeps this endpoint robust even if util missing)
     def parse_timestamp(value):
         if isinstance(value, datetime):
-            return value.astimezone(UTC) if value.tzinfo else value.replace(tzinfo=UTC)
+            return value.astimezone(timezone.utc) if value.tzinfo else value.replace(tzinfo=timezone.utc)
         try:
             # epoch ms vs s
             v = float(value)
             if v > 1e12:
-                return datetime.fromtimestamp(v / 1000.0, tz=UTC)
-            return datetime.fromtimestamp(v, tz=UTC)
+                return datetime.fromtimestamp(v / 1000.0, tz=timezone.utc)
+            return datetime.fromtimestamp(v, tz=timezone.utc)
         except Exception:
             s = str(value).replace("Z", "+00:00")
             try:
                 dt = datetime.fromisoformat(s)
-                return dt.astimezone(UTC) if dt.tzinfo else dt.replace(tzinfo=UTC)
+                return dt.astimezone(timezone.utc) if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
             except Exception:
-                return datetime.now(UTC)
+                return datetime.now(timezone.utc)
 
 def _coerce_iso_z(ts: Any) -> str:
     """Always return RFC3339/ISO-8601 UTC string with Z."""
     dt = parse_timestamp(ts)
-    return dt.astimezone(UTC).isoformat().replace("+00:00", "Z")
+    return dt.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
 
 def _normalize_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """Normalize timestamps and ensure required keys for sort without crashing."""
@@ -3845,7 +3845,7 @@ def _serialize_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     for r in rows:
         d = dict(r)
         ts = d.get("timestamp")
-        d["timestamp"] = _coerce_iso_z(ts) if ts is not None else _coerce_iso_z(datetime.now(UTC))
+        d["timestamp"] = _coerce_iso_z(ts) if ts is not None else _coerce_iso_z(datetime.now(timezone.utc))
         out.append(d)
     return out
 
@@ -3863,8 +3863,8 @@ def load_signals() -> list[dict]:
                 signals_data.append({
                     'id': len(signals_data) + 1,
                     'timestamp': row.get('timestamp'),
-                    'date': str(row.get('date', datetime.now(UTC).strftime('%Y-%m-%d'))),
-                    'time': str(row.get('timestamp', datetime.now(UTC))).split('T')[1][:8] if 'T' in str(row.get('timestamp', '')) else '00:00:00',
+                    'date': str(row.get('date', datetime.now(timezone.utc).strftime('%Y-%m-%d'))),
+                    'time': str(row.get('timestamp', datetime.now(timezone.utc))).split('T')[1][:8] if 'T' in str(row.get('timestamp', '')) else '00:00:00',
                     'symbol': row.get('symbol', 'N/A'),
                     'signal_type': 'SIGNAL',
                     'action': row.get('timing_signal', 'UNKNOWN'),
@@ -3900,7 +3900,7 @@ def load_executed_trades() -> list[dict]:
             for holding in holdings[:10]:
                 symbol = holding.get('symbol', '')
                 if symbol and symbol != 'USDT':
-                    trade_time = datetime.now(UTC) - timedelta(minutes=trade_counter*15)
+                    trade_time = datetime.now(timezone.utc) - timedelta(minutes=trade_counter*15)
                     db_trades.append({
                         'id': f"portfolio_{trade_counter}",
                         'timestamp': trade_time,
