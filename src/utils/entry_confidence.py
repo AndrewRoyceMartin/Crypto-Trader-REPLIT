@@ -1068,6 +1068,13 @@ class EntryConfidenceAnalyzer:
 
         result = calculate_buy_confidence(df, current_price)
         
+        # 📊 LOG SIGNAL FOR ML/BACKTESTING
+        try:
+            from logger.signal_logger import log_signal
+            log_signal(symbol, current_price, result)
+        except Exception as e:
+            self.logger.debug(f"Signal logging failed for {symbol}: {e}")
+        
         # Map confidence score to level
         confidence_score = result['confidence_score']
         if confidence_score >= 70:
