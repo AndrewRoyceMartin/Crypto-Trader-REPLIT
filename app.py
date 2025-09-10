@@ -3556,11 +3556,7 @@ def get_hybrid_signal():
 
 # ===== NEW MULTI-PAGE FRONTEND ROUTES =====
 
-@app.route("/")
-@app.route("/dashboard")
-def dashboard() -> str:
-    """Main dashboard page with portfolio overview and hybrid signal preview."""
-    return render_template('dashboard.html', ADMIN_TOKEN=ADMIN_TOKEN)
+# REMOVED: Duplicate route - main dashboard is handled by index() route above
 
 @app.route("/signals-ml")
 def signals_ml() -> str:

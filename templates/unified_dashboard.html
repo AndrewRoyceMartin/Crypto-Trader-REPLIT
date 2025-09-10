@@ -1638,13 +1638,81 @@
         }
     }
 
-    // === INITIALIZATION ===
-    document.addEventListener('DOMContentLoaded', function() {
-        upgradeIcons(); // convert all existing icons
-        // Set up event handlers
-        handleCurrencyChange();
-        initTableSorting();
+    // === FORCE IMMEDIATE INITIALIZATION ===
+    class DashboardDataLoader {
+        constructor() {
+            console.log('🚀 Initializing Unified Dashboard...');
+            this.init();
+        }
         
+        async init() {
+            upgradeIcons(); // convert all existing icons
+            // Set up event handlers
+            handleCurrencyChange();
+            initTableSorting();
+            
+            // Force immediate data loading
+            await this.loadDashboardData();
+            
+            // Set up auto-refresh
+            setInterval(() => this.loadDashboardData(), 30000);
+        }
+        
+        async loadDashboardData() {
+            try {
+                console.log('📊 Loading dashboard data...');
+                
+                // Load portfolio data first
+                const response = await fetch('/api/crypto-portfolio');
+                if (response.ok) {
+                    const portfolioData = await response.json();
+                    this.updatePortfolioCards(portfolioData);
+                    console.log('✅ Portfolio data loaded');
+                } else {
+                    console.error('❌ Portfolio data failed:', response.status);
+                }
+                
+            } catch (error) {
+                console.error('❌ Dashboard data loading error:', error);
+            }
+        }
+        
+        updatePortfolioCards(portfolioData) {
+            if (!portfolioData) return;
+            
+            // Update main portfolio values using the correct API field names
+            const portfolioValue = document.getElementById('okx-portfolio-value');
+            if (portfolioValue) {
+                portfolioValue.textContent = '$' + (portfolioData.total_value || 0).toLocaleString('en-US', {minimumFractionDigits: 2});
+            }
+            
+            const totalPnL = portfolioData.total_pnl || 0;
+            const pnlElement = document.getElementById('okx-pnl-amount');
+            if (pnlElement) {
+                pnlElement.textContent = (totalPnL >= 0 ? '+' : '') + '$' + Math.abs(totalPnL).toLocaleString('en-US', {minimumFractionDigits: 2});
+                pnlElement.className = totalPnL >= 0 ? 'text-success' : 'text-danger';
+            }
+            
+            const holdingsCount = document.getElementById('okx-holdings-count');
+            if (holdingsCount) {
+                holdingsCount.textContent = portfolioData.total_assets || 0;
+            }
+            
+            // Update other dashboard elements
+            const pnlPercent = document.getElementById('okx-pnl-percent');
+            if (pnlPercent) {
+                const pnlPercentValue = portfolioData.total_pnl_percent || 0;
+                pnlPercent.textContent = (pnlPercentValue >= 0 ? '+' : '') + pnlPercentValue.toFixed(2) + '%';
+                pnlPercent.className = pnlPercentValue >= 0 ? 'text-success' : 'text-danger';
+            }
+        }
+    }
+    
+    // Force immediate execution without waiting for DOM
+    window.dashboardLoader = new DashboardDataLoader();
+    
+    // === LEGACY EVENT HANDLERS ===
+    document.addEventListener('DOMContentLoaded', function() {
         // Set up bot toggle button
         const botButton = document.getElementById('btn-bot-toggle');
         if (botButton) {
