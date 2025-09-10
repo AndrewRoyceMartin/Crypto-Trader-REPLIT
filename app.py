@@ -2035,7 +2035,7 @@ def render_holdings_page() -> str:
 
 def render_loading_skeleton(message: str = "Loading...", error: bool = False) -> str:
     """Render a simple loading message."""
-    return render_template('unified_dashboard.html', ADMIN_TOKEN=ADMIN_TOKEN)
+    return render_template('dashboard.html', ADMIN_TOKEN=ADMIN_TOKEN)
 
 def render_full_dashboard() -> str:
     """Render the unified trading dashboard using templates."""
@@ -2051,7 +2051,7 @@ def render_full_dashboard() -> str:
             logger.debug(f"Could not get file modification time: {e}")
             cache_version = int(time.time() * 1000)  # Fallback with milliseconds
 
-        response = make_response(render_template("unified_dashboard.html",
+        response = make_response(render_template("dashboard.html",
                                                cache_version=cache_version,
                                                version="v2.0",
                                                ADMIN_TOKEN=ADMIN_TOKEN,
