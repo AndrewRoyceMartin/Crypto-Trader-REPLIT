@@ -49,9 +49,9 @@ class EntryConfidenceAnalyzer:
             Dict with confidence score and breakdown
         """
         try:
-            # Get or generate historical data for analysis
+            # Get or generate historical data for analysis (use current price for realistic data)
             if not historical_data:
-                historical_data = self._fetch_market_data(symbol)
+                historical_data = self._fetch_market_data(symbol, days=30, current_price=current_price)
             
             if not historical_data or len(historical_data) < 20:
                 return self._create_basic_confidence(symbol, current_price)
@@ -751,13 +751,11 @@ class EntryConfidenceAnalyzer:
         else:
             return "VERY_HIGH"
     
-    def _fetch_market_data(self, symbol: str, days: int = 30) -> List[Dict]:
+    def _fetch_market_data(self, symbol: str, days: int = 30, current_price: float = None) -> List[Dict]:
         """Fetch historical market data for analysis."""
         try:
-            # Generate synthetic historical data for demonstration
-            # In production, this would fetch from actual price APIs
-            
-            base_price = 100.0  # Starting price
+            # Use current price as base for realistic synthetic data
+            base_price = current_price if current_price else 1.0  # Use actual current price
             data = []
             
             for i in range(days):
