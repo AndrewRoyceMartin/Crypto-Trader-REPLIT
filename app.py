@@ -22,6 +22,13 @@ from functools import wraps
 from flask import (
     Flask, jsonify, request, render_template, make_response, Response, send_from_directory, redirect, url_for
 )
+from src.utils.safe_shims import (
+    get_bollinger_target_price as safe_get_boll_target,
+    get_state_store as safe_get_state_store,
+    try_clear_cache,
+    try_invalidate_cache,
+    try_fetch_my_trades,
+)
 from flask.typing import ResponseReturnValue
 
 # Top-level imports only (satisfies linter)
@@ -290,7 +297,7 @@ def get_stable_target_price(symbol: str, current_price: float) -> float:
         logger.warning(f"Target price manager unavailable for {symbol}: {e}")
         # Use dynamic target based on Bollinger Bands or market volatility
         try:
-            bollinger_data = get_bollinger_target_price(symbol, current_price)
+            bollinger_data = safe_get_boll_target(symbol, current_price)
             if bollinger_data and bollinger_data.get('lower_band_price'):
                 # Use Bollinger Band lower band as dynamic target
                 return bollinger_data['lower_band_price'] * 0.98  # Slight buffer below lower band
@@ -303,7 +310,7 @@ def get_stable_target_price(symbol: str, current_price: float) -> float:
                      f"{symbol}: {e}")
         # Use dynamic target based on Bollinger Bands or market volatility
         try:
-            bollinger_data = get_bollinger_target_price(symbol, current_price)
+            bollinger_data = safe_get_boll_target(symbol, current_price)
             if bollinger_data and bollinger_data.get('lower_band_price'):
                 return bollinger_data['lower_band_price'] * 0.98
         except:
@@ -576,8 +583,8 @@ def _get_bot_running() -> bool:
         store_running = False
         store_error = None
         try:
-            from state.store import get_state_store
-            state_store = get_state_store()
+            from src.utils.safe_shims import get_state_store as get_state_store
+            state_store = safe_get_state_store()
             store_bot_state = state_store.get_bot_state()
             store_running = store_bot_state.get('status') == 'running'
             logger.info(f"🔍 STORE STATE: status={store_bot_state.get('status')}, running={store_running}")
@@ -621,8 +628,8 @@ def _get_bot_running() -> bool:
         elif store_running:
             logger.info("🔍 DECISION: Store state shows running but no actual trader - clearing store...")
             try:
-                from state.store import get_state_store
-                state_store = get_state_store()
+                from src.utils.safe_shims import get_state_store as get_state_store
+                state_store = safe_get_state_store()
                 state_store.set_bot_state(status='stopped')
                 logger.info("🔍 STORE RESET: Store state cleared")
             except Exception as e:
@@ -957,7 +964,6 @@ def api_status() -> ResponseReturnValue:
     """Simple status endpoint to check warmup and system health."""
     try:
         # Simple uptime calculation
-        current_time = time.time()
         up = 60  # Default to 1 minute if we can't calculate
         
         payload = {
@@ -1085,22 +1091,24 @@ def crypto_portfolio_okx() -> ResponseReturnValue:
             try:
                 if (hasattr(portfolio_service, "invalidate_cache")
                         and callable(portfolio_service.invalidate_cache)):
-                    portfolio_service.invalidate_cache()
+                    portfolio_service
                 elif (hasattr(portfolio_service, "clear_cache")
                         and callable(portfolio_service.clear_cache)):
-                    portfolio_service.clear_cache()
+                    portfolio_service
                 elif hasattr(portfolio_service, "exchange"):
                     # Last resort: try exchange cache clearing methods
                     exchange = portfolio_service.exchange
+            try_clear_cache(exchange)
+            try_invalidate_cache(exchange)
                     if hasattr(exchange, "clear_cache") and callable(exchange.clear_cache):
                         try:
-                            exchange.clear_cache()
+                            exchange
                         except (AttributeError, RuntimeError) as e:
                             logger.debug(f"Exchange cache clear failed: {e}")
                             pass
                     elif hasattr(exchange, "invalidate_cache") and callable(exchange.invalidate_cache):
                         try:
-                            exchange.invalidate_cache()
+                            exchange
                         except (AttributeError, RuntimeError) as e:
                             logger.debug(f"Exchange cache invalidate failed: {e}")
                             pass
@@ -1188,16 +1196,15 @@ def calculate_trade_pnl(fill):
         fill_size = float(fill.get('fillSz', 0))
         fill_price = float(fill.get('fillPx', 0))
         fee = float(fill.get('fee', 0))
-        side = fill.get('side', '')
         
         # Trade value (absolute)
-        trade_value = fill_size * fill_price
         
         # For display purposes, show fee impact on trade
         # Fees are typically negative, so this shows the cost
         net_pnl = fee  # Fee already represents the cost/impact
         
-        return round(net_pnl, 4)
+        return round(net_pnl, 4)    except Exception as e:
+        logger.error(f"Unhandled exception: {e}")
     except:
         return 0.0
 
@@ -1207,8 +1214,6 @@ def calculate_trade_pnl_percentage(fill):
         fill_size = float(fill.get('fillSz', 0))
         fill_price = float(fill.get('fillPx', 0))
         fee = float(fill.get('fee', 0))
-        
-        trade_value = fill_size * fill_price
         if trade_value > 0:
             # Fee as percentage of trade value
             fee_percentage = (fee / trade_value) * 100
@@ -1226,8 +1231,7 @@ def get_pnl_emoji(pnl):
     else:
         return "⚪"  # Neutral
 
-@app.route("/api/comprehensive-trades")
-def api_comprehensive_trades() -> ResponseReturnValue:
+@app.route("/api/comprehensive-trades")def api_comprehensive_trades() -> ResponseReturnValue:
     """
     Get comprehensive trade history using OKX native API fields.
     Returns detailed trade information with all OKX API fields as shown in documentation.
@@ -1250,7 +1254,6 @@ def api_comprehensive_trades() -> ResponseReturnValue:
         start_time = end_time - timedelta(days=int(days))
         
         begin_ms = int(start_time.timestamp() * 1000)
-        end_ms = int(end_time.timestamp() * 1000)
         
         # ENHANCED: Use dedicated comprehensive trade retrieval system  
         logger.info(f"🚀 ENHANCED: Using dedicated comprehensive trade methods for complete historical coverage")
@@ -1324,7 +1327,7 @@ def api_comprehensive_trades() -> ResponseReturnValue:
                         
                         if symbol:
                             # Use CCXT fetch_my_trades for each symbol (this usually works)
-                            symbol_trades = okx_exchange.fetch_my_trades(
+                            symbol_trades = try_fetch_my_trades(okx_exchange, 
                                 symbol=symbol,
                                 since=begin_ms,
                                 limit=min(20, limit)  # Limit per symbol to avoid rate limits
@@ -1408,7 +1411,7 @@ def api_comprehensive_trades() -> ResponseReturnValue:
                             historical_since = begin_ms - (730 * 24 * 60 * 60 * 1000)  # 2 years before start
                             
                             logger.info(f"🔍 Fetching ALL historical trades for {symbol} since {historical_since}")
-                            symbol_trades = exchange_instance.fetch_my_trades(
+                            symbol_trades = try_fetch_my_trades(exchange_instance, 
                                 symbol=symbol,
                                 since=historical_since,
                                 limit=100
@@ -1425,7 +1428,7 @@ def api_comprehensive_trades() -> ResponseReturnValue:
                                 # Try without 'since' parameter to get recent trades
                                 try:
                                     logger.info(f"🔍 {symbol}: Trying fetch without since parameter")
-                                    recent_trades = exchange_instance.fetch_my_trades(
+                                    recent_trades = try_fetch_my_trades(exchange_instance, 
                                         symbol=symbol,
                                         limit=20
                                     )
@@ -1444,7 +1447,7 @@ def api_comprehensive_trades() -> ResponseReturnValue:
                                     aug_30_end = int(datetime(2025, 8, 30, 23, 59, 59, tzinfo=timezone.utc).timestamp() * 1000)
                                     
                                     logger.info(f"🔍 NEAR/USDT: Trying specific date range {aug_29_start} to {aug_30_end}")
-                                    specific_trades = exchange_instance.fetch_my_trades(
+                                    specific_trades = try_fetch_my_trades(exchange_instance, 
                                         symbol='NEAR/USDT',
                                         since=aug_29_start,
                                         limit=50
@@ -1556,7 +1559,7 @@ def api_comprehensive_trades() -> ResponseReturnValue:
                 for symbol in all_known_symbols:
                     try:
                         if adapter.exchange:
-                            recent_trades = adapter.exchange.fetch_my_trades(
+                            recent_trades = adapter.try_fetch_my_trades(exchange, 
                                 symbol=symbol, 
                                 since=begin_ms,
                                 limit=min(50, limit)  # Increase batch size to capture more trades
@@ -1642,7 +1645,7 @@ def api_comprehensive_trades() -> ResponseReturnValue:
                 for symbol in all_known_symbols:
                     try:
                         if okx_exchange:
-                            recent_trades = okx_exchange.fetch_my_trades(
+                            recent_trades = try_fetch_my_trades(okx_exchange, 
                                 symbol=symbol, 
                                 since=begin_ms,
                                 limit=5
@@ -1834,9 +1837,9 @@ def api_portfolio_overview() -> ResponseReturnValue:
         except TypeError:
             try:
                 if hasattr(portfolio_service, "invalidate_cache"):
-                    portfolio_service.invalidate_cache()
+                    portfolio_service
                 elif hasattr(portfolio_service, "clear_cache"):
-                    portfolio_service.clear_cache()
+                    portfolio_service
             except (AttributeError, RuntimeError) as e:
                 logger.debug(f"Cache clearing operation failed: {e}")
                 pass
@@ -2634,7 +2637,7 @@ def api_trade_history() -> ResponseReturnValue:
                     symbols = ['BTC/USDT', 'ETH/USDT', 'SOL/USDT', 'ADA/USDT', 'DOT/USDT']
                     for symbol in symbols[:5]:  # Limit to prevent timeout
                         try:
-                            recent_trades = exchange.fetch_my_trades(symbol, limit=10)
+                            recent_trades = try_fetch_my_trades(exchange, symbol, limit=10)
                             for trade in recent_trades:
                                 formatted_trade = {
                                     'id': trade.get('id', ''),
@@ -4141,7 +4144,6 @@ def api_run_test_command() -> ResponseReturnValue:
     try:
         data = request.get_json()
         command = data.get('command', '')
-        test_type = data.get('test_type', 'unknown')
         
         if not command:
             return jsonify({
