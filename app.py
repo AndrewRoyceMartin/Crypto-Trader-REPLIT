@@ -3563,6 +3563,11 @@ def signals_ml() -> str:
     """Signals & ML analysis page with hybrid scoring and confidence analysis."""
     return render_template('signals_ml.html', ADMIN_TOKEN=ADMIN_TOKEN)
 
+@app.route("/trades")
+def trades() -> str:
+    """Trades page displaying actual trading signals and execution history."""
+    return render_template('trades.html', ADMIN_TOKEN=ADMIN_TOKEN)
+
 @app.route("/backtest-results")
 def backtest_results() -> str:
     """Backtest results page displaying P&L analysis and performance metrics."""
@@ -3834,6 +3839,139 @@ def api_performance_charts() -> ResponseReturnValue:
             "success": False,
             "error": str(e),
             "timestamp": iso_utc()
+        }), 500
+
+@app.route('/api/trades')
+def api_trades() -> ResponseReturnValue:
+    """Get trades and signals data from signals_log.csv and database."""
+    try:
+        import pandas as pd
+        import os
+        from datetime import datetime, timedelta
+        
+        logger.info("Fetching trades data from signals_log.csv")
+        
+        # Read signals data
+        signals_data = []
+        if os.path.exists('signals_log.csv'):
+            try:
+                df = pd.read_csv('signals_log.csv')
+                df['timestamp'] = pd.to_datetime(df['timestamp'])
+                
+                # Sort by timestamp descending (newest first)
+                df = df.sort_values('timestamp', ascending=False)
+                
+                # Convert to records and format
+                for _, row in df.head(500).iterrows():  # Limit to last 500 signals
+                    signals_data.append({
+                        'id': len(signals_data) + 1,
+                        'timestamp': row['timestamp'].isoformat(),
+                        'date': row['timestamp'].strftime('%Y-%m-%d'),
+                        'time': row['timestamp'].strftime('%H:%M:%S'),
+                        'symbol': row.get('symbol', 'N/A'),
+                        'signal_type': 'SIGNAL',
+                        'action': row.get('timing_signal', 'UNKNOWN'),
+                        'price': row.get('current_price', 0),
+                        'confidence': row.get('confidence_score', 0),
+                        'rsi': row.get('rsi', 0),
+                        'volatility': row.get('volatility', 0),
+                        'volume_ratio': row.get('volume_ratio', False),
+                        'momentum': row.get('momentum_signal', False),
+                        'support': row.get('support_signal', False),
+                        'bollinger': row.get('bollinger_signal', False),
+                        'status': 'EXECUTED' if row.get('timing_signal') in ['BUY', 'SELL'] else 'SIGNAL',
+                        'ml_probability': row.get('ml_probability', 0) if 'ml_probability' in row else None,
+                        'predicted_return': row.get('predicted_return_pct', 0) if 'predicted_return_pct' in row else None
+                    })
+                
+                logger.info(f"Loaded {len(signals_data)} signals from CSV")
+                
+            except Exception as e:
+                logger.error(f"Error reading signals_log.csv: {e}")
+        
+        # Also get database trades if available
+        db_trades = []
+        try:
+            from src.utils.database import DatabaseManager
+            db = DatabaseManager()
+            
+            cursor = db.connection.cursor()
+            cursor.execute('''
+                SELECT id, timestamp, symbol, action, size, price, commission, 
+                       order_id, strategy, confidence, pnl, mode
+                FROM trades 
+                ORDER BY timestamp DESC 
+                LIMIT 100
+            ''')
+            
+            for row in cursor.fetchall():
+                db_trades.append({
+                    'id': f"db_{row[0]}",
+                    'timestamp': row[1],
+                    'date': datetime.fromisoformat(row[1]).strftime('%Y-%m-%d'),
+                    'time': datetime.fromisoformat(row[1]).strftime('%H:%M:%S'),
+                    'symbol': row[2],
+                    'signal_type': 'TRADE',
+                    'action': row[3],
+                    'price': row[5],
+                    'size': row[4],
+                    'confidence': row[9] or 0,
+                    'pnl': row[10] or 0,
+                    'commission': row[6] or 0,
+                    'order_id': row[7],
+                    'strategy': row[8],
+                    'mode': row[11],
+                    'status': 'EXECUTED'
+                })
+            
+            logger.info(f"Loaded {len(db_trades)} trades from database")
+            
+        except Exception as e:
+            logger.warning(f"Could not load database trades: {e}")
+        
+        # Combine and sort all data
+        all_trades = signals_data + db_trades
+        all_trades.sort(key=lambda x: x['timestamp'], reverse=True)
+        
+        # Calculate summary stats
+        total_signals = len([t for t in all_trades if t['signal_type'] == 'SIGNAL'])
+        total_trades = len([t for t in all_trades if t['signal_type'] == 'TRADE'])
+        buy_signals = len([t for t in all_trades if t.get('action') == 'BUY'])
+        sell_signals = len([t for t in all_trades if t.get('action') == 'SELL'])
+        
+        # Recent activity (last 24 hours)
+        yesterday = datetime.now() - timedelta(days=1)
+        recent_trades = [t for t in all_trades if datetime.fromisoformat(t['timestamp'].replace('Z', '+00:00')) > yesterday]
+        
+        return jsonify({
+            'success': True,
+            'trades': all_trades[:200],  # Return latest 200 for performance
+            'summary': {
+                'total_signals': total_signals,
+                'total_trades': total_trades,
+                'buy_signals': buy_signals,
+                'sell_signals': sell_signals,
+                'recent_24h': len(recent_trades),
+                'avg_confidence': sum(t.get('confidence', 0) for t in all_trades if t.get('confidence')) / max(len([t for t in all_trades if t.get('confidence')]), 1)
+            },
+            'timestamp': iso_utc()
+        })
+        
+    except Exception as e:
+        logger.error(f"Trades API error: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'trades': [],
+            'summary': {
+                'total_signals': 0,
+                'total_trades': 0,
+                'buy_signals': 0,
+                'sell_signals': 0,
+                'recent_24h': 0,
+                'avg_confidence': 0
+            },
+            'timestamp': iso_utc()
         }), 500
 
 @app.route('/api/signal-tracking')

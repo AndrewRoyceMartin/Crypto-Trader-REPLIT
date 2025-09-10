@@ -1,535 +1,534 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Comprehensive Trades - OKX API Fields</title>
+{% extends "base_layout.html" %}
+
+{% block title %}Trades - Hybrid Trading Intelligence{% endblock %}
+
+{% block extra_css %}
+<style>
+    .trades-header {
+        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+        padding: 2rem 0;
+        margin-bottom: 2rem;
+        border-radius: 12px;
+    }
     
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Custom CSS -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v={{ cache_version }}">
+    .stat-card {
+        background: var(--card-bg);
+        border-radius: 12px;
+        padding: 1.5rem;
+        border: 1px solid var(--border-color);
+        transition: transform 0.2s ease;
+    }
     
-    <style>
-        .trades-container {
-            padding: 20px;
-            max-width: 100%;
-            overflow-x: auto;
-        }
-        
+    .stat-card:hover {
+        transform: translateY(-2px);
+    }
+    
+    .stat-value {
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+    }
+    
+    .stat-label {
+        color: var(--text-muted);
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .trades-table {
+        background: var(--card-bg);
+        border-radius: 12px;
+        overflow: hidden;
+        border: 1px solid var(--border-color);
+    }
+    
+    .trades-table th {
+        background: var(--primary-dark);
+        color: var(--text-primary);
+        padding: 1rem 0.75rem;
+        font-weight: 600;
+        border: none;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .trades-table td {
+        padding: 0.875rem 0.75rem;
+        border-bottom: 1px solid var(--border-color);
+        vertical-align: middle;
+    }
+    
+    .trades-table tbody tr:hover {
+        background: rgba(59, 130, 246, 0.05);
+    }
+    
+    .signal-badge {
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .signal-buy {
+        background: rgba(34, 197, 94, 0.15);
+        color: #22c55e;
+        border: 1px solid rgba(34, 197, 94, 0.3);
+    }
+    
+    .signal-sell {
+        background: rgba(239, 68, 68, 0.15);
+        color: #ef4444;
+        border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+    
+    .signal-wait {
+        background: rgba(245, 158, 11, 0.15);
+        color: #f59e0b;
+        border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+    
+    .signal-avoid {
+        background: rgba(156, 163, 175, 0.15);
+        color: #9ca3af;
+        border: 1px solid rgba(156, 163, 175, 0.3);
+    }
+    
+    .type-badge {
+        padding: 0.2rem 0.5rem;
+        border-radius: 12px;
+        font-size: 0.7rem;
+        font-weight: 500;
+        text-transform: uppercase;
+    }
+    
+    .type-signal {
+        background: rgba(59, 130, 246, 0.15);
+        color: #3b82f6;
+    }
+    
+    .type-trade {
+        background: rgba(168, 85, 247, 0.15);
+        color: #a855f7;
+    }
+    
+    .confidence-bar {
+        width: 100%;
+        height: 6px;
+        background: rgba(156, 163, 175, 0.2);
+        border-radius: 3px;
+        overflow: hidden;
+    }
+    
+    .confidence-fill {
+        height: 100%;
+        border-radius: 3px;
+        transition: width 0.3s ease;
+    }
+    
+    .confidence-high { background: #22c55e; }
+    .confidence-medium { background: #f59e0b; }
+    .confidence-low { background: #ef4444; }
+    
+    .filters-section {
+        background: var(--card-bg);
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        border: 1px solid var(--border-color);
+    }
+    
+    .filter-group {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+    
+    .filter-group:last-child {
+        margin-bottom: 0;
+    }
+    
+    .symbol-tag {
+        background: var(--accent-blue);
+        color: white;
+        padding: 0.15rem 0.5rem;
+        border-radius: 8px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+    
+    .loading-spinner {
+        display: none;
+        text-align: center;
+        padding: 2rem;
+        color: var(--text-muted);
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 3rem;
+        color: var(--text-muted);
+    }
+    
+    .empty-state i {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        opacity: 0.5;
+    }
+    
+    @media (max-width: 768px) {
         .trades-table {
-            font-size: 0.85rem;
-            white-space: nowrap;
+            font-size: 0.8rem;
         }
         
-        .trades-table th {
-            background-color: #f8f9fa;
-            position: sticky;
-            top: 0;
-            z-index: 10;
-            border-bottom: 2px solid #dee2e6;
-        }
-        
-        .side-buy { color: #28a745; }
-        .side-sell { color: #dc3545; }
-        
-        .trade-id {
-            font-family: 'Courier New', monospace;
-            font-size: 0.75rem;
-        }
-        
-        .timestamp {
-            font-size: 0.75rem;
-            color: #6c757d;
-        }
-        
-        .fee-negative {
-            color: #dc3545;
-        }
-        
-        .pnl-positive {
-            color: #28a745;
-        }
-        
-        .pnl-negative {
-            color: #dc3545;
-        }
-        
-        .summary-cards {
-            margin-bottom: 2rem;
-        }
-        
-        .summary-card {
-            border-left: 4px solid #007bff;
-        }
-        
-        .table-responsive {
-            max-height: 600px;
-            overflow-y: auto;
-        }
-        
-        .loading-spinner {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 200px;
-        }
-        
-        .filter-controls {
-            margin-bottom: 1rem;
-            background: #f8f9fa;
+        .stat-card {
             padding: 1rem;
-            border-radius: 0.375rem;
         }
-    </style>
-</head>
-<body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="/">
-                <i class="fas fa-chart-line me-2"></i>Crypto Trading Dashboard
-            </a>
-            
-            <div class="navbar-nav ms-auto">
-                <a class="nav-link" href="/">
-                    <i class="fas fa-home me-1"></i>Dashboard
-                </a>
-                <a class="nav-link active" href="/trades">
-                    <i class="fas fa-exchange-alt me-1"></i>Trades
-                </a>
-                <a class="nav-link" href="/performance">
-                    <i class="fas fa-chart-bar me-1"></i>Performance
-                </a>
-            </div>
-        </div>
-    </nav>
+        
+        .stat-value {
+            font-size: 1.5rem;
+        }
+    }
+</style>
+{% endblock %}
 
-    <div class="container-fluid trades-container">
-        <!-- Header -->
-        <div class="row mb-4">
+{% block content %}
+<div class="container-fluid">
+    <!-- Header Section -->
+    <div class="trades-header">
+        <div class="row">
             <div class="col-12">
-                <h1 class="display-6">
-                    <i class="fas fa-exchange-alt text-primary me-3"></i>
-                    Comprehensive Trade History
+                <h1 class="page-title">
+                    <i class="fas fa-chart-line me-3"></i>
+                    Trading Signals & Execution History
                 </h1>
-                <p class="text-muted">Complete trade data using OKX native API fields</p>
-                
-                <!-- Data Source Indicator -->
-                <div id="dataSourceIndicator" class="alert alert-info" style="display: none;">
-                    <i class="fas fa-info-circle me-2"></i>
-                    <strong>Data Source:</strong> <span id="dataSourceText">Loading...</span>
-                </div>
+                <p class="page-subtitle">
+                    Real-time trading signals from your hybrid ML + technical analysis system
+                </p>
             </div>
-        </div>
-
-        <!-- Filter Controls -->
-        <div class="filter-controls">
-            <div class="row align-items-center">
-                <div class="col-md-3">
-                    <label for="daysFilter" class="form-label">Time Range</label>
-                    <select class="form-select" id="daysFilter">
-                        <option value="1">Last 24 Hours</option>
-                        <option value="7" selected>Last 7 Days</option>
-                        <option value="30">Last 30 Days</option>
-                        <option value="90">Last 90 Days</option>
-                    </select>
-                </div>
-                <div class="col-md-3">
-                    <label for="limitFilter" class="form-label">Max Records</label>
-                    <select class="form-select" id="limitFilter">
-                        <option value="50">50 trades</option>
-                        <option value="100" selected>100 trades</option>
-                        <option value="250">250 trades</option>
-                        <option value="500">500 trades</option>
-                        <option value="1000">1000 trades</option>
-                    </select>
-                </div>
-                <div class="col-md-3">
-                    <label for="symbolFilter" class="form-label">Symbol Filter</label>
-                    <input type="text" class="form-control" id="symbolFilter" placeholder="e.g., BTC, ETH">
-                </div>
-                <div class="col-md-3 d-flex align-items-end">
-                    <button class="btn btn-primary me-2" onclick="loadTrades()">
-                        <i class="fas fa-sync me-1"></i>Refresh
-                    </button>
-                    <button class="btn btn-outline-secondary" onclick="exportToCSV()">
-                        <i class="fas fa-download me-1"></i>CSV
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Summary Cards -->
-        <div class="row summary-cards" id="summaryCards">
-            <!-- Dynamic summary cards will be loaded here -->
-        </div>
-
-        <!-- Loading Indicator -->
-        <div class="loading-spinner" id="loadingSpinner">
-            <div class="spinner-border text-primary" role="status">
-                <span class="visually-hidden">Loading trades...</span>
-            </div>
-        </div>
-
-        <!-- Error Message -->
-        <div class="alert alert-danger" id="errorMessage" style="display: none;">
-            <i class="fas fa-exclamation-triangle me-2"></i>
-            <span id="errorText"></span>
-        </div>
-
-        <!-- Trades Table -->
-        <div class="table-responsive" id="tradesTableContainer" style="display: none;">
-            <table class="table table-striped table-hover trades-table" id="tradesTable">
-                <thead>
-                    <tr>
-                        <th>Time</th>
-                        <th>Symbol</th>
-                        <th>Side</th>
-                        <th>Size</th>
-                        <th>Price</th>
-                        <th>Value</th>
-                        <th>Fee</th>
-                        <th>P&L</th>
-                        <th>Type</th>
-                        <th>Trade ID</th>
-                        <th>Order ID</th>
-                        <th>Bill ID</th>
-                        <th>Position Side</th>
-                        <th>Details</th>
-                    </tr>
-                </thead>
-                <tbody id="tradesTableBody">
-                    <!-- Dynamic trade rows will be populated here -->
-                </tbody>
-            </table>
-        </div>
-
-        <!-- No Data Message -->
-        <div class="text-center py-5" id="noDataMessage" style="display: none;">
-            <i class="fas fa-chart-line fa-3x text-muted mb-3"></i>
-            <h4 class="text-muted">No Trades Found</h4>
-            <p class="text-muted">Try adjusting your filter criteria or check back later.</p>
         </div>
     </div>
-
-    <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
-    <script>
-        let tradesData = [];
+    <!-- Summary Statistics -->
+    <div class="row mb-4" id="summary-stats">
+        <div class="col-md-2 col-6 mb-3">
+            <div class="stat-card">
+                <div class="stat-value text-primary" id="total-signals">-</div>
+                <div class="stat-label">Total Signals</div>
+            </div>
+        </div>
+        <div class="col-md-2 col-6 mb-3">
+            <div class="stat-card">
+                <div class="stat-value text-success" id="buy-signals">-</div>
+                <div class="stat-label">Buy Signals</div>
+            </div>
+        </div>
+        <div class="col-md-2 col-6 mb-3">
+            <div class="stat-card">
+                <div class="stat-value text-danger" id="sell-signals">-</div>
+                <div class="stat-label">Sell Signals</div>
+            </div>
+        </div>
+        <div class="col-md-2 col-6 mb-3">
+            <div class="stat-card">
+                <div class="stat-value text-info" id="recent-24h">-</div>
+                <div class="stat-label">Last 24h</div>
+            </div>
+        </div>
+        <div class="col-md-2 col-6 mb-3">
+            <div class="stat-card">
+                <div class="stat-value text-warning" id="avg-confidence">-</div>
+                <div class="stat-label">Avg Confidence</div>
+            </div>
+        </div>
+        <div class="col-md-2 col-6 mb-3">
+            <div class="stat-card">
+                <div class="stat-value text-purple" id="total-trades">-</div>
+                <div class="stat-label">Executed Trades</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Filters Section -->
+    <div class="filters-section">
+        <div class="row">
+            <div class="col-md-3">
+                <div class="filter-group">
+                    <label class="form-label mb-0">Symbol:</label>
+                    <select class="form-select form-select-sm" id="symbol-filter">
+                        <option value="">All Symbols</option>
+                    </select>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="filter-group">
+                    <label class="form-label mb-0">Signal Type:</label>
+                    <select class="form-select form-select-sm" id="action-filter">
+                        <option value="">All Actions</option>
+                        <option value="BUY">Buy Signals</option>
+                        <option value="SELL">Sell Signals</option>
+                        <option value="WAIT">Wait Signals</option>
+                        <option value="AVOID">Avoid Signals</option>
+                    </select>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="filter-group">
+                    <label class="form-label mb-0">Type:</label>
+                    <select class="form-select form-select-sm" id="type-filter">
+                        <option value="">All Types</option>
+                        <option value="SIGNAL">Signals Only</option>
+                        <option value="TRADE">Executed Trades</option>
+                    </select>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="filter-group">
+                    <button class="btn btn-primary btn-sm" onclick="loadTradesData()">
+                        <i class="fas fa-sync-alt me-1"></i>
+                        Refresh
+                    </button>
+                    <button class="btn btn-outline-secondary btn-sm" onclick="clearFilters()">
+                        <i class="fas fa-times me-1"></i>
+                        Clear
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Trades Table -->
+    <div class="trades-table">
+        <div class="loading-spinner" id="loading-spinner">
+            <i class="fas fa-spinner fa-spin fa-2x mb-3"></i>
+            <div>Loading trades data...</div>
+        </div>
         
-        // Load trades data
-        async function loadTrades() {
-            const days = document.getElementById('daysFilter').value;
-            const limit = document.getElementById('limitFilter').value;
-            
-            showLoading();
-            hideError();
-            
-            try {
-                const response = await fetch(`/api/comprehensive-trades?days=${days}&limit=${limit}`);
-                const data = await response.json();
-                
-                if (data.success) {
-                    tradesData = data.trades;
-                    displaySummary(data.summary);
-                    displayTrades(tradesData);
-                    
-                    // Show data source information
-                    updateDataSourceIndicator(data.summary);
-                } else {
-                    showError(data.error || 'Failed to load trades');
-                }
-            } catch (error) {
-                showError('Network error: ' + error.message);
-            }
-        }
+        <div class="empty-state" id="empty-state" style="display: none;">
+            <i class="fas fa-chart-line"></i>
+            <h4>No trades found</h4>
+            <p>Try adjusting your filters or check back later for new trading signals.</p>
+        </div>
         
-        // Display summary cards
-        function displaySummary(summary) {
-            const summaryCards = document.getElementById('summaryCards');
-            summaryCards.innerHTML = `
-                <div class="col-md-3">
-                    <div class="card summary-card">
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between">
-                                <div>
-                                    <h6 class="card-title text-muted">Total Trades</h6>
-                                    <h3 class="text-primary">${summary.total_trades}</h3>
-                                </div>
-                                <i class="fas fa-exchange-alt fa-2x text-primary"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="card summary-card">
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between">
-                                <div>
-                                    <h6 class="card-title text-muted">Buy/Sell Ratio</h6>
-                                    <h3 class="text-success">${summary.buy_trades}/${summary.sell_trades}</h3>
-                                </div>
-                                <i class="fas fa-balance-scale fa-2x text-success"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="card summary-card">
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between">
-                                <div>
-                                    <h6 class="card-title text-muted">Total Volume</h6>
-                                    <h3 class="text-info">$${summary.total_volume_usd.toLocaleString()}</h3>
-                                </div>
-                                <i class="fas fa-dollar-sign fa-2x text-info"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="card summary-card">
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between">
-                                <div>
-                                    <h6 class="card-title text-muted">Total Fees</h6>
-                                    <h3 class="text-warning">$${summary.total_fees_usdt}</h3>
-                                </div>
-                                <i class="fas fa-percent fa-2x text-warning"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-        
-        // Display trades in table
-        function displayTrades(trades) {
-            const tableBody = document.getElementById('tradesTableBody');
-            const symbolFilter = document.getElementById('symbolFilter').value.toUpperCase();
-            
-            // Filter trades by symbol if specified
-            const filteredTrades = symbolFilter ? 
-                trades.filter(t => t.symbol_clean.includes(symbolFilter) || t.instId.includes(symbolFilter)) : 
-                trades;
-            
-            if (filteredTrades.length === 0) {
-                showNoData();
-                return;
-            }
-            
-            tableBody.innerHTML = filteredTrades.map(trade => `
+        <table class="table table-hover mb-0" id="trades-table" style="display: none;">
+            <thead>
                 <tr>
-                    <td class="timestamp">${trade.fillTime}</td>
-                    <td><strong>${trade.symbol_clean}</strong></td>
-                    <td>
-                        <span class="${trade.side === 'buy' ? 'side-buy' : 'side-sell'}">
-                            ${trade.side_emoji} ${trade.side.toUpperCase()}
-                        </span>
-                    </td>
-                    <td>${parseFloat(trade.fillSz).toLocaleString(undefined, {maximumFractionDigits: 8})}</td>
-                    <td>$${parseFloat(trade.fillPx).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 8})}</td>
-                    <td><strong>${trade.trade_value_usd}</strong></td>
-                    <td class="fee-negative">$${Math.abs(parseFloat(trade.fee)).toFixed(4)} ${trade.feeCcy}</td>
-                    <td>
-                        <span class="${trade.net_pnl >= 0 ? 'text-success' : 'text-danger'}">
-                            ${trade.pnl_emoji} $${trade.net_pnl.toFixed(4)}
-                            ${trade.pnl_percentage !== 0 ? ' (' + trade.pnl_percentage.toFixed(2) + '%)' : ''}
-                        </span>
-                    </td>
-                    <td>
-                        <span class="badge ${trade.execType === 'M' ? 'bg-success' : 'bg-primary'}">
-                            ${trade.execType === 'M' ? 'Maker' : 'Taker'}
-                        </span>
-                    </td>
-                    <td class="trade-id">${trade.tradeId}</td>
-                    <td class="trade-id">${trade.ordId}</td>
-                    <td class="trade-id">${trade.billId}</td>
-                    <td>${trade.posSide || 'net'}</td>
-                    <td>
-                        <button class="btn btn-sm btn-outline-info" onclick="showTradeDetails('${trade.tradeId}')">
-                            <i class="fas fa-info-circle"></i>
-                        </button>
-                    </td>
+                    <th>Time</th>
+                    <th>Symbol</th>
+                    <th>Type</th>
+                    <th>Action</th>
+                    <th>Price</th>
+                    <th>Confidence</th>
+                    <th>Technical</th>
+                    <th>ML Data</th>
+                    <th>Status</th>
                 </tr>
-            `).join('');
-            
-            showTable();
+            </thead>
+            <tbody id="trades-tbody">
+                <!-- Dynamic content will be inserted here -->
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+let allTradesData = [];
+let filteredData = [];
+
+// Initialize page
+document.addEventListener('DOMContentLoaded', function() {
+    loadTradesData();
+    
+    // Setup filter event listeners
+    document.getElementById('symbol-filter').addEventListener('change', applyFilters);
+    document.getElementById('action-filter').addEventListener('change', applyFilters);
+    document.getElementById('type-filter').addEventListener('change', applyFilters);
+});
+
+async function loadTradesData() {
+    try {
+        showLoading(true);
+        
+        const response = await fetch('/api/trades');
+        const data = await response.json();
+        
+        if (data.success) {
+            allTradesData = data.trades;
+            updateSummaryStats(data.summary);
+            populateSymbolFilter();
+            applyFilters();
+            console.log('✅ Trades data loaded:', data.trades.length, 'records');
+        } else {
+            console.error('❌ Trades API error:', data.error);
+            showEmptyState();
         }
         
-        // Show loading state
-        function showLoading() {
-            document.getElementById('loadingSpinner').style.display = 'flex';
-            document.getElementById('tradesTableContainer').style.display = 'none';
-            document.getElementById('noDataMessage').style.display = 'none';
-        }
+    } catch (error) {
+        console.error('❌ Failed to load trades data:', error);
+        showEmptyState();
+    } finally {
+        showLoading(false);
+    }
+}
+
+function updateSummaryStats(summary) {
+    document.getElementById('total-signals').textContent = summary.total_signals;
+    document.getElementById('buy-signals').textContent = summary.buy_signals;
+    document.getElementById('sell-signals').textContent = summary.sell_signals;
+    document.getElementById('recent-24h').textContent = summary.recent_24h;
+    document.getElementById('avg-confidence').textContent = summary.avg_confidence.toFixed(1) + '%';
+    document.getElementById('total-trades').textContent = summary.total_trades;
+}
+
+function populateSymbolFilter() {
+    const symbols = [...new Set(allTradesData.map(t => t.symbol).filter(s => s && s !== 'N/A'))].sort();
+    const symbolFilter = document.getElementById('symbol-filter');
+    
+    // Clear existing options except "All Symbols"
+    symbolFilter.innerHTML = '<option value="">All Symbols</option>';
+    
+    symbols.forEach(symbol => {
+        const option = document.createElement('option');
+        option.value = symbol;
+        option.textContent = symbol;
+        symbolFilter.appendChild(option);
+    });
+}
+
+function applyFilters() {
+    const symbolFilter = document.getElementById('symbol-filter').value;
+    const actionFilter = document.getElementById('action-filter').value;
+    const typeFilter = document.getElementById('type-filter').value;
+    
+    filteredData = allTradesData.filter(trade => {
+        const symbolMatch = !symbolFilter || trade.symbol === symbolFilter;
+        const actionMatch = !actionFilter || trade.action === actionFilter;
+        const typeMatch = !typeFilter || trade.signal_type === typeFilter;
         
-        // Show table
-        function showTable() {
-            document.getElementById('loadingSpinner').style.display = 'none';
-            document.getElementById('tradesTableContainer').style.display = 'block';
-            document.getElementById('noDataMessage').style.display = 'none';
-        }
+        return symbolMatch && actionMatch && typeMatch;
+    });
+    
+    renderTradesTable();
+}
+
+function renderTradesTable() {
+    const tbody = document.getElementById('trades-tbody');
+    const table = document.getElementById('trades-table');
+    const emptyState = document.getElementById('empty-state');
+    
+    if (filteredData.length === 0) {
+        table.style.display = 'none';
+        emptyState.style.display = 'block';
+        return;
+    }
+    
+    table.style.display = 'table';
+    emptyState.style.display = 'none';
+    
+    tbody.innerHTML = filteredData.map(trade => {
+        const date = new Date(trade.timestamp);
+        const timeStr = date.toLocaleString();
         
-        // Show no data message
-        function showNoData() {
-            document.getElementById('loadingSpinner').style.display = 'none';
-            document.getElementById('tradesTableContainer').style.display = 'none';
-            document.getElementById('noDataMessage').style.display = 'block';
-        }
+        // Signal badge
+        const signalClass = getSignalClass(trade.action);
+        const signalBadge = `<span class="signal-badge ${signalClass}">${trade.action || 'N/A'}</span>`;
         
-        // Show error
-        function showError(message) {
-            document.getElementById('loadingSpinner').style.display = 'none';
-            document.getElementById('errorMessage').style.display = 'block';
-            document.getElementById('errorText').textContent = message;
-        }
+        // Type badge
+        const typeBadge = `<span class="type-badge type-${trade.signal_type.toLowerCase()}">${trade.signal_type}</span>`;
         
-        // Hide error
-        function hideError() {
-            document.getElementById('errorMessage').style.display = 'none';
-        }
+        // Confidence bar
+        const confidence = trade.confidence || 0;
+        const confidenceClass = confidence >= 70 ? 'confidence-high' : confidence >= 50 ? 'confidence-medium' : 'confidence-low';
+        const confidenceBar = `
+            <div class="confidence-bar">
+                <div class="confidence-fill ${confidenceClass}" style="width: ${confidence}%"></div>
+            </div>
+            <small class="text-muted">${confidence.toFixed(1)}%</small>
+        `;
         
-        // Show trade details modal
-        function showTradeDetails(tradeId) {
-            const trade = tradesData.find(t => t.tradeId === tradeId);
-            if (!trade) return;
-            
-            const detailsHtml = `
-                <div class="modal fade" id="tradeDetailsModal" tabindex="-1">
-                    <div class="modal-dialog modal-lg">
-                        <div class="modal-content">
-                            <div class="modal-header">
-                                <h5 class="modal-title">Trade Details - ${trade.tradeId}</h5>
-                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                            </div>
-                            <div class="modal-body">
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <h6>Basic Information</h6>
-                                        <table class="table table-sm">
-                                            <tr><td>Trade ID:</td><td>${trade.tradeId}</td></tr>
-                                            <tr><td>Instrument:</td><td>${trade.instId}</td></tr>
-                                            <tr><td>Order ID:</td><td>${trade.ordId}</td></tr>
-                                            <tr><td>Client Order ID:</td><td>${trade.clOrdId || 'N/A'}</td></tr>
-                                            <tr><td>Side:</td><td class="${trade.side === 'buy' ? 'side-buy' : 'side-sell'}">${trade.side.toUpperCase()}</td></tr>
-                                            <tr><td>Execution Type:</td><td>${trade.execType === 'M' ? 'Maker' : 'Taker'}</td></tr>
-                                        </table>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <h6>Financial Details</h6>
-                                        <table class="table table-sm">
-                                            <tr><td>Fill Size:</td><td>${trade.fillSz}</td></tr>
-                                            <tr><td>Fill Price:</td><td>$${trade.fillPx}</td></tr>
-                                            <tr><td>Notional Value:</td><td>$${trade.notional_value.toFixed(2)}</td></tr>
-                                            <tr><td>Fee:</td><td>$${Math.abs(parseFloat(trade.fee)).toFixed(4)} ${trade.feeCcy}</td></tr>
-                                            <tr><td>Position Side:</td><td>${trade.posSide || 'net'}</td></tr>
-                                            <tr><td>Bill ID:</td><td>${trade.billId}</td></tr>
-                                        </table>
-                                    </div>
-                                </div>
-                                <div class="mt-3">
-                                    <h6>Timestamps & Meta</h6>
-                                    <table class="table table-sm">
-                                        <tr><td>Fill Time:</td><td>${trade.fillTime}</td></tr>
-                                        <tr><td>Raw Timestamp:</td><td>${trade.timestamp}</td></tr>
-                                        <tr><td>Tag:</td><td>${trade.tag || 'N/A'}</td></tr>
-                                        <tr><td>Data Source:</td><td>${trade.source}</td></tr>
-                                    </table>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
-            
-            // Remove existing modal
-            const existingModal = document.getElementById('tradeDetailsModal');
-            if (existingModal) existingModal.remove();
-            
-            // Add new modal
-            document.body.insertAdjacentHTML('beforeend', detailsHtml);
-            const modal = new bootstrap.Modal(document.getElementById('tradeDetailsModal'));
-            modal.show();
-        }
+        // Technical indicators
+        const technical = [];
+        if (trade.rsi) technical.push(`RSI: ${trade.rsi.toFixed(1)}`);
+        if (trade.volatility) technical.push(`Vol: ${trade.volatility.toFixed(1)}%`);
+        if (trade.volume_ratio) technical.push('Volume ✓');
+        if (trade.momentum) technical.push('Momentum ✓');
+        if (trade.support) technical.push('Support ✓');
+        if (trade.bollinger) technical.push('BB ✓');
         
-        // Export to CSV
-        function exportToCSV() {
-            if (tradesData.length === 0) {
-                alert('No data to export');
-                return;
+        const technicalStr = technical.length > 0 ? technical.slice(0, 2).join('<br>') : 'N/A';
+        
+        // ML data
+        let mlData = 'N/A';
+        if (trade.ml_probability !== null && trade.ml_probability !== undefined) {
+            mlData = `P: ${(trade.ml_probability * 100).toFixed(1)}%`;
+            if (trade.predicted_return) {
+                mlData += `<br>Return: ${trade.predicted_return.toFixed(1)}%`;
             }
-            
-            const csvContent = [
-                // Header
-                ['Time', 'Symbol', 'Side', 'Size', 'Price', 'Value', 'Fee', 'FeeCcy', 'ExecType', 'TradeID', 'OrderID', 'BillID', 'PosSide'].join(','),
-                // Data rows
-                ...tradesData.map(trade => [
-                    trade.fillTime,
-                    trade.symbol_clean,
-                    trade.side,
-                    trade.fillSz,
-                    trade.fillPx,
-                    trade.notional_value,
-                    trade.fee,
-                    trade.feeCcy,
-                    trade.execType,
-                    trade.tradeId,
-                    trade.ordId,
-                    trade.billId,
-                    trade.posSide || 'net'
-                ].join(','))
-            ].join('\\n');
-            
-            const blob = new Blob([csvContent], { type: 'text/csv' });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `trades_${new Date().toISOString().split('T')[0]}.csv`;
-            a.click();
-            window.URL.revokeObjectURL(url);
         }
         
-        // Symbol filter on Enter key
-        document.getElementById('symbolFilter').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                displayTrades(tradesData);
-            }
-        });
+        // Price formatting
+        const price = trade.price ? `$${parseFloat(trade.price).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 6})}` : 'N/A';
         
-        // Update data source indicator
-        function updateDataSourceIndicator(summary) {
-            const indicator = document.getElementById('dataSourceIndicator');
-            const text = document.getElementById('dataSourceText');
-            
-            if (summary.data_source && summary.data_source.includes('Synthetic')) {
-                indicator.className = 'alert alert-warning';
-                text.innerHTML = `<strong>Portfolio-Based Reconstruction:</strong> Trade history created from current positions due to API limitations. Shows ${summary.total_trades} inferred trades worth $${summary.total_volume_usd.toFixed(2)}.`;
-            } else if (summary.data_source) {
-                indicator.className = 'alert alert-success';
-                text.innerHTML = `<strong>Live OKX API:</strong> ${summary.total_trades} historical trades retrieved directly from exchange.`;
-            } else {
-                indicator.className = 'alert alert-info';
-                text.innerHTML = `<strong>Data Source:</strong> ${summary.data_source || 'Unknown'}`;
-            }
-            
-            indicator.style.display = 'block';
-        }
+        // Symbol with tag
+        const symbolDisplay = trade.symbol ? `<span class="symbol-tag">${trade.symbol}</span>` : 'N/A';
         
-        // Auto-refresh every 30 seconds
-        setInterval(() => {
-            if (document.visibilityState === 'visible') {
-                loadTrades();
-            }
-        }, 30000);
-        
-        // Initial load
-        document.addEventListener('DOMContentLoaded', function() {
-            loadTrades();
-        });
-    </script>
-</body>
-</html>
+        return `
+            <tr>
+                <td>
+                    <div style="font-size: 0.85rem;">${timeStr}</div>
+                </td>
+                <td>${symbolDisplay}</td>
+                <td>${typeBadge}</td>
+                <td>${signalBadge}</td>
+                <td class="text-end">${price}</td>
+                <td>${confidenceBar}</td>
+                <td><small>${technicalStr}</small></td>
+                <td><small>${mlData}</small></td>
+                <td>
+                    <span class="badge bg-success">
+                        <i class="fas fa-check-circle me-1"></i>
+                        ${trade.status}
+                    </span>
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+function getSignalClass(action) {
+    switch (action?.toUpperCase()) {
+        case 'BUY': return 'signal-buy';
+        case 'SELL': return 'signal-sell';
+        case 'WAIT': return 'signal-wait';
+        case 'AVOID': return 'signal-avoid';
+        default: return 'signal-wait';
+    }
+}
+
+function clearFilters() {
+    document.getElementById('symbol-filter').value = '';
+    document.getElementById('action-filter').value = '';
+    document.getElementById('type-filter').value = '';
+    applyFilters();
+}
+
+function showLoading(show) {
+    document.getElementById('loading-spinner').style.display = show ? 'block' : 'none';
+    document.getElementById('trades-table').style.display = show ? 'none' : 'table';
+    document.getElementById('empty-state').style.display = 'none';
+}
+
+function showEmptyState() {
+    document.getElementById('loading-spinner').style.display = 'none';
+    document.getElementById('trades-table').style.display = 'none';
+    document.getElementById('empty-state').style.display = 'block';
+}
+
+// Auto-refresh every 30 seconds
+setInterval(loadTradesData, 30000);
+</script>
+{% endblock %}
