@@ -3409,7 +3409,7 @@ def api_available_positions() -> ResponseReturnValue:
                 "start_index": start_idx,
                 "end_index": min(end_idx, len(active_symbols)),
                 "total_symbols": len(active_symbols),
-                "has_more": end_idx < len(active_symbols)
+                "has_more_batches": end_idx < len(active_symbols)
             },
             "currency": currency,
             "last_update": iso_utc()
