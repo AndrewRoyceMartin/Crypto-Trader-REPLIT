@@ -344,13 +344,14 @@ class TradingPerformanceDashboard {
     constructor() {
         this.charts = {};
         this.refreshInterval = 30000; // 30 seconds
-        this.init();
+        this.init(); // This will now work properly
     }
 
-    async init() {
+    init() {
         console.log('🎯 Initializing Trading Performance Dashboard');
-        await this.loadAllData();
+        this.loadAllData(); // Remove await - let it run async
         this.startAutoRefresh();
+        console.log('✅ Trading Performance Dashboard initialization complete');
     }
 
     async loadAllData() {
@@ -371,12 +372,17 @@ class TradingPerformanceDashboard {
 
     async loadOverviewData() {
         try {
+            console.log('🔥 Loading overview data...');
             const response = await fetch('/api/performance-overview');
             const data = await response.json();
+            console.log('📊 API Response:', data);
             
-            if (data.success) {
+            if (data.success && data.portfolio_metrics) {
+                console.log('✅ Updating overview cards with data');
                 this.updateOverviewCards(data);
                 this.updateTopPerformers(data.top_performers);
+            } else {
+                console.error('❌ Invalid API response structure:', data);
             }
         } catch (error) {
             console.error('❌ Error loading overview data:', error);
@@ -664,11 +670,28 @@ if (typeof Chart === 'undefined') {
     window.Chart = function() { return { destroy: () => {} }; };
 }
 
-// Force immediate initialization
+// Force immediate initialization with manual API call
 try {
     console.log('🎯 Force initializing Trading Performance Dashboard');
     window.performanceDashboard = new TradingPerformanceDashboard();
     console.log('✅ Dashboard created successfully');
+    
+    // IMMEDIATE API CALL FOR TESTING
+    console.log('🚀 FORCING IMMEDIATE API CALL');
+    fetch('/api/performance-overview')
+        .then(response => response.json())
+        .then(data => {
+            console.log('🎯 FORCED API RESPONSE:', data);
+            if (data.success && data.portfolio_metrics) {
+                console.log('🔥 FORCE UPDATING DOM');
+                document.getElementById('totalValue').textContent = `$${data.portfolio_metrics.total_value.toLocaleString()}`;
+                document.getElementById('totalPnl').textContent = `$${data.portfolio_metrics.total_pnl.toLocaleString()}`;
+                document.getElementById('winRate').textContent = `${data.portfolio_metrics.win_rate}%`;
+                document.getElementById('mlAccuracy').textContent = `${data.signal_metrics.ml_accuracy}%`;
+                console.log('✅ DOM FORCE UPDATE COMPLETE');
+            }
+        })
+        .catch(error => console.error('❌ FORCE API FAILED:', error));
 } catch (error) {
     console.error('❌ Dashboard initialization failed:', error);
 }
