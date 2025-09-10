@@ -178,42 +178,51 @@ class MLEnhancedConfidenceAnalyzer(EntryConfidenceAnalyzer):
             # Get ML prediction
             ml_results = self._get_ml_prediction(symbol, indicators)
             
-            # Combine traditional and ML scores
-            enhanced_score = self._combine_traditional_and_ml_scores(
+            # HYBRID SCORING: Combine traditional (60%) and ML (40%)
+            hybrid_score = self._combine_traditional_and_ml_scores(
                 traditional_score=traditional_analysis['confidence_score'],
                 ml_probability=ml_results['ml_probability'],
                 ml_confidence=ml_results['ml_confidence']
             )
             
-            # Enhanced timing signal combining both analyses
-            enhanced_timing = self._generate_enhanced_timing_signal(
+            # HYBRID SIGNAL: Generate signal based on hybrid score thresholds
+            hybrid_timing = self._generate_enhanced_timing_signal(
                 traditional_signal=traditional_analysis['timing_signal'],
                 ml_signal=str(ml_results['ml_signal']),
-                enhanced_score=enhanced_score
+                enhanced_score=hybrid_score
             )
             
-            # Create enhanced response
-            enhanced_analysis = traditional_analysis.copy()
-            enhanced_analysis.update({
-                'confidence_score': round(enhanced_score, 1),
-                'confidence_level': self._get_confidence_level(enhanced_score),
-                'timing_signal': enhanced_timing,
+            # Create hybrid analysis response
+            hybrid_analysis = traditional_analysis.copy()
+            hybrid_analysis.update({
+                'confidence_score': round(hybrid_score, 1),
+                'confidence_level': self._get_confidence_level(hybrid_score),
+                'timing_signal': hybrid_timing,
+                'hybrid_score': round(hybrid_score, 2),
+                'ml_probability': round(ml_results['ml_probability'], 4),
+                'final_signal': hybrid_timing,
                 'ml_integration': {
-                    'ml_probability': round(ml_results['ml_probability'], 3),
+                    'ml_probability': round(ml_results['ml_probability'], 4),
                     'ml_confidence': round(ml_results['ml_confidence'], 1),
                     'ml_signal': ml_results['ml_signal'],
                     'ml_enabled': ml_results['ml_enabled'],
                     'traditional_score': traditional_analysis['confidence_score'],
-                    'enhancement_boost': round(enhanced_score - traditional_analysis['confidence_score'], 1)
+                    'enhancement_boost': round(hybrid_score - traditional_analysis['confidence_score'], 1)
                 },
-                'analysis_type': 'ML_ENHANCED',
-                'version': '2.0'
+                'scoring_breakdown': {
+                    'heuristic_component': round(traditional_analysis['confidence_score'] * 0.6, 1),
+                    'ml_component': round(ml_results['ml_probability'] * 100 * 0.4, 1),
+                    'hybrid_total': round(hybrid_score, 1),
+                    'weights': {'heuristic': '60%', 'ml': '40%'}
+                },
+                'analysis_type': 'HYBRID_ML_HEURISTIC',
+                'version': '3.0'
             })
             
             # Log signal for ML training if enabled
-            self._log_signal_for_training(symbol, current_price, enhanced_analysis, indicators)
+            self._log_signal_for_training(symbol, current_price, hybrid_analysis, indicators)
             
-            return enhanced_analysis
+            return hybrid_analysis
             
         except Exception as e:
             self.logger.error(f"Enhanced confidence calculation failed for {symbol}: {e}")
@@ -224,7 +233,9 @@ class MLEnhancedConfidenceAnalyzer(EntryConfidenceAnalyzer):
     def _combine_traditional_and_ml_scores(self, traditional_score: float, 
                                          ml_probability: float, ml_confidence: float) -> float:
         """
-        Intelligently combine traditional 6-factor score with ML prediction.
+        HYBRID SCORING SYSTEM: Combine traditional heuristics (60%) with ML predictions (40%).
+        
+        Formula: hybrid_score = 0.6 * confidence_score + 0.4 * (ml_probability * 100)
         
         Args:
             traditional_score: Score from 6-factor analysis (0-100)
@@ -232,74 +243,59 @@ class MLEnhancedConfidenceAnalyzer(EntryConfidenceAnalyzer):
             ml_confidence: ML confidence level (0-100)
             
         Returns:
-            Enhanced confidence score (0-100)
+            Hybrid confidence score (0-100)
         """
         if not self.ml_enabled:
             return traditional_score
         
-        # Convert ML probability to 0-100 scale
+        # HYBRID SCORING: Fixed 60/40 weight distribution
+        # 60% weight to traditional heuristic analysis
+        # 40% weight to ML probability prediction
+        heuristic_weight = 0.6
+        ml_weight = 0.4
+        
+        # Convert ML probability to 0-100 scale to match traditional score
         ml_score = ml_probability * 100
         
-        # Dynamic weighting based on ML confidence
-        # High ML confidence = more weight to ML
-        # Low ML confidence = more weight to traditional analysis
-        ml_weight = min(ml_confidence / 100 * 0.4, 0.4)  # Max 40% weight to ML
-        traditional_weight = 1.0 - ml_weight
-        
-        # Combine scores
-        combined_score = (traditional_score * traditional_weight) + (ml_score * ml_weight)
-        
-        # Apply boost/penalty based on ML-traditional agreement
-        agreement_factor = 1.0
-        score_diff = abs(traditional_score - ml_score) / 100
-        
-        if score_diff < 0.2:  # Good agreement (within 20 points)
-            agreement_factor = 1.1  # 10% boost for agreement
-        elif score_diff > 0.4:  # Poor agreement (>40 points difference)
-            agreement_factor = 0.95  # 5% penalty for disagreement
-        
-        final_score = combined_score * agreement_factor
+        # Calculate hybrid score with fixed weights
+        hybrid_score = (traditional_score * heuristic_weight) + (ml_score * ml_weight)
         
         # Ensure score stays within bounds
-        return max(0, min(100, final_score))
+        final_score = max(0, min(100, hybrid_score))
+        
+        self.logger.debug(f"🎯 HYBRID SCORING: Traditional={traditional_score:.1f} (60%) + ML={ml_score:.1f} (40%) = {final_score:.1f}")
+        
+        return final_score
     
     def _generate_enhanced_timing_signal(self, traditional_signal: str, 
                                        ml_signal: str, enhanced_score: float) -> str:
-        """Generate enhanced timing signal combining traditional and ML signals."""
+        """
+        HYBRID SIGNAL GENERATION: Generate timing signal based on hybrid score thresholds.
+        
+        Signal Thresholds:
+        - >=75: BUY (Strong hybrid confidence)
+        - >=60: CONSIDER (Moderate hybrid confidence)  
+        - >=45: WAIT (Weak hybrid confidence)
+        - <45: AVOID (Poor hybrid confidence)
+        """
         
         # If ML not available, use traditional signal
         if not self.ml_enabled or ml_signal == 'ERROR':
             return traditional_signal
         
-        # Priority matrix for signal combination
-        signal_priority = {
-            'STRONG_BUY': 5,
-            'BUY': 4,
-            'CAUTIOUS_BUY': 3,
-            'NEUTRAL': 2,
-            'WAIT': 1,
-            'AVOID': 0
-        }
-        
-        # Map ML signals to traditional format
-        ml_mapped = {
-            'STRONG_BUY': 'STRONG_BUY',
-            'BUY': 'BUY', 
-            'NEUTRAL': 'WAIT',
-            'CAUTION': 'WAIT',
-            'AVOID': 'AVOID'
-        }.get(ml_signal, 'WAIT')
-        
-        # Combine signals based on enhanced score
-        if enhanced_score >= 80:
-            # High confidence - take the more aggressive signal
-            return traditional_signal if signal_priority.get(traditional_signal, 1) >= signal_priority.get(ml_mapped, 1) else ml_mapped
+        # HYBRID SIGNAL THRESHOLDS: Based purely on hybrid score
+        if enhanced_score >= 75:
+            signal = "BUY"
         elif enhanced_score >= 60:
-            # Moderate confidence - be conservative 
-            return 'CAUTIOUS_BUY' if 'BUY' in [traditional_signal, ml_mapped] else 'WAIT'
+            signal = "CONSIDER"
+        elif enhanced_score >= 45:
+            signal = "WAIT"
         else:
-            # Low confidence - be very conservative
-            return 'WAIT' if enhanced_score >= 40 else 'AVOID'
+            signal = "AVOID"
+        
+        self.logger.debug(f"🎯 HYBRID SIGNAL: Score={enhanced_score:.1f} → {signal}")
+        
+        return signal
     
     def _log_signal_for_training(self, symbol: str, current_price: float, 
                                analysis: Dict, indicators: Dict) -> None:

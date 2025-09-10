@@ -3500,10 +3500,52 @@ def entry_confidence(symbol):
             "message": str(e)
         }), 500
 
+@app.route('/api/hybrid-signal')
+def get_hybrid_signal():
+    """🎯 HYBRID SIGNAL SYSTEM: Test endpoint for Goal 1 (ML + Heuristics)."""
+    try:
+        symbol = request.args.get('symbol', 'BTC').upper()
+        price = float(request.args.get('price', 111000))
+        
+        logger.info(f"🎯 Testing Hybrid Signal System for {symbol} at ${price}")
+        
+        # Import the hybrid confidence system
+        from src.utils.ml_enhanced_confidence import MLEnhancedConfidenceAnalyzer
+        
+        # Initialize the enhanced analyzer
+        analyzer = MLEnhancedConfidenceAnalyzer()
+        
+        # Calculate hybrid confidence and signal
+        result = analyzer.calculate_enhanced_confidence(symbol, price)
+        
+        # Add system info
+        result['system_info'] = {
+            'description': 'Hybrid Signal System combining ML (40%) + Heuristics (60%)',
+            'thresholds': {
+                'BUY': '≥75 (Strong confidence)',
+                'CONSIDER': '≥60 (Moderate confidence)', 
+                'WAIT': '≥45 (Weak confidence)',
+                'AVOID': '<45 (Poor confidence)'
+            },
+            'formula': 'hybrid_score = 0.6 * confidence_score + 0.4 * (ml_probability * 100)',
+            'goal': '✅ Goal 1: Hybrid Scoring System (ML + Heuristic) Implementation',
+            'next_phase': '🔄 Goal 2: Auto-Backtest on Real OKX Trade History'
+        }
+        
+        logger.info(f"🎯 Hybrid Signal for {symbol}: Score={result.get('hybrid_score', 0):.1f} → Signal={result.get('final_signal', 'N/A')}")
+        
+        return jsonify(result)
+        
+    except Exception as e:
+        logger.error(f"Hybrid signal endpoint error: {e}")
+        return jsonify({
+            "error": str(e), 
+            "success": False,
+            "system_info": "Hybrid Signal System (ML + Heuristics) - Test Endpoint"
+        }), 500
+
 
 # Additional helper functions and imports
-
-
 
 
 # Main application configuration and startup
