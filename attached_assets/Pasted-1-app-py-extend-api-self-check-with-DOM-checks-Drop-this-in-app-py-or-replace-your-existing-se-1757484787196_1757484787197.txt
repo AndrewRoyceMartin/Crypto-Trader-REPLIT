@@ -1,0 +1,99 @@
+1) app.py — extend /api/self-check with DOM checks
+
+Drop this in app.py (or replace your existing self-check route).
+Uses APP_URL and DOM_SELECTORS (JSON array) env vars; defaults included.
+
+# app.py (add/replace your existing self-check)
+import os, json, base64, hmac, hashlib, requests
+from bs4 import BeautifulSoup
+from datetime import datetime, timezone
+from flask import jsonify
+
+@app.get("/api/self-check")
+def self_check():
+    okx_base = "https://www.okx.com"
+    status = {"time": datetime.now(timezone.utc).isoformat()}
+    healthy_parts = []
+
+    # --- Public OKX health ---
+    try:
+        pub = requests.get(f"{okx_base}/api/v5/market/tickers", params={"instType": "SPOT"}, timeout=10)
+        status["okx_public_status"] = pub.status_code
+        body = pub.json() if pub.headers.get("Content-Type","").startswith("application/json") else {}
+        status["okx_public_code"] = body.get("code", "no-json")
+        status["okx_server_date_header"] = pub.headers.get("Date")
+        status["okx_no_simulation_header"] = ("x-simulated-trading" not in pub.headers)
+        status["okx_has_btc"] = any(d.get("instId") == "BTC-USDT" for d in body.get("data", []))
+        healthy_parts.append(
+            status["okx_public_status"] == 200 and
+            status["okx_public_code"] == "0" and
+            status["okx_no_simulation_header"] is True and
+            status["okx_has_btc"] is True
+        )
+    except Exception as e:
+        status["okx_public_error"] = str(e)
+        healthy_parts.append(False)
+
+    # --- Private OKX sanity (auth only, data may be empty) ---
+    try:
+        ts = datetime.now(timezone.utc).isoformat(timespec="milliseconds").replace("+00:00","Z")
+        path = "/api/v5/trade/fills"
+        msg = f"{ts}GET{path}"
+        sig = base64.b64encode(hmac.new(os.getenv("OKX_SECRET_KEY","").encode(), msg.encode(), hashlib.sha256).digest()).decode()
+        headers = {
+            "OK-ACCESS-KEY": os.getenv("OKX_API_KEY",""),
+            "OK-ACCESS-SIGN": sig,
+            "OK-ACCESS-TIMESTAMP": ts,
+            "OK-ACCESS-PASSPHRASE": os.getenv("OKX_PASSPHRASE",""),
+            "Content-Type": "application/json",
+        }
+        priv = requests.get(f"{okx_base}{path}", headers=headers, params={"instType": "SPOT", "limit": 1}, timeout=10)
+        pjson = priv.json() if "application/json" in priv.headers.get("Content-Type","") else {}
+        status["okx_private_status"] = priv.status_code
+        status["okx_private_code"] = pjson.get("code","no-json")
+        healthy_parts.append(status["okx_private_status"] == 200 and status["okx_private_code"] == "0")
+    except Exception as e:
+        status["okx_private_error"] = str(e)
+        healthy_parts.append(False)
+
+    # --- Internal trades route sanity ---
+    try:
+        r = requests.get("http://127.0.0.1:5000/api/trades", timeout=10)
+        body = r.json()
+        status["api_trades_status"] = r.status_code
+        status["api_trades_success"] = body.get("success", False)
+        status["api_trades_count"] = len(body.get("trades", [])) if isinstance(body.get("trades"), list) else 0
+        healthy_parts.append(status["api_trades_status"] == 200 and status["api_trades_success"] is True)
+    except Exception as e:
+        status["api_trades_error"] = str(e)
+        healthy_parts.append(False)
+
+    # --- DOM (HTTP) selectors check ---
+    app_url = os.getenv("APP_URL", "http://127.0.0.1:5000/").rstrip("/")
+    try:
+        sel_env = os.getenv("DOM_SELECTORS", "")
+        dom_selectors = json.loads(sel_env) if sel_env else ["#status-badge", "[data-testid='hybrid-score']", "[data-testid='status-okx']"]
+    except Exception:
+        dom_selectors = ["#status-badge"]
+
+    try:
+        dom = requests.get(app_url, timeout=10)
+        status["dom_http_status"] = dom.status_code
+        missing = []
+        if dom.status_code == 200:
+            soup = BeautifulSoup(dom.text, "html.parser")
+            for sel in dom_selectors:
+                if soup.select_one(sel) is None:
+                    missing.append(sel)
+        status["dom_missing_selectors"] = missing
+        healthy_parts.append(dom.status_code == 200 and len(missing) == 0)
+    except Exception as e:
+        status["dom_http_error"] = str(e)
+        healthy_parts.append(False)
+
+    healthy = all(healthy_parts)
+    return jsonify({"healthy": healthy, "status": status})
+
+
+requirements.txt: add
+beautifulsoup4

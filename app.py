@@ -4199,35 +4199,34 @@ def api_run_test_command() -> ResponseReturnValue:
         }), 500
 
 # Main application configuration and startup
-@app.route("/api/self-check")
+@app.route("/api/self-check", methods=["GET"])
 def self_check():
-    """
-    Lightweight runtime health:
-      - OKX public tickers live check (no simulated data)
-      - Optional private fills auth sanity (code=='0')
-      - Trades API reachable (internal)
-    """
     okx_base = "https://www.okx.com"
-    status = {"time": datetime.now(UTC).isoformat()}
+    status = {"time": datetime.now(timezone.utc).isoformat()}
+    healthy_parts = []
 
-    # Public
-    pub = requests.get(f"{okx_base}/api/v5/market/tickers", params={"instType": "SPOT"}, timeout=10)
-    status["okx_public_status"] = pub.status_code
-    status["okx_public_code"] = pub.json().get("code", "no-json")
-    status["okx_server_date_header"] = pub.headers.get("Date")
-    status["okx_no_simulation_header"] = ("x-simulated-trading" not in pub.headers)
-    status["okx_has_btc"] = any(d.get("instId") == "BTC-USDT" for d in pub.json().get("data", []))
-
-    # Private (best-effort)
+    # --- Public OKX health ---
     try:
-        from src.utils.safe_shims import (
-            okx_ts_utc,  # optional if you created such helper; fallback below
+        pub = requests.get(f"{okx_base}/api/v5/market/tickers", params={"instType": "SPOT"}, timeout=10)
+        status["okx_public_status"] = pub.status_code
+        body = pub.json() if pub.headers.get("Content-Type","").startswith("application/json") else {}
+        status["okx_public_code"] = body.get("code", "no-json")
+        status["okx_server_date_header"] = pub.headers.get("Date")
+        status["okx_no_simulation_header"] = ("x-simulated-trading" not in pub.headers)
+        status["okx_has_btc"] = any(d.get("instId") == "BTC-USDT" for d in body.get("data", []))
+        healthy_parts.append(
+            status["okx_public_status"] == 200 and
+            status["okx_public_code"] == "0" and
+            status["okx_no_simulation_header"] is True and
+            status["okx_has_btc"] is True
         )
-    except Exception:
-        def okx_ts_utc(): return datetime.now(UTC).isoformat(timespec="milliseconds").replace("+00:00","Z")
+    except Exception as e:
+        status["okx_public_error"] = str(e)
+        healthy_parts.append(False)
 
+    # --- Private OKX sanity (auth only, data may be empty) ---
     try:
-        ts = okx_ts_utc()
+        ts = datetime.now(timezone.utc).isoformat(timespec="milliseconds").replace("+00:00","Z")
         path = "/api/v5/trade/fills"
         msg = f"{ts}GET{path}"
         sig = base64.b64encode(hmac.new(os.getenv("OKX_SECRET_KEY","").encode(), msg.encode(), hashlib.sha256).digest()).decode()
@@ -4238,32 +4237,57 @@ def self_check():
             "OK-ACCESS-PASSPHRASE": os.getenv("OKX_PASSPHRASE",""),
             "Content-Type": "application/json",
         }
-        priv = requests.get(f"{okx_base}{path}", headers=headers, params={"instType":"SPOT","limit":1}, timeout=10)
+        priv = requests.get(f"{okx_base}{path}", headers=headers, params={"instType": "SPOT", "limit": 1}, timeout=10)
+        pjson = priv.json() if "application/json" in priv.headers.get("Content-Type","") else {}
         status["okx_private_status"] = priv.status_code
-        status["okx_private_code"] = priv.json().get("code","no-json")
+        status["okx_private_code"] = pjson.get("code","no-json")
+        healthy_parts.append(status["okx_private_status"] == 200 and status["okx_private_code"] == "0")
     except Exception as e:
         status["okx_private_error"] = str(e)
+        healthy_parts.append(False)
 
-    # Internal trades
+    # --- Internal trades route sanity ---
     try:
-        # Call this process directly to avoid HTTP loops if desired
-        # Here we just hit the HTTP endpoint to exercise the route
         r = requests.get("http://127.0.0.1:5000/api/trades", timeout=10)
-        status["api_trades_status"] = r.status_code
         body = r.json()
+        status["api_trades_status"] = r.status_code
         status["api_trades_success"] = body.get("success", False)
         status["api_trades_count"] = len(body.get("trades", [])) if isinstance(body.get("trades"), list) else 0
+        healthy_parts.append(status["api_trades_status"] == 200 and status["api_trades_success"] is True)
     except Exception as e:
         status["api_trades_error"] = str(e)
+        healthy_parts.append(False)
 
-    healthy = (
-        status.get("okx_public_status") == 200
-        and status.get("okx_public_code") == "0"
-        and status.get("okx_no_simulation_header") is True
-        and status.get("okx_has_btc") is True
-        and status.get("api_trades_status") == 200
-        and status.get("api_trades_success") is True
-    )
+    # --- DOM (HTTP) selectors check ---
+    status["dom_section_started"] = True  # Debug marker
+    app_url = os.getenv("APP_URL", "http://127.0.0.1:5000/").rstrip("/")
+    try:
+        sel_env = os.getenv("DOM_SELECTORS", "")
+        dom_selectors = json.loads(sel_env) if sel_env else ["#status-badge", "[data-testid='hybrid-score']", "[data-testid='status-okx']"]
+    except Exception:
+        dom_selectors = ["#status-badge"]
+
+    try:
+        from bs4 import BeautifulSoup
+        status["dom_beautifulsoup_imported"] = True  # Debug marker
+        dom = requests.get(app_url, timeout=10)
+        status["dom_http_status"] = dom.status_code
+        status["dom_checked_selectors"] = dom_selectors
+        missing = []
+        if dom.status_code == 200:
+            soup = BeautifulSoup(dom.text, "html.parser")
+            for sel in dom_selectors:
+                if soup.select_one(sel) is None:
+                    missing.append(sel)
+        status["dom_missing_selectors"] = missing
+        healthy_parts.append(dom.status_code == 200 and len(missing) == 0)
+    except Exception as e:
+        status["dom_http_error"] = str(e)
+        status["dom_http_status"] = getattr(locals().get('dom'), 'status_code', 0)
+        status["dom_missing_selectors"] = []
+        healthy_parts.append(False)
+
+    healthy = all(healthy_parts)
     return jsonify({"healthy": healthy, "status": status})
 
 if __name__ == '__main__':
