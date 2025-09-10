@@ -4002,6 +4002,7 @@ def api_run_test_command() -> ResponseReturnValue:
     try:
         data = request.get_json()
         command = data.get('command', '')
+        test_type = data.get('test_type', 'unknown')
         
         if not command:
             return jsonify({
@@ -4009,9 +4010,16 @@ def api_run_test_command() -> ResponseReturnValue:
                 "error": "No command provided"
             }), 400
         
-        # Security: Only allow specific test commands
+        # Security: Only allow specific test commands and individual test functions
         allowed_commands = [
             'python -m tests.e2e_system_check',
+            'python -c "from tests.e2e_system_check import check_env; check_env(); print(\\\"Environment check passed\\\")"',
+            'python -c "from tests.e2e_system_check import check_okx_public; check_okx_public(); print(\\\"OKX Public API passed\\\")"',
+            'python -c "from tests.e2e_system_check import check_okx_private; check_okx_private(); print(\\\"OKX Authentication passed\\\")"',
+            'python -c "from tests.e2e_system_check import check_ml_model; check_ml_model(); print(\\\"ML Model Loading passed\\\")"',
+            'python -c "from tests.e2e_system_check import check_hybrid_signal; check_hybrid_signal(); print(\\\"Hybrid Signal Generation passed\\\")"',
+            'python -c "from tests.e2e_system_check import check_signal_logging; check_signal_logging(); print(\\\"Signal Logging passed\\\")"',
+            'python -c "from tests.e2e_system_check import check_dom_http; check_dom_http(); print(\\\"DOM Validation passed\\\")"',
             'python -c "from tests.e2e_system_check import check_env, check_okx_public; check_env(); check_okx_public(); print(\'Basic tests passed\')"',
             'python -c "from tests.e2e_system_check import check_dom_http; check_dom_http(); print(\'DOM tests passed\')"'
         ]
