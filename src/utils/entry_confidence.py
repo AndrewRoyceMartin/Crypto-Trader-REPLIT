@@ -1042,147 +1042,66 @@ class EntryConfidenceAnalyzer:
         return []
     
     def _create_basic_confidence(self, symbol: str, current_price: float) -> Dict:
-        """Create 6-factor confidence assessment with fast synthetic data (no API delays)."""
-        try:
-            # 🚀 FAST 6-FACTOR ANALYSIS: Use synthetic data to prevent API timeouts
-            # Generate realistic 20-day price history for comprehensive analysis
-            np.random.seed(hash(symbol) % 1000)  # Consistent randomness per symbol
-            
-            # Create realistic price movements over 20 days
-            daily_changes = np.random.normal(0, 0.02, 19)  # 2% daily volatility
-            price_history = [current_price]
-            
-            for change in reversed(daily_changes):  # Build backwards from current
-                prev_price = price_history[-1] / (1 + change)
-                price_history.append(prev_price)
-            
-            price_history.reverse()  # Chronological order
-            
-            # Generate corresponding volume data
-            base_volume = 100000 + (hash(symbol) % 200000)
-            volume_history = []
-            for i in range(20):
-                vol_multiplier = np.random.uniform(0.5, 2.0)
-                volume_history.append(base_volume * vol_multiplier)
-            
-            # Create OHLC data for sophisticated analysis
-            df_data = []
-            for i, price in enumerate(price_history):
-                high = price * np.random.uniform(1.00, 1.03)
-                low = price * np.random.uniform(0.97, 1.00)
-                open_price = price * np.random.uniform(0.98, 1.02)
-                
-                df_data.append({
-                    'price': price,
-                    'open': open_price,
-                    'high': high,
-                    'low': low, 
-                    'close': price,
-                    'volume': volume_history[i]
-                })
-            
-            df = pd.DataFrame(df_data)
-            
-            # 🎯 USE 6-FACTOR ALGORITHM
-            try:
-                from logic.purchase_predictor import calculate_buy_confidence
-                
-                result = calculate_buy_confidence(df, current_price)
-                confidence_score = result['confidence_score']
-                timing_signal = result['timing_signal']
-                indicators = result['indicators']
-                
-                self.logger.debug(f"🎯 6-factor analysis for {symbol}: {confidence_score}% ({timing_signal})")
-                data_source = "6_factor_synthetic"
-                
-            except Exception as e:
-                # Fallback to simple 4-factor if 6-factor fails
-                self.logger.debug(f"6-factor failed for {symbol}: {e}")
-                confidence_score = self._calculate_enhanced_confidence(df, current_price)
-                timing_signal = "CONSIDER" if confidence_score >= 60 else "WAIT"
-                indicators = {}
-                data_source = "4_factor_fallback"
-            
-            # Determine confidence level based on 6-factor score
-            if confidence_score >= 70:
-                confidence_level = "HIGH"
-                risk_level = "LOW"
-                if 'timing_signal' not in locals():
-                    timing_signal = "BUY"
-            elif confidence_score >= 60:
-                confidence_level = "GOOD"
-                risk_level = "MEDIUM"
-                if 'timing_signal' not in locals():
-                    timing_signal = "CONSIDER"
-            elif confidence_score >= 45:
-                confidence_level = "FAIR"
-                risk_level = "MEDIUM"
-                if 'timing_signal' not in locals():
-                    timing_signal = "WAIT"
-            else:
-                confidence_level = "WEAK"
-                risk_level = "HIGH"
-                if 'timing_signal' not in locals():
-                    timing_signal = "AVOID"
-            
-            return {
-                'symbol': symbol,
-                'confidence_score': confidence_score,
-                'confidence_level': confidence_level,
-                'timing_signal': timing_signal,
-                'suggested_target_price': current_price * 0.97,
-                'breakdown': indicators if 'indicators' in locals() and indicators else {
-                    'technical_analysis': confidence_score - 5,
-                    'volatility_assessment': confidence_score,
-                    'momentum_indicators': confidence_score - 3,
-                    'volume_analysis': confidence_score - 2,
-                    'support_resistance': confidence_score - 4
-                },
-                'entry_recommendation': f"Enhanced: {confidence_level} - {timing_signal}",
-                'risk_level': risk_level,
-                'calculated_at': datetime.now().isoformat(),
-                'note': f"Enhanced analysis for {symbol} using {data_source}"
-            }
-            
-        except Exception as e:
-            # 📉 FALLBACK: Symbol-hash only if technical analysis fails
-            self.logger.debug(f"Enhanced analysis failed for {symbol}: {e}")
-            
-            symbol_hash = hash(symbol) % 30  # 0-29 variation
-            base_score = 50.0 + symbol_hash  # 50-79 range
-            
-            # Determine confidence level for fallback
-            if base_score >= 65:
-                confidence_level = "GOOD"
-                risk_level = "MEDIUM"
-                timing_signal = "CONSIDER"
-            elif base_score >= 50:
-                confidence_level = "FAIR"
-                risk_level = "MEDIUM"
-                timing_signal = "WAIT"
-            else:
-                confidence_level = "WEAK"
-                risk_level = "HIGH"
-                timing_signal = "WAIT"
-            
+        """Create 6-factor confidence assessment using real market data."""
+        from logic.purchase_predictor import calculate_buy_confidence
+        
+        df = self._fetch_market_data(symbol, days=20, current_price=current_price)
+        if isinstance(df, list):  # raw data
+            df = pd.DataFrame(df)
+
+        if 'price' not in df.columns or len(df) < 14:
+            # fallback if data too short
+            base_score = 50.0
             return {
                 'symbol': symbol,
                 'confidence_score': base_score,
-                'confidence_level': confidence_level,
-                'timing_signal': timing_signal,
+                'confidence_level': 'FAIR',
+                'timing_signal': 'WAIT',
                 'suggested_target_price': current_price * 0.97,
-                'breakdown': {
-                    'technical_analysis': base_score - 5,
-                    'volatility_assessment': base_score,
-                    'momentum_indicators': base_score - 3,
-                    'volume_analysis': base_score - 2,
-                    'support_resistance': base_score - 4
-                },
-                'entry_recommendation': f"Fallback: {confidence_level} - {timing_signal}",
-                'risk_level': risk_level,
-                'calculated_at': datetime.now().isoformat(),
-                'note': f"Fallback hash-based analysis for {symbol}"
+                'breakdown': {},
+                'entry_recommendation': "Default fallback due to insufficient data.",
+                'risk_level': 'MEDIUM',
+                'calculated_at': datetime.now().isoformat()
             }
+
+        result = calculate_buy_confidence(df, current_price)
+        
+        # Map confidence score to level
+        confidence_score = result['confidence_score']
+        if confidence_score >= 70:
+            confidence_level = "HIGH"
+            risk_level = "LOW"
+        elif confidence_score >= 60:
+            confidence_level = "GOOD"
+            risk_level = "MEDIUM"
+        elif confidence_score >= 45:
+            confidence_level = "FAIR"
+            risk_level = "MEDIUM"
+        else:
+            confidence_level = "WEAK"
+            risk_level = "HIGH"
+        
+        # Entry recommendation
+        if confidence_score >= 70:
+            entry_recommendation = "Strong buy signal - excellent technical setup"
+        elif confidence_score >= 60:
+            entry_recommendation = "Good entry opportunity - favorable conditions"
+        elif confidence_score >= 45:
+            entry_recommendation = "Mixed signals - proceed with caution"
+        else:
+            entry_recommendation = "Avoid entry - poor technical conditions"
+        
+        return {
+            'symbol': symbol,
+            'confidence_score': result['confidence_score'],
+            'confidence_level': confidence_level,
+            'timing_signal': result['timing_signal'],
+            'suggested_target_price': current_price * 0.97,
+            'breakdown': result['indicators'],
+            'entry_recommendation': entry_recommendation,
+            'risk_level': risk_level,
+            'calculated_at': datetime.now().isoformat()
+        }
 
 # Global instance
 _confidence_analyzer = None

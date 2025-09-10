@@ -1,0 +1,128 @@
+moving into Phase 2: Logging Buy Signals to Build a Dataset is the smart next step.
+
+🎯 Goal of Phase 2
+
+Automatically log each signal prediction to a structured file/database so we can:
+
+✅ Backtest performance
+
+✅ Train future machine learning models (Phase 3)
+
+✅ Visualize how your system behaves over time
+
+✅ What We’ll Log
+
+Each prediction → 1 log row, including:
+
+Field	Example
+symbol	"ETH"
+timestamp	"2025-09-10T12:30:00Z"
+confidence_score	78.5
+timing_signal	"BUY"
+current_price	1650.22
+rsi	29.4
+volatility	8.3
+volume_ratio	1.6
+momentum_signal	True
+support_signal	False
+✅ Implementation Options
+Option	Storage	Use case
+JSON file	Local Replit file	Simple, inspectable
+CSV file	Tabular format	Easy ML import
+SQLite	Structured DB	Future querying, performance
+Firebase/Cloud	Scalable backend	Later phase, not now
+
+We'll go with CSV logging — readable, ML-ready, and easy to append in Replit.
+
+📁 File: logger/signal_logger.py
+# logger/signal_logger.py
+
+import csv
+import os
+from datetime import datetime
+
+CSV_FILE = "signals_log.csv"
+CSV_HEADERS = [
+    "timestamp", "symbol", "current_price", "confidence_score",
+    "timing_signal", "rsi", "volatility", "volume_ratio",
+    "momentum_signal", "support_signal", "bollinger_signal"
+]
+
+def log_signal(symbol: str, current_price: float, confidence_data: dict):
+    """
+    Log signal prediction to CSV file (append if exists).
+    """
+    timestamp = datetime.utcnow().isoformat()
+
+    indicators = confidence_data.get("indicators", {})
+
+    row = {
+        "timestamp": timestamp,
+        "symbol": symbol,
+        "current_price": current_price,
+        "confidence_score": confidence_data.get("confidence_score"),
+        "timing_signal": confidence_data.get("timing_signal"),
+        "rsi": indicators.get("rsi"),
+        "volatility": indicators.get("volatility"),
+        "volume_ratio": indicators.get("volume_signal"),  # True/False
+        "momentum_signal": indicators.get("momentum_signal"),
+        "support_signal": indicators.get("support_signal"),
+        "bollinger_signal": indicators.get("bollinger_signal"),
+    }
+
+    file_exists = os.path.isfile(CSV_FILE)
+
+    with open(CSV_FILE, mode="a", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=CSV_HEADERS)
+
+        if not file_exists:
+            writer.writeheader()
+
+        writer.writerow(row)
+
+🧩 How to Use Inside Your Analyzer
+
+Wherever you're calling:
+
+from logic.purchase_predictor import calculate_buy_confidence
+result = calculate_buy_confidence(df, current_price)
+
+
+Add this right after:
+
+from logger.signal_logger import log_signal
+log_signal(symbol, current_price, result)
+
+
+This will log every signal prediction during live runs.
+
+📂 Output File Example (signals_log.csv)
+timestamp,symbol,current_price,confidence_score,timing_signal,rsi,volatility,volume_ratio,momentum_signal,support_signal,bollinger_signal
+2025-09-10T12:10:00,ETH,1650.22,78.5,BUY,29.4,8.3,1.62,True,False,True
+...
+
+🧪 How to Test It
+
+In main.py:
+
+from logic.purchase_predictor import calculate_buy_confidence
+from logger.signal_logger import log_signal
+
+df = ohlcv_data["ETH"]
+price_now = df["price"].iloc[-1]
+result = calculate_buy_confidence(df, price_now)
+
+log_signal("ETH", price_now, result)
+
+
+Then check file signals_log.csv in Replit’s Files pane.
+
+✅ You're Now Logging Trading Signals!
+
+This is the foundation for ML and backtesting:
+
+You can now track all predictions.
+
+Train models in Phase 3 using this data.
+
+Review why a trade was (or wasn't) triggered.
