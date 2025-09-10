@@ -15,7 +15,8 @@ except (FileNotFoundError, Exception) as e:
 
 def predict_buy_opportunity(indicator_data: dict) -> float:
     """
-    Takes indicator dict and returns probability of profitable trade
+    Takes indicator dict and returns P&L percentage prediction converted to probability scale.
+    Now uses regression model to predict actual P&L% instead of binary classification.
     """
     # Check if model is loaded
     if model is None:
@@ -25,7 +26,15 @@ def predict_buy_opportunity(indicator_data: dict) -> float:
     try:
         features = ["rsi", "volatility", "confidence_score", "volume_ratio"]
         X = np.array([[indicator_data.get(f, 0) for f in features]])
-        prob = model.predict_proba(X)[0][1]  # class 1 = profitable
+        # Use regression prediction instead of classification probability
+        pnl_prediction = model.predict(X)[0]  # Predicted P&L percentage
+        
+        # Convert P&L percentage to probability-like score for hybrid system
+        # Positive P&L gets higher probability, negative gets lower
+        # Scale: 0% P&L = 0.5 probability, +10% P&L = ~1.0, -10% P&L = ~0.0
+        prob = max(0.0, min(1.0, 0.5 + (pnl_prediction / 20)))  # Scale to 0-1 range
+        
+        print(f"🎯 ML Regression: Predicted P&L={pnl_prediction:+.2f}% → Probability={prob:.3f}")
         return round(prob, 4)
     except Exception as e:
         print(f"❌ ML prediction error: {e}")

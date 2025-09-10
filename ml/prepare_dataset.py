@@ -13,10 +13,14 @@ def load_signal_data(path="signals_log.csv") -> pd.DataFrame:
 
 def label_profitability(df: pd.DataFrame, horizon: int = 3) -> pd.DataFrame:
     """
-    Adds a binary label: 1 if price increased in next N rows, else 0
+    Adds continuous P&L percentage target for regression instead of binary classification.
+    Returns actual P&L% that can be predicted by regression model.
     """
     df = df.copy()
     df["future_price"] = df["current_price"].shift(-horizon)
-    df["price_change_pct"] = (df["future_price"] - df["current_price"]) / df["current_price"] * 100
-    df["profitable"] = (df["price_change_pct"] > 1.0).astype(int)  # > +1%
+    df["pnl_pct"] = (df["future_price"] - df["current_price"]) / df["current_price"] * 100
+    
+    # Keep legacy binary label for compatibility (but use pnl_pct as main target)
+    df["profitable"] = (df["pnl_pct"] > 1.0).astype(int)  # > +1%
+    
     return df.dropna()

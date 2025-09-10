@@ -3,7 +3,8 @@
 import pandas as pd
 import xgboost as xgb
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import classification_report
+from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
+import numpy as np
 import joblib
 from prepare_dataset import load_signal_data, label_profitability
 
@@ -26,10 +27,11 @@ def train_model():
         features.append("volume_ratio")
 
     X = df[features]
-    y = df["profitable"]
+    y = df["pnl_pct"]  # Switch to continuous P&L percentage target
     
     print(f"📊 Features: {features}")
-    print(f"📊 Target distribution: {y.value_counts().to_dict()}")
+    print(f"📊 Target P&L% stats: Mean={y.mean():.2f}%, Std={y.std():.2f}%, Min={y.min():.2f}%, Max={y.max():.2f}%")
+    print(f"📊 Positive P&L samples: {(y > 0).sum()}/{len(y)} ({(y > 0).mean():.1%})")
 
     # For very small datasets, skip train/test split and use all data
     if len(df) < 4:
@@ -39,20 +41,38 @@ def train_model():
     else:
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-    model = xgb.XGBClassifier(
-        use_label_encoder=False, 
-        eval_metric="logloss",
-        max_depth=2,  # Reduce complexity for small data
-        n_estimators=10
+    model = xgb.XGBRegressor(
+        objective='reg:squarederror',
+        eval_metric="rmse",
+        max_depth=3,  # Slightly deeper for regression
+        n_estimators=20,  # More trees for better regression performance
+        learning_rate=0.1
     )
     
     model.fit(X_train, y_train)
 
     preds = model.predict(X_test)
-    print(f"🎯 Training accuracy: {(preds == y_test).mean():.1%}")
     
-    if len(set(y_test)) > 1:  # Only if we have both classes
-        print(classification_report(y_test, preds, zero_division=0))
+    # Regression evaluation metrics
+    mae = mean_absolute_error(y_test, preds)
+    mse = mean_squared_error(y_test, preds)
+    rmse = np.sqrt(mse)
+    r2 = r2_score(y_test, preds)
+    
+    print(f"🎯 Regression Performance:")
+    print(f"   MAE (Mean Absolute Error): {mae:.2f}%")
+    print(f"   RMSE (Root Mean Squared Error): {rmse:.2f}%")
+    print(f"   R² Score: {r2:.3f}")
+    
+    # Show prediction vs actual comparison
+    print(f"📈 Sample Predictions vs Actual:")
+    for i in range(min(5, len(y_test))):
+        if hasattr(y_test, 'iloc'):
+            actual = y_test.iloc[i]
+        else:
+            actual = list(y_test)[i] if hasattr(y_test, '__iter__') else y_test[i]
+        predicted = preds[i]
+        print(f"   Actual: {actual:+.2f}% | Predicted: {predicted:+.2f}% | Diff: {abs(actual-predicted):.2f}%")
 
     joblib.dump(model, "buy_signal_model.pkl")
     print("✅ Model saved: buy_signal_model.pkl")
