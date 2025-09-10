@@ -6539,11 +6539,13 @@ function createAvailablePositionRow(position) {
     // Create row using safe DOM methods
     const row = document.createElement('tr');
     
-    // Add data attributes for filtering
+    // Add data attributes for filtering - Enhanced for 6-Factor Analysis
     row.setAttribute('data-symbol', symbol);
     row.setAttribute('data-has-balance', currentBalance > 0 ? 'true' : 'false');
     row.setAttribute('data-confidence-score', confidenceScore);
     row.setAttribute('data-buy-signal', timingSignal);
+    row.setAttribute('data-confidence-level', confidenceLevel);
+    row.setAttribute('data-risk-level', entryConfidence.risk_level || 'MEDIUM');
     
     // Symbol cell with icon
     const symbolCell = document.createElement('td');

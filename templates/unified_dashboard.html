@@ -372,14 +372,27 @@
                         <div class="col-md-3">
                             <select id="bot-criteria-filter" class="form-select form-select-sm" onchange="filterAvailablePositions()">
                                 <option value="">All Criteria</option>
-                                <option value="bot-will-buy">✅ Bot Will Buy</option>
-                                <option value="high-confidence">🎯 High Confidence (75%+)</option>
-                                <option value="excellent-confidence">⭐ Excellent (85%+)</option>
-                                <option value="strong-buy">🚀 Strong Buy</option>
-                                <option value="buy">✅ Buy</option>
-                                <option value="cautious-buy">⚠️ Cautious Buy</option>
-                                <option value="wait">⏸️ Wait</option>
-                                <option value="avoid">❌ Avoid</option>
+                                <optgroup label="6-Factor Analysis">
+                                    <option value="strong-buy-setup">🚀 Strong Buy Setup (70%+)</option>
+                                    <option value="good-entry">📈 Good Entry (60-69%)</option>
+                                    <option value="mixed-signals">⚡ Mixed Signals (45-59%)</option>
+                                    <option value="poor-setup">⚠️ Poor Setup (<45%)</option>
+                                </optgroup>
+                                <optgroup label="Trading Signals">
+                                    <option value="bot-will-buy">✅ Bot Will Buy</option>
+                                    <option value="buy-signal">📊 BUY Signal</option>
+                                    <option value="wait-signal">⏸️ WAIT Signal</option>
+                                    <option value="avoid-signal">❌ AVOID Signal</option>
+                                </optgroup>
+                                <optgroup label="Legacy Filters">
+                                    <option value="high-confidence">🎯 High Confidence (75%+)</option>
+                                    <option value="excellent-confidence">⭐ Excellent (85%+)</option>
+                                    <option value="strong-buy">🚀 Strong Buy</option>
+                                    <option value="buy">✅ Buy</option>
+                                    <option value="cautious-buy">⚠️ Cautious Buy</option>
+                                    <option value="wait">⏸️ Wait</option>
+                                    <option value="avoid">❌ Avoid</option>
+                                </optgroup>
                             </select>
                         </div>
                         <div class="col-md-2">
@@ -412,12 +425,12 @@
                                         <i class="fas fa-percentage me-1 text-info"></i>Diff % <span class="icon icon-sort text-muted"></span>
                                     </th>
                                     <th class="table-sortable text-center" data-sort="entry_confidence.score" onclick="sortAvailableTable(5)"
-                                        title="Entry Confidence: AI-calculated score (0-100) based on technical analysis, momentum, and volatility. Higher scores indicate better entry opportunities. Note: This is for display only - automated trading uses Bollinger Bands.">
-                                        <i class="fas fa-brain me-1 text-warning"></i>Confidence <span class="icon icon-sort text-muted"></span>
+                                        title="6-Factor Confidence Analysis: Advanced technical analysis score (0-100) based on RSI oversold detection, Bollinger Band proximity, volume surge analysis, momentum confirmation, volatility assessment, and support level analysis. 70%+ = Strong Buy Setup, 60-69% = Good Entry, 45-59% = Mixed Signals, <45% = Poor Setup.">
+                                        <i class="fas fa-rocket me-1 text-warning"></i>6-Factor Score <span class="icon icon-sort text-muted"></span>
                                     </th>
                                     <th class="table-sortable text-center" data-sort="entry_confidence.timing_signal" onclick="sortAvailableTable(6)"
-                                        title="Timing Signal: Recommendation for entry timing based on market conditions. STRONG_BUY = optimal entry, CAUTIOUS_BUY = moderate entry, WAIT = hold off. This is informational only.">
-                                        <i class="fas fa-clock me-1 text-primary"></i>Timing <span class="icon icon-sort text-muted"></span>
+                                        title="Enhanced Timing Signal: 6-factor analysis recommendation for entry timing. BUY = favorable technical setup, WAIT = mixed conditions, AVOID = poor technical indicators. Based on comprehensive RSI, Bollinger, volume, momentum, volatility, and support analysis.">
+                                        <i class="fas fa-chart-line me-1 text-primary"></i>Timing Signal <span class="icon icon-sort text-muted"></span>
                                     </th>
                                     <th class="table-sortable text-center" data-sort="entry_confidence.risk_level" onclick="sortAvailableTable(7)"
                                         title="Risk Assessment: Estimated risk level for this entry. LOW = stable/safer entry, MODERATE = balanced risk/reward, HIGH = volatile/riskier entry. Consider your risk tolerance.">
