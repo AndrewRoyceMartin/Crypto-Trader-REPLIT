@@ -3419,6 +3419,66 @@ def api_available_positions() -> ResponseReturnValue:
         logger.error(f"Available positions error: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
 
+@app.route('/api/entry-confidence/<symbol>')
+def entry_confidence(symbol):
+    """Get detailed entry confidence analysis for a specific symbol."""
+    try:
+        logger.info(f"Getting entry confidence analysis for {symbol}")
+        
+        # Use ML-Enhanced Confidence Analyzer
+        from src.utils.ml_enhanced_confidence import MLEnhancedConfidenceAnalyzer
+        
+        # Get current price for the symbol
+        exchange = get_reusable_exchange()
+        if not exchange:
+            return jsonify({
+                "success": False,
+                "status": "error", 
+                "message": "Exchange not available"
+            }), 500
+            
+        try:
+            # Get ticker data for current price
+            ticker_symbol = f"{symbol}/USDT"
+            ticker_data = exchange.fetch_ticker(ticker_symbol)
+            current_price = float(ticker_data['last'])
+            volume_24h = float(ticker_data.get('baseVolume', 0))
+            price_change_24h = float(ticker_data.get('percentage', 0))
+        except Exception as e:
+            logger.warning(f"Could not fetch price for {symbol}: {e}")
+            current_price = 1.0  # Fallback price
+            volume_24h = 0
+            price_change_24h = 0
+        
+        # Initialize ML analyzer and get confidence analysis
+        analyzer = MLEnhancedConfidenceAnalyzer()
+        confidence_data = analyzer.analyze_entry_confidence(
+            symbol=symbol,
+            current_price=current_price,
+            volume_24h=volume_24h,
+            price_change_24h=price_change_24h
+        )
+        
+        # Convert numpy types for JSON serialization
+        confidence_data = convert_numpy_types(confidence_data)
+        
+        return jsonify({
+            "success": True,
+            "status": "success",
+            "data": confidence_data,
+            "symbol": symbol,
+            "current_price": current_price,
+            "timestamp": iso_utc()
+        })
+        
+    except Exception as e:
+        logger.error(f"Entry confidence analysis error for {symbol}: {e}")
+        return jsonify({
+            "success": False,
+            "status": "error",
+            "message": str(e)
+        }), 500
+
 
 # Additional helper functions and imports
 
