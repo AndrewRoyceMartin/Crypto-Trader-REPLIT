@@ -3164,6 +3164,91 @@ def api_portfolio_history() -> ResponseReturnValue:
         return jsonify({"success": False, "error": str(e)}), 500
 
 
+@app.route('/api/current-holdings')
+def api_current_holdings() -> ResponseReturnValue:
+    """Get current holdings - alias for crypto-portfolio endpoint."""
+    try:
+        # Redirect to the existing crypto-portfolio endpoint logic
+        selected_currency = request.args.get('currency', 'USD').upper()
+        logger.info(f"Fetching current holdings (crypto-portfolio alias) with currency: {selected_currency}")
+
+        portfolio_service = get_portfolio_service()
+        
+        try:
+            okx_portfolio_data = portfolio_service.get_portfolio_data_OKX_NATIVE_ONLY(
+                currency=selected_currency,
+                force_refresh=True
+            )
+        except TypeError:
+            # Fallback if force_refresh not supported
+            okx_portfolio_data = portfolio_service.get_portfolio_data_OKX_NATIVE_ONLY(currency=selected_currency)
+
+        holdings_list = okx_portfolio_data['holdings']
+
+        # Filter out holdings with less than $1 value
+        holdings_list = [h for h in holdings_list if float(h.get('current_value', 0) or 0) >= 1.0]
+
+        return jsonify({
+            "success": True,
+            "holdings": holdings_list,
+            "total_value": float(okx_portfolio_data['total_current_value']),
+            "total_pnl": float(okx_portfolio_data['total_pnl']),
+            "currency": selected_currency,
+            "last_update": iso_utc()
+        })
+
+    except Exception as e:
+        logger.error(f"Current holdings error: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route('/api/portfolio-data')
+def api_portfolio_data() -> ResponseReturnValue:
+    """Get portfolio data - alias for crypto-portfolio endpoint."""
+    try:
+        # Redirect to the existing crypto-portfolio endpoint logic
+        selected_currency = request.args.get('currency', 'USD').upper()
+        logger.info(f"Fetching portfolio data (crypto-portfolio alias) with currency: {selected_currency}")
+
+        portfolio_service = get_portfolio_service()
+        
+        try:
+            okx_portfolio_data = portfolio_service.get_portfolio_data_OKX_NATIVE_ONLY(
+                currency=selected_currency,
+                force_refresh=True
+            )
+        except TypeError:
+            # Fallback if force_refresh not supported
+            okx_portfolio_data = portfolio_service.get_portfolio_data_OKX_NATIVE_ONLY(currency=selected_currency)
+
+        holdings_list = okx_portfolio_data['holdings']
+
+        # Filter out holdings with less than $1 value
+        holdings_list = [h for h in holdings_list if float(h.get('current_value', 0) or 0) >= 1.0]
+
+        overview = {
+            "currency": selected_currency,
+            "total_value": float(okx_portfolio_data['total_current_value']),
+            "total_pnl": float(okx_portfolio_data['total_pnl']),
+            "pnl_percent": float(okx_portfolio_data['total_pnl_percent']),
+            "holdings_count": len(holdings_list),
+            "last_update": iso_utc()
+        }
+
+        return jsonify({
+            "success": True,
+            "portfolio_value": overview["total_value"],
+            "pnl_percent": overview["pnl_percent"],
+            "holdings": holdings_list,
+            "overview": overview,
+            "last_update": iso_utc()
+        })
+
+    except Exception as e:
+        logger.error(f"Portfolio data error: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
 @app.route('/api/asset-allocation')
 def api_asset_allocation() -> ResponseReturnValue:
     """Get asset allocation breakdown."""
