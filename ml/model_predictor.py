@@ -4,7 +4,12 @@ import joblib
 import numpy as np
 
 MODEL_PATH = "buy_signal_model.pkl"
-model = joblib.load(MODEL_PATH)
+try:
+    model = joblib.load(MODEL_PATH)
+    print(f"✅ Model loaded from {MODEL_PATH}")
+except FileNotFoundError:
+    print(f"❌ Model file {MODEL_PATH} not found. Train model first.")
+    model = None
 
 def predict_buy_opportunity(indicator_data: dict) -> float:
     """

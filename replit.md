@@ -51,6 +51,7 @@ The system utilizes a modular Flask-based web interface for live OKX trading, st
 -   **Environment-Dependent CSP:** Content Security Policy headers are dynamically configured for development vs production environments, allowing localhost connections for HMR during development while maintaining strict security in production.
 -   **Thread-Safe State Management:** All shared state operations use centralized thread-safe helpers (`_set_warmup()`, `_set_bot_state()`, `_get_warmup_done()`, `_get_warmup_error()`) with RLock protection to prevent race conditions and ensure data consistency across concurrent requests.
 -   **Code Quality Enhancement (August 2025):** Comprehensive removal of all Recent Trades UI functionality to establish a clean codebase foundation. Removed backend variables, frontend cache references, and template elements while preserving core trading and portfolio functionality.
+-   **Phase 3: ML Trading Intelligence (September 2025):** Implemented complete machine learning pipeline for crypto buy signal prediction using XGBoost binary classification. Features dataset preparation with profitability labeling, model training with core technical indicators (RSI, volatility, confidence score, volume ratio), and real-time prediction API. The ML system predicts signal profitability to enhance the 6-factor technical analysis with intelligent recommendations.
 
 ## External Dependencies
 
