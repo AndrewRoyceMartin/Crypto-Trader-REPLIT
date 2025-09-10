@@ -3518,18 +3518,22 @@ def get_hybrid_signal():
         # Calculate hybrid confidence and signal
         result = analyzer.calculate_enhanced_confidence(symbol, price)
         
-        # Add system info
+        # Convert numpy types for JSON serialization
+        result = convert_numpy_types(result)
+        
+        # Add system info with recalibrated thresholds
         result['system_info'] = {
             'description': 'Hybrid Signal System combining ML (40%) + Heuristics (60%)',
             'thresholds': {
-                'BUY': '≥75 (Strong confidence)',
-                'CONSIDER': '≥60 (Moderate confidence)', 
+                'BUY': '≥65 (Strong confidence) - Recalibrated',
+                'CONSIDER': '≥55 (Moderate confidence) - Recalibrated', 
                 'WAIT': '≥45 (Weak confidence)',
                 'AVOID': '<45 (Poor confidence)'
             },
             'formula': 'hybrid_score = 0.6 * confidence_score + 0.4 * (ml_probability * 100)',
             'goal': '✅ Goal 1: Hybrid Scoring System (ML + Heuristic) Implementation',
-            'next_phase': '🔄 Goal 2: Auto-Backtest on Real OKX Trade History'
+            'next_phase': '🔄 Goal 2: Auto-Backtest on Real OKX Trade History',
+            'calibration_note': 'Thresholds lowered based on backtest analysis showing negative correlation between confidence and P&L'
         }
         
         logger.info(f"🎯 Hybrid Signal for {symbol}: Score={result.get('hybrid_score', 0):.1f} → Signal={result.get('final_signal', 'N/A')}")

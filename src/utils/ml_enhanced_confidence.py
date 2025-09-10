@@ -272,11 +272,14 @@ class MLEnhancedConfidenceAnalyzer(EntryConfidenceAnalyzer):
         """
         HYBRID SIGNAL GENERATION: Generate timing signal based on hybrid score thresholds.
         
-        Signal Thresholds:
-        - >=75: BUY (Strong hybrid confidence)
-        - >=60: CONSIDER (Moderate hybrid confidence)  
+        Recalibrated Signal Thresholds (Based on Backtest Analysis):
+        - >=65: BUY (Strong hybrid confidence) - Lowered from 75
+        - >=55: CONSIDER (Moderate hybrid confidence) - Lowered from 60
         - >=45: WAIT (Weak hybrid confidence)
         - <45: AVOID (Poor hybrid confidence)
+        
+        Note: Lower thresholds account for negative correlation between confidence and P&L,
+        where oversold entries with lower scores showed higher mean-reversion potential.
         """
         
         # If ML not available, use traditional signal
@@ -284,9 +287,11 @@ class MLEnhancedConfidenceAnalyzer(EntryConfidenceAnalyzer):
             return traditional_signal
         
         # HYBRID SIGNAL THRESHOLDS: Based purely on hybrid score
-        if enhanced_score >= 75:
+        # Recalibrated thresholds based on backtest analysis
+        # Lower thresholds due to negative correlation between confidence and P&L
+        if enhanced_score >= 65:
             signal = "BUY"
-        elif enhanced_score >= 60:
+        elif enhanced_score >= 55:
             signal = "CONSIDER"
         elif enhanced_score >= 45:
             signal = "WAIT"
