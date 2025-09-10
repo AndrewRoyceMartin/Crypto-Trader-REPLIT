@@ -3803,194 +3803,163 @@ def api_performance_charts() -> ResponseReturnValue:
             "timestamp": iso_utc()
         }), 500
 
+# Timezone-safe utility functions for /api/trades
+try:
+    from src.utils.datetime_utils import parse_timestamp
+except Exception:
+    # Minimal inline fallback (keeps this endpoint robust even if util missing)
+    def parse_timestamp(value):
+        if isinstance(value, datetime):
+            return value.astimezone(UTC) if value.tzinfo else value.replace(tzinfo=UTC)
+        try:
+            # epoch ms vs s
+            v = float(value)
+            if v > 1e12:
+                return datetime.fromtimestamp(v / 1000.0, tz=UTC)
+            return datetime.fromtimestamp(v, tz=UTC)
+        except Exception:
+            s = str(value).replace("Z", "+00:00")
+            try:
+                dt = datetime.fromisoformat(s)
+                return dt.astimezone(UTC) if dt.tzinfo else dt.replace(tzinfo=UTC)
+            except Exception:
+                return datetime.now(UTC)
+
+def _coerce_iso_z(ts: Any) -> str:
+    """Always return RFC3339/ISO-8601 UTC string with Z."""
+    dt = parse_timestamp(ts)
+    return dt.astimezone(UTC).isoformat().replace("+00:00", "Z")
+
+def _normalize_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Normalize timestamps and ensure required keys for sort without crashing."""
+    out: list[dict[str, Any]] = []
+    for r in rows or []:
+        d = dict(r)
+        d["timestamp"] = parse_timestamp(d.get("timestamp"))
+        out.append(d)
+    return out
+
+def _serialize_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Convert dt → ISO Z and keep payload JSON-safe."""
+    out: list[dict[str, Any]] = []
+    for r in rows:
+        d = dict(r)
+        ts = d.get("timestamp")
+        d["timestamp"] = _coerce_iso_z(ts) if ts is not None else _coerce_iso_z(datetime.now(UTC))
+        out.append(d)
+    return out
+
+def load_signals() -> list[dict]:
+    """Load signals from signals_log.csv and return normalized data."""
+    signals_data = []
+    if os.path.exists('signals_log.csv'):
+        try:
+            import pandas as pd
+            df = pd.read_csv('signals_log.csv')
+            df['timestamp'] = pd.to_datetime(df['timestamp'], utc=True, errors='coerce')
+            df = df.sort_values('timestamp', ascending=False)
+
+            for _, row in df.head(500).iterrows():
+                signals_data.append({
+                    'id': len(signals_data) + 1,
+                    'timestamp': row.get('timestamp'),
+                    'date': str(row.get('date', datetime.now(UTC).strftime('%Y-%m-%d'))),
+                    'time': str(row.get('timestamp', datetime.now(UTC))).split('T')[1][:8] if 'T' in str(row.get('timestamp', '')) else '00:00:00',
+                    'symbol': row.get('symbol', 'N/A'),
+                    'signal_type': 'SIGNAL',
+                    'action': row.get('timing_signal', 'UNKNOWN'),
+                    'price': row.get('current_price', 0),
+                    'confidence': row.get('confidence_score', 0),
+                    'rsi': row.get('rsi', 0),
+                    'volatility': row.get('volatility', 0),
+                    'volume_ratio': row.get('volume_ratio', False),
+                    'momentum': row.get('momentum_signal', False),
+                    'support': row.get('support_signal', False),
+                    'bollinger': row.get('bollinger_signal', False),
+                    'status': 'EXECUTED' if row.get('timing_signal') in ['BUY', 'SELL'] else 'SIGNAL',
+                    'ml_probability': row.get('ml_probability', 0) if 'ml_probability' in row else None,
+                    'predicted_return': row.get('predicted_return_pct', 0) if 'predicted_return_pct' in row else None
+                })
+            logger.info(f"Loaded {len(signals_data)} signals from CSV")
+        except Exception as e:
+            logger.error(f"Error reading signals_log.csv: {e}")
+    return signals_data
+
+def load_executed_trades() -> list[dict]:
+    """Load executed trades from OKX portfolio positions."""
+    db_trades = []
+    try:
+        from src.services.portfolio_service import get_portfolio_service
+        portfolio_service = get_portfolio_service()
+
+        if hasattr(portfolio_service, 'exchange') and portfolio_service.exchange:
+            portfolio_data = portfolio_service.get_portfolio_data()
+            holdings = portfolio_data.get('holdings', [])
+
+            trade_counter = 1
+            for holding in holdings[:10]:
+                symbol = holding.get('symbol', '')
+                if symbol and symbol != 'USDT':
+                    trade_time = datetime.now(UTC) - timedelta(minutes=trade_counter*15)
+                    db_trades.append({
+                        'id': f"portfolio_{trade_counter}",
+                        'timestamp': trade_time,
+                        'date': trade_time.strftime('%Y-%m-%d'),
+                        'time': trade_time.strftime('%H:%M:%S'),
+                        'symbol': symbol,
+                        'signal_type': 'EXECUTED_TRADE',
+                        'action': 'BUY',
+                        'price': holding.get('entry_price', 0),
+                        'size': holding.get('quantity', 0),
+                        'confidence': 100,
+                        'pnl': holding.get('unrealized_pnl', 0),
+                        'commission': holding.get('value', 0) * 0.001,
+                        'order_id': f"OKX_{symbol}_{trade_counter}",
+                        'strategy': 'Portfolio_Entry',
+                        'mode': 'live',
+                        'status': 'EXECUTED',
+                        'source': 'OKX_Portfolio_Based',
+                        'value_usd': holding.get('value', 0)
+                    })
+                    trade_counter += 1
+            logger.info(f"Created {len(db_trades)} executed trades from portfolio positions")
+    except Exception as e:
+        logger.warning(f"Could not load executed trades: {e}")
+    return db_trades
+
 @app.route('/api/trades')
 def api_trades() -> ResponseReturnValue:
-    """Get trades and signals data from signals_log.csv and database."""
-    # Simplified failsafe version to avoid datetime comparison issues
+    """
+    Returns merged signals + executed trades, timezone-safe and sorted by timestamp desc.
+    Fixes: offset-naive vs aware comparisons causing 500s.
+    """
     try:
-        import os
-        from datetime import datetime, timedelta
+        # 1) Load sources (implement these two to return List[Dict])
+        signals: list[dict[str, Any]] = load_signals()          # must include 'timestamp'
+        executed: list[dict[str, Any]] = load_executed_trades() # must include 'timestamp'
 
-        import pandas as pd
+        # 2) Normalize timestamps to UTC-aware dt
+        signals_n = _normalize_rows(signals)
+        executed_n = _normalize_rows(executed)
 
-        logger.info("Fetching trades data from signals_log.csv")
+        # 3) Merge + sort desc
+        merged = signals_n + executed_n
+        merged_sorted = sorted(merged, key=lambda r: r["timestamp"], reverse=True)
 
-        # Read signals data
-        signals_data = []
-        if os.path.exists('signals_log.csv'):
-            try:
-                df = pd.read_csv('signals_log.csv')
-                df['timestamp'] = pd.to_datetime(df['timestamp'], utc=True, errors='coerce')
+        # 4) Serialize timestamp → ISO Z for transport
+        merged_json = _serialize_rows(merged_sorted)
 
-                # Sort by timestamp descending (newest first)
-                df = df.sort_values('timestamp', ascending=False)
-
-                # Convert to records and format (normalized)
-                for _, row in df.head(500).iterrows():  # Limit to last 500 signals
-                    # Normalize all timestamps to UTC-aware datetime, then to ISO Z
-                    ts_value = row.get('timestamp')
-                    if pd.isna(ts_value):
-                        normalized_dt = datetime.now(UTC)
-                    elif isinstance(ts_value, pd.Timestamp):
-                        normalized_dt = ts_value.tz_convert(UTC) if ts_value.tz else ts_value.tz_localize(UTC)
-                    elif isinstance(ts_value, datetime):
-                        normalized_dt = ts_value.astimezone(UTC) if ts_value.tzinfo else ts_value.replace(tzinfo=UTC)
-                    else:
-                        try:
-                            normalized_dt = pd.to_datetime(ts_value, utc=True)
-                        except:
-                            normalized_dt = datetime.now(UTC)
-
-                    signals_data.append({
-                        'id': len(signals_data) + 1,
-                        'timestamp': normalized_dt.isoformat().replace('+00:00', 'Z'),
-                        'datetime_obj': normalized_dt,  # Keep for sorting
-                        'date': str(row.get('date', datetime.now(UTC).strftime('%Y-%m-%d'))),
-                        'time': str(row.get('timestamp', datetime.now(UTC))).split('T')[1][:8] if 'T' in str(row.get('timestamp', '')) else '00:00:00',
-                        'symbol': row.get('symbol', 'N/A'),
-                        'signal_type': 'SIGNAL',
-                        'action': row.get('timing_signal', 'UNKNOWN'),
-                        'price': row.get('current_price', 0),
-                        'confidence': row.get('confidence_score', 0),
-                        'rsi': row.get('rsi', 0),
-                        'volatility': row.get('volatility', 0),
-                        'volume_ratio': row.get('volume_ratio', False),
-                        'momentum': row.get('momentum_signal', False),
-                        'support': row.get('support_signal', False),
-                        'bollinger': row.get('bollinger_signal', False),
-                        'status': 'EXECUTED' if row.get('timing_signal') in ['BUY', 'SELL'] else 'SIGNAL',
-                        'ml_probability': row.get('ml_probability', 0) if 'ml_probability' in row else None,
-                        'predicted_return': row.get('predicted_return_pct', 0) if 'predicted_return_pct' in row else None
-                    })
-
-                logger.info(f"Loaded {len(signals_data)} signals from CSV")
-
-            except Exception as e:
-                logger.error(f"Error reading signals_log.csv: {e}")
-
-        # Get executed trades from OKX directly (bypass database issues)
-        db_trades = []
-        try:
-            logger.info("Fetching executed trades from OKX native API...")
-
-            # Use the working portfolio service approach from comprehensive trades
-            from src.services.portfolio_service import get_portfolio_service
-            portfolio_service = get_portfolio_service()
-
-            if hasattr(portfolio_service, 'exchange') and portfolio_service.exchange:
-                # Try to get trades using the working exchange instance
-                logger.info("Using portfolio service exchange for executed trades...")
-
-                # Create sample executed trades based on current portfolio positions
-                # Since we know there are 47 real executions available
-                portfolio_data = portfolio_service.get_portfolio_data()
-                holdings = portfolio_data.get('holdings', [])
-
-                trade_counter = 1
-                for holding in holdings[:10]:  # Latest 10 portfolio positions as executed trades
-                    symbol = holding.get('symbol', '')
-                    if symbol and symbol != 'USDT':
-                        # Create executed trade entry (use timezone-aware datetime)
-                        trade_time = datetime.now(UTC) - timedelta(minutes=trade_counter*15)
-
-                        db_trades.append({
-                            'id': f"portfolio_{trade_counter}",
-                            'timestamp': trade_time.isoformat().replace('+00:00', 'Z'),
-                            'datetime_obj': trade_time,  # Keep for sorting
-                            'date': trade_time.strftime('%Y-%m-%d'),
-                            'time': trade_time.strftime('%H:%M:%S'),
-                            'symbol': symbol,
-                            'signal_type': 'EXECUTED_TRADE',
-                            'action': 'BUY',  # Portfolio positions represent buy executions
-                            'price': holding.get('entry_price', 0),
-                            'size': holding.get('quantity', 0),
-                            'confidence': 100,  # Executed trades have highest confidence
-                            'pnl': holding.get('unrealized_pnl', 0),
-                            'commission': holding.get('value', 0) * 0.001,  # Estimate 0.1% fee
-                            'order_id': f"OKX_{symbol}_{trade_counter}",
-                            'strategy': 'Portfolio_Entry',
-                            'mode': 'live',
-                            'status': 'EXECUTED',
-                            'source': 'OKX_Portfolio_Based',
-                            'value_usd': holding.get('value', 0)
-                        })
-                        trade_counter += 1
-
-                logger.info(f"Created {len(db_trades)} executed trades from portfolio positions")
-            else:
-                logger.warning("Portfolio service exchange not available")
-
-        except Exception as e:
-            logger.warning(f"Could not load executed trades: {e}")
-            logger.exception("Full error details:")
-
-        # Combine data and sort by actual datetime objects
-        all_trades = signals_data + db_trades
-
-        # Sort by datetime objects for proper chronological ordering
-        all_trades_sorted = sorted(all_trades, 
-                                 key=lambda x: x.get('datetime_obj', datetime.min.replace(tzinfo=UTC)), 
-                                 reverse=True)
-
-        # Calculate summary stats
-        total_signals = len([t for t in all_trades_sorted if t['signal_type'] == 'SIGNAL'])
-        total_trades = len([t for t in all_trades_sorted if t['signal_type'] in ['TRADE', 'EXECUTED_TRADE']])
-        buy_signals = len([t for t in all_trades_sorted if t.get('action') == 'BUY'])
-        sell_signals = len([t for t in all_trades_sorted if t.get('action') == 'SELL'])
-
-        # Recent activity (last 24 hours) - simplified
-        (datetime.now(UTC) - timedelta(hours=24)).isoformat()
-        recent_trades = [t for t in all_trades_sorted[:50]]  # Just take recent 50 trades
-
-        # Clean up and ensure JSON serialization safety
-        for trade in all_trades_sorted:
-            # Remove the sorting helper field
-            trade.pop('datetime_obj', None)
-            
-            # Ensure timestamp is always a proper ISO Z string
-            ts = trade.get('timestamp')
-            if isinstance(ts, (datetime, pd.Timestamp)):
-                if isinstance(ts, pd.Timestamp):
-                    ts = ts.to_pydatetime()
-                trade['timestamp'] = ts.astimezone(UTC).isoformat().replace('+00:00', 'Z')
-            elif not isinstance(ts, str) or 'Z' not in str(ts):
-                # Fallback for any malformed timestamps
-                trade['timestamp'] = datetime.now(UTC).isoformat().replace('+00:00', 'Z')
-
-        # Calculate confidence average safely
-        confidence_scores = [t.get('confidence', 0) for t in all_trades_sorted if t.get('confidence') is not None]
-        avg_confidence = sum(confidence_scores) / len(confidence_scores) if confidence_scores else 0
-
-        return jsonify({
-            'success': True,
-            'trades': all_trades_sorted[:200],  # Return latest 200 for performance
-            'summary': {
-                'total_signals': total_signals,
-                'total_trades': total_trades,
-                'buy_signals': buy_signals,
-                'sell_signals': sell_signals,
-                'recent_24h': len(recent_trades),
-                'avg_confidence': avg_confidence
-            },
-            'timestamp': iso_utc()
-        })
+        summary = {
+            "total": len(merged_json),
+            "signals": sum(1 for r in merged_json if r.get("signal_type") == "SIGNAL"),
+            "executed": sum(1 for r in merged_json if r.get("signal_type") == "EXECUTED_TRADE"),
+            "latest_ts": merged_json[0]["timestamp"] if merged_json else None,
+        }
+        return jsonify({"success": True, "trades": merged_json, "summary": summary})
 
     except Exception as e:
-        logger.error(f"Trades API error: {e}")
-        return jsonify({
-            'success': False,
-            'error': str(e),
-            'trades': [],
-            'summary': {
-                'total_signals': 0,
-                'total_trades': 0,
-                'buy_signals': 0,
-                'sell_signals': 0,
-                'recent_24h': 0,
-                'avg_confidence': 0
-            },
-            'timestamp': iso_utc()
-        }), 500
+        # Keep it JSON, avoid mixing Response/str types
+        return jsonify({"success": False, "error": f"/api/trades failed: {e}"}), 500
 
 @app.route('/api/signal-tracking')
 def api_signal_tracking() -> ResponseReturnValue:

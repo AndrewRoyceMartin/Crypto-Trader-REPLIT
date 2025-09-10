@@ -1,0 +1,102 @@
+Patch /api/trades (drop-in)
+
+File: app.py – replace your current /api/trades handler with this full version.
+
+# app.py
+
+from datetime import datetime, timezone
+from typing import Any, Dict, List
+from flask import jsonify
+
+# If you added the utility earlier:
+try:
+    from src.utils.datetime_utils import parse_timestamp
+except Exception:
+    # Minimal inline fallback (keeps this endpoint robust even if util missing)
+    def parse_timestamp(value):
+        if isinstance(value, datetime):
+            return value.astimezone(timezone.utc) if value.tzinfo else value.replace(tzinfo=timezone.utc)
+        try:
+            # epoch ms vs s
+            v = float(value)
+            if v > 1e12:
+                return datetime.fromtimestamp(v / 1000.0, tz=timezone.utc)
+            return datetime.fromtimestamp(v, tz=timezone.utc)
+        except Exception:
+            s = str(value).replace("Z", "+00:00")
+            try:
+                dt = datetime.fromisoformat(s)
+                return dt.astimezone(timezone.utc) if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
+            except Exception:
+                return datetime.now(timezone.utc)
+
+def _coerce_iso_z(ts: Any) -> str:
+    """Always return RFC3339/ISO-8601 UTC string with Z."""
+    dt = parse_timestamp(ts)
+    return dt.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
+
+def _normalize_rows(rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """Normalize timestamps and ensure required keys for sort without crashing."""
+    out: List[Dict[str, Any]] = []
+    for r in rows or []:
+        d = dict(r)
+        d["timestamp"] = parse_timestamp(d.get("timestamp"))
+        out.append(d)
+    return out
+
+def _serialize_rows(rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """Convert dt → ISO Z and keep payload JSON-safe."""
+    out: List[Dict[str, Any]] = []
+    for r in rows:
+        d = dict(r)
+        ts = d.get("timestamp")
+        d["timestamp"] = _coerce_iso_z(ts) if ts is not None else _coerce_iso_z(datetime.now(timezone.utc))
+        out.append(d)
+    return out
+
+@app.get("/api/trades")
+def api_trades() -> Any:
+    """
+    Returns merged signals + executed trades, timezone-safe and sorted by timestamp desc.
+    Fixes: offset-naive vs aware comparisons causing 500s.
+    """
+    try:
+        # 1) Load sources (implement these two to return List[Dict])
+        signals: List[Dict[str, Any]] = load_signals()          # must include 'timestamp'
+        executed: List[Dict[str, Any]] = load_executed_trades() # must include 'timestamp'
+
+        # 2) Normalize timestamps to UTC-aware dt
+        signals_n = _normalize_rows(signals)
+        executed_n = _normalize_rows(executed)
+
+        # 3) Merge + sort desc
+        merged = signals_n + executed_n
+        merged_sorted = sorted(merged, key=lambda r: r["timestamp"], reverse=True)
+
+        # 4) Serialize timestamp → ISO Z for transport
+        merged_json = _serialize_rows(merged_sorted)
+
+        summary = {
+            "total": len(merged_json),
+            "signals": sum(1 for r in merged_json if r.get("signal_type") == "SIGNAL"),
+            "executed": sum(1 for r in merged_json if r.get("signal_type") == "EXECUTED_TRADE"),
+            "latest_ts": merged_json[0]["timestamp"] if merged_json else None,
+        }
+        return jsonify({"success": True, "trades": merged_json, "summary": summary})
+
+    except Exception as e:
+        # Keep it JSON, avoid mixing Response/str types
+        return jsonify({"success": False, "error": f"/api/trades failed: {e}"}), 500
+
+
+Minimal expectations for loaders:
+
+# Example signatures used above
+
+def load_signals() -> list[dict]:
+    # returns rows like: {"timestamp": "...", "symbol": "...", "signal_type": "SIGNAL", ...}
+    ...
+
+def load_executed_trades() -> list[dict]:
+    # returns rows like: {"timestamp": 1694315096587, "symbol": "...", "signal_type": "EXECUTED_TRADE", ...}
+    ...
