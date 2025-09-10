@@ -3864,9 +3864,10 @@ def api_trades() -> ResponseReturnValue:
             from src.utils.database import DatabaseManager
             db = DatabaseManager()
             
-            cursor = db.connection.cursor()
-            cursor.execute('''
-                SELECT id, timestamp, symbol, action, size, price, commission, 
+            with db.get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute('''
+                    SELECT id, timestamp, symbol, action, size, price, commission, 
                        order_id, strategy, confidence, pnl, mode
                 FROM trades 
                 ORDER BY timestamp DESC 
