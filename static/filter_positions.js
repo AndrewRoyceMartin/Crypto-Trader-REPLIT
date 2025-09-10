@@ -39,6 +39,12 @@ function filterAvailablePositions() {
             showRow = false;
         } else if (balanceFilter === 'zero-balance' && hasBalance) {
             showRow = false;
+        } else if (balanceFilter === 'buyback-candidates') {
+            // Show only positions that are buy-back candidates (under $100, could be increased)
+            const isBuybackCandidate = row.getAttribute('data-buyback-candidate') === 'true';
+            if (!isBuybackCandidate) {
+                showRow = false;
+            }
         }
         
         // Apply ML-Enhanced Criteria Filter - Only ML Functions

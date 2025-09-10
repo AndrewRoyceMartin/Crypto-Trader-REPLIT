@@ -367,6 +367,7 @@
                                 <option value="">All Positions</option>
                                 <option value="with-balance">With Balance Only</option>
                                 <option value="zero-balance">Zero Balance Only</option>
+                                <option value="buyback-candidates">💰 Buy-Back Candidates (Under $100)</option>
                             </select>
                         </div>
                         <div class="col-md-3">
@@ -1004,6 +1005,8 @@
                 matchesBalance = position.current_balance > 0;
             } else if (balanceFilter === 'zero-balance') {
                 matchesBalance = position.current_balance === 0;
+            } else if (balanceFilter === 'buyback-candidates') {
+                matchesBalance = position.is_buyback_candidate === true;
             }
             
             return matchesSearch && matchesBalance;
@@ -1020,6 +1023,7 @@
     function clearPositionFilter() {
         document.getElementById('position-filter').value = '';
         document.getElementById('balance-filter').value = '';
+        document.getElementById('bot-criteria-filter').value = '';
         document.getElementById('clear-filter-btn').style.display = 'none';
         
         // Show all positions
@@ -1050,9 +1054,21 @@
         const priceClass = position.current_price > 0 ? '' : 'text-danger';
         const diffClass = position.price_diff_percent < 0 ? 'text-success' : 'text-warning';
         
+        // Buy-back candidate styling
+        const isBuybackCandidate = position.is_buyback_candidate === true;
+        const buybackRowClass = isBuybackCandidate ? 'table-warning border-warning' : '';
+        
         return `
-            <tr>
-                <td><strong>${position.symbol}</strong></td>
+            <tr class="${buybackRowClass}" 
+                data-symbol="${position.symbol.toLowerCase()}" 
+                data-has-balance="${position.current_balance > 0}" 
+                data-confidence-score="${position.entry_confidence?.confidence_score || 0}" 
+                data-buy-signal="${position.buy_signal || ''}"
+                data-buyback-candidate="${isBuybackCandidate}">
+                <td>
+                    <strong>${position.symbol}</strong>
+                    ${isBuybackCandidate ? '<span class="badge bg-warning text-dark ms-1" title="Under $100 - Could be increased">💰 Buy-Back</span>' : ''}
+                </td>
                 <td class="text-end ${balanceColor}">${position.current_balance.toFixed(2)}</td>
                 <td class="text-end ${priceClass}">$${position.current_price.toFixed(4)}</td>
                 <td class="text-end">$${(position.target_buy_price || 0).toFixed(4)}</td>

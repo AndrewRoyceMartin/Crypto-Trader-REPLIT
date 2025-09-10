@@ -3297,11 +3297,20 @@ def api_available_positions() -> ResponseReturnValue:
                 current_balance = float(current_holding.get('balance', 0)) if current_holding else 0
                 current_value = float(current_holding.get('current_value', 0)) if current_holding else 0
                 
-                # Skip if current value is over $100 (not a rebuy candidate)
+                # Flag positions under $100 as potential buy-back candidates
+                is_buyback_candidate = current_value < 100 and current_value > 0.01
+                
+                # Skip positions over $100 (focus on smaller positions that could be increased)
                 if current_value >= 100:
-                    logger.info(f"🔄 LOW VALUE REBUY: {base_currency} worth ${current_value:.2f} (under $100 threshold)")
+                    logger.debug(f"⏭️ SKIPPING: {base_currency} worth ${current_value:.2f} (over $100 threshold, not a buy-back candidate)")
                     skipped_count += 1
                     continue
+                
+                # Log buy-back candidates
+                if is_buyback_candidate:
+                    logger.info(f"💰 BUY-BACK CANDIDATE: {base_currency} worth ${current_value:.2f} (under $100 - could be increased)")
+                elif current_value <= 0.01:
+                    logger.debug(f"🔍 ZERO POSITION: {base_currency} worth ${current_value:.2f} (available for new entry)")
                 
                 # Get price data
                 ticker_data = all_tickers.get(symbol, {})
@@ -3329,9 +3338,11 @@ def api_available_positions() -> ResponseReturnValue:
                 confidence_score = confidence_result.get('score', 50)
                 timing_signal = confidence_result.get('timing_signal', 'WAIT')
                 
-                # Enhanced buy signal logic
+                # Enhanced buy signal logic with buy-back candidate detection
                 buy_signal = "MONITORING"
-                if confidence_score >= 85 and timing_signal == 'BUY':
+                if is_buyback_candidate and confidence_score >= 60:
+                    buy_signal = "BUY-BACK CANDIDATE"
+                elif confidence_score >= 85 and timing_signal == 'BUY':
                     buy_signal = "BOT WILL BUY"
                 elif confidence_score >= 75:
                     buy_signal = "STRONG BUY SETUP"
@@ -3361,6 +3372,15 @@ def api_available_positions() -> ResponseReturnValue:
                 except Exception as bb_error:
                     logger.debug(f"BB analysis failed for {base_currency}: {bb_error}")
                 
+                # Determine position classification  
+                position_type = "zero_balance"
+                if current_balance < 0.01:
+                    position_type = "zero_balance"
+                elif is_buyback_candidate:
+                    position_type = "buyback_candidate"
+                else:
+                    position_type = "low_value"
+
                 position_data = {
                     "symbol": base_currency,
                     "current_price": float(current_price),
@@ -3371,7 +3391,8 @@ def api_available_positions() -> ResponseReturnValue:
                     "free_balance": float(current_balance),
                     "used_balance": 0,
                     "current_value": float(current_value),
-                    "position_type": "zero_balance" if current_balance < 0.01 else "low_value",
+                    "position_type": position_type,
+                    "is_buyback_candidate": is_buyback_candidate,
                     "buy_signal": buy_signal,
                     "entry_confidence": convert_numpy_types(confidence_result),
                     "bollinger_analysis": convert_numpy_types(bollinger_analysis),
