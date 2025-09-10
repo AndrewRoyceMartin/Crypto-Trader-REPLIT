@@ -76,6 +76,24 @@
     padding: 4px 8px;
     border-radius: 12px;
 }
+
+.sortable {
+    user-select: none;
+    transition: background-color 0.2s ease;
+}
+
+.sortable:hover {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+.sortable i {
+    margin-left: 5px;
+    transition: color 0.2s ease;
+}
+
+.sortable:hover i {
+    color: #ffc107 !important;
+}
 </style>
 {% endblock %}
 
@@ -226,14 +244,30 @@
         <table class="table table-dark table-hover">
             <thead>
                 <tr>
-                    <th>Pair</th>
-                    <th>Category</th>
-                    <th class="text-end">Price</th>
-                    <th class="text-end">24h Change</th>
-                    <th class="text-end">24h Volume</th>
-                    <th class="text-center">Hybrid Signal</th>
-                    <th class="text-center">Signal Strength</th>
-                    <th class="text-center">ML Confidence</th>
+                    <th class="sortable" onclick="sortTable(0, 'string')" style="cursor: pointer;">
+                        Pair <i class="fas fa-sort text-muted" id="sort-icon-0"></i>
+                    </th>
+                    <th class="sortable" onclick="sortTable(1, 'string')" style="cursor: pointer;">
+                        Category <i class="fas fa-sort text-muted" id="sort-icon-1"></i>
+                    </th>
+                    <th class="text-end sortable" onclick="sortTable(2, 'number')" style="cursor: pointer;">
+                        Price <i class="fas fa-sort text-muted" id="sort-icon-2"></i>
+                    </th>
+                    <th class="text-end sortable" onclick="sortTable(3, 'number')" style="cursor: pointer;">
+                        24h Change <i class="fas fa-sort text-muted" id="sort-icon-3"></i>
+                    </th>
+                    <th class="text-end sortable" onclick="sortTable(4, 'number')" style="cursor: pointer;">
+                        24h Volume <i class="fas fa-sort text-muted" id="sort-icon-4"></i>
+                    </th>
+                    <th class="text-center sortable" onclick="sortTable(5, 'string')" style="cursor: pointer;">
+                        Hybrid Signal <i class="fas fa-sort text-muted" id="sort-icon-5"></i>
+                    </th>
+                    <th class="text-center sortable" onclick="sortTable(6, 'number')" style="cursor: pointer;">
+                        Signal Strength <i class="fas fa-sort text-muted" id="sort-icon-6"></i>
+                    </th>
+                    <th class="text-center sortable" onclick="sortTable(7, 'number')" style="cursor: pointer;">
+                        ML Confidence <i class="fas fa-sort text-muted" id="sort-icon-7"></i>
+                    </th>
                     <th class="text-center">Actions</th>
                 </tr>
             </thead>
@@ -255,6 +289,7 @@
 <script>
 let marketData = [];
 let filteredData = [];
+let currentSort = { column: -1, direction: 'asc' };
 
 async function loadMarketData() {
     try {
@@ -579,6 +614,96 @@ async function scanAllMarkets() {
 
 async function refreshMarketData() {
     await loadMarketData();
+}
+
+// Table sorting functionality
+function sortTable(columnIndex, dataType) {
+    // Toggle sort direction if clicking the same column
+    if (currentSort.column === columnIndex) {
+        currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+    } else {
+        currentSort.column = columnIndex;
+        currentSort.direction = 'asc';
+    }
+    
+    // Update sort icons
+    updateSortIcons(columnIndex, currentSort.direction);
+    
+    // Sort the filtered data
+    filteredData.sort((a, b) => {
+        let aVal, bVal;
+        
+        switch (columnIndex) {
+            case 0: // Pair
+                aVal = a.symbol || '';
+                bVal = b.symbol || '';
+                break;
+            case 1: // Category
+                aVal = a.category || '';
+                bVal = b.category || '';
+                break;
+            case 2: // Price
+                aVal = parseFloat(a.price) || 0;
+                bVal = parseFloat(b.price) || 0;
+                break;
+            case 3: // 24h Change
+                aVal = parseFloat(a.change_24h) || 0;
+                bVal = parseFloat(b.change_24h) || 0;
+                break;
+            case 4: // 24h Volume
+                aVal = parseFloat(a.volume_24h) || 0;
+                bVal = parseFloat(b.volume_24h) || 0;
+                break;
+            case 5: // Hybrid Signal
+                const signalOrder = { 'BUY': 4, 'CONSIDER': 3, 'WAIT': 2, 'AVOID': 1 };
+                aVal = signalOrder[a.signal] || 0;
+                bVal = signalOrder[b.signal] || 0;
+                break;
+            case 6: // Signal Strength
+                aVal = parseFloat(a.confidence) || 0;
+                bVal = parseFloat(b.confidence) || 0;
+                break;
+            case 7: // ML Confidence
+                aVal = parseFloat(a.ml_probability) || 0;
+                bVal = parseFloat(b.ml_probability) || 0;
+                break;
+            default:
+                return 0;
+        }
+        
+        if (dataType === 'number') {
+            return currentSort.direction === 'asc' ? aVal - bVal : bVal - aVal;
+        } else {
+            if (currentSort.direction === 'asc') {
+                return aVal.toString().localeCompare(bVal.toString());
+            } else {
+                return bVal.toString().localeCompare(aVal.toString());
+            }
+        }
+    });
+    
+    // Re-render the table
+    updateMarketTable();
+}
+
+function updateSortIcons(activeColumn, direction) {
+    // Reset all icons
+    for (let i = 0; i < 8; i++) {
+        const icon = document.getElementById(`sort-icon-${i}`);
+        if (icon) {
+            icon.className = 'fas fa-sort text-muted';
+        }
+    }
+    
+    // Set active icon
+    const activeIcon = document.getElementById(`sort-icon-${activeColumn}`);
+    if (activeIcon) {
+        if (direction === 'asc') {
+            activeIcon.className = 'fas fa-sort-up text-white';
+        } else {
+            activeIcon.className = 'fas fa-sort-down text-white';
+        }
+    }
 }
 
 // Page-specific refresh function
