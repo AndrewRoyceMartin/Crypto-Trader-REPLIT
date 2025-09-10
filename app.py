@@ -3401,7 +3401,7 @@ def api_available_positions() -> ResponseReturnValue:
         return _no_cache_json({
             "success": True,
             "positions": positions,
-            "available_positions": positions,  # Include both field names for compatibility
+            "available_positions": positions.copy(),  # Create proper copy for compatibility
             "count": len(positions),
             "batch_info": {
                 "batch_number": batch_number,
