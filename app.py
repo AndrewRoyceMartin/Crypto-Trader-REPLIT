@@ -14,9 +14,7 @@ import hmac
 import hashlib
 import base64
 import warnings
-import gc
 from datetime import datetime, timedelta, timezone
-from collections import OrderedDict
 from typing import Any, Optional, Iterator, TypedDict
 from functools import wraps
 
@@ -2042,15 +2040,6 @@ def trades() -> str:
         return render_loading_skeleton()
 
 
-def render_trades_page() -> str:
-    """Render the dedicated trades page."""
-    try:
-        from version import get_version
-        cache_version = int(time.time())
-        return render_template("trades.html", cache_version=cache_version, version=get_version())
-    except Exception as e:
-        logger.error(f"Error rendering trades page: {e}")
-        return render_loading_skeleton(f"Trades Error: {e}", error=True)
 
 
 def render_loading_skeleton(message: str = "Loading...", error: bool = False) -> str:
@@ -3263,13 +3252,6 @@ def normalize_pair(symbol: str) -> str:
     return symbol.replace('-', '/') if symbol else symbol
 
 
-def with_throttle(func, *args, **kwargs):
-    """Simple throttling wrapper for API calls."""
-    try:
-        return func(*args, **kwargs)
-    except Exception as e:
-        logger.warning(f"Throttled API call failed: {e}")
-        return None
 
 
 # Main application configuration and startup
