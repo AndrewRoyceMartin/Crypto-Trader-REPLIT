@@ -16,6 +16,9 @@ def safe_get_boll_target(symbol: str, current_price: float) -> dict[str, Any]:
     except Exception:
         return {}
 
+# Alias for backward compatibility
+get_bollinger_target_price = safe_get_boll_target
+
 # ---- Optional state.store shim ----
 class _NullStateStore:
     def get_bot_state(self) -> dict:
@@ -31,7 +34,7 @@ def get_state_store():
     at runtime where the store is optional.
     """
     try:
-        from src.utils.safe_shims import get_state_store as get_state_store as _real
+        from src.utils.state_store import get_state_store as _real
         return _real()
     except Exception:
         return _NullStateStore()

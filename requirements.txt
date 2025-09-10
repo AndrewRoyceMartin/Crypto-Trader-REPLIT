@@ -20,3 +20,8 @@ pytest
 pyright
 ruff
 pytest
+attrs
+certifi
+charset-normalizer
+requests
+urllib3

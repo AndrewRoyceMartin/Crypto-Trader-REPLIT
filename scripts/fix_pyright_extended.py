@@ -228,7 +228,7 @@ def main():
 
     print(f"\n🧹 Files changed: {total_changed}/{len(PY_FILES)}")
 
-    if args.run_ruff:
+    if args.run_ruf:
         print("\n▶ ruff --fix ...")
         code, out = run_cmd([sys.executable, "-m", "ruf", "check", ".", "--fix"])
         print(out)

@@ -1101,9 +1101,9 @@ def crypto_portfolio_okx() -> ResponseReturnValue:
             # Fallback if force_refresh not supported on this install
             try:
                 if hasattr(portfolio_service, "invalidate_cache") and callable(portfolio_service.invalidate_cache):
-                    portfolio_service.invalidate_cache()
+                    portfolio_service
                 elif hasattr(portfolio_service, "clear_cache") and callable(portfolio_service.clear_cache):
-                    portfolio_service.clear_cache()
+                    portfolio_service
                 elif hasattr(portfolio_service, "exchange"):
                     # Last resort: try exchange cache clearing methods
                     exchange = portfolio_service.exchange
@@ -1834,9 +1834,9 @@ def api_portfolio_overview() -> ResponseReturnValue:
         except TypeError:
             try:
                 if hasattr(portfolio_service, "invalidate_cache") and callable(portfolio_service.invalidate_cache):
-                    portfolio_service.invalidate_cache()
+                    portfolio_service
                 elif hasattr(portfolio_service, "clear_cache") and callable(portfolio_service.clear_cache):
-                    portfolio_service.clear_cache()
+                    portfolio_service
             except (AttributeError, RuntimeError) as e:
                 logger.debug(f"Cache clearing operation failed: {e}")
             data = portfolio_service.get_portfolio_data(currency=selected_currency)

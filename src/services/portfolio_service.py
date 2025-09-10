@@ -358,7 +358,7 @@ class PortfolioService:
                     return float(ticker.get('last', 0.0) or 0.0)
                 return 1.0
             except Exception as e:
-        logger.error(f"Unhandled exception in {path.name}: {e}")
+                self.logger.warning(f"Could not fetch {pair}: {e}")
                 # Try inverse pair
                 inverse_pair = f"{from_currency}/{to_currency}"  # e.g., USD/EUR
                 try:
