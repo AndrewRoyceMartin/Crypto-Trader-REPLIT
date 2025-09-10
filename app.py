@@ -1987,26 +1987,6 @@ def render_portfolio_page() -> str:
         return render_loading_skeleton(f"Portfolio Error: {e}", error=True)
 
 
-@app.route('/trades')
-def trades_page() -> str:
-    """Comprehensive trades table using OKX native API fields."""
-    start_warmup()
-
-    if _get_warmup_done() and not _get_warmup_error():
-        return render_trades_page()
-    elif _get_warmup_done() and _get_warmup_error():
-        return render_loading_skeleton(f"System Error: {_get_warmup_error()}", error=True)
-    else:
-        return render_loading_skeleton()
-
-def render_trades_page() -> str:
-    """Render the comprehensive trades table page."""
-    try:
-        cache_version = int(time.time())
-        return render_template("trades.html", cache_version=cache_version)
-    except Exception as e:
-        logger.error(f"Error rendering trades page: {e}")
-        return render_loading_skeleton(f"Trades Error: {e}", error=True)
 
 @app.route('/performance')
 def performance() -> str:
@@ -2054,17 +2034,6 @@ def render_holdings_page() -> str:
         return render_loading_skeleton(f"Holdings Error: {e}", error=True)
 
 
-@app.route('/trades')
-def trades() -> str:
-    """Dedicated trades page showing trading history with analytics"""
-    start_warmup()
-
-    if _get_warmup_done() and not _get_warmup_error():
-        return render_trades_page()
-    elif _get_warmup_done() and _get_warmup_error():
-        return render_loading_skeleton(f"System Error: {_get_warmup_error()}", error=True)
-    else:
-        return render_loading_skeleton()
 
 
 
