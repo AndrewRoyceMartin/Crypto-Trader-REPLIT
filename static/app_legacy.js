@@ -1823,7 +1823,9 @@ class TradingApp {
         // Target multiplier validation removed for production
             
             // Update table via consolidated system to prevent flashing
+            console.debug('🎯 window.tradingApp exists:', !!window.tradingApp);
             if (window.tradingApp) {
+                console.debug('🎯 Calling window.tradingApp.updateAllTables with', (data.holdings || []).length, 'holdings');
                 window.tradingApp.currentCryptoData = data.holdings || [];
                 window.tradingApp.updateAllTables(data.holdings || []);
             } else {
@@ -1933,6 +1935,9 @@ class TradingApp {
                 holdingsTableBody.appendChild(emptyRow);
                 return;
             }
+
+            // 🔥 CRITICAL DEBUG: Log that this function is being called
+            console.debug('🎯 updateHoldingsTable called with', holdings.length, 'holdings');
             
             // Filter holdings: only show positions worth >= $0.01 in Open Positions
             const significantHoldings = holdings.filter(holding => {
@@ -3302,6 +3307,9 @@ class TradingApp {
     
     // CONSOLIDATED table update function to prevent flashing
     updateAllTables(holdings) {
+        // 🔥 CRITICAL DEBUG: Track if this function is called
+        console.debug('🎯 updateAllTables called with', holdings?.length || 0, 'holdings');
+        
         // Prevent rapid updates
         const now = Date.now();
         if (now - this.lastTableUpdate < 1000) {
@@ -3311,8 +3319,13 @@ class TradingApp {
         this.lastTableUpdate = now;
         
         // Update holdings table (Open Positions) - Use only ONE method to prevent conflicts
-        if (document.getElementById('holdings-tbody')) {
+        const holdingsTable = document.getElementById('holdings-tbody');
+        console.debug('🎯 holdings-tbody found:', !!holdingsTable);
+        if (holdingsTable) {
+            console.debug('🎯 About to call this.updateHoldingsTable');
             this.updateHoldingsTable(holdings);
+        } else {
+            console.error('🚨 holdings-tbody element not found in DOM!');
         }
         
         // Update positions summary
@@ -3686,6 +3699,12 @@ class TradingApp {
         if (this.updatingHoldingsTable) return;
         this.updatingHoldingsTable = true;
 
+        // 🔥 CRITICAL DEBUG: This is the correct function being called!
+        console.debug('🎯 TradingApp.updateHoldingsTable called with', cryptos.length, 'holdings');
+        if (cryptos.length > 0) {
+            console.debug('🎯 First holding:', cryptos[0].symbol, 'qty=', cryptos[0].quantity, 'pnl%=', cryptos[0].pnl_percent);
+        }
+
         console.debug('TradingApp.updateHoldingsTable updating with', cryptos.length, 'positions');
         
         try {
@@ -3715,6 +3734,9 @@ class TradingApp {
                 // Real P&L data only
                 const pnlNum = crypto.pnl || crypto.unrealized_pnl || 0;
                 const pp = crypto.pnl_percent || 0;
+
+                // 🔥 CRITICAL DEBUG: Log extracted values to verify field access
+                console.debug('🎯 FIELD ACCESS CHECK:', crypto.symbol, 'qty=', qty, 'pp=', pp, 'raw_quantity=', crypto.quantity, 'raw_pnl_percent=', crypto.pnl_percent);
 
                 // Enhanced P&L color class with nuanced levels
                 const getEnhancedPnlClass = (pnlPercent) => {
@@ -7028,6 +7050,9 @@ function createHoldingRow(holding) {
         const currentPrice = holding.current_price || 0;
         const pnl = holding.pnl || 0;
         const pnlPercent = holding.pnl_percent || 0;
+
+        // 🔥 CRITICAL DEBUG: Log extracted values from createHoldingRow
+        console.debug('🎯 createHoldingRow FIELD CHECK:', symbol, 'qty=', quantity, 'pnl%=', pnlPercent, 'value=', currentValue, 'price=', currentPrice);
         
         // Asset cell with crypto icon
         const assetCell = document.createElement('td');
