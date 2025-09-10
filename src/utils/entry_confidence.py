@@ -42,10 +42,11 @@ class EntryConfidenceAnalyzer:
         """
         indicators = {}
 
-        prices = df['price'].values
-        volumes = df['volume'].values
+        try:
+            prices = df['price'].values
+            volumes = df['volume'].values
 
-        if len(prices) >= 7:
+            if len(prices) >= 7:
             deltas = np.diff(prices)
             gains = np.maximum(deltas, 0)
             losses = np.maximum(-deltas, 0)
@@ -62,6 +63,10 @@ class EntryConfidenceAnalyzer:
 
             indicators['price_above_sma7'] = prices[-1] / (np.mean(prices[-7:]) + 1e-6)
 
+        except Exception as e:
+            # Fallback if calculation fails
+            pass
+            
         return indicators
     
     def _calculate_enhanced_confidence(self, df: pd.DataFrame, current_price: float) -> float:
