@@ -3645,7 +3645,7 @@ def system_test() -> str:
 @app.route("/unified")
 def unified_dashboard_legacy() -> str:
     """Legacy route redirecting to new dashboard."""
-    return redirect(url_for('dashboard'))
+    return redirect(url_for('index'))
 
 # ===== BACKTEST API ENDPOINTS =====
 
