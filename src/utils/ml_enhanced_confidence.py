@@ -129,6 +129,16 @@ class MLEnhancedConfidenceAnalyzer(EntryConfidenceAnalyzer):
                 'ml_enabled': False
             }
     
+    def analyze_entry_confidence(self, symbol: str, current_price: float, 
+                                volume_24h: float = 0, price_change_24h: float = 0,
+                                target_price: float = None) -> Dict[str, Any]:
+        """
+        Analyze entry confidence for a trading position with ML integration.
+        
+        This is an alias method that provides compatibility with the API endpoint.
+        """
+        return self.calculate_enhanced_confidence(symbol, current_price)
+    
     def calculate_enhanced_confidence(self, symbol: str, current_price: float, 
                                     historical_data: Optional[List[Dict]] = None) -> Dict:
         """

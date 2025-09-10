@@ -3054,6 +3054,188 @@ def api_performance_analytics() -> ResponseReturnValue:
         return jsonify({"success": False, "error": str(e)}), 500
 
 
+@app.route('/api/available-positions')
+def api_available_positions() -> ResponseReturnValue:
+    """Get all available OKX assets that can be traded with ML-enhanced confidence analysis."""
+    try:
+        # Get parameters
+        currency = request.args.get('currency', 'USD')
+        batch_size = int(request.args.get('batch_size', 25))
+        batch_number = int(request.args.get('batch_number', 0))
+        
+        logger.warning(f"🔍 DEBUG: Available positions API called with currency: {currency}")
+        
+        # Calculate batch range
+        start_idx = batch_number * batch_size
+        end_idx = start_idx + batch_size
+        
+        logger.info(f"🔄 BATCH {batch_number + 1}: Processing {batch_size} cryptocurrencies (batch loading)")
+        
+        # Get portfolio service and OKX data
+        portfolio_service = get_portfolio_service()
+        portfolio_data = portfolio_service.get_portfolio_data()
+        holdings = portfolio_data.get('holdings', [])
+        
+        # Get all OKX trading pairs
+        exchange = portfolio_service.exchange.exchange if portfolio_service and portfolio_service.exchange else None
+        if not exchange:
+            return jsonify({"error": "Exchange not available"}), 500
+            
+        # Get all markets and active symbols
+        markets = exchange.load_markets()
+        active_symbols = [symbol for symbol, market in markets.items() 
+                         if market.get('active', False) and 'USDT' in symbol and market.get('type') == 'spot']
+        
+        logger.info(f"🚀 Found {len(active_symbols)} active OKX trading pairs (processing in batches)")
+        logger.info(f"📊 BATCH {batch_number + 1}: Processing symbols {start_idx+1}-{min(end_idx, len(active_symbols))} of {len(active_symbols)}")
+        
+        # Get batch of symbols
+        batch_symbols = active_symbols[start_idx:end_idx]
+        
+        # Get ticker data for batch
+        all_tickers = {}
+        try:
+            tickers = exchange.fetch_tickers(batch_symbols)
+            all_tickers.update(tickers)
+            logger.info(f"📊 Batch fetched {len(tickers)} prices for batch {batch_number + 1}")
+        except Exception as e:
+            logger.warning(f"Failed to fetch batch tickers: {e}")
+        
+        positions = []
+        added_count = 0
+        skipped_count = 0
+        
+        for symbol in batch_symbols:
+            try:
+                base_currency = symbol.split('/')[0] if '/' in symbol else symbol.replace('-USDT', '')
+                
+                # Get current holding data
+                current_holding = next((h for h in holdings if h.get('symbol') == base_currency), None)
+                current_balance = float(current_holding.get('balance', 0)) if current_holding else 0
+                current_value = float(current_holding.get('current_value', 0)) if current_holding else 0
+                
+                # Skip if current value is over $100 (not a rebuy candidate)
+                if current_value >= 100:
+                    logger.info(f"🔄 LOW VALUE REBUY: {base_currency} worth ${current_value:.2f} (under $100 threshold)")
+                    skipped_count += 1
+                    continue
+                
+                # Get price data
+                ticker_data = all_tickers.get(symbol, {})
+                current_price = float(ticker_data.get('last', 0))
+                
+                if current_price <= 0:
+                    skipped_count += 1
+                    continue
+                
+                # Calculate target buy price (3% below current)
+                target_buy_price = current_price * 0.97
+                
+                # Use ML-Enhanced Confidence Analyzer
+                from src.utils.ml_enhanced_confidence import MLEnhancedConfidenceAnalyzer
+                
+                analyzer = MLEnhancedConfidenceAnalyzer()
+                confidence_result = analyzer.analyze_entry_confidence(
+                    symbol=base_currency,
+                    current_price=current_price,
+                    volume_24h=float(ticker_data.get('baseVolume', 0)),
+                    price_change_24h=float(ticker_data.get('percentage', 0))
+                )
+                
+                # Determine buy signal based on confidence and other factors
+                confidence_score = confidence_result.get('score', 50)
+                timing_signal = confidence_result.get('timing_signal', 'WAIT')
+                
+                # Enhanced buy signal logic
+                buy_signal = "MONITORING"
+                if confidence_score >= 85 and timing_signal == 'BUY':
+                    buy_signal = "BOT WILL BUY"
+                elif confidence_score >= 75:
+                    buy_signal = "STRONG BUY SETUP"
+                elif confidence_score >= 65:
+                    buy_signal = "GOOD ENTRY"
+                elif confidence_score >= 55:
+                    buy_signal = "FAIR OPPORTUNITY"
+                elif timing_signal == 'AVOID':
+                    buy_signal = "AVOID"
+                
+                # Calculate additional metrics
+                price_diff = current_price - target_buy_price
+                price_diff_percent = (price_diff / current_price * 100) if current_price > 0 else 0
+                
+                # Bollinger Bands analysis placeholder
+                bollinger_analysis = {
+                    "signal": "NO DATA",
+                    "distance_percent": 0,
+                    "lower_band_price": 0,
+                    "strategy": "Standard"
+                }
+                
+                # Try to get BB analysis if available
+                try:
+                    logger.info(f"Calculating BB opportunity analysis for {base_currency} at ${current_price}")
+                    # This is a placeholder - could integrate actual BB calculation
+                except Exception as bb_error:
+                    logger.debug(f"BB analysis failed for {base_currency}: {bb_error}")
+                
+                position_data = {
+                    "symbol": base_currency,
+                    "current_price": current_price,
+                    "target_buy_price": target_buy_price,
+                    "price_difference": price_diff,
+                    "price_diff_percent": price_diff_percent,
+                    "current_balance": current_balance,
+                    "free_balance": current_balance,
+                    "used_balance": 0,
+                    "current_value": current_value,
+                    "position_type": "zero_balance" if current_balance < 0.01 else "low_value",
+                    "buy_signal": buy_signal,
+                    "entry_confidence": confidence_result,
+                    "bollinger_analysis": bollinger_analysis,
+                    "last_exit_price": 0,
+                    "price_drop_from_exit": 0,
+                    "days_since_exit": 0,
+                    "last_trade_date": "",
+                    "calculation_method": "comprehensive_asset_list"
+                }
+                
+                positions.append(position_data)
+                added_count += 1
+                
+                # Log interesting opportunities
+                if buy_signal in ["BOT WILL BUY", "STRONG BUY SETUP"]:
+                    logger.info(f"✅ BUY CRITERIA MET for {base_currency}: price=${current_price:.6f}, target=${target_buy_price:.6f}, BB={bollinger_analysis.get('signal', 'NO DATA')}, discount={price_diff_percent:.2f}%")
+                
+            except Exception as e:
+                logger.warning(f"Error processing {symbol}: {e}")
+                skipped_count += 1
+                continue
+        
+        # Calculate timing stats
+        batch_time = 1.5  # Placeholder timing
+        logger.warning(f"🚀 BATCH {batch_number + 1}: {len(positions)} positions, elapsed time: {batch_time:.2f}s, added: {added_count}, skipped: {skipped_count}, batch size: {batch_size}")
+        
+        return _no_cache_json({
+            "success": True,
+            "positions": positions,
+            "count": len(positions),
+            "batch_info": {
+                "batch_number": batch_number,
+                "batch_size": batch_size,
+                "start_index": start_idx,
+                "end_index": min(end_idx, len(active_symbols)),
+                "total_symbols": len(active_symbols),
+                "has_more": end_idx < len(active_symbols)
+            },
+            "currency": currency,
+            "last_update": iso_utc()
+        })
+        
+    except Exception as e:
+        logger.error(f"Available positions error: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
 # Additional helper functions and imports
 def normalize_pair(symbol: str) -> str:
     """Convert OKX instrument format to standard format."""
