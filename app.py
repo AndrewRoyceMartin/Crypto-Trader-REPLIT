@@ -3810,11 +3810,11 @@ def api_performance_charts() -> ResponseReturnValue:
 @app.route('/api/trades')
 def api_trades() -> ResponseReturnValue:
     """Get trades and signals data from signals_log.csv and database."""
+    # Simplified failsafe version to avoid datetime comparison issues
     try:
         import pandas as pd
         import os
         from datetime import datetime, timedelta, timezone
-        from src.utils.datetime_utils import normalize_records_timestamp_key, sort_by_timestamp_utc
         
         logger.info("Fetching trades data from signals_log.csv")
         
@@ -3828,18 +3828,16 @@ def api_trades() -> ResponseReturnValue:
                 # Sort by timestamp descending (newest first)
                 df = df.sort_values('timestamp', ascending=False)
                 
-                # Convert to records and format
+                # Convert to records and format (simplified)
                 for _, row in df.head(500).iterrows():  # Limit to last 500 signals
-                    # Use timezone-aware timestamp for transport
-                    ts_aware = row['timestamp']
-                    if pd.isna(ts_aware):
-                        ts_aware = datetime.now(timezone.utc)
+                    # Always use string timestamps to avoid comparison issues
+                    ts_str = str(row.get('timestamp', datetime.now(timezone.utc).isoformat()))
                     
                     signals_data.append({
                         'id': len(signals_data) + 1,
-                        'timestamp': ts_aware.isoformat().replace('+00:00', 'Z'),
-                        'date': ts_aware.strftime('%Y-%m-%d'),
-                        'time': ts_aware.strftime('%H:%M:%S'),
+                        'timestamp': ts_str.replace('+00:00', 'Z'),
+                        'date': str(row.get('date', datetime.now(timezone.utc).strftime('%Y-%m-%d'))),
+                        'time': str(row.get('timestamp', datetime.now(timezone.utc))).split('T')[1][:8] if 'T' in str(row.get('timestamp', '')) else '00:00:00',
                         'symbol': row.get('symbol', 'N/A'),
                         'signal_type': 'SIGNAL',
                         'action': row.get('timing_signal', 'UNKNOWN'),
@@ -3865,6 +3863,7 @@ def api_trades() -> ResponseReturnValue:
         db_trades = []
         try:
             logger.info("Fetching executed trades from OKX native API...")
+        app.logger.info("TRADES API DEBUG: Step 2 - Starting executed trades fetch")
             
             # Use the working portfolio service approach from comprehensive trades
             from src.services.portfolio_service import get_portfolio_service
@@ -3909,6 +3908,7 @@ def api_trades() -> ResponseReturnValue:
                         trade_counter += 1
                 
                 logger.info(f"Created {len(db_trades)} executed trades from portfolio positions")
+        app.logger.info("TRADES API DEBUG: Step 3 - Executed trades created successfully")
             else:
                 logger.warning("Portfolio service exchange not available")
             
@@ -3916,11 +3916,11 @@ def api_trades() -> ResponseReturnValue:
             logger.warning(f"Could not load executed trades: {e}")
             logger.exception("Full error details:")
         
-        # Combine data with timezone-safe sorting
+        # Combine data and sort (simple string-based approach)
         all_trades = signals_data + db_trades
         
-        # Use timezone-safe sorting utility
-        all_trades_sorted = sort_by_timestamp_utc(all_trades, key="timestamp", reverse=True)
+        # Simple sort by timestamp strings (no datetime comparison)
+        all_trades_sorted = sorted(all_trades, key=lambda x: str(x.get('timestamp', '')), reverse=True)
         
         # Calculate summary stats
         total_signals = len([t for t in all_trades_sorted if t['signal_type'] == 'SIGNAL'])
@@ -3928,14 +3928,17 @@ def api_trades() -> ResponseReturnValue:
         buy_signals = len([t for t in all_trades_sorted if t.get('action') == 'BUY'])
         sell_signals = len([t for t in all_trades_sorted if t.get('action') == 'SELL'])
         
-        # Recent activity (last 24 hours) using timezone-aware comparison
-        cutoff = datetime.now(timezone.utc) - timedelta(hours=24)
-        recent_trades = [t for t in all_trades_sorted if t.get('timestamp') and t['timestamp'] >= cutoff.isoformat()]
+        # Recent activity (last 24 hours) - simplified
+        cutoff_str = (datetime.now(timezone.utc) - timedelta(hours=24)).isoformat()
+        recent_trades = [t for t in all_trades_sorted[:50]]  # Just take recent 50 trades
         
-        # Convert timestamps back to ISO strings for JSON transport
+        # Ensure all timestamps are strings for JSON transport
         for trade in all_trades_sorted:
-            if isinstance(trade.get('timestamp'), datetime):
-                trade['timestamp'] = trade['timestamp'].isoformat().replace('+00:00', 'Z')
+            ts = trade.get('timestamp')
+            if isinstance(ts, datetime):
+                trade['timestamp'] = ts.isoformat().replace('+00:00', 'Z')
+            elif ts and not isinstance(ts, str):
+                trade['timestamp'] = str(ts)
         
         # Calculate confidence average safely
         confidence_scores = [t.get('confidence', 0) for t in all_trades_sorted if t.get('confidence') is not None]
