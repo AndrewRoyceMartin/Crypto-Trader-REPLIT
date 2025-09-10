@@ -2562,49 +2562,198 @@ def start_trading() -> ResponseReturnValue:
 @app.route("/api/trade-history")
 @rate_limit(4, 5)   # max 4 calls per 5 seconds per IP
 def api_trade_history() -> ResponseReturnValue:
-    """Get trade history records from OKX exchange only."""
+    """Get trade history records using the new OKX trade history system."""
     try:
         initialize_system()
-        logger.info("Ultra-lightweight initialization")
+        logger.info("Fetching trade history using OKX native API")
 
-        # Get timeframe parameter
+        # Get parameters
         timeframe = request.args.get('timeframe', '7d')
-        logger.info(f"Fetching trade history for timeframe: {timeframe}")
+        limit = min(int(request.args.get('limit', '50')), 200)  # Max 200 trades
+        
+        logger.info(f"Trade history request: timeframe={timeframe}, limit={limit}")
 
-        # Get trades from OKX only
-        all_trades = []
-        trade_ids_seen = set()  # Track duplicates across APIs
-
-        # Use the EXACT same method that OKXAdapter uses successfully to get trades
+        # Use the new OKX trade history module
         try:
-            service = get_portfolio_service()
-            if service and hasattr(service, 'exchange') and service.exchange:
-                # This is the WORKING OKX exchange instance that successfully gets "2 trades from OKX"
-                # Access the CCXT exchange instance directly
-                exchange = service.exchange.exchange
-                logger.info(
-                    "Using the same OKX exchange instance that portfolio service uses successfully"
-                )
-
-                # Method 1: OKX Trade Fills API (PRIMARY - has correct action data from OKX)
-                try:
-                    # Get ALL fills without instType filter to capture all trade types (SPOT, conversions, etc.)
-                    fills_params = {
-                        'limit': '100'
-                        # Removed instType filter to get all trade types
+            from okx.trade_history import OKXTradeHistory
+            
+            trade_history = OKXTradeHistory()
+            
+            # Get trade fills from OKX native API
+            logger.info("Fetching trades from OKX trade fills API...")
+            df = trade_history.get_all_trade_fills(instType="SPOT", max_pages=3)
+            
+            all_trades = []
+            if not df.empty:
+                # Convert DataFrame to list of trade dictionaries
+                for _, trade in df.head(limit).iterrows():
+                    formatted_trade = {
+                        'id': trade.get('tradeId', ''),
+                        'trade_number': len(all_trades) + 1,
+                        'symbol': trade.get('instId', '').replace('-', '/'),
+                        'type': 'Trade',
+                        'transaction_type': 'Trade',
+                        'action': trade.get('side', 'UNKNOWN'),
+                        'side': trade.get('side', 'UNKNOWN'),
+                        'quantity': float(trade.get('size', 0)),
+                        'price': float(trade.get('price', 0)),
+                        'timestamp': trade.get('timestamp', '').replace('Z', '+00:00') if trade.get('timestamp') else '',
+                        'total_value': float(trade.get('value_usd', 0)),
+                        'pnl': 0,
+                        'strategy': 'OKX Native',
+                        'order_id': trade.get('ordId', ''),
+                        'fee': abs(float(trade.get('fee', 0))),
+                        'fee_currency': trade.get('feeCcy', 'USDT'),
+                        'source': 'okx_native_api'
                     }
+                    all_trades.append(formatted_trade)
+                
+                logger.info(f"Successfully retrieved {len(all_trades)} trades from OKX native API")
+            else:
+                logger.warning("No trades found in OKX trade fills API")
+                
+        except Exception as okx_error:
+            logger.error(f"OKX native trade history failed: {okx_error}")
+            all_trades = []
 
-                    logger.info(
-                        f"Fetching ALL trade fills from OKX API with params: {fills_params}"
-                    )
-                    response = exchange.privateGetTradeFills(
-                        fills_params
-                    )
+        # Fallback: Try CCXT if no trades found with native API
+        if not all_trades:
+            logger.info("Falling back to CCXT trade fetching...")
+            try:
+                service = get_portfolio_service()
+                if service and hasattr(service, 'exchange') and service.exchange:
+                    exchange = service.exchange.exchange
+                    
+                    # Get recent trades via CCXT
+                    symbols = ['BTC/USDT', 'ETH/USDT', 'SOL/USDT', 'ADA/USDT', 'DOT/USDT']
+                    for symbol in symbols[:5]:  # Limit to prevent timeout
+                        try:
+                            recent_trades = exchange.fetch_my_trades(symbol, limit=10)
+                            for trade in recent_trades:
+                                formatted_trade = {
+                                    'id': trade.get('id', ''),
+                                    'trade_number': len(all_trades) + 1,
+                                    'symbol': trade.get('symbol', ''),
+                                    'type': 'Trade',
+                                    'transaction_type': 'Trade', 
+                                    'action': trade.get('side', '').upper(),
+                                    'side': trade.get('side', '').upper(),
+                                    'quantity': float(trade.get('amount', 0)),
+                                    'price': float(trade.get('price', 0)),
+                                    'timestamp': trade.get('datetime', ''),
+                                    'total_value': float(trade.get('cost', 0)),
+                                    'pnl': 0,
+                                    'strategy': 'CCXT Fallback',
+                                    'order_id': trade.get('order', ''),
+                                    'fee': float(trade.get('fee', {}).get('cost', 0)),
+                                    'fee_currency': trade.get('fee', {}).get('currency', 'USDT'),
+                                    'source': 'ccxt_fallback'
+                                }
+                                all_trades.append(formatted_trade)
+                        except Exception as symbol_error:
+                            logger.debug(f"Failed to fetch trades for {symbol}: {symbol_error}")
+                            continue
+                            
+            except Exception as ccxt_error:
+                logger.warning(f"CCXT fallback failed: {ccxt_error}")
 
-                    logger.debug(f"OKX fills API response: {response}")
-                    if response.get('code') == '0' and response.get('data'):
-                        fills = response['data']
-                        logger.info(f"OKX fills API returned {len(fills)} trade fills")
+        logger.info(f"🔍 Total unique trades collected: {len(all_trades)}")
+
+        # Sort by timestamp descending (newest first)
+        all_trades.sort(key=lambda t: t.get('timestamp', ''), reverse=True)
+
+        # Apply final limit
+        all_trades = all_trades[:limit]
+
+        logger.info(f"Final processed trades count: {len(all_trades)}")
+
+        return _no_cache_json({
+            "trades": all_trades,
+            "count": len(all_trades),
+            "timeframe": timeframe,
+            "data_source": "OKX Native API" if any(t.get('source') == 'okx_native_api' for t in all_trades) else "OKX Exchange",
+            "message": f"Retrieved {len(all_trades)} trades from OKX",
+            "last_update": iso_utc()
+        })
+
+    except Exception as e:
+        logger.error(f"Trade history error: {e}")
+        return jsonify({
+            "error": f"Failed to fetch trade history: {str(e)}",
+            "trades": [],
+            "count": 0,
+            "timeframe": request.args.get('timeframe', '7d')
+        }), 500
+
+
+def filter_trades_by_timeframe(trades: list[dict[str, Any]], timeframe: str) -> list[dict[str, Any]]:
+    """Filter trades by timeframe."""
+    if not trades or timeframe == 'all':
+        return trades
+
+    now = utcnow()
+    logger.info(f"Filtering {len(trades)} trades by timeframe {timeframe}. Current time: {now}")
+
+    # Calculate cutoff time based on timeframe
+    if timeframe == '24h':
+        cutoff = now - timedelta(hours=24)
+    elif timeframe == '3d':
+        cutoff = now - timedelta(days=3)
+    elif timeframe == '7d':
+        cutoff = now - timedelta(days=7)
+    elif timeframe == '30d':
+        cutoff = now - timedelta(days=30)
+    elif timeframe == '90d':
+        cutoff = now - timedelta(days=90)
+    elif timeframe == '1y':
+        cutoff = now - timedelta(days=365)
+    else:
+        return trades  # Unknown timeframe, return all
+
+    cutoff_timestamp = cutoff.timestamp() * 1000  # Convert to milliseconds
+    logger.info(f"Cutoff time for {timeframe}: {cutoff} (timestamp: {cutoff_timestamp})")
+
+    # Filter trades
+    filtered_trades = []
+    for trade in trades:
+        trade_timestamp = trade.get('timestamp', 0)
+        original_timestamp = trade_timestamp
+
+        if isinstance(trade_timestamp, str):
+            try:
+                # Handle ISO timestamp format (canonical format from iso_utc)
+                timestamp_str = trade_timestamp
+
+                # Normalize Z suffix to timezone offset for parsing
+                if timestamp_str.endswith('Z'):
+                    timestamp_str = timestamp_str.replace('Z', '+00:00')
+
+                # Parse the cleaned timestamp
+                trade_time = datetime.fromisoformat(timestamp_str)
+                
+                # Convert to UTC if timezone naive
+                if trade_time.tzinfo is None:
+                    trade_time = trade_time.replace(tzinfo=timezone.utc)
+                
+                trade_timestamp = trade_time.timestamp() * 1000  # Convert to milliseconds
+                
+            except (ValueError, TypeError) as e:
+                logger.warning(f"Could not parse timestamp '{original_timestamp}': {e}")
+                continue  # Skip trades with unparseable timestamps
+        elif isinstance(trade_timestamp, (int, float)):
+            # Handle numeric timestamps (assume milliseconds)
+            if trade_timestamp < 1e10:  # Likely seconds, convert to milliseconds
+                trade_timestamp = trade_timestamp * 1000
+        else:
+            logger.warning(f"Invalid timestamp type {type(trade_timestamp)}: {original_timestamp}")
+            continue  # Skip trades with invalid timestamp types
+
+        # Include trade if it's after the cutoff
+        if trade_timestamp >= cutoff_timestamp:
+            filtered_trades.append(trade)
+
+    logger.info(f"Filtered from {len(trades)} to {len(filtered_trades)} trades for timeframe {timeframe}")
+    return filtered_trades
 
                         if fills:
                             logger.debug(f"First fill sample: {fills[0]}")
