@@ -922,6 +922,8 @@ def initialize_system() -> bool:
 
 # Create Flask app instance
 app = Flask(__name__)
+app.config['TEMPLATES_AUTO_RELOAD'] = True
+app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
 
 # Custom static file handler with aggressive cache busting for JavaScript
 @app.route('/static/<path:filename>')

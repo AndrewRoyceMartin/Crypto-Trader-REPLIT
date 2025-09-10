@@ -655,19 +655,34 @@ class TradingPerformanceDashboard {
     }
 }
 
-// Initialize dashboard when page loads - wait for Chart.js
+// Initialize dashboard immediately - force execution
+console.log('🔥 FORCE INIT: Starting dashboard initialization');
+
+// Fallback Chart.js definition if not loaded
+if (typeof Chart === 'undefined') {
+    console.log('⚠️ Chart.js not loaded, creating stub');
+    window.Chart = function() { return { destroy: () => {} }; };
+}
+
+// Force immediate initialization
+try {
+    console.log('🎯 Force initializing Trading Performance Dashboard');
+    window.performanceDashboard = new TradingPerformanceDashboard();
+    console.log('✅ Dashboard created successfully');
+} catch (error) {
+    console.error('❌ Dashboard initialization failed:', error);
+}
+
+// Also try DOMContentLoaded as backup
 document.addEventListener('DOMContentLoaded', () => {
-    // Wait for Chart.js to load before initializing dashboard
-    function initializeDashboard() {
-        if (typeof Chart !== 'undefined') {
-            console.log('🎯 Chart.js loaded - initializing Trading Performance Dashboard');
+    console.log('🔄 DOM loaded - backup initialization');
+    if (!window.performanceDashboard) {
+        try {
             window.performanceDashboard = new TradingPerformanceDashboard();
-        } else {
-            console.log('⏳ Waiting for Chart.js to load...');
-            setTimeout(initializeDashboard, 100);
+        } catch (error) {
+            console.error('❌ Backup initialization failed:', error);
         }
     }
-    initializeDashboard();
 });
 </script>
 {% endblock %}
