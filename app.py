@@ -4435,7 +4435,8 @@ def reset_target_price(symbol: str) -> ResponseReturnValue:
 def api_entry_confidence(symbol: str) -> ResponseReturnValue:
     """Get entry point confidence analysis for a specific symbol."""
     try:
-        from src.utils.entry_confidence import get_confidence_analyzer
+        # Use ML-enhanced confidence analyzer for single symbol analysis
+        from src.utils.ml_enhanced_confidence import MLEnhancedConfidenceAnalyzer
 
         # Get current price
         portfolio_service = _get_ps()
@@ -4447,9 +4448,9 @@ def api_entry_confidence(symbol: str) -> ResponseReturnValue:
                 'message': f'Unable to get current price for {symbol}'
             }), 400
 
-        # Calculate confidence
-        analyzer = get_confidence_analyzer()
-        confidence_data = analyzer.calculate_confidence(normalize_pair(symbol), current_price)
+        # Calculate enhanced confidence with ML predictions
+        analyzer = MLEnhancedConfidenceAnalyzer()
+        confidence_data = analyzer.calculate_enhanced_confidence(normalize_pair(symbol), current_price)
 
         return jsonify({
             'status': 'success',
@@ -4476,9 +4477,10 @@ def api_entry_confidence_batch() -> ResponseReturnValue:
         # Limit to prevent timeout
         symbols = symbols[:10]
 
-        from src.utils.entry_confidence import get_confidence_analyzer
+        # Use ML-enhanced confidence analyzer for batch analysis
+        from src.utils.ml_enhanced_confidence import MLEnhancedConfidenceAnalyzer
         portfolio_service = _get_ps()
-        analyzer = get_confidence_analyzer()
+        analyzer = MLEnhancedConfidenceAnalyzer()
 
         results = []
 
@@ -4486,7 +4488,7 @@ def api_entry_confidence_batch() -> ResponseReturnValue:
             try:
                 current_price = portfolio_service._get_live_okx_price(symbol)
                 if current_price > 0:
-                    confidence_data = analyzer.calculate_confidence(symbol, current_price)
+                    confidence_data = analyzer.calculate_enhanced_confidence(symbol, current_price)
                     results.append(confidence_data)
                 else:
                     logger.warning(f"Could not get price for {symbol}")
@@ -4809,9 +4811,10 @@ def api_available_positions() -> ResponseReturnValue:
 
                         if current_price > 0 and symbol not in ['AUD', 'USD', 'EUR', 'GBP', 'USDT', 'USDC', 'DAI', 'BUSD']:
                             try:
-                                from src.utils.entry_confidence import get_confidence_analyzer
-                                analyzer = get_confidence_analyzer()
-                                confidence_data = analyzer.calculate_confidence(symbol, current_price)
+                                # Use ML-enhanced confidence analyzer for better predictions
+                                from src.utils.ml_enhanced_confidence import MLEnhancedConfidenceAnalyzer
+                                analyzer = MLEnhancedConfidenceAnalyzer()
+                                confidence_data = analyzer.calculate_enhanced_confidence(symbol, current_price)
                                 confidence_score = confidence_data['confidence_score']
                                 confidence_level = confidence_data['confidence_level']
                                 timing_signal = confidence_data['timing_signal']
