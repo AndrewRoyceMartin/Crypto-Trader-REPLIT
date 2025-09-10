@@ -134,9 +134,7 @@
     color: var(--success-green);
 }
 
-.position-row:hover {
-    background: rgba(255, 255, 255, 0.05);
-}
+/* Remove this since table-v02 handles hover effects */
 
 .refresh-indicator {
     position: fixed;
@@ -268,7 +266,7 @@
                     <span class="text-muted small">Recent predictions</span>
                 </div>
                 <div class="table-responsive">
-                    <table class="table-v02 table-v02--compact">
+                    <table class="table-v02 table-v02--compact" style="--v02-head-bg: #6c7ae0;">
                         <thead>
                             <tr>
                                 <th>Symbol</th>
@@ -303,7 +301,7 @@
                 </div>
             </div>
             <div class="table-responsive">
-                <table class="table-v02">
+                <table class="table-v02" style="--v02-head-bg: #6c7ae0;">
                     <thead>
                         <tr>
                             <th>Symbol</th>
@@ -551,7 +549,7 @@ class TradingDashboard {
         }
 
         tbody.innerHTML = signals.slice(0, 5).map(signal => `
-            <tr class="position-row">
+            <tr>
                 <td><strong>${signal.symbol}</strong></td>
                 <td><span class="signal-badge signal-${signal.signal}">${signal.signal}</span></td>
                 <td><span class="ml-confidence">${signal.hybrid_score.toFixed(1)}%</span></td>
@@ -575,7 +573,7 @@ class TradingDashboard {
             const trendIcon = trade.pnl_percent >= 0 ? 'fa-arrow-up text-success' : 'fa-arrow-down text-danger';
             
             return `
-                <tr class="position-row">
+                <tr>
                     <td><strong>${trade.symbol}</strong></td>
                     <td class="text-end">${trade.quantity.toFixed(4)}</td>
                     <td class="text-end">$${trade.entry_price.toFixed(4)}</td>
