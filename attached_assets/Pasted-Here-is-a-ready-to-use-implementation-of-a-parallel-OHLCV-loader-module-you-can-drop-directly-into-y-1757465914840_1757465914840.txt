@@ -1,0 +1,113 @@
+Here is a ready-to-use implementation of a parallel OHLCV loader module you can drop directly into your Replit project.
+
+📁 File: loaders/ohlcv_loader.py
+# loaders/ohlcv_loader.py
+
+import os
+import pandas as pd
+from typing import List, Dict
+from concurrent.futures import ThreadPoolExecutor
+
+def fetch_ohlcv_for_symbol(symbol: str, days: int = 7) -> pd.DataFrame:
+    """
+    Fetch daily OHLCV candles for a symbol using OKX native client.
+    Assumes symbol like 'BTC', 'ETH' – appends '-USDT'.
+    """
+    try:
+        from src.utils.okx_native import OKXNative, OKXCreds
+        creds = OKXCreds.from_env()
+        client = OKXNative(creds)
+
+        inst_id = f"{symbol}-USDT"
+        candles = client.candles(inst_id, bar="1D", limit=days)
+
+        if not candles:
+            return pd.DataFrame()
+
+        df = pd.DataFrame([{
+            'timestamp': int(c[0]),
+            'open': float(c[1]),
+            'high': float(c[2]),
+            'low': float(c[3]),
+            'close': float(c[4]),
+            'volume': float(c[5]),
+            'price': float(c[4])
+        } for c in candles])
+
+        df['date'] = pd.to_datetime(df['timestamp'], unit='ms')
+        df = df.sort_values('date')
+
+        return df
+
+    except Exception as e:
+        print(f"[ERROR] Failed to fetch OHLCV for {symbol}: {e}")
+        return pd.DataFrame()
+
+def load_all_ohlcv_parallel(symbols: List[str], days: int = 7, max_workers: int = 10) -> Dict[str, pd.DataFrame]:
+    """
+    Load OHLCV data for multiple symbols in parallel using threading.
+    """
+    results = {}
+
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        futures = {
+            executor.submit(fetch_ohlcv_for_symbol, sym, days): sym
+            for sym in symbols
+        }
+
+        for future in futures:
+            symbol = futures[future]
+            try:
+                df = future.result()
+                if not df.empty:
+                    results[symbol] = df
+            except Exception as e:
+                print(f"[ERROR] Error loading {symbol}: {e}")
+
+    return results
+
+✅ How to Use It in Your Main App
+
+Example integration in Replit:
+
+# main.py
+
+from loaders.ohlcv_loader import load_all_ohlcv_parallel
+
+symbols = ["BTC", "ETH", "SOL", "XRP", "DOGE", "ADA"]
+
+# Load OHLCV data for all symbols (last 7 days)
+ohlcv_data = load_all_ohlcv_parallel(symbols, days=7)
+
+# Example: Print how many candles per symbol
+for sym, df in ohlcv_data.items():
+    print(f"{sym}: {len(df)} candles loaded")
+
+✅ Requirements & Assumptions
+
+Your project already includes:
+
+src/utils/okx_native.py with OKXNative and OKXCreds
+
+Your environment variables are set in Replit:
+
+OKX_API_KEY, OKX_SECRET_KEY, OKX_PASSPHRASE
+
+The OKX API is reachable from Replit
+
+✅ Optional: Cache Support
+
+If you already use a cache_get_price / cache_put_price system:
+
+You can wrap each symbol load with cache like:
+
+from app import cache_get_price, cache_put_price
+
+cache_key = f"ohlcv_{symbol}_{days}"
+cached = cache_get_price(cache_key)
+if cached:
+    return pd.DataFrame(cached)
+
+# fetch and cache it
+df = fetch_ohlcv_for_symbol(symbol, days)
+cache_put_price(cache_key, df.to_dict("records"))

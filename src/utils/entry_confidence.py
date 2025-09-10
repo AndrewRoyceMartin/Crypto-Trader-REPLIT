@@ -47,21 +47,21 @@ class EntryConfidenceAnalyzer:
             volumes = df['volume'].values
 
             if len(prices) >= 7:
-            deltas = np.diff(prices)
-            gains = np.maximum(deltas, 0)
-            losses = np.maximum(-deltas, 0)
+                deltas = np.diff(prices)
+                gains = np.maximum(deltas, 0)
+                losses = np.maximum(-deltas, 0)
 
-            avg_gain = np.mean(gains[-7:])
-            avg_loss = np.mean(losses[-7:])
-            rs = avg_gain / avg_loss if avg_loss > 0 else 100
-            indicators['rsi_7'] = 100 - (100 / (1 + rs))
+                avg_gain = np.mean(gains[-7:])
+                avg_loss = np.mean(losses[-7:])
+                rs = avg_gain / avg_loss if avg_loss > 0 else 100
+                indicators['rsi_7'] = 100 - (100 / (1 + rs))
 
-            returns = np.diff(np.log(prices))
-            indicators['volatility_7'] = np.std(returns) * 100  # percentage
+                returns = np.diff(np.log(prices))
+                indicators['volatility_7'] = np.std(returns) * 100  # percentage
 
-            indicators['volume_ratio'] = volumes[-1] / (np.mean(volumes[-7:]) + 1e-6)
+                indicators['volume_ratio'] = volumes[-1] / (np.mean(volumes[-7:]) + 1e-6)
 
-            indicators['price_above_sma7'] = prices[-1] / (np.mean(prices[-7:]) + 1e-6)
+                indicators['price_above_sma7'] = prices[-1] / (np.mean(prices[-7:]) + 1e-6)
 
         except Exception as e:
             # Fallback if calculation fails
@@ -1042,30 +1042,49 @@ class EntryConfidenceAnalyzer:
         return []
     
     def _create_basic_confidence(self, symbol: str, current_price: float) -> Dict:
-        """Create enhanced confidence assessment using technical indicators with fallback."""
+        """Create enhanced confidence assessment using REAL OKX candle data with fallback."""
         try:
-            # 🚀 TRY ENHANCED ANALYSIS: Use real indicators when possible
-            # Create synthetic historical data for basic technical analysis
-            price_variations = [
-                current_price * 0.95,  # 5% down
-                current_price * 0.97,  # 3% down  
-                current_price * 0.98,  # 2% down
-                current_price * 0.99,  # 1% down
-                current_price * 1.00,  # current
-                current_price * 1.01,  # 1% up
-                current_price * 1.02,  # 2% up
-                current_price * 1.015, # 1.5% up (final)
-            ]
-            
-            volume_variations = [80000, 95000, 110000, 105000, 120000, 115000, 125000, 130000]
-            
-            df = pd.DataFrame({
-                'price': price_variations,
-                'volume': volume_variations
-            })
-            
-            # Calculate enhanced confidence using real indicators
-            confidence_score = self._calculate_enhanced_confidence(df, current_price)
+            # 🚀 REAL CANDLE DATA: Try to get actual OKX historical data
+            try:
+                from loaders.ohlcv_loader import fetch_ohlcv_for_symbol
+                
+                # Fetch real 7-day OHLCV candles from OKX
+                df = fetch_ohlcv_for_symbol(symbol, days=7)
+                
+                if not df.empty and len(df) >= 3:
+                    self.logger.debug(f"📊 Using real OKX candle data for {symbol}: {len(df)} candles")
+                    confidence_score = self._calculate_enhanced_confidence(df, current_price)
+                    
+                    # Mark as using real data
+                    data_source = "real_okx_candles"
+                else:
+                    raise ValueError("Insufficient real candle data")
+                    
+            except Exception as e:
+                # 📈 FALLBACK: Use enhanced synthetic data if real data fails
+                self.logger.debug(f"Real candles failed for {symbol}: {e}")
+                self.logger.debug(f"⚡ Using enhanced synthetic data for {symbol}")
+                
+                price_variations = [
+                    current_price * 0.95,  # 5% down
+                    current_price * 0.97,  # 3% down  
+                    current_price * 0.98,  # 2% down
+                    current_price * 0.99,  # 1% down
+                    current_price * 1.00,  # current
+                    current_price * 1.01,  # 1% up
+                    current_price * 1.02,  # 2% up
+                    current_price * 1.015, # 1.5% up (final)
+                ]
+                
+                volume_variations = [80000, 95000, 110000, 105000, 120000, 115000, 125000, 130000]
+                
+                df = pd.DataFrame({
+                    'price': price_variations,
+                    'volume': volume_variations
+                })
+                
+                confidence_score = self._calculate_enhanced_confidence(df, current_price)
+                data_source = "enhanced_synthetic"
             
             # Determine confidence level based on enhanced score
             if confidence_score >= 70:
@@ -1101,7 +1120,7 @@ class EntryConfidenceAnalyzer:
                 'entry_recommendation': f"Enhanced: {confidence_level} - {timing_signal}",
                 'risk_level': risk_level,
                 'calculated_at': datetime.now().isoformat(),
-                'note': f"Enhanced technical analysis for {symbol}"
+                'note': f"Enhanced analysis for {symbol} using {data_source}"
             }
             
         except Exception as e:
