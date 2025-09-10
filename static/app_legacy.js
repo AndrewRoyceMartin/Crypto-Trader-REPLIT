@@ -6396,20 +6396,30 @@ function createAvailablePositionRow(position) {
     const originalBuySignal = position.buy_signal || "WAIT";
     const daysSinceExit = position.days_since_exit || 0;
     
-    // Entry confidence data
-    const entryConfidence = position.entry_confidence || { score: 50, level: "FAIR", timing_signal: "WAIT" };
-    const confidenceScore = entryConfidence.score || 50;
-    const confidenceLevel = entryConfidence.level || "FAIR";
+    // ML-Enhanced Entry confidence data
+    const entryConfidence = position.entry_confidence || { confidence_score: 50, level: "FAIR", timing_signal: "WAIT" };
+    const confidenceScore = entryConfidence.confidence_score || entryConfidence.score || 50;
+    const confidenceLevel = entryConfidence.confidence_level || entryConfidence.level || "FAIR";
     const timingSignal = entryConfidence.timing_signal || "WAIT";
+    const mlIntegration = entryConfidence.ml_integration || {};
+    const isMLEnhanced = entryConfidence.analysis_type === 'ML_ENHANCED';
     
     const buySignal = position.buy_signal || "WAIT";
     
     const getBuySignalClass = (signal) => {
         switch(signal) {
+            case "BOT WILL BUY":
+                return "text-success fw-bold bg-success bg-opacity-10";  // Enhanced for ML bot decision
+            case "STRONG BUY SETUP":
+                return "text-success fw-bold";  // ML-confirmed strong setup
+            case "GOOD ENTRY":
+                return "text-success";  // ML-approved good entry
+            case "FAIR OPPORTUNITY":
+                return "text-warning";  // ML shows fair opportunity
             case "READY TO BUY":
             case "BUY READY":
             case "STRONG BUY":
-                return "text-success fw-bold";  // Bright green for ready to buy
+                return "text-success fw-bold";  // Legacy signals
             case "CAUTIOUS BUY":
                 return "text-warning fw-bold";  // Bold orange for caution
             case "MONITORING":
@@ -6672,28 +6682,78 @@ function createAvailablePositionRow(position) {
     badgeSpan.textContent = timingSignal;
     badgeDiv.appendChild(badgeSpan);
     
-    // Level text
+    // ML Enhancement indicator
+    const mlIndicatorDiv = document.createElement('div');
+    mlIndicatorDiv.className = 'text-center mt-1';
+    mlIndicatorDiv.style.fontSize = '0.65em';
+    
+    if (isMLEnhanced) {
+        const mlBadge = document.createElement('span');
+        mlBadge.className = 'badge bg-primary bg-opacity-20 text-primary border border-primary';
+        mlBadge.style.fontSize = '0.7em';
+        mlBadge.innerHTML = '<i class="fas fa-brain me-1"></i>AI Enhanced';
+        mlBadge.setAttribute('data-bs-toggle', 'tooltip');
+        mlBadge.setAttribute('title', `ML Probability: ${(mlIntegration.ml_probability * 100 || 0).toFixed(1)}% | Boost: +${mlIntegration.enhancement_boost || 0}%`);
+        mlIndicatorDiv.appendChild(mlBadge);
+        
+        // Add ML prediction indicator
+        if (mlIntegration.ml_probability) {
+            const mlProbSpan = document.createElement('div');
+            mlProbSpan.className = 'text-info mt-1';
+            mlProbSpan.style.fontSize = '0.6em';
+            mlProbSpan.innerHTML = `<i class="fas fa-chart-line me-1"></i>ML: ${(mlIntegration.ml_probability * 100).toFixed(1)}%`;
+            mlIndicatorDiv.appendChild(mlProbSpan);
+        }
+    } else {
+        const traditionalBadge = document.createElement('span');
+        traditionalBadge.className = 'badge bg-secondary bg-opacity-20 text-secondary';
+        traditionalBadge.style.fontSize = '0.7em';
+        traditionalBadge.innerHTML = '<i class="fas fa-chart-bar me-1"></i>6-Factor';
+        traditionalBadge.setAttribute('data-bs-toggle', 'tooltip');
+        traditionalBadge.setAttribute('title', 'Traditional 6-factor technical analysis');
+        mlIndicatorDiv.appendChild(traditionalBadge);
+    }
+    
+    // Level text with enhanced tooltips
     const levelDiv = document.createElement('div');
     levelDiv.className = 'text-muted mt-1';
     levelDiv.style.fontSize = '0.7em';
     const levelSpan = document.createElement('span');
     levelSpan.setAttribute('data-bs-toggle', 'tooltip');
     levelSpan.setAttribute('data-bs-placement', 'bottom');
-    const levelTooltip = confidenceScore >= 70 ? 'Strong Buy Setup' : confidenceScore >= 60 ? 'Good Entry Opportunity' : confidenceScore >= 45 ? 'Mixed Signals' : 'Poor Setup - Avoid';
-    levelSpan.setAttribute('title', `6-Factor Analysis: ${levelTooltip}`);
+    const levelTooltip = isMLEnhanced 
+        ? `ML-Enhanced Analysis: ${confidenceScore >= 85 ? 'BOT WILL BUY' : confidenceScore >= 75 ? 'STRONG BUY SETUP' : confidenceScore >= 65 ? 'GOOD ENTRY' : confidenceScore >= 55 ? 'FAIR OPPORTUNITY' : 'MONITORING'}`
+        : `6-Factor Analysis: ${confidenceScore >= 70 ? 'Strong Buy Setup' : confidenceScore >= 60 ? 'Good Entry Opportunity' : confidenceScore >= 45 ? 'Mixed Signals' : 'Poor Setup - Avoid'}`;
+    levelSpan.setAttribute('title', levelTooltip);
     levelSpan.textContent = confidenceLevel;
     levelDiv.appendChild(levelSpan);
     
     mainDiv.appendChild(scoreDiv);
     mainDiv.appendChild(badgeDiv);
+    mainDiv.appendChild(mlIndicatorDiv);
     mainDiv.appendChild(levelDiv);
     confidenceCell.appendChild(mainDiv);
     row.appendChild(confidenceCell);
     
-    // Timing, risk, and buy signal cells
+    // Enhanced AI Timing Signal cell
     const timingCell = document.createElement('td');
     timingCell.className = `text-center ${getTimingSignalClass(timingSignal)}`;
-    timingCell.textContent = timingSignal.replace('_', ' ');
+    
+    const timingDiv = document.createElement('div');
+    timingDiv.textContent = timingSignal.replace('_', ' ');
+    
+    // Add AI enhancement indicator for timing
+    if (isMLEnhanced) {
+        const aiIcon = document.createElement('div');
+        aiIcon.className = 'text-primary mt-1';
+        aiIcon.style.fontSize = '0.7em';
+        aiIcon.innerHTML = '<i class="fas fa-robot me-1"></i>AI Confirmed';
+        aiIcon.setAttribute('data-bs-toggle', 'tooltip');
+        aiIcon.setAttribute('title', `AI-enhanced timing signal with ${(mlIntegration.ml_confidence || 0).toFixed(1)}% ML confidence`);
+        timingDiv.appendChild(aiIcon);
+    }
+    
+    timingCell.appendChild(timingDiv);
     row.appendChild(timingCell);
     
     const riskCell = document.createElement('td');
@@ -6706,7 +6766,7 @@ function createAvailablePositionRow(position) {
     const botCriteriaCell = document.createElement('td');
     botCriteriaCell.className = 'text-center';
     
-    // Enhanced bot criteria logic with better colors
+    // ML-Enhanced bot criteria logic
     const getBotBuyCriteriaStatus = () => {
         // Check if already owned (has significant balance)
         const hasSignificantBalance = currentBalance > 0 && (currentBalance * currentPrice) >= 100;
@@ -6714,34 +6774,54 @@ function createAvailablePositionRow(position) {
             return { status: "OWNED", class: "text-info fw-bold", tooltip: "Already in portfolio" };
         }
         
-        // Check Bollinger Band triggers first (highest priority)
-        const bbAnalysis = position.bollinger_analysis || {};
-        if (bbAnalysis.signal === "BUY ZONE") {
-            return { status: "BOT WILL BUY", class: "text-success fw-bold bg-success bg-opacity-10", tooltip: "Price hit lower Bollinger Band - bot auto-buy triggered!" };
-        }
+        // Use ML-enhanced buy signal from API
+        const mlBuySignal = position.buy_signal || "MONITORING";
         
-        // Check for strong buy conditions
-        if (timingSignal === "STRONG_BUY" && confidenceScore >= 75) {
-            return { status: "READY TO BUY", class: "text-success fw-bold", tooltip: "Strong buy signal with high confidence" };
+        switch(mlBuySignal) {
+            case "BOT WILL BUY":
+                const mlProb = mlIntegration.ml_probability ? `(${(mlIntegration.ml_probability * 100).toFixed(1)}% ML)` : '';
+                return { 
+                    status: "🤖 BOT WILL BUY", 
+                    class: "text-success fw-bold bg-success bg-opacity-15", 
+                    tooltip: `ML + Technical consensus: High confidence entry ${mlProb}` 
+                };
+            case "STRONG BUY SETUP":
+                return { 
+                    status: "💪 STRONG SETUP", 
+                    class: "text-success fw-bold", 
+                    tooltip: `ML-confirmed strong buy setup (${confidenceScore}% confidence)` 
+                };
+            case "GOOD ENTRY":
+                return { 
+                    status: "✅ GOOD ENTRY", 
+                    class: "text-success", 
+                    tooltip: `ML-approved favorable entry point (${confidenceScore}% confidence)` 
+                };
+            case "FAIR OPPORTUNITY":
+                return { 
+                    status: "⚡ FAIR SETUP", 
+                    class: "text-warning", 
+                    tooltip: `ML shows fair opportunity (${confidenceScore}% confidence)` 
+                };
+            case "MONITORING":
+                return { 
+                    status: isMLEnhanced ? "🧠 AI MONITORING" : "MONITORING", 
+                    class: "text-secondary", 
+                    tooltip: isMLEnhanced ? `AI system monitoring market conditions (${confidenceScore}% confidence)` : "Monitoring market conditions" 
+                };
+            case "AVOID":
+                return { 
+                    status: "❌ AVOID", 
+                    class: "text-danger", 
+                    tooltip: isMLEnhanced ? `ML + Technical analysis suggests avoiding (${confidenceScore}% confidence)` : "Poor conditions - avoiding entry" 
+                };
+            default:
+                return { 
+                    status: "MONITORING", 
+                    class: "text-secondary", 
+                    tooltip: "Monitoring market conditions" 
+                };
         }
-        
-        // Check for regular buy conditions  
-        if (timingSignal === "BUY" && confidenceScore >= 60) {
-            return { status: "READY TO BUY", class: "text-success fw-bold", tooltip: "Buy signal with good confidence" };
-        }
-        
-        // Check for cautious buy conditions
-        if (timingSignal === "CAUTIOUS_BUY" && confidenceScore >= 50) {
-            return { status: "WATCH", class: "text-warning fw-bold", tooltip: "Cautious buy signal - monitoring for better entry" };
-        }
-        
-        // Check for avoid conditions
-        if (timingSignal === "AVOID" || confidenceScore < 30) {
-            return { status: "AVOID", class: "text-danger", tooltip: "Poor conditions - avoiding entry" };
-        }
-        
-        // Default monitoring state
-        return { status: "MONITORING", class: "text-secondary", tooltip: "Monitoring market conditions" };
     };
     
     // LEGACY CODE - This entire block below should be replaced with the simplified version above
@@ -6843,9 +6923,23 @@ function createAvailablePositionRow(position) {
     btnGroup.className = 'btn-group btn-group-sm';
     btnGroup.setAttribute('role', 'group');
     
-    // Main action button
+    // ML-Enhanced action button
     const mainBtn = document.createElement('button');
-    if (confidenceScore >= 75 && timingSignal !== "WAIT") {
+    const mlBuySignal = position.buy_signal || "MONITORING";
+    
+    if (mlBuySignal === "BOT WILL BUY") {
+        mainBtn.className = 'btn btn-success btn-xs';
+        mainBtn.innerHTML = '<i class="fas fa-brain me-1"></i>AI Buy';
+        mainBtn.title = 'ML + Technical consensus - High confidence entry';
+    } else if (mlBuySignal === "STRONG BUY SETUP") {
+        mainBtn.className = 'btn btn-success btn-xs';
+        mainBtn.innerHTML = '<i class="fas fa-rocket me-1"></i>Strong';
+        mainBtn.title = 'ML-confirmed strong buy setup';
+    } else if (mlBuySignal === "GOOD ENTRY") {
+        mainBtn.className = 'btn btn-warning btn-xs';
+        mainBtn.innerHTML = '<i class="fas fa-check me-1"></i>Good';
+        mainBtn.title = 'ML-approved good entry point';
+    } else if (confidenceScore >= 75 && timingSignal !== "WAIT") {
         mainBtn.className = 'btn btn-success btn-xs';
         mainBtn.textContent = 'Buy';
         mainBtn.title = 'High Confidence Entry';
@@ -6855,9 +6949,9 @@ function createAvailablePositionRow(position) {
         mainBtn.title = 'Cautious Entry';
     } else {
         mainBtn.className = 'btn btn-outline-secondary btn-xs';
-        mainBtn.textContent = 'Wait';
+        mainBtn.innerHTML = '<i class="fas fa-clock me-1"></i>Wait';
         mainBtn.disabled = true;
-        mainBtn.title = 'Low confidence - wait for better setup';
+        mainBtn.title = isMLEnhanced ? 'ML suggests waiting for better setup' : 'Low confidence - wait for better setup';
     }
     if (!mainBtn.disabled) {
         mainBtn.onclick = () => buyBackPosition(symbol);
