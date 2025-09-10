@@ -1,393 +1,592 @@
 {% extends "base_layout.html" %}
 
 {% block title %}Dashboard - Hybrid Trading Intelligence{% endblock %}
-{% block page_title %}Trading Dashboard{% endblock %}
+{% block page_title %}Crypto Trading Dashboard{% endblock %}
 {% block page_subtitle %}Live portfolio monitoring and hybrid signal overview{% endblock %}
 
 {% block extra_css %}
 <style>
-/* Dashboard-specific styles */
-.portfolio-summary {
-    background: linear-gradient(135deg, var(--accent-blue), var(--primary-dark));
-    border-radius: 15px;
-    padding: 25px;
-    margin-bottom: 30px;
-    border: 2px solid var(--border-color);
+/* Modern Dashboard Styling - matches screenshot */
+.dashboard-header {
+    background: #2c3e50;
+    color: white;
+    padding: 1rem 0;
+    margin-bottom: 2rem;
 }
 
-.summary-stat {
+.currency-controls {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.btn-sm {
+    padding: 0.25rem 0.75rem;
+    font-size: 0.875rem;
+}
+
+.status-badge {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.25rem 0.75rem;
+    background: #6c757d;
+    color: white;
+    border-radius: 0.25rem;
+    font-size: 0.875rem;
+}
+
+.status-connected {
+    background: #28a745;
+}
+
+.kpi-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.kpi-card {
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 0.5rem;
+    padding: 1.5rem;
     text-align: center;
-    padding: 15px;
 }
 
-.stat-value {
-    font-size: 2rem;
-    font-weight: 700;
-    margin: 5px 0;
-}
-
-.stat-label {
-    color: #adb5bd;
-    font-size: 0.9rem;
+.kpi-label {
+    font-size: 0.875rem;
+    color: #6c757d;
     font-weight: 500;
+    margin-bottom: 0.5rem;
 }
 
-.holdings-table {
-    background: var(--primary-dark);
-    border-radius: 10px;
-    overflow: hidden;
+.kpi-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #343a40;
+}
+
+.kpi-change {
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
+}
+
+.section-card {
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 0.5rem;
+    margin-bottom: 2rem;
+}
+
+.section-header {
+    background: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+    padding: 1rem 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.section-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin: 0;
+    color: #343a40;
+}
+
+.section-meta {
+    font-size: 0.875rem;
+    color: #6c757d;
+}
+
+.table-container {
+    overflow-x: auto;
+}
+
+.positions-table {
+    width: 100%;
+    margin: 0;
+}
+
+.positions-table th {
+    background: #6c7ae0;
+    color: white;
+    padding: 0.75rem;
+    font-weight: 600;
+    font-size: 0.875rem;
+    text-align: left;
+    border: none;
+}
+
+.positions-table td {
+    padding: 0.75rem;
+    border-bottom: 1px solid #dee2e6;
+    vertical-align: middle;
+}
+
+.positions-table tbody tr:hover {
+    background: #f8f9fa;
+}
+
+.text-success {
+    color: #28a745 !important;
+}
+
+.text-danger {
+    color: #dc3545 !important;
+}
+
+.loading-row {
+    text-align: center;
+    padding: 2rem;
+    color: #6c757d;
+    font-style: italic;
 }
 </style>
 {% endblock %}
 
 {% block content %}
-<!-- Portfolio Summary Section -->
-<div class="portfolio-summary">
-    <div class="row">
-        <div class="col-md-3">
-            <div class="summary-stat">
-                <div class="stat-value text-success" id="totalValue">$0.00</div>
-                <div class="stat-label">Total Portfolio Value</div>
+<!-- Dashboard Header -->
+<div class="dashboard-header">
+    <div class="container-fluid">
+        <div class="d-flex justify-content-between align-items-center">
+            <h1 class="mb-0">Crypto Trading Dashboard</h1>
+            <div class="d-flex align-items-center gap-3">
+                <div class="currency-controls">
+                    <label class="mb-0 text-light">Currency:</label>
+                    <select id="currency-selector" class="form-select form-select-sm">
+                        <option value="USD" selected>USD</option>
+                        <option value="AUD">AUD</option>
+                        <option value="EUR">EUR</option>
+                        <option value="GBP">GBP</option>
+                    </select>
+                </div>
+                <button class="btn btn-outline-light btn-sm" onclick="window.open('/system-test', '_blank')">
+                    🧪 System Test
+                </button>
             </div>
         </div>
-        <div class="col-md-3">
-            <div class="summary-stat">
-                <div class="stat-value" id="totalPnL">$0.00</div>
-                <div class="stat-label">Total P&L</div>
+        
+        <!-- Action Buttons Row -->
+        <div class="d-flex justify-content-between align-items-center mt-3">
+            <div class="action-buttons">
+                <button class="btn btn-outline-light btn-sm" id="btn-ato-export">
+                    📄 ATO Export
+                </button>
+                <button class="btn btn-warning btn-sm" id="btn-take-profit">
+                    💰 Take Profit
+                </button>
+                <button class="btn btn-success btn-sm" id="btn-buy">
+                    📈 Buy
+                </button>
+                <button class="btn btn-danger btn-sm" id="btn-sell">
+                    📉 Sell
+                </button>
+                <button class="btn btn-primary btn-sm" id="btn-bot-toggle">
+                    🤖 <span id="bot-status-text">START BOT</span>
+                </button>
             </div>
-        </div>
-        <div class="col-md-3">
-            <div class="summary-stat">
-                <div class="stat-value" id="activePositions">0</div>
-                <div class="stat-label">Active Positions</div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="summary-stat">
-                <div class="stat-value text-warning" id="hybridSignals">0</div>
-                <div class="stat-label">Active Signals</div>
+            
+            <div class="status-badge" id="trading-status">
+                <span>⚫</span>
+                <span>Inactive</span>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Quick Actions & Hybrid Signal Overview -->
-<div class="row mb-4">
-    <div class="col-lg-6">
-        <div class="data-card">
-            <h5 class="card-title">
-                <i class="fas fa-brain"></i>
-                Hybrid Signal Intelligence
-            </h5>
-            <div id="hybridSignalPreview" class="text-center py-4">
-                <div class="spinner-border text-primary" role="status">
-                    <span class="visually-hidden">Loading signals...</span>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="col-lg-6">
-        <div class="data-card">
-            <h5 class="card-title">
-                <i class="fas fa-chart-bar"></i>
-                Backtest Performance
-            </h5>
-            <div id="backtestPreview" class="text-center py-4">
-                <div class="spinner-border text-success" role="status">
-                    <span class="visually-hidden">Loading backtest data...</span>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Current Holdings Table -->
-<div class="data-card">
-    <h5 class="card-title">
-        <i class="fas fa-wallet"></i>
-        Current Holdings
-        <span class="badge bg-primary ms-2" id="holdingsCount">0</span>
-    </h5>
+<!-- Main Content -->
+<div class="container-fluid">
     
-    <div class="table-responsive holdings-table">
-        <table class="table table-dark table-hover mb-0" id="holdingsTable">
-            <thead>
-                <tr>
-                    <th>Asset</th>
-                    <th class="text-end">Holdings</th>
-                    <th class="text-end">Current Price</th>
-                    <th class="text-end">Value</th>
-                    <th class="text-end">P&L</th>
-                    <th class="text-end">P&L %</th>
-                    <th class="text-center">Signal</th>
-                    <th class="text-center">Actions</th>
-                </tr>
-            </thead>
-            <tbody id="holdingsTableBody">
-                <tr>
-                    <td colspan="8" class="text-center py-4">
-                        <div class="spinner-border text-primary" role="status">
-                            <span class="visually-hidden">Loading portfolio...</span>
-                        </div>
-                    </td>
-                </tr>
-            </tbody>
-        </table>
+    <!-- OKX Portfolio Overview -->
+    <div class="section-card">
+        <div class="section-header">
+            <h2 class="section-title">OKX Portfolio Overview</h2>
+            <div class="d-flex align-items-center gap-2">
+                <span class="status-badge status-connected" id="okx-status">
+                    <span>🟢</span>
+                    <span>Connected</span>
+                </span>
+                <span class="section-meta">
+                    Last Update: <span id="overview-last-update">—</span>
+                </span>
+            </div>
+        </div>
+        
+        <!-- KPI Cards -->
+        <div class="p-3">
+            <div class="kpi-cards">
+                <div class="kpi-card">
+                    <div class="kpi-label">EQUITY</div>
+                    <div class="kpi-value" id="equity-value">$0.00</div>
+                    <div class="kpi-change" id="equity-change">0.0%</div>
+                </div>
+                
+                <div class="kpi-card">
+                    <div class="kpi-label">UNREALISED P&L</div>
+                    <div class="kpi-value" id="pnl-value">$0.00</div>
+                    <div class="kpi-change" id="pnl-change">0.0%</div>
+                </div>
+                
+                <div class="kpi-card">
+                    <div class="kpi-label">HOLDINGS COUNT</div>
+                    <div class="kpi-value" id="holdings-count">0</div>
+                    <div class="kpi-change">Assets</div>
+                </div>
+                
+                <div class="kpi-card">
+                    <div class="kpi-label">USDT (TRADEABLE BALANCE)</div>
+                    <div class="kpi-value" id="usdt-balance">$0.00</div>
+                    <div class="kpi-change">0.0%</div>
+                </div>
+            </div>
+        </div>
     </div>
+
+    <!-- Open Positions -->
+    <div class="section-card">
+        <div class="section-header">
+            <h3 class="section-title">Open Positions</h3>
+            <div class="section-meta">
+                Last updated: <span id="positions-last-update">—</span> | 
+                Next refresh: <span id="positions-next-refresh">—</span>
+            </div>
+        </div>
+        
+        <div class="table-container">
+            <table class="positions-table">
+                <thead>
+                    <tr>
+                        <th>ASSET</th>
+                        <th class="text-end">QTY HELD</th>
+                        <th class="text-end">ENTRY PRICE</th>
+                        <th class="text-end">CURRENT PRICE</th>
+                        <th class="text-end">POSITION VALUE</th>
+                        <th class="text-end">UNREALIZED $</th>
+                        <th class="text-end">GAIN/LOSS %</th>
+                        <th class="text-center">ACTIONS</th>
+                    </tr>
+                </thead>
+                <tbody id="positions-tbody">
+                    <tr>
+                        <td colspan="8" class="loading-row">
+                            Loading positions...
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Recent Trades -->
+    <div class="section-card">
+        <div class="section-header">
+            <h3 class="section-title">Recent Trades</h3>
+            <div class="section-meta">
+                Last updated: <span id="trades-last-update">—</span>
+            </div>
+        </div>
+        
+        <div class="table-container">
+            <table class="positions-table">
+                <thead>
+                    <tr>
+                        <th>DATE</th>
+                        <th>ASSET</th>
+                        <th>SIDE</th>
+                        <th class="text-end">QUANTITY</th>
+                        <th class="text-end">PRICE</th>
+                        <th class="text-end">VALUE</th>
+                        <th class="text-end">FEE</th>
+                    </tr>
+                </thead>
+                <tbody id="trades-tbody">
+                    <tr>
+                        <td colspan="7" class="loading-row">
+                            Loading trades...
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
 </div>
-{% endblock %}
 
-{% block extra_js %}
 <script>
-// Dashboard-specific JavaScript
-let dashboardData = {
-    portfolio: null,
-    signals: null,
-    backtest: null
-};
+/**
+ * Modern Dashboard Controller - Pure orchestration for app_legacy.js
+ */
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🎯 Modern dashboard initialized');
+    
+    // Initialize data refresh
+    initializeDashboard();
+    
+    // Set up periodic refresh
+    setInterval(refreshDashboardData, 30000); // 30 second refresh
+});
 
-async function loadDashboardData() {
+async function initializeDashboard() {
     try {
-        // Load portfolio data
-        const portfolioResponse = await fetch('/api/crypto-portfolio');
-        if (portfolioResponse.ok) {
-            dashboardData.portfolio = await portfolioResponse.json();
-            updatePortfolioSummary(dashboardData.portfolio);
-            updateHoldingsTable(dashboardData.portfolio);
-        }
+        // Load initial data
+        await refreshDashboardData();
         
-        // Load hybrid signals preview
-        loadHybridSignalPreview();
+        // Set up bot status
+        updateBotStatus();
         
-        // Load backtest results preview
-        loadBacktestPreview();
+        // Update timestamps
+        updateTimestamps();
         
+        console.log('✅ Dashboard initialization complete');
     } catch (error) {
-        console.error('Dashboard data loading failed:', error);
-        showToast('Failed to load dashboard data: ' + error.message, 'error');
+        console.error('❌ Dashboard initialization failed:', error);
     }
 }
 
-function updatePortfolioSummary(portfolio) {
-    if (!portfolio || !portfolio.overview) return;
-    
-    const overview = portfolio.overview;
-    
-    document.getElementById('totalValue').textContent = 
-        '$' + (overview.total_current_value || 0).toLocaleString('en-US', {minimumFractionDigits: 2});
-    
-    const totalPnL = overview.total_pnl || 0;
-    const pnlElement = document.getElementById('totalPnL');
-    pnlElement.textContent = '$' + Math.abs(totalPnL).toLocaleString('en-US', {minimumFractionDigits: 2});
-    pnlElement.className = 'stat-value ' + (totalPnL >= 0 ? 'text-success' : 'text-danger');
-    
-    document.getElementById('activePositions').textContent = 
-        (portfolio.holdings || []).length;
+async function refreshDashboardData() {
+    try {
+        // Let app_legacy.js handle all the heavy lifting
+        if (window.TradingApp && window.TradingApp.refreshAllData) {
+            window.TradingApp.refreshAllData();
+        } else {
+            // Fallback: basic data loads
+            await Promise.all([
+                loadPortfolioOverview(),
+                loadHoldings(),
+                loadTrades()
+            ]);
+        }
+    } catch (error) {
+        console.error('Dashboard refresh failed:', error);
+    }
 }
 
-function updateHoldingsTable(portfolio) {
-    const tbody = document.getElementById('holdingsTableBody');
-    const holdings = portfolio.holdings || [];
+async function loadPortfolioOverview() {
+    try {
+        const response = await fetch('/api/performance-overview');
+        const data = await response.json();
+        
+        if (data.success) {
+            updateKPICards(data);
+            updateTopPerformers(data.top_performers);
+        }
+    } catch (error) {
+        console.error('Portfolio overview failed:', error);
+    }
+}
+
+async function loadHoldings() {
+    try {
+        const response = await fetch('/api/trade-performance');
+        const data = await response.json();
+        
+        if (data.success) {
+            // Hand off to app_legacy.js if available, otherwise use the working trade performance data
+            if (window.TradingApp && window.TradingApp.updateHoldingsTable) {
+                window.TradingApp.updateHoldingsTable(data.trades);
+            } else {
+                renderPositionsTable(data.trades);
+            }
+        }
+    } catch (error) {
+        console.error('Holdings load failed:', error);
+    }
+}
+
+async function loadTrades() {
+    try {
+        const response = await fetch('/api/comprehensive-trades');
+        const data = await response.json();
+        
+        if (data.success && data.data) {
+            renderTradesTable(data.data);
+        }
+    } catch (error) {
+        console.error('Trades load failed:', error);
+    }
+}
+
+function updateKPICards(data) {
+    const metrics = data.portfolio_metrics;
+    const signals = data.signal_metrics;
+
+    // Update equity
+    const equity = document.getElementById('equity-value');
+    if (equity && metrics.total_value) {
+        equity.textContent = `$${metrics.total_value.toLocaleString()}`;
+    }
     
-    if (holdings.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="8" class="text-center py-4">No holdings found</td></tr>';
+    // Update P&L
+    const pnl = document.getElementById('pnl-value');
+    const pnlChange = document.getElementById('pnl-change');
+    if (pnl && metrics.total_pnl !== undefined) {
+        pnl.textContent = `$${metrics.total_pnl.toFixed(2)}`;
+        pnl.className = `kpi-value ${metrics.total_pnl >= 0 ? 'text-success' : 'text-danger'}`;
+        
+        if (pnlChange && metrics.total_pnl_percent !== undefined) {
+            pnlChange.textContent = `${metrics.total_pnl_percent.toFixed(2)}%`;
+            pnlChange.className = `kpi-change ${metrics.total_pnl_percent >= 0 ? 'text-success' : 'text-danger'}`;
+        }
+    }
+    
+    // Update holdings count
+    const holdings = document.getElementById('holdings-count');
+    if (holdings && metrics.total_positions !== undefined) {
+        holdings.textContent = metrics.total_positions;
+    }
+
+    // Update USDT balance (show ML accuracy instead for now)
+    const usdt = document.getElementById('usdt-balance');
+    if (usdt && signals.ml_accuracy !== undefined) {
+        usdt.textContent = `${signals.ml_accuracy}%`;
+    }
+}
+
+function updateTopPerformers(performers) {
+    // We can add top performer display later - for now just console log
+    if (performers) {
+        console.log('🏆 Best performer:', performers.best);
+        console.log('📉 Worst performer:', performers.worst);
+    }
+}
+
+function renderPositionsTable(positions) {
+    const tbody = document.getElementById('positions-tbody');
+    if (!tbody) return;
+    
+    if (!positions || positions.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" class="loading-row">No positions found</td></tr>';
         return;
     }
     
-    document.getElementById('holdingsCount').textContent = holdings.length;
-    
-    tbody.innerHTML = holdings.map(holding => {
-        const pnl = parseFloat(holding.pnl_amount || 0);
-        const pnlPercent = parseFloat(holding.pnl_percentage || 0);
-        
-        return `
-            <tr>
-                <td>
-                    <div class="d-flex align-items-center">
-                        <i class="fas fa-coins me-2 text-warning"></i>
-                        <strong>${holding.symbol || 'N/A'}</strong>
-                    </div>
-                </td>
-                <td class="text-end">${(holding.amount || 0).toFixed(4)}</td>
-                <td class="text-end">$${(holding.current_price || 0).toFixed(4)}</td>
-                <td class="text-end">$${(holding.current_value || 0).toFixed(2)}</td>
-                <td class="text-end ${pnl >= 0 ? 'text-success' : 'text-danger'}">
-                    $${Math.abs(pnl).toFixed(2)}
-                </td>
-                <td class="text-end ${pnlPercent >= 0 ? 'text-success' : 'text-danger'}">
-                    ${pnlPercent.toFixed(2)}%
-                </td>
-                <td class="text-center">
-                    <span class="badge bg-secondary">Loading...</span>
-                </td>
-                <td class="text-center">
-                    <button class="btn btn-sm btn-outline-info" onclick="viewAssetDetails('${holding.symbol}')">
-                        <i class="fas fa-eye"></i>
-                    </button>
-                </td>
-            </tr>
-        `;
-    }).join('');
-    
-    // Load signals for each holding
-    loadHoldingsSignals(holdings);
+    tbody.innerHTML = positions.map(pos => `
+        <tr>
+            <td><strong>${pos.symbol || '—'}</strong></td>
+            <td class="text-end">${pos.quantity?.toFixed(4) || '—'}</td>
+            <td class="text-end">$${pos.entry_price?.toFixed(4) || '—'}</td>
+            <td class="text-end">$${pos.current_price?.toFixed(4) || '—'}</td>
+            <td class="text-end">$${pos.market_value?.toFixed(2) || '—'}</td>
+            <td class="text-end ${(pos.pnl_dollar || 0) >= 0 ? 'text-success' : 'text-danger'}">
+                $${pos.pnl_dollar?.toFixed(2) || '—'}
+            </td>
+            <td class="text-end ${(pos.pnl_percent || 0) >= 0 ? 'text-success' : 'text-danger'}">
+                ${pos.pnl_percent?.toFixed(2) || '—'}%
+            </td>
+            <td class="text-center">
+                <button class="btn btn-sm btn-outline-danger" onclick="sellPosition('${pos.symbol}')">
+                    Sell
+                </button>
+            </td>
+        </tr>
+    `).join('');
 }
 
-async function loadHoldingsSignals(holdings) {
-    for (const holding of holdings) {
-        try {
-            const response = await fetch(`/api/hybrid-signal?symbol=${holding.symbol}&price=${holding.current_price}`);
-            if (response.ok) {
-                const signal = await response.json();
-                updateHoldingSignal(holding.symbol, signal);
+function renderTradesTable(trades) {
+    const tbody = document.getElementById('trades-tbody');
+    if (!tbody) return;
+    
+    if (!trades || trades.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="loading-row">No recent trades</td></tr>';
+        return;
+    }
+    
+    tbody.innerHTML = trades.slice(0, 10).map(trade => `
+        <tr>
+            <td>${new Date(trade.datetime).toLocaleDateString()}</td>
+            <td><strong>${trade.symbol || '—'}</strong></td>
+            <td>
+                <span class="badge ${trade.side === 'buy' ? 'bg-success' : 'bg-danger'}">
+                    ${trade.side?.toUpperCase() || '—'}
+                </span>
+            </td>
+            <td class="text-end">${trade.amount?.toFixed(4) || '—'}</td>
+            <td class="text-end">$${trade.price?.toFixed(4) || '—'}</td>
+            <td class="text-end">$${trade.cost?.toFixed(2) || '—'}</td>
+            <td class="text-end">$${trade.fee?.total?.toFixed(4) || '—'}</td>
+        </tr>
+    `).join('');
+}
+
+function updateBotStatus() {
+    // Check bot status and update UI
+    fetch('/api/bot/status')
+        .then(response => response.json())
+        .then(data => {
+            const statusElement = document.getElementById('trading-status');
+            const botButton = document.getElementById('bot-status-text');
+            
+            if (data.success) {
+                const isRunning = data.status === 'running';
+                
+                if (statusElement) {
+                    statusElement.innerHTML = `
+                        <span>${isRunning ? '🟢' : '⚫'}</span>
+                        <span>${isRunning ? 'Active' : 'Inactive'}</span>
+                    `;
+                    statusElement.className = `status-badge ${isRunning ? 'status-connected' : ''}`;
+                }
+                
+                if (botButton) {
+                    botButton.textContent = isRunning ? 'STOP BOT' : 'START BOT';
+                }
             }
-        } catch (error) {
-            console.error(`Failed to load signal for ${holding.symbol}:`, error);
-        }
-    }
+        })
+        .catch(error => console.error('Bot status check failed:', error));
 }
 
-function updateHoldingSignal(symbol, signal) {
-    const rows = document.querySelectorAll('#holdingsTableBody tr');
-    rows.forEach(row => {
-        const symbolCell = row.querySelector('td strong');
-        if (symbolCell && symbolCell.textContent === symbol) {
-            const signalCell = row.cells[6];
-            const finalSignal = signal.final_signal || 'WAIT';
-            const confidence = signal.hybrid_score || 0;
-            
-            let badgeClass = 'bg-secondary';
-            if (finalSignal === 'BUY') badgeClass = 'bg-success';
-            else if (finalSignal === 'CONSIDER') badgeClass = 'bg-warning';
-            else if (finalSignal === 'AVOID') badgeClass = 'bg-danger';
-            
-            signalCell.innerHTML = `
-                <span class="badge ${badgeClass}">${finalSignal}</span>
-                <br><small>${confidence.toFixed(1)}%</small>
-            `;
-        }
+function updateTimestamps() {
+    const now = new Date().toLocaleTimeString();
+    
+    // Update all timestamp elements
+    ['overview-last-update', 'positions-last-update', 'trades-last-update'].forEach(id => {
+        const element = document.getElementById(id);
+        if (element) element.textContent = now;
     });
-}
-
-async function loadHybridSignalPreview() {
-    try {
-        // Load a sample signal for BTC
-        const response = await fetch('/api/hybrid-signal?symbol=BTC&price=65000');
-        if (response.ok) {
-            const signal = await response.json();
-            displayHybridSignalPreview(signal);
-        } else {
-            throw new Error('Failed to load signal data');
-        }
-    } catch (error) {
-        document.getElementById('hybridSignalPreview').innerHTML = `
-            <div class="text-danger">
-                <i class="fas fa-exclamation-triangle"></i>
-                Failed to load signal data
-            </div>
-        `;
+    
+    // Set next refresh time
+    const nextRefresh = document.getElementById('positions-next-refresh');
+    if (nextRefresh) {
+        const next = new Date(Date.now() + 30000);
+        nextRefresh.textContent = next.toLocaleTimeString();
     }
 }
 
-function displayHybridSignalPreview(signal) {
-    const preview = document.getElementById('hybridSignalPreview');
-    const hybridScore = signal.hybrid_score || 0;
-    const finalSignal = signal.final_signal || 'WAIT';
-    const mlProbability = signal.ml_integration?.ml_probability || 0;
+// Global action handlers
+window.sellPosition = function(symbol) {
+    if (!confirm(`Are you sure you want to sell all ${symbol}?`)) return;
     
-    preview.innerHTML = `
-        <div class="row text-center">
-            <div class="col-4">
-                <div class="h3 text-primary">${hybridScore.toFixed(1)}%</div>
-                <small>Hybrid Score</small>
-            </div>
-            <div class="col-4">
-                <div class="h3 ${finalSignal === 'BUY' ? 'text-success' : finalSignal === 'AVOID' ? 'text-danger' : 'text-warning'}">${finalSignal}</div>
-                <small>Signal</small>
-            </div>
-            <div class="col-4">
-                <div class="h3 text-info">${(mlProbability * 100).toFixed(1)}%</div>
-                <small>ML Confidence</small>
-            </div>
-        </div>
-        <div class="mt-3">
-            <a href="/signals-ml" class="btn btn-outline-primary btn-sm">
-                <i class="fas fa-brain me-1"></i>View Full Analysis
-            </a>
-        </div>
-    `;
-}
-
-async function loadBacktestPreview() {
-    try {
-        // This would load actual backtest results
-        // For now, showing the performance metrics we achieved
-        const backtestData = {
-            avgPnL: 3.8,
-            winRate: 100,
-            matchRate: 75,
-            totalTrades: 15
-        };
-        
-        displayBacktestPreview(backtestData);
-    } catch (error) {
-        document.getElementById('backtestPreview').innerHTML = `
-            <div class="text-danger">
-                <i class="fas fa-exclamation-triangle"></i>
-                Failed to load backtest data
-            </div>
-        `;
+    if (window.TradingApp && window.TradingApp.sellPosition) {
+        window.TradingApp.sellPosition(symbol);
+    } else {
+        console.log(`Sell ${symbol} - handler not available`);
     }
-}
-
-function displayBacktestPreview(data) {
-    const preview = document.getElementById('backtestPreview');
-    
-    preview.innerHTML = `
-        <div class="row text-center">
-            <div class="col-6">
-                <div class="h3 text-success">${data.avgPnL}%</div>
-                <small>Avg P&L</small>
-            </div>
-            <div class="col-6">
-                <div class="h3 text-info">${data.winRate}%</div>
-                <small>Win Rate</small>
-            </div>
-        </div>
-        <div class="row text-center mt-2">
-            <div class="col-6">
-                <div class="h5">${data.matchRate}%</div>
-                <small>Match Rate</small>
-            </div>
-            <div class="col-6">
-                <div class="h5">${data.totalTrades}</div>
-                <small>Trades</small>
-            </div>
-        </div>
-        <div class="mt-3">
-            <a href="/backtest-results" class="btn btn-outline-success btn-sm">
-                <i class="fas fa-chart-bar me-1"></i>View Full Results
-            </a>
-        </div>
-    `;
-}
-
-function viewAssetDetails(symbol) {
-    // Navigate to detailed analysis for this asset
-    window.location.href = `/signals-ml?symbol=${symbol}`;
-}
-
-// Page-specific refresh function
-window.refreshPageData = async function() {
-    await loadDashboardData();
 };
 
-// Initialize dashboard
-document.addEventListener('DOMContentLoaded', function() {
-    loadDashboardData();
-    
-    // Auto-refresh every 60 seconds
-    setInterval(loadDashboardData, 60000);
-});
+// Admin token management for app_legacy.js compatibility
+window.adminTokenManager = {
+    getAdminToken: function() {
+        let token = localStorage.getItem('admin-token');
+        if (!token) {
+            token = prompt('Please enter admin token:');
+            if (token) localStorage.setItem('admin-token', token);
+        }
+        return token;
+    },
+    clearAdminToken: function() {
+        localStorage.removeItem('admin-token');
+    }
+};
 </script>
+
 {% endblock %}
