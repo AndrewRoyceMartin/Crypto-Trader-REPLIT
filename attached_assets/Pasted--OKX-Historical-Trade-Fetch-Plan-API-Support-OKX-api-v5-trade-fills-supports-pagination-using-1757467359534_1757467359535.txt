@@ -1,0 +1,164 @@
+✅ OKX Historical Trade Fetch Plan
+🔁 API Support:
+
+OKX /api/v5/trade/fills supports pagination using:
+
+before: Trade ID or timestamp to go backward in history
+
+after: To move forward (not used here)
+
+limit: Max 100 records per request
+
+We’ll:
+
+Start with the most recent trades
+
+Use before=last_trade_id to paginate back
+
+Stop when we hit max pages, or the response is empty
+
+🧩 Full Upgrade: okx/trade_history.py
+
+Replace your current class with this extended version:
+
+# okx/trade_history.py
+
+import requests
+import pandas as pd
+import time
+import hmac
+import hashlib
+import base64
+import os
+from datetime import datetime
+from typing import Dict, Optional
+
+class OKXTradeHistory:
+    def __init__(self):
+        self.base_url = "https://www.okx.com"
+        self.creds = self._load_creds()
+
+    def _load_creds(self) -> Dict:
+        return {
+            "api_key": os.getenv("OKX_API_KEY", ""),
+            "secret_key": os.getenv("OKX_SECRET_KEY", ""),
+            "passphrase": os.getenv("OKX_PASSPHRASE", "")
+        }
+
+    def _headers(self, method: str, path: str, body: str = "") -> Dict:
+        ts = datetime.utcnow().isoformat(timespec='milliseconds') + "Z"
+        msg = f"{ts}{method}{path}{body}"
+        sign = base64.b64encode(hmac.new(
+            self.creds["secret_key"].encode("utf-8"),
+            msg.encode("utf-8"),
+            hashlib.sha256
+        ).digest()).decode()
+
+        return {
+            "OK-ACCESS-KEY": self.creds["api_key"],
+            "OK-ACCESS-SIGN": sign,
+            "OK-ACCESS-TIMESTAMP": ts,
+            "OK-ACCESS-PASSPHRASE": self.creds["passphrase"],
+            "Content-Type": "application/json"
+        }
+
+    def get_all_trade_fills(self, instType: str = "SPOT", max_pages: int = 20, delay_sec: float = 0.3) -> pd.DataFrame:
+        """
+        Pull full trade history using pagination.
+        OKX limit = 100 trades per request.
+        """
+        path = "/api/v5/trade/fills"
+        url = self.base_url + path
+        headers = self._headers("GET", path)
+
+        all_records = []
+        before_id = None
+        page = 0
+
+        while page < max_pages:
+            params = {
+                "instType": instType,
+                "limit": 100
+            }
+            if before_id:
+                params["before"] = before_id
+
+            response = requests.get(url, headers=headers, params=params)
+            data = response.json()
+
+            if not data.get("data"):
+                break
+
+            records = data["data"]
+            all_records.extend(records)
+
+            last_trade_id = records[-1].get("tradeId")
+            if not last_trade_id:
+                break
+
+            before_id = last_trade_id
+            page += 1
+            time.sleep(delay_sec)  # Rate limit
+
+        if not all_records:
+            print("⚠️ No historical trade data found.")
+            return pd.DataFrame()
+
+        df = pd.DataFrame(all_records)
+
+        # Format columns
+        df["price"] = df["fillPx"].astype(float)
+        df["size"] = df["fillSz"].astype(float)
+        df["timestamp"] = pd.to_datetime(df["ts"].astype(int), unit="ms")
+        df["side"] = df["side"].str.upper()
+
+        return df[["timestamp", "instId", "side", "price", "size", "tradeId", "ordId"]]
+
+    def save_all_trades_to_csv(self, filename="okx_trade_history_full.csv", **kwargs):
+        df = self.get_all_trade_fills(**kwargs)
+        if not df.empty:
+            df.to_csv(filename, index=False)
+            print(f"✅ Saved {len(df)} historical trades to {filename}")
+        else:
+            print("⚠️ No historical trades to save.")
+
+🧪 How to Use in Replit
+In main.py or notebook:
+from okx.trade_history import OKXTradeHistory
+
+okx = OKXTradeHistory()
+
+# Fetch and save last 2000 trades (20 pages × 100 trades)
+okx.save_all_trades_to_csv(
+    filename="my_okx_full_trades.csv",
+    instType="SPOT",  # or "MARGIN", "SWAP"
+    max_pages=20      # Fetch up to 2000 trades
+)
+
+📂 Output
+
+File: my_okx_full_trades.csv
+
+Format:
+
+timestamp	instId	side	price	size	tradeId	ordId
+2025-08-29	ETH-USDT	BUY	1550.22	0.03	91234	29123
+⏳ Pagination Limit Notes
+
+OKX does not return more than 100 fills per request
+
+Use max_pages=50 for ~5000 trades
+
+Rate limit is 5 req/sec → use delay_sec=0.3 between requests
+
+✅ You Now Have Real Historical Trade Data
+
+This enables:
+
+Real execution audit trail
+
+Trade P&L tracking
+
+Signal vs actual buy alignment
+
+Input for ML (Phase 3)
