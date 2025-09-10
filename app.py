@@ -2046,7 +2046,6 @@ def render_loading_skeleton(message: str = "Loading...", error: bool = False) ->
 def render_full_dashboard() -> str:
     """Render the unified trading dashboard using templates."""
     try:
-        from version import get_version
         import os
         import stat
         
@@ -2060,7 +2059,7 @@ def render_full_dashboard() -> str:
             
         response = make_response(render_template("unified_dashboard.html",
                                                cache_version=cache_version,
-                                               version=get_version(),
+                                               version="v2.0",
                                                ADMIN_TOKEN=ADMIN_TOKEN,
                                                config={'ADMIN_TOKEN': ADMIN_TOKEN}))
         
