@@ -7,3 +7,10 @@ matplotlib>=3.8
 pyyaml>=6.0
 ta>=0.11
 arch>=6.2
+flask
+joblib
+jsonschema
+pytz
+requests
+scikit-learn
+xgboost
