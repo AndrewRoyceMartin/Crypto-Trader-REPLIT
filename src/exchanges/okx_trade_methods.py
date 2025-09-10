@@ -326,7 +326,7 @@ class OKXTradeRetrieval:
         # Try fetch_my_trades with symbol strategy
         for sym in symbols_to_try:
             try:
-                my_trades = self.exchange.fetch_my_trades(symbol=sym, since=since, limit=limit)
+                my_trades = self.try_fetch_my_trades(exchange, symbol=sym, since=since, limit=limit)
                 for trade in my_trades:
                     formatted = self._format_ccxt_trade(trade)
                     if formatted:

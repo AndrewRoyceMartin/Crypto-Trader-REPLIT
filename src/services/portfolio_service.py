@@ -162,7 +162,7 @@ class PortfolioService:
 
     def clear_cache(self) -> None:
         """Alias for invalidate_cache for compatibility."""
-        self.invalidate_cache()
+        self
 
     def _throttle_request(self) -> None:
         """Throttle API requests to comply with OKX rate limits."""
@@ -357,7 +357,8 @@ class PortfolioService:
                     ticker = self.exchange.exchange.fetch_ticker(pair)
                     return float(ticker.get('last', 0.0) or 0.0)
                 return 1.0
-            except:
+            except Exception as e:
+        logger.error(f"Unhandled exception in {path.name}: {e}")
                 # Try inverse pair
                 inverse_pair = f"{from_currency}/{to_currency}"  # e.g., USD/EUR
                 try:
@@ -368,7 +369,7 @@ class PortfolioService:
                             return 1.0 / float(last_price)
                         return 1.0
                     return 1.0
-                except:
+                except Exception as e:
                     self.logger.warning(f"Could not get OKX conversion rate for {from_currency} to {to_currency}")
                     return 1.0
         except Exception as e:
@@ -636,7 +637,7 @@ class PortfolioService:
         try:
             # Clear caches if force refresh is requested
             if force_refresh:
-                self.invalidate_cache()
+                self
 
             holdings: list[dict[str, Any]] = []
             total_value = 0.0
@@ -1183,7 +1184,7 @@ class PortfolioService:
                         self.logger.debug(f"Live OKX price for {symbol} ({actual_symbol}) in {currency}: {live_price:.8f}")
                         cache_put_price(cache_key, live_price)
                         return live_price
-                except:
+                except Exception as e:
                     # Fallback to USD conversion
                     pass
 
@@ -1503,8 +1504,7 @@ class PortfolioService:
 
 
 
-# Global portfolio service instance
-_portfolio_service: PortfolioService | None = None
+# Global portfolio service instance_portfolio_service: PortfolioService | None = None
 
 
 def get_portfolio_service() -> PortfolioService:

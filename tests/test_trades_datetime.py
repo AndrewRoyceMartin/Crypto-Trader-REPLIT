@@ -1,6 +1,8 @@
 # tests/test_trades_datetime.py
-from datetime import datetime, timezone
+from datetime import UTC, datetime
+
 from app import app
+
 
 def test_trades_endpoint_sorts_and_serializes(monkeypatch):
     def fake_load_signals():
@@ -11,7 +13,7 @@ def test_trades_endpoint_sorts_and_serializes(monkeypatch):
     def fake_load_exec():
         return [
             {"timestamp": 1694230000000, "signal_type": "EXECUTED_TRADE", "id": "e1"}, # ms
-            {"timestamp": datetime(2025, 9, 11, 1, 0, 0, tzinfo=timezone.utc), "signal_type": "EXECUTED_TRADE", "id": "e2"},
+            {"timestamp": datetime(2025, 9, 11, 1, 0, 0, tzinfo=UTC), "signal_type": "EXECUTED_TRADE", "id": "e2"},
         ]
 
     import app as app_mod

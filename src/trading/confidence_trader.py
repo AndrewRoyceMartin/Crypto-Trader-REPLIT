@@ -193,7 +193,7 @@ class ConfidenceBasedTrader:
 
                     if usdt_balance < amount_usd:
                         self.logger.warning(
-                            "🚨 INSUFFICIENT FUNDS: USDT balance $%.2f insufficient for %s purchase $%.2f",
+                            "🚨 INSUFFICIENT FUNDS: USDT balance $%.2f insufficient for %s purchase $%.2",
                             usdt_balance, symbol, amount_usd
                         )
                         return False
@@ -295,7 +295,7 @@ class ConfidenceBasedTrader:
                 amount = opportunity['recommended_amount']
 
                 self.logger.info(
-                    "📊 OPPORTUNITY %d/%d: %s - Score: %.1f - Signal: %s - Amount: $%.2f",
+                    "📊 OPPORTUNITY %d/%d: %s - Score: %.1f - Signal: %s - Amount: $%.2",
                     i + 1, min(len(opportunities), max_purchases_per_cycle),
                     symbol, opportunity['confidence_score'],
                     opportunity['timing_signal'], amount

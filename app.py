@@ -7,6 +7,7 @@ Ultra-fast boot: bind port immediately, defer all heavy work to background.
 import base64
 import hashlib
 import hmac
+import json
 import logging
 import os
 import sys
@@ -15,7 +16,7 @@ import time
 import warnings
 from collections import OrderedDict
 from collections.abc import Iterator
-from datetime import UTC, datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from functools import wraps
 from typing import Any, TypedDict
 
@@ -315,7 +316,7 @@ def get_stable_target_price(symbol: str, current_price: float) -> float:
         # Fallback to volatility-adjusted target
         return current_price * (0.92 if current_price > 1000 else 0.88)  # Larger discount for smaller coins
     except Exception as e:
-        logger.error(f"Unexpected error getting stable target price for "
+        logger.error("Unexpected error getting stable target price for "
                      f"{symbol}: {e}")
         # Use dynamic target based on Bollinger Bands or market volatility
         try:
@@ -351,11 +352,11 @@ def okx_ticker_pct_change_24h(
         client = get_okx_native_client()
         return with_throttle(client.ticker, inst_id)
     except (ConnectionError, TimeoutError) as e:
-        logger.warning(f"Network error getting OKX ticker for "
+        logger.warning("Network error getting OKX ticker for "
                        f"{inst_id}: {e}")
         return {'last': 0.0, 'open24h': 0.0, 'vol24h': 0.0, 'pct_24h': 0.0}
     except Exception as e:
-        logger.error(f"Unexpected error getting OKX ticker for "
+        logger.error("Unexpected error getting OKX ticker for "
                      f"{inst_id}: {e}")
         return {'last': 0.0, 'open24h': 0.0, 'vol24h': 0.0, 'pct_24h': 0.0}
 
@@ -1097,10 +1098,10 @@ def crypto_portfolio_okx() -> ResponseReturnValue:
         except TypeError:
             # Fallback if force_refresh not supported on this install
             try:
-                if (hasattr(portfolio_service, "invalidate_cache")
-                        and callable(portfolio_service.invalidate_cache)) or (hasattr(portfolio_service, "clear_cache")
-                        and callable(portfolio_service.clear_cache)):
-                    portfolio_service
+                if hasattr(portfolio_service, "invalidate_cache") and callable(portfolio_service.invalidate_cache):
+                    portfolio_service.invalidate_cache()
+                elif hasattr(portfolio_service, "clear_cache") and callable(portfolio_service.clear_cache):
+                    portfolio_service.clear_cache()
                 elif hasattr(portfolio_service, "exchange"):
                     # Last resort: try exchange cache clearing methods
                     exchange = portfolio_service.exchange
@@ -1205,8 +1206,9 @@ def calculate_trade_pnl(fill):
 def calculate_trade_pnl_percentage(fill):
     """Calculate P&L percentage based on fee impact."""
     try:
-        float(fill.get('fillSz', 0))
-        float(fill.get('fillPx', 0))
+        fill_size = float(fill.get('fillSz', 0))
+        fill_price = float(fill.get('fillPx', 0))
+        trade_value = fill_size * fill_price
         fee = float(fill.get('fee', 0))
         if trade_value > 0:
             # Fee as percentage of trade value
@@ -1553,7 +1555,7 @@ def api_comprehensive_trades() -> ResponseReturnValue:
                 for symbol in all_known_symbols:
                     try:
                         if adapter.exchange:
-                            recent_trades = adapter.try_fetch_my_trades(exchange,
+                            recent_trades = adapter.try_fetch_my_trades(adapter.exchange,
                                 symbol=symbol,
                                 since=begin_ms,
                                 limit=min(50, limit)  # Increase batch size to capture more trades
@@ -1698,14 +1700,14 @@ def api_comprehensive_trades() -> ResponseReturnValue:
 
                         # Create synthetic buy trade representing the position entry
                         synthetic_trade = {
-                            'tradeId': f"pos_entry_{symbol}_{int(datetime.utcnow().timestamp())}",
+                            'tradeId': f"pos_entry_{symbol}_{int(datetime.now(UTC).timestamp())}",
                             'instId': symbol.replace('/', '-'),
                             'ordId': f"position_{symbol}",
                             'clOrdId': '',
                             'side': 'buy',
                             'fillSz': str(quantity),
                             'fillPx': str(entry_price),
-                            'ts': str(int((datetime.utcnow() - timedelta(days=20)).timestamp() * 1000)),  # Estimate 20 days ago
+                            'ts': str(int((datetime.now(UTC) - timedelta(days=20)).timestamp() * 1000)),  # Estimate 20 days ago
                             'fee': str(original_investment * 0.001),  # Estimate 0.1% fee
                             'feeCcy': 'USDT',
                             'execType': 'T',
@@ -1714,7 +1716,7 @@ def api_comprehensive_trades() -> ResponseReturnValue:
                             'tag': 'synthetic_from_portfolio',
                             'symbol_clean': symbol,
                             'trade_value_usd': original_investment,
-                            'fillTime': int((datetime.utcnow() - timedelta(days=20)).timestamp() * 1000),
+                            'fillTime': int((datetime.now(UTC) - timedelta(days=20)).timestamp() * 1000),
                             'source': 'Portfolio-Based (Synthetic)'
                         }
 
@@ -1829,8 +1831,10 @@ def api_portfolio_overview() -> ResponseReturnValue:
             data = portfolio_service.get_portfolio_data(currency=selected_currency, force_refresh=True)
         except TypeError:
             try:
-                if hasattr(portfolio_service, "invalidate_cache") or hasattr(portfolio_service, "clear_cache"):
-                    portfolio_service
+                if hasattr(portfolio_service, "invalidate_cache") and callable(portfolio_service.invalidate_cache):
+                    portfolio_service.invalidate_cache()
+                elif hasattr(portfolio_service, "clear_cache") and callable(portfolio_service.clear_cache):
+                    portfolio_service.clear_cache()
             except (AttributeError, RuntimeError) as e:
                 logger.debug(f"Cache clearing operation failed: {e}")
             data = portfolio_service.get_portfolio_data(currency=selected_currency)
@@ -1909,7 +1913,7 @@ def ready() -> ResponseReturnValue:
     """UI can poll this and show a spinner until ready."""
     with _state_lock:
         warmup_copy = warmup.copy()
-    up = time.time() - _shared_state.get('start_ts', time.time())
+    up = time.time() - warmup.get('start_ts', time.time())
     payload = {"ready": warmup_copy["done"], **warmup_copy,
                "uptime_seconds": up, "uptime_human": humanize_seconds(up)}
     return _no_cache_json(payload, 200) if warmup_copy["done"] else _no_cache_json(payload, 503)
@@ -1949,7 +1953,7 @@ def api_price() -> ResponseReturnValue:
 def index() -> str:
     """Main dashboard route with ultra-fast loading."""
     start_warmup()
-    
+
     # Always show the dashboard since core functionality is working
     # Warmup is for background optimization, not blocking the UI
     return render_full_dashboard()
@@ -3170,7 +3174,7 @@ def api_current_holdings() -> ResponseReturnValue:
         logger.info(f"Fetching current holdings (crypto-portfolio alias) with currency: {selected_currency}")
 
         portfolio_service = get_portfolio_service()
-        
+
         try:
             okx_portfolio_data = portfolio_service.get_portfolio_data_OKX_NATIVE_ONLY(
                 currency=selected_currency,
@@ -3208,7 +3212,7 @@ def api_portfolio_data() -> ResponseReturnValue:
         logger.info(f"Fetching portfolio data (crypto-portfolio alias) with currency: {selected_currency}")
 
         portfolio_service = get_portfolio_service()
-        
+
         try:
             okx_portfolio_data = portfolio_service.get_portfolio_data_OKX_NATIVE_ONLY(
                 currency=selected_currency,
@@ -3892,25 +3896,25 @@ except Exception:
     # Minimal inline fallback (keeps this endpoint robust even if util missing)
     def parse_timestamp(value):
         if isinstance(value, datetime):
-            return value.astimezone(timezone.utc) if value.tzinfo else value.replace(tzinfo=timezone.utc)
+            return value.astimezone(UTC) if value.tzinfo else value.replace(tzinfo=UTC)
         try:
             # epoch ms vs s
             v = float(value)
             if v > 1e12:
-                return datetime.fromtimestamp(v / 1000.0, tz=timezone.utc)
-            return datetime.fromtimestamp(v, tz=timezone.utc)
+                return datetime.fromtimestamp(v / 1000.0, tz=UTC)
+            return datetime.fromtimestamp(v, tz=UTC)
         except Exception:
             s = str(value).replace("Z", "+00:00")
             try:
                 dt = datetime.fromisoformat(s)
-                return dt.astimezone(timezone.utc) if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
+                return dt.astimezone(UTC) if dt.tzinfo else dt.replace(tzinfo=UTC)
             except Exception:
-                return datetime.now(timezone.utc)
+                return datetime.now(UTC)
 
 def _coerce_iso_z(ts: Any) -> str:
     """Always return RFC3339/ISO-8601 UTC string with Z."""
     dt = parse_timestamp(ts)
-    return dt.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
+    return dt.astimezone(UTC).isoformat().replace("+00:00", "Z")
 
 def _normalize_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """Normalize timestamps and ensure required keys for sort without crashing."""
@@ -3927,7 +3931,7 @@ def _serialize_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     for r in rows:
         d = dict(r)
         ts = d.get("timestamp")
-        d["timestamp"] = _coerce_iso_z(ts) if ts is not None else _coerce_iso_z(datetime.now(timezone.utc))
+        d["timestamp"] = _coerce_iso_z(ts) if ts is not None else _coerce_iso_z(datetime.now(UTC))
         out.append(d)
     return out
 
@@ -3945,8 +3949,8 @@ def load_signals() -> list[dict]:
                 signals_data.append({
                     'id': len(signals_data) + 1,
                     'timestamp': row.get('timestamp'),
-                    'date': str(row.get('date', datetime.now(timezone.utc).strftime('%Y-%m-%d'))),
-                    'time': str(row.get('timestamp', datetime.now(timezone.utc))).split('T')[1][:8] if 'T' in str(row.get('timestamp', '')) else '00:00:00',
+                    'date': str(row.get('date', datetime.now(UTC).strftime('%Y-%m-%d'))),
+                    'time': str(row.get('timestamp', datetime.now(UTC))).split('T')[1][:8] if 'T' in str(row.get('timestamp', '')) else '00:00:00',
                     'symbol': row.get('symbol', 'N/A'),
                     'signal_type': 'SIGNAL',
                     'action': row.get('timing_signal', 'UNKNOWN'),
@@ -3982,7 +3986,7 @@ def load_executed_trades() -> list[dict]:
             for holding in holdings[:10]:
                 symbol = holding.get('symbol', '')
                 if symbol and symbol != 'USDT':
-                    trade_time = datetime.now(timezone.utc) - timedelta(minutes=trade_counter*15)
+                    trade_time = datetime.now(UTC) - timedelta(minutes=trade_counter*15)
                     db_trades.append({
                         'id': f"portfolio_{trade_counter}",
                         'timestamp': trade_time,

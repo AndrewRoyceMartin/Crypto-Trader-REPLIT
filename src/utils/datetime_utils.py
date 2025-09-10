@@ -49,7 +49,7 @@ def parse_timestamp(value: str | int | float | datetime) -> datetime:
             return ensure_aware(dt)
         except ValueError:
             # Last resort: try several common formats
-            for fmt in ("%Y-%m-%d %H:%M:%S.%f", "%Y-%m-%d %H:%M:%S"):
+            for fmt in ("%Y-%m-%d %H:%M:%S.%", "%Y-%m-%d %H:%M:%S"):
                 try:
                     return ensure_aware(datetime.strptime(s, fmt))
                 except ValueError:

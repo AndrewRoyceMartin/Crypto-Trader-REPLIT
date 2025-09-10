@@ -252,7 +252,7 @@ class LiveTrader:
         # Check if signal confidence is high enough
         min_confidence = 0.7  # Require high confidence for live trading
         if getattr(signal, "confidence", 0.0) < min_confidence:
-            self.logger.warning("Signal confidence too low: %.3f < %.3f", getattr(signal, "confidence", 0.0), min_confidence)
+            self.logger.warning("Signal confidence too low: %.3f < %.3", getattr(signal, "confidence", 0.0), min_confidence)
             return False
 
         # Check position size is reasonable - ONLY for buy signals
@@ -260,7 +260,7 @@ class LiveTrader:
         signal_action = str(getattr(signal, "action", "")).lower()
         max_position_percent = 0.10  # Max 10% of portfolio per trade
         if signal_action == 'buy' and getattr(signal, "size", 0.0) > max_position_percent:
-            self.logger.warning("Position size too large: %.3f > %.3f", getattr(signal, "size", 0.0), max_position_percent)
+            self.logger.warning("Position size too large: %.3f > %.3", getattr(signal, "size", 0.0), max_position_percent)
             return False
 
         # Throttle: avoid too many recent trades on the same symbol in last hour

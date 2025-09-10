@@ -104,7 +104,7 @@ class EnhancedTrader:
                         self.strategy.position_state['rebuy_armed'] = False  # Reset rebuy for existing positions
 
                         self.logger.critical(
-                            "🔄 PORTFOLIO SYNC: %s position found - Qty: %.8f, Entry: $%.4f, Current: $%.4f",
+                            "🔄 PORTFOLIO SYNC: %s position found - Qty: %.8f, Entry: $%.4f, Current: $%.4",
                             base_symbol, quantity, avg_entry_price, current_price
                         )
 
@@ -120,7 +120,8 @@ class EnhancedTrader:
                                 volatility_multiplier = max(1.0, min(2.0, self.strategy.volatility_score / 50.0))
 
                             dynamic_safety_threshold = 4.0 * volatility_multiplier  # Base 4%, adjust for volatility
-                        except:
+                        except Exception as e:
+        logger.error(f"Unhandled exception in {path.name}: {e}")
                             dynamic_safety_threshold = 6.0  # Fallback to conservative 6%
 
                         if gain_percent >= dynamic_safety_threshold:  # Dynamic safety net
@@ -142,7 +143,7 @@ class EnhancedTrader:
                                         fill_discount = max(0.0005, min(0.002, self.strategy.volatility_score / 10000))
                                     else:
                                         fill_discount = 0.001  # Default 0.1% discount
-                                except:
+                                except Exception as e:
                                     fill_discount = 0.001  # Conservative fallback
 
                                 fill_price = current_price * (1 - fill_discount)
@@ -384,7 +385,7 @@ class EnhancedTrader:
         action = str(getattr(signal, "action", "")).lower()
 
         if confidence < 0.65:
-            self.logger.debug("Signal confidence below threshold: %.2f", confidence)
+            self.logger.debug("Signal confidence below threshold: %.2", confidence)
             return False
 
         # CRITICAL FIX: Position size limits only apply to BUY signals, not SELL signals
@@ -627,9 +628,9 @@ class EnhancedTrader:
             # Verify position was actually closed by checking live portfolio
             # Force refresh by clearing cache
             if hasattr(portfolio_service, 'invalidate_cache'):
-                portfolio_service.invalidate_cache()
+                portfolio_service
             elif hasattr(portfolio_service, 'clear_cache'):
-                portfolio_service.clear_cache()
+                portfolio_service
             portfolio_after = portfolio_service.get_portfolio_data()
             holdings_after = portfolio_after.get('holdings', [])
 
@@ -776,9 +777,9 @@ class EnhancedTrader:
             # Verify position was actually acquired by checking live portfolio
             # Force refresh by clearing cache
             if hasattr(portfolio_service, 'invalidate_cache'):
-                portfolio_service.invalidate_cache()
+                portfolio_service
             elif hasattr(portfolio_service, 'clear_cache'):
-                portfolio_service.clear_cache()
+                portfolio_service
             portfolio_after = portfolio_service.get_portfolio_data()
             holdings_after = portfolio_after.get('holdings', [])
 

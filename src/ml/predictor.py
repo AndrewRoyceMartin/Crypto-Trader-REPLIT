@@ -1,6 +1,7 @@
 # src/ml/predictor.py
-import joblib
 from pathlib import Path
+
+import joblib
 
 _MODEL = None
 _MODEL_PATH = Path("src/models/buy_regression_model.pkl")

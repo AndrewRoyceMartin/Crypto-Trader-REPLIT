@@ -37,7 +37,7 @@ def replace_bare_except(text: str) -> str:
     return re.sub(r"\n\s*except:\s*\n(?:\s+.+\n)*", _fix_block, text)
 
 def guard_adapter_calls(text: str) -> str:
-    # Swap risky calls: .clear_cache(), .invalidate_cache(), .fetch_my_trades(), .fetch_orders()
+    # Swap risky calls: , , .fetch_my_trades(), .fetch_orders()
     text = re.sub(r"(\.clear_cache\s*\(\s*\))", r"", text)
     text = re.sub(r"(\.invalidate_cache\s*\(\s*\))", r"", text)
     # Replace direct calls with guarded helper usage where clearly safe
@@ -57,12 +57,12 @@ def guard_adapter_calls(text: str) -> str:
     return text
 
 def wire_bollinger_target(text: str) -> str:
-    # Replace get_bollinger_target_price(...) with safe_get_boll_target(...)
-    return text.replace("get_bollinger_target_price(", "safe_get_boll_target(")
+    # Replace safe_get_boll_target(...) with safe_get_boll_target(...)
+    return text.replace("safe_get_boll_target(", "safe_get_boll_target(")
 
 def fix_state_store_imports(text: str) -> str:
-    # Replace fragile 'from state.store import get_state_store' with safe shim alias where used in try blocks
-    text = text.replace("from state.store import get_state_store", "from src.utils.safe_shims import get_state_store as get_state_store")
+    # Replace fragile 'from src.utils.safe_shims import get_state_store as get_state_store' with safe shim alias where used in try blocks
+    text = text.replace("from src.utils.safe_shims import get_state_store as get_state_store", "from src.utils.safe_shims import get_state_store as get_state_store")
     # In debug helper where import is inside try: ensure fallback
     text = text.replace("get_state_store()", "safe_get_state_store()")
     return text

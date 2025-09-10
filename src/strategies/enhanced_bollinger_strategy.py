@@ -1,3 +1,4 @@
+import logging
 """
 Enhanced Bollinger Bands strategy with advanced crash protection and dynamic risk management.
 Incorporates peak tracking, crash failsafes, and dynamic rebuy mechanisms.
@@ -286,7 +287,8 @@ class EnhancedBollingerBandsStrategy(BaseStrategy):
 
             self.logger.debug(f"🎯 Dynamic safety threshold: {safety_take_profit_percent:.1f}% "
                             f"(BB width: {bb_width_percent:.1f}%, multiplier: {volatility_multiplier:.1f}x)")
-        except:
+        except Exception as e:
+        logger.error(f"Unhandled exception in {path.name}: {e}")
             safety_take_profit_percent = self.take_profit_percent * 1.5  # Fallback to static 1.5x
         safety_take = entry_price * (1 + safety_take_profit_percent / 100)
         fixed_percentage_exit = px >= safety_take
@@ -327,7 +329,7 @@ class EnhancedBollingerBandsStrategy(BaseStrategy):
                     fill_discount = 0.001  # Default 0.1%
 
                 self.logger.debug(f"🎯 Dynamic fill discount: {fill_discount*100:.3f}%")
-            except:
+            except Exception as e:
                 fill_discount = 0.001  # Conservative fallback
 
             fill_price = px * (1 - fill_discount)

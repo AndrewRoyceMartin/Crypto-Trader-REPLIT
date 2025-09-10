@@ -5,7 +5,7 @@ import contextlib
 from typing import Any
 
 
-def get_bollinger_target_price(symbol: str, current_price: float) -> dict[str, Any]:
+def safe_get_boll_target(symbol: str, current_price: float) -> dict[str, Any]:
     """
     Safe shim: try to import real function from enhanced_bollinger_strategy.
     If not available, return an empty dict (caller will fall back gracefully).
@@ -31,7 +31,7 @@ def get_state_store():
     at runtime where the store is optional.
     """
     try:
-        from state.store import get_state_store as _real
+        from src.utils.safe_shims import get_state_store as get_state_store as _real
         return _real()
     except Exception:
         return _NullStateStore()
@@ -40,14 +40,14 @@ def get_state_store():
 def try_clear_cache(obj: Any) -> None:
     if hasattr(obj, "clear_cache") and callable(obj.clear_cache):
         with contextlib.suppress(Exception):
-            obj.clear_cache()
+            obj
 
 def try_invalidate_cache(obj: Any) -> None:
     if hasattr(obj, "invalidate_cache") and callable(obj.invalidate_cache):
         with contextlib.suppress(Exception):
-            obj.invalidate_cache()
+            obj
 
 def try_fetch_my_trades(exchange: Any, symbol: str, since: int | None = None, limit: int | None = None):
     if hasattr(exchange, "fetch_my_trades") and callable(exchange.fetch_my_trades):
-        return exchange.fetch_my_trades(symbol=symbol, since=since, limit=limit)
+        return try_fetch_my_trades(exchange, symbol=symbol, since=since, limit=limit)
     return []

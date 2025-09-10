@@ -1,3 +1,5 @@
+from datetime import datetime, timezone
+import logging
 # tests/e2e_system_check.py
 """
 End-to-end system check for OKX connectivity, real data retrieval, ML model, hybrid signal,
@@ -52,7 +54,8 @@ def auto_populate_environment():
                     os.environ["APP_URL"] = url
                     populated["APP_URL"] = f"✓ Auto-detected: {url}"
                     break
-            except:
+            except Exception as e:
+        logger.error(f"Unhandled exception in {path.name}: {e}")
                 continue
         else:
             populated["APP_URL"] = "❌ No responding server found"
@@ -67,8 +70,7 @@ def auto_populate_environment():
 
     return populated
 
-# -------- Configuration --------
-OKX_BASE = "https://www.okx.com"
+# -------- Configuration --------OKX_BASE = "https://www.okx.com"
 TIMEOUT = 10
 TEST_SYMBOLS = ["BTC-USDT", "ETH-USDT", "SOL-USDT"]
 MODEL_PATH = "buy_regression_model.pkl"
@@ -319,7 +321,7 @@ def run_model_inference(model, candles: dict[str, pd.DataFrame]) -> dict:
 def append_signal_log(entry: dict) -> None:
     print("7) Appending to signals_log.csv ...")
     row = {
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
         "symbol": entry["symbol"],
         "current_price": None,
         "confidence_score": entry["confidence_score"],

@@ -112,11 +112,11 @@ def _get_ml_prediction(indicators: dict[str, Any]) -> float:
 
         # Get predicted return and convert to probability
         predicted_return = predict_buy_return(confidence_score, ml_probability)
-        
+
         # Convert return prediction to probability (0-1 range)
         # Positive returns → higher probability, negative → lower
         probability = max(0.1, min(0.9, 0.5 + predicted_return * 10))
-        
+
         return probability
 
     except Exception as e:
