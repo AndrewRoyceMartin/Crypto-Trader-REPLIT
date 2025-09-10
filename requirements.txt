@@ -14,6 +14,7 @@ pytz
 requests
 xgboost
 beautifulsoup4
+gunicorn
 playwright
 pytest
 pyright
