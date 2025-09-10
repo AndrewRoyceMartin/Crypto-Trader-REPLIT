@@ -6201,24 +6201,56 @@ async function fetchAndUpdateAvailablePositions() {
         // Step 2: Starting API call
         updateProgress(10, 'Connecting to OKX API...', 0);
         
-        // Step 3: Fetch data (this takes time as backend processes 68+ cryptocurrencies)
-        updateProgress(15, 'Fetching 68+ cryptocurrency data...', 0);
-        const response = await fetch('/api/available-positions', { 
-            cache: 'no-cache',
-            signal: AbortSignal.timeout(300000) // 5 minute timeout (increased for 68 positions)
-        });
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        // Step 3: 🔄 BATCH PROCESSING - Load data in batches to prevent timeouts
+        updateProgress(15, 'Loading batch 1 of 6 (50 cryptocurrencies)...', 0);
         
-        // Step 4: Backend is processing - this reflects the real backend work
-        updateProgress(25, 'Backend processing 68 assets...', 0);
+        let allPositions = [];
+        let batchNumber = 0;
+        let hasMoreBatches = true;
+        const batchSize = 50;
         
-        // Step 5: Bollinger Bands and risk analysis
-        updateProgress(40, 'Calculating Bollinger Bands & risk analysis...', 0);
+        while (hasMoreBatches) {
+            const response = await fetch(`/api/available-positions?batch_size=${batchSize}&batch_number=${batchNumber}`, { 
+                cache: 'no-cache',
+                signal: AbortSignal.timeout(60000) // 1 minute timeout per batch
+            });
+            if (!response.ok) throw new Error(`HTTP ${response.status} (Batch ${batchNumber + 1})`);
+            
+            const batchData = await response.json();
+            
+            // Add positions from this batch
+            if (batchData.available_positions) {
+                allPositions = allPositions.concat(batchData.available_positions);
+            }
+            
+            // Check if more batches are available
+            hasMoreBatches = batchData.batch_info?.has_more_batches || false;
+            batchNumber++;
+            
+            // Update progress based on batch completion
+            const progressPercent = Math.min(15 + (batchNumber * 15), 85);
+            updateProgress(progressPercent, `Loaded batch ${batchNumber} (${allPositions.length} total positions)...`, 0);
+            
+            // Small delay between batches to prevent API overload
+            if (hasMoreBatches) {
+                await new Promise(resolve => setTimeout(resolve, 200));
+            }
+        }
         
-        // Step 6: Parse response
-        updateProgress(55, 'Processing API response...', 0);
+        // Create response object to match original format
+        const response = { 
+            ok: true,
+            json: () => Promise.resolve({
+                available_positions: allPositions,
+                count: allPositions.length,
+                success: true
+            })
+        };
+        
+        // Step 4: Parse batch response data
+        updateProgress(92, 'Processing batch data...', 0);
         const data = await response.json();
-        console.debug("Available positions API response:", data);
+        console.debug(`Available positions batch loaded: ${allPositions.length} total positions`, data);
         
         // Step 7: Validating data integrity
         updateProgress(70, 'Validating data integrity...', 0);

@@ -4655,7 +4655,12 @@ def api_available_positions() -> ResponseReturnValue:
         added_count = 0
         skipped_count = 0
         
-        logger.info(f"Processing ALL OKX markets (complete coverage - 291+ cryptocurrencies)")
+        # 🚀 BATCH PROCESSING: Check for batch parameters
+        batch_size = int(request.args.get('batch_size', 50))  # Default 50 per batch
+        batch_number = int(request.args.get('batch_number', 0))  # Default first batch
+        max_batch_size = min(batch_size, 100)  # Cap at 100 for safety
+        
+        logger.info(f"🔄 BATCH {batch_number + 1}: Processing {max_batch_size} cryptocurrencies (batch loading)")
         
         # CIRCUIT BREAKER: Check if we're in rate limiting state
         rate_limit_key = "available_positions_rate_limit"
@@ -4670,7 +4675,12 @@ def api_available_positions() -> ResponseReturnValue:
                 'count': 0,
                 'error': f'Rate limiting cooldown active - retry in {remaining_cooldown}s',
                 'success': False,
-                'cooldown_remaining': remaining_cooldown
+                'cooldown_remaining': remaining_cooldown,
+                'batch_info': {
+                    'batch_number': batch_number,
+                    'batch_size': max_batch_size,
+                    'more_batches': False
+                }
             }), 429
 
         # STEP 1: Get ALL OKX active trading pairs (complete market coverage)
@@ -4691,11 +4701,18 @@ def api_available_positions() -> ResponseReturnValue:
                         if quote_symbol == 'USDT' and base_symbol:
                             all_okx_symbols.append(base_symbol)
                             
-                logger.info(f"🚀 Processing ALL {len(all_okx_symbols)} active OKX trading pairs (complete coverage)")
+                logger.info(f"🚀 Found {len(all_okx_symbols)} active OKX trading pairs (processing in batches)")
                 
-                # STEP 2: Batch fetch prices for ALL OKX tokens
+                # 🔄 BATCH PROCESSING: Only process current batch slice
+                start_idx = batch_number * max_batch_size
+                end_idx = min(start_idx + max_batch_size, len(all_okx_symbols))
+                batch_symbols = all_okx_symbols[start_idx:end_idx]
+                
+                logger.info(f"📊 BATCH {batch_number + 1}: Processing symbols {start_idx + 1}-{end_idx} of {len(all_okx_symbols)}")
+                
+                # STEP 2: Fetch prices only for current batch symbols
                 all_tickers = exchange.exchange.fetch_tickers()
-                for symbol in all_okx_symbols:
+                for symbol in batch_symbols:
                     if symbol not in ['AUD', 'USD', 'EUR', 'GBP', 'USDT', 'USDC', 'DAI', 'BUSD']:
                         # Try multiple ticker formats
                         for ticker_symbol in [f"{symbol}/USDT", f"{symbol}/USD", f"{symbol}USDT"]:
@@ -4703,12 +4720,19 @@ def api_available_positions() -> ResponseReturnValue:
                                 ticker_data = all_tickers[ticker_symbol]
                                 batch_prices[symbol] = float(ticker_data.get('last', 0.0) or 0.0)
                                 break
-                logger.info(f"📊 Batch fetched {len(batch_prices)} prices for ALL OKX tokens")
+                
+                # Update all_okx_symbols to only current batch for processing
+                all_okx_symbols = batch_symbols
+                logger.info(f"📊 Batch fetched {len(batch_prices)} prices for batch {batch_number + 1}")
                 
         except Exception as markets_error:
-            logger.warning(f"Could not fetch ALL OKX markets: {markets_error}")
+            logger.warning(f"Could not fetch OKX markets for batch: {markets_error}")
             # Fallback to original curated list if full market fetch fails
-            all_okx_symbols = major_crypto_assets
+            start_idx = batch_number * max_batch_size
+            end_idx = min(start_idx + max_batch_size, len(major_crypto_assets))
+            all_okx_symbols = major_crypto_assets[start_idx:end_idx]
+            logger.info(f"📊 Fallback to curated list batch: {start_idx + 1}-{end_idx} of {len(major_crypto_assets)}")
+            
             # Rate limiting error handling with circuit breaker
             if "busy" in str(markets_error).lower() or "rate" in str(markets_error).lower():
                 logger.error("🚨 RATE LIMITING DETECTED - Activating circuit breaker")
@@ -4720,7 +4744,12 @@ def api_available_positions() -> ResponseReturnValue:
                     'count': 0,
                     'error': 'Rate limiting detected - circuit breaker activated for 2 minutes',
                     'success': False,
-                    'cooldown_remaining': 120
+                    'cooldown_remaining': 120,
+                    'batch_info': {
+                        'batch_number': batch_number,
+                        'batch_size': max_batch_size,
+                        'more_batches': False
+                    }
                 }), 429
             time.sleep(2.0)  # Extended delay for other errors
         
@@ -5046,7 +5075,12 @@ def api_available_positions() -> ResponseReturnValue:
 
         # Final debug logging
         elapsed_time = time.time() - start_time
-        logger.warning(f"🚀 ALL OKX MARKETS: {len(available_positions)} positions, elapsed time: {elapsed_time:.2f}s, added: {added_count}, skipped: {skipped_count}, total OKX pairs: {len(all_okx_symbols)}")
+        # 🔄 BATCH INFO: Calculate if more batches are available
+        total_symbols = 291  # Approximate total OKX trading pairs
+        processed_so_far = (batch_number + 1) * max_batch_size
+        has_more_batches = processed_so_far < total_symbols
+        
+        logger.warning(f"🚀 BATCH {batch_number + 1}: {len(available_positions)} positions, elapsed time: {elapsed_time:.2f}s, added: {added_count}, skipped: {skipped_count}, batch size: {len(all_okx_symbols)}")
         
         # Check for timeout issues
         if elapsed_time > 30:
@@ -5056,9 +5090,19 @@ def api_available_positions() -> ResponseReturnValue:
             'available_positions': available_positions,
             'count': len(available_positions),
             'success': True,
-            'message': f"Found {len(available_positions)} available assets from OKX account",
+            'message': f"Found {len(available_positions)} available assets from OKX account (batch {batch_number + 1})",
             'last_update': iso_utc(),
             'next_refresh_in_seconds': int(os.getenv("UI_REFRESH_MS", "6000")) // 1000,
+            'batch_info': {
+                'batch_number': batch_number,
+                'batch_size': max_batch_size,
+                'processed_in_batch': len(all_okx_symbols),
+                'total_processed': processed_so_far,
+                'estimated_total': total_symbols,
+                'has_more_batches': has_more_batches,
+                'next_batch_number': batch_number + 1 if has_more_batches else None,
+                'processing_time': elapsed_time
+            }
         })
 
     except Exception as e:
