@@ -1048,8 +1048,10 @@ class EntryConfidenceAnalyzer:
         df = self._fetch_market_data(symbol, days=20, current_price=current_price)
         if isinstance(df, list):  # raw data
             df = pd.DataFrame(df)
+        elif isinstance(df, dict):  # single data point
+            df = pd.DataFrame([df])
 
-        if 'price' not in df.columns or len(df) < 14:
+        if not hasattr(df, 'columns') or 'price' not in df.columns or len(df) < 14:
             # fallback if data too short
             base_score = 50.0
             return {
