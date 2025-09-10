@@ -703,6 +703,23 @@ def humanize_seconds(seconds: float) -> str:
         hours = int(seconds // 3600)
         return f"{hours} hour{'s' if hours != 1 else ''}"
 
+def convert_numpy_types(obj):
+    """Convert NumPy types to Python native types for JSON serialization."""
+    import numpy as np
+    if isinstance(obj, dict):
+        return {key: convert_numpy_types(value) for key, value in obj.items()}
+    elif isinstance(obj, list):
+        return [convert_numpy_types(item) for item in obj]
+    elif isinstance(obj, (np.integer, np.floating, np.ndarray)):
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+        else:
+            return obj.item()  # Convert numpy scalar to Python scalar
+    elif hasattr(obj, 'dtype'):  # Catch any other numpy types
+        return float(obj) if 'float' in str(obj.dtype) else int(obj)
+    else:
+        return obj
+
 def get_portfolio_service():
     """Get the global PortfolioService singleton from the service module."""
     return _get_ps()
@@ -3198,18 +3215,18 @@ def api_available_positions() -> ResponseReturnValue:
                 
                 position_data = {
                     "symbol": base_currency,
-                    "current_price": current_price,
-                    "target_buy_price": target_buy_price,
-                    "price_difference": price_diff,
-                    "price_diff_percent": price_diff_percent,
-                    "current_balance": current_balance,
-                    "free_balance": current_balance,
+                    "current_price": float(current_price),
+                    "target_buy_price": float(target_buy_price),
+                    "price_difference": float(price_diff),
+                    "price_diff_percent": float(price_diff_percent),
+                    "current_balance": float(current_balance),
+                    "free_balance": float(current_balance),
                     "used_balance": 0,
-                    "current_value": current_value,
+                    "current_value": float(current_value),
                     "position_type": "zero_balance" if current_balance < 0.01 else "low_value",
                     "buy_signal": buy_signal,
-                    "entry_confidence": confidence_result,
-                    "bollinger_analysis": bollinger_analysis,
+                    "entry_confidence": convert_numpy_types(confidence_result),
+                    "bollinger_analysis": convert_numpy_types(bollinger_analysis),
                     "last_exit_price": 0,
                     "price_drop_from_exit": 0,
                     "days_since_exit": 0,
