@@ -1762,111 +1762,171 @@
             window.tradingApp.init();
         }
         
-        // 🔥 IMPLEMENT TRADING PERFORMANCE WORKING MECHANISM
-        // Force immediate holdings table update with direct API call (same as Trading Performance page)
-        async function forceLoadHoldingsTable() {
-            try {
-                console.log('🔥 FORCE LOADING: Holdings table via Trading Performance mechanism');
-                
-                // Direct API call like Trading Performance page
-                const response = await fetch('/api/crypto-portfolio', { cache: 'no-store' });
-                if (!response.ok) throw new Error(`API returned ${response.status}`);
-                
-                const data = await response.json();
-                console.log('🎯 Holdings API data:', data.holdings?.length || 0, 'items');
-                
-                // Direct table update like Trading Performance page
-                if (data.holdings && data.holdings.length > 0) {
-                    updateHoldingsTableDirect(data.holdings);
+        // 🔥 REPLACE WITH EXACT TRADING PERFORMANCE WORKING MECHANISM
+        class DashboardDataLoader {
+            constructor() {
+                this.refreshInterval = 30000; // 30 seconds like Trading Performance
+                this.init();
+            }
+
+            init() {
+                console.log('🎯 Initializing Dashboard Data Loader (Trading Performance pattern)');
+                this.loadAllData(); // Immediate load like Trading Performance
+                this.startAutoRefresh();
+                console.log('✅ Dashboard Data Loader initialization complete');
+            }
+
+            async loadAllData() {
+                try {
+                    await Promise.all([
+                        this.loadHoldingsData(),
+                        this.loadOverviewData()
+                    ]);
+                } catch (error) {
+                    console.error('❌ Error loading dashboard data:', error);
+                }
+            }
+
+            async loadHoldingsData() {
+                try {
+                    console.log('🔥 LOADING: Holdings data via Trading Performance API pattern');
+                    
+                    // Use exact same API call pattern as Trading Performance
+                    const response = await fetch('/api/crypto-portfolio', { 
+                        cache: 'no-store',
+                        headers: { 'Accept': 'application/json' }
+                    });
+                    
+                    if (!response.ok) throw new Error(`API returned ${response.status}`);
+                    
+                    const data = await response.json();
+                    console.log('🎯 Holdings API data received:', data.holdings?.length || 0, 'items');
+                    
+                    if (data.holdings && data.holdings.length > 0) {
+                        this.updateHoldingsTable(data.holdings);
+                    }
+                    
+                } catch (error) {
+                    console.error('❌ Holdings load failed:', error);
+                }
+            }
+
+            async loadOverviewData() {
+                try {
+                    // Load overview data like Trading Performance page
+                    const response = await fetch('/api/portfolio-overview', { cache: 'no-store' });
+                    if (response.ok) {
+                        const data = await response.json();
+                        this.updateOverviewCards(data);
+                    }
+                } catch (error) {
+                    console.error('❌ Overview load failed:', error);
+                }
+            }
+
+            updateHoldingsTable(holdings) {
+                const tableBody = document.getElementById('holdings-tbody');
+                if (!tableBody) {
+                    console.error('❌ holdings-tbody not found');
+                    return;
                 }
                 
-            } catch (error) {
-                console.error('❌ Force holdings load failed:', error);
-            }
-        }
-        
-        // Direct table update function (Trading Performance pattern)
-        function updateHoldingsTableDirect(holdings) {
-            const tableBody = document.getElementById('holdings-tbody');
-            if (!tableBody) {
-                console.error('❌ holdings-tbody not found');
-                return;
-            }
-            
-            console.log('🎯 Directly updating holdings table with', holdings.length, 'holdings');
-            
-            // Clear existing content
-            tableBody.innerHTML = '';
-            
-            if (!holdings || holdings.length === 0) {
-                tableBody.innerHTML = '<tr><td colspan="11" class="text-center text-muted">No holdings data</td></tr>';
-                return;
-            }
-            
-            // Create rows directly (Trading Performance pattern)
-            holdings.forEach(holding => {
-                if ((holding.current_value || 0) < 1.0) return; // Filter like main logic
+                console.log('🎯 Updating holdings table with', holdings.length, 'holdings (Trading Performance pattern)');
                 
-                const row = document.createElement('tr');
+                // Clear existing content
+                tableBody.innerHTML = '';
                 
-                // Extract real data
-                const qty = holding.quantity || 0;
-                const pnlPercent = holding.pnl_percent || 0;
-                const pnl = holding.pnl || 0;
-                const currentPrice = holding.current_price || 0;
-                const currentValue = holding.current_value || 0;
-                const entryPrice = holding.avg_entry_price || 0;
+                if (!holdings || holdings.length === 0) {
+                    tableBody.innerHTML = '<tr><td colspan="11" class="text-center text-muted">No holdings data</td></tr>';
+                    return;
+                }
                 
-                console.debug('🎯 Creating row for', holding.symbol, 'qty=', qty, 'pnl%=', pnlPercent);
-                
-                // Color classes
-                const pnlClass = pnl >= 0 ? 'text-success' : 'text-danger';
-                const pnlSign = pnl >= 0 ? '+' : '';
-                
-                // Create cells with real data (same as Trading Performance structure)
-                row.innerHTML = `
-                    <td class="text-start">
-                        <div class="d-flex align-items-center">
-                            <i class="fa-solid fa-coins me-2" style="color: #007bff;"></i>
-                            <div>
-                                <div class="fw-bold">${holding.symbol}</div>
-                                <small class="text-muted">${holding.name || holding.symbol}</small>
+                // Create rows using Trading Performance pattern
+                holdings.forEach(holding => {
+                    if ((holding.current_value || 0) < 1.0) return; // Filter small positions
+                    
+                    const row = document.createElement('tr');
+                    
+                    // Extract real data like Trading Performance
+                    const qty = holding.quantity || 0;
+                    const pnlPercent = holding.pnl_percent || 0;
+                    const pnl = holding.pnl || 0;
+                    const currentPrice = holding.current_price || 0;
+                    const currentValue = holding.current_value || 0;
+                    const entryPrice = holding.avg_entry_price || 0;
+                    
+                    console.debug('🎯 Creating row for', holding.symbol, 'qty=', qty, 'pnl%=', pnlPercent);
+                    
+                    // Color classes like Trading Performance
+                    const pnlClass = pnl >= 0 ? 'text-success' : 'text-danger';
+                    const pnlSign = pnl >= 0 ? '+' : '';
+                    
+                    // Create cells exactly like Trading Performance structure
+                    row.innerHTML = `
+                        <td class="text-start">
+                            <div class="d-flex align-items-center">
+                                <i class="fa-solid fa-coins me-2" style="color: #007bff;"></i>
+                                <div>
+                                    <div class="fw-bold">${holding.symbol}</div>
+                                    <small class="text-muted">${holding.name || holding.symbol}</small>
+                                </div>
                             </div>
-                        </div>
-                    </td>
-                    <td class="text-end">${qty.toFixed(6)}</td>
-                    <td class="text-end">$${entryPrice.toFixed(4)}</td>
-                    <td class="text-end">$${currentPrice.toFixed(4)}</td>
-                    <td class="text-end">$${currentValue.toFixed(2)}</td>
-                    <td class="text-end ${pnlClass}"><strong>${pnlSign}$${Math.abs(pnl).toFixed(2)}</strong></td>
-                    <td class="text-end ${pnlClass}"><strong>${pnlSign}${Math.abs(pnlPercent).toFixed(2)}%</strong></td>
-                    <td class="text-end text-success">$${(currentValue * 1.1).toFixed(2)}</td>
-                    <td class="text-end text-success">$${(pnl + currentValue * 0.1).toFixed(2)}</td>
-                    <td class="text-end text-success">+10.0%</td>
-                    <td class="text-center">
-                        <span class="badge ${pnl >= 0 ? 'bg-success' : 'bg-danger'}">
-                            ${qty > 0 ? 'LONG' : 'FLAT'}
-                        </span>
-                    </td>
-                `;
+                        </td>
+                        <td class="text-end">${qty.toFixed(6)}</td>
+                        <td class="text-end">$${entryPrice.toFixed(4)}</td>
+                        <td class="text-end">$${currentPrice.toFixed(4)}</td>
+                        <td class="text-end">$${currentValue.toFixed(2)}</td>
+                        <td class="text-end ${pnlClass}"><strong>${pnlSign}$${Math.abs(pnl).toFixed(2)}</strong></td>
+                        <td class="text-end ${pnlClass}"><strong>${pnlSign}${Math.abs(pnlPercent).toFixed(2)}%</strong></td>
+                        <td class="text-end text-success">$${(currentValue * 1.1).toFixed(2)}</td>
+                        <td class="text-end text-success">$${(pnl + currentValue * 0.1).toFixed(2)}</td>
+                        <td class="text-end text-success">+10.0%</td>
+                        <td class="text-center">
+                            <span class="badge ${pnl >= 0 ? 'bg-success' : 'bg-danger'}">
+                                ${qty > 0 ? 'LONG' : 'FLAT'}
+                            </span>
+                        </td>
+                    `;
+                    
+                    tableBody.appendChild(row);
+                });
                 
-                tableBody.appendChild(row);
-            });
-            
-            console.log('✅ Holdings table updated successfully');
+                console.log('✅ Holdings table updated successfully (Trading Performance pattern)');
+            }
+
+            updateOverviewCards(data) {
+                // Update overview cards like Trading Performance page
+                if (data.success && data.overview) {
+                    const overview = data.overview;
+                    
+                    // Update cards with real data
+                    if (document.getElementById('portfolio-total-value')) {
+                        document.getElementById('portfolio-total-value').textContent = `$${overview.total_value?.toLocaleString() || '0'}`;
+                    }
+                    if (document.getElementById('portfolio-total-pnl')) {
+                        document.getElementById('portfolio-total-pnl').textContent = `$${overview.total_pnl?.toLocaleString() || '0'}`;
+                    }
+                }
+            }
+
+            startAutoRefresh() {
+                setInterval(() => {
+                    console.log('🔄 Auto-refresh: Reloading all data (Trading Performance pattern)');
+                    this.loadAllData();
+                }, this.refreshInterval);
+                
+                console.log(`🔄 Auto-refresh started (${this.refreshInterval/1000}s interval)`);
+            }
         }
-        
-        // Force immediate execution (Trading Performance pattern)
-        console.log('🔥 FORCE INIT: Starting holdings table initialization');
-        setTimeout(() => {
-            forceLoadHoldingsTable();
-        }, 500);
-        
-        // Auto-refresh like Trading Performance page
-        setInterval(() => {
-            console.log('🔄 Auto-refresh: Reloading holdings table');
-            forceLoadHoldingsTable();
-        }, 30000); // 30 second refresh
+
+        // FORCE IMMEDIATE INITIALIZATION (EXACT TRADING PERFORMANCE PATTERN)
+        console.log('🔥 FORCE INIT: Starting Dashboard Data Loader (Trading Performance pattern)');
+        try {
+            window.dashboardLoader = new DashboardDataLoader();
+            console.log('✅ Dashboard Data Loader created successfully');
+        } catch (error) {
+            console.error('❌ Dashboard Data Loader initialization failed:', error);
+        }
         
         // Load initial data for tables
         setTimeout(() => {
