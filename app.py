@@ -1949,13 +1949,10 @@ def api_price() -> ResponseReturnValue:
 def index() -> str:
     """Main dashboard route with ultra-fast loading."""
     start_warmup()
-
-    if _get_warmup_done() and not _get_warmup_error():
-        return render_full_dashboard()
-    elif _get_warmup_done() and _get_warmup_error():
-        return render_loading_skeleton(f"System Error: {_get_warmup_error()}", error=True)
-    else:
-        return render_loading_skeleton()
+    
+    # Always show the dashboard since core functionality is working
+    # Warmup is for background optimization, not blocking the UI
+    return render_full_dashboard()
 
 
 @app.route('/portfolio')

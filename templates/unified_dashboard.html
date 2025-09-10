@@ -1811,15 +1811,52 @@
             loadTradesData(days, limit);
         });
         
-        // Set up navigation handling for trades section
+        // Set up complete navigation handling
         document.addEventListener('click', function(e) {
-            if (e.target && e.target.getAttribute('href') === '#trades') {
-                // Load trades data when trades section is accessed
-                setTimeout(() => {
-                    const days = document.getElementById('trades-days-filter').value || 30;
-                    const limit = document.getElementById('trades-limit-filter').value || 100;
-                    loadTradesData(days, limit);
-                }, 100);
+            // Handle navigation links
+            if (e.target && e.target.classList.contains('nav-link') && e.target.getAttribute('href')?.startsWith('#')) {
+                e.preventDefault();
+                const target = e.target.getAttribute('href').substring(1); // Remove # from href
+                
+                // Remove active class from all nav-links
+                document.querySelectorAll('.nav-link').forEach(link => {
+                    link.classList.remove('active');
+                });
+                
+                // Add active class to clicked nav-link
+                e.target.classList.add('active');
+                
+                // Hide all sections
+                document.querySelectorAll('section[id]').forEach(section => {
+                    section.style.display = 'none';
+                });
+                
+                // Show target section
+                const targetSection = document.getElementById(target);
+                if (targetSection) {
+                    targetSection.style.display = 'block';
+                }
+                
+                // Load specific section data
+                if (target === 'trades') {
+                    // Load trades data when trades section is accessed
+                    setTimeout(() => {
+                        const days = document.getElementById('trades-days-filter')?.value || 30;
+                        const limit = document.getElementById('trades-limit-filter')?.value || 100;
+                        loadTradesData(days, limit);
+                    }, 100);
+                } else if (target === 'holdings') {
+                    // Refresh holdings data
+                    setTimeout(() => {
+                        loadCryptoPortfolio();
+                    }, 100);
+                } else if (target === 'overview') {
+                    // Refresh overview data
+                    setTimeout(() => {
+                        loadCryptoPortfolio();
+                        loadBasicChecks();
+                    }, 100);
+                }
             }
         });
         
