@@ -925,7 +925,7 @@ def _no_cache_json(payload: dict, code: int = 200) -> Response:
 @app.route("/api/status")
 def api_status() -> ResponseReturnValue:
     """Simple status endpoint to check warmup and system health."""
-    up = get_uptime_seconds()
+    up = time.time() - _shared_state.get('start_ts', time.time())
 
     # Bot runtime (seconds/human) derived from bot_state.started_at
     with _state_lock:
@@ -950,7 +950,7 @@ def api_status() -> ResponseReturnValue:
         "trading_state": trading_state,
         "active": bot_running,
         "timestamp": iso_utc(),
-        "server_started_at": iso_utc(server_start_time),
+        "server_started_at": iso_utc(),
         "uptime_seconds": up,
         "uptime_human": humanize_seconds(up),
         # 👇 aliases some UIs expect
@@ -1869,7 +1869,7 @@ def ready() -> ResponseReturnValue:
     """UI can poll this and show a spinner until ready."""
     with _state_lock:
         warmup_copy = warmup.copy()
-    up = get_uptime_seconds()
+    up = time.time() - _shared_state.get('start_ts', time.time())
     payload = {"ready": warmup_copy["done"], **warmup_copy,
                "uptime_seconds": up, "uptime_human": humanize_seconds(up)}
     return _no_cache_json(payload, 200) if warmup_copy["done"] else _no_cache_json(payload, 503)
@@ -2035,6 +2035,10 @@ def render_trades_page() -> str:
         logger.error(f"Error rendering trades page: {e}")
         return render_loading_skeleton(f"Trades Error: {e}", error=True)
 
+
+def render_loading_skeleton(message: str = "Loading...", error: bool = False) -> str:
+    """Render a simple loading message."""
+    return render_template('unified_dashboard.html', ADMIN_TOKEN=ADMIN_TOKEN)
 
 def render_full_dashboard() -> str:
     """Render the unified trading dashboard using templates."""
