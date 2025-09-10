@@ -827,4 +827,20 @@ document.addEventListener('DOMContentLoaded', function() {
     window.dashboard = new TradingDashboard();
 });
 </script>
+
+<script>
+/* Remove legacy/Bootstrap classes that override v02 tables */
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('.table-v02, .table-v02--compact').forEach((el) => {
+    // If Bootstrap .table slipped in via server/JS, kill it
+    if (el.classList.contains('table')) el.classList.remove('table');
+    // If any legacy class snuck in, strip common offenders
+    ['table-striped','table-hover','table-sm','data-table','legacy-table'].forEach(c => {
+      if (el.classList.contains(c)) el.classList.remove(c);
+    });
+    // Add a marker to help CSS specificity (if needed)
+    el.setAttribute('data-style', 'v02');
+  });
+});
+</script>
 {% endblock %}
