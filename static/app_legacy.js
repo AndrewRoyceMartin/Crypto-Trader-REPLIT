@@ -6608,24 +6608,84 @@ function createAvailablePositionRow(position) {
         row.appendChild(cell);
     });
     
-    // Confidence score cell
+    // Entry Confidence Analysis - Enhanced 6-Factor Technical Analysis Display
+    const breakdown = entryConfidence.breakdown || {};
+    
+    // Enhanced signal icons based on confidence score and timing
+    let signalIcon = 'fa-clock';
+    if (confidenceScore >= 70) {
+        signalIcon = 'fa-rocket';
+    } else if (confidenceScore >= 60) {
+        signalIcon = 'fa-chart-line';
+    } else if (confidenceScore >= 45) {
+        signalIcon = 'fa-pause';
+    } else {
+        signalIcon = 'fa-times-circle';
+    }
+    
+    // Generate enhanced technical factors tooltip for 6-factor analysis
+    const factorsList = Object.entries(breakdown).map(([key, value]) => {
+        const displayName = key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+        if (typeof value === 'boolean') {
+            return `${displayName}: ${value ? '✓ Pass' : '✗ Fail'}`;
+        }
+        return `${displayName}: ${typeof value === 'number' ? value.toFixed(1) : value}`;
+    }).join('\\n');
+    
+    const tooltipContent = factorsList || '6-Factor Technical Analysis:\\n• RSI Oversold Detection\\n• Bollinger Band Proximity\\n• Volume Surge Analysis\\n• Momentum Confirmation\\n• Volatility Assessment\\n• Support Level Analysis';
+    
     const confidenceCell = document.createElement('td');
-    confidenceCell.className = `text-center ${getConfidenceClass(confidenceScore)}`;
-    const confidenceDiv = document.createElement('div');
-    confidenceDiv.className = 'd-flex align-items-center justify-content-center';
-    const scoreSpan = document.createElement('span');
-    scoreSpan.className = 'fw-bold me-1';
-    scoreSpan.textContent = confidenceScore.toFixed(1);
-    const maxSpan = document.createElement('small');
-    maxSpan.className = 'text-muted';
-    maxSpan.textContent = '/ 100';
-    confidenceDiv.appendChild(scoreSpan);
-    confidenceDiv.appendChild(maxSpan);
-    confidenceCell.appendChild(confidenceDiv);
-    const levelSmall = document.createElement('small');
-    levelSmall.className = `text-center ${getConfidenceClass(confidenceScore)}`;
-    levelSmall.textContent = confidenceLevel;
-    confidenceCell.appendChild(levelSmall);
+    confidenceCell.className = 'text-center';
+    confidenceCell.setAttribute('data-label', 'Entry Confidence');
+    
+    // Create enhanced display structure
+    const mainDiv = document.createElement('div');
+    mainDiv.className = 'd-flex flex-column align-items-center';
+    
+    // Score with icon
+    const scoreDiv = document.createElement('div');
+    scoreDiv.className = `${getConfidenceClass(confidenceScore)}`;
+    scoreDiv.style.fontSize = '1.1em';
+    scoreDiv.setAttribute('data-bs-toggle', 'tooltip');
+    scoreDiv.setAttribute('data-bs-placement', 'top');
+    scoreDiv.setAttribute('title', tooltipContent);
+    
+    const iconSpan = document.createElement('i');
+    iconSpan.className = `fas ${signalIcon} me-1`;
+    const scoreSpan = document.createElement('strong');
+    scoreSpan.textContent = `${confidenceScore.toFixed(1)}%`;
+    
+    scoreDiv.appendChild(iconSpan);
+    scoreDiv.appendChild(scoreSpan);
+    
+    // Timing signal badge
+    const badgeDiv = document.createElement('div');
+    badgeDiv.className = 'mt-1';
+    const badgeSpan = document.createElement('span');
+    badgeSpan.className = `badge ${confidenceScore >= 70 ? 'bg-success' : confidenceScore >= 60 ? 'bg-primary' : confidenceScore >= 45 ? 'bg-warning' : 'bg-danger'}`;
+    badgeSpan.style.fontSize = '0.75em';
+    badgeSpan.setAttribute('data-bs-toggle', 'tooltip');
+    badgeSpan.setAttribute('data-bs-placement', 'right');
+    badgeSpan.setAttribute('title', '6-Factor Enhanced Signal');
+    badgeSpan.textContent = timingSignal;
+    badgeDiv.appendChild(badgeSpan);
+    
+    // Level text
+    const levelDiv = document.createElement('div');
+    levelDiv.className = 'text-muted mt-1';
+    levelDiv.style.fontSize = '0.7em';
+    const levelSpan = document.createElement('span');
+    levelSpan.setAttribute('data-bs-toggle', 'tooltip');
+    levelSpan.setAttribute('data-bs-placement', 'bottom');
+    const levelTooltip = confidenceScore >= 70 ? 'Strong Buy Setup' : confidenceScore >= 60 ? 'Good Entry Opportunity' : confidenceScore >= 45 ? 'Mixed Signals' : 'Poor Setup - Avoid';
+    levelSpan.setAttribute('title', `6-Factor Analysis: ${levelTooltip}`);
+    levelSpan.textContent = confidenceLevel;
+    levelDiv.appendChild(levelSpan);
+    
+    mainDiv.appendChild(scoreDiv);
+    mainDiv.appendChild(badgeDiv);
+    mainDiv.appendChild(levelDiv);
+    confidenceCell.appendChild(mainDiv);
     row.appendChild(confidenceCell);
     
     // Timing, risk, and buy signal cells
@@ -7110,6 +7170,29 @@ function updateAvailablePositionsTable(availablePositions) {
             availableTableBody.appendChild(row);
         });
         console.debug("Available positions table updated successfully");
+        
+        // Reinitialize Bootstrap tooltips for the new 6-factor analysis data
+        setTimeout(() => {
+            if (typeof bootstrap !== 'undefined') {
+                // Dispose existing tooltips first
+                document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(element => {
+                    const tooltip = bootstrap.Tooltip.getInstance(element);
+                    if (tooltip) {
+                        tooltip.dispose();
+                    }
+                });
+                
+                // Create new tooltips for 6-factor analysis
+                const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+                [...tooltipTriggerList].forEach(tooltipTriggerEl => {
+                    new bootstrap.Tooltip(tooltipTriggerEl, {
+                        html: true,
+                        delay: { show: 300, hide: 100 },
+                        placement: 'auto'
+                    });
+                });
+            }
+        }, 100);
         
     } catch (error) {
         console.error("Available positions table update failed:", error);
