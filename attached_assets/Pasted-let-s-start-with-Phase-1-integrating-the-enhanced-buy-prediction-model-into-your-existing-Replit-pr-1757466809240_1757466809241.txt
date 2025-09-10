@@ -1,12 +1,34 @@
+let’s start with Phase 1: integrating the enhanced buy prediction model into your existing Replit project.
+
+🧩 Step-by-Step Plan for Integration into Replit
+✅ Goal
+
+Replace your basic hash-based scoring fallback with a real indicator-based buy signal model using:
+
+RSI(14)
+
+Bollinger Bands
+
+Volume Surge
+
+Momentum
+
+Volatility
+
+Support Proximity
+
+✅ Step 1: Add the Buy Prediction Function
+📁 File: logic/purchase_predictor.py
+
+Create this file (or module) in your Replit project:
+
+# logic/purchase_predictor.py
+
 import numpy as np
 import pandas as pd
 from typing import Dict
 
 def calculate_buy_confidence(df: pd.DataFrame, current_price: float) -> Dict:
-    """
-    Enhanced buy prediction model using 6-factor technical analysis:
-    RSI(14), Bollinger Bands, Volume Surge, Momentum, Volatility, Support Proximity
-    """
     def rsi(prices, period=14):
         delta = np.diff(prices)
         gain = np.maximum(delta, 0)
