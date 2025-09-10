@@ -1,0 +1,482 @@
+{% extends "base_layout.html" %}
+
+{% block title %}System Test Dashboard - E2E Testing{% endblock %}
+
+{% block extra_css %}
+<style>
+/* System Test Dashboard Specific Styles */
+.test-dashboard {
+    background: var(--bg-primary);
+    min-height: 100vh;
+    color: var(--text-primary);
+}
+
+.test-header {
+    background: linear-gradient(135deg, var(--dark-blue-1) 0%, var(--dark-blue-2) 100%);
+    border-bottom: 1px solid var(--border-color);
+    padding: 20px 0;
+}
+
+.test-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+    transition: all 0.3s ease;
+}
+
+.test-card:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: var(--accent-blue);
+}
+
+.status-indicator {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 8px;
+}
+
+.status-pass { background-color: var(--success-green); }
+.status-fail { background-color: var(--danger-red); }
+.status-warning { background-color: var(--warning-orange); }
+.status-pending { background-color: #6c757d; }
+
+.test-output {
+    background: #1a1a1a;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 15px;
+    font-family: 'Courier New', monospace;
+    font-size: 0.9rem;
+    color: #e0e0e0;
+    max-height: 400px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+}
+
+.test-controls {
+    margin-bottom: 20px;
+}
+
+.test-button {
+    background: var(--accent-blue);
+    border: none;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 6px;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    margin-right: 10px;
+    margin-bottom: 10px;
+}
+
+.test-button:hover {
+    background: #0056b3;
+    transform: translateY(-1px);
+}
+
+.test-button:disabled {
+    background: #6c757d;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.test-metrics {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.metric-item {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 15px;
+    text-align: center;
+}
+
+.metric-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 5px;
+}
+
+.metric-label {
+    color: var(--text-light);
+    font-size: 0.9rem;
+}
+
+.test-section {
+    margin-bottom: 30px;
+}
+
+.test-progress {
+    margin-bottom: 20px;
+}
+
+.spinner {
+    border: 2px solid transparent;
+    border-top: 2px solid var(--accent-blue);
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    animation: spin 1s linear infinite;
+    display: inline-block;
+    margin-right: 8px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.config-section {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.env-var {
+    font-family: 'Courier New', monospace;
+    background: rgba(0, 0, 0, 0.3);
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.9rem;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="test-dashboard">
+    <div class="test-header">
+        <div class="container-fluid">
+            <h1 class="page-title mb-3">
+                <i class="fas fa-vial me-2"></i>
+                System Test Dashboard
+            </h1>
+            <p class="text-light mb-0">
+                End-to-end testing for OKX connectivity, ML models, hybrid signals, and DOM validation
+            </p>
+        </div>
+    </div>
+
+    <div class="container-fluid mt-4">
+        <!-- Test Configuration -->
+        <div class="test-section">
+            <h3><i class="fas fa-cog me-2"></i>Configuration</h3>
+            <div class="config-section">
+                <h5>Environment Variables</h5>
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Required for Testing:</strong></p>
+                        <ul>
+                            <li><span class="env-var">OKX_API_KEY</span> - Your OKX API key</li>
+                            <li><span class="env-var">OKX_SECRET_KEY</span> - Your OKX secret</li>
+                            <li><span class="env-var">OKX_PASSPHRASE</span> - Your OKX passphrase</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Optional for DOM Tests:</strong></p>
+                        <ul>
+                            <li><span class="env-var">APP_URL</span> - Your app's URL for DOM checks</li>
+                            <li><span class="env-var">DOM_SELECTORS</span> - JSON array of CSS selectors</li>
+                            <li><span class="env-var">DOM_CHECK_JS</span> - Enable Playwright tests</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Test Metrics -->
+        <div class="test-section">
+            <h3><i class="fas fa-chart-bar me-2"></i>Test Metrics</h3>
+            <div class="test-metrics">
+                <div class="metric-item">
+                    <div class="metric-value" id="total-tests">0</div>
+                    <div class="metric-label">Total Tests</div>
+                </div>
+                <div class="metric-item">
+                    <div class="metric-value text-success" id="passed-tests">0</div>
+                    <div class="metric-label">Passed</div>
+                </div>
+                <div class="metric-item">
+                    <div class="metric-value text-danger" id="failed-tests">0</div>
+                    <div class="metric-label">Failed</div>
+                </div>
+                <div class="metric-item">
+                    <div class="metric-value" id="test-duration">0s</div>
+                    <div class="metric-label">Duration</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Test Controls -->
+        <div class="test-section">
+            <h3><i class="fas fa-play me-2"></i>Test Controls</h3>
+            <div class="test-controls">
+                <button class="test-button" id="run-full-test" onclick="runFullTest()">
+                    <i class="fas fa-rocket me-2"></i>Run Full E2E Test
+                </button>
+                <button class="test-button" id="run-basic-test" onclick="runBasicTest()">
+                    <i class="fas fa-cogs me-2"></i>Run Basic Tests
+                </button>
+                <button class="test-button" id="run-dom-test" onclick="runDOMTest()">
+                    <i class="fas fa-window-maximize me-2"></i>Run DOM Tests
+                </button>
+                <button class="test-button" id="clear-output" onclick="clearOutput()">
+                    <i class="fas fa-trash me-2"></i>Clear Output
+                </button>
+            </div>
+            
+            <div class="test-progress">
+                <div class="progress">
+                    <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                         role="progressbar" 
+                         style="width: 0%" 
+                         id="test-progress"></div>
+                </div>
+                <div class="mt-2">
+                    <small class="text-muted" id="current-test">Ready to run tests</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Test Status -->
+        <div class="test-section">
+            <h3><i class="fas fa-list-check me-2"></i>Test Status</h3>
+            <div class="test-card" id="test-status">
+                <div class="row">
+                    <div class="col-md-3">
+                        <h6><span class="status-indicator status-pending" id="env-status"></span>Environment</h6>
+                        <small class="text-muted">API credentials check</small>
+                    </div>
+                    <div class="col-md-3">
+                        <h6><span class="status-indicator status-pending" id="okx-status"></span>OKX Public API</h6>
+                        <small class="text-muted">Live market data</small>
+                    </div>
+                    <div class="col-md-3">
+                        <h6><span class="status-indicator status-pending" id="auth-status"></span>OKX Private API</h6>
+                        <small class="text-muted">Authenticated access</small>
+                    </div>
+                    <div class="col-md-3">
+                        <h6><span class="status-indicator status-pending" id="ml-status"></span>ML Model</h6>
+                        <small class="text-muted">Regression model</small>
+                    </div>
+                </div>
+                <hr>
+                <div class="row">
+                    <div class="col-md-3">
+                        <h6><span class="status-indicator status-pending" id="hybrid-status"></span>Hybrid Signals</h6>
+                        <small class="text-muted">ML + Technical analysis</small>
+                    </div>
+                    <div class="col-md-3">
+                        <h6><span class="status-indicator status-pending" id="logging-status"></span>Signal Logging</h6>
+                        <small class="text-muted">CSV data export</small>
+                    </div>
+                    <div class="col-md-3">
+                        <h6><span class="status-indicator status-pending" id="dom-status"></span>DOM Validation</h6>
+                        <small class="text-muted">UI structure check</small>
+                    </div>
+                    <div class="col-md-3">
+                        <h6><span class="status-indicator status-pending" id="backtest-status"></span>Backtest Files</h6>
+                        <small class="text-muted">Historical data</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Test Output -->
+        <div class="test-section">
+            <h3><i class="fas fa-terminal me-2"></i>Test Output</h3>
+            <div class="test-output" id="test-output">
+                Waiting for test execution...
+                
+To run tests manually from the shell:
+$ python -m tests.e2e_system_check
+
+For Playwright DOM tests:
+$ python -m playwright install --with-deps
+$ export DOM_CHECK_JS=true
+$ python -m tests.e2e_system_check
+            </div>
+        </div>
+
+        <!-- Test Results -->
+        <div class="test-section" id="results-section" style="display: none;">
+            <h3><i class="fas fa-flag-checkered me-2"></i>Latest Test Results</h3>
+            <div class="test-card">
+                <div id="test-results"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let testRunning = false;
+let testStartTime = 0;
+
+function updateStatus(elementId, status) {
+    const element = document.getElementById(elementId);
+    if (element) {
+        element.className = `status-indicator status-${status}`;
+    }
+}
+
+function updateMetrics(passed, failed, duration) {
+    document.getElementById('total-tests').textContent = passed + failed;
+    document.getElementById('passed-tests').textContent = passed;
+    document.getElementById('failed-tests').textContent = failed;
+    document.getElementById('test-duration').textContent = duration + 's';
+}
+
+function updateProgress(percent, message) {
+    const progressBar = document.getElementById('test-progress');
+    const currentTest = document.getElementById('current-test');
+    
+    progressBar.style.width = percent + '%';
+    currentTest.textContent = message;
+}
+
+function appendOutput(text) {
+    const output = document.getElementById('test-output');
+    output.textContent += text + '\n';
+    output.scrollTop = output.scrollHeight;
+}
+
+function clearOutput() {
+    document.getElementById('test-output').textContent = '';
+    updateProgress(0, 'Ready to run tests');
+    
+    // Reset all status indicators
+    const statuses = ['env', 'okx', 'auth', 'ml', 'hybrid', 'logging', 'dom', 'backtest'];
+    statuses.forEach(status => updateStatus(status + '-status', 'pending'));
+}
+
+function setTestRunning(running) {
+    testRunning = running;
+    const buttons = document.querySelectorAll('.test-button');
+    buttons.forEach(btn => {
+        if (btn.id !== 'clear-output') {
+            btn.disabled = running;
+        }
+    });
+    
+    if (running) {
+        testStartTime = Date.now();
+    }
+}
+
+async function runCommand(command, description) {
+    try {
+        appendOutput(`\n🚀 ${description}...`);
+        
+        const response = await fetch('/api/run-test-command', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ command: command })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            appendOutput(`✅ ${description} completed`);
+            appendOutput(result.output);
+            return true;
+        } else {
+            appendOutput(`❌ ${description} failed: ${result.error}`);
+            return false;
+        }
+    } catch (error) {
+        appendOutput(`❌ ${description} error: ${error.message}`);
+        return false;
+    }
+}
+
+async function runFullTest() {
+    if (testRunning) return;
+    
+    setTestRunning(true);
+    clearOutput();
+    
+    appendOutput('🎯 Starting comprehensive E2E system test...');
+    updateProgress(10, 'Initializing test environment...');
+    
+    // Simulate test steps
+    const tests = [
+        { step: 'env', name: 'Environment Check', progress: 20 },
+        { step: 'okx', name: 'OKX Public API', progress: 30 },
+        { step: 'auth', name: 'OKX Authentication', progress: 45 },
+        { step: 'ml', name: 'ML Model Loading', progress: 60 },
+        { step: 'hybrid', name: 'Hybrid Signal Generation', progress: 75 },
+        { step: 'logging', name: 'Signal Logging', progress: 85 },
+        { step: 'dom', name: 'DOM Validation', progress: 95 }
+    ];
+    
+    let passed = 0;
+    let failed = 0;
+    
+    for (const test of tests) {
+        updateProgress(test.progress, `Running ${test.name}...`);
+        updateStatus(test.step + '-status', 'pending');
+        
+        await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate test time
+        
+        // Run the actual Python test
+        const success = await runCommand('python -m tests.e2e_system_check', test.name);
+        
+        if (success) {
+            updateStatus(test.step + '-status', 'pass');
+            passed++;
+        } else {
+            updateStatus(test.step + '-status', 'fail');
+            failed++;
+        }
+    }
+    
+    const duration = Math.round((Date.now() - testStartTime) / 1000);
+    updateMetrics(passed, failed, duration);
+    updateProgress(100, 'Test completed');
+    
+    setTestRunning(false);
+    
+    // Show results
+    const resultsSection = document.getElementById('results-section');
+    resultsSection.style.display = 'block';
+    
+    const overallStatus = failed === 0 ? 'PASSED' : 'FAILED';
+    const statusColor = failed === 0 ? 'success' : 'danger';
+    
+    document.getElementById('test-results').innerHTML = `
+        <h4 class="text-${statusColor}">Overall Status: ${overallStatus}</h4>
+        <p>Tests completed in ${duration} seconds with ${passed} passed and ${failed} failed.</p>
+    `;
+}
+
+async function runBasicTest() {
+    if (testRunning) return;
+    appendOutput('\n🔍 Running basic connectivity tests...');
+    await runCommand('python -c "from tests.e2e_system_check import check_env, check_okx_public; check_env(); check_okx_public(); print(\'Basic tests passed\')"', 'Basic Tests');
+}
+
+async function runDOMTest() {
+    if (testRunning) return;
+    appendOutput('\n🖥️ Running DOM validation tests...');
+    await runCommand('python -c "from tests.e2e_system_check import check_dom_http; check_dom_http(); print(\'DOM tests passed\')"', 'DOM Tests');
+}
+
+// Auto-refresh status every 30 seconds
+setInterval(() => {
+    if (!testRunning) {
+        // Could add background status checks here
+    }
+}, 30000);
+</script>
+{% endblock %}

@@ -12,5 +12,6 @@ joblib
 jsonschema
 pytz
 requests
-scikit-learn
 xgboost
+beautifulsoup4
+playwright

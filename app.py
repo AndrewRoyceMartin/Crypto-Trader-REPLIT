@@ -3587,6 +3587,11 @@ def trading_performance() -> str:
     """Trading performance dashboard for real-time monitoring and analysis."""
     return render_template('trading_performance.html', ADMIN_TOKEN=ADMIN_TOKEN)
 
+@app.route("/system-test")
+def system_test() -> str:
+    """Comprehensive system testing dashboard for E2E validation."""
+    return render_template('system_test.html', ADMIN_TOKEN=ADMIN_TOKEN)
+
 # Legacy route compatibility
 @app.route("/unified")
 def unified_dashboard_legacy() -> str:
@@ -3993,6 +3998,67 @@ def api_trade_performance() -> ResponseReturnValue:
             "success": False,
             "error": str(e),
             "timestamp": iso_utc()
+        }), 500
+
+@app.route('/api/run-test-command', methods=['POST'])
+def api_run_test_command() -> ResponseReturnValue:
+    """Execute test commands for the system test dashboard."""
+    try:
+        data = request.get_json()
+        command = data.get('command', '')
+        
+        if not command:
+            return jsonify({
+                "success": False,
+                "error": "No command provided"
+            }), 400
+        
+        # Security: Only allow specific test commands
+        allowed_commands = [
+            'python -m tests.e2e_system_check',
+            'python -c "from tests.e2e_system_check import check_env, check_okx_public; check_env(); check_okx_public(); print(\'Basic tests passed\')"',
+            'python -c "from tests.e2e_system_check import check_dom_http; check_dom_http(); print(\'DOM tests passed\')"'
+        ]
+        
+        if command not in allowed_commands:
+            return jsonify({
+                "success": False,
+                "error": "Command not allowed"
+            }), 403
+        
+        import subprocess
+        import os
+        
+        # Set environment variables for test
+        env = os.environ.copy()
+        env['APP_URL'] = request.host_url.rstrip('/')
+        
+        try:
+            result = subprocess.run(
+                command.split(),
+                capture_output=True,
+                text=True,
+                timeout=30,
+                env=env
+            )
+            
+            return jsonify({
+                "success": result.returncode == 0,
+                "output": result.stdout,
+                "error": result.stderr if result.returncode != 0 else None
+            })
+            
+        except subprocess.TimeoutExpired:
+            return jsonify({
+                "success": False,
+                "error": "Command timed out after 30 seconds"
+            }), 408
+            
+    except Exception as e:
+        logger.error(f"Test command execution failed: {e}")
+        return jsonify({
+            "success": False,
+            "error": str(e)
         }), 500
 
 # Main application configuration and startup
