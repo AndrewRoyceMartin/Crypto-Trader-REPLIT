@@ -16,6 +16,7 @@ import base64
 import warnings
 from datetime import datetime, timedelta, timezone
 from typing import Any, Optional, Iterator, TypedDict
+from collections import OrderedDict
 from functools import wraps
 
 from flask import (
@@ -690,6 +691,17 @@ def cache_get(sym: str, tf: str) -> Optional[Any]:
 
 # Forwarder to the PortfolioService singleton in the service module
 
+
+def humanize_seconds(seconds: float) -> str:
+    """Convert seconds to human-readable format."""
+    if seconds < 60:
+        return f"{int(seconds)} seconds"
+    elif seconds < 3600:
+        minutes = int(seconds // 60)
+        return f"{minutes} minute{'s' if minutes != 1 else ''}"
+    else:
+        hours = int(seconds // 3600)
+        return f"{hours} hour{'s' if hours != 1 else ''}"
 
 def get_portfolio_service():
     """Get the global PortfolioService singleton from the service module."""
@@ -1949,9 +1961,8 @@ def portfolio() -> str:
 def render_portfolio_page() -> str:
     """Render the dedicated portfolio page."""
     try:
-        from version import get_version
         cache_version = int(time.time())
-        return render_template("portfolio.html", cache_version=cache_version, version=get_version())
+        return render_template("portfolio.html", cache_version=cache_version)
     except Exception as e:
         logger.error(f"Error rendering portfolio page: {e}")
         return render_loading_skeleton(f"Portfolio Error: {e}", error=True)
@@ -1972,9 +1983,8 @@ def trades_page() -> str:
 def render_trades_page() -> str:
     """Render the comprehensive trades table page."""
     try:
-        from version import get_version
         cache_version = int(time.time())
-        return render_template("trades.html", cache_version=cache_version, version=get_version())
+        return render_template("trades.html", cache_version=cache_version)
     except Exception as e:
         logger.error(f"Error rendering trades page: {e}")
         return render_loading_skeleton(f"Trades Error: {e}", error=True)
@@ -1995,9 +2005,8 @@ def performance() -> str:
 def render_performance_page() -> str:
     """Render the dedicated performance analytics page."""
     try:
-        from version import get_version
         cache_version = int(time.time())
-        return render_template("performance.html", cache_version=cache_version, version=get_version())
+        return render_template("performance.html", cache_version=cache_version)
     except Exception as e:
         logger.error(f"Error rendering performance page: {e}")
         return render_loading_skeleton(f"Performance Error: {e}", error=True)
@@ -2019,9 +2028,8 @@ def holdings() -> str:
 def render_holdings_page() -> str:
     """Render the dedicated holdings page."""
     try:
-        from version import get_version
         cache_version = int(time.time())
-        return render_template("holdings.html", cache_version=cache_version, version=get_version())
+        return render_template("holdings.html", cache_version=cache_version)
     except Exception as e:
         logger.error(f"Error rendering holdings page: {e}")
         return render_loading_skeleton(f"Holdings Error: {e}", error=True)
@@ -3247,9 +3255,6 @@ def api_available_positions() -> ResponseReturnValue:
 
 
 # Additional helper functions and imports
-def normalize_pair(symbol: str) -> str:
-    """Convert OKX instrument format to standard format."""
-    return symbol.replace('-', '/') if symbol else symbol
 
 
 
