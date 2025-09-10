@@ -245,7 +245,7 @@
             <thead>
                 <tr>
                     <th class="sortable" onclick="sortTable(0, 'string')" style="cursor: pointer;">
-                        Pair <i class="fas fa-sort text-muted" id="sort-icon-0"></i>
+                        Coin <i class="fas fa-sort text-muted" id="sort-icon-0"></i>
                     </th>
                     <th class="sortable" onclick="sortTable(1, 'string')" style="cursor: pointer;">
                         Category <i class="fas fa-sort text-muted" id="sort-icon-1"></i>
@@ -485,7 +485,7 @@ function updateMarketTable() {
                 <td>
                     <div class="d-flex align-items-center">
                         <i class="fas fa-coins me-2 text-warning"></i>
-                        <strong>${pair.pair}</strong>
+                        <strong>${pair.symbol}</strong>
                     </div>
                 </td>
                 <td>
@@ -634,7 +634,7 @@ function sortTable(columnIndex, dataType) {
         let aVal, bVal;
         
         switch (columnIndex) {
-            case 0: // Pair
+            case 0: // Coin
                 aVal = a.symbol || '';
                 bVal = b.symbol || '';
                 break;
