@@ -4201,6 +4201,71 @@ def api_run_test_command() -> ResponseReturnValue:
         }), 500
 
 # Main application configuration and startup
+@app.route("/api/self-check")
+def self_check():
+    """
+    Lightweight runtime health:
+      - OKX public tickers live check (no simulated data)
+      - Optional private fills auth sanity (code=='0')
+      - Trades API reachable (internal)
+    """
+    okx_base = "https://www.okx.com"
+    status = {"time": datetime.now(timezone.utc).isoformat()}
+
+    # Public
+    pub = requests.get(f"{okx_base}/api/v5/market/tickers", params={"instType": "SPOT"}, timeout=10)
+    status["okx_public_status"] = pub.status_code
+    status["okx_public_code"] = pub.json().get("code", "no-json")
+    status["okx_server_date_header"] = pub.headers.get("Date")
+    status["okx_no_simulation_header"] = ("x-simulated-trading" not in pub.headers)
+    status["okx_has_btc"] = any(d.get("instId") == "BTC-USDT" for d in pub.json().get("data", []))
+
+    # Private (best-effort)
+    try:
+        from src.utils.safe_shims import okx_ts_utc  # optional if you created such helper; fallback below
+    except Exception:
+        def okx_ts_utc(): return datetime.now(timezone.utc).isoformat(timespec="milliseconds").replace("+00:00","Z")
+
+    try:
+        ts = okx_ts_utc()
+        path = "/api/v5/trade/fills"
+        msg = f"{ts}GET{path}"
+        sig = base64.b64encode(hmac.new(os.getenv("OKX_SECRET_KEY","").encode(), msg.encode(), hashlib.sha256).digest()).decode()
+        headers = {
+            "OK-ACCESS-KEY": os.getenv("OKX_API_KEY",""),
+            "OK-ACCESS-SIGN": sig,
+            "OK-ACCESS-TIMESTAMP": ts,
+            "OK-ACCESS-PASSPHRASE": os.getenv("OKX_PASSPHRASE",""),
+            "Content-Type": "application/json",
+        }
+        priv = requests.get(f"{okx_base}{path}", headers=headers, params={"instType":"SPOT","limit":1}, timeout=10)
+        status["okx_private_status"] = priv.status_code
+        status["okx_private_code"] = priv.json().get("code","no-json")
+    except Exception as e:
+        status["okx_private_error"] = str(e)
+
+    # Internal trades
+    try:
+        # Call this process directly to avoid HTTP loops if desired
+        # Here we just hit the HTTP endpoint to exercise the route
+        r = requests.get("http://127.0.0.1:5000/api/trades", timeout=10)
+        status["api_trades_status"] = r.status_code
+        body = r.json()
+        status["api_trades_success"] = body.get("success", False)
+        status["api_trades_count"] = len(body.get("trades", [])) if isinstance(body.get("trades"), list) else 0
+    except Exception as e:
+        status["api_trades_error"] = str(e)
+
+    healthy = (
+        status.get("okx_public_status") == 200
+        and status.get("okx_public_code") == "0"
+        and status.get("okx_no_simulation_header") is True
+        and status.get("okx_has_btc") is True
+        and status.get("api_trades_status") == 200
+        and status.get("api_trades_success") is True
+    )
+    return jsonify({"healthy": healthy, "status": status})
+
 if __name__ == '__main__':
     # Flask app will be started by the workflow system
     app.run(host='0.0.0.0', port=5000, debug=False)
