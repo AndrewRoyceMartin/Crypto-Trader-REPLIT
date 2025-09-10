@@ -301,7 +301,8 @@ def get_stable_target_price(symbol: str, current_price: float) -> float:
             if bollinger_data and bollinger_data.get('lower_band_price'):
                 # Use Bollinger Band lower band as dynamic target
                 return bollinger_data['lower_band_price'] * 0.98  # Slight buffer below lower band
-        except:
+        except Exception as e:
+            logger.error(f"Bollinger target price calculation failed: {e}")
             pass
         # Fallback to volatility-adjusted target
         return current_price * (0.92 if current_price > 1000 else 0.88)  # Larger discount for smaller coins
@@ -313,7 +314,8 @@ def get_stable_target_price(symbol: str, current_price: float) -> float:
             bollinger_data = safe_get_boll_target(symbol, current_price)
             if bollinger_data and bollinger_data.get('lower_band_price'):
                 return bollinger_data['lower_band_price'] * 0.98
-        except:
+        except Exception as e:
+            logger.error(f"Safe Bollinger target calculation failed: {e}")
             pass
         return current_price * (0.92 if current_price > 1000 else 0.88)
 
@@ -1098,20 +1100,8 @@ def crypto_portfolio_okx() -> ResponseReturnValue:
                 elif hasattr(portfolio_service, "exchange"):
                     # Last resort: try exchange cache clearing methods
                     exchange = portfolio_service.exchange
-            try_clear_cache(exchange)
-            try_invalidate_cache(exchange)
-                    if hasattr(exchange, "clear_cache") and callable(exchange.clear_cache):
-                        try:
-                            exchange
-                        except (AttributeError, RuntimeError) as e:
-                            logger.debug(f"Exchange cache clear failed: {e}")
-                            pass
-                    elif hasattr(exchange, "invalidate_cache") and callable(exchange.invalidate_cache):
-                        try:
-                            exchange
-                        except (AttributeError, RuntimeError) as e:
-                            logger.debug(f"Exchange cache invalidate failed: {e}")
-                            pass
+                    try_clear_cache(exchange)
+                    try_invalidate_cache(exchange)
             except Exception as e:
                 logger.debug(f"Cache invalidation not available: {e}")
             okx_portfolio_data: dict[str, Any] = portfolio_service.get_portfolio_data_OKX_NATIVE_ONLY(currency=selected_currency)
@@ -1203,9 +1193,9 @@ def calculate_trade_pnl(fill):
         # Fees are typically negative, so this shows the cost
         net_pnl = fee  # Fee already represents the cost/impact
         
-        return round(net_pnl, 4)    except Exception as e:
+        return round(net_pnl, 4)
+    except Exception as e:
         logger.error(f"Unhandled exception: {e}")
-    except:
         return 0.0
 
 def calculate_trade_pnl_percentage(fill):
@@ -1219,7 +1209,8 @@ def calculate_trade_pnl_percentage(fill):
             fee_percentage = (fee / trade_value) * 100
             return round(fee_percentage, 3)
         return 0.0
-    except:
+    except Exception as e:
+        logger.error(f"Fee percentage calculation failed: {e}")
         return 0.0
 
 def get_pnl_emoji(pnl):
@@ -1231,7 +1222,8 @@ def get_pnl_emoji(pnl):
     else:
         return "⚪"  # Neutral
 
-@app.route("/api/comprehensive-trades")def api_comprehensive_trades() -> ResponseReturnValue:
+@app.route("/api/comprehensive-trades")
+def api_comprehensive_trades() -> ResponseReturnValue:
     """
     Get comprehensive trade history using OKX native API fields.
     Returns detailed trade information with all OKX API fields as shown in documentation.
@@ -2057,7 +2049,8 @@ def render_full_dashboard() -> str:
         try:
             file_mod_time = int(os.path.getmtime(js_file_path))
             cache_version = f"{file_mod_time}_{int(time.time() * 1000)}"  # Include milliseconds
-        except:
+        except Exception as e:
+            logger.debug(f"Could not get file modification time: {e}")
             cache_version = int(time.time() * 1000)  # Fallback with milliseconds
             
         response = make_response(render_template("unified_dashboard.html",
@@ -2247,7 +2240,8 @@ def bot_start() -> ResponseReturnValue:
             try:
                 if hasattr(multi_currency_trader, 'stop'):
                     multi_currency_trader.stop()
-            except:
+            except Exception as e:
+                logger.debug(f"Error stopping multi-currency trader: {e}")
                 pass
             multi_currency_trader = None
         
