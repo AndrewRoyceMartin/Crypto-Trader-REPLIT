@@ -840,7 +840,31 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     // Add a marker to help CSS specificity (if needed)
     el.setAttribute('data-style', 'v02');
+    
+    // Force blue headers programmatically to override Bootstrap conflicts
+    const headers = el.querySelectorAll('thead th');
+    headers.forEach(header => {
+      header.style.backgroundColor = '#6c7ae0';
+      header.style.color = '#ffffff';
+      header.style.border = 'none';
+      header.style.fontWeight = '600';
+    });
   });
+  
+  // Also apply styles to any new tables that load dynamically
+  const observer = new MutationObserver(() => {
+    document.querySelectorAll('.table-v02:not([data-style]), .table-v02--compact:not([data-style])').forEach((el) => {
+      el.setAttribute('data-style', 'v02');
+      const headers = el.querySelectorAll('thead th');
+      headers.forEach(header => {
+        header.style.backgroundColor = '#6c7ae0';
+        header.style.color = '#ffffff';
+        header.style.border = 'none';
+        header.style.fontWeight = '600';
+      });
+    });
+  });
+  observer.observe(document.body, { childList: true, subtree: true });
 });
 </script>
 {% endblock %}
