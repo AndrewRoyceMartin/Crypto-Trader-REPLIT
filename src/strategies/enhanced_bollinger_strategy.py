@@ -69,8 +69,17 @@ class EnhancedBollingerBandsStrategy(BaseStrategy):
         self.logger.info("Enhanced Bollinger Bands strategy initialized with crash protection")
     
     def calculate_position_size(self, signal, portfolio_value: float, current_price: float) -> float:
-        """Calculate position size based on risk management."""
-        risk_amount = portfolio_value * (signal.size if hasattr(signal, 'size') else self.position_size_percent / 100)
+        """Calculate position size based on hybrid score dynamic risk weighting."""
+        # Dynamic position sizing based on hybrid score
+        if hasattr(signal, 'hybrid_score') and signal.hybrid_score:
+            # Risk multiplier from 0.0 to 1.0 based on hybrid score
+            risk_weight = min(1.0, max(0.1, signal.hybrid_score / 100))  # Cap between 10% and 100%
+            risk_amount = portfolio_value * risk_weight
+            self.logger.info(f"🎯 Dynamic Position Sizing: Hybrid Score={signal.hybrid_score:.1f}% → Risk Weight={risk_weight:.1%} → ${risk_amount:.2f}")
+        else:
+            # Fallback to traditional fixed percentage
+            risk_amount = portfolio_value * (signal.size if hasattr(signal, 'size') else self.position_size_percent / 100)
+            
         position_size = risk_amount / current_price
         return position_size
     
@@ -356,6 +365,19 @@ class EnhancedBollingerBandsStrategy(BaseStrategy):
         
         return None
     
+    def _get_hybrid_score(self, symbol: str, current_price: float) -> float:
+        """Get hybrid score from ML enhanced confidence analyzer."""
+        try:
+            from src.utils.ml_enhanced_confidence import MLEnhancedConfidenceAnalyzer
+            analyzer = MLEnhancedConfidenceAnalyzer()
+            result = analyzer.calculate_enhanced_confidence(symbol, current_price)
+            hybrid_score = result.get('hybrid_score', 0.0)
+            self.logger.debug(f"🎯 Retrieved Hybrid Score for {symbol}: {hybrid_score:.1f}%")
+            return float(hybrid_score)
+        except Exception as e:
+            self.logger.warning(f"Failed to get hybrid score for {symbol}: {e}")
+            return 0.0
+
     def _check_entry_opportunities(self, px: float, bb_up: float, bb_lo: float, atr: float, data: pd.DataFrame) -> Optional[Signal]:
         """ENHANCED: Check for entry opportunities with multiple confirmation filters for higher probability trades."""
         if self.position_state['position_qty'] > 0.0:
@@ -419,10 +441,17 @@ class EnhancedBollingerBandsStrategy(BaseStrategy):
             self.logger.critical(f"   ✅ Confirmed filters: {', '.join(confirmed_filters)}")
             self.logger.critical(f"   📊 Entry confidence: {confidence_boost:.1%}")
             
+            # Get hybrid score for dynamic position sizing
+            symbol = getattr(self, '_current_symbol', 'BTC')  # Default to BTC if symbol not set
+            hybrid_score = self._get_hybrid_score(symbol, px)
+            self._current_hybrid_score = hybrid_score  # Store for position sizing
+            
             signal = self._create_entry_signal(px, atr, 'HIGH_PROBABILITY_ENTRY')
             signal.confidence = confidence_boost
+            signal.hybrid_score = hybrid_score  # Add hybrid score to signal
             signal.metadata['confirmations'] = total_confirmations
             signal.metadata['confirmed_filters'] = confirmed_filters
+            signal.metadata['hybrid_score'] = hybrid_score
             
             return signal
         else:
@@ -638,18 +667,38 @@ class EnhancedBollingerBandsStrategy(BaseStrategy):
         # Risk-based position sizing using real OKX entry price
         risk_per_unit = max(1e-12, px * self.stop_loss_percent / 100)
         
-        # Apply rebuy limit for rebuy trades, or scale normal trades based on confidence
-        if 'REBUY' in event_type:
-            dollars = min(self.rebuy_max_usd, self.position_size_percent / 100 * self.position_state['equity'])
-            self.logger.info(f"Rebuy trade limited to ${dollars:.2f} (max: ${self.rebuy_max_usd:.2f})")
-        elif 'HIGH_PROBABILITY' in event_type:
-            # Scale position size based on confidence for high probability entries
-            base_dollars = self.position_size_percent / 100 * self.position_state['equity']
-            confidence_multiplier = 1.5  # Increase size for high confidence trades
-            dollars = min(base_dollars * confidence_multiplier, 150.0)  # Cap at $150 for high prob trades
-            self.logger.info(f"High probability trade: ${dollars:.2f} (confidence multiplier: {confidence_multiplier}x)")
+        # Dynamic position sizing based on hybrid score
+        hybrid_score = getattr(self, '_current_hybrid_score', None)
+        
+        if hybrid_score and hybrid_score > 0:
+            # Risk multiplier from 0.0 to 1.0 based on hybrid score
+            risk_weight = min(1.0, max(0.1, hybrid_score / 100))  # Cap between 10% and 100%
+            base_dollars = self.position_state['equity'] * risk_weight
+            
+            # Apply special limits for specific trade types
+            if 'REBUY' in event_type:
+                dollars = min(self.rebuy_max_usd, base_dollars)
+                self.logger.info(f"🎯 Dynamic Rebuy: Hybrid Score={hybrid_score:.1f}% → Risk Weight={risk_weight:.1%} → ${dollars:.2f} (max: ${self.rebuy_max_usd:.2f})")
+            elif 'HIGH_PROBABILITY' in event_type:
+                # For high probability, use full hybrid score allocation (no artificial multiplier)
+                dollars = min(base_dollars, 200.0)  # Cap at $200 for high prob trades
+                self.logger.info(f"🎯 Dynamic High Probability: Hybrid Score={hybrid_score:.1f}% → Risk Weight={risk_weight:.1%} → ${dollars:.2f}")
+            else:
+                dollars = min(base_dollars, 150.0)  # Cap regular trades at $150
+                self.logger.info(f"🎯 Dynamic Position Sizing: Hybrid Score={hybrid_score:.1f}% → Risk Weight={risk_weight:.1%} → ${dollars:.2f}")
         else:
-            dollars = self.position_size_percent / 100 * self.position_state['equity']
+            # Fallback to traditional fixed percentage for trades without hybrid score
+            if 'REBUY' in event_type:
+                dollars = min(self.rebuy_max_usd, self.position_size_percent / 100 * self.position_state['equity'])
+                self.logger.info(f"Traditional rebuy trade: ${dollars:.2f} (max: ${self.rebuy_max_usd:.2f})")
+            elif 'HIGH_PROBABILITY' in event_type:
+                base_dollars = self.position_size_percent / 100 * self.position_state['equity']
+                confidence_multiplier = 1.5
+                dollars = min(base_dollars * confidence_multiplier, 150.0)
+                self.logger.info(f"Traditional high probability trade: ${dollars:.2f} (confidence multiplier: {confidence_multiplier}x)")
+            else:
+                dollars = self.position_size_percent / 100 * self.position_state['equity']
+                self.logger.info(f"Traditional position sizing: ${dollars:.2f} ({self.position_size_percent}% of equity)")
         
         # Additional safety: Ensure we don't exceed maximum trade size
         max_trade_usd = max(self.rebuy_max_usd, 1000.0)  # Either rebuy limit or $1000 max for normal trades
@@ -679,6 +728,10 @@ class EnhancedBollingerBandsStrategy(BaseStrategy):
             stop_loss=stop_loss,
             take_profit=take_profit
         )
+        
+        # Add hybrid score to signal for position sizing
+        if hasattr(self, '_current_hybrid_score'):
+            signal.hybrid_score = self._current_hybrid_score
         
         signal.metadata = {
             'event': event_type,
