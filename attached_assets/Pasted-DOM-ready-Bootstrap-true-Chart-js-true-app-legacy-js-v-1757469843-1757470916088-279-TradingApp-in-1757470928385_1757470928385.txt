@@ -1,0 +1,56 @@
+DOM ready, Bootstrap: true Chart.js: true
+app_legacy.js?v=1757469843_1757470916088:279 TradingApp initialized once (consolidated)
+filter_positions.js?v=1757469843_1757470916088:116 🔧 Position filters initialized
+app_legacy.js?v=1757469843_1757470916088:803  GET https://47c9c798-b0c1-4791-9090-157d07a27bb9-00-3ij4m9iy3b22d.worf.replit.dev/api/config 404 (Not Found)
+fetchWithCache @ app_legacy.js?v=1757469843_1757470916088:803
+loadConfig @ app_legacy.js?v=1757469843_1757470916088:2670
+init @ app_legacy.js?v=1757469843_1757470916088:653
+TradingApp @ app_legacy.js?v=1757469843_1757470916088:380
+(anonymous) @ app_legacy.js?v=1757469843_1757470916088:278Understand this error
+app_legacy.js?v=1757469843_1757470916088:2493  GET https://47c9c798-b0c1-4791-9090-157d07a27bb9-00-3ij4m9iy3b22d.worf.replit.dev/api/price-source-status 404 (Not Found)
+updatePriceSourceStatus @ app_legacy.js?v=1757469843_1757470916088:2493
+updateDashboard @ app_legacy.js?v=1757469843_1757470916088:895
+await in updateDashboard
+debouncedUpdateDashboard @ app_legacy.js?v=1757469843_1757470916088:2488
+startAutoUpdate @ app_legacy.js?v=1757469843_1757470916088:701
+init @ app_legacy.js?v=1757469843_1757470916088:663
+TradingApp @ app_legacy.js?v=1757469843_1757470916088:380
+(anonymous) @ app_legacy.js?v=1757469843_1757470916088:278Understand this error
+app_legacy.js?v=1757469843_1757470916088:929  GET https://47c9c798-b0c1-4791-9090-157d07a27bb9-00-3ij4m9iy3b22d.worf.replit.dev/api/portfolio-analytics 404 (Not Found)
+updatePortfolioAnalytics @ app_legacy.js?v=1757469843_1757470916088:929
+updateDashboard @ app_legacy.js?v=1757469843_1757470916088:899
+await in updateDashboard
+debouncedUpdateDashboard @ app_legacy.js?v=1757469843_1757470916088:2488
+startAutoUpdate @ app_legacy.js?v=1757469843_1757470916088:701
+init @ app_legacy.js?v=1757469843_1757470916088:663
+TradingApp @ app_legacy.js?v=1757469843_1757470916088:380
+(anonymous) @ app_legacy.js?v=1757469843_1757470916088:278Understand this error
+app_legacy.js?v=1757469843_1757470916088:1047  GET https://47c9c798-b0c1-4791-9090-157d07a27bb9-00-3ij4m9iy3b22d.worf.replit.dev/api/portfolio-history?timeframe=30d 404 (Not Found)
+updatePortfolioHistory @ app_legacy.js?v=1757469843_1757470916088:1047
+updateDashboard @ app_legacy.js?v=1757469843_1757470916088:902
+await in updateDashboard
+debouncedUpdateDashboard @ app_legacy.js?v=1757469843_1757470916088:2488
+startAutoUpdate @ app_legacy.js?v=1757469843_1757470916088:701
+init @ app_legacy.js?v=1757469843_1757470916088:663
+TradingApp @ app_legacy.js?v=1757469843_1757470916088:380
+(anonymous) @ app_legacy.js?v=1757469843_1757470916088:278Understand this error
+app_legacy.js?v=1757469843_1757470916088:1171  GET https://47c9c798-b0c1-4791-9090-157d07a27bb9-00-3ij4m9iy3b22d.worf.replit.dev/api/asset-allocation 404 (Not Found)
+updateAssetAllocation @ app_legacy.js?v=1757469843_1757470916088:1171
+updateDashboard @ app_legacy.js?v=1757469843_1757470916088:905
+await in updateDashboard
+debouncedUpdateDashboard @ app_legacy.js?v=1757469843_1757470916088:2488
+startAutoUpdate @ app_legacy.js?v=1757469843_1757470916088:701
+init @ app_legacy.js?v=1757469843_1757470916088:663
+TradingApp @ app_legacy.js?v=1757469843_1757470916088:380
+(anonymous) @ app_legacy.js?v=1757469843_1757470916088:278Understand this error
+app_legacy.js?v=1757469843_1757470916088:3531 Holdings progress: 5% - Initializing request...
+app_legacy.js?v=1757469843_1757470916088:3142 📊 Holdings refresh starting - loading data
+app_legacy.js?v=1757469843_1757470916088:3531 Holdings progress: 15% - Connecting to OKX API...
+app_legacy.js?v=1757469843_1757470916088:3531 Holdings progress: 25% - Fetching portfolio data...
+app_legacy.js?v=1757469843_1757470916088:3531 Holdings progress: 50% - Processing market data...
+app_legacy.js?v=1757469843_1757470916088:3531 Holdings progress: 70% - Validating data integrity...
+app_legacy.js?v=1757469843_1757470916088:3531 Holdings progress: 85% - Updating table display...
+app_legacy.js?v=1757469843_1757470916088:3531 Holdings progress: 90% - Updating crypto displays...
+app_legacy.js?v=1757469843_1757470916088:3531 Holdings progress: 95% - Finalizing summary...
+app_legacy.js?v=1757469843_1757470916088:5412 Updating OKX Portfolio Overview cards with data: {totalValue: 1061.2571395420564, totalPnl: -56.14242047064192, totalPnlPercent: -5.026518494661501, dailyPnl: 0, dailyPnlPercent: 0, …}
+app_legacy.js?v=1757469843_1757470916088:3531 Holdings progress: 100% - Complete!
