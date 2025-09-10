@@ -1504,7 +1504,8 @@ class PortfolioService:
 
 
 
-# Global portfolio service instance_portfolio_service: PortfolioService | None = None
+# Global portfolio service instance
+_portfolio_service: PortfolioService | None = None
 
 
 def get_portfolio_service() -> PortfolioService:

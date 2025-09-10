@@ -36,7 +36,7 @@ from flask import (
 from flask.typing import ResponseReturnValue
 
 # Top-level imports only (satisfies linter)
-from src.services.portfolio_service import get_portfolio_service as _get_ps
+from src.services.portfolio_service import get_portfolio_service
 from src.utils.safe_shims import (
     get_bollinger_target_price as safe_get_boll_target,
     get_state_store as safe_get_state_store,
@@ -737,9 +737,7 @@ def convert_numpy_types(obj):
     else:
         return obj
 
-def get_portfolio_service():
-    """Get the global PortfolioService singleton from the service module."""
-    return _get_ps()
+# get_portfolio_service is imported directly from portfolio_service module
 
 
 def normalize_pair(pair: str) -> str:
