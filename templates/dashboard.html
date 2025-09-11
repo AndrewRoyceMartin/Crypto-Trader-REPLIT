@@ -349,6 +349,115 @@ div.table-responsive table.table-v02--compact thead th {
 /* Utility aligns – don't rely on Bootstrap .text-end/.text-center if legacy CSS overrides */
 .t-right { text-align: right !important; }
 .t-center { text-align: center !important; }
+
+/* Enhanced Professional Loading Animations */
+.loading-skeleton {
+    background: linear-gradient(90deg, 
+        rgba(156, 163, 175, 0.1) 25%, 
+        rgba(156, 163, 175, 0.2) 50%, 
+        rgba(156, 163, 175, 0.1) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+    border-radius: 6px;
+    height: 1.4em;
+}
+
+.loading-skeleton-metric {
+    background: linear-gradient(90deg, 
+        rgba(255, 255, 255, 0.1) 25%, 
+        rgba(255, 255, 255, 0.3) 50%, 
+        rgba(255, 255, 255, 0.1) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+    border-radius: 8px;
+    height: 2rem;
+    width: 80%;
+    margin: 0 auto;
+}
+
+.loading-skeleton-small {
+    background: linear-gradient(90deg, 
+        rgba(156, 163, 175, 0.1) 25%, 
+        rgba(156, 163, 175, 0.2) 50%, 
+        rgba(156, 163, 175, 0.1) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+    border-radius: 4px;
+    height: 1rem;
+    width: 60%;
+    margin: 5px auto;
+}
+
+@keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+}
+
+.metric-card-loading {
+    opacity: 0.7;
+    transform: scale(0.98);
+    transition: all 0.4s ease;
+}
+
+.metric-card-loaded {
+    opacity: 1;
+    transform: scale(1);
+    animation: cardAppear 0.6s ease-out;
+}
+
+@keyframes cardAppear {
+    0% { 
+        opacity: 0;
+        transform: scale(0.95) translateY(10px);
+    }
+    100% { 
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+.dashboard-status {
+    font-size: 0.9rem;
+    text-align: center;
+    margin: 25px 0;
+    padding: 12px 25px;
+    border-radius: 30px;
+    transition: all 0.3s ease;
+    font-weight: 600;
+    border: 2px solid transparent;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02));
+}
+
+.status-loading { 
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(245, 158, 11, 0.1));
+    color: #f59e0b;
+    border-color: rgba(245, 158, 11, 0.3);
+}
+.status-loaded { 
+    background: linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(34, 197, 94, 0.1));
+    color: #22c55e;
+    border-color: rgba(34, 197, 94, 0.3);
+}
+.status-error { 
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(239, 68, 68, 0.1));
+    color: #ef4444;
+    border-color: rgba(239, 68, 68, 0.3);
+}
+
+.table-loading {
+    text-align: center;
+    padding: 30px 20px;
+}
+
+.table-skeleton-rows {
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 0.8; }
+    50% { opacity: 0.4; }
+}
+
 </style>
 {% endblock %}
 
@@ -386,25 +495,46 @@ div.table-responsive table.table-v02--compact thead th {
         <!-- Key Performance Metrics -->
         <div class="metric-grid">
             <div class="metric-card">
-                <div class="metric-value text-info" id="portfolioValue">$0.00</div>
+                <div class="metric-value text-info" id="portfolioValue">
+                    <div class="loading-skeleton loading-skeleton-metric"></div>
+                </div>
                 <div class="metric-label">Portfolio Value</div>
-                <div class="metric-change" id="portfolioChange">--</div>
+                <div class="metric-change" id="portfolioChange">
+                    <div class="loading-skeleton loading-skeleton-small"></div>
+                </div>
             </div>
             <div class="metric-card">
-                <div class="metric-value" id="totalPnL">$0.00</div>
+                <div class="metric-value" id="totalPnL">
+                    <div class="loading-skeleton loading-skeleton-metric"></div>
+                </div>
                 <div class="metric-label">Total P&L</div>
-                <div class="metric-change" id="pnlPercent">--</div>
+                <div class="metric-change" id="pnlPercent">
+                    <div class="loading-skeleton loading-skeleton-small"></div>
+                </div>
             </div>
             <div class="metric-card">
-                <div class="metric-value text-warning" id="activePositions">0</div>
+                <div class="metric-value text-warning" id="activePositions">
+                    <div class="loading-skeleton loading-skeleton-metric"></div>
+                </div>
                 <div class="metric-label">Active Positions</div>
-                <div class="metric-change" id="winRate">-- Win Rate</div>
+                <div class="metric-change" id="winRate">
+                    <div class="loading-skeleton loading-skeleton-small"></div>
+                </div>
             </div>
             <div class="metric-card">
-                <div class="metric-value text-success" id="mlAccuracy">0%</div>
+                <div class="metric-value text-success" id="mlAccuracy">
+                    <div class="loading-skeleton loading-skeleton-metric"></div>
+                </div>
                 <div class="metric-label">ML Accuracy</div>
-                <div class="metric-change" id="signalsToday">-- Signals Today</div>
+                <div class="metric-change" id="signalsToday">
+                    <div class="loading-skeleton loading-skeleton-small"></div>
+                </div>
             </div>
+        </div>
+
+        <!-- Status Indicator -->
+        <div class="dashboard-status status-loading" id="dashboard-status">
+            <i class="fas fa-sync fa-spin me-2"></i>Loading trading intelligence dashboard...
         </div>
 
         <div class="two-column">
@@ -445,7 +575,13 @@ div.table-responsive table.table-v02--compact thead th {
                             <tr>
                                 <td colspan="4" class="t-center">
                                     <div class="loading-spinner"></div>
-                                    Loading ML signals...
+                                <div class="table-loading">
+                                    <div class="table-skeleton-rows">
+                                        <div class="loading-skeleton mb-2"></div>
+                                        <div class="loading-skeleton mb-2"></div>
+                                        <div class="loading-skeleton mb-2"></div>
+                                    </div>
+                                </div>
                                 </td>
                             </tr>
                         </tbody>
@@ -484,7 +620,14 @@ div.table-responsive table.table-v02--compact thead th {
                         <tr>
                             <td colspan="8" class="t-center">
                                 <div class="loading-spinner"></div>
-                                Loading portfolio positions...
+                                <div class="table-loading">
+                                    <div class="table-skeleton-rows">
+                                        <div class="loading-skeleton mb-2"></div>
+                                        <div class="loading-skeleton mb-2"></div>
+                                        <div class="loading-skeleton mb-2"></div>
+                                        <div class="loading-skeleton mb-2"></div>
+                                    </div>
+                                </div>
                             </td>
                         </tr>
                     </tbody>
@@ -504,25 +647,33 @@ div.table-responsive table.table-v02--compact thead th {
                 <div class="row">
                     <div class="col-6">
                         <div class="text-center p-3">
-                            <div class="h4 mb-1" id="maxDrawdown">--</div>
+                            <div class="h4 mb-1" id="maxDrawdown">
+                                <div class="loading-skeleton loading-skeleton-metric"></div>
+                            </div>
                             <small class="text-muted-xs">Max Drawdown</small>
                         </div>
                     </div>
                     <div class="col-6">
                         <div class="text-center p-3">
-                            <div class="h4 mb-1" id="sharpeRatio">--</div>
+                            <div class="h4 mb-1" id="sharpeRatio">
+                                <div class="loading-skeleton loading-skeleton-metric"></div>
+                            </div>
                             <small class="text-muted-xs">Sharpe Ratio</small>
                         </div>
                     </div>
                     <div class="col-6">
                         <div class="text-center p-3">
-                            <div class="h4 mb-1" id="volatility">--</div>
+                            <div class="h4 mb-1" id="volatility">
+                                <div class="loading-skeleton loading-skeleton-metric"></div>
+                            </div>
                             <small class="text-muted-xs">Volatility</small>
                         </div>
                     </div>
                     <div class="col-6">
                         <div class="text-center p-3">
-                            <div class="h4 mb-1" id="exposureRisk">--</div>
+                            <div class="h4 mb-1" id="exposureRisk">
+                                <div class="loading-skeleton loading-skeleton-metric"></div>
+                            </div>
                             <small class="text-muted-xs">Risk Exposure</small>
                         </div>
                     </div>
@@ -541,13 +692,19 @@ div.table-responsive table.table-v02--compact thead th {
                     <div class="col-12 mb-3">
                         <div id="bestPerformer" class="text-center p-3" style="background: rgba(40, 167, 69, 0.1); border-radius: 8px;">
                             <div class="loading-spinner"></div>
-                            Loading best performer...
+                            <div class="table-skeleton-rows">
+                                <div class="loading-skeleton mb-2"></div>
+                                <div class="loading-skeleton loading-skeleton-small"></div>
+                            </div>
                         </div>
                     </div>
                     <div class="col-12">
                         <div id="worstPerformer" class="text-center p-3" style="background: rgba(220, 53, 69, 0.1); border-radius: 8px;">
                             <div class="loading-spinner"></div>
-                            Loading worst performer...
+                            <div class="table-skeleton-rows">
+                                <div class="loading-skeleton mb-2"></div>
+                                <div class="loading-skeleton loading-skeleton-small"></div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -676,7 +833,12 @@ class TradingDashboard {
 
     async loadAllData() {
         this.showRefreshIndicator();
+        this.showDashboardLoading();
+        
         try {
+            // Show loading states for all metric cards
+            this.showMetricLoading();
+            
             await Promise.all([
                 this.loadPortfolioOverview(),
                 this.loadMLSignals(),
@@ -684,12 +846,93 @@ class TradingDashboard {
                 this.loadChartData(),
                 this.loadRiskMetrics()
             ]);
+            
+            // Update to loaded state
+            this.showDashboardLoaded();
             this.updateLastUpdateTime();
+            
         } catch (error) {
             console.error('❌ Error loading dashboard data:', error);
+            this.showDashboardError();
             this.updateSystemStatus('error');
         } finally {
             this.hideRefreshIndicator();
+        }
+    }
+
+    showDashboardLoading() {
+        const statusEl = document.getElementById('dashboard-status');
+        if (statusEl) {
+            statusEl.className = 'dashboard-status status-loading';
+            statusEl.innerHTML = '<i class="fas fa-sync fa-spin me-2"></i>Loading trading intelligence dashboard...';
+        }
+    }
+
+    showDashboardLoaded() {
+        const statusEl = document.getElementById('dashboard-status');
+        if (statusEl) {
+            statusEl.className = 'dashboard-status status-loaded';
+            const now = new Date();
+            statusEl.innerHTML = `<i class="fas fa-check-circle me-2"></i>Dashboard loaded successfully - Last updated: ${now.toLocaleTimeString()}`;
+        }
+    }
+
+    showDashboardError() {
+        const statusEl = document.getElementById('dashboard-status');
+        if (statusEl) {
+            statusEl.className = 'dashboard-status status-error';
+            statusEl.innerHTML = '<i class="fas fa-exclamation-triangle me-2"></i>Error loading dashboard - Retrying...';
+        }
+    }
+
+    showMetricLoading() {
+        // Add loading state to all metric cards
+        document.querySelectorAll('.metric-card').forEach((card, index) => {
+            card.classList.add('metric-card-loading');
+            card.classList.remove('metric-card-loaded');
+            
+            // Stagger the loading animation
+            setTimeout(() => {
+                card.style.transform = 'scale(0.98)';
+                card.style.opacity = '0.7';
+            }, index * 100);
+        });
+    }
+
+    updateMetricWithAnimation(elementId, value, isPercentage = false) {
+        const element = document.getElementById(elementId);
+        if (!element) return;
+        
+        const skeletonEl = element.querySelector('.loading-skeleton');
+        if (skeletonEl) {
+            // Smooth transition from skeleton to actual data
+            setTimeout(() => {
+                skeletonEl.style.opacity = '0';
+                setTimeout(() => {
+                    skeletonEl.remove();
+                    element.textContent = value;
+                    element.style.opacity = '0';
+                    element.style.transform = 'scale(0.9)';
+                    
+                    // Animate in the real value
+                    setTimeout(() => {
+                        element.style.transition = 'all 0.4s ease';
+                        element.style.opacity = '1';
+                        element.style.transform = 'scale(1)';
+                    }, 50);
+                }, 200);
+            }, Math.random() * 400); // Stagger animations
+        } else {
+            element.textContent = value;
+        }
+        
+        // Update parent card to loaded state
+        const parentCard = element.closest('.metric-card');
+        if (parentCard) {
+            setTimeout(() => {
+                parentCard.classList.remove('metric-card-loading');
+                parentCard.classList.add('metric-card-loaded');
+            }, 600);
         }
     }
 
@@ -771,17 +1014,26 @@ class TradingDashboard {
         const metrics = data.portfolio_metrics;
         const signals = data.signal_metrics;
 
-        document.getElementById('portfolioValue').textContent = `$${metrics.total_value.toLocaleString()}`;
-        document.getElementById('totalPnL').textContent = `$${metrics.total_pnl.toFixed(2)}`;
-        document.getElementById('totalPnL').className = `metric-value ${metrics.total_pnl >= 0 ? 'text-success' : 'text-danger'}`;
-        document.getElementById('pnlPercent').textContent = `${metrics.total_pnl_percent.toFixed(2)}%`;
-        document.getElementById('pnlPercent').className = `metric-change ${metrics.total_pnl_percent >= 0 ? 'text-success' : 'text-danger'}`;
+        // Use animated updates for professional transitions
+        this.updateMetricWithAnimation('portfolioValue', `$${metrics.total_value.toLocaleString()}`);
         
-        document.getElementById('activePositions').textContent = metrics.total_positions;
-        document.getElementById('winRate').textContent = `${metrics.win_rate}% Win Rate`;
+        const totalPnLEl = document.getElementById('totalPnL');
+        this.updateMetricWithAnimation('totalPnL', `$${metrics.total_pnl.toFixed(2)}`);
+        if (totalPnLEl) {
+            totalPnLEl.className = `metric-value ${metrics.total_pnl >= 0 ? 'text-success' : 'text-danger'}`;
+        }
         
-        document.getElementById('mlAccuracy').textContent = `${signals.ml_accuracy}%`;
-        document.getElementById('signalsToday').textContent = `${signals.signals_today} Signals Today`;
+        const pnlPercentEl = document.getElementById('pnlPercent');
+        this.updateMetricWithAnimation('pnlPercent', `${metrics.total_pnl_percent.toFixed(2)}%`);
+        if (pnlPercentEl) {
+            pnlPercentEl.className = `metric-change ${metrics.total_pnl_percent >= 0 ? 'text-success' : 'text-danger'}`;
+        }
+        
+        this.updateMetricWithAnimation('activePositions', metrics.total_positions);
+        this.updateMetricWithAnimation('winRate', `${metrics.win_rate}% Win Rate`);
+        
+        this.updateMetricWithAnimation('mlAccuracy', `${signals.ml_accuracy}%`);
+        this.updateMetricWithAnimation('signalsToday', `${signals.signals_today} Signals Today`);
     }
 
     updateMLSignalsTable(signals) {
@@ -872,10 +1124,11 @@ class TradingDashboard {
 
     updateRiskMetrics(summary) {
         if (summary) {
-            document.getElementById('maxDrawdown').textContent = `${summary.max_drawdown || 0}%`;
-            document.getElementById('sharpeRatio').textContent = `${summary.sharpe_ratio || 0}`;
-            document.getElementById('volatility').textContent = `${(Math.abs(summary.avg_pnl_percent) * 2).toFixed(1)}%`;
-            document.getElementById('exposureRisk').textContent = summary.total_trades > 15 ? 'HIGH' : 'MODERATE';
+            // Use animated updates for risk metrics
+            this.updateMetricWithAnimation('maxDrawdown', `${summary.max_drawdown || 0}%`);
+            this.updateMetricWithAnimation('sharpeRatio', `${summary.sharpe_ratio || 0}`);
+            this.updateMetricWithAnimation('volatility', `${(Math.abs(summary.avg_pnl_percent) * 2).toFixed(1)}%`);
+            this.updateMetricWithAnimation('exposureRisk', summary.total_trades > 15 ? 'HIGH' : 'MODERATE');
         }
     }
 
