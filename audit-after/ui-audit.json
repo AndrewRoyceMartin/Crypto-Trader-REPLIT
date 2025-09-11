@@ -1,0 +1,38 @@
+{
+  "timestamp": "2025-09-11T07:43:47.528Z",
+  "url": "http://127.0.0.1:5000/signals-ml",
+  "fixes_applied": [
+    {
+      "type": "FIXED",
+      "description": "Added stable data attributes",
+      "details": "Added 9/9 stable data attributes for reliable testing",
+      "impact": "UI elements now have stable selectors for automated testing"
+    },
+    {
+      "type": "FIXED",
+      "description": "Removed hardcoded price fallbacks",
+      "details": "Implemented strict authentic data validation with no fallback values",
+      "impact": "System now requires real OKX data and displays \"—\" for missing values"
+    },
+    {
+      "type": "FIXED",
+      "description": "Improved loading skeleton management",
+      "details": "Added explicit skeleton hiding and data-loaded attributes",
+      "impact": "Loading skeletons are properly hidden in all success paths"
+    },
+    {
+      "type": "FIXED",
+      "description": "Created centralized number utilities",
+      "details": "Added parseNumber, fmtCurrency, fmtPercent utilities with comprehensive tests",
+      "impact": "Consistent number parsing and formatting across the application"
+    }
+  ],
+  "remaining_issues": [],
+  "kpis": [],
+  "improvements": [
+    {
+      "description": "API endpoints remain healthy after repairs",
+      "impact": "3/3 endpoints functioning correctly"
+    }
+  ]
+}

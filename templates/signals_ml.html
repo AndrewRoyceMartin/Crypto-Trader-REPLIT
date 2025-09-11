@@ -271,14 +271,14 @@
 
 <!-- Hybrid Signal Score -->
 <div class="signal-analysis-card">
-    <div class="last-updated" id="lastUpdated">Loading...</div>
+    <div class="last-updated" id="lastUpdated" data-timestamp>Loading...</div>
     <div class="row">
         <div class="col-lg-4 text-center">
             <h5><i class="fas fa-crosshairs me-2"></i>Hybrid Signal Score</h5>
-            <div class="signal-score" id="hybridScore">
+            <div class="signal-score" id="hybridScore" data-metric="hybridScore" data-value>
                 <div class="loading-skeleton" style="width: 80px; height: 60px; margin: 0 auto;"></div>
             </div>
-            <div class="signal-badge bg-secondary" id="signalBadge">
+            <div class="signal-badge bg-secondary" id="signalBadge" data-signal>
                 <div class="loading-skeleton" style="width: 80px; height: 20px; margin: 0 auto;"></div>
             </div>
         </div>
@@ -291,7 +291,7 @@
                         <div class="confidence-meter">
                             <div class="confidence-fill bg-info" id="traditionalFill" style="width: 0%"></div>
                         </div>
-                        <div id="traditionalScore">
+                        <div id="traditionalScore" data-metric="traditionalScore" data-value>
                             <div class="loading-skeleton" style="width: 60px;"></div>
                         </div>
                     </div>
@@ -300,7 +300,7 @@
                         <div class="confidence-meter">
                             <div class="confidence-fill bg-warning" id="mlFill" style="width: 0%"></div>
                         </div>
-                        <div id="mlScore">
+                        <div id="mlScore" data-metric="mlScore" data-value>
                             <div class="loading-skeleton" style="width: 60px;"></div>
                         </div>
                     </div>
@@ -319,13 +319,13 @@
             </h5>
             <div class="indicator-grid" id="indicatorGrid">
                 <div class="indicator-item">
-                    <div class="value" id="rsiValue">
+                    <div class="value" id="rsiValue" data-indicator="rsi" data-value>
                         <div class="loading-skeleton"></div>
                     </div>
                     <div class="label">RSI (14)</div>
                 </div>
                 <div class="indicator-item">
-                    <div class="value" id="volatilityValue">
+                    <div class="value" id="volatilityValue" data-indicator="volatility" data-value>
                         <div class="loading-skeleton"></div>
                     </div>
                     <div class="label">Volatility</div>
@@ -416,7 +416,7 @@
                     <th class="text-end">Price</th>
                 </tr>
             </thead>
-            <tbody id="signalHistoryTable">
+            <tbody id="signalHistoryTable" data-table="signals" data-content>
                 <tr>
                     <td colspan="7" class="text-center py-4">
                         <div class="loading-spinner text-primary" role="status">
@@ -498,9 +498,10 @@ async function loadSignalAnalysis() {
             }
         }
         
-        // Require authentic price data - no hardcoded fallbacks
-        if (!currentPrice || currentPrice <= 0) {
-            throw new Error(`Unable to get authentic OKX price for ${symbol}. Trading analysis requires real market data.`);
+        // REPAIR: Strict authentic data requirement - no hardcoded fallbacks allowed
+        if (!currentPrice || currentPrice <= 0 || isNaN(currentPrice)) {
+            console.error(`❌ AUTHENTIC DATA VIOLATION: Missing OKX price for ${symbol}`);
+            throw new Error(`Unable to get authentic OKX price for ${symbol}. Trading analysis requires real market data. No fallbacks permitted.`);
         }
         
         // Get hybrid signal data
@@ -517,6 +518,9 @@ async function loadSignalAnalysis() {
         // Load real signal history from CSV
         await loadRealSignalHistory();
         
+        // REPAIR: Ensure loading skeletons are hidden after successful data load
+        hideLoadingSkeletons();
+        
     } catch (error) {
         console.error('Signal analysis loading failed:', error);
         updateStatus('error', 'Error loading');
@@ -532,8 +536,10 @@ function showLoadingSkeletons() {
 }
 
 function hideLoadingSkeletons() {
+    // REPAIR: Ensure loading skeletons are properly hidden in all success paths
     document.querySelectorAll('.loading-skeleton').forEach(skeleton => {
         skeleton.style.display = 'none';
+        skeleton.parentElement?.setAttribute('data-loaded', 'true');
     });
 }
 
@@ -589,9 +595,14 @@ function displaySignalAnalysis(signal) {
     const enhancedFilters = signal.enhanced_filters || {};
     const indicators = enhancedFilters.technical_indicators || {};
     
-    document.getElementById('rsiValue').textContent = (indicators.rsi_14 || indicators.rsi || 50).toFixed(1);
-    document.getElementById('volatilityValue').textContent = (indicators.volatility_7 || indicators.volatility || 10).toFixed(1) + '%';
-    document.getElementById('volumeValue').textContent = (indicators.volume_ratio || 1.0).toFixed(2);
+    // REPAIR: No hardcoded fallbacks - use authentic data only  
+    const rsi = indicators.rsi_14 || indicators.rsi;
+    const volatility = indicators.volatility_7 || indicators.volatility;
+    const volume = indicators.volume_ratio;
+    
+    document.getElementById('rsiValue').textContent = rsi != null ? rsi.toFixed(1) : '—';
+    document.getElementById('volatilityValue').textContent = volatility != null ? volatility.toFixed(1) + '%' : '—';
+    document.getElementById('volumeValue').textContent = volume != null ? volume.toFixed(2) : '—';
     
     // Update signal indicators
     const signals = enhancedFilters.signals || {};

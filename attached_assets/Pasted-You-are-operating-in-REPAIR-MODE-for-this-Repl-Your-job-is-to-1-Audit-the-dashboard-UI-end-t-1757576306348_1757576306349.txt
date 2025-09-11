@@ -1,0 +1,114 @@
+You are operating in **REPAIR MODE** for this Repl. Your job is to:
+1) Audit the dashboard UI end-to-end.
+2) Identify concrete issues (selectors, rendering, parsing, totals, stale data, formatting, API/UI mismatches).
+3) Apply minimal, targeted code changes to **repair** them.
+4) Prove the fixes by tests and an artifacted before/after report.
+
+# TARGET
+- SIGNALS AND ML PAGE
+- If the app runs on a different port/path, discover it from package.json scripts or server logs.
+
+# GUARDRAILS
+- Create a branch: `fix/ui-audit-repairs`.
+- Do NOT remove features. Prefer additive or surgical changes.
+- Keep changes small, well-scoped, and reversible.
+- Add comments `// REPAIR:` on each changed line.
+- After repairs pass, open a PR (or produce a clear diff if PRs aren’t available).
+
+# WORKFLOW
+1) Setup & Run Baseline Audit
+   - Install Playwright and deps: 
+     npm i -D @playwright/test
+     npx playwright install --with-deps
+   - Start the app (npm run dev or npm start) in a background pane.
+   - Create tests `tests/ui-audit.spec.ts` that:
+       • Load the URL, wait for `networkidle`, wait for spinners to disappear.
+       • Enumerate and capture: all <table> (thead/tbody), KPI cards (.card, [data-metric], [data-value], [class*=kpi|stat|summary]).
+       • Extract text, parsed numbers, and bounding box; mark visibility.
+       • Validate: non-empty KPIs, numeric parse where relevant (qty/price/value/pnl/%), % in [-100,100], dates parse, totals ~ sum of values (0.5% tolerance), duplication of metrics, zero-size elements.
+   - Emit artifacts:
+       • `./audit-before/ui-audit.json` and `./audit-before/ui-audit.md`
+       • Final console line: `UI AUDIT: FAIL(n)/PASS(0), WARN(m)`
+   - If login is required, autodetect a simple form and use env creds if present; otherwise continue anonymously.
+
+2) Auto-REPAIR (apply fixes in this priority order)
+   A) **Selector & Rendering**
+      - If the audit can’t find KPIs/tables due to fragile selectors, add stable data attributes in the UI (e.g., `data-metric="totalValue"`, `data-table="holdings"`), update tests to use them.
+      - Fix tables that render empty due to missing keys/map index or conditional rendering; ensure rows map with stable keys and headers match cells.
+
+   B) **Parsing & Formatting**
+      - Create a tiny utility `src/lib/num.ts` (or similar) with:
+          export const parseNumber = (s:string)=>parseFloat(s.replace(/[^\d.+-]/g,'')); 
+          export const fmtCurrency = (n:number)=> (isFinite(n)? n.toLocaleString(undefined,{style:'currency',currency:'USD'}) : '—');
+          export const fmtPercent  = (n:number)=> (isFinite(n)? `${n.toFixed(2)}%` : '—');
+      - Replace ad-hoc currency/% string building with these helpers.
+      - Guard against NaN by defaulting to 0 or ‘—’ where appropriate.
+
+   C) **Totals & Derived Values**
+      - If “Total Value / Portfolio Value” ≠ sum(row values) within tolerance:
+          • Fix computation source (prefer backend canonical value).
+          • Or compute on the client from row data using a single source of truth (e.g., `sumBy(holdings,'marketValue')`).
+          • Align rounding rules (use same precision frontend/back).
+      - Add unit tests for totals (see Testing below).
+
+   D) **Staleness & Timestamps**
+      - If “Last Updated” fails to parse or is stale, normalize ISO handling and timezone; render with a consistent formatter.
+      - Add a spinner/“as of” label while fetching; hide when settled.
+
+   E) **API/UI Mismatch**
+      - If UI fields don’t match API shape, add a light adapter function that maps API keys to UI props in one place.
+      - Ensure numeric types are coerced from strings where the API returns strings.
+
+   F) **Layout/Visibility**
+      - Fix zero-size/hidden KPI cards (CSS conflicts, missing container classes, bootstrap/tailwind clashes).
+      - If legacy Bootstrap classes conflict, namespace or remove the old CSS import in the dashboard route; prefer local utility classes.
+
+3) TESTING (prove the repairs)
+   - Update `tests/ui-audit.spec.ts` to re-run after fixes.
+   - Add **unit tests**:
+       • `tests/num.spec.ts` for parse/format.
+       • `tests/totals.spec.ts` that feeds mock holdings and asserts totals match to tolerance.
+   - Produce **after** artifacts:
+       • `./audit-after/ui-audit.json` and `./audit-after/ui-audit.md`
+   - Print final line: `REPAIR RESULT: PASS(0 failures) | WARN(m)`
+
+4) REPORT & CHANGELOG
+   - Create `REPAIR_REPORT.md` with:
+       • Summary table: issues found vs fixed.
+       • Before/After metrics: #KPIs scanned, #tables, #cells, failures & warnings.
+       • Code diffs (file, lines changed) with brief rationale.
+       • Instructions to run audits: 
+           - Baseline: npx playwright test tests/ui-audit.spec.ts --reporter=list
+           - After fix: npx playwright test tests/ui-audit.spec.ts --reporter=list
+       • Known limitations or items left as TODO.
+
+# ACCEPTANCE CRITERIA
+- `npx playwright test tests/ui-audit.spec.ts` ends with: `REPAIR RESULT: PASS(0 failures)` (warnings allowed).
+- No empty/NaN KPI or table cells for numeric columns.
+- Total value within ±0.5% of sum (or documented canonical API precedence).
+- Dates parse and are not older than 24h (or clearly labeled if historical).
+- Stable selectors exist for all KPIs and tables (data-*).
+- `REPAIR_REPORT.md` and before/after audit artifacts exist.
+
+# OPTIONAL: BACKEND CROSS-CHECK
+If an `/api/portfolio/summary` and `/api/portfolio/holdings` endpoint exist:
+- Fetch them in the test and verify UI == API within tolerance.
+- If mismatch is due to rounding or units, standardize in one adapter module and update both render and tests.
+
+# DELIVERABLES
+- Branch: fix/ui-audit-repairs
+- Files:
+   tests/ui-audit.spec.ts
+   tests/num.spec.ts
+   tests/totals.spec.ts
+   src/lib/num.ts (or equivalent path)
+   REPAIR_REPORT.md
+   audit-before/{ui-audit.json, ui-audit.md}
+   audit-after/{ui-audit.json, ui-audit.md}
+
+# RUN NOW
+- Create the branch, run the baseline audit, apply repairs, re-run tests, and output:
+   1) The final PASS/WARN line
+   2) Paths to before/after audit artifacts
+   3) A short bullet list (max 10) of concrete fixes performed with file paths and line ranges
+

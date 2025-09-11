@@ -1,0 +1,91 @@
+{
+  "timestamp": "2025-09-11T07:42:56.673Z",
+  "url": "http://127.0.0.1:5000/signals-ml",
+  "kpis": [
+    {
+      "id": "hybridScore",
+      "type": "KPI",
+      "description": "Hybrid Signal Score",
+      "found": true,
+      "hasLoadingSkeleton": true,
+      "dataAttribute": "hybridScore"
+    },
+    {
+      "id": "traditionalScore",
+      "type": "KPI",
+      "description": "Traditional Analysis Score",
+      "found": true,
+      "hasLoadingSkeleton": true,
+      "dataAttribute": "traditionalScore"
+    },
+    {
+      "id": "mlScore",
+      "type": "KPI",
+      "description": "ML Prediction Score",
+      "found": true,
+      "hasLoadingSkeleton": true,
+      "dataAttribute": "mlScore"
+    },
+    {
+      "id": "mlProbability",
+      "type": "KPI",
+      "description": "ML Success Probability",
+      "found": true,
+      "hasLoadingSkeleton": true,
+      "dataAttribute": "mlProbability"
+    },
+    {
+      "id": "signalHistoryTable",
+      "type": "TABLE",
+      "description": "Signal History Table",
+      "found": true,
+      "hasLoadingSkeleton": true,
+      "dataAttribute": "signalHistoryTable"
+    },
+    {
+      "id": "rsiValue",
+      "type": "INDICATOR",
+      "description": "RSI Value",
+      "found": true,
+      "hasLoadingSkeleton": true,
+      "dataAttribute": "rsiValue"
+    },
+    {
+      "id": "volatilityValue",
+      "type": "INDICATOR",
+      "description": "Volatility Value",
+      "found": true,
+      "hasLoadingSkeleton": true,
+      "dataAttribute": "volatilityValue"
+    }
+  ],
+  "tables": [],
+  "issues": [
+    {
+      "type": "ERROR",
+      "description": "Potential hardcoded price fallbacks detected",
+      "details": "Code should only use authentic OKX data",
+      "fix": "Remove any hardcoded price fallbacks, throw errors for missing OKX data"
+    },
+    {
+      "type": "ERROR",
+      "description": "Missing stable data attributes",
+      "details": "UI elements lack data-* attributes for reliable testing",
+      "fix": "Add data-metric, data-table, data-value attributes to key elements"
+    }
+  ],
+  "warnings": [
+    {
+      "type": "WARNING",
+      "description": "Loading skeletons may persist after data load",
+      "details": "hideLoadingSkeletons() function may not be called properly",
+      "fix": "Ensure hideLoadingSkeletons() is called in all success paths"
+    },
+    {
+      "type": "WARNING",
+      "description": "Number parsing may be inconsistent",
+      "details": "Ad-hoc string manipulation for numbers",
+      "fix": "Use centralized parseNumber/fmtCurrency utilities"
+    }
+  ]
+}
