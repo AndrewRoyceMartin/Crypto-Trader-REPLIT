@@ -41,10 +41,10 @@ class OKXCreds:
         )
 
 class OKXNative:
-    # Class-level rate limiting
+    # Class-level rate limiting with more aggressive throttling
     _rate_limiter = threading.Lock()
     _last_request_time = 0
-    _min_request_interval = 0.2  # 200ms between requests (5 req/sec max)
+    _min_request_interval = 0.5  # 500ms between requests (2 req/sec max) - more conservative
 
     def __init__(self, creds: OKXCreds, timeout: int = 10):
         if not (creds.api_key and creds.secret_key and creds.passphrase):

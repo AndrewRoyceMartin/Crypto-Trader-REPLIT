@@ -2820,10 +2820,11 @@ def api_best_performer() -> ResponseReturnValue:
 
                 # Get 7d price data
                 if symbol in ['BTC', 'ETH', 'SOL', 'ADA', 'DOT']:
-                    candles = with_throttle(client.klines, f"{symbol}-USDT", "1D", limit=7)
+                    candles = with_throttle(client.candles, f"{symbol}-USDT", "1D", limit=7)
                     if candles and len(candles) >= 2:
-                        old_price = float(candles[0]['close'])
-                        current_price = float(candles[-1]['close'])
+                        # OKX candles format: [timestamp, open, high, low, close, volume, ...]
+                        old_price = float(candles[-1][4])  # Last entry is oldest (reverse chronological)
+                        current_price = float(candles[0][4])  # First entry is newest
                         price_7d = ((current_price - old_price) / old_price) * 100
                     else:
                         price_7d = 0
@@ -2961,52 +2962,20 @@ def api_equity_curve() -> ResponseReturnValue:
         else:
             start_date = now - timedelta(days=30)
 
-        # Get account balance history
-        equity_data = []
-        try:
-            # Get historical balance data from OKX
-            bills = client.account_bills(begin=int(start_date.timestamp() * 1000))
-
-            # Process bills to calculate daily equity
-            daily_balances = {}
-            for bill in bills:
-                timestamp = int(bill.get('ts', 0))
-                date_key = datetime.fromtimestamp(timestamp / 1000, UTC).strftime('%Y-%m-%d')
-
-                if date_key not in daily_balances:
-                    daily_balances[date_key] = 0
-
-                # Add balance changes
-                bal_change = float(bill.get('balChg', 0))
-                daily_balances[date_key] += bal_change
-
-            # Convert to equity curve format
-            for date_str, balance in sorted(daily_balances.items()):
-                equity_data.append({
-                    'date': date_str,
-                    'value': abs(balance),
-                    'timestamp': date_str
-                })
-
-        except Exception as e:
-            logger.warning(f"Failed to get equity curve from bills: {e}")
-            # Fallback to current portfolio value
-            portfolio_service = get_portfolio_service()
-            portfolio_data = portfolio_service.get_portfolio_data()
-            current_value = portfolio_data.get('total_current_value', 0)
-
-            equity_data = [{
-                'date': now.strftime('%Y-%m-%d'),
-                'value': current_value,
-                'timestamp': now.strftime('%Y-%m-%d')
-            }]
-
+        # ✅ AUTHENTIC DATA ONLY: No synthetic data generation allowed
+        # Historical equity curve requires real OKX account bills API access
+        logger.info("❌ AUTHENTIC DATA ONLY: Historical equity curve unavailable without OKX account bills API")
+        
+        # Return clear "data unavailable" status instead of synthetic data
         return jsonify({
-            "success": True,
-            "equity_curve": equity_data,
+            "success": False,
+            "error": "authentic_data_only",
+            "message": "Historical equity curve data unavailable (authentic data only - no synthetic generation)",
+            "data_availability": "unavailable",
+            "reason": "Historical account bills API access required for authentic equity curve",
             "timeframe": timeframe,
             "last_update": iso_utc()
-        })
+        }), 503
 
     except Exception as e:
         logger.error(f"Equity curve error: {e}")

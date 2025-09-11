@@ -1,0 +1,191 @@
+Here’s a tight, paste-once super-prompt you can give Replit to trace the frontend data flow and fix the bindings (property name mismatches, wrong selectors, stale effects, parsing/formatting, hidden UI), assuming your backend is fine.
+
+Paste everything between the lines into Replit’s AI:
+
+You are in **FRONTEND DATA-BINDING REPAIR MODE**. The backend is OK. Fix why data is not appearing or is incorrect on the dashboard. Do NOT remove features. Make small, targeted changes with comments `// REPAIR:`.
+
+SCOPE
+- App type: React/TS (adjust if different, but keep intent)
+- Page: /trades (discover exact route from router)
+- Data sources to verify: /api/portfolio/summary and /api/portfolio/holdings (discover from codebase if different)
+
+OBJECTIVE
+1) Trace data from fetch -> adapter -> state -> props -> render.
+2) Identify and FIX: wrong field names, missing adapters, bad effect deps, stale closures, string→number coercion, wrong base URL, hidden/zero-size UI, CSS clashes.
+3) Add stable data attributes so metrics/tables are bound deterministically.
+4) Prove fixes with one quick Playwright run.
+
+WORK PLAN (follow exactly)
+
+A) DISCOVER & SNAPSHOT
+1. Grep for fetch/axios calls and table/card renders. Produce a short list:
+   - Files and lines where the dashboard fetches data.
+   - Endpoints and expected shapes in code (object keys).
+2. At runtime, hit the endpoints and save snapshots in `./snapshots/summary.json` and `./snapshots/holdings.json`.
+   - If endpoints differ, use the real ones.
+   - Print the top-level keys present in each snapshot.
+
+B) INSTALL SMALL TOOLING
+- Add `src/lib/num.ts`:
+  ```ts
+  export const num = (v:any)=> {
+    if (typeof v === 'number') return v;
+    if (typeof v === 'string') {
+      const n = parseFloat(v.replace(/[^\d.+\-]/g,''));
+      return Number.isFinite(n) ? n : NaN;
+    }
+    return NaN;
+  };
+  export const fmtCurrency = (n:number)=> Number.isFinite(n) ? n.toLocaleString(undefined,{style:'currency',currency:'USD'}) : '—';
+  export const fmtPercent = (n:number)=> Number.isFinite(n) ? `${n.toFixed(2)}%` : '—';
+
+
+Add src/lib/adapters.ts to absorb API/UI key mismatches (common synonyms):
+
+import { num } from './num';
+
+export type UiSummary = {
+  totalValue: number;
+  dailyPnlPercent: number;
+  totalPnlPercent?: number;
+  lastUpdatedIso?: string;
+};
+
+// Accept camelCase/snake_case variants and legacy names
+export const toUiSummary = (api:any): UiSummary => ({
+  totalValue:  num(api.totalValue ?? api.total_value ?? api.portfolio_value),
+  dailyPnlPercent: num(api.dailyPnlPercent ?? api.daily_pnl_percent ?? api.daily_pnl_pct),
+  totalPnlPercent: num(api.totalPnlPercent ?? api.total_pnl_percent ?? api.total_pnl_pct),
+  lastUpdatedIso:  api.lastUpdatedIso ?? api.last_updated ?? api.as_of
+});
+
+export type UiHolding = {
+  symbol: string;
+  quantity: number;
+  price: number;
+  marketValue: number;
+  pnlPercent?: number;
+};
+
+export const toUiHolding = (h:any): UiHolding => ({
+  symbol:      String(h.symbol ?? h.ticker ?? h.code ?? ''),
+  quantity:    num(h.quantity ?? h.qty ?? h.amount),
+  price:       num(h.price ?? h.lastPrice ?? h.last_price),
+  marketValue: num(h.marketValue ?? h.value ?? h.market_value),
+  pnlPercent:  num(h.pnlPercent ?? h.pct ?? h.pnl_pct)
+});
+
+
+C) FIX FETCHING & STATE (React example; adapt as needed)
+
+In the dashboard container component:
+
+Replace absolute URLs like http://localhost:* with relative /api/... so the dev proxy works. Keep base URL in one place.
+
+Ensure useEffect uses an inner async fn + AbortController, and that you set state from adapters:
+
+// REPAIR: unified data load
+const [summary, setSummary] = useState<UiSummary|null>(null);
+const [holdings, setHoldings] = useState<UiHolding[]>([]);
+const [err, setErr] = useState<string|undefined>();
+
+useEffect(() => {
+  const ac = new AbortController();
+  (async () => {
+    try {
+      const sRes = await fetch('/api/portfolio/summary', { signal: ac.signal });
+      const hRes = await fetch('/api/portfolio/holdings', { signal: ac.signal });
+      const sJson = await sRes.json();
+      const hJson = await hRes.json();
+      setSummary(toUiSummary(sJson));                  // REPAIR: normalize keys
+      setHoldings(Array.isArray(hJson) ? hJson.map(toUiHolding) : []);
+    } catch (e:any) {
+      setErr(e?.message || 'load failed');             // REPAIR: surface error
+    }
+  })();
+  return () => ac.abort();
+}, []); // REPAIR: correct deps for initial load only
+
+
+Replace direct usages of raw API fields in render with summary/holdings derived from adapters.
+
+Add defensive rendering and stable selectors:
+
+<div data-metric="totalValue">{fmtCurrency(summary?.totalValue ?? NaN)}</div> {/* REPAIR */}
+<div data-metric="dailyPnlPercent">{fmtPercent(summary?.dailyPnlPercent ?? NaN)}</div> {/* REPAIR */}
+
+<table data-table="holdings" id="holdingsTable">
+  <thead>...</thead>
+  <tbody>
+    {holdings.map(h => (
+      <tr key={h.symbol}>
+        <td data-col="symbol">{h.symbol}</td>
+        <td data-col="qty">{h.quantity}</td>
+        <td data-col="price">{fmtCurrency(h.price)}</td>
+        <td data-col="value">{fmtCurrency(h.marketValue)}</td>
+        <td data-col="pnlPct">{fmtPercent(h.pnlPercent ?? NaN)}</td>
+      </tr>
+    ))}
+  </tbody>
+</table>
+
+
+D) KILL COMMON SILENT FAILS
+
+Wrong prop names: Search and replace any direct summary.totalPnlPct, daily_pnl_percent, etc., to use the adapter’s fields. Add // REPAIR on each change.
+
+Stale closures / missing re-render: Ensure no direct state mutation (summary.totalValue = ...). Always use setters.
+
+String math: Wrap all arithmetic with num() before calculations.
+
+Hidden UI: If cards/tables are present in the DOM but invisible, remove conflicting legacy CSS (old Bootstrap) or namespace it. Prefer utility classes and ensure containers aren’t display:none or visibility:hidden.
+
+Base URL: Centralize fetch base (e.g., const API = '' prefix). Relative URLs prevent mixed-origin/CORS issues.
+
+E) QUICK PROOF (1 small Playwright file)
+
+Add tests/bindings.spec.ts:
+
+import { test, expect } from '@playwright/test';
+test('dashboard shows bound data', async ({ page }) => {
+  await page.goto(process.env.DASHBOARD_URL || 'http://localhost:3000/dashboard');
+  await page.waitForLoadState('networkidle');
+  const total = await page.locator('[data-metric="totalValue"]').innerText();
+  expect(total.trim()).not.toMatch(/^$|^—$|^NaN$/);            // REPAIR: not empty/placeholder
+  const rows = await page.locator('[data-table="holdings"] tbody tr').count();
+  expect(rows).toBeGreaterThan(0);                              // REPAIR: holdings rendered
+});
+
+
+Run once:
+
+npm i -D @playwright/test && npx playwright install --with-deps
+npx playwright test tests/bindings.spec.ts --reporter=list
+
+
+F) OUTPUT
+
+Print a short summary of fixes: files changed, fields remapped, and any CSS un-hid issues.
+
+Ensure the dashboard now renders non-empty metrics and at least one holdings row.
+
+ACCEPTANCE
+
+Dashboard KPIs render with real values (not placeholders).
+
+Holdings table shows rows with symbol/qty/price/value.
+
+No console errors about undefined properties.
+
+Playwright test passes.
+
+Now execute the plan, make the minimal code edits with // REPAIR: comments, and run the quick test. Then report:
+
+Files changed with line numbers
+
+Keys remapped (API→UI)
+
+Whether the dashboard now displays data
+
+
+If you want, I can also give you a **one-file diff** template that replaces direct field usage with the adapter in your main dashboard component—say the word and I’ll generate it.

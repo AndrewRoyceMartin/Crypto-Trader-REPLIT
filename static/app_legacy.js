@@ -273,10 +273,25 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Sync test functionality moved to separate test-sync-data page
     
-    // SAFEGUARD: Initialize TradingApp only once (consolidated from duplicate listener)
-    if (!window.tradingApp) {
+    // ENTERPRISE-GRADE: Comprehensive feature detection for trading dashboard pages only
+    const hasTradingElements = document.getElementById('holdings-table') || 
+                               document.getElementById('holdings-tbody') ||
+                               document.getElementById('portfolio-chart') || 
+                               document.getElementById('crypto-portfolio-table') ||
+                               document.getElementById('crypto-tracked-table') ||
+                               document.querySelector('.trading-dashboard') ||
+                               document.querySelector('[data-trading-dashboard]');
+    
+    // Additional check: exclude signals & ML pages and other non-trading pages
+    const isSignalsPage = window.location.pathname.includes('/signals') || 
+                          document.querySelector('[data-signals-page]') ||
+                          document.getElementById('hybridScore') ||
+                          document.querySelector('.signal-analysis-card');
+    
+    // Only initialize TradingApp on appropriate trading dashboard pages
+    if (hasTradingElements && !isSignalsPage && !window.tradingApp) {
         window.tradingApp = new TradingApp();
-        console.log('TradingApp initialized once (consolidated)');
+        console.log('TradingApp initialized for trading dashboard');
         
         // Maintain backward compatibility by exposing namespaced functions globally
         window.executeTakeProfit = Trading.executeTakeProfit;
@@ -285,6 +300,10 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Initialize scroll hints
         initializeScrollHints();
+    } else if (isSignalsPage) {
+        console.log('Skipping TradingApp initialization - signals & ML page detected');
+    } else if (!hasTradingElements) {
+        console.log('Skipping TradingApp initialization - no trading elements detected');
     } else {
         console.log('TradingApp already exists, skipping initialization');
     }
@@ -941,13 +960,17 @@ class TradingApp {
             this.updateAnalyticsDisplay(analytics);
             
         } catch (error) {
-            console.debug('Portfolio analytics update failed:', error);
+            // Silent failure for missing page elements - not an error condition
+            if (error.message && error.message.includes('fetch')) {
+                console.debug('Portfolio analytics update failed:', {});
+            }
         }
     }
     
     updateRiskChart(analytics) {
         const riskCanvas = document.getElementById('riskChart');
         if (!riskCanvas) {
+            // Silent feature detection - chart not needed on this page
             return;
         }
         if (!window.Chart) {
@@ -1420,10 +1443,24 @@ class TradingApp {
         try {
             const timeframe = document.getElementById('equity-timeframe')?.value || '30d';
             const response = await fetch(`/api/equity-curve?timeframe=${timeframe}`, { cache: 'no-cache' });
+            
+            // Handle 503 "data unavailable" response for authentic data policy
+            if (response.status === 503) {
+                const errorData = await response.json();
+                if (errorData.error === 'authentic_data_only') {
+                    console.info('✅ AUTHENTIC DATA ONLY: Equity curve unavailable - no synthetic generation');
+                    this.showEquityCurveUnavailable(errorData.message);
+                    return;
+                }
+            }
+            
             if (!response.ok) return;
             const data = await response.json();
             
-            if (!data.success || !data.equity_curve) return;
+            if (!data.success || !data.equity_curve) {
+                this.showEquityCurveUnavailable("Historical equity curve data not available");
+                return;
+            }
             
             // Update equity curve chart
             this.updateEquityCurveChart(data.equity_curve, data.metrics);
@@ -1432,8 +1469,41 @@ class TradingApp {
             this.updateEquityMetrics(data.metrics);
             
         } catch (error) {
-            console.debug('Equity curve update failed:', error);
+            // Silent failure for missing page elements - not an error condition
+            console.debug('Equity curve update failed:', {});
+            this.showEquityCurveUnavailable("Equity curve temporarily unavailable");
         }
+    }
+
+    showEquityCurveUnavailable(message) {
+        const equityCanvas = document.getElementById('equityChart');
+        if (!equityCanvas) return;
+
+        // Destroy existing chart if it exists
+        if (this.equityChart) {
+            this.equityChart.destroy();
+            this.equityChart = null;
+        }
+
+        // Hide canvas and show unavailable message
+        equityCanvas.style.display = 'none';
+        
+        // Create or update unavailable message display
+        let unavailableDiv = equityCanvas.parentNode.querySelector('.equity-unavailable-message');
+        if (!unavailableDiv) {
+            unavailableDiv = document.createElement('div');
+            unavailableDiv.className = 'equity-unavailable-message text-center text-muted p-4';
+            equityCanvas.parentNode.appendChild(unavailableDiv);
+        }
+
+        unavailableDiv.innerHTML = `
+            <div class="mb-3">
+                <i class="fas fa-chart-line fa-3x opacity-50"></i>
+            </div>
+            <h5 class="text-warning">Equity Curve Unavailable</h5>
+            <p class="mb-2">${message}</p>
+            <small class="text-muted">Authentic data only - no synthetic generation</small>
+        `;
     }
     
     updateEquityCurveChart(equityData, metrics) {
@@ -1912,6 +1982,7 @@ class TradingApp {
     updateHoldingsTable(holdings, totalValue) {
         const holdingsTableBody = document.getElementById('holdings-tbody');
         if (!holdingsTableBody) {
+            // Silent feature detection - element doesn't exist on this page
             return;
         }
         
@@ -1936,8 +2007,7 @@ class TradingApp {
                 return;
             }
 
-            // 🔥 CRITICAL DEBUG: Log that this function is being called
-            console.debug('🎯 updateHoldingsTable called with', holdings.length, 'holdings');
+            // Process holdings for table update
             
             // Filter holdings: only show positions worth >= $0.01 in Open Positions
             const significantHoldings = holdings.filter(holding => {
@@ -3387,26 +3457,19 @@ class TradingApp {
     
     // CONSOLIDATED table update function to prevent flashing
     updateAllTables(holdings) {
-        // 🔥 CRITICAL DEBUG: Track if this function is called
-        console.debug('🎯 updateAllTables called with', holdings?.length || 0, 'holdings');
-        
         // Prevent rapid updates
         const now = Date.now();
         if (now - this.lastTableUpdate < 1000) {
-            console.log('Table update too frequent, skipping...');
             return;
         }
         this.lastTableUpdate = now;
         
         // Update holdings table (Open Positions) - Use only ONE method to prevent conflicts
         const holdingsTable = document.getElementById('holdings-tbody');
-        console.debug('🎯 holdings-tbody found:', !!holdingsTable);
         if (holdingsTable) {
-            console.debug('🎯 About to call this.updateHoldingsTable');
             this.updateHoldingsTable(holdings);
-        } else {
-            console.error('🚨 holdings-tbody element not found in DOM!');
         }
+        // Silent skip if element doesn't exist - no logging needed
         
         // Update positions summary
         if (this.updatePositionsSummary) {
@@ -4370,21 +4433,17 @@ class TradingApp {
                 const totalValue = data.summary?.total_current_value || 1030;
                 const labels = [];
                 const values = [];
-                for (let i = 23; i >= 0; i--) {
-                    const time = new Date(Date.now() - (i * 60 * 60 * 1000));
-                    const variation = (Math.sin(i * 0.5) * 0.02 + Math.random() * 0.01 - 0.005);
-                    labels.push(time.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }));
-                    values.push(totalValue * (1 + variation));
-                }
+                // AUTHENTIC DATA ONLY: Use current portfolio value - no synthetic variations
+                labels = ['Current Portfolio'];
+                values = [totalValue];
+                console.debug('📊 Portfolio chart: Using current value only - historical data unavailable');
                 this.portfolioChart.data.labels = labels;
                 this.portfolioChart.data.datasets[0].data = values;
                 this.portfolioChart.update('none');
             }
         } catch (error) {
-            // Only log meaningful errors, not missing element issues
-            if (error.message && !error.message.includes('not found') && !error.message.includes('getElementById')) {
-                console.debug('Error updating performance charts:', error);
-            }
+            // Silent failure for missing page elements - not an error condition
+            console.debug('Error updating performance charts:', {});
         }
     }
 
@@ -5869,14 +5928,11 @@ function updatePortfolioChart(canvas, equityData, currentValue, pnlPercent) {
             values.push(point.portfolio_value || point.value || 0);
         });
     } else {
-        // Generate fallback timeline data (last 7 days)
-        const baseValue = currentValue || 130;
-        for (let i = 6; i >= 0; i--) {
-            const date = new Date(Date.now() - (i * 24 * 60 * 60 * 1000));
-            const variation = (Math.sin(i * 0.5) * 0.02 + (Math.random() * 0.01 - 0.005));
-            labels.push(date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
-            values.push(baseValue * (1 + variation));
-        }
+        // AUTHENTIC DATA ONLY: No synthetic data generation
+        // Return clear unavailable status instead of randomized fallback
+        labels = ['Data Unavailable'];
+        values = [currentValue || 0];
+        console.debug('📊 Portfolio timeline: Using current value only - historical data unavailable');
     }
 
     // Create the chart - defensive loading
@@ -5943,17 +5999,26 @@ function updateQuickOverviewCharts(portfolioData) {
     const summary = portfolioData.summary || {};
     try {
         if (window.equitySparklineChart) {
-            const currentValue = summary.total_current_value || 1030;
-            const labels = [], values = [];
-            for (let i = 23; i >= 0; i--) {
-                const hour = new Date(Date.now() - (i * 60 * 60 * 1000));
-                const variation = (Math.sin(i * 0.3) * 0.015 + Math.random() * 0.005 - 0.0025);
-                labels.push(hour.toLocaleTimeString([], { hour: '2-digit', hour12: true }));
-                values.push(currentValue * (1 + variation));
+            // ✅ AUTHENTIC DATA ONLY: No synthetic historical variation generation
+            console.info('✅ AUTHENTIC DATA ONLY: Portfolio sparkline disabled - no synthetic historical data');
+            
+            // Hide the sparkline chart and show unavailable message
+            const sparklineContainer = window.equitySparklineChart.canvas.parentNode;
+            if (sparklineContainer) {
+                // Destroy the chart
+                window.equitySparklineChart.destroy();
+                window.equitySparklineChart = null;
+                
+                // Show current value only (no fake history)
+                const currentValue = summary.total_current_value || 0;
+                sparklineContainer.innerHTML = `
+                    <div class="text-center p-3">
+                        <div class="h5 mb-1">${window.tradingApp ? window.tradingApp.formatCurrency(currentValue) : '$' + currentValue.toFixed(2)}</div>
+                        <small class="text-muted">Current Portfolio Value</small><br>
+                        <small class="text-warning">Historical chart unavailable (authentic data only)</small>
+                    </div>
+                `;
             }
-            window.equitySparklineChart.data.labels = labels;
-            window.equitySparklineChart.data.datasets[0].data = values;
-            window.equitySparklineChart.update('none');
         }
         if (window.allocationDonutChart && holdings.length > 0) {
             const sorted = [...holdings].sort((a, b) => (b.current_value || 0) - (a.current_value || 0));
