@@ -3202,30 +3202,30 @@ class TradingApp {
             // Step 6: Updating tables
             this.updateHoldingsProgress(85, 'Updating table display...', holdings.length);
 
-            // Use the new overview object for consistent data access
-            const overview = data.overview || {};
-            const totalValue = overview.total_value 
+            // REPAIR: Use correct field names from actual API response structure
+            const portfolioMetrics = data.portfolio_metrics || {};
+            const analytics = data.performance_analytics || data.analytics || data.overview || {};
+            
+            const totalValue = portfolioMetrics.total_value 
+                            ?? analytics.current_value
                             ?? data.summary?.total_current_value
                             ?? data.total_value
                             ?? holdings.reduce((s, c) => s + (c.current_value || c.value || 0), 0);
 
-            const totalPnl = overview.total_pnl
+            const totalPnl = portfolioMetrics.total_pnl
+                           ?? analytics.absolute_return
                            ?? data.summary?.total_pnl
                            ?? data.total_pnl
                            ?? holdings.reduce((s, c) => s + (c.pnl || 0), 0);
 
-            // Display KPIs (optional if present)
-            if (document.getElementById('crypto-total-count')) {
-                document.getElementById('crypto-total-count').textContent = holdings.length;
-            }
-            if (document.getElementById('crypto-current-value')) {
-                document.getElementById('crypto-current-value').textContent = this.formatCurrency(totalValue, this.selectedCurrency);
-            }
-            if (document.getElementById('crypto-total-pnl')) {
-                const pnlEl = document.getElementById('crypto-total-pnl');
-                pnlEl.textContent = this.formatCurrency(totalPnl, this.selectedCurrency);
-                pnlEl.className = `mb-0 ${totalPnl >= 0 ? 'text-success' : 'text-danger'}`;
-            }
+            // REPAIR: Update dashboard metrics with correct element IDs and stable data attributes
+            this.updateDashboardMetrics({
+                portfolioValue: totalValue,
+                totalPnL: totalPnl,
+                activePositions: portfolioMetrics.total_positions || analytics.active_positions || holdings.length,
+                totalReturnPercent: portfolioMetrics.total_pnl_percent || analytics.total_return_percent || 0,
+                winRate: portfolioMetrics.win_rate || analytics.win_rate || 0
+            });
 
             // Persist and render
             this.currentCryptoData = holdings;
@@ -3241,12 +3241,12 @@ class TradingApp {
             // Step 8: Finalizing
             this.updateHoldingsProgress(95, 'Finalizing summary...', holdings.length);
 
-            // Small summary widget method (class-local) - use overview data
+            // REPAIR: Small summary widget method using portfolio metrics data
             this.updatePortfolioSummary({
-                total_cryptos: overview.total_assets || holdings.length,
+                total_cryptos: portfolioMetrics.total_positions || analytics.active_positions || holdings.length,
                 total_current_value: totalValue,
                 total_pnl: totalPnl,
-                total_pnl_percent: overview.total_pnl_percent || data.total_pnl_percent || 0
+                total_pnl_percent: portfolioMetrics.total_pnl_percent || analytics.total_return_percent || 0
             }, holdings);
 
             // Big UI aggregation update (global function, renamed)
@@ -3302,6 +3302,86 @@ class TradingApp {
             this.isUpdatingTables = false;
             
             // Position countdown managed by consolidated startAutoUpdate()
+        }
+    }
+
+    // REPAIR: Method to update dashboard metrics with proper data binding
+    updateDashboardMetrics(metrics) {
+        console.log('🔧 REPAIR: Updating dashboard metrics:', metrics);
+        
+        // Import number formatting utilities
+        const num = (v) => {
+            if (typeof v === 'number') return v;
+            if (typeof v === 'string') {
+                const n = parseFloat(v.replace(/[^\d.+\-]/g,''));
+                return Number.isFinite(n) ? n : NaN;
+            }
+            return NaN;
+        };
+        
+        const fmtCurrency = (n) => Number.isFinite(n) ? n.toLocaleString(undefined,{style:'currency',currency:'USD'}) : '—';
+        const fmtPercent = (n) => Number.isFinite(n) ? `${n.toFixed(2)}%` : '—';
+        
+        // Portfolio Value
+        const portfolioValueEl = document.getElementById('portfolioValue');
+        if (portfolioValueEl && metrics.portfolioValue !== undefined) {
+            portfolioValueEl.innerHTML = fmtCurrency(num(metrics.portfolioValue));
+            portfolioValueEl.setAttribute('data-loaded', 'true');
+            portfolioValueEl.closest('[data-metric-card]')?.classList.add('metric-card-loaded');
+        }
+        
+        // Total P&L
+        const totalPnLEl = document.getElementById('totalPnL');
+        if (totalPnLEl && metrics.totalPnL !== undefined) {
+            const pnlValue = num(metrics.totalPnL);
+            totalPnLEl.innerHTML = fmtCurrency(pnlValue);
+            totalPnLEl.className = `metric-value ${pnlValue >= 0 ? 'text-success' : 'text-danger'}`;
+            totalPnLEl.setAttribute('data-loaded', 'true');
+            totalPnLEl.closest('[data-metric-card]')?.classList.add('metric-card-loaded');
+        }
+        
+        // P&L Percentage
+        const pnlPercentEl = document.getElementById('pnlPercent');
+        if (pnlPercentEl && metrics.totalReturnPercent !== undefined) {
+            const pctValue = num(metrics.totalReturnPercent);
+            pnlPercentEl.innerHTML = fmtPercent(pctValue);
+            pnlPercentEl.className = `metric-change ${pctValue >= 0 ? 'text-success' : 'text-danger'}`;
+            pnlPercentEl.setAttribute('data-loaded', 'true');
+        }
+        
+        // Active Positions
+        const activePositionsEl = document.getElementById('activePositions');
+        if (activePositionsEl && metrics.activePositions !== undefined) {
+            activePositionsEl.innerHTML = num(metrics.activePositions).toString();
+            activePositionsEl.setAttribute('data-loaded', 'true');
+            activePositionsEl.closest('[data-metric-card]')?.classList.add('metric-card-loaded');
+        }
+        
+        // Win Rate
+        const winRateEl = document.getElementById('winRate');
+        if (winRateEl && metrics.winRate !== undefined) {
+            winRateEl.innerHTML = fmtPercent(num(metrics.winRate));
+            winRateEl.setAttribute('data-loaded', 'true');
+        }
+        
+        // REPAIR: Hide all loading skeletons in metric cards
+        this.hideMetricLoadingSkeletons();
+        
+        console.log('✅ Dashboard metrics updated successfully');
+    }
+    
+    // REPAIR: Hide loading skeletons in metric cards
+    hideMetricLoadingSkeletons() {
+        document.querySelectorAll('.loading-skeleton, .loading-skeleton-metric, .loading-skeleton-small').forEach(skeleton => {
+            skeleton.style.display = 'none';
+        });
+        
+        // Update dashboard status
+        const statusEl = document.getElementById('dashboard-status');
+        if (statusEl) {
+            statusEl.innerHTML = '<i class="fas fa-check-circle me-2"></i>Trading intelligence dashboard loaded';
+            statusEl.className = 'dashboard-status status-loaded';
+            statusEl.setAttribute('data-loaded', 'true');
         }
     }
     
