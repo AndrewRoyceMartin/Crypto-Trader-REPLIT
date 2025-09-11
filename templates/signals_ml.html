@@ -298,26 +298,27 @@ async function loadSignalAnalysis() {
 }
 
 function displaySignalAnalysis(signal) {
-    // Update hybrid score
-    const hybridScore = signal.hybrid_score || 0;
+    // Update hybrid score - use confidence_score from API
+    const hybridScore = signal.confidence_score || 0;
     document.getElementById('hybridScore').textContent = hybridScore.toFixed(1);
     
-    // Update signal badge
-    const finalSignal = signal.final_signal || 'WAIT';
+    // Update signal badge - use timing_signal from API
+    const finalSignal = signal.timing_signal || 'WAIT';
     const badgeElement = document.getElementById('signalBadge');
     badgeElement.textContent = finalSignal;
     
-    // Set badge color
+    // Set badge color based on timing signal
     badgeElement.className = 'signal-badge ';
     if (finalSignal === 'BUY') badgeElement.className += 'bg-success';
     else if (finalSignal === 'CONSIDER') badgeElement.className += 'bg-warning';
     else if (finalSignal === 'AVOID') badgeElement.className += 'bg-danger';
     else badgeElement.className += 'bg-secondary';
     
-    // Update score breakdown
+    // Update score breakdown - get from actual API response structure
     const mlIntegration = signal.ml_integration || {};
-    const traditionalScore = mlIntegration.traditional_score || 0;
-    const mlProbability = mlIntegration.ml_probability || 0;
+    const breakdown = signal.breakdown || {};
+    const traditionalScore = signal.confidence_score || 0; // Base traditional score
+    const mlProbability = mlIntegration.ml_probability || 0.5; // ML probability
     
     document.getElementById('traditionalScore').textContent = traditionalScore.toFixed(1) + '%';
     document.getElementById('mlScore').textContent = (mlProbability * 100).toFixed(1) + '%';
@@ -328,23 +329,25 @@ function displaySignalAnalysis(signal) {
         document.getElementById('mlFill').style.width = (mlProbability * 100) + '%';
     }, 200);
     
-    // Update technical indicators
-    const indicators = signal.indicators || {};
-    document.getElementById('rsiValue').textContent = (indicators.rsi_14 || 0).toFixed(1);
-    document.getElementById('volatilityValue').textContent = (indicators.volatility_7 || 0).toFixed(1) + '%';
-    document.getElementById('volumeValue').textContent = (indicators.volume_ratio || 0).toFixed(2);
+    // Update technical indicators - use enhanced_filters if available
+    const enhancedFilters = signal.enhanced_filters || {};
+    const indicators = enhancedFilters.technical_indicators || {};
+    document.getElementById('rsiValue').textContent = (indicators.rsi_14 || indicators.rsi || 50).toFixed(1);
+    document.getElementById('volatilityValue').textContent = (indicators.volatility_7 || indicators.volatility || 10).toFixed(1) + '%';
+    document.getElementById('volumeValue').textContent = (indicators.volume_ratio || 1.0).toFixed(2);
     
-    // Update signal indicators
-    const signals = signal.signals || {};
-    document.getElementById('momentumValue').textContent = signals.momentum_signal ? '✓' : '✗';
-    document.getElementById('supportValue').textContent = signals.support_signal ? '✓' : '✗';
-    document.getElementById('bollingerValue').textContent = signals.bollinger_signal ? '✓' : '✗';
+    // Update signal indicators - use enhanced_filters signals
+    const signals = enhancedFilters.signals || {};
+    document.getElementById('momentumValue').textContent = signals.momentum_positive ? '✓' : '✗';
+    document.getElementById('supportValue').textContent = signals.near_support ? '✓' : '✗';
+    document.getElementById('bollingerValue').textContent = signals.bollinger_oversold ? '✓' : '✗';
     
     // Update ML prediction
     document.getElementById('mlProbability').textContent = (mlProbability * 100).toFixed(1) + '%';
     document.getElementById('mlDetails').innerHTML = `
-        Model confidence: ${mlIntegration.model_confidence || 'N/A'}<br>
-        Feature count: ${mlIntegration.feature_count || 'N/A'}<br>
+        ML Signal: ${mlIntegration.ml_signal || 'UNAVAILABLE'}<br>
+        ML Enabled: ${mlIntegration.ml_enabled ? '✓' : '✗'}<br>
+        Analysis Type: ${signal.analysis_type || 'TRADITIONAL'}<br>
         Last updated: ${new Date().toLocaleTimeString()}
     `;
 }

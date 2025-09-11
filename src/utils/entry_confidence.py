@@ -1040,8 +1040,7 @@ class EntryConfidenceAnalyzer:
 
     def _create_basic_confidence(self, symbol: str, current_price: float) -> dict:
         """Create 6-factor confidence assessment using real market data."""
-        from logic.purchase_predictor import calculate_buy_confidence
-
+        
         df = self._fetch_market_data(symbol, days=20, current_price=current_price)
         if isinstance(df, list):  # raw data
             df = pd.DataFrame(df)
@@ -1063,7 +1062,7 @@ class EntryConfidenceAnalyzer:
                 'calculated_at': datetime.now().isoformat()
             }
 
-        result = calculate_buy_confidence(df, current_price)
+        result = self.calculate_confidence(symbol, current_price, df.to_dict('records'))
 
         # 📊 LOG SIGNAL FOR ML/BACKTESTING
         try:
