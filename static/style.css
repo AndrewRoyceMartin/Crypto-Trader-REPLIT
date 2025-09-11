@@ -107,41 +107,41 @@ h4, h5, h6, .h4, .h5, .h6 { font-weight: var(--fw-medium); }
   color: inherit;
 }
 
-/* Hover state – subtle on dark */
-.dashboard-section .table-v02 tbody tr:hover > *,
-.dashboard-section .table-v02--compact tbody tr:hover > * {
+/* Table hover state - unified dark theme */
+.table-v02 tbody tr:hover > *,
+.table-v02--compact tbody tr:hover > * {
   background-color: var(--v02-row-hover);
 }
 
-/* Scope the responsive wrapper so it doesn't globally lighten borders */
-.dashboard-section .table-responsive {
-  border-radius: var(--v02-radius, 10px);
+/* Table responsive wrapper - unified styling */
+.table-responsive {
+  border-radius: var(--v02-radius);
   border: 1px solid var(--v02-border);
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
 }
 
-/* MOBILE: remove hardcoded white backgrounds + box-shadows */
+/* Mobile responsive tables - unified dark theme */
 @media (max-width: 768px) {
-  .dashboard-section .table-v02 thead { display: none; }
-  .dashboard-section .table-v02 tr {
+  .table-v02 thead { display: none; }
+  .table-v02 tr {
     display: block;
     border: 1px solid var(--v02-border);
-    border-radius: var(--v02-radius, 10px);
+    border-radius: var(--v02-radius);
     margin-bottom: .75rem;
-    background: transparent;            /* was #fff */
-    box-shadow: none;                    /* was var(--v02-shadow) */
+    background: transparent;
+    box-shadow: none;
   }
-  .dashboard-section .table-v02 td {
+  .table-v02 td {
     display: flex;
     justify-content: space-between;
     gap: .75rem;
     padding: .5rem .75rem;
     border-bottom: 1px dashed var(--v02-border);
   }
-  .dashboard-section .table-v02 td:last-child { border-bottom: 0; }
-  .dashboard-section .table-v02 td::before {
-    color: var(--accent-blue, #6c7ae0);
+  .table-v02 td:last-child { border-bottom: 0; }
+  .table-v02 td::before {
+    color: var(--accent-blue);
   }
 }
 
@@ -426,7 +426,7 @@ h4, h5, h6, .h4, .h5, .h6 { font-weight: var(--fw-medium); }
 
 /* ===== 5) Dashboard Component Styles ===== */
 .kpi-card {
-    background: #fff;
+    background: var(--card-bg);
     border: 1px solid #e9ecef;
     border-radius: 8px;
     padding: 12px;
@@ -516,7 +516,7 @@ h4, h5, h6, .h4, .h5, .h6 { font-weight: var(--fw-medium); }
 /* Navbar z-index fix for Chrome scrolling overlap */
 .navbar.sticky-top {
     z-index: 1020;
-    background: #ffffff !important;
+    background: var(--card-bg) !important;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     border-bottom: 1px solid #e9ecef;
 }
@@ -575,7 +575,7 @@ h4, h5, h6, .h4, .h5, .h6 { font-weight: var(--fw-medium); }
 
 /* ===== Stat Strip (compact KPI pills) ===== */
 :root{
-  --kpi-bg: #ffffff;
+  --kpi-bg: var(--card-bg);
   --kpi-border: rgba(0,0,0,.08);
   --kpi-shadow: 0 6px 18px rgba(0,0,0,.06);
   --kpi-muted: #6b7280;        /* label */
