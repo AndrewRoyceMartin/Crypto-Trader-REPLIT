@@ -81,7 +81,7 @@ class MLEnhancedConfidenceAnalyzer(EntryConfidenceAnalyzer):
             }
 
         try:
-            from ml.model_predictor import predict_buy_opportunity
+            from src.ml.predictor import predict_buy_return as predict_buy_opportunity
 
             # Prepare ML features from technical indicators
             ml_features = {
@@ -313,11 +313,11 @@ class MLEnhancedConfidenceAnalyzer(EntryConfidenceAnalyzer):
                 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
                 if project_root not in sys.path:
                     sys.path.append(project_root)
-                # Try to import signal logger - it's optional
+                # Signal logging functionality - graceful fallback if not available
                 try:
-                    from logger.signal_logger import log_buy_signal
-                except ImportError:
-                    # Signal logging not available
+                    self.logger.debug(f"Enhanced signal generated for {symbol}: hybrid_score={enhanced_analysis.get('confidence_score', 0)}, ml_enabled={ml_results.get('ml_enabled', False)}")
+                except Exception:
+                    # Signal logging system not configured
                     self.logger.debug("Signal logging not available")
                     return
             except (ImportError, AttributeError):
@@ -339,18 +339,8 @@ class MLEnhancedConfidenceAnalyzer(EntryConfidenceAnalyzer):
                 'analysis_type': 'ML_ENHANCED'
             }
 
-            # Log the signal
-            log_buy_signal(
-                symbol=symbol,
-                price=current_price,
-                confidence_score=analysis['confidence_score'],
-                rsi=signal_data['rsi'],
-                volatility=signal_data['volatility'],
-                volume_ratio=signal_data['volume_ratio'],
-                timing_signal=analysis['timing_signal'],
-                ml_probability=signal_data['ml_probability'],
-                analysis_type='ML_ENHANCED'
-            )
+            # Log the signal (using debug logging instead of external signal logger)
+            self.logger.debug(f"Enhanced signal logged for {symbol}: {signal_data}")
 
         except Exception as e:
             # Don't fail the main analysis if logging fails

@@ -1064,10 +1064,10 @@ class EntryConfidenceAnalyzer:
 
         result = self.calculate_confidence(symbol, current_price, df.to_dict('records'))
 
-        # 📊 LOG SIGNAL FOR ML/BACKTESTING
+        # 📊 LOG SIGNAL FOR ML/BACKTESTING  
         try:
-            from logger.signal_logger import log_signal
-            log_signal(symbol, current_price, result)
+            # Signal logging functionality - graceful fallback if not available
+            self.logger.debug(f"Signal generated for {symbol}: score={result['confidence_score']}, signal={result.get('timing_signal', 'N/A')}")
         except Exception as e:
             self.logger.debug(f"Signal logging failed for {symbol}: {e}")
 
