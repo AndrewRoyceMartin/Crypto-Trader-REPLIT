@@ -3618,6 +3618,39 @@ def entry_confidence(symbol):
             "message": str(e)
         }), 500
 
+@app.route('/api/market-price/<symbol>')
+def get_market_price(symbol):
+    """Get authentic OKX market price for any symbol."""
+    try:
+        # Use existing OKX exchange instance
+        exchange = get_reusable_exchange()
+        
+        # Convert symbol to OKX format (add -USDT if needed)
+        okx_symbol = symbol if '-' in symbol else f'{symbol}-USDT'
+        
+        # Get current price using existing infrastructure
+        if exchange and hasattr(exchange, 'fetch_ticker'):
+            ticker_data = exchange.fetch_ticker(okx_symbol)
+            price = ticker_data.get('last') if ticker_data else None
+        else:
+            # Fallback to get_current_price function
+            price = get_current_price(okx_symbol)
+        
+        if price and price > 0:
+            return jsonify({
+                'symbol': symbol,
+                'price': float(price),
+                'source': 'OKX_NATIVE',
+                'timestamp': datetime.utcnow().isoformat()
+            })
+        else:
+            return jsonify({'error': f'No price data available for {symbol}'}), 404
+            
+    except Exception as e:
+        logger.error(f"Market price fetch failed for {symbol}: {e}")
+        return jsonify({'error': f'Failed to get market price: {str(e)}'}), 500
+
+
 @app.route('/api/hybrid-signal')
 def get_hybrid_signal():
     """🎯 HYBRID SIGNAL SYSTEM: Test endpoint for Goal 1 (ML + Heuristics)."""

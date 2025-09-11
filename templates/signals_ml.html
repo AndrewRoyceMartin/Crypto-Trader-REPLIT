@@ -479,16 +479,28 @@ async function loadSignalAnalysis() {
         updateStatus('loading', 'Analyzing signal...');
         showLoadingSkeletons();
         
-        // Get current price first
+        // Get current price from authentic OKX data only
         const priceResponse = await fetch(`/api/current-holdings`);
-        currentPrice = 114000; // Default fallback
+        currentPrice = null; // Must get real price from OKX
         
         if (priceResponse.ok) {
             const holdings = await priceResponse.json();
             const holding = holdings.holdings?.find(h => h.symbol === symbol);
             if (holding && holding.current_price) {
                 currentPrice = holding.current_price;
+            } else {
+                // If symbol not in holdings, get market price from OKX directly
+                const marketResponse = await fetch(`/api/market-price/${symbol}`);
+                if (marketResponse.ok) {
+                    const marketData = await marketResponse.json();
+                    currentPrice = marketData.price;
+                }
             }
+        }
+        
+        // Require authentic price data - no hardcoded fallbacks
+        if (!currentPrice || currentPrice <= 0) {
+            throw new Error(`Unable to get authentic OKX price for ${symbol}. Trading analysis requires real market data.`);
         }
         
         // Get hybrid signal data
@@ -766,7 +778,12 @@ const SignalsMLDebug = {
     
     async debugSignal(symbol = null) {
         const testSymbol = symbol || currentSymbol;
-        const testPrice = currentPrice || 114200;
+        const testPrice = currentPrice || null; // No hardcoded fallback
+        
+        if (!testPrice) {
+            TradingDebug.log('❌ Cannot test signal without authentic price data');
+            return null;
+        }
         
         TradingDebug.log(`🧠 Testing signal for ${testSymbol} at $${testPrice}`);
         try {
