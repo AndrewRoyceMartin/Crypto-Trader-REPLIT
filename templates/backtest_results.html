@@ -192,23 +192,31 @@
     <div class="signal-performance-grid" id="signalPerformanceGrid">
         <div class="signal-performance-card">
             <div class="h4 text-success">BUY</div>
-            <div class="h3 text-success" id="buyPnL">3.97%</div>
-            <div style="color: #9ca3af;">4 trades • 100% win rate</div>
+            <div class="h3 text-success" id="buyPnL">
+                <div class="loading-skeleton loading-skeleton-metric"></div>
+            </div>
+            <div style="color: #9ca3af;" id="buyStats">Loading authentic data...</div>
         </div>
         <div class="signal-performance-card">
             <div class="h4 text-warning">CONSIDER</div>
-            <div class="h3 text-warning" id="considerPnL">3.81%</div>
-            <div style="color: #9ca3af;">4 trades • 100% win rate</div>
+            <div class="h3 text-warning" id="considerPnL">
+                <div class="loading-skeleton loading-skeleton-metric"></div>
+            </div>
+            <div style="color: #9ca3af;" id="considerStats">Loading authentic data...</div>
         </div>
         <div class="signal-performance-card">
             <div class="h4 text-secondary">WAIT</div>
-            <div class="h3 text-secondary" id="waitPnL">3.67%</div>
-            <div style="color: #9ca3af;">4 trades • 100% win rate</div>
+            <div class="h3 text-secondary" id="waitPnL">
+                <div class="loading-skeleton loading-skeleton-metric"></div>
+            </div>
+            <div style="color: #9ca3af;" id="waitStats">Loading authentic data...</div>
         </div>
         <div class="signal-performance-card">
             <div class="h4 text-danger">AVOID</div>
-            <div class="h3 text-danger" id="avoidPnL">3.76%</div>
-            <div style="color: #9ca3af;">3 trades • 100% win rate</div>
+            <div class="h3 text-danger" id="avoidPnL">
+                <div class="loading-skeleton loading-skeleton-metric"></div>
+            </div>
+            <div style="color: #9ca3af;" id="avoidStats">Loading authentic data...</div>
         </div>
     </div>
 </div>
@@ -233,10 +241,12 @@
                 ML vs Traditional
             </h5>
             <div class="text-center py-4">
-                <div class="h4 text-info">Correlation: -0.99</div>
-                <div style="color: #9ca3af;" class="mb-3">Strong negative correlation between confidence and P&L</div>
+                <div class="h4 text-info" id="correlation">
+                    <div class="loading-skeleton loading-skeleton-metric"></div>
+                </div>
+                <div style="color: #9ca3af;" class="mb-3" id="correlationDesc">Loading ML correlation analysis...</div>
                 <div class="h5 text-warning">ML Contribution: 40%</div>
-                <div style="color: #9ca3af;" class="mb-3">ML probability correlation: -0.30</div>
+                <div style="color: #9ca3af;" class="mb-3" id="mlCorrelation">Loading ML probability correlation...</div>
                 <div class="h5 text-success">Traditional: 60%</div>
                 <div style="color: #9ca3af;">Technical analysis weight</div>
             </div>
@@ -363,8 +373,13 @@ async function loadBacktestResults() {
             }, 400);
             
         } else {
-            // Fallback to sample data
-            loadSampleBacktestData();
+            // No fallback - require authentic backtest data only
+            console.error('❌ Authentic backtest data required - no CSV file available');
+            const statusElement = document.getElementById('backtest-status');
+            if (statusElement) {
+                statusElement.textContent = 'No authentic backtest results available - run backtest first';
+                statusElement.className = 'status-indicator status-error';
+            }
         }
         
     } catch (error) {
@@ -377,7 +392,8 @@ async function loadBacktestResults() {
             statusElement.className = 'status-indicator status-error';
         }
         
-        loadSampleBacktestData();
+        // No sample data fallback - authentic data only
+        console.error('❌ DATA INTEGRITY: No sample data fallback - authentic backtest results required');
     }
 }
 
@@ -401,36 +417,15 @@ function parseCSV(csvText) {
 }
 
 function loadSampleBacktestData() {
-    // Sample data based on our actual backtest results
-    backtestResults = [
-        {
-            timestamp: '2025-09-10 03:04:56',
-            symbol: 'BTC',
-            signal: 'BUY',
-            confidence: '60',
-            ml_probability: '0.3',
-            signal_price: '100',
-            execution_price: '105.0',
-            'pnl_$': '5.0',
-            'pnl_%': '5.0',
-            matched: 'True'
-        },
-        {
-            timestamp: '2025-09-09 03:04:56',
-            symbol: 'ETH',
-            signal: 'CONSIDER',
-            confidence: '61',
-            ml_probability: '0.4',
-            signal_price: '105',
-            execution_price: '110.0',
-            'pnl_$': '5.0',
-            'pnl_%': '4.762',
-            matched: 'True'
-        },
-        // Add more sample data...
-    ];
+    // ❌ REMOVED: No sample data - authentic backtest results only
+    console.error('❌ DATA INTEGRITY: Sample data removed - authentic backtest data required from ML system');
     
-    displayBacktestResults(backtestResults);
+    // Show error message instead of fake data
+    document.getElementById('backtestTableBody').innerHTML = 
+        '<tr><td colspan="10" class="text-center py-4 text-warning">' +
+        '<i class="fas fa-exclamation-triangle me-2"></i>' +
+        'No authentic backtest results available. Run a new backtest to generate real ML data.' +
+        '</td></tr>';
 }
 
 function displayBacktestResults(results) {
@@ -465,11 +460,86 @@ function updateSummaryStats(results) {
     const winRate = (winningTrades / pnlValues.length) * 100;
     const matchRate = (matchedResults.length / results.length) * 100;
     
-    // Update display
+    // Update main display
     document.getElementById('avgPnL').textContent = avgPnL.toFixed(2) + '%';
     document.getElementById('winRate').textContent = winRate.toFixed(0) + '%';
     document.getElementById('matchRate').textContent = matchRate.toFixed(0) + '%';
     document.getElementById('totalTrades').textContent = matchedResults.length;
+    
+    // Update signal performance cards with authentic data
+    updateSignalTypePerformance(matchedResults);
+    
+    // Update ML correlation analysis with authentic data
+    updateMLCorrelationAnalysis(matchedResults);
+}
+
+function updateSignalTypePerformance(results) {
+    const signalTypes = ['BUY', 'CONSIDER', 'WAIT', 'AVOID'];
+    
+    signalTypes.forEach(signal => {
+        const signalResults = results.filter(r => r.signal === signal);
+        if (signalResults.length > 0) {
+            const pnlValues = signalResults.map(r => parseFloat(r['pnl_%'] || 0));
+            const avgPnL = pnlValues.reduce((a, b) => a + b, 0) / pnlValues.length;
+            const winningTrades = pnlValues.filter(p => p > 0).length;
+            const winRate = (winningTrades / pnlValues.length) * 100;
+            
+            const elementId = signal.toLowerCase() + 'PnL';
+            const statsId = signal.toLowerCase() + 'Stats';
+            
+            document.getElementById(elementId).textContent = avgPnL.toFixed(2) + '%';
+            document.getElementById(statsId).textContent = 
+                `${signalResults.length} trades • ${winRate.toFixed(0)}% win rate`;
+        } else {
+            const elementId = signal.toLowerCase() + 'PnL';
+            const statsId = signal.toLowerCase() + 'Stats';
+            
+            document.getElementById(elementId).textContent = 'N/A';
+            document.getElementById(statsId).textContent = 'No trades';
+        }
+    });
+}
+
+function updateMLCorrelationAnalysis(results) {
+    // Calculate correlation between ML probability and P&L
+    const mlProbs = results.map(r => parseFloat(r.ml_probability || 0));
+    const pnlValues = results.map(r => parseFloat(r['pnl_%'] || 0));
+    
+    const correlation = calculateCorrelation(mlProbs, pnlValues);
+    
+    document.getElementById('correlation').textContent = `Correlation: ${correlation.toFixed(2)}`;
+    
+    const description = correlation > 0.5 ? 'Strong positive correlation' :
+                       correlation > 0.2 ? 'Moderate positive correlation' :
+                       correlation > -0.2 ? 'Weak correlation' :
+                       correlation > -0.5 ? 'Moderate negative correlation' :
+                       'Strong negative correlation';
+    
+    document.getElementById('correlationDesc').textContent = `${description} between ML probability and P&L`;
+    document.getElementById('mlCorrelation').textContent = `ML probability correlation: ${correlation.toFixed(2)}`;
+}
+
+function calculateCorrelation(x, y) {
+    const n = x.length;
+    if (n === 0) return 0;
+    
+    const meanX = x.reduce((a, b) => a + b) / n;
+    const meanY = y.reduce((a, b) => a + b) / n;
+    
+    let numerator = 0;
+    let denomX = 0;
+    let denomY = 0;
+    
+    for (let i = 0; i < n; i++) {
+        const dx = x[i] - meanX;
+        const dy = y[i] - meanY;
+        numerator += dx * dy;
+        denomX += dx * dx;
+        denomY += dy * dy;
+    }
+    
+    const denominator = Math.sqrt(denomX * denomY);
+    return denominator === 0 ? 0 : numerator / denominator;
 }
 
 function updateResultsTable(results) {
