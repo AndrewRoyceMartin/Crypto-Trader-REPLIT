@@ -12,6 +12,7 @@
     border-radius: 15px;
     padding: 25px;
     margin-bottom: 25px;
+    position: relative;
 }
 
 .signal-score {
@@ -19,6 +20,10 @@
     font-weight: 800;
     text-align: center;
     margin: 20px 0;
+    background: linear-gradient(135deg, #3b82f6, #06b6d4);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
 }
 
 .score-breakdown {
@@ -26,6 +31,7 @@
     border-radius: 10px;
     padding: 20px;
     margin: 15px 0;
+    border: 1px solid var(--border-color);
 }
 
 .confidence-meter {
@@ -35,12 +41,30 @@
     overflow: hidden;
     position: relative;
     margin: 10px 0;
+    border: 1px solid var(--border-color);
 }
 
 .confidence-fill {
     height: 100%;
     transition: width 0.8s ease;
     border-radius: 15px;
+    position: relative;
+}
+
+.confidence-fill::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.2) 50%, transparent 100%);
+    animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
 }
 
 .signal-badge {
@@ -49,6 +73,32 @@
     border-radius: 25px;
     font-weight: 600;
     text-transform: uppercase;
+    border: 2px solid;
+    position: relative;
+    overflow: hidden;
+}
+
+.signal-badge.bg-success {
+    background: var(--success-green);
+    border-color: var(--success-green);
+    box-shadow: 0 0 20px rgba(34, 197, 94, 0.3);
+}
+
+.signal-badge.bg-warning {
+    background: var(--warning-orange);
+    border-color: var(--warning-orange);
+    box-shadow: 0 0 20px rgba(251, 146, 60, 0.3);
+}
+
+.signal-badge.bg-danger {
+    background: var(--danger-red);
+    border-color: var(--danger-red);
+    box-shadow: 0 0 20px rgba(239, 68, 68, 0.3);
+}
+
+.signal-badge.bg-secondary {
+    background: var(--secondary);
+    border-color: var(--secondary);
 }
 
 .indicator-grid {
@@ -60,10 +110,31 @@
 
 .indicator-item {
     background: var(--secondary-dark);
-    padding: 15px;
-    border-radius: 8px;
+    padding: 20px;
+    border-radius: 10px;
     text-align: center;
     border: 1px solid var(--border-color);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.indicator-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+
+.indicator-item .value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 5px;
+}
+
+.indicator-item .label {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
 .ml-prediction-box {
@@ -72,6 +143,97 @@
     padding: 25px;
     margin: 20px 0;
     border: 2px solid var(--success-green);
+    position: relative;
+    overflow: hidden;
+}
+
+.ml-prediction-box::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(6, 182, 212, 0.1));
+    pointer-events: none;
+}
+
+.status-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    margin-left: 15px;
+}
+
+.status-live {
+    background: rgba(34, 197, 94, 0.2);
+    border: 1px solid var(--success-green);
+    color: var(--success-green);
+}
+
+.status-loading {
+    background: rgba(59, 130, 246, 0.2);
+    border: 1px solid var(--accent-blue);
+    color: var(--accent-blue);
+}
+
+.loading-skeleton {
+    background: linear-gradient(90deg, var(--secondary-dark) 0%, var(--border-color) 50%, var(--secondary-dark) 100%);
+    background-size: 200% 100%;
+    animation: loading-wave 1.5s infinite;
+    border-radius: 4px;
+    height: 1.5rem;
+    margin: 5px 0;
+}
+
+@keyframes loading-wave {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+.last-updated {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    background: var(--secondary-dark);
+    padding: 5px 10px;
+    border-radius: 15px;
+    border: 1px solid var(--border-color);
+}
+
+.enhanced-filters-box {
+    background: var(--secondary-dark);
+    border-radius: 10px;
+    padding: 20px;
+    margin: 15px 0;
+    border: 1px solid var(--border-color);
+}
+
+.signal-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 8px 0;
+    padding: 5px 0;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.signal-row:last-child {
+    border-bottom: none;
+}
+
+.check-icon {
+    color: var(--success-green);
+}
+
+.x-icon {
+    color: var(--danger-red);
 }
 </style>
 {% endblock %}
@@ -81,48 +243,66 @@
 <div class="data-card mb-4">
     <div class="row align-items-center">
         <div class="col-md-6">
-            <label for="symbolSelect" class="form-label">Select Asset for Analysis</label>
+            <label for="symbolSelect" class="form-label">
+                <i class="fas fa-chart-line me-2"></i>Select Asset for Analysis
+            </label>
             <select class="form-select form-select-lg" id="symbolSelect" onchange="loadSignalAnalysis()">
                 <option value="BTC">Bitcoin (BTC)</option>
                 <option value="ETH">Ethereum (ETH)</option>
                 <option value="SOL">Solana (SOL)</option>
                 <option value="ALGO">Algorand (ALGO)</option>
                 <option value="ATOM">Cosmos (ATOM)</option>
+                <option value="LINK">Chainlink (LINK)</option>
+                <option value="UNI">Uniswap (UNI)</option>
+                <option value="COMP">Compound (COMP)</option>
             </select>
         </div>
         <div class="col-md-6 text-end">
-            <button class="btn btn-outline-primary btn-lg" onclick="refreshSignalData()">
+            <button class="btn btn-outline-primary btn-lg" onclick="refreshSignalData()" id="refreshBtn">
                 <i class="fas fa-sync-alt me-2"></i>Refresh Analysis
             </button>
+            <div class="status-indicator status-loading" id="statusIndicator">
+                <i class="fas fa-spinner fa-spin"></i>
+                <span>Loading...</span>
+            </div>
         </div>
     </div>
 </div>
 
 <!-- Hybrid Signal Score -->
 <div class="signal-analysis-card">
+    <div class="last-updated" id="lastUpdated">Loading...</div>
     <div class="row">
         <div class="col-lg-4 text-center">
-            <h5>Hybrid Signal Score</h5>
-            <div class="signal-score text-primary" id="hybridScore">--</div>
-            <div class="signal-badge bg-secondary" id="signalBadge">LOADING</div>
+            <h5><i class="fas fa-crosshairs me-2"></i>Hybrid Signal Score</h5>
+            <div class="signal-score" id="hybridScore">
+                <div class="loading-skeleton" style="width: 80px; height: 60px; margin: 0 auto;"></div>
+            </div>
+            <div class="signal-badge bg-secondary" id="signalBadge">
+                <div class="loading-skeleton" style="width: 80px; height: 20px; margin: 0 auto;"></div>
+            </div>
         </div>
         <div class="col-lg-8">
-            <h6>Score Breakdown</h6>
+            <h6><i class="fas fa-analytics me-2"></i>Score Breakdown</h6>
             <div class="score-breakdown">
                 <div class="row">
                     <div class="col-6">
-                        <h6 class="text-info">Traditional Analysis (60%)</h6>
+                        <h6 class="text-info"><i class="fas fa-chart-area me-2"></i>Traditional Analysis (60%)</h6>
                         <div class="confidence-meter">
                             <div class="confidence-fill bg-info" id="traditionalFill" style="width: 0%"></div>
                         </div>
-                        <div id="traditionalScore">0%</div>
+                        <div id="traditionalScore">
+                            <div class="loading-skeleton" style="width: 60px;"></div>
+                        </div>
                     </div>
                     <div class="col-6">
-                        <h6 class="text-warning">ML Prediction (40%)</h6>
+                        <h6 class="text-warning"><i class="fas fa-brain me-2"></i>ML Prediction (40%)</h6>
                         <div class="confidence-meter">
                             <div class="confidence-fill bg-warning" id="mlFill" style="width: 0%"></div>
                         </div>
-                        <div id="mlScore">0%</div>
+                        <div id="mlScore">
+                            <div class="loading-skeleton" style="width: 60px;"></div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -130,38 +310,57 @@
     </div>
 </div>
 
-<!-- Technical Indicators -->
+<!-- Technical Indicators & ML Prediction -->
 <div class="row">
     <div class="col-lg-8">
         <div class="data-card">
             <h5 class="card-title">
-                <i class="fas fa-chart-line"></i>
-                Technical Indicators
+                <i class="fas fa-chart-line me-2"></i>Technical Indicators
             </h5>
             <div class="indicator-grid" id="indicatorGrid">
                 <div class="indicator-item">
-                    <div class="h4" id="rsiValue">--</div>
-                    <div style="color: #9ca3af;">RSI (14)</div>
+                    <div class="value" id="rsiValue">
+                        <div class="loading-skeleton"></div>
+                    </div>
+                    <div class="label">RSI (14)</div>
                 </div>
                 <div class="indicator-item">
-                    <div class="h4" id="volatilityValue">--</div>
-                    <div style="color: #9ca3af;">Volatility</div>
+                    <div class="value" id="volatilityValue">
+                        <div class="loading-skeleton"></div>
+                    </div>
+                    <div class="label">Volatility</div>
                 </div>
                 <div class="indicator-item">
-                    <div class="h4" id="volumeValue">--</div>
-                    <div style="color: #9ca3af;">Volume Ratio</div>
+                    <div class="value" id="volumeValue">
+                        <div class="loading-skeleton"></div>
+                    </div>
+                    <div class="label">Volume Ratio</div>
                 </div>
                 <div class="indicator-item">
-                    <div class="h4" id="momentumValue">--</div>
-                    <div style="color: #9ca3af;">Momentum</div>
+                    <div class="value" id="momentumValue">
+                        <div class="loading-skeleton"></div>
+                    </div>
+                    <div class="label">Momentum</div>
                 </div>
                 <div class="indicator-item">
-                    <div class="h4" id="supportValue">--</div>
-                    <div style="color: #9ca3af;">Support</div>
+                    <div class="value" id="supportValue">
+                        <div class="loading-skeleton"></div>
+                    </div>
+                    <div class="label">Support Level</div>
                 </div>
                 <div class="indicator-item">
-                    <div class="h4" id="bollingerValue">--</div>
-                    <div style="color: #9ca3af;">Bollinger</div>
+                    <div class="value" id="bollingerValue">
+                        <div class="loading-skeleton"></div>
+                    </div>
+                    <div class="label">Bollinger Bands</div>
+                </div>
+            </div>
+            
+            <!-- Enhanced Filters Detail -->
+            <div class="enhanced-filters-box" id="enhancedFiltersBox" style="display: none;">
+                <h6><i class="fas fa-filter me-2"></i>Signal Components</h6>
+                <div id="enhancedFiltersContent">
+                    <!-- Will be populated dynamically -->
                 </div>
             </div>
         </div>
@@ -169,15 +368,26 @@
     <div class="col-lg-4">
         <div class="ml-prediction-box">
             <h5 class="text-center text-white">
-                <i class="fas fa-robot me-2"></i>
-                ML Prediction
+                <i class="fas fa-robot me-2"></i>ML Prediction Engine
             </h5>
             <div class="text-center">
-                <div class="h2 text-success" id="mlProbability">--</div>
-                <div class="text-light">Probability</div>
-                <div class="mt-3">
-                    <small class="text-light" id="mlDetails">Loading ML analysis...</small>
+                <div class="h2 text-success" id="mlProbability">
+                    <div class="loading-skeleton" style="width: 80px; height: 40px; margin: 0 auto;"></div>
                 </div>
+                <div class="text-light mb-3">Success Probability</div>
+                <div class="mt-3">
+                    <small class="text-light" id="mlDetails">
+                        <div class="loading-skeleton" style="height: 60px;"></div>
+                    </small>
+                </div>
+            </div>
+        </div>
+        
+        <!-- System Info -->
+        <div class="data-card">
+            <h6><i class="fas fa-info-circle me-2"></i>System Info</h6>
+            <div id="systemInfo">
+                <div class="loading-skeleton" style="height: 80px;"></div>
             </div>
         </div>
     </div>
@@ -186,11 +396,11 @@
 <!-- Signal History Table -->
 <div class="data-card">
     <h5 class="card-title">
-        <i class="fas fa-history"></i>
-        Recent Signal History
+        <i class="fas fa-history me-2"></i>Recent Signal History
         <button class="btn btn-sm btn-outline-primary ms-3" onclick="exportSignalHistory()">
             <i class="fas fa-download me-1"></i>Export CSV
         </button>
+        <span class="badge bg-info ms-2" id="historyCount">Loading...</span>
     </h5>
     
     <div class="table-responsive">
@@ -200,9 +410,9 @@
                     <th>Timestamp</th>
                     <th>Symbol</th>
                     <th class="text-center">Signal</th>
-                    <th class="text-end">Hybrid Score</th>
-                    <th class="text-end">ML Prob</th>
-                    <th class="text-end">Traditional</th>
+                    <th class="text-end">Confidence</th>
+                    <th class="text-end">RSI</th>
+                    <th class="text-end">Volatility</th>
                     <th class="text-end">Price</th>
                 </tr>
             </thead>
@@ -210,7 +420,8 @@
                 <tr>
                     <td colspan="7" class="text-center py-4">
                         <div class="loading-spinner text-primary" role="status">
-                            <span class="visually-hidden">Loading signal history...</span>
+                            <i class="fas fa-spinner fa-spin me-2"></i>
+                            <span>Loading signal history from CSV...</span>
                         </div>
                     </td>
                 </tr>
@@ -219,34 +430,34 @@
     </div>
 </div>
 
-<!-- Threshold Configuration -->
+<!-- Signal Thresholds Reference -->
 <div class="data-card">
     <h5 class="card-title">
-        <i class="fas fa-sliders-h"></i>
-        Signal Thresholds
+        <i class="fas fa-sliders-h me-2"></i>Signal Thresholds
+        <small class="text-muted ms-2">(Calibrated from backtest analysis)</small>
     </h5>
     <div class="row">
         <div class="col-md-3">
             <div class="text-center p-3 border rounded bg-success">
-                <div class="h5">≥75</div>
+                <div class="h5"><i class="fas fa-arrow-up me-1"></i>≥65</div>
                 <div>BUY Signal</div>
             </div>
         </div>
         <div class="col-md-3">
             <div class="text-center p-3 border rounded bg-warning">
-                <div class="h5">≥60</div>
+                <div class="h5"><i class="fas fa-eye me-1"></i>≥55</div>
                 <div>CONSIDER Signal</div>
             </div>
         </div>
         <div class="col-md-3">
             <div class="text-center p-3 border rounded bg-secondary">
-                <div class="h5">≥45</div>
+                <div class="h5"><i class="fas fa-pause me-1"></i>≥45</div>
                 <div>WAIT Signal</div>
             </div>
         </div>
         <div class="col-md-3">
             <div class="text-center p-3 border rounded bg-danger">
-                <div class="h5">&lt;45</div>
+                <div class="h5"><i class="fas fa-times me-1"></i>&lt;45</div>
                 <div>AVOID Signal</div>
             </div>
         </div>
@@ -258,17 +469,19 @@
 <script>
 let currentSymbol = 'BTC';
 let signalData = null;
+let currentPrice = null;
 
 async function loadSignalAnalysis() {
     const symbol = document.getElementById('symbolSelect').value;
     currentSymbol = symbol;
     
     try {
-        showToast(`Loading ${symbol} signal analysis...`, 'info');
+        updateStatus('loading', 'Analyzing signal...');
+        showLoadingSkeletons();
         
         // Get current price first
         const priceResponse = await fetch(`/api/current-holdings`);
-        let currentPrice = 50000; // Default fallback
+        currentPrice = 114000; // Default fallback
         
         if (priceResponse.ok) {
             const holdings = await priceResponse.json();
@@ -283,26 +496,58 @@ async function loadSignalAnalysis() {
         if (signalResponse.ok) {
             signalData = await signalResponse.json();
             displaySignalAnalysis(signalData);
-            showToast('Signal analysis updated successfully!', 'success');
+            updateStatus('live', 'Live data');
+            showToast(`${symbol} signal analysis updated`, 'success');
         } else {
             throw new Error('Failed to load signal data');
         }
         
-        // Load signal history
-        loadSignalHistory();
+        // Load real signal history from CSV
+        await loadRealSignalHistory();
         
     } catch (error) {
         console.error('Signal analysis loading failed:', error);
+        updateStatus('error', 'Error loading');
         showToast('Failed to load signal analysis: ' + error.message, 'error');
+        hideLoadingSkeletons();
     }
 }
 
+function showLoadingSkeletons() {
+    document.querySelectorAll('.loading-skeleton').forEach(skeleton => {
+        skeleton.style.display = 'block';
+    });
+}
+
+function hideLoadingSkeletons() {
+    document.querySelectorAll('.loading-skeleton').forEach(skeleton => {
+        skeleton.style.display = 'none';
+    });
+}
+
+function updateStatus(type, text) {
+    const indicator = document.getElementById('statusIndicator');
+    const iconMap = {
+        loading: 'fas fa-spinner fa-spin',
+        live: 'fas fa-circle',
+        error: 'fas fa-exclamation-circle'
+    };
+    
+    indicator.className = `status-indicator status-${type}`;
+    indicator.innerHTML = `<i class="${iconMap[type]}"></i><span>${text}</span>`;
+    
+    // Update last updated timestamp
+    document.getElementById('lastUpdated').textContent = new Date().toLocaleTimeString();
+}
+
 function displaySignalAnalysis(signal) {
-    // Update hybrid score - use confidence_score from API
+    hideLoadingSkeletons();
+    
+    // Update hybrid score
     const hybridScore = signal.confidence_score || 0;
     document.getElementById('hybridScore').textContent = hybridScore.toFixed(1);
     
-    // Update signal badge - use timing_signal from API
+    // Update signal badge
     const finalSignal = signal.timing_signal || 'WAIT';
     const badgeElement = document.getElementById('signalBadge');
     badgeElement.textContent = finalSignal;
@@ -314,11 +559,10 @@ function displaySignalAnalysis(signal) {
     else if (finalSignal === 'AVOID') badgeElement.className += 'bg-danger';
     else badgeElement.className += 'bg-secondary';
     
-    // Update score breakdown - get from actual API response structure
+    // Update score breakdown
     const mlIntegration = signal.ml_integration || {};
-    const breakdown = signal.breakdown || {};
-    const traditionalScore = signal.confidence_score || 0; // Base traditional score
-    const mlProbability = mlIntegration.ml_probability || 0.5; // ML probability
+    const traditionalScore = mlIntegration.traditional_score || signal.confidence_score || 0;
+    const mlProbability = mlIntegration.ml_probability || 0.5;
     
     document.getElementById('traditionalScore').textContent = traditionalScore.toFixed(1) + '%';
     document.getElementById('mlScore').textContent = (mlProbability * 100).toFixed(1) + '%';
@@ -327,73 +571,113 @@ function displaySignalAnalysis(signal) {
     setTimeout(() => {
         document.getElementById('traditionalFill').style.width = traditionalScore + '%';
         document.getElementById('mlFill').style.width = (mlProbability * 100) + '%';
-    }, 200);
+    }, 300);
     
     // Update technical indicators - use enhanced_filters if available
     const enhancedFilters = signal.enhanced_filters || {};
     const indicators = enhancedFilters.technical_indicators || {};
+    
     document.getElementById('rsiValue').textContent = (indicators.rsi_14 || indicators.rsi || 50).toFixed(1);
     document.getElementById('volatilityValue').textContent = (indicators.volatility_7 || indicators.volatility || 10).toFixed(1) + '%';
     document.getElementById('volumeValue').textContent = (indicators.volume_ratio || 1.0).toFixed(2);
     
-    // Update signal indicators - use enhanced_filters signals
+    // Update signal indicators
     const signals = enhancedFilters.signals || {};
-    document.getElementById('momentumValue').textContent = signals.momentum_positive ? '✓' : '✗';
-    document.getElementById('supportValue').textContent = signals.near_support ? '✓' : '✗';
-    document.getElementById('bollingerValue').textContent = signals.bollinger_oversold ? '✓' : '✗';
+    document.getElementById('momentumValue').innerHTML = signals.momentum_positive ? 
+        '<i class="fas fa-check check-icon"></i>' : '<i class="fas fa-times x-icon"></i>';
+    document.getElementById('supportValue').innerHTML = signals.near_support ? 
+        '<i class="fas fa-check check-icon"></i>' : '<i class="fas fa-times x-icon"></i>';
+    document.getElementById('bollingerValue').innerHTML = signals.bollinger_oversold ? 
+        '<i class="fas fa-check check-icon"></i>' : '<i class="fas fa-times x-icon"></i>';
+    
+    // Update enhanced filters detail
+    if (Object.keys(enhancedFilters).length > 0) {
+        displayEnhancedFilters(enhancedFilters);
+    }
     
     // Update ML prediction
     document.getElementById('mlProbability').textContent = (mlProbability * 100).toFixed(1) + '%';
     document.getElementById('mlDetails').innerHTML = `
-        ML Signal: ${mlIntegration.ml_signal || 'UNAVAILABLE'}<br>
-        ML Enabled: ${mlIntegration.ml_enabled ? '✓' : '✗'}<br>
-        Analysis Type: ${signal.analysis_type || 'TRADITIONAL'}<br>
-        Last updated: ${new Date().toLocaleTimeString()}
+        <strong>ML Status:</strong> ${mlIntegration.ml_enabled ? '🟢 Active' : '🟡 Fallback'}<br>
+        <strong>Signal:</strong> ${mlIntegration.ml_signal || 'UNAVAILABLE'}<br>
+        <strong>Confidence:</strong> ${(mlIntegration.ml_confidence * 100).toFixed(1)}%<br>
+        <strong>Type:</strong> ${signal.analysis_type || 'TRADITIONAL'}
+    `;
+    
+    // Update system info
+    const systemInfo = signal.system_info || {};
+    document.getElementById('systemInfo').innerHTML = `
+        <div style="font-size: 0.9rem; line-height: 1.4;">
+            <strong>Version:</strong> ${signal.version || 'N/A'}<br>
+            <strong>Risk Level:</strong> ${signal.risk_level || 'MEDIUM'}<br>
+            <strong>Target Price:</strong> $${(signal.suggested_target_price || 0).toLocaleString()}<br>
+            <strong>Formula:</strong> ${systemInfo.formula || 'N/A'}
+        </div>
     `;
 }
 
-async function loadSignalHistory() {
-    try {
-        // This would load from the signal log CSV file
-        // For now, showing sample historical data
-        const historyData = [
-            {
-                timestamp: new Date(Date.now() - 3600000).toISOString(),
-                symbol: currentSymbol,
-                signal: 'BUY',
-                hybrid_score: 78.5,
-                ml_prob: 0.65,
-                traditional: 85.2,
-                price: 65000
-            },
-            {
-                timestamp: new Date(Date.now() - 7200000).toISOString(),
-                symbol: currentSymbol,
-                signal: 'CONSIDER',
-                hybrid_score: 62.1,
-                ml_prob: 0.45,
-                traditional: 72.8,
-                price: 64800
-            },
-            {
-                timestamp: new Date(Date.now() - 10800000).toISOString(),
-                symbol: currentSymbol,
-                signal: 'WAIT',
-                hybrid_score: 48.3,
-                ml_prob: 0.30,
-                traditional: 58.9,
-                price: 64200
-            }
-        ];
-        
-        displaySignalHistory(historyData);
-        
-    } catch (error) {
-        console.error('Signal history loading failed:', error);
+function displayEnhancedFilters(filters) {
+    const signals = filters.signals || {};
+    const box = document.getElementById('enhancedFiltersBox');
+    const content = document.getElementById('enhancedFiltersContent');
+    
+    let html = '';
+    for (const [key, value] of Object.entries(signals)) {
+        const displayName = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+        const icon = value ? '<i class="fas fa-check check-icon"></i>' : '<i class="fas fa-times x-icon"></i>';
+        html += `<div class="signal-row"><span>${displayName}</span><span>${icon}</span></div>`;
+    }
+    
+    if (html) {
+        content.innerHTML = html;
+        box.style.display = 'block';
     }
 }
 
-function displaySignalHistory(history) {
+async function loadRealSignalHistory() {
+    try {
+        const response = await fetch('/signals_log.csv');
+        if (response.ok) {
+            const csvText = await response.text();
+            const lines = csvText.split('\n').filter(line => line.trim());
+            
+            if (lines.length <= 1) {
+                document.getElementById('signalHistoryTable').innerHTML = 
+                    '<tr><td colspan="7" class="text-center py-4">No signal history available</td></tr>';
+                return;
+            }
+            
+            // Parse CSV (skip header)
+            const records = lines.slice(1, 11).map(line => { // Show last 10 records
+                const cols = line.split(',');
+                return {
+                    timestamp: cols[0],
+                    symbol: cols[1],
+                    price: parseFloat(cols[2]) || 0,
+                    confidence: parseFloat(cols[3]) || 0,
+                    signal: cols[4] || 'WAIT',
+                    rsi: parseFloat(cols[5]) || 0,
+                    volatility: parseFloat(cols[6]) || 0
+                };
+            }).filter(record => record.symbol && record.timestamp);
+            
+            displayRealSignalHistory(records);
+            
+            // Update count
+            document.getElementById('historyCount').textContent = `${records.length} recent signals`;
+            
+        } else {
+            throw new Error('Unable to load CSV data');
+        }
+    } catch (error) {
+        console.error('Signal history loading failed:', error);
+        document.getElementById('signalHistoryTable').innerHTML = 
+            `<tr><td colspan="7" class="text-center py-4 text-danger">Failed to load signal history: ${error.message}</td></tr>`;
+        document.getElementById('historyCount').textContent = 'Error';
+    }
+}
+
+function displayRealSignalHistory(history) {
     const tbody = document.getElementById('signalHistoryTable');
     
     if (history.length === 0) {
@@ -415,9 +699,9 @@ function displaySignalHistory(history) {
                 <td class="text-center">
                     <span class="badge ${signalClass}">${record.signal}</span>
                 </td>
-                <td class="text-end">${record.hybrid_score.toFixed(1)}</td>
-                <td class="text-end">${(record.ml_prob * 100).toFixed(1)}%</td>
-                <td class="text-end">${record.traditional.toFixed(1)}</td>
+                <td class="text-end">${record.confidence.toFixed(1)}</td>
+                <td class="text-end">${record.rsi.toFixed(1)}</td>
+                <td class="text-end">${record.volatility.toFixed(1)}%</td>
                 <td class="text-end">$${record.price.toLocaleString()}</td>
             </tr>
         `;
@@ -425,21 +709,33 @@ function displaySignalHistory(history) {
 }
 
 async function refreshSignalData() {
-    await loadSignalAnalysis();
+    const refreshBtn = document.getElementById('refreshBtn');
+    const originalText = refreshBtn.innerHTML;
+    
+    refreshBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Refreshing...';
+    refreshBtn.disabled = true;
+    
+    try {
+        await loadSignalAnalysis();
+    } finally {
+        setTimeout(() => {
+            refreshBtn.innerHTML = originalText;
+            refreshBtn.disabled = false;
+        }, 1000);
+    }
 }
 
 async function exportSignalHistory() {
     try {
         showToast('Exporting signal history...', 'info');
         
-        // This would export the actual signal CSV file
         const response = await fetch('/signals_log.csv');
         if (response.ok) {
             const blob = await response.blob();
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = 'signal_history.csv';
+            a.download = `signal_history_${new Date().toISOString().split('T')[0]}.csv`;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
@@ -459,17 +755,15 @@ window.refreshPageData = async function() {
     await loadSignalAnalysis();
 };
 
-// 🔧 SIGNALS ML DEBUG FUNCTIONS
+// 🔧 ENHANCED SIGNALS ML DEBUG FUNCTIONS
 const SignalsMLDebug = {
-    // Inspect current signals ML state
     inspectState() {
         TradingDebug.log('🧠 Signals ML State Inspection');
         TradingDebug.inspectState('currentSymbol', currentSymbol);
         TradingDebug.inspectState('currentPrice', currentPrice);
-        TradingDebug.inspectState('lastSignalData', window.lastSignalData);
+        TradingDebug.inspectState('lastSignalData', signalData);
     },
     
-    // Debug signal loading for specific symbol
     async debugSignal(symbol = null) {
         const testSymbol = symbol || currentSymbol;
         const testPrice = currentPrice || 114200;
@@ -480,8 +774,6 @@ const SignalsMLDebug = {
             const data = await response.json();
             
             TradingDebug.log('🧠 Signal response:', data);
-            window.lastSignalData = data; // Store for inspection
-            
             return data;
         } catch (error) {
             TradingDebug.trackError(error, 'Signal Loading');
@@ -489,12 +781,12 @@ const SignalsMLDebug = {
         }
     },
     
-    // Test all signal APIs
     async testAPIs() {
         TradingDebug.log('🧠 Testing Signals ML APIs...');
         const endpoints = [
             '/api/hybrid-signal?symbol=BTC&price=114200',
-            '/api/current-holdings'
+            '/api/current-holdings',
+            '/signals_log.csv'
         ];
         
         for (const endpoint of endpoints) {
@@ -502,40 +794,39 @@ const SignalsMLDebug = {
         }
     },
     
-    // Force refresh signal data
     refreshSignals() {
         TradingDebug.log('🧠 Forcing signals refresh...');
-        loadSignalAnalysis();
+        refreshSignalData();
     },
     
-    // Analyze signal calculations
-    analyzeSignal(signalData) {
-        if (!signalData) signalData = window.lastSignalData;
-        if (!signalData) {
+    analyzeSignal(signalData = null) {
+        const data = signalData || window.lastSignalData;
+        if (!data) {
             TradingDebug.log('No signal data to analyze');
             return;
         }
         
         TradingDebug.log('🧠 Signal Analysis:');
         console.group('🧠 Signal Breakdown');
-        console.log('Confidence Score:', signalData.confidence_score);
-        console.log('Timing Signal:', signalData.timing_signal);
-        console.log('Analysis Type:', signalData.analysis_type);
-        console.log('ML Integration:', signalData.ml_integration);
-        console.log('Enhanced Filters:', signalData.enhanced_filters);
+        console.log('Confidence Score:', data.confidence_score);
+        console.log('Timing Signal:', data.timing_signal);
+        console.log('Analysis Type:', data.analysis_type);
+        console.log('ML Integration:', data.ml_integration);
+        console.log('Enhanced Filters:', data.enhanced_filters);
+        console.log('System Info:', data.system_info);
         console.groupEnd();
     }
 };
 
-// Add signals debug to global scope
+// Add to global scope
 window.signalsMLDebug = SignalsMLDebug;
 
 // Initialize page
 document.addEventListener('DOMContentLoaded', function() {
     loadSignalAnalysis();
     
-    // Auto-refresh every 2 minutes
-    setInterval(loadSignalAnalysis, 120000);
+    // Auto-refresh every 3 minutes
+    setInterval(loadSignalAnalysis, 180000);
 });
 </script>
 {% endblock %}

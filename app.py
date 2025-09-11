@@ -957,6 +957,22 @@ def custom_static(filename):
 
     return response
 
+
+@app.route('/signals_log.csv')
+def serve_signals_csv():
+    """Serve the signals log CSV file for export and analysis."""
+    try:
+        if os.path.exists('signals_log.csv'):
+            response = make_response(send_from_directory('.', 'signals_log.csv', as_attachment=False))
+            response.headers['Content-Type'] = 'text/csv'
+            response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+            return response
+        else:
+            return jsonify({"error": "Signals log file not found"}), 404
+    except Exception as e:
+        logger.error(f"Error serving signals CSV: {e}")
+        return jsonify({"error": "Unable to serve signals log"}), 500
+
 # Register the real OKX endpoint directly without circular import
 
 
