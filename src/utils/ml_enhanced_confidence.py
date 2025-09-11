@@ -15,6 +15,7 @@ import logging
 import os
 import sys
 from typing import Any
+import pandas as pd
 
 # Add the project root to the path to import ML modules
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
@@ -160,22 +161,27 @@ class MLEnhancedConfidenceAnalyzer(EntryConfidenceAnalyzer):
         # Extract technical indicators for ML prediction
         try:
             if not historical_data:
+                self.logger.debug(f"🔍 Fetching market data for {symbol}")
                 historical_data = self._fetch_market_data(symbol, days=30, current_price=current_price)
+                self.logger.debug(f"🔍 Fetched data type: {type(historical_data)}, length: {len(historical_data) if historical_data else 'None'}")
 
-            # Calculate lightweight indicators for ML
+            # Calculate lightweight indicators for ML with robust DataFrame creation
             if historical_data and len(historical_data) >= 7:
-                import pandas as pd
-                # Ensure historical_data is properly structured for DataFrame creation
-                if isinstance(historical_data, dict):
-                    df = pd.DataFrame([historical_data], index=[0])
+                self.logger.debug(f"🔍 Creating DataFrame from data: {type(historical_data)}")
+                # Safe DataFrame creation with comprehensive data validation
+                df = self._create_safe_dataframe(historical_data, current_price)
+                self.logger.debug(f"🔍 DataFrame created: {df is not None}, shape: {df.shape if df is not None else 'None'}")
+                
+                if df is not None and len(df) >= 7:
+                    self.logger.debug(f"🔍 Calculating lightweight indicators")
+                    indicators = self._lightweight_indicators(df)
+                    indicators['composite_confidence'] = traditional_analysis['confidence_score']
+                    self.logger.debug(f"🔍 Indicators calculated: {len(indicators)} items")
                 else:
-                    df = pd.DataFrame(historical_data)
-                df['price'] = pd.to_numeric(df['price'], errors='coerce')
-                df['volume'] = pd.to_numeric(df.get('volume', [1000] * len(df)), errors='coerce')
-
-                indicators = self._lightweight_indicators(df)
-                indicators['composite_confidence'] = traditional_analysis['confidence_score']
+                    self.logger.debug(f"🔍 Using fallback indicators (insufficient data)")
+                    indicators = {'composite_confidence': traditional_analysis['confidence_score']}
             else:
+                self.logger.debug(f"🔍 Using fallback indicators (no historical data)")
                 indicators = {'composite_confidence': traditional_analysis['confidence_score']}
 
             # Get ML prediction
@@ -349,6 +355,100 @@ class MLEnhancedConfidenceAnalyzer(EntryConfidenceAnalyzer):
         except Exception as e:
             # Don't fail the main analysis if logging fails
             self.logger.debug(f"Signal logging failed for {symbol}: {e}")
+
+    def _create_safe_dataframe(self, historical_data: list | dict | None, current_price: float) -> pd.DataFrame | None:
+        """
+        Safely create a pandas DataFrame from historical data, handling all edge cases.
+        
+        Args:
+            historical_data: Raw historical data in various formats
+            current_price: Current price to use as fallback
+            
+        Returns:
+            Valid DataFrame or None if creation fails
+        """
+        try:
+            # Handle None or empty data
+            if not historical_data:
+                return None
+                
+            # Case 1: Single dictionary - wrap in list
+            if isinstance(historical_data, dict):
+                # Ensure it has at least price data
+                if not any(key in historical_data for key in ['price', 'close', 'c']):
+                    historical_data['price'] = current_price
+                if 'volume' not in historical_data:
+                    historical_data['volume'] = 1000.0
+                df = pd.DataFrame([historical_data])
+                
+            # Case 2: List of data
+            elif isinstance(historical_data, list):
+                if not historical_data:
+                    return None
+                    
+                # Check if list contains scalars only
+                if all(isinstance(item, (int, float, str)) for item in historical_data):
+                    # Convert scalar list to price data
+                    df_data = []
+                    for i, price in enumerate(historical_data):
+                        try:
+                            price_val = float(price)
+                            df_data.append({
+                                'price': price_val,
+                                'volume': 1000.0,
+                                'index': i
+                            })
+                        except (ValueError, TypeError):
+                            df_data.append({
+                                'price': current_price,
+                                'volume': 1000.0,
+                                'index': i
+                            })
+                    df = pd.DataFrame(df_data)
+                else:
+                    # Try to create DataFrame from list of dicts/objects
+                    df = pd.DataFrame(historical_data)
+                    
+            else:
+                # Unexpected data type
+                self.logger.warning(f"Unexpected data type for historical_data: {type(historical_data)}")
+                return None
+                
+            # Ensure DataFrame has required columns
+            if df.empty:
+                return None
+                
+            # Standardize price column
+            if 'price' in df.columns:
+                df['price'] = pd.to_numeric(df['price'], errors='coerce')
+            elif 'close' in df.columns:
+                df['price'] = pd.to_numeric(df['close'], errors='coerce')
+            elif 'c' in df.columns:
+                df['price'] = pd.to_numeric(df['c'], errors='coerce')
+            else:
+                df['price'] = current_price
+                
+            # Standardize volume column
+            if 'volume' in df.columns:
+                df['volume'] = pd.to_numeric(df['volume'], errors='coerce')
+            elif 'v' in df.columns:
+                df['volume'] = pd.to_numeric(df['v'], errors='coerce')
+            else:
+                df['volume'] = 1000.0
+                
+            # Fill any NaN values
+            df['price'] = df['price'].fillna(current_price)
+            df['volume'] = df['volume'].fillna(1000.0)
+            
+            # Ensure we have valid data
+            if df['price'].isna().all() or len(df) == 0:
+                return None
+                
+            return df
+            
+        except Exception as e:
+            self.logger.debug(f"DataFrame creation failed: {e}")
+            return None
 
     def get_ml_status(self) -> dict[str, bool]:
         """Get status of ML integration."""

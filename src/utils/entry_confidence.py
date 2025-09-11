@@ -104,26 +104,10 @@ class EntryConfidenceAnalyzer:
             if not historical_data or len(historical_data) < 20:
                 return self._create_basic_confidence(symbol, current_price)
 
-            # Convert to DataFrame for analysis
-            df = pd.DataFrame(historical_data)
-            # Handle different possible price column names
-            if 'price' in df.columns:
-                df['price'] = df['price'].astype(float)
-            elif 'close' in df.columns:
-                df['price'] = df['close'].astype(float)
-            elif 'c' in df.columns:
-                df['price'] = df['c'].astype(float)
-            else:
-                # Fallback - use current price for all rows
-                df['price'] = current_price
-            
-            # Handle volume data
-            if 'volume' in df.columns:
-                df['volume'] = df['volume'].astype(float)
-            elif 'v' in df.columns:
-                df['volume'] = df['v'].astype(float)
-            else:
-                df['volume'] = 1000.0  # Default volume
+            # Convert to DataFrame for analysis with safe creation
+            df = self._create_safe_dataframe(historical_data, current_price)
+            if df is None:
+                return self._create_basic_confidence(symbol, current_price)
 
             # Calculate individual confidence components
             technical_score = self._calculate_technical_score(df, current_price)
@@ -800,6 +784,100 @@ class EntryConfidenceAnalyzer:
             # Conservative fallback - small discount from current price
             return round(current_price * 0.98, 8)
 
+    def _create_safe_dataframe(self, historical_data: list | dict | None, current_price: float) -> pd.DataFrame | None:
+        """
+        Safely create a pandas DataFrame from historical data, handling all edge cases.
+        
+        Args:
+            historical_data: Raw historical data in various formats
+            current_price: Current price to use as fallback
+            
+        Returns:
+            Valid DataFrame or None if creation fails
+        """
+        try:
+            # Handle None or empty data
+            if not historical_data:
+                return None
+                
+            # Case 1: Single dictionary - wrap in list
+            if isinstance(historical_data, dict):
+                # Ensure it has at least price data
+                if not any(key in historical_data for key in ['price', 'close', 'c']):
+                    historical_data['price'] = current_price
+                if 'volume' not in historical_data:
+                    historical_data['volume'] = 1000.0
+                df = pd.DataFrame([historical_data])
+                
+            # Case 2: List of data
+            elif isinstance(historical_data, list):
+                if not historical_data:
+                    return None
+                    
+                # Check if list contains scalars only
+                if all(isinstance(item, (int, float, str)) for item in historical_data):
+                    # Convert scalar list to price data
+                    df_data = []
+                    for i, price in enumerate(historical_data):
+                        try:
+                            price_val = float(price)
+                            df_data.append({
+                                'price': price_val,
+                                'volume': 1000.0,
+                                'index': i
+                            })
+                        except (ValueError, TypeError):
+                            df_data.append({
+                                'price': current_price,
+                                'volume': 1000.0,
+                                'index': i
+                            })
+                    df = pd.DataFrame(df_data)
+                else:
+                    # Try to create DataFrame from list of dicts/objects
+                    df = pd.DataFrame(historical_data)
+                    
+            else:
+                # Unexpected data type
+                self.logger.warning(f"Unexpected data type for historical_data: {type(historical_data)}")
+                return None
+                
+            # Ensure DataFrame has required columns
+            if df.empty:
+                return None
+                
+            # Standardize price column
+            if 'price' in df.columns:
+                df['price'] = pd.to_numeric(df['price'], errors='coerce')
+            elif 'close' in df.columns:
+                df['price'] = pd.to_numeric(df['close'], errors='coerce')
+            elif 'c' in df.columns:
+                df['price'] = pd.to_numeric(df['c'], errors='coerce')
+            else:
+                df['price'] = current_price
+                
+            # Standardize volume column
+            if 'volume' in df.columns:
+                df['volume'] = pd.to_numeric(df['volume'], errors='coerce')
+            elif 'v' in df.columns:
+                df['volume'] = pd.to_numeric(df['v'], errors='coerce')
+            else:
+                df['volume'] = 1000.0
+                
+            # Fill any NaN values
+            df['price'] = df['price'].fillna(current_price)
+            df['volume'] = df['volume'].fillna(1000.0)
+            
+            # Ensure we have valid data
+            if df['price'].isna().all() or len(df) == 0:
+                return None
+                
+            return df
+            
+        except Exception as e:
+            self.logger.debug(f"DataFrame creation failed: {e}")
+            return None
+
     def _assess_risk_level(self, volatility_score: float, momentum_score: float) -> str:
         """Assess overall risk level."""
         avg_score = (volatility_score + momentum_score) / 2
@@ -881,7 +959,7 @@ class EntryConfidenceAnalyzer:
                         'volume': [100000, 120000, 110000]  # Sample volumes
                     }
 
-                    df = pd.DataFrame(sample_data)
+                    df = self._create_safe_dataframe(sample_data, current_price)
 
                     # Apply lightweight indicators
                     indicators = self._lightweight_indicators(df)
@@ -967,7 +1045,8 @@ class EntryConfidenceAnalyzer:
                     pass
 
                 self.logger.info(f"✅ Enhanced confidence analysis for {symbol}: {confidence_score:.1f}% ({confidence_level})")
-                return result
+                # _fetch_market_data should return list[dict], not dict
+                return self._create_fallback_data(current_price)
 
             except Exception as e:
                 self.logger.error(f"Error calculating enhanced confidence for {symbol}: {e}")
@@ -1057,14 +1136,10 @@ class EntryConfidenceAnalyzer:
     def _create_basic_confidence(self, symbol: str, current_price: float) -> dict:
         """Create 6-factor confidence assessment using real market data."""
         
-        df = self._fetch_market_data(symbol, days=20, current_price=current_price)
-        if isinstance(df, list):  # raw data
-            df = pd.DataFrame(df)
-        elif isinstance(df, dict):  # single data point
-            # Ensure we create DataFrame properly with index for single data point
-            df = pd.DataFrame([df], index=[0])
+        raw_data = self._fetch_market_data(symbol, days=20, current_price=current_price)
+        df = self._create_safe_dataframe(raw_data, current_price)
 
-        if not hasattr(df, 'columns') or 'price' not in df.columns or len(df) < 14:
+        if df is None or 'price' not in df.columns or len(df) < 14:
             # fallback if data too short
             base_score = 50.0
             return {
