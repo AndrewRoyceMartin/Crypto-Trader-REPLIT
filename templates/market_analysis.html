@@ -188,7 +188,7 @@
             </h5>
             <div id="topOpportunities">
                 <div class="text-center py-4">
-                    <div class="spinner-border text-warning" role="status">
+                    <div class="loading-spinner text-warning" role="status">
                         <span class="visually-hidden">Scanning markets...</span>
                     </div>
                 </div>
@@ -274,7 +274,7 @@
             <tbody id="allPairsTable">
                 <tr>
                     <td colspan="9" class="text-center py-4">
-                        <div class="spinner-border text-primary" role="status">
+                        <div class="loading-spinner text-primary" role="status">
                             <span class="visually-hidden">Loading market data...</span>
                         </div>
                     </td>
@@ -598,7 +598,7 @@ async function scanAllMarkets() {
     // Add scanning animation
     document.getElementById('topOpportunities').innerHTML = `
         <div class="text-center py-4">
-            <div class="spinner-border text-warning" role="status">
+            <div class="loading-spinner text-warning" role="status">
                 <span class="visually-hidden">Scanning markets...</span>
             </div>
             <div class="mt-2">Analyzing hybrid signals across all trading pairs...</div>

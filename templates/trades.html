@@ -161,7 +161,7 @@
         font-weight: 600;
     }
     
-    .loading-spinner {
+    .loading-spinner-container {
         display: none;
         text-align: center;
         padding: 2rem;
@@ -203,7 +203,7 @@
         <div class="row">
             <div class="col-12">
                 <h1 class="page-title">
-                    <i class="fas fa-chart-line me-3"></i>
+                    <i class="icon-chart-line me-3"></i>
                     Trading Signals & Execution History
                 </h1>
                 <p class="page-subtitle">
@@ -289,11 +289,11 @@
             <div class="col-md-3">
                 <div class="filter-group">
                     <button class="btn btn-primary btn-sm" onclick="loadTradesData()">
-                        <i class="fas fa-sync-alt me-1"></i>
+                        <i class="icon-sync-alt me-1"></i>
                         Refresh
                     </button>
                     <button class="btn btn-outline-secondary btn-sm" onclick="clearFilters()">
-                        <i class="fas fa-times me-1"></i>
+                        <i class="icon-times me-1"></i>
                         Clear
                     </button>
                 </div>
@@ -303,13 +303,13 @@
     
     <!-- Trades Table -->
     <div class="trades-table">
-        <div class="loading-spinner" id="loading-spinner">
-            <i class="fas fa-spinner fa-spin fa-2x mb-3"></i>
+        <div class="loading-spinner-container" id="loading-spinner">
+            <div class="loading-spinner text-primary"></div>
             <div>Loading trades data...</div>
         </div>
         
         <div class="empty-state" id="empty-state" style="display: none;">
-            <i class="fas fa-chart-line"></i>
+            <i class="icon-chart-line"></i>
             <h4>No trades found</h4>
             <p>Try adjusting your filters or check back later for new trading signals.</p>
         </div>
@@ -490,7 +490,7 @@ function renderTradesTable() {
                 <td><small>${mlData}</small></td>
                 <td>
                     <span class="badge bg-success">
-                        <i class="fas fa-check-circle me-1"></i>
+                        <i class="icon-check-circle me-1"></i>
                         ${trade.status}
                     </span>
                 </td>

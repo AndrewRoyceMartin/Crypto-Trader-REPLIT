@@ -149,6 +149,65 @@ h4, h5, h6, .h4, .h5, .h6 { font-weight: var(--fw-medium); }
 .icon-minus::before { content: "−"; }
 .icon-exclamation-triangle::before { content: "⚠"; }
 .icon-times-circle::before { content: "✗"; }
+.icon-check-circle::before { content: "✓"; }
+.icon-bullseye::before { content: "🎯"; }
+.icon-signal::before { content: "📶"; }
+.icon-chart-line-down::before { content: "📉"; }
+.icon-sliders-h::before { content: "🎛"; }
+.icon-history::before { content: "⏳"; }
+
+/* ===== Custom Loading Spinners - Replace Bootstrap ===== */
+
+/* Main loading spinner */
+.loading-spinner {
+  width: 2rem;
+  height: 2rem;
+  border: 0.25em solid rgba(255, 255, 255, 0.25);
+  border-top-color: var(--primary-blue);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto;
+}
+
+/* Color variants */
+.loading-spinner.text-primary {
+  border-top-color: var(--primary-blue);
+}
+
+.loading-spinner.text-success {
+  border-top-color: var(--success-green);
+}
+
+.loading-spinner.text-warning {
+  border-top-color: var(--warning-orange);
+}
+
+.loading-spinner.text-danger {
+  border-top-color: var(--danger-red);
+}
+
+.loading-spinner.text-info {
+  border-top-color: var(--info-cyan);
+}
+
+/* Size variants */
+.loading-spinner.spinner-sm {
+  width: 1rem;
+  height: 1rem;
+  border-width: 0.15em;
+}
+
+.loading-spinner.spinner-lg {
+  width: 3rem;
+  height: 3rem;
+  border-width: 0.35em;
+}
+
+/* Spin animation */
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
 
 /* Status indicator base */
 .icon-circle,
