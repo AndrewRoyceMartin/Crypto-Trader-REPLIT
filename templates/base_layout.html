@@ -440,9 +440,6 @@
                     <button class="control-btn start" onclick="startTrading()">
                         <i class="fas fa-play me-1"></i> Start
                     </button>
-                    <button class="control-btn stop" onclick="stopTrading()">
-                        <i class="fas fa-stop me-1"></i> Stop
-                    </button>
                     <button class="control-btn refresh" onclick="refreshData()">
                         <i class="fas fa-sync me-1"></i> Refresh
                     </button>
@@ -504,22 +501,6 @@
         }
     }
 
-    async function stopTrading() {
-        try {
-            showToast('Stopping trading bot...', 'info');
-            const response = await fetch('/api/stop_trading', { method: 'POST' });
-            const result = await response.json();
-            
-            if (result.success) {
-                showToast('Trading bot stopped successfully!', 'success');
-                updateSystemStatus('monitoring');
-            } else {
-                showToast('Failed to stop trading: ' + result.message, 'error');
-            }
-        } catch (error) {
-            showToast('Error stopping trading: ' + error.message, 'error');
-        }
-    }
 
     async function refreshData() {
         try {
