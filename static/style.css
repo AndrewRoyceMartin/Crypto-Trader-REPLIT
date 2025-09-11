@@ -364,7 +364,7 @@ h4, h5, h6, .h4, .h5, .h6 { font-weight: var(--fw-medium); }
     width: 100%;
   }
   .table-v02 tbody tr {
-    background: #fff;
+    background: transparent;
     border: 1px solid var(--v02-border);
     border-radius: var(--v02-radius);
     box-shadow: var(--v02-shadow);
@@ -385,7 +385,7 @@ h4, h5, h6, .h4, .h5, .h6 { font-weight: var(--fw-medium); }
     flex: 0 0 40%;
     min-width: 140px;
     font-weight: var(--fw-medium);
-    color: #6c7ae0;
+    color: #9ca3af;
   }
 }
 
