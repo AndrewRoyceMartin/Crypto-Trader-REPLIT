@@ -167,10 +167,10 @@
         <div class="col-md-3">
             <div class="d-flex gap-2 mt-4">
                 <button class="btn btn-primary" onclick="scanAllMarkets()">
-                    <i class="fas fa-search me-1"></i>Scan All
+                    <i class="icon-search me-1"></i>Scan All
                 </button>
                 <button class="btn btn-outline-secondary" onclick="refreshMarketData()">
-                    <i class="fas fa-sync me-1"></i>Refresh
+                    <i class="icon-sync me-1"></i>Refresh
                 </button>
             </div>
         </div>
@@ -182,7 +182,7 @@
     <div class="col-lg-8">
         <div class="data-card">
             <h5 class="card-title">
-                <i class="fas fa-star text-warning"></i>
+                <i class="icon-star text-warning"></i>
                 Top Market Opportunities
                 <span class="badge bg-success ms-2" id="opportunitiesCount">0</span>
             </h5>
@@ -198,7 +198,7 @@
     <div class="col-lg-4">
         <div class="data-card">
             <h5 class="card-title">
-                <i class="fas fa-chart-bar text-info"></i>
+                <i class="icon-chart-bar text-info"></i>
                 Market Sentiment
             </h5>
             <div class="text-center py-3">
@@ -224,7 +224,7 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h5 class="card-title mb-1">
-                <i class="fas fa-globe"></i>
+                <i class="icon-globe"></i>
                 All OKX Trading Pairs
                 <span class="badge bg-primary ms-2" id="pairsCount">298</span>
             </h5>
@@ -234,7 +234,7 @@
             <div class="input-group" style="width: 300px;">
                 <input type="text" class="form-control" id="searchPairs" placeholder="Search pairs..." onkeyup="searchPairs()">
                 <button class="btn btn-outline-secondary" onclick="clearSearch()">
-                    <i class="fas fa-times"></i>
+                    <i class="icon-times"></i>
                 </button>
             </div>
         </div>
@@ -245,28 +245,28 @@
             <thead>
                 <tr>
                     <th class="sortable" onclick="sortTable(0, 'string')" style="cursor: pointer;">
-                        Coin <i class="fas fa-sort" style="color: #9ca3af;" id="sort-icon-0"></i>
+                        Coin <i class="icon-sort" style="color: #9ca3af;" id="sort-icon-0"></i>
                     </th>
                     <th class="sortable" onclick="sortTable(1, 'string')" style="cursor: pointer;">
-                        Category <i class="fas fa-sort" style="color: #9ca3af;" id="sort-icon-1"></i>
+                        Category <i class="icon-sort" style="color: #9ca3af;" id="sort-icon-1"></i>
                     </th>
                     <th class="text-end sortable" onclick="sortTable(2, 'number')" style="cursor: pointer;">
-                        Price <i class="fas fa-sort" style="color: #9ca3af;" id="sort-icon-2"></i>
+                        Price <i class="icon-sort" style="color: #9ca3af;" id="sort-icon-2"></i>
                     </th>
                     <th class="text-end sortable" onclick="sortTable(3, 'number')" style="cursor: pointer;">
-                        24h Change <i class="fas fa-sort" style="color: #9ca3af;" id="sort-icon-3"></i>
+                        24h Change <i class="icon-sort" style="color: #9ca3af;" id="sort-icon-3"></i>
                     </th>
                     <th class="text-end sortable" onclick="sortTable(4, 'number')" style="cursor: pointer;">
-                        24h Volume <i class="fas fa-sort" style="color: #9ca3af;" id="sort-icon-4"></i>
+                        24h Volume <i class="icon-sort" style="color: #9ca3af;" id="sort-icon-4"></i>
                     </th>
                     <th class="text-center sortable" onclick="sortTable(5, 'string')" style="cursor: pointer;">
-                        Hybrid Signal <i class="fas fa-sort" style="color: #9ca3af;" id="sort-icon-5"></i>
+                        Hybrid Signal <i class="icon-sort" style="color: #9ca3af;" id="sort-icon-5"></i>
                     </th>
                     <th class="text-center sortable" onclick="sortTable(6, 'number')" style="cursor: pointer;">
-                        Signal Strength <i class="fas fa-sort" style="color: #9ca3af;" id="sort-icon-6"></i>
+                        Signal Strength <i class="icon-sort" style="color: #9ca3af;" id="sort-icon-6"></i>
                     </th>
                     <th class="text-center sortable" onclick="sortTable(7, 'number')" style="cursor: pointer;">
-                        ML Confidence <i class="fas fa-sort" style="color: #9ca3af;" id="sort-icon-7"></i>
+                        ML Confidence <i class="icon-sort" style="color: #9ca3af;" id="sort-icon-7"></i>
                     </th>
                     <th class="text-center">Actions</th>
                 </tr>
@@ -442,7 +442,7 @@ function updateTopOpportunities() {
                 <div class="col-md-2">
                     <div class="text-end">
                         <button class="btn btn-outline-primary btn-sm" onclick="event.stopPropagation(); analyzeOpportunity('${opp.symbol}')">
-                            <i class="fas fa-chart-line me-1"></i>Analyze
+                            <i class="icon-chart-line me-1"></i>Analyze
                         </button>
                     </div>
                 </div>
@@ -484,7 +484,7 @@ function updateMarketTable() {
             <tr class="pair-row" onclick="analyzeOpportunity('${pair.symbol}')">
                 <td>
                     <div class="d-flex align-items-center">
-                        <i class="fas fa-coins me-2 text-warning"></i>
+                        <i class="icon-coins me-2 text-warning"></i>
                         <strong>${pair.symbol}</strong>
                     </div>
                 </td>
@@ -511,7 +511,7 @@ function updateMarketTable() {
                 </td>
                 <td class="text-center">
                     <button class="btn btn-sm btn-outline-info" onclick="event.stopPropagation(); analyzeOpportunity('${pair.symbol}')">
-                        <i class="fas fa-eye"></i>
+                        <i class="icon-eye"></i>
                     </button>
                 </td>
             </tr>
@@ -691,7 +691,7 @@ function updateSortIcons(activeColumn, direction) {
     for (let i = 0; i < 8; i++) {
         const icon = document.getElementById(`sort-icon-${i}`);
         if (icon) {
-            icon.className = 'fas fa-sort';
+            icon.className = 'icon-sort';
             icon.style.color = '#9ca3af';
         }
     }
@@ -700,9 +700,9 @@ function updateSortIcons(activeColumn, direction) {
     const activeIcon = document.getElementById(`sort-icon-${activeColumn}`);
     if (activeIcon) {
         if (direction === 'asc') {
-            activeIcon.className = 'fas fa-sort-up text-white';
+            activeIcon.className = 'icon-sort-up text-white';
         } else {
-            activeIcon.className = 'fas fa-sort-down text-white';
+            activeIcon.className = 'icon-sort-down text-white';
         }
     }
 }

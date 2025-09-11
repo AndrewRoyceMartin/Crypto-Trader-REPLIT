@@ -92,6 +92,72 @@ h4, h5, h6, .h4, .h5, .h6 { font-weight: var(--fw-medium); }
 .mb-sm { margin-bottom: 0.5rem; }
 .mb-md { margin-bottom: 1rem; }
 
+/* ===== Custom Icon Classes - Replace FontAwesome ===== */
+
+/* Chart & Analytics Icons */
+.icon-chart::before { content: "📊"; }
+.icon-chart-line::before { content: "📈"; }
+.icon-chart-area::before { content: "📊"; }
+.icon-chart-pie::before { content: "📊"; }
+.icon-chart-bar::before { content: "📊"; }
+
+/* System & Status Icons */
+.icon-circle::before { content: "●"; }
+.icon-circle-success::before { content: "●"; color: var(--success-green); }
+.icon-sync::before { content: "⟳"; }
+.icon-sync-alt::before { content: "⟳"; }
+.icon-heartbeat::before { content: "♥"; }
+
+/* Financial & Trading Icons */
+.icon-wallet::before { content: "💰"; }
+.icon-trophy::before { content: "🏆"; }
+.icon-brain::before { content: "🧠"; }
+.icon-shield::before { content: "🛡"; }
+.icon-shield-alt::before { content: "🛡"; }
+
+/* Action Icons */
+.icon-play::before { content: "▶"; }
+.icon-download::before { content: "⬇"; }
+.icon-search::before { content: "🔍"; }
+.icon-times::before { content: "✕"; }
+.icon-sort::before { content: "↕"; }
+
+/* Navigation Icons */
+.icon-globe::before { content: "🌐"; }
+.icon-coins::before { content: "🪙"; }
+.icon-star::before { content: "⭐"; }
+
+/* System & Technical Icons */
+.icon-vial::before { content: "🧪"; }
+.icon-cog::before { content: "⚙"; }
+.icon-cogs::before { content: "⚙"; }
+.icon-rocket::before { content: "🚀"; }
+.icon-robot::before { content: "🤖"; }
+.icon-clock::before { content: "⏰"; }
+.icon-trash::before { content: "🗑"; }
+.icon-terminal::before { content: "💻"; }
+.icon-list-check::before { content: "✅"; }
+.icon-flag-checkered::before { content: "🏁"; }
+.icon-window-maximize::before { content: "📱"; }
+.icon-eye::before { content: "👁"; }
+.icon-sort-up::before { content: "▲"; }
+.icon-sort-down::before { content: "▼"; }
+.icon-list::before { content: "📋"; }
+.icon-file-excel::before { content: "📊"; }
+.icon-balance-scale::before { content: "⚖"; }
+.icon-plus::before { content: "+"; }
+.icon-minus::before { content: "−"; }
+.icon-exclamation-triangle::before { content: "⚠"; }
+.icon-times-circle::before { content: "✗"; }
+
+/* Status indicator base */
+.icon-circle,
+.icon-circle-success {
+  font-style: normal;
+  display: inline-block;
+  font-family: inherit;
+}
+
 /* ===== 2) Standalone Table V02 (no Bootstrap table dependency) ===== */
 
 /* === Table Dark Theme (no overrides needed - uses unified variables) === */

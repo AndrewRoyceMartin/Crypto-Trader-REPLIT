@@ -103,7 +103,7 @@
 <div class="performance-grid">
     <div class="analytics-card">
         <h5 class="card-title">
-            <i class="fas fa-chart-line text-success"></i>
+            <i class="icon-chart-line text-success"></i>
             Performance Metrics
         </h5>
         <div class="row">
@@ -138,7 +138,7 @@
 
     <div class="analytics-card">
         <h5 class="card-title">
-            <i class="fas fa-pie-chart text-warning"></i>
+            <i class="icon-chart-pie text-warning"></i>
             Asset Allocation
         </h5>
         <div class="allocation-chart">
@@ -148,7 +148,7 @@
 
     <div class="analytics-card">
         <h5 class="card-title">
-            <i class="fas fa-clock text-info"></i>
+            <i class="icon-heartbeat text-info"></i>
             Recent Activity
         </h5>
         <div id="recentActivity">
@@ -182,7 +182,7 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h5 class="card-title mb-1">
-                <i class="fas fa-list"></i>
+                <i class="icon-list"></i>
                 Portfolio Positions
                 <span class="badge bg-primary ms-2" id="positionsCount">0</span>
             </h5>
@@ -191,13 +191,13 @@
         <div>
             <div class="btn-group">
                 <button class="btn btn-outline-success" onclick="exportPortfolioDetailed()">
-                    <i class="fas fa-file-excel me-1"></i>Export Excel
+                    <i class="icon-file-excel me-1"></i>Export Excel
                 </button>
                 <button class="btn btn-outline-primary" onclick="refreshPortfolioData()">
-                    <i class="fas fa-sync me-1"></i>Refresh
+                    <i class="icon-sync me-1"></i>Refresh
                 </button>
                 <button class="btn btn-outline-warning" onclick="rebalancePortfolio()">
-                    <i class="fas fa-balance-scale me-1"></i>Rebalance
+                    <i class="icon-balance-scale me-1"></i>Rebalance
                 </button>
             </div>
         </div>
@@ -237,7 +237,7 @@
     <div class="col-lg-6">
         <div class="data-card">
             <h5 class="card-title text-success">
-                <i class="fas fa-trophy"></i>
+                <i class="icon-trophy"></i>
                 Top Performers
             </h5>
             <div id="topPerformers">
@@ -252,7 +252,7 @@
     <div class="col-lg-6">
         <div class="data-card">
             <h5 class="card-title text-warning">
-                <i class="fas fa-search"></i>
+                <i class="icon-search"></i>
                 Buy Opportunities
             </h5>
             <div id="buyOpportunities">
@@ -351,7 +351,7 @@ function updatePositionsTable(portfolio) {
             <tr class="position-row" data-symbol="${holding.symbol}">
                 <td>
                     <div class="d-flex align-items-center">
-                        <i class="fas fa-coins me-2 text-warning"></i>
+                        <i class="icon-coins me-2 text-warning"></i>
                         <div>
                             <strong>${holding.symbol || 'N/A'}</strong>
                             <br><small class="text-muted">${holding.name || 'Cryptocurrency'}</small>
@@ -377,13 +377,13 @@ function updatePositionsTable(portfolio) {
                 <td class="text-center">
                     <div class="position-actions">
                         <button class="btn btn-sm btn-outline-success" onclick="buyMore('${holding.symbol}')">
-                            <i class="fas fa-plus"></i>
+                            <i class="icon-plus"></i>
                         </button>
                         <button class="btn btn-sm btn-outline-danger" onclick="sellPosition('${holding.symbol}')">
-                            <i class="fas fa-minus"></i>
+                            <i class="icon-minus"></i>
                         </button>
                         <button class="btn btn-sm btn-outline-info" onclick="analyzePosition('${holding.symbol}')">
-                            <i class="fas fa-chart-line"></i>
+                            <i class="icon-chart-line"></i>
                         </button>
                     </div>
                 </td>
