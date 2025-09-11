@@ -1740,65 +1740,11 @@ def api_comprehensive_trades() -> ResponseReturnValue:
             except Exception as e:
                 logger.warning(f"CCXT major pairs method failed: {e}")
 
-        # Method 3: SYNTHETIC SOLUTION - Create trade history from current portfolio positions
+        # Method 3: AUTHENTIC DATA ONLY - No synthetic trade creation allowed
         if len(fills_data) == 0:
-            logger.info("🎯 SOLUTION: Creating synthetic trade history from current portfolio positions")
-
-            try:
-                from src.services.portfolio_service import get_portfolio_service
-                portfolio_service = get_portfolio_service()
-                portfolio_data = portfolio_service.get_portfolio_data()
-
-                logger.info(f"📊 Creating synthetic trades from {len(portfolio_data.get('holdings', []))} current positions")
-
-                # Create synthetic trade entries for each current position
-                synthetic_count = 0
-                total_synthetic_value = 0
-
-                for position in portfolio_data.get('holdings', []):
-                    # Skip positions with no entry price (like PEPE with 0 entry)
-                    entry_price = float(position.get('entry_price', 0))
-                    current_value = float(position.get('current_value', 0))
-
-                    if entry_price > 0 and current_value > 5:  # Only positions worth >$5
-                        # Calculate original investment value
-                        quantity = float(position.get('quantity', 0))
-                        symbol = position.get('symbol', '')
-                        original_investment = entry_price * quantity
-
-                        # Create synthetic buy trade representing the position entry
-                        synthetic_trade = {
-                            'tradeId': f"pos_entry_{symbol}_{int(datetime.now(UTC).timestamp())}",
-                            'instId': symbol.replace('/', '-'),
-                            'ordId': f"position_{symbol}",
-                            'clOrdId': '',
-                            'side': 'buy',
-                            'fillSz': str(quantity),
-                            'fillPx': str(entry_price),
-                            'ts': str(int((datetime.now(UTC) - timedelta(days=20)).timestamp() * 1000)),  # Estimate 20 days ago
-                            'fee': str(original_investment * 0.001),  # Estimate 0.1% fee
-                            'feeCcy': 'USDT',
-                            'execType': 'T',
-                            'posSide': 'net',
-                            'billId': f"PORTFOLIO_POSITION_{symbol}",
-                            'tag': 'synthetic_from_portfolio',
-                            'symbol_clean': symbol,
-                            'trade_value_usd': original_investment,
-                            'fillTime': int((datetime.now(UTC) - timedelta(days=20)).timestamp() * 1000),
-                            'source': 'Portfolio-Based (Synthetic)'
-                        }
-
-                        fills_data.append(synthetic_trade)
-                        synthetic_count += 1
-                        total_synthetic_value += original_investment
-
-                        logger.info(f"✅ Synthetic trade: {symbol} {quantity:.4f} @ ${entry_price:.4f} = ${original_investment:.2f}")
-
-                logger.info(f"🎯 SYNTHETIC SUCCESS: Created {synthetic_count} trades worth ${total_synthetic_value:.2f} from portfolio positions")
-
-            except Exception as synth_e:
-                logger.error(f"❌ Synthetic trade creation failed: {synth_e}")
-                fills_data = []
+            logger.info("❌ DATA INTEGRITY: No synthetic trade creation - authentic OKX data only")
+            logger.info("📊 Trades page requires real OKX transaction history or ML system data exclusively")
+            fills_data = []
 
         # Process and format trade data
         trades = []
@@ -1855,9 +1801,8 @@ def api_comprehensive_trades() -> ResponseReturnValue:
         total_volume = sum(float(t.get('fillSz', 0)) * float(t.get('fillPx', 0)) for t in trades)
         total_fees = sum(float(t.get('fee', 0)) for t in trades if t.get('feeCcy') == 'USDT')
 
-        # Determine data source for UI labeling
-        has_synthetic = any(t.get('source', '').find('Synthetic') >= 0 or t.get('tag', '').find('synthetic') >= 0 for t in trades)
-        data_source = "Portfolio-Based (Synthetic)" if has_synthetic else "OKX Native API (Live)"
+        # All data is now authentic - determine actual source
+        data_source = "OKX Native API (Live)" if trades else "No Real Trade Data Available"
 
         response = {
             'trades': trades,
@@ -4113,46 +4058,10 @@ def load_signals() -> list[dict]:
     return signals_data
 
 def load_executed_trades() -> list[dict]:
-    """Load executed trades from OKX portfolio positions."""
-    db_trades = []
-    try:
-        from src.services.portfolio_service import get_portfolio_service
-        portfolio_service = get_portfolio_service()
-
-        if hasattr(portfolio_service, 'exchange') and portfolio_service.exchange:
-            portfolio_data = portfolio_service.get_portfolio_data()
-            holdings = portfolio_data.get('holdings', [])
-
-            trade_counter = 1
-            for holding in holdings[:10]:
-                symbol = holding.get('symbol', '')
-                if symbol and symbol != 'USDT':
-                    trade_time = datetime.now(UTC) - timedelta(minutes=trade_counter*15)
-                    db_trades.append({
-                        'id': f"portfolio_{trade_counter}",
-                        'timestamp': trade_time,
-                        'date': trade_time.strftime('%Y-%m-%d'),
-                        'time': trade_time.strftime('%H:%M:%S'),
-                        'symbol': symbol,
-                        'signal_type': 'EXECUTED_TRADE',
-                        'action': 'BUY',
-                        'price': holding.get('entry_price', 0),
-                        'size': holding.get('quantity', 0),
-                        'confidence': 100,
-                        'pnl': holding.get('unrealized_pnl', 0),
-                        'commission': holding.get('value', 0) * 0.001,
-                        'order_id': f"OKX_{symbol}_{trade_counter}",
-                        'strategy': 'Portfolio_Entry',
-                        'mode': 'live',
-                        'status': 'EXECUTED',
-                        'source': 'OKX_Portfolio_Based',
-                        'value_usd': holding.get('value', 0)
-                    })
-                    trade_counter += 1
-            logger.info(f"Created {len(db_trades)} executed trades from portfolio positions")
-    except Exception as e:
-        logger.warning(f"Could not load executed trades: {e}")
-    return db_trades
+    """Load executed trades - AUTHENTIC DATA ONLY (no synthetic trade creation)."""
+    logger.info("❌ AUTHENTIC DATA ONLY: No synthetic executed trade creation")
+    logger.info("📊 Executed trades require real OKX transaction history exclusively")
+    return []
 
 @app.route('/api/trades')
 def api_trades() -> ResponseReturnValue:
