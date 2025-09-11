@@ -322,7 +322,7 @@
     <nav class="sidebar" id="sidebar">
         <div class="sidebar-header">
             <a href="{{ url_for('index') }}" class="sidebar-brand">
-                <i class="icon-chart-line me-2"></i>
+                <i class="fas fa-chart-line me-2"></i>
                 Hybrid Trading AI
             </a>
         </div>
@@ -332,35 +332,35 @@
             <div class="nav-section-title">Core Features</div>
             <div class="nav-item">
                 <a href="{{ url_for('index') }}" class="nav-link" data-page="dashboard">
-                    <i class="icon-tachometer-alt"></i>
+                    <i class="fas fa-tachometer-alt"></i>
                     Dashboard
                     <span class="nav-badge">Live</span>
                 </a>
             </div>
             <div class="nav-item">
                 <a href="{{ url_for('signals_ml') }}" class="nav-link" data-page="signals">
-                    <i class="icon-brain"></i>
+                    <i class="fas fa-brain"></i>
                     Signals & ML
                     <span class="nav-badge">AI</span>
                 </a>
             </div>
             <div class="nav-item">
                 <a href="{{ url_for('trades') }}" class="nav-link" data-page="trades">
-                    <i class="icon-exchange-alt"></i>
+                    <i class="fas fa-exchange-alt"></i>
                     Trades
                     <span class="nav-badge">Live</span>
                 </a>
             </div>
             <div class="nav-item">
                 <a href="{{ url_for('backtest_results') }}" class="nav-link" data-page="backtest">
-                    <i class="icon-chart-bar"></i>
+                    <i class="fas fa-chart-bar"></i>
                     Backtest Results
                     <span class="nav-badge">3.8%</span>
                 </a>
             </div>
             <div class="nav-item">
                 <a href="{{ url_for('trading_performance') }}" class="nav-link" data-page="performance">
-                    <i class="icon-chart-line"></i>
+                    <i class="fas fa-chart-line"></i>
                     Performance
                     <span class="nav-badge">Live</span>
                 </a>
@@ -372,14 +372,14 @@
             <div class="nav-section-title">Portfolio & Analysis</div>
             <div class="nav-item">
                 <a href="{{ url_for('portfolio_advanced') }}" class="nav-link" data-page="portfolio">
-                    <i class="icon-wallet"></i>
+                    <i class="fas fa-wallet"></i>
                     Portfolio Analytics
                     <span class="nav-badge">26+</span>
                 </a>
             </div>
             <div class="nav-item">
                 <a href="{{ url_for('market_analysis') }}" class="nav-link" data-page="market">
-                    <i class="icon-globe"></i>
+                    <i class="fas fa-globe"></i>
                     Market Analysis
                     <span class="nav-badge">298</span>
                 </a>
@@ -391,13 +391,13 @@
             <div class="nav-section-title">Tools</div>
             <div class="nav-item">
                 <a href="/api/export-ato-tax" class="nav-link" target="_blank">
-                    <i class="icon-file-export"></i>
+                    <i class="fas fa-file-export"></i>
                     Export ATO Tax
                 </a>
             </div>
             <div class="nav-item">
                 <a href="/system-test" class="nav-link">
-                    <i class="icon-vial"></i>
+                    <i class="fas fa-vial"></i>
                     System Test
                 </a>
             </div>
@@ -412,11 +412,11 @@
                     <span class="label">Checking…</span>
                 </div>
                 <div class="status-indicator online mb-2">
-                    <i class="icon-circle me-2"></i>
+                    <i class="fas fa-circle me-2"></i>
                     OKX Connected
                 </div>
                 <div class="status-indicator trading">
-                    <i class="icon-robot me-2"></i>
+                    <i class="fas fa-robot me-2"></i>
                     Monitoring
                 </div>
             </div>
@@ -433,28 +433,28 @@
             </div>
             <div class="header-controls">
                 <button class="mobile-nav-toggle" onclick="toggleMobileNav()">
-                    <i class="icon-bars"></i>
+                    <i class="fas fa-bars"></i>
                 </button>
                 
                 <!-- Global Trading Controls -->
                 <div class="trading-controls">
                     <button class="control-btn start" onclick="startTrading()">
-                        <i class="icon-play me-1"></i> Start
+                        <i class="fas fa-play me-1"></i> Start
                     </button>
                     <button class="control-btn stop" onclick="stopTrading()">
-                        <i class="icon-stop me-1"></i> Stop
+                        <i class="fas fa-stop me-1"></i> Stop
                     </button>
                     <button class="control-btn refresh" onclick="refreshData()">
-                        <i class="icon-sync me-1"></i> Refresh
+                        <i class="fas fa-sync me-1"></i> Refresh
                     </button>
                     <button class="control-btn export" onclick="exportPortfolio()">
-                        <i class="icon-download me-1"></i> Export
+                        <i class="fas fa-download me-1"></i> Export
                     </button>
                 </div>
 
                 <!-- Status Indicators -->
                 <div class="status-indicator online" id="systemStatus">
-                    <i class="icon-circle me-2"></i>
+                    <i class="fas fa-circle me-2"></i>
                     System Online
                 </div>
             </div>
@@ -575,7 +575,7 @@
             'monitoring': 'Monitoring'
         };
         
-        statusEl.innerHTML = `<i class="icon-circle me-2"></i>${statusText[status] || status}`;
+        statusEl.innerHTML = `<i class="fas fa-circle me-2"></i>${statusText[status] || status}`;
     }
 
     // Toast Notification System

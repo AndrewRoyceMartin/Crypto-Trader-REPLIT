@@ -355,7 +355,7 @@ div.table-responsive table.table-v02--compact thead th {
 {% block content %}
 <!-- Refresh Indicator -->
 <div id="refreshIndicator" class="refresh-indicator">
-    <i class="icon-sync-alt"></i> Updating data...
+    <i class="fas fa-sync-alt"></i> Updating data...
 </div>
 
 <div class="content-wrapper">
@@ -365,7 +365,7 @@ div.table-responsive table.table-v02--compact thead th {
             <div class="row align-items-center">
                 <div class="col-md-8">
                     <h1 class="mb-2">
-                        <i class="icon-chart-line text-warning"></i>
+                        <i class="fas fa-chart-line text-warning"></i>
                         Trading Intelligence Dashboard
                     </h1>
                     <p class="mb-0 opacity-75">
@@ -374,7 +374,7 @@ div.table-responsive table.table-v02--compact thead th {
                 </div>
                 <div class="col-md-4 text-end">
                     <div id="systemStatus" class="status-indicator status-live">
-                        <i class="icon-circle"></i> SYSTEM LIVE
+                        <i class="fas fa-circle"></i> SYSTEM LIVE
                     </div>
                     <div class="mt-2">
                         <small id="lastUpdate" class="text-muted-xs">Last updated: --</small>
@@ -412,7 +412,7 @@ div.table-responsive table.table-v02--compact thead th {
             <div class="dashboard-section">
                 <div class="section-header">
                     <h3 class="section-title">
-                        <i class="icon-chart-area text-info"></i>
+                        <i class="fas fa-chart-area text-info"></i>
                         Portfolio Performance
                     </h3>
                     <span class="text-muted-sm">30-day trend</span>
@@ -426,7 +426,7 @@ div.table-responsive table.table-v02--compact thead th {
             <div class="dashboard-section">
                 <div class="section-header">
                     <h3 class="section-title">
-                        <i class="icon-brain text-warning"></i>
+                        <i class="fas fa-brain text-warning"></i>
                         ML Signal Intelligence
                     </h3>
                     <span class="text-muted-sm">Recent predictions</span>
@@ -458,12 +458,12 @@ div.table-responsive table.table-v02--compact thead th {
         <div class="dashboard-section">
             <div class="section-header">
                 <h3 class="section-title">
-                    <i class="icon-wallet text-success"></i>
+                    <i class="fas fa-wallet text-success"></i>
                     Current Holdings Performance
                 </h3>
                 <div>
                     <span class="text-muted-sm">Live OKX data</span>
-                    <i class="icon-circle text-success ms-1" style="font-size: 8px;"></i>
+                    <i class="fas fa-circle text-success ms-1" style="font-size: 8px;"></i>
                 </div>
             </div>
             <div class="table-responsive">
@@ -497,7 +497,7 @@ div.table-responsive table.table-v02--compact thead th {
             <div class="dashboard-section">
                 <div class="section-header">
                     <h3 class="section-title">
-                        <i class="icon-shield-alt text-danger"></i>
+                        <i class="fas fa-shield-alt text-danger"></i>
                         Risk Analysis
                     </h3>
                 </div>
@@ -533,7 +533,7 @@ div.table-responsive table.table-v02--compact thead th {
             <div class="dashboard-section">
                 <div class="section-header">
                     <h3 class="section-title">
-                        <i class="icon-trophy text-warning"></i>
+                        <i class="fas fa-trophy text-warning"></i>
                         Performance Leaders
                     </h3>
                 </div>
@@ -558,32 +558,32 @@ div.table-responsive table.table-v02--compact thead th {
         <div class="dashboard-section">
             <div class="section-header">
                 <h3 class="section-title">
-                    <i class="icon-heartbeat text-info"></i>
+                    <i class="fas fa-heartbeat text-info"></i>
                     System Health & Activity
                 </h3>
             </div>
             <div class="row">
                 <div class="col-md-3 text-center">
                     <div class="h5 mb-1" id="apiStatus">
-                        <i class="icon-circle text-success"></i> OKX API
+                        <i class="fas fa-circle text-success"></i> OKX API
                     </div>
                     <small class="text-muted-xs">Exchange Connection</small>
                 </div>
                 <div class="col-md-3 text-center">
                     <div class="h5 mb-1" id="mlStatus">
-                        <i class="icon-circle text-success"></i> ML Engine
+                        <i class="fas fa-circle text-success"></i> ML Engine
                     </div>
                     <small class="text-muted-xs">Prediction System</small>
                 </div>
                 <div class="col-md-3 text-center">
                     <div class="h5 mb-1" id="dataSync">
-                        <i class="icon-sync text-warning"></i> Data Sync
+                        <i class="fas fa-sync text-warning"></i> Data Sync
                     </div>
                     <small class="text-muted-xs">Real-time Updates</small>
                 </div>
                 <div class="col-md-3 text-center">
                     <div class="h5 mb-1" id="riskEngine">
-                        <i class="icon-shield text-info"></i> Risk Engine
+                        <i class="fas fa-shield text-info"></i> Risk Engine
                     </div>
                     <small class="text-muted-xs">Safety Controls</small>
                 </div>
@@ -867,15 +867,15 @@ class TradingDashboard {
         switch(status) {
             case 'live':
                 statusEl.className = 'status-indicator status-live';
-                statusEl.innerHTML = '<i class="icon-circle"></i> SYSTEM LIVE';
+                statusEl.innerHTML = '<i class="fas fa-circle"></i> SYSTEM LIVE';
                 break;
             case 'warning':
                 statusEl.className = 'status-indicator status-warning';
-                statusEl.innerHTML = '<i class="icon-exclamation-triangle"></i> WARNING';
+                statusEl.innerHTML = '<i class="fas fa-exclamation-triangle"></i> WARNING';
                 break;
             case 'error':
                 statusEl.className = 'status-indicator status-error';
-                statusEl.innerHTML = '<i class="icon-times-circle"></i> ERROR';
+                statusEl.innerHTML = '<i class="fas fa-times-circle"></i> ERROR';
                 break;
         }
     }
