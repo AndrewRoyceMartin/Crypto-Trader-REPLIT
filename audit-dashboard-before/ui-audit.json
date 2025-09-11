@@ -1,0 +1,27 @@
+{
+  "timestamp": "2025-09-11T10:00:35.670Z",
+  "url": "http://127.0.0.1:5000/",
+  "kpis": [],
+  "tables": [],
+  "issues": [
+    {
+      "type": "ERROR",
+      "description": "Missing stable data attributes",
+      "details": "Only 0 data attributes found. UI elements lack stable selectors for testing.",
+      "impact": "Automated testing and maintenance will be unreliable"
+    }
+  ],
+  "warnings": [
+    {
+      "type": "WARNING",
+      "description": "Loading states may persist",
+      "details": "Found loading elements but unclear hiding mechanism",
+      "impact": "Users may see loading spinners indefinitely"
+    }
+  ],
+  "summary": {
+    "pageLoads": true,
+    "healthyEndpoints": 5,
+    "totalEndpoints": 5
+  }
+}
