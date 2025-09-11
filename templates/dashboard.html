@@ -1142,10 +1142,10 @@ class TradingDashboard {
         this.charts.portfolio = new Chart(ctx, {
             type: 'line',
             data: {
-                labels: data.labels || ['Day 1', 'Day 2', 'Day 3', 'Day 4', 'Day 5'],
+                labels: data.labels || ['No Data'],
                 datasets: [{
                     label: 'Portfolio Value',
-                    data: data.values || [1000, 1020, 995, 1045, 1067],
+                    data: data.values || [0],
                     borderColor: '#36A2EB',
                     backgroundColor: 'rgba(54, 162, 235, 0.1)',
                     fill: true,

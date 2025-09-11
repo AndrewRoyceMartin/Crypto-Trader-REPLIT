@@ -3875,9 +3875,53 @@ def api_performance_overview() -> ResponseReturnValue:
         losing_positions = len([h for h in holdings if float(h.get('pnl_percent', 0)) < 0])
         total_positions = len([h for h in holdings if float(h.get('current_value', 0)) > 1])
 
-        # Get signal statistics (simulated for now - can be enhanced with real signal tracking)
-        signals_today = 15  # This could be from actual signal logging
-        signals_success_rate = 68.5  # This could be calculated from signal vs outcome tracking
+        # Get authentic signal statistics from CSV signal logging
+        signals_today = 0
+        signals_success_rate = 0.0
+        
+        # Load real signals from CSV to calculate authentic metrics
+        try:
+            import csv
+            from pathlib import Path
+            from datetime import datetime
+            
+            signal_log_paths = [
+                "logger/signals_log.csv",
+                "archive/organized_modules/logger/signals_log.csv", 
+                "signals_log.csv"
+            ]
+            
+            recent_signals = []
+            for log_path in signal_log_paths:
+                if Path(log_path).exists():
+                    with open(log_path, 'r') as f:
+                        reader = csv.DictReader(f)
+                        recent_signals = list(reader)
+                    break
+            
+            if recent_signals:
+                # Filter signals from today for authentic count
+                today = datetime.now().strftime('%Y-%m-%d')
+                today_signals = [s for s in recent_signals if s.get('timestamp', '').startswith(today)]
+                signals_today = len(today_signals)
+                
+                # Calculate authentic success rate from real outcomes
+                successful_signals = 0
+                for s in recent_signals:
+                    pnl = s.get('pnl_percent')
+                    if pnl is not None and pnl != '':
+                        try:
+                            if float(pnl) > 0:
+                                successful_signals += 1
+                        except (ValueError, TypeError):
+                            continue
+                
+                if len(recent_signals) > 0:
+                    signals_success_rate = (successful_signals / len(recent_signals)) * 100
+                    
+        except Exception as e:
+            logger.warning(f"Could not load authentic signal data: {e}")
+            # Keep authentic zeros instead of fake numbers
 
         # Best and worst performers
         best_performer = None
@@ -4224,17 +4268,49 @@ def api_signal_tracking() -> ResponseReturnValue:
         # Take most recent signals only
         recent_signals = recent_signals[-10:] if recent_signals else []
         
-        # Calculate real signal performance statistics from data
+        # Calculate real signal performance statistics from data (null-safe)
         total_signals = len(recent_signals)
-        positive_outcomes = len([s for s in recent_signals if s.get('pnl_percent', 0) > 0])
-        negative_outcomes = len([s for s in recent_signals if s.get('pnl_percent', 0) < 0])
+        positive_outcomes = 0
+        negative_outcomes = 0
+        
+        for s in recent_signals:
+            pnl = s.get('pnl_percent')
+            if pnl is not None and pnl != '':
+                try:
+                    pnl_float = float(pnl)
+                    if pnl_float > 0:
+                        positive_outcomes += 1
+                    elif pnl_float < 0:
+                        negative_outcomes += 1
+                except (ValueError, TypeError):
+                    continue
+        
         pending_outcomes = total_signals - positive_outcomes - negative_outcomes
         
-        # Calculate accuracy by signal type from real data
+        # Calculate accuracy by signal type from real data (null-safe)
         accuracy_by_signal = {}
+        correct_avoids = 0
+        
         for signal_type in ["BUY", "CONSIDER", "WAIT", "AVOID"]:
             signals_of_type = [s for s in recent_signals if s.get('signal') == signal_type]
-            correct_signals = len([s for s in signals_of_type if s.get('pnl_percent', 0) > 0 or s.get('outcome') == 'CORRECT_AVOID'])
+            correct_signals = 0
+            
+            for s in signals_of_type:
+                # Check for positive PnL (null-safe)
+                pnl = s.get('pnl_percent')
+                if pnl is not None and pnl != '':
+                    try:
+                        if float(pnl) > 0:
+                            correct_signals += 1
+                    except (ValueError, TypeError):
+                        continue
+                
+                # Check for correct avoids
+                if s.get('outcome') == 'CORRECT_AVOID':
+                    correct_signals += 1
+                    if signal_type == 'AVOID':
+                        correct_avoids += 1
+            
             total_type = len(signals_of_type)
             accuracy = (correct_signals / max(total_type, 1)) * 100 if total_type > 0 else 0
             
