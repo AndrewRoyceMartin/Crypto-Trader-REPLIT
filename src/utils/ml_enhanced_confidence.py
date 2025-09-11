@@ -165,7 +165,11 @@ class MLEnhancedConfidenceAnalyzer(EntryConfidenceAnalyzer):
             # Calculate lightweight indicators for ML
             if historical_data and len(historical_data) >= 7:
                 import pandas as pd
-                df = pd.DataFrame(historical_data)
+                # Ensure historical_data is properly structured for DataFrame creation
+                if isinstance(historical_data, dict):
+                    df = pd.DataFrame([historical_data], index=[0])
+                else:
+                    df = pd.DataFrame(historical_data)
                 df['price'] = pd.to_numeric(df['price'], errors='coerce')
                 df['volume'] = pd.to_numeric(df.get('volume', [1000] * len(df)), errors='coerce')
 

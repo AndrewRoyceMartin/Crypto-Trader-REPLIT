@@ -106,8 +106,24 @@ class EntryConfidenceAnalyzer:
 
             # Convert to DataFrame for analysis
             df = pd.DataFrame(historical_data)
-            df['price'] = df['price'].astype(float)
-            df['volume'] = df.get('volume', [1000] * len(df)).astype(float)
+            # Handle different possible price column names
+            if 'price' in df.columns:
+                df['price'] = df['price'].astype(float)
+            elif 'close' in df.columns:
+                df['price'] = df['close'].astype(float)
+            elif 'c' in df.columns:
+                df['price'] = df['c'].astype(float)
+            else:
+                # Fallback - use current price for all rows
+                df['price'] = current_price
+            
+            # Handle volume data
+            if 'volume' in df.columns:
+                df['volume'] = df['volume'].astype(float)
+            elif 'v' in df.columns:
+                df['volume'] = df['v'].astype(float)
+            else:
+                df['volume'] = 1000.0  # Default volume
 
             # Calculate individual confidence components
             technical_score = self._calculate_technical_score(df, current_price)
@@ -1045,7 +1061,8 @@ class EntryConfidenceAnalyzer:
         if isinstance(df, list):  # raw data
             df = pd.DataFrame(df)
         elif isinstance(df, dict):  # single data point
-            df = pd.DataFrame([df])
+            # Ensure we create DataFrame properly with index for single data point
+            df = pd.DataFrame([df], index=[0])
 
         if not hasattr(df, 'columns') or 'price' not in df.columns or len(df) < 14:
             # fallback if data too short
