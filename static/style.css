@@ -146,8 +146,9 @@ h4, h5, h6, .h4, .h5, .h6 { font-weight: var(--fw-medium); }
 }
 
 /* Utility alignments that won't get overridden by Bootstrap utilities */
-.dashboard-section .t-right   { text-align: right !important; }
-.dashboard-section .t-center  { text-align: center !important; }
+/* Utility alignments */
+.t-right   { text-align: right !important; }
+.t-center  { text-align: center !important; }
 
 .table-v02 {
   width: 100%;
@@ -221,7 +222,7 @@ h4, h5, h6, .h4, .h5, .h6 { font-weight: var(--fw-medium); }
   .table-v02 thead { display: none; }
   .table-v02 tr { 
     display: block; 
-    border: 1px solid #e9ecef; 
+    border: 1px solid var(--border-color); 
     border-radius: .25rem; 
     margin-bottom: .75rem; 
   }
@@ -427,7 +428,7 @@ h4, h5, h6, .h4, .h5, .h6 { font-weight: var(--fw-medium); }
 /* ===== 5) Dashboard Component Styles ===== */
 .kpi-card {
     background: var(--card-bg);
-    border: 1px solid #e9ecef;
+    border: 1px solid var(--border-color);
     border-radius: 8px;
     padding: 12px;
     height: 100%;
