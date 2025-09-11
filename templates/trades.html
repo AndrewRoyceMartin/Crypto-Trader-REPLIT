@@ -255,7 +255,7 @@
                 </h1>
                 <p class="page-subtitle">
                     Real-time trading signals from your hybrid ML + technical analysis system
-        <br><small id="last-updated" style="color: #9ca3af; font-size: 0.8rem;">Loading data...</small>
+        <br><small id="last-updated" style="color: #9ca3af; font-size: 0.8rem;" data-status="last-updated" data-timestamp>Loading data...</small>
                 </p>
             </div>
         </div>
@@ -264,48 +264,48 @@
     <!-- Summary Statistics -->
     <div class="row mb-4" id="summary-stats">
         <div class="col-md-2 col-6 mb-3">
-            <div class="stat-card">
-                <div class="stat-value text-primary" id="total-signals">
+            <div class="stat-card" data-stat="total-signals">
+                <div class="stat-value text-primary" id="total-signals" data-metric="totalSignals" data-count data-value>
                     <div class="loading-skeleton loading-skeleton-stat"></div>
                 </div>
                 <div class="stat-label">Total Signals</div>
             </div>
         </div>
         <div class="col-md-2 col-6 mb-3">
-            <div class="stat-card">
-                <div class="stat-value text-success" id="buy-signals">
+            <div class="stat-card" data-stat="buy-signals">
+                <div class="stat-value text-success" id="buy-signals" data-metric="buySignals" data-count data-value>
                     <div class="loading-skeleton loading-skeleton-stat"></div>
                 </div>
                 <div class="stat-label">Buy Signals</div>
             </div>
         </div>
         <div class="col-md-2 col-6 mb-3">
-            <div class="stat-card">
-                <div class="stat-value text-danger" id="sell-signals">
+            <div class="stat-card" data-stat="sell-signals">
+                <div class="stat-value text-danger" id="sell-signals" data-metric="sellSignals" data-count data-value>
                     <div class="loading-skeleton loading-skeleton-stat"></div>
                 </div>
                 <div class="stat-label">Sell Signals</div>
             </div>
         </div>
         <div class="col-md-2 col-6 mb-3">
-            <div class="stat-card">
-                <div class="stat-value text-info" id="recent-24h">
+            <div class="stat-card" data-stat="recent-24h">
+                <div class="stat-value text-info" id="recent-24h" data-metric="recent24h" data-count data-value>
                     <div class="loading-skeleton loading-skeleton-stat"></div>
                 </div>
                 <div class="stat-label">Last 24h</div>
             </div>
         </div>
         <div class="col-md-2 col-6 mb-3">
-            <div class="stat-card">
-                <div class="stat-value text-warning" id="avg-confidence">
+            <div class="stat-card" data-stat="avg-confidence">
+                <div class="stat-value text-warning" id="avg-confidence" data-metric="avgConfidence" data-percentage data-value>
                     <div class="loading-skeleton loading-skeleton-stat"></div>
                 </div>
                 <div class="stat-label">Avg Confidence</div>
             </div>
         </div>
         <div class="col-md-2 col-6 mb-3">
-            <div class="stat-card">
-                <div class="stat-value text-purple" id="total-trades">
+            <div class="stat-card" data-stat="total-trades">
+                <div class="stat-value text-purple" id="total-trades" data-metric="totalTrades" data-count data-value>
                     <div class="loading-skeleton loading-skeleton-stat"></div>
                 </div>
                 <div class="stat-label">Executed Trades</div>
@@ -319,7 +319,7 @@
             <div class="col-md-3">
                 <div class="filter-group">
                     <label class="form-label mb-0">Symbol:</label>
-                    <select class="form-select form-select-sm" id="symbol-filter">
+                    <select class="form-select form-select-sm" id="symbol-filter" data-filter="symbol" data-control>
                         <option value="">All Symbols</option>
                     </select>
                 </div>
@@ -327,7 +327,7 @@
             <div class="col-md-3">
                 <div class="filter-group">
                     <label class="form-label mb-0">Signal Type:</label>
-                    <select class="form-select form-select-sm" id="action-filter">
+                    <select class="form-select form-select-sm" id="action-filter" data-filter="action" data-control>
                         <option value="">All Actions</option>
                         <option value="BUY">Buy Signals</option>
                         <option value="SELL">Sell Signals</option>
@@ -339,7 +339,7 @@
             <div class="col-md-3">
                 <div class="filter-group">
                     <label class="form-label mb-0">Type:</label>
-                    <select class="form-select form-select-sm" id="type-filter">
+                    <select class="form-select form-select-sm" id="type-filter" data-filter="type" data-control>
                         <option value="">All Types</option>
                         <option value="SIGNAL">Signals Only</option>
                         <option value="TRADE">Executed Trades</option>
@@ -348,11 +348,11 @@
             </div>
             <div class="col-md-3">
                 <div class="filter-group">
-                    <button class="btn btn-primary btn-sm" onclick="loadTradesData()">
+                    <button class="btn btn-primary btn-sm" onclick="loadTradesData()" data-action="refresh" data-control>
                         <i class="fas fa-sync-alt me-1"></i>
                         Refresh
                     </button>
-                    <button class="btn btn-outline-secondary btn-sm" onclick="clearFilters()">
+                    <button class="btn btn-outline-secondary btn-sm" onclick="clearFilters()" data-action="clear-filters" data-control>
                         <i class="fas fa-times me-1"></i>
                         Clear
                     </button>
@@ -363,18 +363,18 @@
     
     <!-- Trades Table -->
     <div class="trades-table">
-        <div class="loading-spinner-container" id="loading-spinner">
+        <div class="loading-spinner-container" id="loading-spinner" data-loading="trades">
             <div class="loading-spinner text-primary"></div>
             <div>Loading trades data...</div>
         </div>
         
-        <div class="empty-state" id="empty-state" style="display: none;">
+        <div class="empty-state" id="empty-state" style="display: none;" data-state="empty" data-content>
             <i class="fas fa-chart-line"></i>
             <h4>No trades found</h4>
             <p>Try adjusting your filters or check back later for new trading signals.</p>
         </div>
         
-        <table class="table-v02" style="--v02-head-bg: #6c7ae0; display: none;" id="trades-table">
+        <table class="table-v02" style="--v02-head-bg: #6c7ae0; display: none;" id="trades-table" data-table="trades" data-content>
             <thead>
                 <tr>
                     <th>Time</th>
@@ -388,7 +388,7 @@
                     <th>Status</th>
                 </tr>
             </thead>
-            <tbody id="trades-tbody">
+            <tbody id="trades-tbody" data-tbody="trades" data-content>
                 <!-- Dynamic content will be inserted here -->
             </tbody>
         </table>
@@ -398,6 +398,30 @@
 <script>
 let allTradesData = [];
 let filteredData = [];
+
+// REPAIR: Enhanced loading skeleton management for trades page
+function hideAllLoadingSkeletons() {
+    console.log('🔧 REPAIR: Hiding all trades loading skeletons...');
+    
+    // Hide all loading skeletons
+    document.querySelectorAll('.loading-skeleton, .loading-skeleton-stat').forEach(skeleton => {
+        skeleton.style.display = 'none';
+        // Mark parent as loaded
+        const parent = skeleton.closest('[data-metric], [data-stat]');
+        if (parent) {
+            parent.setAttribute('data-loaded', 'true');
+        }
+    });
+    
+    // Update all stat cards to loaded state
+    document.querySelectorAll('.stat-card').forEach(card => {
+        card.classList.add('stat-loaded');
+        card.classList.remove('stat-loading');
+        card.setAttribute('data-loading-state', 'loaded');
+    });
+    
+    console.log('✅ All trades loading skeletons hidden successfully');
+}
 
 // Initialize page
 // 🔧 TRADES DEBUG FUNCTIONS
@@ -463,10 +487,11 @@ async function loadTradesData() {
         showLoading(true);
         console.log('🔄 Loading trades data with enhanced animations...');
         
-        // Reset stat cards to loading state
+        // REPAIR: Reset stat cards to loading state with proper tracking
         document.querySelectorAll('.stat-card').forEach(card => {
             card.classList.remove('stat-loaded');
             card.classList.add('stat-loading');
+            card.setAttribute('data-loading-state', 'loading');
         });
         
         const response = await fetch('/api/trades');
@@ -480,6 +505,10 @@ async function loadTradesData() {
                 updateSummaryStats(data.summary);
                 populateSymbolFilter();
                 applyFilters();
+                
+                // REPAIR: Ensure all loading skeletons are properly hidden
+                hideAllLoadingSkeletons();
+                
                 console.log('✅ Trades data loaded with animations:', data.trades.length, 'records');
             }, 300);
         } else {

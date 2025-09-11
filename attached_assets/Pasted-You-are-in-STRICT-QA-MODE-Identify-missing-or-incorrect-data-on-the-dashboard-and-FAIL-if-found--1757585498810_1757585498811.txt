@@ -1,0 +1,63 @@
+You are in STRICT QA MODE. Identify *missing or incorrect* data on the dashboard and FAIL if found.
+
+GOAL
+- Visit the dashboard and *prove* data quality.
+- Treat empties, placeholders, NaN, unparsable numbers/percentages, out-of-range values, stale timestamps, and broken totals as **failures**.
+- Produce a machine-readable report + concise console summary.
+- If no failures are found, explicitly print “NO FAILURES DETECTED”.
+
+TARGET
+- URL: http://localhost:3000/dashboard  (discover actual URL/port from package.json or server logs if different)
+
+SETUP
+1) Install and provision Playwright:
+   npm i -D @playwright/test
+   npx playwright install --with-deps
+
+2) Create file tests/ui-quick-audit.spec.ts with EXACT behavior below, then run:
+   npx playwright test tests/ui-quick-audit.spec.ts --reporter=list
+
+TEST BEHAVIOR (MANDATORY)
+- Navigate to the dashboard; wait for networkidle.
+- Wait for any spinners/skeletons to disappear ([class*="spinner"], [aria-busy="true"], [class*="skeleton"]).
+- Scan:
+  A) KPI-like elements: [data-metric], [data-value], [class*="kpi"], [class*="stat"], [class*="summary"], .card
+  B) All <table> elements (thead, tbody, th, td)
+- For each KPI/text block:
+  • Extract innerText (trim).
+  • If empty or equals one of ["-", "—", "–", "N/A", "NA", "null", "undefined"], record **FAIL: empty/placeholder**.
+  • If it contains digits or %/$, parse a number:
+      - Currency/number: must be finite (not NaN/Infinity).
+      - Percent with “%”: value must be between -100 and 100 inclusive. Otherwise **FAIL: percent out of range**.
+- For each table cell:
+  • Apply the same empty/placeholder/parseable rules.
+  • If header contains any of ["qty","quantity","amount","price","value","pnl","percent","%"], treat cell as numeric and **FAIL** if unparsable.
+- Totals consistency (soft but failing): 
+  • If there is a KPI containing “Total” or “Portfolio” with a numeric value (call this TOTAL), and any table has a column header containing “value” or “market value”:
+    - Sum that column (parsed numbers).
+    - If |sum - TOTAL| > max(0.005 * |TOTAL|, 0.02) => **FAIL: total mismatch**, include both values.
+- Timestamp sanity:
+  • If an element text contains “Updated”, “Last updated”, or “As of”, try Date.parse.
+  • If invalid => **FAIL: invalid date**.
+  • If parsed time is older than 24h => **FAIL: stale data** (include ISO).
+- Visibility:
+  • If a KPI/table node has zero width or height, record **FAIL: not visible** with a CSS selector.
+
+OUTPUT (MANDATORY)
+- Write ./ui-quick-audit.json with:
+  { meta:{url, timestampIso}, kpis:[{selector,text,parsedNumber?,issues:[]}], tables:[{selector,headers,rows,issues:[]}], issues:[{severity:"fail"|"warn", where, message}] }
+- Print to console a PASS/FAIL line:
+  - “UI QUICK AUDIT: FAIL (N failures, M warnings)” or “UI QUICK AUDIT: PASS (0 failures, M warnings)”
+- If FAIL, print the first 10 failures with selector + reason.
+
+EDGE RULES
+- Ignore hidden elements (display:none) except to report **not visible**.
+- If virtualization is used (long tables), scroll container to load more rows (page.keyboard/PageDown or element.scrollTo) and re-scan.
+- Do not refactor app; this is read-only.
+
+DELIVERABLE
+- Create tests/ui-quick-audit.spec.ts implementing the above exactly.
+- Run the test and show me:
+  1) The PASS/FAIL line
+  2) The path to ./ui-quick-audit.json
+  3) The first 10 failures (selector + reason)
