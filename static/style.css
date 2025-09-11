@@ -43,6 +43,11 @@ h4, h5, h6, .h4, .h5, .h6 { font-weight: var(--fw-medium); }
   font-weight: var(--fw-regular);
 }
 
+/* Light color for small text - avoid dark colors */
+.small, small {
+  color: #d1d5db;
+}
+
 /* ===== 2) Standalone Table V02 (no Bootstrap table dependency) ===== */
 
 /* === v02 Dark Overrides (scoped to dashboard) === */
