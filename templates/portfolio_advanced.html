@@ -109,13 +109,13 @@
         <div class="row">
             <div class="col-6">
                 <div class="text-center">
-                    <div class="h4" id="sharpeRatio">1.2</div>
+                    <div class="h4 loading-skeleton" id="sharpeRatio">Loading...</div>
                     <small class="text-muted-xs">Sharpe Ratio</small>
                 </div>
             </div>
             <div class="col-6">
                 <div class="text-center">
-                    <div class="h4" id="maxDrawdown">-5.2%</div>
+                    <div class="h4 loading-skeleton" id="maxDrawdown">Loading...</div>
                     <small class="text-muted-xs">Max Drawdown</small>
                 </div>
             </div>
@@ -123,13 +123,13 @@
         <div class="row mt-3">
             <div class="col-6">
                 <div class="text-center">
-                    <div class="h4" id="volatility">15.8%</div>
+                    <div class="h4 loading-skeleton" id="volatility">Loading...</div>
                     <small class="text-muted-xs">Volatility</small>
                 </div>
             </div>
             <div class="col-6">
                 <div class="text-center">
-                    <div class="h4" id="winRatePortfolio">68%</div>
+                    <div class="h4 loading-skeleton" id="winRatePortfolio">Loading...</div>
                     <small class="text-muted-xs">Win Rate</small>
                 </div>
             </div>
@@ -152,26 +152,11 @@
             Recent Activity
         </h5>
         <div id="recentActivity">
-            <div class="d-flex justify-content-between align-items-center mb-2 p-2 bg-dark rounded">
-                <div>
-                    <strong>BTC Buy Signal</strong>
-                    <br><small class="text-muted-xs">2 hours ago</small>
-                </div>
-                <div class="text-success">+3.2%</div>
-            </div>
-            <div class="d-flex justify-content-between align-items-center mb-2 p-2 bg-dark rounded">
-                <div>
-                    <strong>ETH Analysis Update</strong>
-                    <br><small class="text-muted-xs">4 hours ago</small>
-                </div>
-                <div class="text-warning">Monitoring</div>
-            </div>
-            <div class="d-flex justify-content-between align-items-center mb-2 p-2 bg-dark rounded">
-                <div>
-                    <strong>Portfolio Rebalance</strong>
-                    <br><small class="text-muted-xs">1 day ago</small>
-                </div>
-                <div class="text-info">Completed</div>
+            <div class="text-center py-3">
+                <div class="loading-skeleton" style="height: 20px; margin-bottom: 10px;"></div>
+                <div class="loading-skeleton" style="height: 20px; margin-bottom: 10px; width: 80%;"></div>
+                <div class="loading-skeleton" style="height: 20px; width: 60%;"></div>
+                <small class="text-muted-xs">Loading authentic activity from ML system...</small>
             </div>
         </div>
     </div>
@@ -292,9 +277,12 @@ async function loadPortfolioData() {
             updatePerformanceMetrics(analytics);
         }
         
-        // Load top performers and opportunities
-        loadTopPerformers();
-        loadBuyOpportunities();
+        // Load top performers, opportunities, and recent activity
+        await Promise.all([
+            loadTopPerformers(),
+            loadBuyOpportunities(),
+            loadRecentActivity()
+        ]);
         
         showToast('Portfolio analytics loaded successfully!', 'success');
         
@@ -430,10 +418,23 @@ function updatePerformanceMetrics(analytics) {
     
     const metrics = analytics.analytics;
     
-    document.getElementById('sharpeRatio').textContent = (metrics.sharpe_ratio || 1.0).toFixed(1);
-    document.getElementById('maxDrawdown').textContent = (metrics.max_drawdown || -10).toFixed(1) + '%';
-    document.getElementById('volatility').textContent = (metrics.volatility || 15).toFixed(1) + '%';
-    document.getElementById('winRatePortfolio').textContent = (metrics.win_rate || 50).toFixed(0) + '%';
+    // Update with authentic data only - no fallback values
+    if (metrics.sharpe_ratio !== undefined && metrics.sharpe_ratio !== null) {
+        document.getElementById('sharpeRatio').textContent = metrics.sharpe_ratio.toFixed(1);
+        document.getElementById('sharpeRatio').classList.remove('loading-skeleton');
+    }
+    if (metrics.max_drawdown !== undefined && metrics.max_drawdown !== null) {
+        document.getElementById('maxDrawdown').textContent = metrics.max_drawdown.toFixed(1) + '%';
+        document.getElementById('maxDrawdown').classList.remove('loading-skeleton');
+    }
+    if (metrics.volatility !== undefined && metrics.volatility !== null) {
+        document.getElementById('volatility').textContent = metrics.volatility.toFixed(1) + '%';
+        document.getElementById('volatility').classList.remove('loading-skeleton');
+    }
+    if (metrics.win_rate !== undefined && metrics.win_rate !== null) {
+        document.getElementById('winRatePortfolio').textContent = metrics.win_rate.toFixed(0) + '%';
+        document.getElementById('winRatePortfolio').classList.remove('loading-skeleton');
+    }
 }
 
 function updateAllocationChart(portfolio) {
@@ -500,7 +501,7 @@ async function loadBuyOpportunities() {
         const response = await fetch('/api/available-positions');
         if (response.ok) {
             const data = await response.json();
-            displayBuyOpportunities(data);
+            await displayBuyOpportunities(data);
         }
     } catch (error) {
         document.getElementById('buyOpportunities').innerHTML = 
@@ -508,42 +509,182 @@ async function loadBuyOpportunities() {
     }
 }
 
-function displayTopPerformers(data) {
-    // Sample display - would use actual API data
-    const performers = [
-        { symbol: 'BTC', pnl: 12.5 },
-        { symbol: 'ETH', pnl: 8.7 },
-        { symbol: 'SOL', pnl: 15.2 }
-    ];
+async function loadRecentActivity() {
+    try {
+        // Try to load recent signals from CSV file first
+        const response = await fetch('/signals_log.csv');
+        if (response.ok) {
+            const csvText = await response.text();
+            displayRecentActivityFromCSV(csvText);
+        } else {
+            // Fallback to portfolio-based activity
+            displayPortfolioBasedActivity();
+        }
+    } catch (error) {
+        console.error('Error loading recent activity:', error);
+        document.getElementById('recentActivity').innerHTML = 
+            '<div class="text-muted text-center py-3">AUTHENTIC DATA ONLY: No recent ML activity available</div>';
+    }
+}
+
+function displayRecentActivityFromCSV(csvText) {
+    try {
+        const lines = csvText.trim().split('\n');
+        if (lines.length <= 1) {
+            displayPortfolioBasedActivity();
+            return;
+        }
+        
+        // Skip header line and take last 3 entries
+        const dataLines = lines.slice(1, -1).slice(-3).reverse();
+        
+        const activities = dataLines.map(line => {
+            const parts = line.split(',');
+            const timestamp = parts[0];
+            const symbol = parts[1];
+            const signal = parts[2];
+            const confidence = parseFloat(parts[9]) || 0;
+            
+            return {
+                timestamp,
+                symbol,
+                signal,
+                confidence,
+                timeAgo: calculateTimeAgo(new Date(timestamp))
+            };
+        });
+        
+        const html = activities.map(activity => `
+            <div class="d-flex justify-content-between align-items-center mb-2 p-2 bg-dark rounded">
+                <div>
+                    <strong>${activity.symbol} ${activity.signal} Signal</strong>
+                    <br><small class="text-muted-xs">${activity.timeAgo}</small>
+                </div>
+                <div class="text-info">${activity.confidence.toFixed(0)}% ML</div>
+            </div>
+        `).join('');
+        
+        document.getElementById('recentActivity').innerHTML = html;
+    } catch (error) {
+        console.error('Error parsing CSV data:', error);
+        displayPortfolioBasedActivity();
+    }
+}
+
+function displayPortfolioBasedActivity() {
+    // Use authentic portfolio data as fallback
+    const portfolioData = window.portfolioData;
+    if (!portfolioData || !portfolioData.holdings) {
+        document.getElementById('recentActivity').innerHTML = 
+            '<div class="text-muted text-center py-3">AUTHENTIC DATA ONLY: No recent activity data available</div>';
+        return;
+    }
     
-    const html = performers.map(p => `
+    // Show recent P&L changes from top 3 positions
+    const topPositions = portfolioData.holdings
+        .filter(h => parseFloat(h.current_value) > 10) // Only significant positions
+        .sort((a, b) => Math.abs(parseFloat(b.pnl_percent || 0)) - Math.abs(parseFloat(a.pnl_percent || 0)))
+        .slice(0, 3);
+    
+    const html = topPositions.map(position => {
+        const pnlPercent = parseFloat(position.pnl_percent || 0);
+        const pnlClass = pnlPercent >= 0 ? 'text-success' : 'text-danger';
+        const changeType = pnlPercent >= 0 ? 'gain' : 'loss';
+        
+        return `
+            <div class="d-flex justify-content-between align-items-center mb-2 p-2 bg-dark rounded">
+                <div>
+                    <strong>${position.symbol} Position Update</strong>
+                    <br><small class="text-muted-xs">Current ${changeType}</small>
+                </div>
+                <div class="${pnlClass}">${pnlPercent > 0 ? '+' : ''}${pnlPercent.toFixed(1)}%</div>
+            </div>
+        `;
+    }).join('');
+    
+    document.getElementById('recentActivity').innerHTML = html;
+}
+
+
+function calculateTimeAgo(date) {
+    const now = new Date();
+    const diffInSeconds = Math.floor((now - date) / 1000);
+    
+    if (diffInSeconds < 60) return 'Just now';
+    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} minutes ago`;
+    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} hours ago`;
+    return `${Math.floor(diffInSeconds / 86400)} days ago`;
+}
+
+function displayTopPerformers(data) {
+    // Use authentic API data only
+    if (!data || !data.success || !data.best_performer) {
+        document.getElementById('topPerformers').innerHTML = 
+            '<div class="text-muted text-center py-3">No authentic performance data available</div>';
+        return;
+    }
+    
+    const performer = data.best_performer;
+    const html = `
         <div class="d-flex justify-content-between align-items-center mb-2 p-2 bg-dark rounded">
             <div>
-                <strong>${p.symbol}</strong>
-                <br><small class="text-muted-xs">Performance leader</small>
+                <strong>${performer.symbol}</strong>
+                <br><small class="text-muted-xs">Top performer</small>
             </div>
             <div class="text-success h5 mb-0">
-                +${p.pnl}%
+                ${performer.pnl_percent > 0 ? '+' : ''}${performer.pnl_percent.toFixed(2)}%
             </div>
         </div>
-    `).join('');
+        <div class="text-center mt-2">
+            <small class="text-muted-xs">Value: $${performer.pnl_usd.toFixed(2)}</small>
+        </div>
+    `;
     
     document.getElementById('topPerformers').innerHTML = html;
 }
 
-function displayBuyOpportunities(data) {
-    // Sample display - would use actual API data
-    const opportunities = [
-        { symbol: 'ALGO', signal: 'BUY', confidence: 78 },
-        { symbol: 'ATOM', signal: 'CONSIDER', confidence: 65 },
-        { symbol: 'LINK', signal: 'BUY', confidence: 82 }
-    ];
+async function displayBuyOpportunities(data) {
+    // Load authentic ML signals from available positions API
+    if (!data || !data.success || !data.positions || data.positions.length === 0) {
+        document.getElementById('buyOpportunities').innerHTML = 
+            '<div class="text-muted text-center py-3">No authentic opportunities data available</div>';
+        return;
+    }
+    
+    // Get top 3 opportunities with BUY or CONSIDER signals
+    const opportunities = [];
+    for (const position of data.positions.slice(0, 5)) {
+        try {
+            const signalResponse = await fetch(`/api/hybrid-signal?symbol=${position.symbol}&price=${position.current_price}`);
+            if (signalResponse.ok) {
+                const signal = await signalResponse.json();
+                if (signal.final_signal === 'BUY' || signal.final_signal === 'CONSIDER') {
+                    opportunities.push({
+                        symbol: position.symbol,
+                        signal: signal.final_signal,
+                        confidence: signal.hybrid_score || 0,
+                        price: position.current_price
+                    });
+                }
+            }
+        } catch (error) {
+            console.error(`Failed to get signal for ${position.symbol}:`, error);
+        }
+        
+        if (opportunities.length >= 3) break;
+    }
+    
+    if (opportunities.length === 0) {
+        document.getElementById('buyOpportunities').innerHTML = 
+            '<div class="text-muted text-center py-3">No BUY/CONSIDER signals found</div>';
+        return;
+    }
     
     const html = opportunities.map(o => `
         <div class="d-flex justify-content-between align-items-center mb-2 p-2 bg-dark rounded">
             <div>
                 <strong>${o.symbol}</strong>
-                <br><small class="text-muted-xs">${o.confidence}% confidence</small>
+                <br><small class="text-muted-xs">${o.confidence.toFixed(0)}% ML confidence</small>
             </div>
             <div>
                 <span class="badge ${o.signal === 'BUY' ? 'bg-success' : 'bg-warning'}">${o.signal}</span>
