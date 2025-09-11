@@ -1,0 +1,138 @@
+ou’re not fighting Bootstrap classes here—the conflict is your own CSS: the table-v02 stylesheet still ships light-theme defaults and a few global selectors that override the dark dashboard. The ML table is the only one fully using table-v02, so it looks different (light), while the rest of the page uses your dark theme.
+
+Root causes in the snippet you posted
+
+:root tokens set light values:
+
+--v02-bg: #ffffff;
+
+--v02-border: rgba(0,0,0,.06);
+
+--v02-shadow: 0 10px 30px rgba(0,0,0,.08);
+
+Global selectors apply light styles everywhere:
+
+.table-v02 tbody td { background: var(--v02-bg); } → white cells on a dark dashboard
+
+@media (max-width: 768px) block sets .table-v02 tbody tr { background: #fff; box-shadow: var(--v02-shadow); }
+
+.table-responsive { border: 1px solid var(--v02-border); } (global, light border)
+
+Only the ML table uses .table-v02 consistently → it picks up the light palette; other tables are still styled by the dark dashboard CSS.
+
+Fix: dark-scope overrides (safe patch)
+
+Add this block after the current CSS (or place it in static/style.css after Bootstrap and your legacy CSS). It keeps your v02 API but aligns it to the dark dashboard and scopes any global selectors.
+
+/* === v02 Dark Overrides (scoped to dashboard) === */
+.dashboard-section {
+  --v02-bg: transparent;
+  --v02-head-bg: var(--accent-blue, #6c7ae0);
+  --v02-head-color: #fff;
+  --v02-border: var(--border-color, rgba(255,255,255,.12));
+  --v02-row-hover: rgba(108,122,224,.12);
+  --v02-shadow: none;
+}
+
+/* Tables match dark cards */
+.dashboard-section .table-v02,
+.dashboard-section .table-v02--compact {
+  background: var(--v02-bg);
+  color: var(--text-light, #e5e7eb);
+  box-shadow: var(--v02-shadow);
+  border-radius: var(--v02-radius, 10px);
+}
+
+/* Header stays branded, always on top */
+.dashboard-section .table-v02 thead th,
+.dashboard-section .table-v02--compact thead th {
+  background: var(--v02-head-bg) !important;
+  color: var(--v02-head-color) !important;
+  border-color: transparent !important;
+  position: sticky; top: 0; z-index: 1;
+}
+
+/* Body cells/cell borders use dark border token and no white bg */
+.dashboard-section .table-v02 tbody td,
+.dashboard-section .table-v02 tbody th,
+.dashboard-section .table-v02--compact tbody td,
+.dashboard-section .table-v02--compact tbody th {
+  background: transparent;
+  border-top: 1px solid var(--v02-border);
+  color: inherit;
+}
+
+/* Hover state – subtle on dark */
+.dashboard-section .table-v02 tbody tr:hover > *,
+.dashboard-section .table-v02--compact tbody tr:hover > * {
+  background-color: var(--v02-row-hover);
+}
+
+/* Scope the responsive wrapper so it doesn't globally lighten borders */
+.dashboard-section .table-responsive {
+  border-radius: var(--v02-radius, 10px);
+  border: 1px solid var(--v02-border);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* MOBILE: remove hardcoded white backgrounds + box-shadows */
+@media (max-width: 768px) {
+  .dashboard-section .table-v02 thead { display: none; }
+  .dashboard-section .table-v02 tr {
+    display: block;
+    border: 1px solid var(--v02-border);
+    border-radius: var(--v02-radius, 10px);
+    margin-bottom: .75rem;
+    background: transparent;            /* was #fff */
+    box-shadow: none;                    /* was var(--v02-shadow) */
+  }
+  .dashboard-section .table-v02 td {
+    display: flex;
+    justify-content: space-between;
+    gap: .75rem;
+    padding: .5rem .75rem;
+    border-bottom: 1px dashed var(--v02-border);
+  }
+  .dashboard-section .table-v02 td:last-child { border-bottom: 0; }
+  .dashboard-section .table-v02 td::before {
+    color: var(--accent-blue, #6c7ae0);
+  }
+}
+
+/* Utility alignments that won't get overridden by Bootstrap utilities */
+.dashboard-section .t-right   { text-align: right !important; }
+.dashboard-section .t-center  { text-align: center !important; }
+
+What this does
+
+Flips table-v02 to dark within .dashboard-section only.
+
+Removes hardcoded white backgrounds and shadows on rows at all breakpoints.
+
+Scopes .table-responsive so it doesn’t globally paint light borders.
+
+Keeps your header accent color via --v02-head-bg.
+
+Minimal HTML check
+
+For tables you want skinned in dark v02, ensure they live inside a .dashboard-section container (they already do in your file). Keep the classes as:
+
+<table class="table-v02 table-v02--compact" style="--v02-head-bg:#6c7ae0;">
+
+
+Avoid adding class="table" (Bootstrap) to these v02 tables.
+
+Optional cleanups (nice-to-have)
+
+In your original CSS, these light-only rules can be deleted or scoped to a “light” page if you won’t use them on the dashboard:
+
+--v02-bg: #ffffff; and --v02-border: rgba(0,0,0,.06); in :root.
+
+The global .table-responsive { border: 1px solid var(--v02-border); } block → scope it to .dashboard-section .table-responsive.
+
+The mobile block that sets .table-v02 tbody tr { background: #fff; box-shadow: var(--v02-shadow); }.
+
+Why your Replit cleanup script found “nothing”
+
+The page isn’t using Bootstrap .table classes on the ML table. The style mismatch is coming from your CSS tokens and global selectors, not Bootstrap. Once you swap the tokens to dark and scope the globals, the ML table will match the rest.

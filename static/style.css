@@ -45,14 +45,85 @@ h4, h5, h6, .h4, .h5, .h6 { font-weight: var(--fw-medium); }
 
 /* ===== 2) Standalone Table V02 (no Bootstrap table dependency) ===== */
 
-/* GLOBAL TABLE HEADER ENFORCEMENT - Overrides all Bootstrap conflicts */
-.table-v02 thead th,
-.table-v02--compact thead th {
-  background-color: var(--v02-head-bg) !important;
+/* === v02 Dark Overrides (scoped to dashboard) === */
+.dashboard-section {
+  --v02-bg: transparent;
+  --v02-head-bg: var(--accent-blue, #6c7ae0);
+  --v02-head-color: #fff;
+  --v02-border: var(--border-color, rgba(255,255,255,.12));
+  --v02-row-hover: rgba(108,122,224,.12);
+  --v02-shadow: none;
+}
+
+/* Tables match dark cards */
+.dashboard-section .table-v02,
+.dashboard-section .table-v02--compact {
+  background: var(--v02-bg);
+  color: var(--text-light, #e5e7eb);
+  box-shadow: var(--v02-shadow);
+  border-radius: var(--v02-radius, 10px);
+}
+
+/* Header stays branded, always on top */
+.dashboard-section .table-v02 thead th,
+.dashboard-section .table-v02--compact thead th {
   background: var(--v02-head-bg) !important;
   color: var(--v02-head-color) !important;
   border-color: transparent !important;
+  position: sticky; top: 0; z-index: 1;
 }
+
+/* Body cells/cell borders use dark border token and no white bg */
+.dashboard-section .table-v02 tbody td,
+.dashboard-section .table-v02 tbody th,
+.dashboard-section .table-v02--compact tbody td,
+.dashboard-section .table-v02--compact tbody th {
+  background: transparent;
+  border-top: 1px solid var(--v02-border);
+  color: inherit;
+}
+
+/* Hover state – subtle on dark */
+.dashboard-section .table-v02 tbody tr:hover > *,
+.dashboard-section .table-v02--compact tbody tr:hover > * {
+  background-color: var(--v02-row-hover);
+}
+
+/* Scope the responsive wrapper so it doesn't globally lighten borders */
+.dashboard-section .table-responsive {
+  border-radius: var(--v02-radius, 10px);
+  border: 1px solid var(--v02-border);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* MOBILE: remove hardcoded white backgrounds + box-shadows */
+@media (max-width: 768px) {
+  .dashboard-section .table-v02 thead { display: none; }
+  .dashboard-section .table-v02 tr {
+    display: block;
+    border: 1px solid var(--v02-border);
+    border-radius: var(--v02-radius, 10px);
+    margin-bottom: .75rem;
+    background: transparent;            /* was #fff */
+    box-shadow: none;                    /* was var(--v02-shadow) */
+  }
+  .dashboard-section .table-v02 td {
+    display: flex;
+    justify-content: space-between;
+    gap: .75rem;
+    padding: .5rem .75rem;
+    border-bottom: 1px dashed var(--v02-border);
+  }
+  .dashboard-section .table-v02 td:last-child { border-bottom: 0; }
+  .dashboard-section .table-v02 td::before {
+    color: var(--accent-blue, #6c7ae0);
+  }
+}
+
+/* Utility alignments that won't get overridden by Bootstrap utilities */
+.dashboard-section .t-right   { text-align: right !important; }
+.dashboard-section .t-center  { text-align: center !important; }
 
 .table-v02 {
   width: 100%;
