@@ -28,6 +28,19 @@
         --danger-red: #dc3545;
         --text-light: #e9ecef;
         --border-color: #495057;
+        
+        /* TABLE V02 VARIABLES - Force blue headers */
+        --v02-head-bg: #6c7ae0 !important;
+        --v02-head-color: #ffffff !important;
+        --v02-bg: #ffffff;
+        --v02-border: #e9ecef;
+        --v02-radius: 0.375rem;
+        --v02-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+        --v02-cell-py: 0.75rem;
+        --v02-cell-px: 0.75rem;
+        --fw-regular: 400;
+        --fw-semibold: 600;
+        --font-ui: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     }
 
     body {
@@ -310,6 +323,23 @@
     .text-warning { color: var(--warning-orange) !important; }
     .text-danger { color: var(--danger-red) !important; }
     .bg-dark-card { background: var(--primary-dark); }
+
+    /* FORCE BLUE TABLE HEADERS - Override any theme conflicts */
+    .table-v02 thead th,
+    .table-v02--compact thead th {
+        background-color: var(--v02-head-bg) !important;
+        background: var(--v02-head-bg) !important;
+        color: var(--v02-head-color) !important;
+        border-color: transparent !important;
+    }
+    
+    /* Ensure table-responsive doesn't interfere */
+    .table-responsive .table-v02 thead th,
+    .table-responsive .table-v02--compact thead th {
+        background-color: var(--v02-head-bg) !important;
+        background: var(--v02-head-bg) !important;
+        color: var(--v02-head-color) !important;
+    }
     </style>
 
     {% block extra_css %}{% endblock %}
