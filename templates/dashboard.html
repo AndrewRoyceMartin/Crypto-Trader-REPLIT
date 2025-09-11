@@ -4,6 +4,76 @@
 
 {% block extra_css %}
 <style>
+/* v02: variables (safe defaults) */
+:root{
+  --v02-head-bg:#6c7ae0; --v02-head-fg:#fff;
+  --v02-row-hover:rgba(108,122,224,.12); --v02-row-alt:rgba(255,255,255,.02);
+  --v02-border:rgba(255,255,255,.12); --v02-fg:#e5e7eb;
+}
+
+/* Boost specificity to beat Bootstrap & legacy */
+.dashboard-section .table-responsive .table-v02,
+.dashboard-section .table-v02,
+.dashboard-section .table-v02--compact{
+  width:100%; border-collapse:separate; border-spacing:0;
+  color:var(--v02-fg); background:transparent;
+  font:500 13px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+}
+
+/* Kill Bootstrap skin if it sneaks in */
+.dashboard-section .table-responsive .table-v02.table,
+.dashboard-section .table-responsive .table-v02--compact.table,
+.dashboard-section .table-v02.table,
+.dashboard-section .table-v02--compact.table{
+  background-color:transparent !important;
+  border-color:var(--v02-border) !important;
+}
+
+/* Head */
+.dashboard-section .table-responsive .table-v02 thead th,
+.dashboard-section .table-responsive .table-v02--compact thead th,
+.dashboard-section .table-v02 thead th,
+.dashboard-section .table-v02--compact thead th{
+  background:var(--v02-head-bg) !important; color:var(--v02-head-fg);
+  padding:10px 12px; font-weight:700; letter-spacing:.02em;
+  position:sticky; top:0; z-index:1; border-bottom:1px solid var(--v02-border);
+  white-space:nowrap;
+}
+
+/* Rows */
+.dashboard-section .table-responsive .table-v02 tbody tr,
+.dashboard-section .table-responsive .table-v02--compact tbody tr,
+.dashboard-section .table-v02 tbody tr,
+.dashboard-section .table-v02--compact tbody tr{
+  border-bottom:1px solid var(--v02-border); background:transparent;
+}
+.dashboard-section .table-responsive .table-v02 tbody tr:nth-child(even),
+.dashboard-section .table-responsive .table-v02--compact tbody tr:nth-child(even),
+.dashboard-section .table-v02 tbody tr:nth-child(even),
+.dashboard-section .table-v02--compact tbody tr:nth-child(even){
+  background:var(--v02-row-alt);
+}
+.dashboard-section .table-responsive .table-v02 tbody tr:hover,
+.dashboard-section .table-responsive .table-v02--compact tbody tr:hover,
+.dashboard-section .table-v02 tbody tr:hover,
+.dashboard-section .table-v02--compact tbody tr:hover{
+  background:var(--v02-row-hover);
+}
+
+/* Cells */
+.dashboard-section .table-responsive .table-v02 th,
+.dashboard-section .table-responsive .table-v02 td,
+.dashboard-section .table-responsive .table-v02--compact th,
+.dashboard-section .table-responsive .table-v02--compact td,
+.dashboard-section .table-v02 th, .dashboard-section .table-v02 td,
+.dashboard-section .table-v02--compact th, .dashboard-section .table-v02--compact td{
+  padding:10px 12px; vertical-align:middle;
+}
+
+/* Compact variant */
+.dashboard-section .table-v02--compact th,
+.dashboard-section .table-v02--compact td{ padding:8px 10px; font-size:12px; }
+
 /* Dashboard-specific styling */
 .dashboard-header {
     background: linear-gradient(135deg, var(--accent-blue) 0%, var(--secondary-dark) 100%);
@@ -829,42 +899,14 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 
 <script>
-/* Remove legacy/Bootstrap classes that override v02 tables */
+/* Runtime sanitizer (removes Bootstrap/legacy classes if JS adds them) */
 document.addEventListener('DOMContentLoaded', () => {
-  document.querySelectorAll('.table-v02, .table-v02--compact').forEach((el) => {
-    // If Bootstrap .table slipped in via server/JS, kill it
-    if (el.classList.contains('table')) el.classList.remove('table');
-    // If any legacy class snuck in, strip common offenders
-    ['table-striped','table-hover','table-sm','data-table','legacy-table'].forEach(c => {
-      if (el.classList.contains(c)) el.classList.remove(c);
-    });
-    // Add a marker to help CSS specificity (if needed)
-    el.setAttribute('data-style', 'v02');
-    
-    // Force blue headers programmatically to override Bootstrap conflicts
-    const headers = el.querySelectorAll('thead th');
-    headers.forEach(header => {
-      header.style.backgroundColor = '#6c7ae0';
-      header.style.color = '#ffffff';
-      header.style.border = 'none';
-      header.style.fontWeight = '600';
-    });
+  document.querySelectorAll('.table-v02, .table-v02--compact').forEach(el => {
+    // Remove Bootstrap/legacy classes that hijack styles
+    ['table','table-striped','table-hover','table-sm','data-table','legacy-table']
+      .forEach(c => el.classList.remove(c));
+    el.setAttribute('data-style','v02');
   });
-  
-  // Also apply styles to any new tables that load dynamically
-  const observer = new MutationObserver(() => {
-    document.querySelectorAll('.table-v02:not([data-style]), .table-v02--compact:not([data-style])').forEach((el) => {
-      el.setAttribute('data-style', 'v02');
-      const headers = el.querySelectorAll('thead th');
-      headers.forEach(header => {
-        header.style.backgroundColor = '#6c7ae0';
-        header.style.color = '#ffffff';
-        header.style.border = 'none';
-        header.style.fontWeight = '600';
-      });
-    });
-  });
-  observer.observe(document.body, { childList: true, subtree: true });
 });
 </script>
 {% endblock %}

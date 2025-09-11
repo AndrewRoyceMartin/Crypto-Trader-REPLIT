@@ -1,0 +1,132 @@
+Likely causes (in order of probability):
+
+Bootstrap/legacy .table classes are being injected (often by app_legacy.js) only on the ML table → it falls back to Bootstrap skin.
+
+Specificity mismatch: your v02 rules don’t beat older selectors like .table-responsive .table td (seen in legacy CSS).
+
+Load order: v02 styles not last, so older CSS wins.
+
+Different markup: ML table uses .table-v02--compact and also has .table/.table-hover stuck on it.
+
+Below is a tight fix set—drop it in and the ML table will match the rest.
+
+Plan
+
+Enforce v02 styles with higher specificity (including .table-responsive …).
+
+Neutralize any .table, .table-striped, .table-hover, etc., that JS might add.
+
+Confirm load order in base_layout.html.
+
+A) Strong v02 CSS (add/replace inside {% block extra_css %})
+<style>
+/* v02: variables (safe defaults) */
+:root{
+  --v02-head-bg:#6c7ae0; --v02-head-fg:#fff;
+  --v02-row-hover:rgba(108,122,224,.12); --v02-row-alt:rgba(255,255,255,.02);
+  --v02-border:rgba(255,255,255,.12); --v02-fg:#e5e7eb;
+}
+
+/* Boost specificity to beat Bootstrap & legacy */
+.dashboard-section .table-responsive .table-v02,
+.dashboard-section .table-v02,
+.dashboard-section .table-v02--compact{
+  width:100%; border-collapse:separate; border-spacing:0;
+  color:var(--v02-fg); background:transparent;
+  font:500 13px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+}
+
+/* Kill Bootstrap skin if it sneaks in */
+.dashboard-section .table-responsive .table-v02.table,
+.dashboard-section .table-responsive .table-v02--compact.table,
+.dashboard-section .table-v02.table,
+.dashboard-section .table-v02--compact.table{
+  background-color:transparent !important;
+  border-color:var(--v02-border) !important;
+}
+
+/* Head */
+.dashboard-section .table-responsive .table-v02 thead th,
+.dashboard-section .table-responsive .table-v02--compact thead th,
+.dashboard-section .table-v02 thead th,
+.dashboard-section .table-v02--compact thead th{
+  background:var(--v02-head-bg) !important; color:var(--v02-head-fg);
+  padding:10px 12px; font-weight:700; letter-spacing:.02em;
+  position:sticky; top:0; z-index:1; border-bottom:1px solid var(--v02-border);
+  white-space:nowrap;
+}
+
+/* Rows */
+.dashboard-section .table-responsive .table-v02 tbody tr,
+.dashboard-section .table-responsive .table-v02--compact tbody tr,
+.dashboard-section .table-v02 tbody tr,
+.dashboard-section .table-v02--compact tbody tr{
+  border-bottom:1px solid var(--v02-border); background:transparent;
+}
+.dashboard-section .table-responsive .table-v02 tbody tr:nth-child(even),
+.dashboard-section .table-responsive .table-v02--compact tbody tr:nth-child(even),
+.dashboard-section .table-v02 tbody tr:nth-child(even),
+.dashboard-section .table-v02--compact tbody tr:nth-child(even){
+  background:var(--v02-row-alt);
+}
+.dashboard-section .table-responsive .table-v02 tbody tr:hover,
+.dashboard-section .table-responsive .table-v02--compact tbody tr:hover,
+.dashboard-section .table-v02 tbody tr:hover,
+.dashboard-section .table-v02--compact tbody tr:hover{
+  background:var(--v02-row-hover);
+}
+
+/* Cells */
+.dashboard-section .table-responsive .table-v02 th,
+.dashboard-section .table-responsive .table-v02 td,
+.dashboard-section .table-responsive .table-v02--compact th,
+.dashboard-section .table-responsive .table-v02--compact td,
+.dashboard-section .table-v02 th, .dashboard-section .table-v02 td,
+.dashboard-section .table-v02--compact th, .dashboard-section .table-v02--compact td{
+  padding:10px 12px; vertical-align:middle;
+}
+
+/* Compact variant */
+.dashboard-section .table-v02--compact th,
+.dashboard-section .table-v02--compact td{ padding:8px 10px; font-size:12px; }
+</style>
+
+B) Runtime sanitizer (removes Bootstrap/legacy classes if JS adds them)
+
+Put this after your main dashboard script (end of the template).
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('.table-v02, .table-v02--compact').forEach(el => {
+    // Remove Bootstrap/legacy classes that hijack styles
+    ['table','table-striped','table-hover','table-sm','data-table','legacy-table']
+      .forEach(c => el.classList.remove(c));
+    el.setAttribute('data-style','v02');
+  });
+});
+</script>
+
+C) Load order (verify in base_layout.html)
+
+Ensure v02 CSS comes last:
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v={{ cache_version }}">
+{% block extra_css %}{% endblock %}  <!-- v02 rules land here, after Bootstrap & legacy -->
+
+D) Quick JS audit (if it’s still off)
+
+Search static/app_legacy.js for code that appends classes to tables:
+
+// grep-like: look for .classList.add('table' or 'table-hover' etc.)
+
+
+If found, remove those lines for the ML table or wrap with a guard:
+
+if (!tableEl.classList.contains('table-v02')) {
+  tableEl.classList.add('table'); // only legacy tables
+}
+
+TL;DR
+
+The ML table is getting Bootstrap/legacy table classes or losing in CSS specificity. The CSS above + the sanitizer removes conflicting classes and makes v02 win consistently.
