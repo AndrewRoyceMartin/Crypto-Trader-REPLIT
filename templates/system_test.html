@@ -668,9 +668,14 @@ async function runFullTest() {
         updateStatus('auth-status', 'warning'); // Private API blocked but expected
         
         appendOutput('✅ All systems operational!');
-        appendOutput('📊 Portfolio: $1,062 • P&L: -4.96% • 26 positions');
+        
+        // Load authentic portfolio data from OKX
+        await loadAuthenticPortfolioSummary();
+        
         appendOutput('🤖 ML Model: Loaded • Hybrid Signals: Active');
-        appendOutput('🌐 DOM Elements: 8/24 found (33% success rate)');
+        
+        // Load authentic DOM test results
+        await loadAuthenticDOMResults();
         
     } else {
         // Mark all as failed if test failed
@@ -855,6 +860,12 @@ const SystemTestDebug = {
         updateSystemStatus();
     },
     
+    // Load authentic portfolio data
+    async loadPortfolioData() {
+        TradingDebug.log('⚙️ Loading authentic portfolio data...');
+        await loadAuthenticPortfolioSummary();
+    },
+    
     // Debug test results
     analyzeTests() {
         TradingDebug.log('⚙️ Test Results Analysis:');
@@ -874,5 +885,55 @@ setInterval(() => {
         // Could add background status checks here
     }
 }, 30000);
+
+// ✅ AUTHENTIC DATA FUNCTIONS
+async function loadAuthenticPortfolioSummary() {
+    try {
+        const response = await fetch('/api/current-holdings');
+        if (response.ok) {
+            const data = await response.json();
+            const holdings = data.holdings || [];
+            const totalValue = holdings.reduce((sum, h) => sum + (h.current_value || 0), 0);
+            const totalPnL = holdings.reduce((sum, h) => sum + (h.pnl_usd || 0), 0);
+            const pnlPercent = totalValue > 0 ? (totalPnL / (totalValue - totalPnL)) * 100 : 0;
+            
+            appendOutput(`📊 AUTHENTIC PORTFOLIO: $${totalValue.toFixed(2)} • P&L: ${totalPnL >= 0 ? '+' : ''}$${totalPnL.toFixed(2)} (${pnlPercent >= 0 ? '+' : ''}${pnlPercent.toFixed(2)}%) • ${holdings.length} positions`);
+        } else {
+            appendOutput('📊 AUTHENTIC DATA ONLY: Portfolio data requires real OKX connection');
+        }
+    } catch (error) {
+        appendOutput('📊 AUTHENTIC DATA ONLY: Failed to load real portfolio data - ' + error.message);
+    }
+}
+
+async function loadAuthenticDOMResults() {
+    try {
+        const response = await fetch('/');
+        if (response.ok) {
+            const html = await response.text();
+            
+            // Count essential DOM elements for authentic validation
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            
+            const essentialSelectors = [
+                '.card', '.btn', '.nav-link', '.container', '.row', '.col',
+                '#holdings-table', '#equity-chart', '.metric-card', '.status-indicator'
+            ];
+            
+            let foundElements = 0;
+            essentialSelectors.forEach(selector => {
+                if (doc.querySelector(selector)) foundElements++;
+            });
+            
+            const successRate = ((foundElements / essentialSelectors.length) * 100).toFixed(0);
+            appendOutput(`🌐 AUTHENTIC DOM VALIDATION: ${foundElements}/${essentialSelectors.length} elements found (${successRate}% success rate)`);
+        } else {
+            appendOutput('🌐 AUTHENTIC DATA ONLY: DOM validation requires running application');
+        }
+    } catch (error) {
+        appendOutput('🌐 AUTHENTIC DATA ONLY: DOM validation failed - ' + error.message);
+    }
+}
 </script>
 {% endblock %}
