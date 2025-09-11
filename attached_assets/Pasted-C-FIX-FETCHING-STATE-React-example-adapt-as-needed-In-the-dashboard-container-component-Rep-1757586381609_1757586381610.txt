@@ -1,0 +1,113 @@
+C) FIX FETCHING & STATE (React example; adapt as needed)
+
+In the dashboard container component:
+
+Replace absolute URLs like http://localhost:* with relative /api/... so the dev proxy works. Keep base URL in one place.
+
+Ensure useEffect uses an inner async fn + AbortController, and that you set state from adapters:
+
+// REPAIR: unified data load
+const [summary, setSummary] = useState<UiSummary|null>(null);
+const [holdings, setHoldings] = useState<UiHolding[]>([]);
+const [err, setErr] = useState<string|undefined>();
+
+useEffect(() => {
+  const ac = new AbortController();
+  (async () => {
+    try {
+      const sRes = await fetch('/api/portfolio/summary', { signal: ac.signal });
+      const hRes = await fetch('/api/portfolio/holdings', { signal: ac.signal });
+      const sJson = await sRes.json();
+      const hJson = await hRes.json();
+      setSummary(toUiSummary(sJson));                  // REPAIR: normalize keys
+      setHoldings(Array.isArray(hJson) ? hJson.map(toUiHolding) : []);
+    } catch (e:any) {
+      setErr(e?.message || 'load failed');             // REPAIR: surface error
+    }
+  })();
+  return () => ac.abort();
+}, []); // REPAIR: correct deps for initial load only
+
+
+Replace direct usages of raw API fields in render with summary/holdings derived from adapters.
+
+Add defensive rendering and stable selectors:
+
+<div data-metric="totalValue">{fmtCurrency(summary?.totalValue ?? NaN)}</div> {/* REPAIR */}
+<div data-metric="dailyPnlPercent">{fmtPercent(summary?.dailyPnlPercent ?? NaN)}</div> {/* REPAIR */}
+
+<table data-table="holdings" id="holdingsTable">
+  <thead>...</thead>
+  <tbody>
+    {holdings.map(h => (
+      <tr key={h.symbol}>
+        <td data-col="symbol">{h.symbol}</td>
+        <td data-col="qty">{h.quantity}</td>
+        <td data-col="price">{fmtCurrency(h.price)}</td>
+        <td data-col="value">{fmtCurrency(h.marketValue)}</td>
+        <td data-col="pnlPct">{fmtPercent(h.pnlPercent ?? NaN)}</td>
+      </tr>
+    ))}
+  </tbody>
+</table>
+
+
+D) KILL COMMON SILENT FAILS
+
+Wrong prop names: Search and replace any direct summary.totalPnlPct, daily_pnl_percent, etc., to use the adapter’s fields. Add // REPAIR on each change.
+
+Stale closures / missing re-render: Ensure no direct state mutation (summary.totalValue = ...). Always use setters.
+
+String math: Wrap all arithmetic with num() before calculations.
+
+Hidden UI: If cards/tables are present in the DOM but invisible, remove conflicting legacy CSS (old Bootstrap) or namespace it. Prefer utility classes and ensure containers aren’t display:none or visibility:hidden.
+
+Base URL: Centralize fetch base (e.g., const API = '' prefix). Relative URLs prevent mixed-origin/CORS issues.
+
+E) QUICK PROOF (1 small Playwright file)
+
+Add tests/bindings.spec.ts:
+
+import { test, expect } from '@playwright/test';
+test('dashboard shows bound data', async ({ page }) => {
+  await page.goto(process.env.DASHBOARD_URL || 'http://localhost:3000/dashboard');
+  await page.waitForLoadState('networkidle');
+  const total = await page.locator('[data-metric="totalValue"]').innerText();
+  expect(total.trim()).not.toMatch(/^$|^—$|^NaN$/);            // REPAIR: not empty/placeholder
+  const rows = await page.locator('[data-table="holdings"] tbody tr').count();
+  expect(rows).toBeGreaterThan(0);                              // REPAIR: holdings rendered
+});
+
+
+Run once:
+
+npm i -D @playwright/test && npx playwright install --with-deps
+npx playwright test tests/bindings.spec.ts --reporter=list
+
+
+F) OUTPUT
+
+Print a short summary of fixes: files changed, fields remapped, and any CSS un-hid issues.
+
+Ensure the dashboard now renders non-empty metrics and at least one holdings row.
+
+ACCEPTANCE
+
+Dashboard KPIs render with real values (not placeholders).
+
+Holdings table shows rows with symbol/qty/price/value.
+
+No console errors about undefined properties.
+
+Playwright test passes.
+
+Now execute the plan, make the minimal code edits with // REPAIR: comments, and run the quick test. Then report:
+
+Files changed with line numbers
+
+Keys remapped (API→UI)
+
+Whether the dashboard now displays data
+
+
+If you want, I can also give you a **one-file diff** template that replaces direct field usage with the adapter in your main dashboard component—say the word and I’ll generate it.

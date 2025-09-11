@@ -749,7 +749,7 @@ div.table-responsive table.table-v02--compact thead th {
     </div>
 </div>
 
-<!-- Dashboard Bootstrap Module - Clean modular initialization -->
-<script type="module" defer src="/static/js/bootstrap.js"></script>
+<!-- REPAIR: Load updated dashboard script with fixed data binding (cache-busting) -->
+<script defer src="{{ url_for('static', filename='app_legacy.js') }}?v={{ range(1000000, 9999999) | random }}"></script>
 
 {% endblock %}

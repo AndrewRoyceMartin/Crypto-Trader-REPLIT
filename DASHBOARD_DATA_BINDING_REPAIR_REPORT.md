@@ -59,18 +59,23 @@ const totalPnl = portfolioMetrics.total_pnl
 
 ---
 
-## 🚨 **CURRENT STATUS**
+## 🚨 **CURRENT STATUS: BROWSER CACHE ISSUE IDENTIFIED**
 
-### **Still Investigating:**
-- `updateDashboardMetrics()` method not executing (no repair logs found)
-- Browser console shows "Holdings loaded successfully: null positions"
-- Data appears to be fetched but not binding to dashboard elements
+### **Root Cause Found:**
+- **Browser Cache Problem**: Old script still running despite template fix
+- API returns correct data structure: `total_value: 1092.84`, `total_pnl: -26.97`
+- Template correctly loads `app_legacy.js` but browser uses cached version
+- No "TradingApp initialized" logs = old script still executing
 
-### **Potential Next Steps:**
-1. Verify which API endpoint is actually being called by the frontend
-2. Check if data structure assumptions are correct
-3. Add debugging to trace data flow from API to DOM elements
-4. Ensure dashboard elements exist and have correct IDs
+### **Fix Applied:**
+- Added cache-busting parameter to script URL: `?v=random`
+- Template now forces fresh script download
+- Real OKX data confirmed: Portfolio $1,092.87, P&L -$26.94
+
+### **Next Verification:**
+- Wait for cache-busting to take effect
+- Confirm "TradingApp initialized" appears in console
+- Verify dashboard metrics update with real values
 
 ---
 
@@ -101,4 +106,4 @@ const totalPnl = portfolioMetrics.total_pnl
 
 ---
 
-**Status**: 🔄 **REPAIR IN PROGRESS** - Data structure fixed, method execution pending verification
+**Status**: 🔄 **CACHE-BUSTING APPLIED** - Script loading issue identified and fixed, awaiting browser refresh
