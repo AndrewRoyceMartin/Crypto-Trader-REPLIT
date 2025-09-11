@@ -161,6 +161,53 @@
         font-weight: 600;
     }
     
+    /* Enhanced Loading Animations */
+    .loading-skeleton {
+        background: linear-gradient(90deg, 
+            rgba(156, 163, 175, 0.1) 25%, 
+            rgba(156, 163, 175, 0.2) 50%, 
+            rgba(156, 163, 175, 0.1) 75%);
+        background-size: 200% 100%;
+        animation: shimmer 1.5s infinite;
+        border-radius: 4px;
+        height: 1.2em;
+    }
+    
+    .loading-skeleton-stat {
+        background: linear-gradient(90deg, 
+            rgba(59, 130, 246, 0.1) 25%, 
+            rgba(59, 130, 246, 0.3) 50%, 
+            rgba(59, 130, 246, 0.1) 75%);
+        background-size: 200% 100%;
+        animation: shimmer 1.5s infinite;
+        border-radius: 6px;
+        height: 2rem;
+        width: 80%;
+    }
+    
+    @keyframes shimmer {
+        0% { background-position: -200% 0; }
+        100% { background-position: 200% 0; }
+    }
+    
+    .stat-loading {
+        opacity: 0.7;
+        transform: scale(0.98);
+        transition: all 0.3s ease;
+    }
+    
+    .stat-loaded {
+        opacity: 1;
+        transform: scale(1);
+        animation: statPulse 0.5s ease-out;
+    }
+    
+    @keyframes statPulse {
+        0% { transform: scale(0.95); }
+        50% { transform: scale(1.02); }
+        100% { transform: scale(1); }
+    }
+    
     .loading-spinner-container {
         display: none;
         text-align: center;
@@ -208,6 +255,7 @@
                 </h1>
                 <p class="page-subtitle">
                     Real-time trading signals from your hybrid ML + technical analysis system
+        <br><small id="last-updated" style="color: #9ca3af; font-size: 0.8rem;">Loading data...</small>
                 </p>
             </div>
         </div>
@@ -217,37 +265,49 @@
     <div class="row mb-4" id="summary-stats">
         <div class="col-md-2 col-6 mb-3">
             <div class="stat-card">
-                <div class="stat-value text-primary" id="total-signals">-</div>
+                <div class="stat-value text-primary" id="total-signals">
+                    <div class="loading-skeleton loading-skeleton-stat"></div>
+                </div>
                 <div class="stat-label">Total Signals</div>
             </div>
         </div>
         <div class="col-md-2 col-6 mb-3">
             <div class="stat-card">
-                <div class="stat-value text-success" id="buy-signals">-</div>
+                <div class="stat-value text-success" id="buy-signals">
+                    <div class="loading-skeleton loading-skeleton-stat"></div>
+                </div>
                 <div class="stat-label">Buy Signals</div>
             </div>
         </div>
         <div class="col-md-2 col-6 mb-3">
             <div class="stat-card">
-                <div class="stat-value text-danger" id="sell-signals">-</div>
+                <div class="stat-value text-danger" id="sell-signals">
+                    <div class="loading-skeleton loading-skeleton-stat"></div>
+                </div>
                 <div class="stat-label">Sell Signals</div>
             </div>
         </div>
         <div class="col-md-2 col-6 mb-3">
             <div class="stat-card">
-                <div class="stat-value text-info" id="recent-24h">-</div>
+                <div class="stat-value text-info" id="recent-24h">
+                    <div class="loading-skeleton loading-skeleton-stat"></div>
+                </div>
                 <div class="stat-label">Last 24h</div>
             </div>
         </div>
         <div class="col-md-2 col-6 mb-3">
             <div class="stat-card">
-                <div class="stat-value text-warning" id="avg-confidence">-</div>
+                <div class="stat-value text-warning" id="avg-confidence">
+                    <div class="loading-skeleton loading-skeleton-stat"></div>
+                </div>
                 <div class="stat-label">Avg Confidence</div>
             </div>
         </div>
         <div class="col-md-2 col-6 mb-3">
             <div class="stat-card">
-                <div class="stat-value text-purple" id="total-trades">-</div>
+                <div class="stat-value text-purple" id="total-trades">
+                    <div class="loading-skeleton loading-skeleton-stat"></div>
+                </div>
                 <div class="stat-label">Executed Trades</div>
             </div>
         </div>
@@ -401,16 +461,27 @@ document.addEventListener('DOMContentLoaded', function() {
 async function loadTradesData() {
     try {
         showLoading(true);
+        console.log('🔄 Loading trades data with enhanced animations...');
+        
+        // Reset stat cards to loading state
+        document.querySelectorAll('.stat-card').forEach(card => {
+            card.classList.remove('stat-loaded');
+            card.classList.add('stat-loading');
+        });
         
         const response = await fetch('/api/trades');
         const data = await response.json();
         
         if (data.success) {
             allTradesData = data.trades;
-            updateSummaryStats(data.summary);
-            populateSymbolFilter();
-            applyFilters();
-            console.log('✅ Trades data loaded:', data.trades.length, 'records');
+            
+            // Add slight delay to show loading animation
+            setTimeout(() => {
+                updateSummaryStats(data.summary);
+                populateSymbolFilter();
+                applyFilters();
+                console.log('✅ Trades data loaded with animations:', data.trades.length, 'records');
+            }, 300);
         } else {
             console.error('❌ Trades API error:', data.error);
             showEmptyState();
@@ -420,17 +491,44 @@ async function loadTradesData() {
         console.error('❌ Failed to load trades data:', error);
         showEmptyState();
     } finally {
-        showLoading(false);
+        setTimeout(() => showLoading(false), 400);
     }
 }
 
 function updateSummaryStats(summary) {
-    document.getElementById('total-signals').textContent = summary.total_signals;
-    document.getElementById('buy-signals').textContent = summary.buy_signals;
-    document.getElementById('sell-signals').textContent = summary.sell_signals;
-    document.getElementById('recent-24h').textContent = summary.recent_24h;
-    document.getElementById('avg-confidence').textContent = summary.avg_confidence.toFixed(1) + '%';
-    document.getElementById('total-trades').textContent = summary.total_trades;
+    // Enhanced loading to data transition with animations
+    const stats = [
+        { id: 'total-signals', value: summary.total_signals, suffix: '' },
+        { id: 'buy-signals', value: summary.buy_signals, suffix: '' },
+        { id: 'sell-signals', value: summary.sell_signals, suffix: '' },
+        { id: 'recent-24h', value: summary.recent_24h, suffix: '' },
+        { id: 'avg-confidence', value: summary.avg_confidence ? summary.avg_confidence.toFixed(1) : '0.0', suffix: '%' },
+        { id: 'total-trades', value: summary.total_trades, suffix: '' }
+    ];
+    
+    stats.forEach((stat, index) => {
+        setTimeout(() => {
+            const element = document.getElementById(stat.id);
+            const parent = element.closest('.stat-card');
+            
+            // Add loading state
+            parent.classList.add('stat-loading');
+            
+            setTimeout(() => {
+                // Replace loading skeleton with actual data
+                element.innerHTML = `<span style="opacity: 0; transform: translateY(10px); transition: all 0.4s ease;">${stat.value}${stat.suffix}</span>`;
+                
+                // Trigger animation
+                requestAnimationFrame(() => {
+                    const span = element.querySelector('span');
+                    span.style.opacity = '1';
+                    span.style.transform = 'translateY(0)';
+                    parent.classList.remove('stat-loading');
+                    parent.classList.add('stat-loaded');
+                });
+            }, 200);
+        }, index * 100); // Stagger the animations
+    });
 }
 
 function populateSymbolFilter() {
@@ -566,9 +664,25 @@ function clearFilters() {
 }
 
 function showLoading(show) {
-    document.getElementById('loading-spinner').style.display = show ? 'block' : 'none';
-    document.getElementById('trades-table').style.display = show ? 'none' : 'table';
-    document.getElementById('empty-state').style.display = 'none';
+    const spinner = document.getElementById('loading-spinner');
+    const table = document.getElementById('trades-table');
+    const emptyState = document.getElementById('empty-state');
+    const lastUpdated = document.getElementById('last-updated');
+    
+    if (spinner) spinner.style.display = show ? 'block' : 'none';
+    if (table) table.style.display = show ? 'none' : 'table';
+    if (emptyState) emptyState.style.display = 'none';
+    
+    if (lastUpdated) {
+        if (show) {
+            lastUpdated.textContent = 'Loading data...';
+            lastUpdated.style.color = '#f59e0b';
+        } else {
+            const now = new Date();
+            lastUpdated.textContent = `Last updated: ${now.toLocaleTimeString()}`;
+            lastUpdated.style.color = '#22c55e';
+        }
+    }
 }
 
 function showEmptyState() {
