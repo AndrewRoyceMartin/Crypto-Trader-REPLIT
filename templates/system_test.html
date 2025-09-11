@@ -149,6 +149,88 @@
     border-radius: 4px;
     font-size: 0.9rem;
 }
+
+/* Enhanced Professional Loading Animations for System Tests */
+.loading-skeleton {
+    background: linear-gradient(90deg, 
+        rgba(156, 163, 175, 0.1) 25%, 
+        rgba(156, 163, 175, 0.2) 50%, 
+        rgba(156, 163, 175, 0.1) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+    border-radius: 6px;
+    height: 1.5rem;
+}
+
+.loading-skeleton-metric {
+    background: linear-gradient(90deg, 
+        rgba(255, 255, 255, 0.1) 25%, 
+        rgba(255, 255, 255, 0.3) 50%, 
+        rgba(255, 255, 255, 0.1) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+    border-radius: 8px;
+    height: 1.5rem;
+    width: 60%;
+    margin: 0 auto;
+}
+
+@keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+}
+
+.metric-item-loading {
+    opacity: 0.7;
+    transform: scale(0.98);
+    transition: all 0.4s ease;
+}
+
+.metric-item-loaded {
+    opacity: 1;
+    transform: scale(1);
+    animation: cardAppear 0.6s ease-out;
+}
+
+@keyframes cardAppear {
+    0% { 
+        opacity: 0;
+        transform: scale(0.95) translateY(10px);
+    }
+    100% { 
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+.test-status-container {
+    font-size: 1rem;
+    text-align: center;
+    margin: 25px 0;
+    padding: 15px 25px;
+    border-radius: 30px;
+    transition: all 0.3s ease;
+    font-weight: 600;
+    border: 2px solid transparent;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02));
+}
+
+.status-loading { 
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(245, 158, 11, 0.1));
+    color: #f59e0b;
+    border-color: rgba(245, 158, 11, 0.3);
+}
+.status-loaded { 
+    background: linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(34, 197, 94, 0.1));
+    color: #22c55e;
+    border-color: rgba(34, 197, 94, 0.3);
+}
+.status-error { 
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(239, 68, 68, 0.1));
+    color: #ef4444;
+    border-color: rgba(239, 68, 68, 0.3);
+}
+
 </style>
 {% endblock %}
 
@@ -198,19 +280,27 @@
             <h3><i class="fas fa-chart-bar me-2"></i>Test Metrics</h3>
             <div class="test-metrics">
                 <div class="metric-item">
-                    <div class="metric-value" id="total-tests">0</div>
+                    <div class="metric-value" id="total-tests">
+                        <div class="loading-skeleton loading-skeleton-metric"></div>
+                    </div>
                     <div class="metric-label">Total Tests</div>
                 </div>
                 <div class="metric-item">
-                    <div class="metric-value text-success" id="passed-tests">0</div>
+                    <div class="metric-value text-success" id="passed-tests">
+                        <div class="loading-skeleton loading-skeleton-metric"></div>
+                    </div>
                     <div class="metric-label">Passed</div>
                 </div>
                 <div class="metric-item">
-                    <div class="metric-value text-danger" id="failed-tests">0</div>
+                    <div class="metric-value text-danger" id="failed-tests">
+                        <div class="loading-skeleton loading-skeleton-metric"></div>
+                    </div>
                     <div class="metric-label">Failed</div>
                 </div>
                 <div class="metric-item">
-                    <div class="metric-value" id="test-duration">0s</div>
+                    <div class="metric-value" id="test-duration">
+                        <div class="loading-skeleton loading-skeleton-metric"></div>
+                    </div>
                     <div class="metric-label">Duration</div>
                 </div>
             </div>
@@ -252,6 +342,11 @@
                 </div>
                 <div class="mt-2">
                     <small class="text-muted-xs" id="current-test">Ready to run tests</small>
+                </div>
+                
+                <!-- Enhanced Status Indicator -->
+                <div class="test-status-container status-loading" id="test-status-indicator">
+                    <i class="fas fa-vial me-2"></i>System test environment ready - Click any test to begin
                 </div>
             </div>
         </div>
@@ -357,10 +452,48 @@ function updateStatus(elementId, status) {
 }
 
 function updateMetrics(passed, failed, duration) {
-    document.getElementById('total-tests').textContent = passed + failed;
-    document.getElementById('passed-tests').textContent = passed;
-    document.getElementById('failed-tests').textContent = failed;
-    document.getElementById('test-duration').textContent = duration + 's';
+    // Use enhanced metric updates with animations
+    updateMetricWithAnimation('total-tests', passed + failed);
+    updateMetricWithAnimation('passed-tests', passed, true);
+    updateMetricWithAnimation('failed-tests', failed, true);
+    updateMetricWithAnimation('test-duration', duration + 's');
+}
+
+function updateMetricWithAnimation(elementId, value, isColored = false) {
+    const element = document.getElementById(elementId);
+    if (!element) return;
+    
+    const skeletonEl = element.querySelector('.loading-skeleton');
+    if (skeletonEl) {
+        // Smooth transition from skeleton to actual data
+        setTimeout(() => {
+            skeletonEl.style.opacity = '0';
+            setTimeout(() => {
+                skeletonEl.remove();
+                element.textContent = value;
+                element.style.opacity = '0';
+                element.style.transform = 'scale(0.9)';
+                
+                // Animate in the real value
+                setTimeout(() => {
+                    element.style.transition = 'all 0.4s ease';
+                    element.style.opacity = '1';
+                    element.style.transform = 'scale(1)';
+                }, 50);
+            }, 200);
+        }, Math.random() * 300); // Stagger animations
+    } else {
+        element.textContent = value;
+    }
+    
+    // Update parent card to loaded state
+    const parentCard = element.closest('.metric-item');
+    if (parentCard) {
+        setTimeout(() => {
+            parentCard.classList.remove('metric-item-loading');
+            parentCard.classList.add('metric-item-loaded');
+        }, 500);
+    }
 }
 
 function updateProgress(percent, message) {
@@ -384,6 +517,33 @@ function clearOutput() {
     // Reset all status indicators
     const statuses = ['env', 'okx', 'auth', 'ml', 'hybrid', 'logging', 'dom', 'backtest', 'datetime', 'predictor', 'regression', 'api'];
     statuses.forEach(status => updateStatus(status + '-status', 'pending'));
+    
+    // Reset professional status indicator
+    const statusEl = document.getElementById('test-status-indicator');
+    if (statusEl) {
+        statusEl.className = 'test-status-container status-loading';
+        statusEl.innerHTML = '<i class="fas fa-vial me-2"></i>System test environment ready - Click any test to begin';
+    }
+    
+    // Reset metrics to loading skeleton
+    resetMetricsToLoading();
+}
+
+function resetMetricsToLoading() {
+    const metricIds = ['total-tests', 'passed-tests', 'failed-tests', 'test-duration'];
+    metricIds.forEach(id => {
+        const element = document.getElementById(id);
+        if (element && !element.querySelector('.loading-skeleton')) {
+            element.innerHTML = '<div class="loading-skeleton loading-skeleton-metric"></div>';
+        }
+    });
+    
+    // Reset metric cards to initial state
+    document.querySelectorAll('.metric-item').forEach(item => {
+        item.classList.remove('metric-item-loaded', 'metric-item-loading');
+        item.style.transform = '';
+        item.style.opacity = '';
+    });
 }
 
 function setTestRunning(running) {
@@ -398,6 +558,38 @@ function setTestRunning(running) {
     if (running) {
         testStartTime = Date.now();
     }
+    
+    // Update status indicator with professional feedback
+    const statusEl = document.getElementById('test-status-indicator');
+    if (statusEl) {
+        if (running) {
+            statusEl.className = 'test-status-container status-loading';
+            statusEl.innerHTML = '<i class="fas fa-sync fa-spin me-2"></i>Running system tests...';
+        } else {
+            statusEl.className = 'test-status-container status-loaded';
+            const now = new Date();
+            statusEl.innerHTML = `<i class="fas fa-check-circle me-2"></i>Tests completed - Last run: ${now.toLocaleTimeString()}`;
+        }
+    }
+    
+    // Show loading state for metrics when starting tests
+    if (running) {
+        showMetricLoading();
+    }
+}
+
+function showMetricLoading() {
+    // Add loading state to all metric items
+    document.querySelectorAll('.metric-item').forEach((item, index) => {
+        item.classList.add('metric-item-loading');
+        item.classList.remove('metric-item-loaded');
+        
+        // Stagger the loading animation
+        setTimeout(() => {
+            item.style.transform = 'scale(0.98)';
+            item.style.opacity = '0.7';
+        }, index * 100);
+    });
 }
 
 async function runCommand(command, description) {
