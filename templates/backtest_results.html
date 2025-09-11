@@ -546,6 +546,68 @@ window.refreshPageData = async function() {
 };
 
 // Initialize page
+// 🔧 BACKTEST DEBUG FUNCTIONS
+const BacktestDebug = {
+    // Inspect backtest state
+    inspectState() {
+        TradingDebug.log('🧪 Backtest State Inspection');
+        TradingDebug.inspectState('backtest data', window.backtestData);
+        TradingDebug.inspectState('pnl chart', window.pnlChart);
+        TradingDebug.inspectState('stats', window.backtestStats);
+    },
+    
+    // Debug backtest loading
+    async debugBacktest() {
+        TradingDebug.log('🧪 Testing backtest loading...');
+        try {
+            await loadBacktestResults();
+            TradingDebug.log('🧪 Backtest results loaded successfully');
+            this.inspectState();
+        } catch (error) {
+            TradingDebug.trackError(error, 'Backtest Loading');
+        }
+    },
+    
+    // Test backtest APIs
+    async testAPIs() {
+        TradingDebug.log('🧪 Testing Backtest APIs...');
+        const endpoints = [
+            '/api/trades',
+            '/api/performance-charts'
+        ];
+        
+        for (const endpoint of endpoints) {
+            await TradingDebug.helpers.testAPI(endpoint);
+        }
+    },
+    
+    // Force refresh backtest
+    refreshBacktest() {
+        TradingDebug.log('🧪 Forcing backtest refresh...');
+        loadBacktestResults();
+    },
+    
+    // Analyze backtest performance
+    analyzePerformance() {
+        if (!window.backtestData) {
+            TradingDebug.log('No backtest data to analyze');
+            return;
+        }
+        
+        TradingDebug.log('🧪 Backtest Performance Analysis:');
+        console.group('🧪 Performance Metrics');
+        console.log('Total Signals:', window.backtestData.length);
+        console.log('Win Rate:', window.backtestStats?.winRate);
+        console.log('Total PnL:', window.backtestStats?.totalPnL);
+        console.log('Best Trade:', window.backtestStats?.bestTrade);
+        console.log('Worst Trade:', window.backtestStats?.worstTrade);
+        console.groupEnd();
+    }
+};
+
+// Add backtest debug to global scope
+window.backtestDebug = BacktestDebug;
+
 document.addEventListener('DOMContentLoaded', function() {
     loadBacktestResults();
 });

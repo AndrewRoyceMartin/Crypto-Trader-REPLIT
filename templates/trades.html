@@ -340,6 +340,55 @@ let allTradesData = [];
 let filteredData = [];
 
 // Initialize page
+// 🔧 TRADES DEBUG FUNCTIONS
+const TradesDebug = {
+    // Inspect trades state
+    inspectState() {
+        TradingDebug.log('📊 Trades State Inspection');
+        TradingDebug.inspectState('trades data', window.tradesData);
+        TradingDebug.inspectState('filtered trades', window.filteredTrades);
+    },
+    
+    // Debug trades loading
+    async debugTrades() {
+        TradingDebug.log('📊 Testing trades loading...');
+        try {
+            await loadTradesData();
+            TradingDebug.log('📊 Trades loaded successfully');
+            this.inspectState();
+        } catch (error) {
+            TradingDebug.trackError(error, 'Trades Loading');
+        }
+    },
+    
+    // Test trades APIs
+    async testAPIs() {
+        TradingDebug.log('📊 Testing Trades APIs...');
+        const endpoints = [
+            '/api/trades',
+            '/api/current-holdings'
+        ];
+        
+        for (const endpoint of endpoints) {
+            await TradingDebug.helpers.testAPI(endpoint);
+        }
+    },
+    
+    // Debug filters
+    debugFilters() {
+        TradingDebug.log('📊 Filter Debug:');
+        const symbolFilter = document.getElementById('symbol-filter');
+        const actionFilter = document.getElementById('action-filter');
+        
+        console.log('Symbol Filter:', symbolFilter?.value);
+        console.log('Action Filter:', actionFilter?.value);
+        this.inspectState();
+    }
+};
+
+// Add trades debug to global scope
+window.tradesDebug = TradesDebug;
+
 document.addEventListener('DOMContentLoaded', function() {
     loadTradesData();
     

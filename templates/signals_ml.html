@@ -459,6 +459,77 @@ window.refreshPageData = async function() {
     await loadSignalAnalysis();
 };
 
+// 🔧 SIGNALS ML DEBUG FUNCTIONS
+const SignalsMLDebug = {
+    // Inspect current signals ML state
+    inspectState() {
+        TradingDebug.log('🧠 Signals ML State Inspection');
+        TradingDebug.inspectState('currentSymbol', currentSymbol);
+        TradingDebug.inspectState('currentPrice', currentPrice);
+        TradingDebug.inspectState('lastSignalData', window.lastSignalData);
+    },
+    
+    // Debug signal loading for specific symbol
+    async debugSignal(symbol = null) {
+        const testSymbol = symbol || currentSymbol;
+        const testPrice = currentPrice || 114200;
+        
+        TradingDebug.log(`🧠 Testing signal for ${testSymbol} at $${testPrice}`);
+        try {
+            const response = await fetch(`/api/hybrid-signal?symbol=${testSymbol}&price=${testPrice}`);
+            const data = await response.json();
+            
+            TradingDebug.log('🧠 Signal response:', data);
+            window.lastSignalData = data; // Store for inspection
+            
+            return data;
+        } catch (error) {
+            TradingDebug.trackError(error, 'Signal Loading');
+            return null;
+        }
+    },
+    
+    // Test all signal APIs
+    async testAPIs() {
+        TradingDebug.log('🧠 Testing Signals ML APIs...');
+        const endpoints = [
+            '/api/hybrid-signal?symbol=BTC&price=114200',
+            '/api/current-holdings'
+        ];
+        
+        for (const endpoint of endpoints) {
+            await TradingDebug.helpers.testAPI(endpoint);
+        }
+    },
+    
+    // Force refresh signal data
+    refreshSignals() {
+        TradingDebug.log('🧠 Forcing signals refresh...');
+        loadSignalAnalysis();
+    },
+    
+    // Analyze signal calculations
+    analyzeSignal(signalData) {
+        if (!signalData) signalData = window.lastSignalData;
+        if (!signalData) {
+            TradingDebug.log('No signal data to analyze');
+            return;
+        }
+        
+        TradingDebug.log('🧠 Signal Analysis:');
+        console.group('🧠 Signal Breakdown');
+        console.log('Confidence Score:', signalData.confidence_score);
+        console.log('Timing Signal:', signalData.timing_signal);
+        console.log('Analysis Type:', signalData.analysis_type);
+        console.log('ML Integration:', signalData.ml_integration);
+        console.log('Enhanced Filters:', signalData.enhanced_filters);
+        console.groupEnd();
+    }
+};
+
+// Add signals debug to global scope
+window.signalsMLDebug = SignalsMLDebug;
+
 // Initialize page
 document.addEventListener('DOMContentLoaded', function() {
     loadSignalAnalysis();

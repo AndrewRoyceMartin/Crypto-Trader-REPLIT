@@ -624,6 +624,54 @@ window.refreshPageData = async function() {
     await loadPortfolioData();
 };
 
+// 🔧 PORTFOLIO ADVANCED DEBUG FUNCTIONS
+const PortfolioAdvancedDebug = {
+    // Inspect portfolio state
+    inspectState() {
+        TradingDebug.log('💼 Portfolio Advanced State Inspection');
+        TradingDebug.inspectState('portfolio data', window.portfolioData);
+        TradingDebug.inspectState('equity chart', window.equityChart);
+        TradingDebug.inspectState('allocation chart', window.allocationChart);
+    },
+    
+    // Debug portfolio loading
+    async debugPortfolio() {
+        TradingDebug.log('💼 Testing portfolio loading...');
+        try {
+            await loadPortfolioData();
+            TradingDebug.log('💼 Portfolio loaded successfully');
+            this.inspectState();
+        } catch (error) {
+            TradingDebug.trackError(error, 'Portfolio Loading');
+        }
+    },
+    
+    // Test portfolio APIs
+    async testAPIs() {
+        TradingDebug.log('💼 Testing Portfolio APIs...');
+        const endpoints = [
+            '/api/current-holdings',
+            '/api/portfolio-analytics',
+            '/api/equity-curve',
+            '/api/performance-charts',
+            '/api/best-performer'
+        ];
+        
+        for (const endpoint of endpoints) {
+            await TradingDebug.helpers.testAPI(endpoint);
+        }
+    },
+    
+    // Force refresh
+    refreshPortfolio() {
+        TradingDebug.log('💼 Forcing portfolio refresh...');
+        loadPortfolioData();
+    }
+};
+
+// Add portfolio debug to global scope
+window.portfolioAdvancedDebug = PortfolioAdvancedDebug;
+
 // Initialize page
 document.addEventListener('DOMContentLoaded', function() {
     loadPortfolioData();

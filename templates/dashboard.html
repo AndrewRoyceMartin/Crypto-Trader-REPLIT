@@ -593,6 +593,73 @@ div.table-responsive table.table-v02--compact thead th {
 </div>
 
 <script>
+// 🔧 DASHBOARD DEBUG FUNCTIONS
+const DashboardDebug = {
+    // Inspect current dashboard state
+    inspectState() {
+        TradingDebug.log('📊 Dashboard State Inspection');
+        TradingDebug.inspectState('dashboard instance', window.dashboard);
+        TradingDebug.inspectState('charts', window.dashboard?.charts);
+    },
+    
+    // Debug portfolio loading
+    debugPortfolio() {
+        TradingDebug.log('📊 Testing portfolio loading...');
+        if (window.dashboard) {
+            window.dashboard.loadPortfolioOverview().then(() => {
+                TradingDebug.log('📊 Portfolio loaded successfully');
+                this.inspectState();
+            }).catch(error => {
+                TradingDebug.trackError(error, 'Portfolio Loading');
+            });
+        } else {
+            TradingDebug.log('Dashboard not initialized');
+        }
+    },
+    
+    // Debug charts
+    debugCharts() {
+        TradingDebug.log('📊 Chart Debug Information');
+        if (window.dashboard?.charts) {
+            Object.keys(window.dashboard.charts).forEach(chartName => {
+                TradingDebug.log(`Chart ${chartName}:`, {
+                    exists: !!window.dashboard.charts[chartName],
+                    type: window.dashboard.charts[chartName]?.config?.type,
+                    data: window.dashboard.charts[chartName]?.data?.labels?.length || 0
+                });
+            });
+        } else {
+            TradingDebug.log('No charts initialized');
+        }
+    },
+    
+    // Test all dashboard APIs
+    async testAPIs() {
+        TradingDebug.log('📊 Testing all dashboard APIs...');
+        const endpoints = [
+            '/api/current-holdings',
+            '/api/performance-charts',
+            '/api/trades',
+            '/api/status'
+        ];
+        
+        for (const endpoint of endpoints) {
+            await TradingDebug.helpers.testAPI(endpoint);
+        }
+    },
+    
+    // Force dashboard refresh
+    refreshDashboard() {
+        TradingDebug.log('📊 Forcing dashboard refresh...');
+        if (window.dashboard) {
+            window.dashboard.loadAllData();
+        }
+    }
+};
+
+// Add dashboard debug to global scope
+window.dashboardDebug = DashboardDebug;
+
 class TradingDashboard {
     constructor() {
         this.charts = {};

@@ -646,6 +646,198 @@
     });
     </script>
 
+    <script>
+    // 🔧 GLOBAL DEBUG SYSTEM - Available on all pages
+    window.TradingDebug = {
+        // Debug mode control
+        enabled: localStorage.getItem('debug_mode') === 'true',
+        
+        // Enable/disable debug mode
+        enable() {
+            this.enabled = true;
+            localStorage.setItem('debug_mode', 'true');
+            console.log('🔧 Trading Debug: ENABLED');
+            this.log('Debug mode activated');
+        },
+        
+        disable() {
+            this.enabled = false;
+            localStorage.setItem('debug_mode', 'false');
+            console.log('🔧 Trading Debug: DISABLED');
+        },
+        
+        // Enhanced logging with timestamps and categories
+        log(message, category = 'INFO', data = null) {
+            if (!this.enabled) return;
+            const timestamp = new Date().toLocaleTimeString();
+            const prefix = `🔧 [${timestamp}] ${category}:`;
+            
+            if (data) {
+                console.log(prefix, message, data);
+            } else {
+                console.log(prefix, message);
+            }
+        },
+        
+        // API call debugging
+        logAPI(method, url, response = null, error = null) {
+            if (!this.enabled) return;
+            const timestamp = new Date().toLocaleTimeString();
+            
+            if (error) {
+                console.error(`🔧 [${timestamp}] API ERROR:`, {
+                    method,
+                    url,
+                    error: error.message || error
+                });
+            } else {
+                console.log(`🔧 [${timestamp}] API CALL:`, {
+                    method,
+                    url,
+                    response: response ? (typeof response === 'object' ? Object.keys(response) : response) : 'no response'
+                });
+            }
+        },
+        
+        // State inspection
+        inspectState(stateName, stateData) {
+            if (!this.enabled) return;
+            console.group(`🔧 State: ${stateName}`);
+            console.log('Data:', stateData);
+            console.log('Type:', typeof stateData);
+            console.log('Keys:', stateData && typeof stateData === 'object' ? Object.keys(stateData) : 'N/A');
+            console.groupEnd();
+        },
+        
+        // Performance monitoring
+        startTimer(name) {
+            if (!this.enabled) return;
+            console.time(`🔧 Timer: ${name}`);
+        },
+        
+        endTimer(name) {
+            if (!this.enabled) return;
+            console.timeEnd(`🔧 Timer: ${name}`);
+        },
+        
+        // Error tracking
+        trackError(error, context = '') {
+            console.error(`🔧 ERROR${context ? ` (${context})` : ''}:`, error);
+            if (this.enabled) {
+                console.trace('Error stack trace:');
+            }
+        },
+        
+        // DOM element inspection
+        inspectElement(selector) {
+            if (!this.enabled) return;
+            const element = document.querySelector(selector);
+            console.group(`🔧 Element: ${selector}`);
+            console.log('Element:', element);
+            console.log('Classes:', element?.className);
+            console.log('Text:', element?.textContent?.slice(0, 100));
+            console.log('Attributes:', element ? [...element.attributes].map(a => `${a.name}="${a.value}"`) : 'N/A');
+            console.groupEnd();
+        },
+        
+        // Helper functions
+        helpers: {
+            // Get all API endpoints
+            showEndpoints() {
+                console.log('🔧 Available API Endpoints:', [
+                    '/api/current-holdings',
+                    '/api/hybrid-signal',
+                    '/api/trades',
+                    '/api/performance-charts', 
+                    '/api/equity-curve',
+                    '/api/portfolio-analytics',
+                    '/api/status',
+                    '/api/self-check'
+                ]);
+            },
+            
+            // Test API endpoint
+            async testAPI(endpoint) {
+                try {
+                    TradingDebug.log(`Testing endpoint: ${endpoint}`);
+                    const response = await fetch(endpoint);
+                    const data = await response.json();
+                    console.log(`🔧 API Test Result for ${endpoint}:`, data);
+                    return data;
+                } catch (error) {
+                    console.error(`🔧 API Test Failed for ${endpoint}:`, error);
+                    return null;
+                }
+            },
+            
+            // Get current page info
+            pageInfo() {
+                console.log('🔧 Page Information:', {
+                    url: window.location.href,
+                    title: document.title,
+                    scripts: [...document.scripts].map(s => s.src).filter(s => s),
+                    stylesheets: [...document.styleSheets].map(s => s.href).filter(s => s)
+                });
+            },
+            
+            // Clear all console logs
+            clear() {
+                console.clear();
+                console.log('🔧 Trading Debug: Console cleared');
+            }
+        },
+        
+        // Quick access commands
+        commands: {
+            // Enable debug mode
+            on() { TradingDebug.enable(); },
+            
+            // Disable debug mode  
+            off() { TradingDebug.disable(); },
+            
+            // Show help
+            help() {
+                console.log(`🔧 Trading Debug Commands:
+                
+                TradingDebug.on()     - Enable debug mode
+                TradingDebug.off()    - Disable debug mode
+                TradingDebug.log(msg) - Log debug message
+                TradingDebug.helpers.showEndpoints() - Show API endpoints
+                TradingDebug.helpers.testAPI('/api/status') - Test API
+                TradingDebug.helpers.pageInfo() - Show page info
+                TradingDebug.helpers.clear() - Clear console
+                TradingDebug.inspectState(name, data) - Inspect state
+                TradingDebug.inspectElement('.class') - Inspect DOM element
+                `);
+            }
+        }
+    };
+    
+    // Auto-enable if previously enabled
+    if (TradingDebug.enabled) {
+        TradingDebug.log('Debug mode restored from previous session');
+    }
+    
+    // Global error handler
+    window.addEventListener('error', (event) => {
+        TradingDebug.trackError(event.error, 'Global Error Handler');
+    });
+    
+    // Unhandled promise rejection handler
+    window.addEventListener('unhandledrejection', (event) => {
+        TradingDebug.trackError(event.reason, 'Unhandled Promise Rejection');
+    });
+    
+    // Page load debugging
+    document.addEventListener('DOMContentLoaded', () => {
+        TradingDebug.log('DOM Content Loaded');
+        TradingDebug.log('Page:', window.location.pathname);
+    });
+    
+    // Shortcut commands for console
+    window.debug = TradingDebug.commands;
+    </script>
+
     {% block extra_js %}{% endblock %}
 </body>
 </html>

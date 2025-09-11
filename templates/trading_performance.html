@@ -684,6 +684,75 @@ try {
 }
 
 // Also try DOMContentLoaded as backup
+// 🔧 TRADING PERFORMANCE DEBUG FUNCTIONS
+const TradingPerformanceDebug = {
+    // Inspect performance state
+    inspectState() {
+        TradingDebug.log('📈 Trading Performance State Inspection');
+        TradingDebug.inspectState('performance dashboard', window.performanceDashboard);
+        TradingDebug.inspectState('charts', window.performanceDashboard?.charts);
+        TradingDebug.inspectState('performance data', window.performanceDashboard?.performanceData);
+    },
+    
+    // Debug performance loading
+    async debugPerformance() {
+        TradingDebug.log('📈 Testing performance loading...');
+        try {
+            if (window.performanceDashboard) {
+                await window.performanceDashboard.loadAllData();
+                TradingDebug.log('📈 Performance data loaded successfully');
+                this.inspectState();
+            } else {
+                TradingDebug.log('Performance dashboard not initialized');
+            }
+        } catch (error) {
+            TradingDebug.trackError(error, 'Performance Loading');
+        }
+    },
+    
+    // Test performance APIs
+    async testAPIs() {
+        TradingDebug.log('📈 Testing Performance APIs...');
+        const endpoints = [
+            '/api/trades',
+            '/api/current-holdings',
+            '/api/equity-curve',
+            '/api/performance-charts'
+        ];
+        
+        for (const endpoint of endpoints) {
+            await TradingDebug.helpers.testAPI(endpoint);
+        }
+    },
+    
+    // Force refresh
+    refreshPerformance() {
+        TradingDebug.log('📈 Forcing performance refresh...');
+        if (window.performanceDashboard) {
+            window.performanceDashboard.loadAllData();
+        }
+    },
+    
+    // Analyze performance metrics
+    analyzeMetrics() {
+        if (!window.performanceDashboard?.performanceData) {
+            TradingDebug.log('No performance data to analyze');
+            return;
+        }
+        
+        TradingDebug.log('📈 Performance Metrics Analysis:');
+        console.group('📈 Performance Breakdown');
+        console.log('Portfolio Value:', window.performanceDashboard.performanceData.totalValue);
+        console.log('Total P&L:', window.performanceDashboard.performanceData.totalPnL);
+        console.log('Win Rate:', window.performanceDashboard.performanceData.winRate);
+        console.log('Active Positions:', window.performanceDashboard.performanceData.positions);
+        console.groupEnd();
+    }
+};
+
+// Add performance debug to global scope
+window.tradingPerformanceDebug = TradingPerformanceDebug;
+
 document.addEventListener('DOMContentLoaded', () => {
     console.log('🔄 DOM loaded - backup initialization');
     if (!window.performanceDashboard) {

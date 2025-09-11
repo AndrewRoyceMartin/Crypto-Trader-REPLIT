@@ -621,6 +621,61 @@ async function runHybridTest() {
     setTestRunning(false);
 }
 
+// 🔧 SYSTEM TEST DEBUG FUNCTIONS
+const SystemTestDebug = {
+    // Inspect system test state
+    inspectState() {
+        TradingDebug.log('⚙️ System Test State Inspection');
+        TradingDebug.inspectState('test results', window.testResults);
+        TradingDebug.inspectState('system status', window.systemStatus);
+        TradingDebug.inspectState('test running', testRunning);
+    },
+    
+    // Run all tests
+    async runAllTests() {
+        TradingDebug.log('⚙️ Running comprehensive system tests...');
+        await runBasicTests();
+        await runAdvancedTests(); 
+        await runLoadTests();
+        await runDatetimeTests();
+        await runHybridTest();
+        this.inspectState();
+    },
+    
+    // Test all system APIs
+    async testSystemAPIs() {
+        TradingDebug.log('⚙️ Testing System APIs...');
+        const endpoints = [
+            '/api/status',
+            '/api/self-check',
+            '/api/current-holdings',
+            '/api/test-sync-data'
+        ];
+        
+        for (const endpoint of endpoints) {
+            await TradingDebug.helpers.testAPI(endpoint);
+        }
+    },
+    
+    // Force system status update
+    updateStatus() {
+        TradingDebug.log('⚙️ Forcing system status update...');
+        updateSystemStatus();
+    },
+    
+    // Debug test results
+    analyzeTests() {
+        TradingDebug.log('⚙️ Test Results Analysis:');
+        console.group('⚙️ System Test Overview');
+        console.log('Test Running:', testRunning);
+        console.log('Available Test Functions:', ['runBasicTests', 'runAdvancedTests', 'runLoadTests', 'runDatetimeTests', 'runHybridTest']);
+        console.groupEnd();
+    }
+};
+
+// Add system test debug to global scope
+window.systemTestDebug = SystemTestDebug;
+
 // Auto-refresh status every 30 seconds
 setInterval(() => {
     if (!testRunning) {

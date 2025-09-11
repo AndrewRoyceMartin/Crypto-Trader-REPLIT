@@ -713,6 +713,62 @@ window.refreshPageData = async function() {
 };
 
 // Initialize page
+// 🔧 MARKET ANALYSIS DEBUG FUNCTIONS
+const MarketAnalysisDebug = {
+    // Inspect market state
+    inspectState() {
+        TradingDebug.log('📈 Market Analysis State Inspection');
+        TradingDebug.inspectState('market data', window.marketData);
+        TradingDebug.inspectState('filtered data', window.filteredMarketData);
+        TradingDebug.inspectState('opportunities', window.topOpportunities);
+    },
+    
+    // Debug market loading
+    async debugMarket() {
+        TradingDebug.log('📈 Testing market loading...');
+        try {
+            await loadMarketData();
+            TradingDebug.log('📈 Market data loaded successfully');
+            this.inspectState();
+        } catch (error) {
+            TradingDebug.trackError(error, 'Market Loading');
+        }
+    },
+    
+    // Test market APIs
+    async testAPIs() {
+        TradingDebug.log('📈 Testing Market APIs...');
+        const endpoints = [
+            '/api/available-positions',
+            '/api/current-holdings',
+            '/api/hybrid-signal?symbol=BTC&price=114200'
+        ];
+        
+        for (const endpoint of endpoints) {
+            await TradingDebug.helpers.testAPI(endpoint);
+        }
+    },
+    
+    // Force scan all markets
+    forceScan() {
+        TradingDebug.log('📈 Forcing market scan...');
+        scanAllMarkets();
+    },
+    
+    // Debug filters
+    debugFilters() {
+        TradingDebug.log('📈 Filter Debug:');
+        const categoryFilter = document.getElementById('categoryFilter');
+        const sortBy = document.getElementById('sortBy');
+        
+        console.log('Category Filter:', categoryFilter?.value);
+        console.log('Sort By:', sortBy?.value);
+    }
+};
+
+// Add market debug to global scope
+window.marketAnalysisDebug = MarketAnalysisDebug;
+
 document.addEventListener('DOMContentLoaded', function() {
     loadMarketData();
     
