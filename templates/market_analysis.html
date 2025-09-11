@@ -461,23 +461,28 @@ async function loadMarketData() {
                 marketData = data.data;
                 filteredData = [...marketData];
                 
-                // Add delay to showcase loading animation
-                setTimeout(() => {
+                // Load authentic data with animations
+                setTimeout(async () => {
                     updateMarketOverviewWithAnimation();
-                    updateTopOpportunities();
+                    await updateTopOpportunities(); // Wait for ML signals
                     updateMarketTable();
+                    
+                    // Load ML signals for table rows (async background loading)
+                    setTimeout(() => {
+                        loadMLSignalsForTable();
+                    }, 1000);
                     
                     // Update status to loaded
                     if (statusElement) {
                         setTimeout(() => {
                             const now = new Date();
-                            statusElement.innerHTML = '<i class="fas fa-chart-bar me-2"></i>Market scan complete - Last updated: ' + now.toLocaleTimeString();
+                            statusElement.innerHTML = '<i class="fas fa-chart-bar me-2"></i>Authentic market scan complete - Last updated: ' + now.toLocaleTimeString();
                             statusElement.className = 'market-status status-loaded';
                         }, 600);
                     }
                     
-                    showToast('Market data loaded successfully!', 'success');
-                    console.log('✅ Market analysis loaded with animations');
+                    showToast('Authentic market data loaded successfully!', 'success');
+                    console.log('✅ Authentic market analysis loaded with animations');
                 }, 500);
             } else {
                 throw new Error('Invalid market data format');
@@ -496,61 +501,15 @@ async function loadMarketData() {
             statusElement.className = 'market-status status-error';
         }
         
-        loadSampleMarketData();
-        showToast('Using sample market data for demonstration', 'warning');
+        // AUTHENTIC DATA ONLY: No fallback to sample data
+        document.getElementById('topOpportunities').innerHTML = 
+            '<div class="text-center py-4"><div class="text-muted">AUTHENTIC DATA ONLY: Unable to load real OKX market data</div></div>';
+        showToast('AUTHENTIC DATA ONLY: Real OKX market data required', 'error');
     }
 }
 
-function loadSampleMarketData() {
-    // Generate sample data for 298+ trading pairs
-    const categories = ['large-cap', 'mid-cap', 'defi', 'gaming', 'meme', 'layer1', 'layer2'];
-    const signals = ['BUY', 'CONSIDER', 'WAIT', 'AVOID'];
-    
-    marketData = [];
-    
-    // Major pairs
-    const majorPairs = [
-        'BTC-USDT', 'ETH-USDT', 'SOL-USDT', 'ALGO-USDT', 'ATOM-USDT',
-        'LINK-USDT', 'ADA-USDT', 'DOT-USDT', 'AVAX-USDT', 'MATIC-USDT'
-    ];
-    
-    majorPairs.forEach((pair, index) => {
-        const signal = signals[index % signals.length];
-        marketData.push({
-            symbol: pair.split('-')[0],
-            pair: pair,
-            category: categories[index % categories.length],
-            price: (Math.random() * 1000 + 10).toFixed(4),
-            change_24h: (Math.random() * 20 - 10).toFixed(2),
-            volume_24h: (Math.random() * 100000000).toFixed(0),
-            signal: signal,
-            confidence: Math.random() * 40 + 50,
-            ml_probability: Math.random() * 0.6 + 0.2
-        });
-    });
-    
-    // Add more pairs to reach 298+
-    for (let i = majorPairs.length; i < 298; i++) {
-        const symbol = `COIN${i}`;
-        const signal = signals[Math.floor(Math.random() * signals.length)];
-        marketData.push({
-            symbol: symbol,
-            pair: `${symbol}-USDT`,
-            category: categories[Math.floor(Math.random() * categories.length)],
-            price: (Math.random() * 100 + 0.01).toFixed(4),
-            change_24h: (Math.random() * 30 - 15).toFixed(2),
-            volume_24h: (Math.random() * 10000000).toFixed(0),
-            signal: signal,
-            confidence: Math.random() * 50 + 40,
-            ml_probability: Math.random() * 0.8 + 0.1
-        });
-    }
-    
-    filteredData = [...marketData];
-    updateMarketOverview();
-    updateTopOpportunities();
-    updateMarketTable();
-}
+// ❌ REMOVED: Sample data generation eliminated for authentic data integrity
+// All market data must come from authentic OKX sources exclusively
 
 function updateMarketOverview() {
     const buySignals = filteredData.filter(d => d.signal === 'BUY').length;
@@ -640,18 +599,48 @@ function updateStatWithAnimation(elementId, value, className) {
 }
 }
 
-function updateTopOpportunities() {
-    // Get top opportunities (BUY and high confidence CONSIDER signals)
-    const opportunities = filteredData
-        .filter(d => d.signal === 'BUY' || (d.signal === 'CONSIDER' && d.confidence > 70))
-        .sort((a, b) => b.confidence - a.confidence)
-        .slice(0, 10);
+async function updateTopOpportunities() {
+    // AUTHENTIC DATA ONLY: Load real ML signals for top opportunities
+    if (!filteredData || filteredData.length === 0) {
+        document.getElementById('topOpportunities').innerHTML = 
+            '<div class="text-center py-4"><div class="text-muted">AUTHENTIC DATA ONLY: No real OKX market data available</div></div>';
+        return;
+    }
+    
+    // Get opportunities with authentic ML signals
+    const opportunities = [];
+    const topPairs = filteredData.slice(0, 20); // Process top 20 pairs for ML signals
+    
+    for (const pair of topPairs) {
+        try {
+            const signalResponse = await fetch(`/api/hybrid-signal?symbol=${pair.symbol}&price=${pair.current_price || pair.price}`);
+            if (signalResponse.ok) {
+                const signal = await signalResponse.json();
+                if (signal.final_signal === 'BUY' || (signal.final_signal === 'CONSIDER' && signal.hybrid_score > 70)) {
+                    opportunities.push({
+                        symbol: pair.symbol,
+                        pair: pair.pair || `${pair.symbol}-USDT`,
+                        category: pair.category || 'crypto',
+                        price: pair.current_price || pair.price,
+                        change_24h: pair.change_24h || '0.00',
+                        signal: signal.final_signal,
+                        confidence: signal.hybrid_score || 0,
+                        ml_probability: signal.ml_prediction ? signal.ml_prediction.confidence : 0
+                    });
+                }
+            }
+        } catch (error) {
+            console.error(`Failed to get ML signal for ${pair.symbol}:`, error);
+        }
+        
+        if (opportunities.length >= 10) break; // Limit to top 10 opportunities
+    }
     
     document.getElementById('opportunitiesCount').textContent = opportunities.length;
     
     if (opportunities.length === 0) {
         document.getElementById('topOpportunities').innerHTML = 
-            '<div style="color: #9ca3af;" class="text-center py-4">No high-confidence opportunities found</div>';
+            '<div style="color: #9ca3af;" class="text-center py-4">AUTHENTIC DATA ONLY: No high-confidence ML opportunities found</div>';
         return;
     }
     
@@ -698,62 +687,70 @@ function updateTopOpportunities() {
 
 function updateMarketTable() {
     const tbody = document.getElementById('allPairsTable');
-    document.getElementById('pairsCount').textContent = filteredData.length;
     
-    if (filteredData.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="9" class="text-center py-4">No pairs match the current filters</td></tr>';
+    if (!filteredData || filteredData.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="9" class="text-center py-4">AUTHENTIC DATA ONLY: No real OKX market data available</td></tr>';
+        document.getElementById('pairsCount').textContent = '0';
         return;
     }
     
-    // Show first 50 pairs for performance
-    const displayData = filteredData.slice(0, 50);
+    document.getElementById('pairsCount').textContent = filteredData.length;
+    
+    // Show first 50 pairs for performance with authentic data validation
+    const displayData = filteredData.slice(0, 50).filter(pair => {
+        // Ensure we have valid OKX data
+        return pair && (pair.current_price || pair.price) && pair.symbol;
+    });
     
     tbody.innerHTML = displayData.map(pair => {
-        const change = parseFloat(pair.change_24h);
-        const confidence = pair.confidence || 0;
+        // Use authentic OKX data only
+        const price = pair.current_price || pair.price || '0.0000';
+        const change = parseFloat(pair.change_24h || '0.00');
+        const volume = pair.volume_24h || '0';
+        const symbol = pair.symbol || 'UNKNOWN';
+        const category = pair.category || 'crypto';
         
-        let signalClass = 'bg-secondary';
-        if (pair.signal === 'BUY') signalClass = 'bg-success';
-        else if (pair.signal === 'CONSIDER') signalClass = 'bg-warning';
-        else if (pair.signal === 'AVOID') signalClass = 'bg-danger';
+        // Signal and confidence will be loaded via ML system - show pending state
+        const signalClass = 'bg-secondary';
+        const signalText = 'PENDING';
+        const confidence = 0;
         
         let categoryClass = 'bg-secondary';
-        if (pair.category === 'large-cap') categoryClass = 'bg-primary';
-        else if (pair.category === 'defi') categoryClass = 'bg-info';
-        else if (pair.category === 'gaming') categoryClass = 'bg-warning';
-        else if (pair.category === 'meme') categoryClass = 'bg-danger';
+        if (category === 'large-cap') categoryClass = 'bg-primary';
+        else if (category === 'defi') categoryClass = 'bg-info';
+        else if (category === 'gaming') categoryClass = 'bg-warning';
+        else if (category === 'meme') categoryClass = 'bg-danger';
         
         return `
-            <tr class="pair-row" onclick="analyzeOpportunity('${pair.symbol}')">
+            <tr class="pair-row" onclick="analyzeOpportunity('${symbol}')">
                 <td>
                     <div class="d-flex align-items-center">
                         <i class="fas fa-coins me-2 text-warning"></i>
-                        <strong>${pair.symbol}</strong>
+                        <strong>${symbol}</strong>
                     </div>
                 </td>
                 <td>
-                    <span class="category-badge ${categoryClass}">${pair.category}</span>
+                    <span class="category-badge ${categoryClass}">${category}</span>
                 </td>
-                <td class="text-end">$${pair.price}</td>
+                <td class="text-end">$${parseFloat(price).toFixed(4)}</td>
                 <td class="text-end ${change >= 0 ? 'text-success' : 'text-danger'}">
-                    ${change >= 0 ? '+' : ''}${change}%
+                    ${change >= 0 ? '+' : ''}${change.toFixed(2)}%
                 </td>
-                <td class="text-end">$${parseInt(pair.volume_24h).toLocaleString()}</td>
+                <td class="text-end">$${parseInt(volume).toLocaleString()}</td>
                 <td class="text-center">
-                    <span class="badge ${signalClass}">${pair.signal}</span>
+                    <span class="badge ${signalClass}" id="signal-${symbol}">${signalText}</span>
                 </td>
                 <td class="text-center">
                     <div class="signal-strength mx-2">
-                        <div class="signal-fill ${confidence > 75 ? 'bg-success' : confidence > 60 ? 'bg-warning' : 'bg-secondary'}" 
-                             style="width: ${confidence}%"></div>
+                        <div class="signal-fill bg-secondary" style="width: 0%" id="confidence-${symbol}"></div>
                     </div>
-                    <small>${confidence.toFixed(0)}%</small>
+                    <small id="confidence-text-${symbol}">ML Loading...</small>
                 </td>
                 <td class="text-center">
-                    <small>${(pair.ml_probability * 100).toFixed(0)}%</small>
+                    <small id="ml-prob-${symbol}">ML Loading...</small>
                 </td>
                 <td class="text-center">
-                    <button class="btn btn-sm btn-outline-info" onclick="event.stopPropagation(); analyzeOpportunity('${pair.symbol}')">
+                    <button class="btn btn-sm btn-outline-info" onclick="event.stopPropagation(); analyzeOpportunity('${symbol}')">
                         <i class="fas fa-eye"></i>
                     </button>
                 </td>
@@ -765,10 +762,65 @@ function updateMarketTable() {
         tbody.innerHTML += `
             <tr>
                 <td colspan="9" class="text-center py-3" style="color: #9ca3af;">
-                    Showing first 50 of ${filteredData.length} pairs. Use filters to narrow results.
+                    Showing first 50 authentic OKX pairs of ${filteredData.length} total. Use filters to narrow results.
                 </td>
             </tr>
         `;
+    }
+}
+
+async function loadMLSignalsForTable() {
+    // Load ML signals for visible table rows (background loading)
+    const displayData = filteredData.slice(0, 20); // Load ML for first 20 rows
+    
+    for (const pair of displayData) {
+        try {
+            const signalResponse = await fetch(`/api/hybrid-signal?symbol=${pair.symbol}&price=${pair.current_price || pair.price}`);
+            if (signalResponse.ok) {
+                const signal = await signalResponse.json();
+                updateTableRowSignal(pair.symbol, signal);
+            }
+        } catch (error) {
+            console.error(`Failed to load ML signal for ${pair.symbol}:`, error);
+            // Update row to show ML unavailable
+            const signalEl = document.getElementById(`signal-${pair.symbol}`);
+            const confidenceTextEl = document.getElementById(`confidence-text-${pair.symbol}`);
+            const mlProbEl = document.getElementById(`ml-prob-${pair.symbol}`);
+            
+            if (signalEl) signalEl.textContent = 'WAIT';
+            if (confidenceTextEl) confidenceTextEl.textContent = 'ML N/A';
+            if (mlProbEl) mlProbEl.textContent = 'N/A';
+        }
+    }
+}
+
+function updateTableRowSignal(symbol, signal) {
+    const signalEl = document.getElementById(`signal-${symbol}`);
+    const confidenceEl = document.getElementById(`confidence-${symbol}`);
+    const confidenceTextEl = document.getElementById(`confidence-text-${symbol}`);
+    const mlProbEl = document.getElementById(`ml-prob-${symbol}`);
+    
+    if (signalEl && signal.final_signal) {
+        signalEl.textContent = signal.final_signal;
+        let signalClass = 'bg-secondary';
+        if (signal.final_signal === 'BUY') signalClass = 'bg-success';
+        else if (signal.final_signal === 'CONSIDER') signalClass = 'bg-warning';
+        else if (signal.final_signal === 'AVOID') signalClass = 'bg-danger';
+        signalEl.className = `badge ${signalClass}`;
+    }
+    
+    const confidence = signal.hybrid_score || 0;
+    if (confidenceEl) {
+        confidenceEl.style.width = `${confidence}%`;
+        confidenceEl.className = `signal-fill ${confidence > 75 ? 'bg-success' : confidence > 60 ? 'bg-warning' : 'bg-secondary'}`;
+    }
+    
+    if (confidenceTextEl) {
+        confidenceTextEl.textContent = `${confidence.toFixed(0)}%`;
+    }
+    
+    if (mlProbEl && signal.ml_prediction) {
+        mlProbEl.textContent = `${(signal.ml_prediction.confidence * 100).toFixed(0)}%`;
     }
 }
 
@@ -848,11 +900,16 @@ async function scanAllMarkets() {
         </div>
     `;
     
-    // Simulate scan delay
-    setTimeout(() => {
-        loadMarketData();
-        showToast('Market scan completed! Found new opportunities.', 'success');
-    }, 3000);
+    // Authentic market scan with real OKX data
+    try {
+        await loadMarketData();
+        showToast('Authentic market scan completed with real OKX data!', 'success');
+    } catch (error) {
+        console.error('Authentic market scan failed:', error);
+        showToast('AUTHENTIC DATA ONLY: Market scan requires real OKX data', 'error');
+        document.getElementById('topOpportunities').innerHTML = 
+            '<div class="text-center py-4"><div class="text-muted">AUTHENTIC DATA ONLY: Real OKX market scan failed</div></div>';
+    }
 }
 
 async function refreshMarketData() {
