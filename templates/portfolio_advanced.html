@@ -155,21 +155,21 @@
             <div class="d-flex justify-content-between align-items-center mb-2 p-2 bg-dark rounded">
                 <div>
                     <strong>BTC Buy Signal</strong>
-                    <br><small class="text-muted">2 hours ago</small>
+                    <br><small class="text-muted-xs">2 hours ago</small>
                 </div>
                 <div class="text-success">+3.2%</div>
             </div>
             <div class="d-flex justify-content-between align-items-center mb-2 p-2 bg-dark rounded">
                 <div>
                     <strong>ETH Analysis Update</strong>
-                    <br><small class="text-muted">4 hours ago</small>
+                    <br><small class="text-muted-xs">4 hours ago</small>
                 </div>
                 <div class="text-warning">Monitoring</div>
             </div>
             <div class="d-flex justify-content-between align-items-center mb-2 p-2 bg-dark rounded">
                 <div>
                     <strong>Portfolio Rebalance</strong>
-                    <br><small class="text-muted">1 day ago</small>
+                    <br><small class="text-muted-xs">1 day ago</small>
                 </div>
                 <div class="text-info">Completed</div>
             </div>
@@ -186,7 +186,7 @@
                 Portfolio Positions
                 <span class="badge bg-primary ms-2" id="positionsCount">0</span>
             </h5>
-            <small class="text-muted">Complete overview of all holdings with performance and signals</small>
+            <small class="text-muted-xs">Complete overview of all holdings with performance and signals</small>
         </div>
         <div>
             <div class="btn-group">
@@ -520,7 +520,7 @@ function displayTopPerformers(data) {
         <div class="d-flex justify-content-between align-items-center mb-2 p-2 bg-dark rounded">
             <div>
                 <strong>${p.symbol}</strong>
-                <br><small class="text-muted">Performance leader</small>
+                <br><small class="text-muted-xs">Performance leader</small>
             </div>
             <div class="text-success h5 mb-0">
                 +${p.pnl}%
@@ -543,7 +543,7 @@ function displayBuyOpportunities(data) {
         <div class="d-flex justify-content-between align-items-center mb-2 p-2 bg-dark rounded">
             <div>
                 <strong>${o.symbol}</strong>
-                <br><small class="text-muted">${o.confidence}% confidence</small>
+                <br><small class="text-muted-xs">${o.confidence}% confidence</small>
             </div>
             <div>
                 <span class="badge ${o.signal === 'BUY' ? 'bg-success' : 'bg-warning'}">${o.signal}</span>

@@ -390,7 +390,7 @@ div.table-responsive table.table-v02--compact thead th {
                         <i class="fas fa-circle"></i> SYSTEM LIVE
                     </div>
                     <div class="mt-2">
-                        <small id="lastUpdate" class="text-muted">Last updated: --</small>
+                        <small id="lastUpdate" class="text-muted-xs">Last updated: --</small>
                     </div>
                 </div>
             </div>
@@ -797,7 +797,7 @@ class TradingDashboard {
             bestEl.innerHTML = `
                 <div class="h4 text-success mb-1">${performers.best.symbol || 'N/A'}</div>
                 <div class="text-success h5 mb-1">+${bestPnlPercent.toFixed(2)}%</div>
-                <small class="text-muted">$${bestPnlUsd.toFixed(2)} profit</small>
+                <small class="text-muted-xs">$${bestPnlUsd.toFixed(2)} profit</small>
             `;
         } else {
             bestEl.innerHTML = '<p class="text-muted mb-0">No profit positions</p>';
@@ -809,7 +809,7 @@ class TradingDashboard {
             worstEl.innerHTML = `
                 <div class="h4 text-danger mb-1">${performers.worst.symbol || 'N/A'}</div>
                 <div class="text-danger h5 mb-1">${worstPnlPercent.toFixed(2)}%</div>
-                <small class="text-muted">$${worstPnlUsd.toFixed(2)} loss</small>
+                <small class="text-muted-xs">$${worstPnlUsd.toFixed(2)} loss</small>
             `;
         } else {
             worstEl.innerHTML = '<p class="text-muted mb-0">No loss positions</p>';

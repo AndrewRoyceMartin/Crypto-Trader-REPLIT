@@ -415,7 +415,7 @@ function updateBestWorstTrades(results) {
         <div class="d-flex justify-content-between align-items-center mb-2 p-2 bg-dark rounded">
             <div>
                 <strong>${trade.symbol}</strong> - ${trade.signal}
-                <br><small class="text-muted">${new Date(trade.timestamp).toLocaleDateString()}</small>
+                <br><small class="text-muted-xs">${new Date(trade.timestamp).toLocaleDateString()}</small>
             </div>
             <div class="text-success h5 mb-0">
                 ${parseFloat(trade['pnl_%']).toFixed(2)}%
@@ -431,7 +431,7 @@ function updateBestWorstTrades(results) {
         <div class="d-flex justify-content-between align-items-center mb-2 p-2 bg-dark rounded">
             <div>
                 <strong>${trade.symbol}</strong> - ${trade.signal}
-                <br><small class="text-muted">${new Date(trade.timestamp).toLocaleDateString()}</small>
+                <br><small class="text-muted-xs">${new Date(trade.timestamp).toLocaleDateString()}</small>
             </div>
             <div class="text-warning h5 mb-0">
                 ${parseFloat(trade['pnl_%']).toFixed(2)}%
