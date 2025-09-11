@@ -58,6 +58,66 @@
     border-radius: 10px;
     overflow: hidden;
 }
+
+/* Enhanced Loading Animations */
+.loading-skeleton {
+    background: linear-gradient(90deg, 
+        rgba(156, 163, 175, 0.1) 25%, 
+        rgba(156, 163, 175, 0.2) 50%, 
+        rgba(156, 163, 175, 0.1) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+    border-radius: 4px;
+    height: 1.2em;
+}
+
+.loading-skeleton-metric {
+    background: linear-gradient(90deg, 
+        rgba(255, 255, 255, 0.1) 25%, 
+        rgba(255, 255, 255, 0.3) 50%, 
+        rgba(255, 255, 255, 0.1) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+    border-radius: 8px;
+    height: 2.5rem;
+    width: 85%;
+    margin: 10px auto;
+}
+
+@keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+}
+
+.metric-loading {
+    opacity: 0.7;
+    transform: scale(0.98);
+    transition: all 0.3s ease;
+}
+
+.metric-loaded {
+    opacity: 1;
+    transform: scale(1);
+    animation: metricPulse 0.6s ease-out;
+}
+
+@keyframes metricPulse {
+    0% { transform: scale(0.95); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+.status-indicator {
+    font-size: 0.8rem;
+    color: #9ca3af;
+    margin-top: 10px;
+    text-align: center;
+    transition: color 0.3s ease;
+}
+
+.status-loading { color: #f59e0b; }
+.status-loaded { color: #22c55e; }
+.status-error { color: #ef4444; }
 </style>
 {% endblock %}
 
@@ -67,29 +127,38 @@
     <div class="row">
         <div class="col-md-3">
             <div class="performance-metric">
-                <div class="metric-value text-white" id="avgPnL">3.8%</div>
+                <div class="metric-value text-white" id="avgPnL">
+                    <div class="loading-skeleton loading-skeleton-metric"></div>
+                </div>
                 <div class="metric-label">Average P&L</div>
             </div>
         </div>
         <div class="col-md-3">
             <div class="performance-metric">
-                <div class="metric-value text-white" id="winRate">100%</div>
+                <div class="metric-value text-white" id="winRate">
+                    <div class="loading-skeleton loading-skeleton-metric"></div>
+                </div>
                 <div class="metric-label">Win Rate</div>
             </div>
         </div>
         <div class="col-md-3">
             <div class="performance-metric">
-                <div class="metric-value text-white" id="matchRate">75%</div>
+                <div class="metric-value text-white" id="matchRate">
+                    <div class="loading-skeleton loading-skeleton-metric"></div>
+                </div>
                 <div class="metric-label">Match Rate</div>
             </div>
         </div>
         <div class="col-md-3">
             <div class="performance-metric">
-                <div class="metric-value text-white" id="totalTrades">15</div>
+                <div class="metric-value text-white" id="totalTrades">
+                    <div class="loading-skeleton loading-skeleton-metric"></div>
+                </div>
                 <div class="metric-label">Total Trades</div>
             </div>
         </div>
     </div>
+    <div class="status-indicator status-loading" id="backtest-status">Loading backtest data...</div>
 </div>
 
 <!-- Control Panel -->
@@ -250,6 +319,26 @@ let pnlChart = null;
 
 async function loadBacktestResults() {
     try {
+        console.log('🔄 Loading backtest data with enhanced animations...');
+        
+        // Set all metrics to loading state
+        const metricElements = ['avgPnL', 'winRate', 'matchRate', 'totalTrades'];
+        metricElements.forEach(id => {
+            const element = document.getElementById(id);
+            const parent = element?.closest('.performance-metric');
+            if (parent) {
+                parent.classList.add('metric-loading');
+                parent.classList.remove('metric-loaded');
+            }
+        });
+        
+        // Update status indicator
+        const statusElement = document.getElementById('backtest-status');
+        if (statusElement) {
+            statusElement.textContent = 'Loading backtest data...';
+            statusElement.className = 'status-indicator status-loading';
+        }
+        
         showToast('Loading backtest results...', 'info');
         
         // Load backtest results from CSV file
@@ -257,15 +346,37 @@ async function loadBacktestResults() {
         if (response.ok) {
             const csvText = await response.text();
             backtestResults = parseCSV(csvText);
-            displayBacktestResults(backtestResults);
-            showToast('Backtest results loaded successfully!', 'success');
+            
+            // Add delay to show loading animation
+            setTimeout(() => {
+                displayBacktestResults(backtestResults);
+                
+                // Update status to loaded
+                if (statusElement) {
+                    const now = new Date();
+                    statusElement.textContent = `Last updated: ${now.toLocaleTimeString()}`;
+                    statusElement.className = 'status-indicator status-loaded';
+                }
+                
+                showToast('Backtest results loaded successfully!', 'success');
+                console.log('✅ Backtest data loaded with animations:', backtestResults.length, 'records');
+            }, 400);
+            
         } else {
             // Fallback to sample data
             loadSampleBacktestData();
         }
         
     } catch (error) {
-        console.error('Backtest results loading failed:', error);
+        console.error('❌ Backtest results loading failed:', error);
+        
+        // Update status to error
+        const statusElement = document.getElementById('backtest-status');
+        if (statusElement) {
+            statusElement.textContent = 'Error loading data';
+            statusElement.className = 'status-indicator status-error';
+        }
+        
         loadSampleBacktestData();
     }
 }
