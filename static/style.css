@@ -657,6 +657,111 @@ h4, h5, h6, .h4, .h5, .h6 { font-weight: var(--fw-medium); }
   }
 }
 
+/* Pulse animation for loading states */
+@keyframes pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.7; }
+  100% { opacity: 1; }
+}
+
+/* Shimmer animation for skeleton loaders */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* Card appear animation */
+@keyframes cardAppear {
+  0% { 
+    opacity: 0;
+    transform: scale(0.95) translateY(10px);
+  }
+  100% { 
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* Loading skeleton styles */
+.loading-skeleton {
+  background: linear-gradient(90deg, 
+    rgba(156, 163, 175, 0.1) 25%, 
+    rgba(156, 163, 175, 0.2) 50%, 
+    rgba(156, 163, 175, 0.1) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 6px;
+  height: 1.4em;
+}
+
+.loading-skeleton-metric {
+  background: linear-gradient(90deg, 
+    rgba(255, 255, 255, 0.1) 25%, 
+    rgba(255, 255, 255, 0.3) 50%, 
+    rgba(255, 255, 255, 0.1) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 8px;
+  height: 2rem;
+  width: 80%;
+  margin: 0 auto;
+}
+
+.loading-skeleton-small {
+  background: linear-gradient(90deg, 
+    rgba(156, 163, 175, 0.1) 25%, 
+    rgba(156, 163, 175, 0.2) 50%, 
+    rgba(156, 163, 175, 0.1) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 4px;
+  height: 1rem;
+  width: 60%;
+  margin: 5px auto;
+}
+
+/* Loading states for metric cards */
+.metric-card-loading {
+  opacity: 0.7;
+  transform: scale(0.98);
+  transition: all 0.4s ease;
+}
+
+.metric-card-loaded {
+  opacity: 1;
+  transform: scale(1);
+  animation: cardAppear 0.6s ease-out;
+}
+
+/* Status loading states */
+.status-loading { 
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(245, 158, 11, 0.1));
+  color: #f59e0b;
+  border-color: rgba(245, 158, 11, 0.3);
+}
+
+.status-loaded { 
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(34, 197, 94, 0.1));
+  color: #22c55e;
+  border-color: rgba(34, 197, 94, 0.3);
+}
+
+.status-error { 
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(239, 68, 68, 0.1));
+  color: #ef4444;
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+/* Table loading states */
+.table-loading {
+  text-align: center;
+  padding: 30px 20px;
+}
+
+.table-skeleton-rows {
+  animation: pulse 2s infinite;
+}
+
 
 /* ===== 2) Standalone Table V02 (no Bootstrap table dependency) ===== */
 
