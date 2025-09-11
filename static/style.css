@@ -210,7 +210,7 @@ h4, h5, h6, .h4, .h5, .h6 { font-weight: var(--fw-medium); }
   .table-v02 td::before { 
     content: attr(data-label); 
     font-weight: 600; 
-    color: #6c757d; 
+    color: #9ca3af; 
   }
 }
 
@@ -411,7 +411,7 @@ h4, h5, h6, .h4, .h5, .h6 { font-weight: var(--fw-medium); }
     min-height: 120px;
     transition: all 0.3s ease;
 }
-.kpi-card .label { font-size: 12px; color: #6c757d; }
+.kpi-card .label { font-size: 12px; color: #9ca3af; }
 .kpi-card .value { font-size: 20px; font-weight: 600; margin-top: 2px; }
 .kpi-card .change-indicator { font-size: 12px; margin-top: 4px; }
 
@@ -429,13 +429,13 @@ h4, h5, h6, .h4, .h5, .h6 { font-weight: var(--fw-medium); }
     align-items: center;
     justify-content: center;
     font-size: 12px;
-    color: #6c757d;
+    color: #9ca3af;
     cursor: pointer;
     transition: all 0.2s ease;
 }
 .view-toggle-btn:hover {
-    background: rgba(0,0,0,0.2);
-    color: #000;
+    background: rgba(255,255,255,0.2);
+    color: #e5e7eb;
 }
 
 /* Different Card View Styles */
@@ -483,11 +483,11 @@ h4, h5, h6, .h4, .h5, .h6 { font-weight: var(--fw-medium); }
 .card--hover { border: 1px solid #e9ecef; border-radius: 8px; }
 .card--hover:hover { box-shadow: 0 6px 18px rgba(0,0,0,0.06); transition: box-shadow .2s ease; }
 .card-header { background: #fff; border-bottom: 1px solid #e9ecef; display:flex; justify-content: space-between; align-items:center; }
-.card-header .meta { color:#6c757d; font-size: 12px; }
+.card-header .meta { color:#9ca3af; font-size: 12px; }
 
 .table-sm th, .table-sm td { white-space: nowrap; }
 .table-sortable { cursor: pointer; user-select: none; }
-.muted { color: #6c757d; }
+.muted { color: #9ca3af; }
 
 /* Navbar z-index fix for Chrome scrolling overlap */
 .navbar.sticky-top {
