@@ -30,7 +30,7 @@
     }
     
     .stat-label {
-        color: var(--text-muted);
+        color: #9ca3af;
         font-size: 0.9rem;
         text-transform: uppercase;
         letter-spacing: 0.5px;
@@ -165,13 +165,13 @@
         display: none;
         text-align: center;
         padding: 2rem;
-        color: var(--text-muted);
+        color: #9ca3af;
     }
     
     .empty-state {
         text-align: center;
         padding: 3rem;
-        color: var(--text-muted);
+        color: #9ca3af;
     }
     
     .empty-state i {
@@ -447,7 +447,7 @@ function renderTradesTable() {
             <div class="confidence-bar">
                 <div class="confidence-fill ${confidenceClass}" style="width: ${confidence}%"></div>
             </div>
-            <small class="text-muted">${confidence.toFixed(1)}%</small>
+            <small style="color: #9ca3af;">${confidence.toFixed(1)}%</small>
         `;
         
         // Technical indicators

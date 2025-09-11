@@ -245,28 +245,28 @@
             <thead>
                 <tr>
                     <th class="sortable" onclick="sortTable(0, 'string')" style="cursor: pointer;">
-                        Coin <i class="fas fa-sort text-muted" id="sort-icon-0"></i>
+                        Coin <i class="fas fa-sort" style="color: #9ca3af;" id="sort-icon-0"></i>
                     </th>
                     <th class="sortable" onclick="sortTable(1, 'string')" style="cursor: pointer;">
-                        Category <i class="fas fa-sort text-muted" id="sort-icon-1"></i>
+                        Category <i class="fas fa-sort" style="color: #9ca3af;" id="sort-icon-1"></i>
                     </th>
                     <th class="text-end sortable" onclick="sortTable(2, 'number')" style="cursor: pointer;">
-                        Price <i class="fas fa-sort text-muted" id="sort-icon-2"></i>
+                        Price <i class="fas fa-sort" style="color: #9ca3af;" id="sort-icon-2"></i>
                     </th>
                     <th class="text-end sortable" onclick="sortTable(3, 'number')" style="cursor: pointer;">
-                        24h Change <i class="fas fa-sort text-muted" id="sort-icon-3"></i>
+                        24h Change <i class="fas fa-sort" style="color: #9ca3af;" id="sort-icon-3"></i>
                     </th>
                     <th class="text-end sortable" onclick="sortTable(4, 'number')" style="cursor: pointer;">
-                        24h Volume <i class="fas fa-sort text-muted" id="sort-icon-4"></i>
+                        24h Volume <i class="fas fa-sort" style="color: #9ca3af;" id="sort-icon-4"></i>
                     </th>
                     <th class="text-center sortable" onclick="sortTable(5, 'string')" style="cursor: pointer;">
-                        Hybrid Signal <i class="fas fa-sort text-muted" id="sort-icon-5"></i>
+                        Hybrid Signal <i class="fas fa-sort" style="color: #9ca3af;" id="sort-icon-5"></i>
                     </th>
                     <th class="text-center sortable" onclick="sortTable(6, 'number')" style="cursor: pointer;">
-                        Signal Strength <i class="fas fa-sort text-muted" id="sort-icon-6"></i>
+                        Signal Strength <i class="fas fa-sort" style="color: #9ca3af;" id="sort-icon-6"></i>
                     </th>
                     <th class="text-center sortable" onclick="sortTable(7, 'number')" style="cursor: pointer;">
-                        ML Confidence <i class="fas fa-sort text-muted" id="sort-icon-7"></i>
+                        ML Confidence <i class="fas fa-sort" style="color: #9ca3af;" id="sort-icon-7"></i>
                     </th>
                     <th class="text-center">Actions</th>
                 </tr>
@@ -408,7 +408,7 @@ function updateTopOpportunities() {
     
     if (opportunities.length === 0) {
         document.getElementById('topOpportunities').innerHTML = 
-            '<div class="text-muted text-center py-4">No high-confidence opportunities found</div>';
+            '<div style="color: #9ca3af;" class="text-center py-4">No high-confidence opportunities found</div>';
         return;
     }
     
@@ -437,7 +437,7 @@ function updateTopOpportunities() {
                         <div class="signal-fill ${opp.confidence > 75 ? 'bg-success' : 'bg-warning'}" 
                              style="width: ${opp.confidence}%"></div>
                     </div>
-                    <small class="text-muted">${opp.confidence.toFixed(1)}% confidence</small>
+                    <small style="color: #9ca3af;">${opp.confidence.toFixed(1)}% confidence</small>
                 </div>
                 <div class="col-md-2">
                     <div class="text-end">
@@ -521,7 +521,7 @@ function updateMarketTable() {
     if (filteredData.length > 50) {
         tbody.innerHTML += `
             <tr>
-                <td colspan="9" class="text-center py-3 text-muted">
+                <td colspan="9" class="text-center py-3" style="color: #9ca3af;">
                     Showing first 50 of ${filteredData.length} pairs. Use filters to narrow results.
                 </td>
             </tr>
@@ -691,7 +691,8 @@ function updateSortIcons(activeColumn, direction) {
     for (let i = 0; i < 8; i++) {
         const icon = document.getElementById(`sort-icon-${i}`);
         if (icon) {
-            icon.className = 'fas fa-sort text-muted';
+            icon.className = 'fas fa-sort';
+            icon.style.color = '#9ca3af';
         }
     }
     
