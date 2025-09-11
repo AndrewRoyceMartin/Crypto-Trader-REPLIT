@@ -1025,6 +1025,22 @@ def serve_signals_csv():
         logger.error(f"Error serving signals CSV: {e}")
         return jsonify({"error": "Unable to serve signals log"}), 500
 
+
+@app.route('/ml/backtest_results.csv')
+def serve_backtest_results():
+    """Serve the ML backtest results CSV file for analysis."""
+    try:
+        if os.path.exists('ml/backtest_results.csv'):
+            response = make_response(send_from_directory('ml', 'backtest_results.csv', as_attachment=False))
+            response.headers['Content-Type'] = 'text/csv'
+            response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+            return response
+        else:
+            return jsonify({"error": "Backtest results file not found"}), 404
+    except Exception as e:
+        logger.error(f"Error serving backtest results CSV: {e}")
+        return jsonify({"error": "Unable to serve backtest results"}), 500
+
 # Register the real OKX endpoint directly without circular import
 
 
