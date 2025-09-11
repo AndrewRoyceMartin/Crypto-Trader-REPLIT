@@ -1,0 +1,241 @@
+Here’s a safe, repo-wide Bootstrap table class scrubber you can run in Replit.
+It removes old Bootstrap table classes only when the element is a v02 table (.table-v02 / .table-v02--compact) so the rest of your Bootstrap UI stays intact. It also cleans common JS patterns that add those classes to v02 tables.
+
+Plan
+
+Scan templates/, static/, and src/ for HTML/Jinja/JS files.
+
+HTML/Jinja: parse with BeautifulSoup; if an element has table-v02 or table-v02--compact, remove any of:
+table, table-striped, table-hover, table-sm, data-table, legacy-table.
+
+JS/TS: remove .classList.add(...) / .classList.remove(...) for the above classes only when they’re applied to elements containing 'table-v02' in nearby code (3-line window heuristic). Optional --aggressive to remove all occurrences regardless of context.
+
+Defaults to dry-run; use --write to modify files. Creates .bak backups.
+
+scripts/strip_bootstrap_table_classes.py
+#!/usr/bin/env python3
+"""
+Strip legacy Bootstrap table classes from v02 tables across the repo.
+
+By default:
+- HTML/Jinja: removes conflicting classes ONLY if element has 'table-v02' or 'table-v02--compact'
+- JS/TS: removes classList.add/remove('table*') ONLY if the same block references 'table-v02' nearby (±3 lines)
+
+Usage:
+  python3 scripts/strip_bootstrap_table_classes.py              # dry-run
+  python3 scripts/strip_bootstrap_table_classes.py --write      # apply changes (creates .bak)
+  python3 scripts/strip_bootstrap_table_classes.py --write --aggressive  # also scrub JS aggressively
+
+Requires:
+  pip install beautifulsoup4
+"""
+
+from __future__ import annotations
+import argparse
+import re
+from pathlib import Path
+from typing import Iterable
+
+try:
+    from bs4 import BeautifulSoup  # type: ignore
+except Exception as e:
+    print("Missing dependency: beautifulsoup4\nInstall with: pip install beautifulsoup4")
+    raise
+
+ROOT = Path(".").resolve()
+
+HTML_EXTS = {".html", ".htm", ".jinja", ".j2", ".tmpl"}
+JS_EXTS = {".js", ".mjs", ".ts", ".tsx"}
+SEARCH_DIRS = ["templates", "static", "src"]
+
+# Classes to strip when element is table-v02
+BOOTSTRAP_TABLE_CLASSES = {
+    "table",
+    "table-striped",
+    "table-hover",
+    "table-sm",
+    "data-table",
+    "legacy-table",
+}
+
+V02_MARKERS = {"table-v02", "table-v02--compact"}
+
+
+def iter_files() -> Iterable[Path]:
+    for d in SEARCH_DIRS:
+        base = ROOT / d
+        if not base.exists():
+            continue
+        for p in base.rglob("*"):
+            if p.is_file() and (p.suffix.lower() in HTML_EXTS or p.suffix.lower() in JS_EXTS):
+                yield p
+
+
+def process_html(path: Path, write: bool) -> bool:
+    """Remove bootstrap table classes only from v02 tables."""
+    text = path.read_text(encoding="utf-8", errors="ignore")
+    soup = BeautifulSoup(text, "html.parser")
+    changed = False
+
+    # Look at all elements that carry class attribute
+    for el in soup.find_all(class_=True):
+        classes = set(el.get("class", []))
+        if not classes:
+            continue
+
+        if V02_MARKERS.isdisjoint(classes):
+            # Not a v02 table; skip
+            continue
+
+        # Only strip table-ish classes
+        before = set(classes)
+        classes = {c for c in classes if c not in BOOTSTRAP_TABLE_CLASSES}
+        if before != classes:
+            el["class"] = sorted(classes) if classes else None
+            changed = True
+
+    if changed and write:
+        # Backup
+        path.with_suffix(path.suffix + ".bak").write_text(text, encoding="utf-8")
+        # Write updated HTML
+        path.write_text(str(soup), encoding="utf-8")
+
+    return changed
+
+
+# Regexes for JS/TS
+# 1) const table = document.querySelector('.table-v02'...); table.classList.add('table', 'table-hover')
+CLS_ADD_RE = re.compile(
+    r"""(?P<var>\b[A-Za-z_]\w*\b)\.classList\.(?:add|remove)\s*\(\s*(?P<args>[^)]*?)\)\s*;""",
+    re.MULTILINE,
+)
+# Nearby v02 marker in same small block
+V02_NEAR_RE = re.compile(r"table-v02", re.IGNORECASE)
+
+def _strip_targets_from_args(args: str) -> str:
+    # Remove string args that match targets; preserve commas/spacing
+    # Handles single/double/backtick quotes
+    def repl(m: re.Match) -> str:
+        s = m.group(0)
+        token = m.group("tok").strip()
+        token_clean = token[1:-1] if len(token) >= 2 and token[0] in "'\"`" and token[-1]==token[0] else token
+        if token_clean in BOOTSTRAP_TABLE_CLASSES:
+            return ""  # drop
+        return s
+
+    # Match individual tokens (quoted or bare identifiers)
+    token_re = re.compile(r"""(?P<tok>\s*['"`][^'"`]+['"`]\s*|\s*[A-Za-z_]\w*\s*)\s*(,)?""")
+    # Rebuild by filtering
+    parts = []
+    last_end = 0
+    for m in token_re.finditer(args):
+        parts.append(repl(m))
+        last_end = m.end()
+    parts.append(args[last_end:])
+    new_args = "".join(parts)
+
+    # Clean up stray commas
+    new_args = re.sub(r",\s*,", ",", new_args)
+    new_args = re.sub(r"^\s*,\s*", "", new_args)
+    new_args = re.sub(r",\s*$", "", new_args)
+    return new_args
+
+
+def process_js_blockwise(content: str, aggressive: bool) -> tuple[str, bool]:
+    """
+    Remove classList.add/remove('table',...) if:
+      - aggressive=True → always
+      - else only if 'table-v02' appears within ±3 lines of the statement.
+    """
+    lines = content.splitlines(keepends=True)
+    changed = False
+
+    # Build index of lines containing classList add/remove
+    idxs = []
+    for i, line in enumerate(lines):
+        if ".classList.add(" in line or ".classList.remove(" in line:
+            idxs.append(i)
+
+    for i in idxs:
+        # Extract a window
+        start = max(0, i - 3)
+        end = min(len(lines), i + 4)
+        window = "".join(lines[start:end])
+
+        if aggressive or V02_NEAR_RE.search(window):
+            # Transform within the single line or whole window if multi-line call
+            # Join window, apply regex with sub function, then re-split to put back
+            def sub_call(m: re.Match) -> str:
+                args = m.group("args")
+                new_args = _strip_targets_from_args(args)
+                if new_args.strip() == "":
+                    # remove the entire call if empty
+                    return ""
+                return f"{m.group('var')}.classList.add({new_args});" if ".add(" in m.group(0) else f"{m.group('var')}.classList.remove({new_args});"
+
+            new_window, n = CLS_ADD_RE.subn(sub_call, window)
+            if n > 0 and new_window != window:
+                # Put back
+                lines[start:end] = [new_window]
+                # Fill the rest with empty lines to maintain count roughly
+                while end - start > 1 and len(lines) > start + 1 and lines[start + 1].strip() != "":
+                    del lines[start + 1]
+                changed = True
+
+    return "".join(lines), changed
+
+
+def process_js(path: Path, write: bool, aggressive: bool) -> bool:
+    text = path.read_text(encoding="utf-8", errors="ignore")
+    new_text, changed = process_js_blockwise(text, aggressive)
+    if changed and write:
+        path.with_suffix(path.suffix + ".bak").write_text(text, encoding="utf-8")
+        path.write_text(new_text, encoding="utf-8")
+    return changed
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--write", action="store_true", help="Apply changes (default is dry-run)")
+    ap.add_argument("--aggressive", action="store_true", help="For JS/TS: remove classList adds regardless of v02 proximity")
+    args = ap.parse_args()
+
+    html_changed = js_changed = 0
+    total = 0
+
+    for p in iter_files():
+        total += 1
+        if p.suffix.lower() in HTML_EXTS:
+            if process_html(p, args.write):
+                html_changed += 1
+                print(f"HTML fixed: {p}")
+        elif p.suffix.lower() in JS_EXTS:
+            if process_js(p, args.write, args.aggressive):
+                js_changed += 1
+                print(f"JS fixed:   {p}")
+
+    print(f"\nScanned {total} files. Changed: HTML={html_changed}, JS/TS={js_changed}. Mode: {'WRITE' if args.write else 'DRY-RUN'}; Aggressive JS: {args.aggressive}")
+
+
+if __name__ == "__main__":
+    main()
+
+How to run in Replit
+# 1) Save the script
+mkdir -p scripts
+nano scripts/strip_bootstrap_table_classes.py  # paste, save
+
+# 2) Install dependency
+pip install beautifulsoup4
+
+# 3) Dry-run (see what would change)
+python3 scripts/strip_bootstrap_table_classes.py
+
+# 4) Apply changes (creates .bak backups)
+python3 scripts/strip_bootstrap_table_classes.py --write
+
+# 5) If some JS still forces .table on v02 tables, use aggressive mode
+python3 scripts/strip_bootstrap_table_classes.py --write --aggressive
+
+
+Tip: After applying, run your existing DOM/self-check and reload the dashboard. The ML table should now share the same v02 styles as the others.

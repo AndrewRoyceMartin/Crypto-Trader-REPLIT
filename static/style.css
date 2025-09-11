@@ -44,6 +44,16 @@ h4, h5, h6, .h4, .h5, .h6 { font-weight: var(--fw-medium); }
 }
 
 /* ===== 2) Standalone Table V02 (no Bootstrap table dependency) ===== */
+
+/* GLOBAL TABLE HEADER ENFORCEMENT - Overrides all Bootstrap conflicts */
+.table-v02 thead th,
+.table-v02--compact thead th {
+  background-color: var(--v02-head-bg) !important;
+  background: var(--v02-head-bg) !important;
+  color: var(--v02-head-color) !important;
+  border-color: transparent !important;
+}
+
 .table-v02 {
   width: 100%;
   border-collapse: separate;
