@@ -471,6 +471,138 @@ let currentSymbol = 'BTC';
 let signalData = null;
 let currentPrice = null;
 
+// Data normalization helpers for robust API response mapping
+const DataMapper = {
+    // Normalize hybrid signal response structure
+    normalizeHybridSignal(data) {
+        if (!data || typeof data !== 'object') {
+            console.warn('⚠️ Invalid hybrid signal data received:', data);
+            return this.getDefaultHybridSignal();
+        }
+        
+        return {
+            confidence_score: this.safeFloat(data.confidence_score, 0),
+            timing_signal: this.safeString(data.timing_signal || data.final_signal, 'WAIT'),
+            analysis_type: this.safeString(data.analysis_type, 'TRADITIONAL'),
+            version: this.safeString(data.version, '1.0'),
+            risk_level: this.safeString(data.risk_level, 'MEDIUM'),
+            suggested_target_price: this.safeFloat(data.suggested_target_price, 0),
+            ml_integration: this.normalizeMlIntegration(data.ml_integration || {}),
+            enhanced_filters: this.normalizeEnhancedFilters(data.enhanced_filters || {}),
+            system_info: this.normalizeSystemInfo(data.system_info || {})
+        };
+    },
+    
+    // Normalize ML integration data
+    normalizeMlIntegration(data) {
+        return {
+            ml_enabled: Boolean(data.ml_enabled),
+            ml_probability: this.safeFloat(data.ml_probability, 0.5),
+            ml_confidence: this.safeFloat(data.ml_confidence, 0),
+            ml_signal: this.safeString(data.ml_signal, 'UNAVAILABLE'),
+            traditional_score: this.safeFloat(data.traditional_score, 0)
+        };
+    },
+    
+    // Normalize enhanced filters data
+    normalizeEnhancedFilters(data) {
+        return {
+            technical_indicators: this.normalizeTechnicalIndicators(data.technical_indicators || {}),
+            signals: this.normalizeSignals(data.signals || {})
+        };
+    },
+    
+    // Normalize technical indicators
+    normalizeTechnicalIndicators(data) {
+        return {
+            rsi_14: this.safeFloat(data.rsi_14 || data.rsi, null),
+            volatility_7: this.safeFloat(data.volatility_7 || data.volatility, null),
+            volume_ratio: this.safeFloat(data.volume_ratio, null),
+            momentum: this.safeFloat(data.momentum, null)
+        };
+    },
+    
+    // Normalize signal flags
+    normalizeSignals(data) {
+        return {
+            momentum_positive: Boolean(data.momentum_positive),
+            near_support: Boolean(data.near_support),
+            bollinger_oversold: Boolean(data.bollinger_oversold),
+            volume_above_average: Boolean(data.volume_above_average),
+            trend_bullish: Boolean(data.trend_bullish)
+        };
+    },
+    
+    // Normalize system info
+    normalizeSystemInfo(data) {
+        return {
+            description: this.safeString(data.description, 'Signal Analysis System'),
+            formula: this.safeString(data.formula, 'N/A'),
+            thresholds: data.thresholds || {
+                'BUY': '≥65 (Strong confidence)',
+                'CONSIDER': '≥55 (Moderate confidence)', 
+                'WAIT': '≥45 (Weak confidence)',
+                'AVOID': '<45 (Poor confidence)'
+            }
+        };
+    },
+    
+    // Normalize current holdings data
+    normalizeHoldingsData(data) {
+        if (!data || !data.holdings || !Array.isArray(data.holdings)) {
+            console.warn('⚠️ Invalid holdings data received:', data);
+            return [];
+        }
+        
+        return data.holdings.map(holding => ({
+            symbol: this.safeString(holding.symbol, ''),
+            current_price: this.safeFloat(holding.current_price, 0),
+            quantity: this.safeFloat(holding.quantity, 0),
+            value: this.safeFloat(holding.value, 0)
+        }));
+    },
+    
+    // Safe data type conversion helpers
+    safeFloat(value, defaultValue = 0) {
+        if (value === null || value === undefined) return defaultValue;
+        const parsed = parseFloat(value);
+        return isNaN(parsed) ? defaultValue : parsed;
+    },
+    
+    safeString(value, defaultValue = '') {
+        if (value === null || value === undefined) return defaultValue;
+        return String(value);
+    },
+    
+    // Default fallback data structures
+    getDefaultHybridSignal() {
+        return {
+            confidence_score: 0,
+            timing_signal: 'WAIT',
+            analysis_type: 'UNAVAILABLE',
+            version: '1.0',
+            risk_level: 'HIGH',
+            suggested_target_price: 0,
+            ml_integration: {
+                ml_enabled: false,
+                ml_probability: 0.5,
+                ml_confidence: 0,
+                ml_signal: 'UNAVAILABLE',
+                traditional_score: 0
+            },
+            enhanced_filters: {
+                technical_indicators: {},
+                signals: {}
+            },
+            system_info: {
+                description: 'Signal system unavailable',
+                formula: 'N/A',
+                thresholds: {}
+            }
+        };
+    }
+};
+
 async function loadSignalAnalysis() {
     const symbol = document.getElementById('symbolSelect').value;
     currentSymbol = symbol;
@@ -479,68 +611,288 @@ async function loadSignalAnalysis() {
         updateStatus('loading', 'Analyzing signal...');
         showLoadingSkeletons();
         
-        // Get current price from authentic OKX data only
-        const priceResponse = await fetch(`/api/current-holdings`);
-        currentPrice = null; // Must get real price from OKX
+        // Enhanced error handling with timeout protection
+        const fetchWithTimeout = async (url, options = {}, timeout = 10000) => {
+            const controller = new AbortController();
+            const id = setTimeout(() => controller.abort(), timeout);
+            
+            try {
+                const response = await fetch(url, {
+                    ...options,
+                    signal: controller.signal,
+                    headers: {
+                        'Cache-Control': 'no-cache',
+                        'Pragma': 'no-cache',
+                        ...options.headers
+                    }
+                });
+                clearTimeout(id);
+                return response;
+            } catch (error) {
+                clearTimeout(id);
+                throw error;
+            }
+        };
         
-        if (priceResponse.ok) {
-            const holdings = await priceResponse.json();
-            const holding = holdings.holdings?.find(h => h.symbol === symbol);
-            if (holding && holding.current_price) {
-                currentPrice = holding.current_price;
+        // Get current price from authentic OKX data with comprehensive error handling
+        currentPrice = null;
+        let priceSource = 'unknown';
+        
+        try {
+            const priceResponse = await fetchWithTimeout('/api/current-holdings', {}, 8000);
+            
+            if (priceResponse.ok) {
+                const rawHoldings = await priceResponse.json();
+                const holdings = DataMapper.normalizeHoldingsData(rawHoldings);
+                const holding = holdings.find(h => h.symbol === symbol);
+                
+                if (holding && holding.current_price > 0) {
+                    currentPrice = holding.current_price;
+                    priceSource = 'holdings';
+                    console.log(`✅ Price from holdings: ${symbol} = $${currentPrice}`);
+                } else {
+                    console.warn(`⚠️ Symbol ${symbol} not found in holdings, trying market price`);
+                }
             } else {
-                // If symbol not in holdings, get market price from OKX directly
-                const marketResponse = await fetch(`/api/market-price/${symbol}`);
+                console.warn(`⚠️ Holdings API error: ${priceResponse.status}`);
+            }
+        } catch (error) {
+            console.warn(`⚠️ Holdings fetch failed: ${error.message}`);
+        }
+        
+        // Fallback to market price API if needed
+        if (!currentPrice || currentPrice <= 0) {
+            try {
+                const marketResponse = await fetchWithTimeout(`/api/market-price/${symbol}`, {}, 5000);
                 if (marketResponse.ok) {
                     const marketData = await marketResponse.json();
-                    currentPrice = marketData.price;
+                    if (marketData.price && marketData.price > 0) {
+                        currentPrice = marketData.price;
+                        priceSource = 'market';
+                        console.log(`✅ Price from market: ${symbol} = $${currentPrice}`);
+                    }
                 }
+            } catch (error) {
+                console.warn(`⚠️ Market price fetch failed: ${error.message}`);
             }
         }
         
-        // REPAIR: Strict authentic data requirement - no hardcoded fallbacks allowed
+        // Enhanced validation with user-friendly error messages
         if (!currentPrice || currentPrice <= 0 || isNaN(currentPrice)) {
-            console.error(`❌ AUTHENTIC DATA VIOLATION: Missing OKX price for ${symbol}`);
-            throw new Error(`Unable to get authentic OKX price for ${symbol}. Trading analysis requires real market data. No fallbacks permitted.`);
+            throw new Error(`Unable to obtain current price for ${symbol}. Please check your connection and try again. The system requires live OKX price data for accurate signal analysis.`);
         }
         
-        // Get hybrid signal data
-        const signalResponse = await fetch(`/api/hybrid-signal?symbol=${symbol}&price=${currentPrice}`);
-        if (signalResponse.ok) {
-            signalData = await signalResponse.json();
+        // Get hybrid signal data with robust error handling
+        let rawSignalData = null;
+        try {
+            const signalResponse = await fetchWithTimeout(`/api/hybrid-signal?symbol=${symbol}&price=${currentPrice}`, {}, 10000);
+            
+            if (!signalResponse.ok) {
+                const errorText = await signalResponse.text();
+                throw new Error(`Signal API returned ${signalResponse.status}: ${errorText}`);
+            }
+            
+            rawSignalData = await signalResponse.json();
+            
+            if (!rawSignalData) {
+                throw new Error('Signal API returned empty response');
+            }
+            
+            // Normalize and validate signal data
+            signalData = DataMapper.normalizeHybridSignal(rawSignalData);
+            
+            // Add metadata for debugging
+            signalData._metadata = {
+                symbol,
+                currentPrice,
+                priceSource,
+                timestamp: new Date().toISOString(),
+                rawDataKeys: Object.keys(rawSignalData || {})
+            };
+            
+            console.log(`✅ Signal data loaded for ${symbol}:`, {
+                score: signalData.confidence_score,
+                signal: signalData.timing_signal,
+                mlEnabled: signalData.ml_integration?.ml_enabled,
+                priceSource
+            });
+            
             displaySignalAnalysis(signalData);
-            updateStatus('live', 'Live data');
-            showToast(`${symbol} signal analysis updated`, 'success');
-        } else {
-            throw new Error('Failed to load signal data');
+            updateStatus('live', `Live data (${priceSource})`);
+            showToast(`${symbol} signal analysis updated from ${priceSource} data`, 'success');
+            
+        } catch (error) {
+            console.error(`❌ Signal data fetch failed for ${symbol}:`, error);
+            throw new Error(`Signal analysis failed: ${error.message}`);
         }
         
-        // Load real signal history from CSV
-        await loadRealSignalHistory();
+        // Load real signal history from CSV with error handling
+        try {
+            await loadRealSignalHistory();
+        } catch (error) {
+            console.warn(`⚠️ Signal history loading failed: ${error.message}`);
+            // Don't fail the entire operation if history fails
+        }
         
-        // REPAIR: Ensure loading skeletons are hidden after successful data load
+        // Ensure loading skeletons are hidden after successful data load
         hideLoadingSkeletons();
         
     } catch (error) {
         console.error('Signal analysis loading failed:', error);
         updateStatus('error', 'Error loading');
-        showToast('Failed to load signal analysis: ' + error.message, 'error');
+        
+        // Enhanced error display with actionable suggestions
+        const userMessage = error.message.includes('price') 
+            ? `Price data unavailable for ${symbol}. Please try a different symbol or check your connection.`
+            : error.message.includes('Signal')
+            ? `Signal analysis failed for ${symbol}. The system may be temporarily unavailable.`
+            : `Failed to load ${symbol} analysis: ${error.message}`;
+        
+        showToast(userMessage, 'error');
         hideLoadingSkeletons();
+        
+        // Display fallback UI state
+        displayErrorState(symbol, error.message);
     }
 }
 
+// Enhanced loading skeleton management with data attributes
 function showLoadingSkeletons() {
     document.querySelectorAll('.loading-skeleton').forEach(skeleton => {
         skeleton.style.display = 'block';
+        skeleton.parentElement?.setAttribute('data-loaded', 'false');
+        skeleton.parentElement?.removeAttribute('data-error');
     });
+    
+    // Reset all data values to loading state
+    document.querySelectorAll('[data-value]').forEach(element => {
+        element.removeAttribute('data-value');
+        element.setAttribute('data-loaded', 'false');
+    });
+    
+    console.log('🔄 Loading skeletons shown');
 }
 
 function hideLoadingSkeletons() {
-    // REPAIR: Ensure loading skeletons are properly hidden in all success paths
     document.querySelectorAll('.loading-skeleton').forEach(skeleton => {
         skeleton.style.display = 'none';
         skeleton.parentElement?.setAttribute('data-loaded', 'true');
     });
+    
+    console.log('✅ Loading skeletons hidden');
+}
+
+// Helper function to update indicator elements with data attributes
+function updateIndicatorElement(elementId, value, indicator, formatter = null) {
+    const element = document.getElementById(elementId);
+    if (!element) {
+        console.warn(`⚠️ Element ${elementId} not found`);
+        return;
+    }
+    
+    if (value != null && !isNaN(value)) {
+        const displayValue = formatter ? formatter(value) : value;
+        element.textContent = displayValue;
+        element.setAttribute('data-value', value);
+        element.setAttribute('data-indicator', indicator);
+        element.setAttribute('data-loaded', 'true');
+        element.removeAttribute('data-error');
+    } else {
+        element.textContent = '—';
+        element.setAttribute('data-error', 'no-data');
+        element.setAttribute('data-loaded', 'true');
+        element.removeAttribute('data-value');
+    }
+}
+
+// Helper function to update signal indicators with data attributes  
+function updateSignalIndicator(elementId, value, signal) {
+    const element = document.getElementById(elementId);
+    if (!element) {
+        console.warn(`⚠️ Signal element ${elementId} not found`);
+        return;
+    }
+    
+    const isPositive = Boolean(value);
+    element.innerHTML = isPositive ? 
+        '<i class="fas fa-check check-icon"></i>' : 
+        '<i class="fas fa-times x-icon"></i>';
+    element.setAttribute('data-signal', signal);
+    element.setAttribute('data-value', isPositive);
+    element.setAttribute('data-loaded', 'true');
+}
+
+// Error state display function
+function displayErrorState(symbol, errorMessage) {
+    console.log(`🚨 Displaying error state for ${symbol}:`, errorMessage);
+    
+    // Hide loading skeletons
+    hideLoadingSkeletons();
+    
+    // Set error states on key elements
+    const hybridScoreElement = document.getElementById('hybridScore');
+    if (hybridScoreElement) {
+        hybridScoreElement.textContent = '—';
+        hybridScoreElement.setAttribute('data-error', 'load-failed');
+        hybridScoreElement.setAttribute('data-loaded', 'false');
+    }
+    
+    const signalBadgeElement = document.getElementById('signalBadge');
+    if (signalBadgeElement) {
+        signalBadgeElement.textContent = 'ERROR';
+        signalBadgeElement.className = 'signal-badge bg-danger';
+        signalBadgeElement.setAttribute('data-error', 'load-failed');
+        signalBadgeElement.setAttribute('data-loaded', 'false');
+    }
+    
+    // Clear progress bars
+    ['traditionalFill', 'mlFill'].forEach(id => {
+        const element = document.getElementById(id);
+        if (element) {
+            element.style.width = '0%';
+            element.setAttribute('data-error', 'load-failed');
+        }
+    });
+    
+    // Set error state for indicators
+    ['rsiValue', 'volatilityValue', 'volumeValue'].forEach(id => {
+        const element = document.getElementById(id);
+        if (element) {
+            element.textContent = '—';
+            element.setAttribute('data-error', 'load-failed');
+            element.setAttribute('data-loaded', 'false');
+        }
+    });
+    
+    // Set error state for signal indicators
+    ['momentumValue', 'supportValue', 'bollingerValue'].forEach(id => {
+        const element = document.getElementById(id);
+        if (element) {
+            element.innerHTML = '<i class="fas fa-exclamation-triangle text-danger"></i>';
+            element.setAttribute('data-error', 'load-failed');
+            element.setAttribute('data-loaded', 'false');
+        }
+    });
+    
+    // Update ML prediction with error state
+    const mlProbabilityElement = document.getElementById('mlProbability');
+    if (mlProbabilityElement) {
+        mlProbabilityElement.textContent = '—';
+        mlProbabilityElement.setAttribute('data-error', 'load-failed');
+    }
+    
+    const mlDetailsElement = document.getElementById('mlDetails');
+    if (mlDetailsElement) {
+        mlDetailsElement.innerHTML = `
+            <span class="text-danger">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                Analysis unavailable: ${errorMessage}
+            </span>
+        `;
+        mlDetailsElement.setAttribute('data-error', 'load-failed');
+    }
+    
+    console.log('🚨 Error state display completed');
 }
 
 function updateStatus(type, text) {
@@ -559,84 +911,166 @@ function updateStatus(type, text) {
 }
 
 function displaySignalAnalysis(signal) {
+    if (!signal) {
+        console.error('❌ No signal data provided to displaySignalAnalysis');
+        displayErrorState(currentSymbol, 'Invalid signal data received');
+        return;
+    }
+    
     hideLoadingSkeletons();
+    console.log('🎯 Displaying signal analysis:', signal);
     
-    // Update hybrid score
-    const hybridScore = signal.confidence_score || 0;
-    document.getElementById('hybridScore').textContent = hybridScore.toFixed(1);
+    // Update hybrid score with data attributes and validation
+    const hybridScore = DataMapper.safeFloat(signal.confidence_score, 0);
+    const hybridScoreElement = document.getElementById('hybridScore');
+    if (hybridScoreElement) {
+        hybridScoreElement.textContent = hybridScore.toFixed(1);
+        hybridScoreElement.setAttribute('data-value', hybridScore);
+        hybridScoreElement.setAttribute('data-loaded', 'true');
+        hybridScoreElement.setAttribute('data-symbol', currentSymbol);
+    }
     
-    // Update signal badge
-    const finalSignal = signal.timing_signal || 'WAIT';
+    // Update signal badge with enhanced validation
+    const finalSignal = DataMapper.safeString(signal.timing_signal, 'WAIT');
     const badgeElement = document.getElementById('signalBadge');
-    badgeElement.textContent = finalSignal;
+    if (badgeElement) {
+        badgeElement.textContent = finalSignal;
+        badgeElement.setAttribute('data-signal', finalSignal);
+        badgeElement.setAttribute('data-loaded', 'true');
+        
+        // Set badge color based on timing signal with enhanced mapping
+        badgeElement.className = 'signal-badge ';
+        const signalColorMap = {
+            'BUY': 'bg-success',
+            'STRONG_BUY': 'bg-success',
+            'CONSIDER': 'bg-warning', 
+            'HOLD': 'bg-secondary',
+            'WAIT': 'bg-secondary',
+            'AVOID': 'bg-danger',
+            'SELL': 'bg-danger'
+        };
+        badgeElement.className += signalColorMap[finalSignal] || 'bg-secondary';
+    }
     
-    // Set badge color based on timing signal
-    badgeElement.className = 'signal-badge ';
-    if (finalSignal === 'BUY') badgeElement.className += 'bg-success';
-    else if (finalSignal === 'CONSIDER') badgeElement.className += 'bg-warning';
-    else if (finalSignal === 'AVOID') badgeElement.className += 'bg-danger';
-    else badgeElement.className += 'bg-secondary';
-    
-    // Update score breakdown
+    // Update score breakdown with enhanced data attributes
     const mlIntegration = signal.ml_integration || {};
-    const traditionalScore = mlIntegration.traditional_score || signal.confidence_score || 0;
-    const mlProbability = mlIntegration.ml_probability || 0.5;
+    const traditionalScore = DataMapper.safeFloat(mlIntegration.traditional_score || signal.confidence_score, 0);
+    const mlProbability = DataMapper.safeFloat(mlIntegration.ml_probability, 0.5);
     
-    document.getElementById('traditionalScore').textContent = traditionalScore.toFixed(1) + '%';
-    document.getElementById('mlScore').textContent = (mlProbability * 100).toFixed(1) + '%';
+    const traditionalElement = document.getElementById('traditionalScore');
+    const mlElement = document.getElementById('mlScore');
     
-    // Animate progress bars
+    if (traditionalElement) {
+        traditionalElement.textContent = traditionalScore.toFixed(1) + '%';
+        traditionalElement.setAttribute('data-value', traditionalScore);
+        traditionalElement.setAttribute('data-loaded', 'true');
+    }
+    
+    if (mlElement) {
+        mlElement.textContent = (mlProbability * 100).toFixed(1) + '%';
+        mlElement.setAttribute('data-value', mlProbability * 100);
+        mlElement.setAttribute('data-loaded', 'true');
+    }
+    
+    // Animate progress bars with error handling
     setTimeout(() => {
-        document.getElementById('traditionalFill').style.width = traditionalScore + '%';
-        document.getElementById('mlFill').style.width = (mlProbability * 100) + '%';
+        try {
+            const traditionalFill = document.getElementById('traditionalFill');
+            const mlFill = document.getElementById('mlFill');
+            
+            if (traditionalFill) {
+                traditionalFill.style.width = Math.min(Math.max(traditionalScore, 0), 100) + '%';
+                traditionalFill.setAttribute('data-value', traditionalScore);
+            }
+            
+            if (mlFill) {
+                const mlPercentage = Math.min(Math.max(mlProbability * 100, 0), 100);
+                mlFill.style.width = mlPercentage + '%';
+                mlFill.setAttribute('data-value', mlPercentage);
+            }
+        } catch (error) {
+            console.warn('⚠️ Progress bar animation failed:', error);
+        }
     }, 300);
     
-    // Update technical indicators - use enhanced_filters if available
+    // Update technical indicators with comprehensive error handling
     const enhancedFilters = signal.enhanced_filters || {};
     const indicators = enhancedFilters.technical_indicators || {};
     
-    // REPAIR: No hardcoded fallbacks - use authentic data only  
-    const rsi = indicators.rsi_14 || indicators.rsi;
-    const volatility = indicators.volatility_7 || indicators.volatility;
-    const volume = indicators.volume_ratio;
+    // Enhanced indicator updates with data attributes
+    updateIndicatorElement('rsiValue', indicators.rsi_14 || indicators.rsi, 'rsi', val => val?.toFixed(1));
+    updateIndicatorElement('volatilityValue', indicators.volatility_7 || indicators.volatility, 'volatility', val => val?.toFixed(1) + '%');
+    updateIndicatorElement('volumeValue', indicators.volume_ratio, 'volume', val => val?.toFixed(2));
     
-    document.getElementById('rsiValue').textContent = rsi != null ? rsi.toFixed(1) : '—';
-    document.getElementById('volatilityValue').textContent = volatility != null ? volatility.toFixed(1) + '%' : '—';
-    document.getElementById('volumeValue').textContent = volume != null ? volume.toFixed(2) : '—';
-    
-    // Update signal indicators
+    // Update signal indicators with enhanced error handling
     const signals = enhancedFilters.signals || {};
-    document.getElementById('momentumValue').innerHTML = signals.momentum_positive ? 
-        '<i class="fas fa-check check-icon"></i>' : '<i class="fas fa-times x-icon"></i>';
-    document.getElementById('supportValue').innerHTML = signals.near_support ? 
-        '<i class="fas fa-check check-icon"></i>' : '<i class="fas fa-times x-icon"></i>';
-    document.getElementById('bollingerValue').innerHTML = signals.bollinger_oversold ? 
-        '<i class="fas fa-check check-icon"></i>' : '<i class="fas fa-times x-icon"></i>';
+    updateSignalIndicator('momentumValue', signals.momentum_positive, 'momentum');
+    updateSignalIndicator('supportValue', signals.near_support, 'support');
+    updateSignalIndicator('bollingerValue', signals.bollinger_oversold, 'bollinger');
     
-    // Update enhanced filters detail
-    if (Object.keys(enhancedFilters).length > 0) {
-        displayEnhancedFilters(enhancedFilters);
+    // Update enhanced filters detail with validation
+    if (enhancedFilters && typeof enhancedFilters === 'object' && Object.keys(enhancedFilters).length > 0) {
+        try {
+            displayEnhancedFilters(enhancedFilters);
+        } catch (error) {
+            console.warn('⚠️ Enhanced filters display failed:', error);
+        }
     }
     
-    // Update ML prediction
-    document.getElementById('mlProbability').textContent = (mlProbability * 100).toFixed(1) + '%';
-    document.getElementById('mlDetails').innerHTML = `
-        <strong>ML Status:</strong> ${mlIntegration.ml_enabled ? '🟢 Active' : '🟡 Fallback'}<br>
-        <strong>Signal:</strong> ${mlIntegration.ml_signal || 'UNAVAILABLE'}<br>
-        <strong>Confidence:</strong> ${(mlIntegration.ml_confidence * 100).toFixed(1)}%<br>
-        <strong>Type:</strong> ${signal.analysis_type || 'TRADITIONAL'}
-    `;
+    // Update ML prediction with enhanced data attributes
+    const mlProbabilityElement = document.getElementById('mlProbability');
+    const mlDetailsElement = document.getElementById('mlDetails');
     
-    // Update system info
-    const systemInfo = signal.system_info || {};
-    document.getElementById('systemInfo').innerHTML = `
-        <div style="font-size: 0.9rem; line-height: 1.4;">
-            <strong>Version:</strong> ${signal.version || 'N/A'}<br>
-            <strong>Risk Level:</strong> ${signal.risk_level || 'MEDIUM'}<br>
-            <strong>Target Price:</strong> $${(signal.suggested_target_price || 0).toLocaleString()}<br>
-            <strong>Formula:</strong> ${systemInfo.formula || 'N/A'}
-        </div>
-    `;
+    if (mlProbabilityElement) {
+        mlProbabilityElement.textContent = (mlProbability * 100).toFixed(1) + '%';
+        mlProbabilityElement.setAttribute('data-value', mlProbability * 100);
+        mlProbabilityElement.setAttribute('data-loaded', 'true');
+    }
+    
+    if (mlDetailsElement) {
+        const mlEnabled = Boolean(mlIntegration.ml_enabled);
+        const mlSignal = DataMapper.safeString(mlIntegration.ml_signal, 'UNAVAILABLE');
+        const mlConfidence = DataMapper.safeFloat(mlIntegration.ml_confidence, 0);
+        const analysisType = DataMapper.safeString(signal.analysis_type, 'TRADITIONAL');
+        
+        mlDetailsElement.innerHTML = `
+            <strong>ML Status:</strong> <span data-ml-enabled="${mlEnabled}">${mlEnabled ? '🟢 Active' : '🟡 Fallback'}</span><br>
+            <strong>Signal:</strong> <span data-ml-signal="${mlSignal}">${mlSignal}</span><br>
+            <strong>Confidence:</strong> <span data-ml-confidence="${mlConfidence}">${(mlConfidence * 100).toFixed(1)}%</span><br>
+            <strong>Type:</strong> <span data-analysis-type="${analysisType}">${analysisType}</span>
+        `;
+        mlDetailsElement.setAttribute('data-loaded', 'true');
+    }
+    
+    // Update system info with enhanced data attributes
+    const systemInfoElement = document.getElementById('systemInfo');
+    if (systemInfoElement) {
+        const systemInfo = signal.system_info || {};
+        const version = DataMapper.safeString(signal.version, 'N/A');
+        const riskLevel = DataMapper.safeString(signal.risk_level, 'MEDIUM');
+        const targetPrice = DataMapper.safeFloat(signal.suggested_target_price, 0);
+        const formula = DataMapper.safeString(systemInfo.formula, 'N/A');
+        
+        systemInfoElement.innerHTML = `
+            <div style="font-size: 0.9rem; line-height: 1.4;">
+                <strong>Version:</strong> <span data-version="${version}">${version}</span><br>
+                <strong>Risk Level:</strong> <span data-risk-level="${riskLevel}">${riskLevel}</span><br>
+                <strong>Target Price:</strong> <span data-target-price="${targetPrice}">$${targetPrice.toLocaleString()}</span><br>
+                <strong>Formula:</strong> <span data-formula="${formula}">${formula}</span>
+            </div>
+        `;
+        systemInfoElement.setAttribute('data-loaded', 'true');
+    }
+    
+    // Update last updated timestamp
+    const lastUpdatedElement = document.getElementById('lastUpdated');
+    if (lastUpdatedElement) {
+        const timestamp = new Date().toLocaleTimeString();
+        lastUpdatedElement.textContent = timestamp;
+        lastUpdatedElement.setAttribute('data-timestamp', new Date().toISOString());
+    }
+    
+    console.log('✅ Signal analysis display completed successfully');
 }
 
 function displayEnhancedFilters(filters) {
@@ -658,77 +1092,221 @@ function displayEnhancedFilters(filters) {
 }
 
 async function loadRealSignalHistory() {
+    const historyTable = document.getElementById('signalHistoryTable');
+    const historyCount = document.getElementById('historyCount');
+    
+    // Set loading state
+    if (historyTable) {
+        historyTable.innerHTML = '<tr><td colspan="7" class="text-center py-4"><i class="fas fa-spinner fa-spin me-2"></i>Loading signal history...</td></tr>';
+    }
+    if (historyCount) {
+        historyCount.textContent = 'Loading...';
+    }
+    
     try {
-        const response = await fetch('/signals_log.csv');
-        if (response.ok) {
-            const csvText = await response.text();
-            const lines = csvText.split('\n').filter(line => line.trim());
-            
-            if (lines.length <= 1) {
-                document.getElementById('signalHistoryTable').innerHTML = 
-                    '<tr><td colspan="7" class="text-center py-4">No signal history available</td></tr>';
-                return;
+        const response = await fetch('/signals_log.csv', {
+            cache: 'no-cache',
+            headers: {
+                'Cache-Control': 'no-cache',
+                'Pragma': 'no-cache'
             }
-            
-            // Parse CSV (skip header)
-            const records = lines.slice(1, 11).map(line => { // Show last 10 records
-                const cols = line.split(',');
-                return {
-                    timestamp: cols[0],
-                    symbol: cols[1],
-                    price: parseFloat(cols[2]) || 0,
-                    confidence: parseFloat(cols[3]) || 0,
-                    signal: cols[4] || 'WAIT',
-                    rsi: parseFloat(cols[5]) || 0,
-                    volatility: parseFloat(cols[6]) || 0
-                };
-            }).filter(record => record.symbol && record.timestamp);
-            
-            displayRealSignalHistory(records);
-            
-            // Update count
-            document.getElementById('historyCount').textContent = `${records.length} recent signals`;
-            
-        } else {
-            throw new Error('Unable to load CSV data');
+        });
+        
+        if (!response.ok) {
+            throw new Error(`CSV API returned ${response.status}: ${response.statusText}`);
         }
+        
+        const csvText = await response.text();
+        if (!csvText || csvText.trim().length === 0) {
+            throw new Error('Empty CSV data received');
+        }
+        
+        const lines = csvText.split('\n').filter(line => line.trim());
+        
+        if (lines.length <= 1) {
+            if (historyTable) {
+                historyTable.innerHTML = 
+                    '<tr><td colspan="7" class="text-center py-4 text-muted">No signal history available yet</td></tr>';
+            }
+            if (historyCount) {
+                historyCount.textContent = '0 signals';
+            }
+            return;
+        }
+        
+        // Enhanced CSV parsing with validation
+        const records = [];
+        const maxRecords = 10;
+        const startIndex = Math.max(1, lines.length - maxRecords); // Get most recent records
+        
+        for (let i = startIndex; i < lines.length; i++) {
+            const line = lines[i].trim();
+            if (!line) continue;
+            
+            try {
+                const cols = line.split(',').map(col => col.trim().replace(/^"|"$/g, ''));
+                
+                if (cols.length < 5) {
+                    console.warn(`⚠️ Skipping malformed CSV line: ${line}`);
+                    continue;
+                }
+                
+                const record = {
+                    timestamp: cols[0] || '',
+                    symbol: cols[1] || '',
+                    price: DataMapper.safeFloat(cols[2], 0),
+                    confidence: DataMapper.safeFloat(cols[3], 0),
+                    signal: DataMapper.safeString(cols[4], 'WAIT'),
+                    rsi: DataMapper.safeFloat(cols[5], 0),
+                    volatility: DataMapper.safeFloat(cols[6], 0)
+                };
+                
+                // Validate record has essential data
+                if (record.symbol && record.timestamp) {
+                    records.push(record);
+                } else {
+                    console.warn(`⚠️ Skipping invalid record:`, record);
+                }
+            } catch (parseError) {
+                console.warn(`⚠️ Error parsing CSV line: ${line}`, parseError);
+            }
+        }
+        
+        // Sort records by timestamp (newest first)
+        records.sort((a, b) => {
+            try {
+                const dateA = new Date(a.timestamp);
+                const dateB = new Date(b.timestamp);
+                return dateB.getTime() - dateA.getTime();
+            } catch {
+                return 0;
+            }
+        });
+        
+        console.log(`✅ Loaded ${records.length} signal history records`);
+        
+        displayRealSignalHistory(records);
+        
+        // Update count with data attributes
+        if (historyCount) {
+            historyCount.textContent = `${records.length} recent signals`;
+            historyCount.setAttribute('data-count', records.length);
+            historyCount.setAttribute('data-loaded', 'true');
+        }
+        
     } catch (error) {
         console.error('Signal history loading failed:', error);
-        document.getElementById('signalHistoryTable').innerHTML = 
-            `<tr><td colspan="7" class="text-center py-4 text-danger">Failed to load signal history: ${error.message}</td></tr>`;
-        document.getElementById('historyCount').textContent = 'Error';
+        
+        if (historyTable) {
+            historyTable.innerHTML = `
+                <tr><td colspan="7" class="text-center py-4 text-danger">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    Failed to load signal history: ${error.message}
+                    <br><small class="text-muted mt-2 d-block">Please check your connection and try again</small>
+                </td></tr>
+            `;
+            historyTable.setAttribute('data-error', 'load-failed');
+        }
+        
+        if (historyCount) {
+            historyCount.textContent = 'Error';
+            historyCount.setAttribute('data-error', 'load-failed');
+        }
     }
 }
 
 function displayRealSignalHistory(history) {
     const tbody = document.getElementById('signalHistoryTable');
     
-    if (history.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4">No signal history available</td></tr>';
+    if (!tbody) {
+        console.warn('⚠️ Signal history table element not found');
         return;
     }
     
-    tbody.innerHTML = history.map(record => {
-        const timestamp = new Date(record.timestamp).toLocaleString();
-        let signalClass = 'bg-secondary';
-        if (record.signal === 'BUY') signalClass = 'bg-success';
-        else if (record.signal === 'CONSIDER') signalClass = 'bg-warning';
-        else if (record.signal === 'AVOID') signalClass = 'bg-danger';
+    if (!history || history.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted">No signal history available yet</td></tr>';
+        tbody.setAttribute('data-state', 'empty');
+        return;
+    }
+    
+    try {
+        const signalColorMap = {
+            'BUY': 'bg-success',
+            'STRONG_BUY': 'bg-success',
+            'CONSIDER': 'bg-warning',
+            'HOLD': 'bg-secondary', 
+            'WAIT': 'bg-secondary',
+            'AVOID': 'bg-danger',
+            'SELL': 'bg-danger'
+        };
         
-        return `
-            <tr>
-                <td>${timestamp}</td>
-                <td><strong>${record.symbol}</strong></td>
-                <td class="text-center">
-                    <span class="badge ${signalClass}">${record.signal}</span>
-                </td>
-                <td class="text-end">${record.confidence.toFixed(1)}</td>
-                <td class="text-end">${record.rsi.toFixed(1)}</td>
-                <td class="text-end">${record.volatility.toFixed(1)}%</td>
-                <td class="text-end">$${record.price.toLocaleString()}</td>
-            </tr>
+        const rows = history.map((record, index) => {
+            try {
+                // Enhanced timestamp formatting
+                let timestamp = 'Invalid Date';
+                try {
+                    const date = new Date(record.timestamp);
+                    if (!isNaN(date.getTime())) {
+                        timestamp = date.toLocaleString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                        });
+                    }
+                } catch {
+                    timestamp = record.timestamp.substring(0, 16); // Fallback
+                }
+                
+                const signalClass = signalColorMap[record.signal] || 'bg-secondary';
+                const confidence = DataMapper.safeFloat(record.confidence, 0);
+                const rsi = DataMapper.safeFloat(record.rsi, 0);
+                const volatility = DataMapper.safeFloat(record.volatility, 0);
+                const price = DataMapper.safeFloat(record.price, 0);
+                
+                return `
+                    <tr data-record-index="${index}" data-symbol="${record.symbol}" data-signal="${record.signal}">
+                        <td data-field="timestamp">${timestamp}</td>
+                        <td data-field="symbol"><strong>${record.symbol}</strong></td>
+                        <td class="text-center" data-field="signal">
+                            <span class="badge ${signalClass}" data-signal="${record.signal}">${record.signal}</span>
+                        </td>
+                        <td class="text-end" data-field="confidence" data-value="${confidence}">${confidence.toFixed(1)}</td>
+                        <td class="text-end" data-field="rsi" data-value="${rsi}">${rsi.toFixed(1)}</td>
+                        <td class="text-end" data-field="volatility" data-value="${volatility}">${volatility.toFixed(1)}%</td>
+                        <td class="text-end" data-field="price" data-value="${price}">$${price.toLocaleString()}</td>
+                    </tr>
+                `;
+            } catch (rowError) {
+                console.warn(`⚠️ Error rendering history record:`, record, rowError);
+                return `
+                    <tr data-record-index="${index}" data-error="render-failed">
+                        <td colspan="7" class="text-center py-2 text-muted">
+                            <small><i class="fas fa-exclamation-triangle me-1"></i>Error displaying record</small>
+                        </td>
+                    </tr>
+                `;
+            }
+        });
+        
+        tbody.innerHTML = rows.join('');
+        tbody.setAttribute('data-state', 'loaded');
+        tbody.setAttribute('data-count', history.length);
+        tbody.removeAttribute('data-error');
+        
+        console.log(`✅ Displayed ${history.length} signal history records`);
+        
+    } catch (error) {
+        console.error('Error displaying signal history:', error);
+        tbody.innerHTML = `
+            <tr><td colspan="7" class="text-center py-4 text-danger">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                Error displaying signal history
+                <br><small class="text-muted mt-1">${error.message}</small>
+            </td></tr>
         `;
-    }).join('');
+        tbody.setAttribute('data-error', 'display-failed');
+    }
 }
 
 async function refreshSignalData() {
