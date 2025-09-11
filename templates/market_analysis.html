@@ -203,32 +203,32 @@
 <div class="market-overview">
     <div class="row">
         <div class="col-md-3">
-            <div class="market-stat">
-                <div class="stat-large text-white" id="totalPairs">
+            <div class="market-stat" data-stat="trading-pairs">
+                <div class="stat-large text-white" id="totalPairs" data-metric="totalPairs" data-count data-value>
                     <div class="loading-skeleton loading-skeleton-stat"></div>
                 </div>
                 <div class="text-light">Trading Pairs</div>
             </div>
         </div>
         <div class="col-md-3">
-            <div class="market-stat">
-                <div class="stat-large text-success" id="buySignals">
+            <div class="market-stat" data-stat="buy-signals">
+                <div class="stat-large text-success" id="buySignals" data-metric="buySignals" data-count data-value>
                     <div class="loading-skeleton loading-skeleton-stat"></div>
                 </div>
                 <div class="text-light">BUY Signals</div>
             </div>
         </div>
         <div class="col-md-3">
-            <div class="market-stat">
-                <div class="stat-large text-warning" id="considerSignals">
+            <div class="market-stat" data-stat="consider-signals">
+                <div class="stat-large text-warning" id="considerSignals" data-metric="considerSignals" data-count data-value>
                     <div class="loading-skeleton loading-skeleton-stat"></div>
                 </div>
                 <div class="text-light">CONSIDER Signals</div>
             </div>
         </div>
         <div class="col-md-3">
-            <div class="market-stat">
-                <div class="stat-large text-info" id="marketVolume">
+            <div class="market-stat" data-stat="market-volume">
+                <div class="stat-large text-info" id="marketVolume" data-metric="marketVolume" data-currency data-value>
                     <div class="loading-skeleton loading-skeleton-stat"></div>
                 </div>
                 <div class="text-light">24h Volume</div>
@@ -237,7 +237,7 @@
     </div>
     
     <!-- Status Indicator -->
-    <div class="market-status status-loading" id="market-status">
+    <div class="market-status status-loading" id="market-status" data-status="market" data-loading>
         <i class="fas fa-search fa-spin me-2"></i>Scanning 298+ trading pairs...
     </div>
 </div>
@@ -247,7 +247,7 @@
     <div class="row align-items-center">
         <div class="col-md-3">
             <label for="categoryFilter" class="form-label">Filter by Category</label>
-            <select class="form-select" id="categoryFilter" onchange="filterMarketData()">
+            <select class="form-select" id="categoryFilter" onchange="filterMarketData()" data-filter="category" data-control>
                 <option value="all">All Categories</option>
                 <option value="large-cap">Large Cap (BTC, ETH)</option>
                 <option value="mid-cap">Mid Cap</option>
@@ -260,7 +260,7 @@
         </div>
         <div class="col-md-3">
             <label for="signalFilter" class="form-label">Filter by Signal</label>
-            <select class="form-select" id="signalFilter" onchange="filterMarketData()">
+            <select class="form-select" id="signalFilter" onchange="filterMarketData()" data-filter="signal" data-control>
                 <option value="all">All Signals</option>
                 <option value="BUY">BUY Only</option>
                 <option value="CONSIDER">CONSIDER Only</option>
@@ -270,7 +270,7 @@
         </div>
         <div class="col-md-3">
             <label for="sortBy" class="form-label">Sort By</label>
-            <select class="form-select" id="sortBy" onchange="sortMarketData()">
+            <select class="form-select" id="sortBy" onchange="sortMarketData()" data-sort="control" data-control>
                 <option value="signal_strength">Signal Strength</option>
                 <option value="volume">24h Volume</option>
                 <option value="price_change">Price Change</option>
@@ -280,10 +280,10 @@
         </div>
         <div class="col-md-3">
             <div class="d-flex gap-2 mt-4">
-                <button class="btn btn-primary" onclick="scanAllMarkets()">
+                <button class="btn btn-primary" onclick="scanAllMarkets()" data-action="scan" data-control>
                     <i class="fas fa-search me-1"></i>Scan All
                 </button>
-                <button class="btn btn-outline-secondary" onclick="refreshMarketData()">
+                <button class="btn btn-outline-secondary" onclick="refreshMarketData()" data-action="refresh" data-control>
                     <i class="fas fa-sync me-1"></i>Refresh
                 </button>
             </div>
@@ -298,9 +298,9 @@
             <h5 class="card-title">
                 <i class="fas fa-star text-warning"></i>
                 Top Market Opportunities
-                <span class="badge bg-success ms-2" id="opportunitiesCount">0</span>
+                <span class="badge bg-success ms-2" id="opportunitiesCount" data-metric="opportunitiesCount" data-count data-value>0</span>
             </h5>
-            <div id="topOpportunities">
+            <div id="topOpportunities" data-section="opportunities" data-content>
                 <div class="text-center py-4">
                     <div class="loading-spinner text-warning" role="status">
                         <span class="visually-hidden">Scanning markets...</span>
@@ -316,15 +316,15 @@
                 Market Sentiment
             </h5>
             <div class="text-center py-3">
-                <div class="h2 text-success" id="marketSentiment">Bullish</div>
+                <div class="h2 text-success" id="marketSentiment" data-metric="marketSentiment" data-sentiment data-value>Bullish</div>
                 <div class="text-muted-sm mb-3">Overall Market</div>
                 <div class="row">
                     <div class="col-6">
-                        <div class="h5 text-success" id="bullishCount">0</div>
+                        <div class="h5 text-success" id="bullishCount" data-metric="bullishCount" data-count data-value>0</div>
                         <small>Bullish</small>
                     </div>
                     <div class="col-6">
-                        <div class="h5 text-danger" id="bearishCount">0</div>
+                        <div class="h5 text-danger" id="bearishCount" data-metric="bearishCount" data-count data-value>0</div>
                         <small>Bearish</small>
                     </div>
                 </div>
@@ -340,14 +340,14 @@
             <h5 class="card-title mb-1">
                 <i class="fas fa-globe"></i>
                 All OKX Trading Pairs
-                <span class="badge bg-primary ms-2" id="pairsCount">298</span>
+                <span class="badge bg-primary ms-2" id="pairsCount" data-metric="pairsCount" data-count data-value>298</span>
             </h5>
             <small class="text-muted-xs">Real-time analysis across the complete OKX ecosystem</small>
         </div>
         <div>
             <div class="input-group" style="width: 300px;">
-                <input type="text" class="form-control" id="searchPairs" placeholder="Search pairs..." onkeyup="searchPairs()">
-                <button class="btn btn-outline-secondary" onclick="clearSearch()">
+                <input type="text" class="form-control" id="searchPairs" placeholder="Search pairs..." onkeyup="searchPairs()" data-search="pairs" data-control>
+                <button class="btn btn-outline-secondary" onclick="clearSearch()" data-action="clear-search" data-control>
                     <i class="fas fa-times"></i>
                 </button>
             </div>
@@ -385,7 +385,7 @@
                     <th class="text-center">Actions</th>
                 </tr>
             </thead>
-            <tbody id="allPairsTable">
+            <tbody id="allPairsTable" data-table="marketPairs" data-content>
                 <tr>
                     <td colspan="9" class="text-center py-4">
                         <div class="loading-spinner text-primary" role="status">
@@ -405,11 +405,35 @@ let marketData = [];
 let filteredData = [];
 let currentSort = { column: -1, direction: 'asc' };
 
+// REPAIR: Enhanced loading skeleton management
+function hideAllLoadingSkeletons() {
+    console.log('🔧 REPAIR: Hiding all loading skeletons...');
+    
+    // Hide all loading skeletons
+    document.querySelectorAll('.loading-skeleton, .loading-skeleton-stat').forEach(skeleton => {
+        skeleton.style.display = 'none';
+        // Mark parent as loaded
+        const parent = skeleton.closest('[data-metric], [data-stat]');
+        if (parent) {
+            parent.setAttribute('data-loaded', 'true');
+        }
+    });
+    
+    // Update all market stats to loaded state
+    document.querySelectorAll('.market-stat').forEach(stat => {
+        stat.classList.add('market-stat-loaded');
+        stat.classList.remove('market-stat-loading');
+        stat.setAttribute('data-loading-state', 'loaded');
+    });
+    
+    console.log('✅ All loading skeletons hidden successfully');
+}
+
 async function loadMarketData() {
     try {
         console.log('🔄 Loading market analysis with enhanced animations...');
         
-        // Set all market stats to loading state
+        // REPAIR: Set all market stats to loading state with proper tracking
         const statElements = ['totalPairs', 'buySignals', 'considerSignals', 'marketVolume'];
         statElements.forEach(id => {
             const element = document.getElementById(id);
@@ -417,6 +441,8 @@ async function loadMarketData() {
             if (parent) {
                 parent.classList.add('market-stat-loading');
                 parent.classList.remove('market-stat-loaded');
+                // Add data attribute for tracking
+                parent.setAttribute('data-loading-state', 'loading');
             }
         });
         
@@ -471,6 +497,9 @@ async function loadMarketData() {
                     setTimeout(() => {
                         loadMLSignalsForTable();
                     }, 1000);
+                    
+                    // REPAIR: Ensure all loading skeletons are properly hidden
+                    hideAllLoadingSkeletons();
                     
                     // Update status to loaded
                     if (statusElement) {

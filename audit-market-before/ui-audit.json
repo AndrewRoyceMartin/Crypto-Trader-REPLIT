@@ -1,0 +1,27 @@
+{
+  "timestamp": "2025-09-11T10:06:53.203Z",
+  "url": "http://127.0.0.1:5000/market-analysis",
+  "kpis": [],
+  "tables": [],
+  "issues": [
+    {
+      "type": "ERROR",
+      "description": "Missing stable data attributes",
+      "details": "Only 0 data attributes found. Market analysis elements lack stable selectors for testing.",
+      "impact": "Automated testing and maintenance will be unreliable"
+    }
+  ],
+  "warnings": [
+    {
+      "type": "WARNING",
+      "description": "Market data loading states may persist",
+      "details": "Found loading elements but unclear hiding mechanism for market data",
+      "impact": "Users may see loading spinners indefinitely on market analysis"
+    }
+  ],
+  "summary": {
+    "pageLoads": true,
+    "healthyEndpoints": 5,
+    "totalEndpoints": 5
+  }
+}
