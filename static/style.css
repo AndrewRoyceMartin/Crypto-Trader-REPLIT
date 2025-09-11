@@ -70,7 +70,23 @@ h4, h5, h6, .h4, .h5, .h6 { font-weight: var(--fw-medium); }
   font-weight: var(--fw-regular);
 }
 
-/* Let Bootstrap handle .small class - no color override needed */
+/* ===== Custom Utility Classes - Replace Bootstrap ===== */
+
+/* Custom Text Utilities */
+.text-muted-sm {
+  color: var(--text-muted);
+  font-size: 0.875rem;
+}
+
+.text-muted-xs {
+  color: var(--text-muted);
+  font-size: 0.75rem;
+}
+
+/* Custom Spacing Utilities */
+.mb-xs { margin-bottom: 0.25rem; }
+.mb-sm { margin-bottom: 0.5rem; }
+.mb-md { margin-bottom: 1rem; }
 
 /* ===== 2) Standalone Table V02 (no Bootstrap table dependency) ===== */
 
