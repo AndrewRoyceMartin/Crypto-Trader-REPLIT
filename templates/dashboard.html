@@ -74,6 +74,27 @@
 .dashboard-section .table-v02--compact th,
 .dashboard-section .table-v02--compact td{ padding:8px 10px; font-size:12px; }
 
+/* ULTRA HIGH SPECIFICITY - Force blue headers regardless of Bootstrap */
+.table-responsive .table-v02 thead th,
+.table-responsive .table-v02--compact thead th,
+div.table-responsive table.table-v02 thead th,
+div.table-responsive table.table-v02--compact thead th {
+  background-color: #6c7ae0 !important;
+  background: #6c7ae0 !important;
+  color: #ffffff !important;
+  border-color: transparent !important;
+}
+
+/* Override any possible Bootstrap table inheritance */
+.table-responsive .table-v02,
+.table-responsive .table-v02--compact {
+  --bs-table-bg: transparent !important;
+  --bs-table-accent-bg: transparent !important;
+  --bs-table-striped-bg: transparent !important;
+  --bs-table-active-bg: transparent !important;
+  --bs-table-hover-bg: transparent !important;
+}
+
 /* Dashboard-specific styling */
 .dashboard-header {
     background: linear-gradient(135deg, var(--accent-blue) 0%, var(--secondary-dark) 100%);
@@ -899,14 +920,36 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 
 <script>
-/* Runtime sanitizer (removes Bootstrap/legacy classes if JS adds them) */
+/* NUCLEAR OPTION: Force blue headers with maximum specificity */
 document.addEventListener('DOMContentLoaded', () => {
-  document.querySelectorAll('.table-v02, .table-v02--compact').forEach(el => {
-    // Remove Bootstrap/legacy classes that hijack styles
-    ['table','table-striped','table-hover','table-sm','data-table','legacy-table']
-      .forEach(c => el.classList.remove(c));
-    el.setAttribute('data-style','v02');
-  });
+  function forceBlueHeaders() {
+    document.querySelectorAll('.table-v02 thead th, .table-v02--compact thead th').forEach(header => {
+      // Triple force with style, CSS custom properties, and class attributes
+      header.style.setProperty('background-color', '#6c7ae0', 'important');
+      header.style.setProperty('background', '#6c7ae0', 'important');
+      header.style.setProperty('color', '#ffffff', 'important');
+      header.style.setProperty('border-color', 'transparent', 'important');
+      
+      // Remove any Bootstrap classes from the table itself
+      const table = header.closest('table');
+      if (table) {
+        ['table','table-striped','table-hover','table-sm','table-bordered','table-borderless'].forEach(cls => {
+          if (table.classList.contains(cls)) table.classList.remove(cls);
+        });
+      }
+    });
+  }
+  
+  // Run immediately
+  forceBlueHeaders();
+  
+  // Run again after a short delay for dynamic content
+  setTimeout(forceBlueHeaders, 100);
+  setTimeout(forceBlueHeaders, 500);
+  
+  // Also run whenever new content is added
+  const observer = new MutationObserver(forceBlueHeaders);
+  observer.observe(document.body, { childList: true, subtree: true });
 });
 </script>
 {% endblock %}
