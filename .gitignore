@@ -2,3 +2,9 @@
 __pycache__/
 artifacts/
 .DS_Store
+node_modules/
+.env
+.env.local
+.DS_Store
+dist/
+build/
