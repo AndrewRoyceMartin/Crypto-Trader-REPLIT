@@ -116,3 +116,21 @@ class Config:
             }
         else:
             raise ValueError(f"Unknown exchange: {exchange}")
+            # config.py
+import os
+from dataclasses import dataclass
+from dotenv import load_dotenv
+
+# In production (Render), env vars are already present.
+# In local dev, this loads .env / .env.local if present.
+load_dotenv(override=False)
+
+@dataclass(frozen=True)
+class Settings:
+    # Declare the secrets you need (edit to match your app)
+    COIN_API_KEY: str = os.getenv("COIN_API_KEY", "")
+    DATABASE_URL: str = os.getenv("DATABASE_URL", "")
+    OTHER_SECRET: str = os.getenv("OTHER_SECRET", "")
+
+settings = Settings()
+
