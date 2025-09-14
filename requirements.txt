@@ -26,3 +26,4 @@ charset-normalizer
 requests
 urllib3
 beautifulsoup4
+python-dotenv>=1.0.1
