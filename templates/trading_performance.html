@@ -757,41 +757,41 @@ class TradingPerformanceDashboard {
     }
 
     updateOverviewCards(data) {
-        const metrics = data.portfolio_metrics;
-        const signals = data.signal_metrics;
+        const metrics = data.portfolio_metrics || {};
+        const signals = data.signal_metrics || {};
 
-        document.getElementById('totalValue').textContent = `$${metrics.total_value.toLocaleString()}`;
-        document.getElementById('totalPnl').textContent = `$${metrics.total_pnl.toLocaleString()}`;
-        document.getElementById('totalPnl').className = `metric-value ${metrics.total_pnl >= 0 ? 'text-success' : 'text-danger'}`;
-        const wr = Number(metrics.win_rate);
+        document.getElementById('totalValue').textContent = `$${(metrics.total_value || 0).toLocaleString()}`;
+        document.getElementById('totalPnl').textContent = `$${(metrics.total_pnl || 0).toLocaleString()}`;
+        document.getElementById('totalPnl').className = `metric-value ${(metrics.total_pnl || 0) >= 0 ? 'text-success' : 'text-danger'}`;
+        const wr = Number(metrics.win_rate || 0);
         document.getElementById('winRate').textContent = isFinite(wr) ? `${wr.toFixed(2)}%` : 'N/A';
-        document.getElementById('mlAccuracy').textContent = `${signals.ml_accuracy}%`;
+        document.getElementById('mlAccuracy').textContent = `${signals.ml_accuracy || 0}%`;
     }
     
     updateOverviewCardsWithAnimation(data) {
-        const metrics = data.portfolio_metrics;
-        const signals = data.signal_metrics;
+        const metrics = data.portfolio_metrics || {};
+        const signals = data.signal_metrics || {};
         
         // Define the metrics data with animations
         const metricUpdates = [
             { 
                 id: 'totalValue', 
-                value: `$${metrics.total_value.toLocaleString()}`, 
+                value: `$${(metrics.total_value || 0).toLocaleString()}`, 
                 className: 'metric-value text-info' 
             },
             { 
                 id: 'totalPnl', 
-                value: `$${metrics.total_pnl.toLocaleString()}`, 
-                className: `metric-value ${metrics.total_pnl >= 0 ? 'text-success' : 'text-danger'}` 
+                value: `$${(metrics.total_pnl || 0).toLocaleString()}`, 
+                className: `metric-value ${(metrics.total_pnl || 0) >= 0 ? 'text-success' : 'text-danger'}` 
             },
             { 
                 id: 'winRate', 
-                value: (() => { const wr = Number(metrics.win_rate); return isFinite(wr) ? `${wr.toFixed(2)}%` : 'N/A'; })(), 
+                value: (() => { const wr = Number(metrics.win_rate || 0); return isFinite(wr) ? `${wr.toFixed(2)}%` : 'N/A'; })(), 
                 className: 'metric-value text-warning' 
             },
             { 
                 id: 'mlAccuracy', 
-                value: `${signals.ml_accuracy}%`, 
+                value: `${signals.ml_accuracy || 0}%`, 
                 className: 'metric-value text-success' 
             }
         ];
@@ -831,21 +831,21 @@ class TradingPerformanceDashboard {
         const bestEl = document.getElementById('bestPerformer');
         const worstEl = document.getElementById('worstPerformer');
 
-        if (performers.best) {
+        if (performers && performers.best) {
             bestEl.innerHTML = `
-                <h4 class="text-success">${performers.best.symbol}</h4>
-                <p class="text-success mb-1">+${performers.best.pnl_percent.toFixed(2)}%</p>
-                <p class="text-muted">$${performers.best.pnl_usd.toFixed(2)}</p>
+                <h4 class="text-success">${performers.best.symbol || 'N/A'}</h4>
+                <p class="text-success mb-1">+${(performers.best.pnl_percent || 0).toFixed(2)}%</p>
+                <p class="text-muted">$${(performers.best.pnl_usd || 0).toFixed(2)}</p>
             `;
         } else {
             bestEl.innerHTML = '<p class="text-muted">No data</p>';
         }
 
-        if (performers.worst) {
+        if (performers && performers.worst) {
             worstEl.innerHTML = `
-                <h4 class="text-danger">${performers.worst.symbol}</h4>
-                <p class="text-danger mb-1">${performers.worst.pnl_percent.toFixed(2)}%</p>
-                <p class="text-muted">$${performers.worst.pnl_usd.toFixed(2)}</p>
+                <h4 class="text-danger">${performers.worst.symbol || 'N/A'}</h4>
+                <p class="text-danger mb-1">${(performers.worst.pnl_percent || 0).toFixed(2)}%</p>
+                <p class="text-muted">$${(performers.worst.pnl_usd || 0).toFixed(2)}</p>
             `;
         } else {
             worstEl.innerHTML = '<p class="text-muted">No data</p>';
@@ -930,23 +930,24 @@ class TradingPerformanceDashboard {
 
         tbody.innerHTML = signals.map(signal => `
             <tr class="trade-row">
-                <td><strong>${signal.symbol}</strong></td>
-                <td><span class="signal-badge signal-${signal.signal}">${signal.signal}</span></td>
-                <td>${signal.hybrid_score.toFixed(1)}%</td>
-                <td><span class="outcome-badge outcome-${signal.outcome}">${signal.outcome.replace('_', ' ')}</span></td>
-                <td class="${signal.pnl_percent !== null ? (signal.pnl_percent >= 0 ? 'text-success' : 'text-danger') : 'text-muted'}">
-                    ${signal.pnl_percent !== null ? signal.pnl_percent.toFixed(2) + '%' : 'N/A'}
+                <td><strong>${signal.symbol || 'N/A'}</strong></td>
+                <td><span class="signal-badge signal-${signal.signal || 'UNKNOWN'}">${signal.signal || 'UNKNOWN'}</span></td>
+                <td>${signal.hybrid_score ? signal.hybrid_score.toFixed(1) : '0.0'}%</td>
+                <td><span class="outcome-badge outcome-${signal.outcome || 'PENDING'}">${(signal.outcome || 'PENDING').replace('_', ' ')}</span></td>
+                <td class="${signal.pnl_percent !== null && signal.pnl_percent !== undefined ? (signal.pnl_percent >= 0 ? 'text-success' : 'text-danger') : 'text-muted'}">
+                    ${signal.pnl_percent !== null && signal.pnl_percent !== undefined && !isNaN(signal.pnl_percent) ? signal.pnl_percent.toFixed(2) + '%' : 'N/A'}
                 </td>
             </tr>
         `).join('');
     }
 
     updateTradeSummary(summary) {
-        document.getElementById('totalTrades').textContent = summary.total_trades;
-        document.getElementById('winningTrades').textContent = summary.winning_trades;
-        document.getElementById('losingTrades').textContent = summary.losing_trades;
-        document.getElementById('avgPnl').textContent = `${summary.avg_pnl_percent.toFixed(2)}%`;
-        document.getElementById('avgPnl').className = `metric-value ${summary.avg_pnl_percent >= 0 ? 'text-success' : 'text-danger'}`;
+        document.getElementById('totalTrades').textContent = summary.total_trades || 0;
+        document.getElementById('winningTrades').textContent = summary.winning_trades || 0;
+        document.getElementById('losingTrades').textContent = summary.losing_trades || 0;
+        const avgPnl = summary.avg_pnl_percent || 0;
+        document.getElementById('avgPnl').textContent = `${avgPnl.toFixed(2)}%`;
+        document.getElementById('avgPnl').className = `metric-value ${avgPnl >= 0 ? 'text-success' : 'text-danger'}`;
     }
 
     updateTradesTable(trades) {
@@ -1006,10 +1007,13 @@ try {
             console.log('🎯 FORCED API RESPONSE:', data);
             if (data.success && data.portfolio_metrics) {
                 console.log('🔥 FORCE UPDATING DOM');
-                document.getElementById('totalValue').textContent = `$${data.portfolio_metrics.total_value.toLocaleString()}`;
-                document.getElementById('totalPnl').textContent = `$${data.portfolio_metrics.total_pnl.toLocaleString()}`;
-                document.getElementById('winRate').textContent = `${data.portfolio_metrics.win_rate}%`;
-                document.getElementById('mlAccuracy').textContent = `${data.signal_metrics.ml_accuracy}%`;
+                const metrics = data.portfolio_metrics;
+                const signals = data.signal_metrics || {};
+                document.getElementById('totalValue').textContent = `$${(metrics.total_value || 0).toLocaleString()}`;
+                document.getElementById('totalPnl').textContent = `$${(metrics.total_pnl || 0).toLocaleString()}`;
+                const wr = Number(metrics.win_rate || 0);
+                document.getElementById('winRate').textContent = isFinite(wr) ? `${wr.toFixed(2)}%` : 'N/A';
+                document.getElementById('mlAccuracy').textContent = `${signals.ml_accuracy || 0}%`;
                 console.log('✅ DOM FORCE UPDATE COMPLETE');
             }
         })
