@@ -387,6 +387,32 @@ window.onerror = (m, s, l, c, e) => console.error('JS error:', m, s, l, c, e);
 let backtestResults = null;
 let pnlChart = null;
 
+// Helper functions for metric updates
+function safeParseFloat(value, defaultValue = 0) {
+    const parsed = parseFloat(value);
+    return isNaN(parsed) ? defaultValue : parsed;
+}
+
+function fmtPct(value, decimals = 1) {
+    return safeParseFloat(value).toFixed(decimals) + '%';
+}
+
+function setMetric(id, valueText) {
+    const element = document.getElementById(id);
+    if (!element) return;
+    
+    // Remove any skeleton child nodes
+    const skeletons = element.querySelectorAll('.loading-skeleton, .loading-skeleton-metric');
+    skeletons.forEach(skeleton => skeleton.remove());
+    
+    // Set the final text content
+    element.textContent = valueText;
+    
+    // Toggle CSS classes for loaded state
+    element.classList.remove('metric-loading');
+    element.classList.add('metric-loaded');
+}
+
 // Removed duplicate CSV-based loadBacktestResults function - using API-based version below
 
 function parseCSV(csvText) {
@@ -533,18 +559,11 @@ function updateSummaryStats(results) {
     if (window.backtestSummary) {
         const summary = window.backtestSummary;
         
-        // Update main display using summary data from API with error checking
-        const avgPnLEl = document.getElementById('avgPnL');
-        if (avgPnLEl) avgPnLEl.textContent = Number(summary.avg_pnl_percent || 0).toFixed(2) + '%';
-        
-        const winRateEl = document.getElementById('winRate');
-        if (winRateEl) winRateEl.textContent = Number(summary.win_rate || 0).toFixed(1) + '%';
-        
-        const matchRateEl = document.getElementById('matchRate');
-        if (matchRateEl) matchRateEl.textContent = '100%'; // All results are matched since they come from real trades
-        
-        const totalTradesEl = document.getElementById('totalTrades');
-        if (totalTradesEl) totalTradesEl.textContent = summary.total_trades || 0;
+        // Update main display using setMetric helper to clear skeletons and set loaded state
+        setMetric('avgPnL', fmtPct(summary.avg_pnl_percent || 0, 2));
+        setMetric('winRate', fmtPct(summary.win_rate || 0));
+        setMetric('matchRate', '100%'); // All results are matched since they come from real trades
+        setMetric('totalTrades', String(summary.total_trades || 0));
         
         console.log('✅ Status cards updated with API summary data');
     } else {
@@ -554,29 +573,29 @@ function updateSummaryStats(results) {
         if (matchedResults.length === 0) {
             // Use all results if no matched field
             const allResults = results;
-            const pnlValues = allResults.map(r => parseFloat(r['pnl_%'] || r['pnl_percent'] || 0));
+            const pnlValues = allResults.map(r => safeParseFloat(r['pnl_%'] || r['pnl_percent']));
             const avgPnL = pnlValues.length > 0 ? pnlValues.reduce((a, b) => a + b, 0) / pnlValues.length : 0;
             const winningTrades = pnlValues.filter(p => p > 0).length;
             const winRate = pnlValues.length > 0 ? (winningTrades / pnlValues.length) * 100 : 0;
             
-            // Update main display
-            document.getElementById('avgPnL').textContent = avgPnL.toFixed(2) + '%';
-            document.getElementById('winRate').textContent = winRate.toFixed(1) + '%';
-            document.getElementById('matchRate').textContent = '100%';
-            document.getElementById('totalTrades').textContent = allResults.length;
+            // Update main display using setMetric helper
+            setMetric('avgPnL', fmtPct(avgPnL, 2));
+            setMetric('winRate', fmtPct(winRate));
+            setMetric('matchRate', '100%');
+            setMetric('totalTrades', String(allResults.length));
         } else {
             // Use matched results
-            const pnlValues = matchedResults.map(r => parseFloat(r['pnl_%'] || r['pnl_percent'] || 0));
+            const pnlValues = matchedResults.map(r => safeParseFloat(r['pnl_%'] || r['pnl_percent']));
             const avgPnL = pnlValues.reduce((a, b) => a + b, 0) / pnlValues.length;
             const winningTrades = pnlValues.filter(p => p > 0).length;
             const winRate = (winningTrades / pnlValues.length) * 100;
             const matchRate = (matchedResults.length / results.length) * 100;
             
-            // Update main display
-            document.getElementById('avgPnL').textContent = avgPnL.toFixed(2) + '%';
-            document.getElementById('winRate').textContent = winRate.toFixed(1) + '%';
-            document.getElementById('matchRate').textContent = matchRate.toFixed(1) + '%';
-            document.getElementById('totalTrades').textContent = matchedResults.length;
+            // Update main display using setMetric helper
+            setMetric('avgPnL', fmtPct(avgPnL, 2));
+            setMetric('winRate', fmtPct(winRate));
+            setMetric('matchRate', fmtPct(matchRate));
+            setMetric('totalTrades', String(matchedResults.length));
         }
     }
     
