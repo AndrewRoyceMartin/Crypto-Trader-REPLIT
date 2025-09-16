@@ -2762,66 +2762,650 @@ def api_current_holdings() -> ResponseReturnValue:
 
 @app.route("/api/market-price/<symbol>")
 def api_market_price(symbol: str) -> ResponseReturnValue:
-    """Get current market price for a symbol."""
+    """Get current market price for a symbol with enhanced OKX integration."""
     try:
-        # Use existing market prices endpoint data
-        from src.services.portfolio_service import get_portfolio_service
-        
-        # Get market prices from portfolio data
-        portfolio_service = get_portfolio_service()
-        data = portfolio_service.get_portfolio_data()
-        prices_data = {}
-        for holding in data.get('holdings', []):
-            symbol_key = holding.get('symbol', '').upper()
-            if symbol_key:
-                prices_data[symbol_key] = holding.get('current_price', 0)
-        
         symbol_upper = symbol.upper()
-        if symbol_upper in prices_data:
-            return jsonify({
-                'success': True,
-                'symbol': symbol_upper,
-                'price': prices_data[symbol_upper],
-                'timestamp': datetime.now().isoformat()
-            })
+        
+        # Try multiple methods to get the price
+        price = None
+        price_source = "unknown"
+        
+        # Method 1: Try OKX native client
+        try:
+            client = get_okx_native_client()
+            okx_symbol = f"{symbol_upper}-USDT"
+            ticker_data = client.ticker(okx_symbol)
+            
+            if ticker_data and ticker_data.get('last', 0) > 0:
+                price = float(ticker_data['last'])
+                price_source = "okx_native"
+                logger.debug(f"✅ Price from OKX native: {symbol_upper} = ${price}")
+        except Exception as e:
+            logger.debug(f"OKX native price fetch failed for {symbol_upper}: {e}")
+        
+        # Method 2: Try portfolio service/reusable exchange
+        if not price:
+            try:
+                pair = f"{symbol_upper}/USDT"
+                price = get_public_price(pair)
+                if price and price > 0:
+                    price_source = "portfolio_service"
+                    logger.debug(f"✅ Price from portfolio service: {symbol_upper} = ${price}")
+            except Exception as e:
+                logger.debug(f"Portfolio service price fetch failed for {symbol_upper}: {e}")
+        
+        # Method 3: Try current holdings lookup
+        if not price:
+            try:
+                portfolio_service = get_portfolio_service()
+                data = portfolio_service.get_portfolio_data()
+                holdings = data.get('holdings', [])
+                
+                matching_holding = next((h for h in holdings if h.get('symbol', '') == symbol_upper), None)
+                if matching_holding and matching_holding.get('current_price', 0) > 0:
+                    price = float(matching_holding['current_price'])
+                    price_source = "portfolio_holdings"
+                    logger.debug(f"✅ Price from portfolio holdings: {symbol_upper} = ${price}")
+            except Exception as e:
+                logger.debug(f"Portfolio holdings price fetch failed for {symbol_upper}: {e}")
+        
+        if price and price > 0:
+            # Get additional market data if available
+            try:
+                client = get_okx_native_client()
+                okx_symbol = f"{symbol_upper}-USDT"
+                ticker_data = client.ticker(okx_symbol)
+                
+                change_24h = ticker_data.get('pct_24h', 0.0) if ticker_data else 0.0
+                volume_24h = ticker_data.get('vol24h', 0.0) if ticker_data else 0.0
+                high_24h = ticker_data.get('high24h', price) if ticker_data else price
+                low_24h = ticker_data.get('low24h', price) if ticker_data else price
+                
+                return jsonify({
+                    'success': True,
+                    'symbol': symbol_upper,
+                    'price': price,
+                    'change_24h': change_24h,
+                    'change_24h_percent': change_24h,
+                    'volume_24h': volume_24h,
+                    'high_24h': high_24h,
+                    'low_24h': low_24h,
+                    'price_source': price_source,
+                    'timestamp': datetime.now().isoformat()
+                })
+            except Exception:
+                # Fallback to basic response
+                return jsonify({
+                    'success': True,
+                    'symbol': symbol_upper,
+                    'price': price,
+                    'price_source': price_source,
+                    'timestamp': datetime.now().isoformat()
+                })
         else:
-            # Return a basic price structure if not found
+            logger.warning(f"⚠️ Unable to fetch price for {symbol_upper} from any source")
             return jsonify({
                 'success': False,
                 'error': f'Price not available for {symbol_upper}',
-                'symbol': symbol_upper
+                'symbol': symbol_upper,
+                'attempted_sources': ['okx_native', 'portfolio_service', 'portfolio_holdings']
             }), 404
             
     except Exception as e:
-        logger.error(f"Error getting market price for {symbol}: {e}")
-        return jsonify({'success': False, 'error': str(e)}), 500
+        logger.error(f"Market price error for {symbol}: {e}")
+        return jsonify({
+            'success': False, 
+            'error': str(e),
+            'symbol': symbol.upper()
+        }), 500
 
 @app.route("/api/hybrid-signal")
 def api_hybrid_signal() -> ResponseReturnValue:
-    """Get hybrid trading signal for a symbol."""
+    """Get hybrid trading signal combining ML predictions with technical analysis."""
     try:
+        # Parse request parameters
         symbol = request.args.get('symbol', '').upper()
         price = request.args.get('price', 0, type=float)
         
         if not symbol:
-            return jsonify({'success': False, 'error': 'Symbol parameter required'}), 400
+            return jsonify({
+                'success': False, 
+                'error': 'Symbol parameter required',
+                'timing_signal': 'WAIT',
+                'confidence_score': 0
+            }), 400
+        
+        logger.info(f"🔍 Computing hybrid signal for {symbol} at ${price}")
+        
+        # Fetch current price if not provided
+        if not price or price <= 0:
+            try:
+                price = get_public_price(f"{symbol}/USDT")
+                if price <= 0:
+                    return jsonify({
+                        'success': False,
+                        'error': f'Unable to fetch current price for {symbol}',
+                        'timing_signal': 'WAIT',
+                        'confidence_score': 0
+                    }), 400
+            except Exception as e:
+                logger.error(f"Price fetch failed for {symbol}: {e}")
+                return jsonify({
+                    'success': False,
+                    'error': f'Price data unavailable for {symbol}',
+                    'timing_signal': 'WAIT', 
+                    'confidence_score': 0
+                }), 400
+        
+        # Fetch OKX OHLCV candles for technical analysis
+        historical_data = []
+        try:
+            client = get_okx_native_client()
+            okx_symbol = to_okx_inst(f"{symbol}/USDT")
             
-        # Return a basic signal structure (can be enhanced later)
-        return jsonify({
+            # Get ~200 recent 1-hour candles 
+            raw_candles = with_throttle(client.candles, okx_symbol, "1H", limit=200)
+            
+            if raw_candles and len(raw_candles) >= 20:
+                # Convert OKX candles to expected format: [timestamp, open, high, low, close, volume]
+                for candle in raw_candles:
+                    if len(candle) >= 6:
+                        try:
+                            historical_data.append({
+                                'ts': int(candle[0]),
+                                'open': float(candle[1]), 
+                                'high': float(candle[2]),
+                                'low': float(candle[3]),
+                                'close': float(candle[4]),
+                                'volume': float(candle[5]),
+                                'price': float(candle[4])  # Use close as price
+                            })
+                        except (ValueError, IndexError) as e:
+                            logger.debug(f"Skipping invalid candle: {candle} - {e}")
+                            continue
+                
+                logger.info(f"✅ Fetched {len(historical_data)} candles for {symbol}")
+            else:
+                logger.warning(f"⚠️ Insufficient candle data for {symbol}: {len(raw_candles) if raw_candles else 0} candles")
+                
+        except Exception as e:
+            logger.error(f"❌ Failed to fetch OHLCV data for {symbol}: {e}")
+        
+        # Fallback to basic price data if no historical data
+        if not historical_data:
+            logger.warning(f"⚠️ Using fallback price data for {symbol}")
+            historical_data = [{'price': price, 'volume': 1000.0}]
+        
+        # Calculate technical indicators using real data
+        technical_indicators = calculate_technical_indicators(historical_data, price)
+        
+        # Generate enhanced filters/signals
+        enhanced_filters = generate_enhanced_filters(technical_indicators, historical_data, price)
+        
+        # Try ML integration 
+        ml_integration = get_ml_integration(symbol, price, historical_data, technical_indicators)
+        
+        # Calculate hybrid score: 60% traditional + 40% ML
+        traditional_score = technical_indicators.get('composite_confidence', 50.0)
+        
+        if ml_integration['ml_enabled'] and ml_integration['ml_probability'] is not None:
+            # Real hybrid scoring
+            ml_score = ml_integration['ml_probability'] * 100  # Convert to 0-100 scale
+            hybrid_score = 0.6 * traditional_score + 0.4 * ml_score
+            analysis_type = 'HYBRID'
+            logger.info(f"🧠 Hybrid scoring: {traditional_score:.1f}*0.6 + {ml_score:.1f}*0.4 = {hybrid_score:.1f}")
+        else:
+            # Fallback to traditional only
+            hybrid_score = traditional_score
+            analysis_type = 'TRADITIONAL'
+            logger.info(f"📊 Traditional scoring only: {hybrid_score:.1f}")
+        
+        # Generate timing signal based on calibrated thresholds 
+        timing_signal = generate_timing_signal(hybrid_score)
+        confidence_level = get_confidence_level(hybrid_score)
+        risk_level = get_risk_level(hybrid_score)
+        
+        # Calculate target price suggestion
+        suggested_target_price = calculate_target_price(symbol, price, technical_indicators)
+        
+        # Build system info
+        system_info = {
+            'description': 'Hybrid ML + Technical Analysis Signal System',
+            'formula': '0.6 * technical_score + 0.4 * ml_probability * 100' if ml_integration['ml_enabled'] else 'Traditional 6-factor analysis',
+            'thresholds': {
+                'BUY': '≥65 (Strong confidence)',
+                'CONSIDER': '≥55 (Moderate confidence)',
+                'WAIT': '≥45 (Weak confidence)', 
+                'AVOID': '<45 (Poor confidence)'
+            },
+            'version': '3.0'
+        }
+        
+        # Construct response matching frontend expectations
+        response = {
             'success': True,
             'symbol': symbol,
-            'price': price,
-            'signal': 'NEUTRAL',
-            'confidence': 0.5,
-            'technical_score': 0.5,
-            'ml_score': 0.5,
-            'hybrid_score': 0.5,
-            'timestamp': datetime.now().isoformat()
-        })
+            'current_price': price,
+            'confidence_score': round(hybrid_score, 1),
+            'timing_signal': timing_signal,
+            'analysis_type': analysis_type,
+            'version': '3.0',
+            'risk_level': risk_level,
+            'suggested_target_price': suggested_target_price,
+            'ml_integration': ml_integration,
+            'enhanced_filters': enhanced_filters,
+            'system_info': system_info,
+            'timestamp': iso_utc()
+        }
+        
+        logger.info(f"✅ Generated {analysis_type} signal for {symbol}: {timing_signal} ({hybrid_score:.1f})")
+        return _no_cache_json(response)
         
     except Exception as e:
-        logger.error(f"Error getting hybrid signal: {e}")
-        return jsonify({'success': False, 'error': str(e)}), 500
+        logger.error(f"❌ Hybrid signal error for {symbol}: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'timing_signal': 'WAIT',
+            'confidence_score': 0,
+            'analysis_type': 'ERROR',
+            'timestamp': iso_utc()
+        }), 500
+
+
+def calculate_technical_indicators(historical_data: list[dict], current_price: float) -> dict[str, float]:
+    """Calculate technical indicators from historical OHLCV data."""
+    try:
+        if not historical_data or len(historical_data) < 7:
+            logger.warning("Insufficient data for technical indicators")
+            return {
+                'rsi_14': 50.0,
+                'volatility_7': 20.0, 
+                'volume_ratio': 1.0,
+                'momentum': 0.0,
+                'composite_confidence': 50.0
+            }
+        
+        # Extract price and volume data
+        prices = [float(d.get('close', d.get('price', current_price))) for d in historical_data]
+        volumes = [float(d.get('volume', 1000.0)) for d in historical_data]
+        
+        # Ensure we have enough data points
+        prices = prices[-50:] if len(prices) > 50 else prices  # Last 50 periods max
+        volumes = volumes[-50:] if len(volumes) > 50 else volumes
+        
+        indicators = {}
+        
+        # RSI (14-period) calculation
+        try:
+            if len(prices) >= 14:
+                deltas = [prices[i] - prices[i-1] for i in range(1, len(prices))]
+                gains = [max(d, 0) for d in deltas]
+                losses = [max(-d, 0) for d in deltas]
+                
+                # Simple moving average for RSI
+                recent_gains = gains[-14:]
+                recent_losses = losses[-14:]
+                
+                avg_gain = sum(recent_gains) / len(recent_gains) if recent_gains else 0
+                avg_loss = sum(recent_losses) / len(recent_losses) if recent_losses else 0.01
+                
+                rs = avg_gain / avg_loss if avg_loss > 0 else 100
+                rsi = 100 - (100 / (1 + rs))
+                indicators['rsi_14'] = max(0, min(100, rsi))
+            else:
+                indicators['rsi_14'] = 50.0
+        except Exception as e:
+            logger.debug(f"RSI calculation failed: {e}")
+            indicators['rsi_14'] = 50.0
+        
+        # Volatility (7-period standard deviation %)
+        try:
+            if len(prices) >= 7:
+                recent_prices = prices[-7:]
+                returns = [(recent_prices[i] / recent_prices[i-1]) - 1 for i in range(1, len(recent_prices))]
+                
+                if returns:
+                    mean_return = sum(returns) / len(returns)
+                    variance = sum((r - mean_return) ** 2 for r in returns) / len(returns)
+                    volatility = (variance ** 0.5) * 100  # Convert to percentage
+                    indicators['volatility_7'] = max(0, volatility)
+                else:
+                    indicators['volatility_7'] = 20.0
+            else:
+                indicators['volatility_7'] = 20.0
+        except Exception as e:
+            logger.debug(f"Volatility calculation failed: {e}")
+            indicators['volatility_7'] = 20.0
+        
+        # Volume ratio vs 20-period average
+        try:
+            if len(volumes) >= 20:
+                recent_volume = volumes[-1]
+                avg_volume = sum(volumes[-20:]) / 20
+                indicators['volume_ratio'] = recent_volume / avg_volume if avg_volume > 0 else 1.0
+            else:
+                indicators['volume_ratio'] = 1.0
+        except Exception as e:
+            logger.debug(f"Volume ratio calculation failed: {e}")
+            indicators['volume_ratio'] = 1.0
+        
+        # Momentum % (price change over last 7 periods)
+        try:
+            if len(prices) >= 7:
+                old_price = prices[-7]
+                current = prices[-1]
+                momentum_pct = ((current - old_price) / old_price * 100) if old_price > 0 else 0
+                indicators['momentum'] = momentum_pct
+            else:
+                indicators['momentum'] = 0.0
+        except Exception as e:
+            logger.debug(f"Momentum calculation failed: {e}")
+            indicators['momentum'] = 0.0
+        
+        # SMA trend (20 vs 50 period comparison)
+        try:
+            if len(prices) >= 50:
+                sma_20 = sum(prices[-20:]) / 20
+                sma_50 = sum(prices[-50:]) / 50
+                indicators['sma_trend'] = ((sma_20 - sma_50) / sma_50 * 100) if sma_50 > 0 else 0
+            elif len(prices) >= 20:
+                sma_20 = sum(prices[-20:]) / 20
+                indicators['sma_trend'] = ((sma_20 - prices[0]) / prices[0] * 100) if prices[0] > 0 else 0
+            else:
+                indicators['sma_trend'] = 0.0
+        except Exception as e:
+            logger.debug(f"SMA trend calculation failed: {e}")
+            indicators['sma_trend'] = 0.0
+        
+        # Bollinger Bands (20-period, 2 standard deviations)
+        try:
+            if len(prices) >= 20:
+                recent_20 = prices[-20:]
+                sma = sum(recent_20) / 20
+                
+                # Calculate standard deviation
+                variance = sum((p - sma) ** 2 for p in recent_20) / 20
+                std_dev = variance ** 0.5
+                
+                upper_band = sma + (2 * std_dev)
+                lower_band = sma - (2 * std_dev)
+                
+                current = prices[-1]
+                indicators['bollinger_upper'] = upper_band
+                indicators['bollinger_lower'] = lower_band
+                indicators['bollinger_sma'] = sma
+                
+                # Check if oversold (below lower band)
+                indicators['bollinger_oversold'] = current < lower_band
+                
+                # Bollinger Band position (0-100 scale)
+                bb_position = ((current - lower_band) / (upper_band - lower_band) * 100) if upper_band > lower_band else 50
+                indicators['bollinger_position'] = max(0, min(100, bb_position))
+            else:
+                indicators['bollinger_oversold'] = False
+                indicators['bollinger_position'] = 50.0
+        except Exception as e:
+            logger.debug(f"Bollinger Bands calculation failed: {e}")
+            indicators['bollinger_oversold'] = False
+            indicators['bollinger_position'] = 50.0
+        
+        # Composite confidence score based on technical factors
+        try:
+            confidence = 50.0  # Base score
+            
+            # RSI factor (oversold conditions are positive)
+            rsi = indicators.get('rsi_14', 50)
+            if rsi < 30:  # Oversold
+                confidence += 15
+            elif rsi < 50:
+                confidence += 5
+            elif rsi > 70:  # Overbought (negative)
+                confidence -= 10
+            
+            # Volatility factor (moderate volatility is positive)
+            vol = indicators.get('volatility_7', 20)
+            if 10 <= vol <= 30:  # Sweet spot
+                confidence += 10
+            elif vol > 50:  # Too volatile
+                confidence -= 15
+            
+            # Volume factor (above average is positive)
+            vol_ratio = indicators.get('volume_ratio', 1.0)
+            if vol_ratio > 1.5:
+                confidence += 10
+            elif vol_ratio > 1.2:
+                confidence += 5
+            
+            # Momentum factor
+            momentum = indicators.get('momentum', 0)
+            if momentum > 5:  # Positive momentum
+                confidence += 10
+            elif momentum < -10:  # Strong negative momentum
+                confidence -= 15
+            
+            # SMA trend factor
+            sma_trend = indicators.get('sma_trend', 0)
+            if sma_trend > 2:  # Positive trend
+                confidence += 10
+            elif sma_trend < -5:  # Negative trend
+                confidence -= 10
+            
+            # Bollinger oversold factor
+            if indicators.get('bollinger_oversold', False):
+                confidence += 15  # Oversold can be a good entry point
+            
+            indicators['composite_confidence'] = max(0, min(100, confidence))
+            
+        except Exception as e:
+            logger.debug(f"Composite confidence calculation failed: {e}")
+            indicators['composite_confidence'] = 50.0
+        
+        logger.debug(f"📊 Technical indicators calculated: RSI={indicators.get('rsi_14', 0):.1f}, Vol={indicators.get('volatility_7', 0):.1f}%, Conf={indicators.get('composite_confidence', 0):.1f}")
+        
+        return indicators
+        
+    except Exception as e:
+        logger.error(f"❌ Technical indicators calculation failed: {e}")
+        return {
+            'rsi_14': 50.0,
+            'volatility_7': 20.0,
+            'volume_ratio': 1.0, 
+            'momentum': 0.0,
+            'composite_confidence': 50.0
+        }
+
+
+def generate_enhanced_filters(technical_indicators: dict, historical_data: list[dict], current_price: float) -> dict:
+    """Generate enhanced filters/signals based on technical analysis."""
+    try:
+        # Technical indicators section
+        tech_indicators = {
+            'rsi_14': technical_indicators.get('rsi_14', 50.0),
+            'volatility_7': technical_indicators.get('volatility_7', 20.0),
+            'volume_ratio': technical_indicators.get('volume_ratio', 1.0),
+            'momentum': technical_indicators.get('momentum', 0.0)
+        }
+        
+        # Signal flags based on technical analysis
+        signals = {
+            'momentum_positive': technical_indicators.get('momentum', 0) > 0,
+            'near_support': detect_near_support(historical_data, current_price),
+            'bollinger_oversold': technical_indicators.get('bollinger_oversold', False),
+            'volume_above_average': technical_indicators.get('volume_ratio', 1.0) > 1.2,
+            'trend_bullish': technical_indicators.get('sma_trend', 0) > 0
+        }
+        
+        return {
+            'technical_indicators': tech_indicators,
+            'signals': signals
+        }
+        
+    except Exception as e:
+        logger.error(f"Enhanced filters generation failed: {e}")
+        return {
+            'technical_indicators': {
+                'rsi_14': 50.0,
+                'volatility_7': 20.0,
+                'volume_ratio': 1.0,
+                'momentum': 0.0
+            },
+            'signals': {
+                'momentum_positive': False,
+                'near_support': False, 
+                'bollinger_oversold': False,
+                'volume_above_average': False,
+                'trend_bullish': False
+            }
+        }
+
+
+def detect_near_support(historical_data: list[dict], current_price: float) -> bool:
+    """Detect if current price is near a support level."""
+    try:
+        if not historical_data or len(historical_data) < 20:
+            return False
+        
+        # Get recent low prices
+        lows = []
+        for d in historical_data[-20:]:
+            low_price = d.get('low', d.get('price', current_price))
+            lows.append(float(low_price))
+        
+        if not lows:
+            return False
+        
+        # Find potential support (recent significant low)
+        min_low = min(lows)
+        
+        # Check if current price is within 5% of recent low
+        support_threshold = min_low * 1.05
+        return current_price <= support_threshold
+        
+    except Exception as e:
+        logger.debug(f"Support detection failed: {e}")
+        return False
+
+
+def get_ml_integration(symbol: str, price: float, historical_data: list[dict], technical_indicators: dict) -> dict:
+    """Integrate ML predictions using the existing MLEnhancedConfidenceAnalyzer."""
+    try:
+        from src.utils.ml_enhanced_confidence import MLEnhancedConfidenceAnalyzer
+        
+        analyzer = MLEnhancedConfidenceAnalyzer()
+        
+        if not analyzer.ml_enabled:
+            logger.debug(f"ML not available for {symbol}, using traditional analysis")
+            return {
+                'ml_enabled': False,
+                'ml_probability': None,
+                'ml_confidence': 0.0,
+                'ml_signal': 'UNAVAILABLE',
+                'traditional_score': technical_indicators.get('composite_confidence', 50.0)
+            }
+        
+        # Calculate enhanced confidence with ML
+        result = analyzer.calculate_enhanced_confidence(symbol, price, historical_data)
+        
+        if result and isinstance(result, dict):
+            ml_integration = result.get('ml_integration', {})
+            
+            return {
+                'ml_enabled': ml_integration.get('ml_enabled', False),
+                'ml_probability': ml_integration.get('ml_probability'),
+                'ml_confidence': ml_integration.get('ml_confidence', 0.0),
+                'ml_signal': ml_integration.get('ml_signal', 'UNKNOWN'),
+                'traditional_score': ml_integration.get('traditional_score', technical_indicators.get('composite_confidence', 50.0))
+            }
+        else:
+            logger.warning(f"Invalid ML result format for {symbol}")
+            return {
+                'ml_enabled': False,
+                'ml_probability': None,
+                'ml_confidence': 0.0,
+                'ml_signal': 'ERROR',
+                'traditional_score': technical_indicators.get('composite_confidence', 50.0)
+            }
+            
+    except ImportError as e:
+        logger.debug(f"ML analyzer not available: {e}")
+        return {
+            'ml_enabled': False,
+            'ml_probability': None,
+            'ml_confidence': 0.0,
+            'ml_signal': 'UNAVAILABLE',
+            'traditional_score': technical_indicators.get('composite_confidence', 50.0)
+        }
+    except Exception as e:
+        logger.error(f"ML integration failed for {symbol}: {e}")
+        return {
+            'ml_enabled': False,
+            'ml_probability': None, 
+            'ml_confidence': 0.0,
+            'ml_signal': 'ERROR',
+            'traditional_score': technical_indicators.get('composite_confidence', 50.0)
+        }
+
+
+def generate_timing_signal(hybrid_score: float) -> str:
+    """Generate timing signal based on calibrated thresholds."""
+    if hybrid_score >= 65:
+        return "BUY"
+    elif hybrid_score >= 55:
+        return "CONSIDER"
+    elif hybrid_score >= 45:
+        return "WAIT"
+    else:
+        return "AVOID"
+
+
+def get_confidence_level(score: float) -> str:
+    """Get confidence level description."""
+    if score >= 75:
+        return "HIGH"
+    elif score >= 60:
+        return "MODERATE"
+    elif score >= 45:
+        return "LOW"
+    else:
+        return "VERY_LOW"
+
+
+def get_risk_level(score: float) -> str:
+    """Get risk level based on confidence score."""
+    if score >= 70:
+        return "LOW"
+    elif score >= 55:
+        return "MEDIUM"
+    elif score >= 40:
+        return "HIGH"
+    else:
+        return "VERY_HIGH"
+
+
+def calculate_target_price(symbol: str, current_price: float, technical_indicators: dict) -> float | None:
+    """Calculate suggested target price based on technical analysis."""
+    try:
+        # Use Bollinger lower band if available
+        lower_band = technical_indicators.get('bollinger_lower')
+        if lower_band and lower_band > 0:
+            # Target slightly above lower band for mean reversion play
+            return round(lower_band * 1.02, 2)
+        
+        # Fallback: use volatility-based target
+        volatility = technical_indicators.get('volatility_7', 20.0)
+        if volatility > 0:
+            # More volatile assets get bigger discount
+            discount = min(0.15, volatility / 100 * 0.5)  # Max 15% discount
+            target = current_price * (1 - discount)
+            return round(target, 2)
+        
+        return None
+        
+    except Exception as e:
+        logger.debug(f"Target price calculation failed for {symbol}: {e}")
+        return None
+
 
 @app.route("/api/portfolio-analytics")
 def api_portfolio_analytics() -> ResponseReturnValue:
