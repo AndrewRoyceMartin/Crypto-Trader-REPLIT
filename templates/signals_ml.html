@@ -1,6 +1,6 @@
 {% extends "base_layout.html" %}
 
-{% block title %}Signals & ML - Hybrid Trading Intelligence{% endblock %}
+{% block title %}Signals & ML - Grim Trader v2.0{% endblock %}
 {% block page_title %}Signals & ML Analysis{% endblock %}
 {% block page_subtitle %}Hybrid scoring system combining ML predictions with technical analysis{% endblock %}
 
@@ -1436,5 +1436,114 @@ document.addEventListener('DOMContentLoaded', function() {
     // Auto-refresh every 3 minutes
     setInterval(loadSignalAnalysis, 180000);
 });
+
+// ================================
+// MISSING UTILITY FUNCTIONS  
+// ================================
+
+// Toast notification system
+let toastContainer = null;
+
+function initToastContainer() {
+    if (!toastContainer) {
+        toastContainer = document.createElement('div');
+        toastContainer.id = 'toastContainer';
+        toastContainer.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            max-width: 350px;
+        `;
+        document.body.appendChild(toastContainer);
+    }
+}
+
+function showToast(message, type = 'info', duration = 4000) {
+    initToastContainer();
+    
+    const toast = document.createElement('div');
+    toast.className = `alert alert-${type === 'error' ? 'danger' : type} alert-dismissible fade show`;
+    toast.style.cssText = `
+        margin-bottom: 10px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        animation: slideInRight 0.3s ease;
+    `;
+    
+    const iconMap = {
+        'success': 'fas fa-check-circle',
+        'error': 'fas fa-exclamation-triangle', 
+        'info': 'fas fa-info-circle',
+        'warning': 'fas fa-exclamation-triangle'
+    };
+    
+    toast.innerHTML = `
+        <i class="${iconMap[type] || iconMap.info} me-2"></i>
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    toastContainer.appendChild(toast);
+    
+    // Auto dismiss
+    setTimeout(() => {
+        if (toast.parentNode) {
+            toast.remove();
+        }
+    }, duration);
+    
+    return toast;
+}
+
+// Modal popup system
+function showPopup(title, content, type = 'info') {
+    let modal = document.getElementById('dynamicModal');
+    
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'dynamicModal';
+        modal.className = 'modal fade';
+        modal.innerHTML = `
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content bg-dark text-light">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="dynamicModalTitle"></h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body" id="dynamicModalContent"></div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    }
+    
+    document.getElementById('dynamicModalTitle').textContent = title;
+    document.getElementById('dynamicModalContent').innerHTML = content;
+    
+    const bootstrapModal = new bootstrap.Modal(modal);
+    bootstrapModal.show();
+    
+    return bootstrapModal;
+}
+
+// Add CSS animations
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes slideInRight {
+        from {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+`;
+document.head.appendChild(style);
+
 </script>
 {% endblock %}
