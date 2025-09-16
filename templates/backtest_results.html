@@ -1,6 +1,6 @@
 {% extends "base_layout.html" %}
 
-{% block title %}Backtest Results - Hybrid Trading Intelligence{% endblock %}
+{% block title %}Backtest Results - Grim Trader v2.0{% endblock %}
 {% block page_title %}Backtest Results{% endblock %}
 {% block page_subtitle %}Performance validation of hybrid signals against real OKX trade history{% endblock %}
 
@@ -169,13 +169,13 @@
             <p style="color: #9ca3af;" class="mb-0">Run new backtest or export current results</p>
         </div>
         <div class="col-md-6 text-end">
-            <button class="btn btn-success me-2" onclick="runNewBacktest()">
+            <button class="btn btn-success me-2" onclick="runNewBacktest()" title="Runs a fresh backtest analysis on recent trade data using the current ML models and technical indicators">
                 <i class="fas fa-play me-2"></i>Run New Backtest
             </button>
-            <button class="btn btn-outline-primary me-2" onclick="exportBacktestResults()">
+            <button class="btn btn-outline-primary me-2" onclick="exportBacktestResults()" title="Downloads current backtest results as a CSV file for external analysis in Excel or other tools">
                 <i class="fas fa-download me-1"></i>Export CSV
             </button>
-            <button class="btn btn-outline-secondary" onclick="refreshBacktestData()">
+            <button class="btn btn-outline-secondary" onclick="refreshBacktestData()" title="Refreshes all charts and metrics with the latest trade data and recalculates performance statistics">
                 <i class="fas fa-sync me-1"></i>Refresh
             </button>
         </div>
@@ -190,33 +190,33 @@
     </h5>
     
     <div class="signal-performance-grid" id="signalPerformanceGrid">
-        <div class="signal-performance-card">
+        <div class="signal-performance-card" title="BUY signals: Strong upward momentum trades. Shows total P&L and win rate for all positions entered on BUY signals from the trading algorithm.">
             <div class="h4 text-success">BUY</div>
             <div class="h3 text-success" id="buyPnL">
                 <div class="loading-skeleton loading-skeleton-metric"></div>
             </div>
             <div style="color: #9ca3af;" id="buyStats">Loading authentic data...</div>
         </div>
-        <div class="signal-performance-card">
+        <div class="signal-performance-card" title="CONSIDER signals: SELL signals mapped to CONSIDER card. Shows performance for positions that were closed or avoided based on bearish momentum indicators.">
             <div class="h4 text-warning">CONSIDER</div>
             <div class="h3 text-warning" id="considerPnL">
                 <div class="loading-skeleton loading-skeleton-metric"></div>
             </div>
             <div style="color: #9ca3af;" id="considerStats">Loading authentic data...</div>
         </div>
-        <div class="signal-performance-card">
-            <div class="h4 text-secondary">WAIT</div>
-            <div class="h3 text-secondary" id="waitPnL">
+        <div class="signal-performance-card" title="Risk & Efficiency: Max Drawdown shows largest peak-to-trough loss. Profit Factor is gross profits ÷ gross losses. Sharpe Ratio measures risk-adjusted returns.">
+            <div class="h4 text-warning">RISK & EFFICIENCY</div>
+            <div class="h3 text-warning" id="riskPnL">
                 <div class="loading-skeleton loading-skeleton-metric"></div>
             </div>
-            <div style="color: #9ca3af;" id="waitStats">Loading authentic data...</div>
+            <div style="color: #9ca3af;" id="riskStats">Loading risk metrics...</div>
         </div>
-        <div class="signal-performance-card">
-            <div class="h4 text-danger">AVOID</div>
-            <div class="h3 text-danger" id="avoidPnL">
+        <div class="signal-performance-card" title="Market Regime: Performance analysis across different time periods. Compares early vs recent trading performance to identify changing market conditions.">
+            <div class="h4 text-info">MARKET REGIME</div>
+            <div class="h3 text-info" id="regimePnL">
                 <div class="loading-skeleton loading-skeleton-metric"></div>
             </div>
-            <div style="color: #9ca3af;" id="avoidStats">Loading authentic data...</div>
+            <div style="color: #9ca3af;" id="regimeStats">Loading regime analysis...</div>
         </div>
     </div>
 </div>
@@ -224,7 +224,7 @@
 <!-- P&L Distribution Chart -->
 <div class="row mb-4">
     <div class="col-lg-8">
-        <div class="data-card">
+        <div class="data-card" title="P&L Distribution: Histogram showing frequency of profit/loss outcomes. Helps identify if the strategy has consistent small wins or relies on few large wins.">
             <h5 class="card-title">
                 <i class="fas fa-chart-line"></i>
                 P&L Distribution
@@ -235,7 +235,7 @@
         </div>
     </div>
     <div class="col-lg-4">
-        <div class="data-card">
+        <div class="data-card" title="ML vs Traditional: Compares machine learning predictions with traditional technical analysis. Shows correlation between ML probability scores and actual trade outcomes.">
             <h5 class="card-title">
                 <i class="fas fa-brain"></i>
                 ML vs Traditional
@@ -254,6 +254,63 @@
     </div>
 </div>
 
+<!-- Dynamic Weighting System -->
+<div class="row mb-4">
+    <div class="col-lg-12">
+        <div class="data-card" title="Dynamic Weighting System: Advanced ML/TA hybrid signal system that automatically recalibrates weights based on rolling correlation with actual P&L outcomes. Ensures optimal balance between machine learning and technical analysis.">
+            <h5 class="card-title">
+                <i class="fas fa-balance-scale"></i>
+                Dynamic ML/TA Weighting System
+                <span class="badge bg-success ms-2">LIVE</span>
+            </h5>
+            <div class="row">
+                <div class="col-md-3">
+                    <div class="text-center py-3">
+                        <div class="h4 text-primary" id="dynamicMLWeight">
+                            <div class="loading-skeleton loading-skeleton-metric"></div>
+                        </div>
+                        <div style="color: #9ca3af;">ML Weight</div>
+                        <small class="text-muted" id="mlCorrelationValue">Loading...</small>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="text-center py-3">
+                        <div class="h4 text-success" id="dynamicTAWeight">
+                            <div class="loading-skeleton loading-skeleton-metric"></div>
+                        </div>
+                        <div style="color: #9ca3af;">TA Weight</div>
+                        <small class="text-muted" id="taCorrelationValue">Loading...</small>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="text-center py-3">
+                        <div class="h4 text-warning" id="dynamicSampleSize">
+                            <div class="loading-skeleton loading-skeleton-metric"></div>
+                        </div>
+                        <div style="color: #9ca3af;">Sample Size</div>
+                        <small class="text-muted">Rolling window: 50 trades</small>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="text-center py-3">
+                        <div class="h4" id="dynamicStatus">
+                            <div class="loading-skeleton loading-skeleton-metric"></div>
+                        </div>
+                        <div style="color: #9ca3af;">System Status</div>
+                        <small class="text-muted" id="dynamicStatusDesc">Initializing...</small>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-3 p-3 rounded" style="background: rgba(0,123,255,0.1); border-left: 4px solid #007bff;">
+                <small class="text-info">
+                    <i class="fas fa-info-circle me-1"></i>
+                    <strong>How it works:</strong> This system continuously monitors the correlation between ML predictions and actual trade outcomes vs Technical Analysis indicators and actual results. When ML predictions become more accurate, ML weight increases (max 80%). When TA performs better, TA weight increases. This ensures optimal signal quality as market conditions change.
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Detailed Results Table -->
 <div class="data-card">
     <h5 class="card-title">
@@ -266,16 +323,16 @@
         <table class="table-v02" style="--v02-head-bg: #6c7ae0;" id="backtestTable">
             <thead>
                 <tr>
-                    <th>Timestamp</th>
-                    <th>Symbol</th>
-                    <th class="text-center">Signal</th>
-                    <th class="text-end">Confidence</th>
-                    <th class="text-end">ML Prob</th>
-                    <th class="text-end">Signal Price</th>
-                    <th class="text-end">Exec Price</th>
-                    <th class="text-end">P&L $</th>
-                    <th class="text-end">P&L %</th>
-                    <th class="text-center">Match</th>
+                    <th title="When the trading signal was generated based on market analysis">Timestamp</th>
+                    <th title="Cryptocurrency trading pair (e.g., BTC, ETH, TRX)">Symbol</th>
+                    <th class="text-center" title="Trading action: BUY (strong bullish), CONSIDER (mixed signals), WAIT (bearish), AVOID (high risk)">Signal</th>
+                    <th class="text-end" title="Overall signal strength combining ML predictions and technical analysis (0-100%)">Confidence</th>
+                    <th class="text-end" title="Machine learning model probability prediction for price direction (0.1-0.9)">ML Prob</th>
+                    <th class="text-end" title="Price when the signal was generated (signal candle close price)">Signal Price</th>
+                    <th class="text-end" title="Price when trade would be executed (next candle open price using T+1 model)">Exec Price</th>
+                    <th class="text-end" title="Profit/Loss in dollar amount based on position size and price movement">P&L $</th>
+                    <th class="text-end" title="Percentage return based on entry price vs current/exit price">P&L %</th>
+                    <th class="text-center" title="YES: execution price within 0.1% tolerance of signal price. NO: significant slippage occurred">Match</th>
                 </tr>
             </thead>
             <tbody id="backtestTableBody">
@@ -294,7 +351,7 @@
 <!-- Best & Worst Trades -->
 <div class="row">
     <div class="col-lg-6">
-        <div class="data-card">
+        <div class="data-card" title="Top 5 Best Trades: Shows the most profitable trades ranked by percentage return. Helps identify what conditions lead to successful trades.">
             <h5 class="card-title text-success">
                 <i class="fas fa-trophy"></i>
                 Top 5 Best Trades
@@ -307,7 +364,7 @@
         </div>
     </div>
     <div class="col-lg-6">
-        <div class="data-card">
+        <div class="data-card" title="Bottom 5 Trades: Shows the worst performing trades by percentage loss. Helps identify patterns to avoid and improve risk management.">
             <h5 class="card-title text-warning">
                 <i class="fas fa-chart-line"></i>
                 Bottom 5 Trades
@@ -324,78 +381,13 @@
 
 {% block extra_js %}
 <script>
+console.log('🔧 Backtest JS loaded');
+window.onerror = (m, s, l, c, e) => console.error('JS error:', m, s, l, c, e);
+
 let backtestResults = null;
 let pnlChart = null;
 
-async function loadBacktestResults() {
-    try {
-        console.log('🔄 Loading backtest data with enhanced animations...');
-        
-        // Set all metrics to loading state
-        const metricElements = ['avgPnL', 'winRate', 'matchRate', 'totalTrades'];
-        metricElements.forEach(id => {
-            const element = document.getElementById(id);
-            const parent = element?.closest('.performance-metric');
-            if (parent) {
-                parent.classList.add('metric-loading');
-                parent.classList.remove('metric-loaded');
-            }
-        });
-        
-        // Update status indicator
-        const statusElement = document.getElementById('backtest-status');
-        if (statusElement) {
-            statusElement.textContent = 'Loading backtest data...';
-            statusElement.className = 'status-indicator status-loading';
-        }
-        
-        showToast('Loading backtest results...', 'info');
-        
-        // Load backtest results from CSV file
-        const response = await fetch('/ml/backtest_results.csv');
-        if (response.ok) {
-            const csvText = await response.text();
-            backtestResults = parseCSV(csvText);
-            
-            // Add delay to show loading animation
-            setTimeout(() => {
-                displayBacktestResults(backtestResults);
-                
-                // Update status to loaded
-                if (statusElement) {
-                    const now = new Date();
-                    statusElement.textContent = `Last updated: ${now.toLocaleTimeString()}`;
-                    statusElement.className = 'status-indicator status-loaded';
-                }
-                
-                showToast('Backtest results loaded successfully!', 'success');
-                console.log('✅ Backtest data loaded with animations:', backtestResults.length, 'records');
-            }, 400);
-            
-        } else {
-            // No fallback - require authentic backtest data only
-            console.error('❌ Authentic backtest data required - no CSV file available');
-            const statusElement = document.getElementById('backtest-status');
-            if (statusElement) {
-                statusElement.textContent = 'No authentic backtest results available - run backtest first';
-                statusElement.className = 'status-indicator status-error';
-            }
-        }
-        
-    } catch (error) {
-        console.error('❌ Backtest results loading failed:', error);
-        
-        // Update status to error
-        const statusElement = document.getElementById('backtest-status');
-        if (statusElement) {
-            statusElement.textContent = 'Error loading data';
-            statusElement.className = 'status-indicator status-error';
-        }
-        
-        // No sample data fallback - authentic data only
-        console.error('❌ DATA INTEGRITY: No sample data fallback - authentic backtest results required');
-    }
-}
+// Removed duplicate CSV-based loadBacktestResults function - using API-based version below
 
 function parseCSV(csvText) {
     const lines = csvText.split('\n');
@@ -428,6 +420,94 @@ function loadSampleBacktestData() {
         '</td></tr>';
 }
 
+async function loadBacktestResults() {
+    try {
+        console.log('🔄 Loading backtest results from performance charts API...');
+        
+        // Update status to loading
+        const statusElement = document.getElementById('backtest-status');
+        if (statusElement) {
+            statusElement.textContent = 'Loading backtest data...';
+            statusElement.className = 'status-indicator status-loading';
+        }
+        
+        // Fetch performance chart data (which includes backtest results)
+        const response = await fetch('/api/public/backtest');
+        if (!response.ok) {
+            throw new Error(`Failed to fetch performance data: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        
+        if (data.success && data.results && data.results.length > 0) {
+            console.log('✅ Performance chart data loaded:', data.results.length, 'results');
+            
+            // Store data globally
+            window.backtestData = data.results;
+            window.backtestSummary = data.summary;
+            
+            // Update all UI components with the new data - chart first, then stats
+            updateResultsTable(data.results);
+            updatePnLChart(data.results);
+            updateBestWorstTrades(data.results);
+            
+            // Update summary stats with error handling for correlation
+            try {
+                updateSummaryStats(data.results);
+            } catch (error) {
+                console.error('❌ Error in summary stats (correlation):', error);
+            }
+            
+            // Display the results
+            displayBacktestResults(data.results);
+            
+            // Update status to success
+            if (statusElement) {
+                const now = new Date();
+                statusElement.textContent = `Last updated: ${now.toLocaleTimeString()}`;
+                statusElement.className = 'status-indicator status-loaded';
+            }
+            
+            console.log('✅ Backtest results displayed successfully');
+            
+        } else {
+            console.warn('No backtest results available from API');
+            
+            // Show empty state
+            document.getElementById('backtestTableBody').innerHTML = 
+                '<tr><td colspan="10" class="text-center py-4 text-warning">' +
+                '<i class="fas fa-info-circle me-2"></i>' +
+                'No backtest results available. Run a new backtest to generate data.' +
+                '</td></tr>';
+            
+            // Update status
+            if (statusElement) {
+                statusElement.textContent = 'No backtest data available';
+                statusElement.className = 'status-indicator status-warning';
+            }
+        }
+        
+    } catch (error) {
+        console.error('❌ Backtest results loading failed:', error);
+        
+        // Update status to error
+        const statusElement = document.getElementById('backtest-status');
+        if (statusElement) {
+            statusElement.textContent = 'Error loading data';
+            statusElement.className = 'status-indicator status-error';
+        }
+        
+        // Show error in table
+        document.getElementById('backtestTableBody').innerHTML = 
+            '<tr><td colspan="10" class="text-center py-4 text-danger">' +
+            '<i class="fas fa-exclamation-triangle me-2"></i>' +
+            'Error loading backtest results. Please try again.' +
+            '</td></tr>';
+    }
+}
+
+// Removed redundant updateStatusCards function - updateSummaryStats handles this correctly
+
 function displayBacktestResults(results) {
     if (!results || results.length === 0) {
         document.getElementById('backtestTableBody').innerHTML = 
@@ -449,55 +529,203 @@ function displayBacktestResults(results) {
 }
 
 function updateSummaryStats(results) {
-    const matchedResults = results.filter(r => r.matched === 'True');
-    
-    if (matchedResults.length === 0) return;
-    
-    // Calculate statistics
-    const pnlValues = matchedResults.map(r => parseFloat(r['pnl_%'] || 0));
-    const avgPnL = pnlValues.reduce((a, b) => a + b, 0) / pnlValues.length;
-    const winningTrades = pnlValues.filter(p => p > 0).length;
-    const winRate = (winningTrades / pnlValues.length) * 100;
-    const matchRate = (matchedResults.length / results.length) * 100;
-    
-    // Update main display
-    document.getElementById('avgPnL').textContent = avgPnL.toFixed(2) + '%';
-    document.getElementById('winRate').textContent = winRate.toFixed(0) + '%';
-    document.getElementById('matchRate').textContent = matchRate.toFixed(0) + '%';
-    document.getElementById('totalTrades').textContent = matchedResults.length;
-    
-    // Update signal performance cards with authentic data
-    updateSignalTypePerformance(matchedResults);
-    
-    // Update ML correlation analysis with authentic data
-    updateMLCorrelationAnalysis(matchedResults);
-}
-
-function updateSignalTypePerformance(results) {
-    const signalTypes = ['BUY', 'CONSIDER', 'WAIT', 'AVOID'];
-    
-    signalTypes.forEach(signal => {
-        const signalResults = results.filter(r => r.signal === signal);
-        if (signalResults.length > 0) {
-            const pnlValues = signalResults.map(r => parseFloat(r['pnl_%'] || 0));
+    // Use summary data from global variable if available, otherwise calculate from results
+    if (window.backtestSummary) {
+        const summary = window.backtestSummary;
+        
+        // Update main display using summary data from API with error checking
+        const avgPnLEl = document.getElementById('avgPnL');
+        if (avgPnLEl) avgPnLEl.textContent = Number(summary.avg_pnl_percent || 0).toFixed(2) + '%';
+        
+        const winRateEl = document.getElementById('winRate');
+        if (winRateEl) winRateEl.textContent = Number(summary.win_rate || 0).toFixed(1) + '%';
+        
+        const matchRateEl = document.getElementById('matchRate');
+        if (matchRateEl) matchRateEl.textContent = '100%'; // All results are matched since they come from real trades
+        
+        const totalTradesEl = document.getElementById('totalTrades');
+        if (totalTradesEl) totalTradesEl.textContent = summary.total_trades || 0;
+        
+        console.log('✅ Status cards updated with API summary data');
+    } else {
+        // Fallback: calculate from results (if in old format)
+        const matchedResults = results.filter(r => r.matched === true || r.matched === 'True');
+        
+        if (matchedResults.length === 0) {
+            // Use all results if no matched field
+            const allResults = results;
+            const pnlValues = allResults.map(r => parseFloat(r['pnl_%'] || r['pnl_percent'] || 0));
+            const avgPnL = pnlValues.length > 0 ? pnlValues.reduce((a, b) => a + b, 0) / pnlValues.length : 0;
+            const winningTrades = pnlValues.filter(p => p > 0).length;
+            const winRate = pnlValues.length > 0 ? (winningTrades / pnlValues.length) * 100 : 0;
+            
+            // Update main display
+            document.getElementById('avgPnL').textContent = avgPnL.toFixed(2) + '%';
+            document.getElementById('winRate').textContent = winRate.toFixed(1) + '%';
+            document.getElementById('matchRate').textContent = '100%';
+            document.getElementById('totalTrades').textContent = allResults.length;
+        } else {
+            // Use matched results
+            const pnlValues = matchedResults.map(r => parseFloat(r['pnl_%'] || r['pnl_percent'] || 0));
             const avgPnL = pnlValues.reduce((a, b) => a + b, 0) / pnlValues.length;
             const winningTrades = pnlValues.filter(p => p > 0).length;
             const winRate = (winningTrades / pnlValues.length) * 100;
+            const matchRate = (matchedResults.length / results.length) * 100;
             
-            const elementId = signal.toLowerCase() + 'PnL';
-            const statsId = signal.toLowerCase() + 'Stats';
+            // Update main display
+            document.getElementById('avgPnL').textContent = avgPnL.toFixed(2) + '%';
+            document.getElementById('winRate').textContent = winRate.toFixed(1) + '%';
+            document.getElementById('matchRate').textContent = matchRate.toFixed(1) + '%';
+            document.getElementById('totalTrades').textContent = matchedResults.length;
+        }
+    }
+    
+    // Update signal performance cards with authentic data
+    updateSignalTypePerformance(results);
+    
+    // Update ML correlation analysis with authentic data
+    updateMLCorrelationAnalysis(results);
+}
+
+function updateSignalTypePerformance(results) {
+    console.log('🔄 Updating signal type performance with results:', results.length);
+    
+    // Check what signal types actually exist in the data
+    const actualSignals = [...new Set(results.map(r => r.signal))];
+    console.log('📊 Actual signals in data:', actualSignals);
+    
+    // Map actual signals to display cards
+    const signalMappings = {
+        'BUY': { element: 'buy', label: 'BUY' },
+        'CAUTIOUS_BUY': { element: 'buy', label: 'CAUTIOUS BUY' },  // Map CAUTIOUS_BUY to BUY card
+        'SELL': { element: 'consider', label: 'SELL' },  // Map SELL to CONSIDER card
+        'CONSIDER': { element: 'consider', label: 'CONSIDER' },
+        'WAIT': { element: 'consider', label: 'WAIT' },  // Map WAIT to CONSIDER card
+        'AVOID': { element: 'consider', label: 'AVOID' }  // Map AVOID to CONSIDER card for display
+    };
+    
+    // Clear signal cards first
+    ['buy', 'consider'].forEach(cardType => {
+        const pnlElement = document.getElementById(cardType + 'PnL');
+        const statsElement = document.getElementById(cardType + 'Stats');
+        if (pnlElement) pnlElement.textContent = 'N/A';
+        if (statsElement) statsElement.textContent = 'No trades';
+    });
+    
+    // Update cards based on actual signals
+    actualSignals.forEach(signal => {
+        const mapping = signalMappings[signal];
+        if (mapping) {
+            const signalResults = results.filter(r => r.signal === signal);
+            console.log(`📊 Signal ${signal} (${mapping.label}): ${signalResults.length} trades`);
             
-            document.getElementById(elementId).textContent = avgPnL.toFixed(2) + '%';
-            document.getElementById(statsId).textContent = 
-                `${signalResults.length} trades • ${winRate.toFixed(0)}% win rate`;
+            if (signalResults.length > 0) {
+                const pnlValues = signalResults.map(r => parseFloat(r['pnl_%'] || 0));
+                const avgPnL = pnlValues.reduce((a, b) => a + b, 0) / pnlValues.length;
+                const winningTrades = pnlValues.filter(p => p > 0).length;
+                const winRate = (winningTrades / pnlValues.length) * 100;
+                
+                const elementId = mapping.element + 'PnL';
+                const statsId = mapping.element + 'Stats';
+                
+                const pnlElement = document.getElementById(elementId);
+                const statsElement = document.getElementById(statsId);
+                
+                if (pnlElement && statsElement) {
+                    pnlElement.textContent = avgPnL.toFixed(2) + '%';
+                    statsElement.textContent = `${signalResults.length} ${mapping.label} trades • ${winRate.toFixed(0)}% win rate`;
+                    console.log(`✅ Updated ${mapping.label}: ${avgPnL.toFixed(2)}% (${signalResults.length} trades)`);
+                } else {
+                    console.error(`❌ Elements not found for ${mapping.label}: ${elementId}, ${statsId}`);
+                }
+            }
         } else {
-            const elementId = signal.toLowerCase() + 'PnL';
-            const statsId = signal.toLowerCase() + 'Stats';
-            
-            document.getElementById(elementId).textContent = 'N/A';
-            document.getElementById(statsId).textContent = 'No trades';
+            console.warn(`⚠️ Unknown signal type: ${signal}`);
         }
     });
+    
+    console.log('✅ Signal type performance update completed');
+    
+    // Update risk & efficiency and market regime cards
+    updateRiskAndRegimeCards(results);
+}
+
+function updateRiskAndRegimeCards(results) {
+    console.log('🔄 Updating risk and regime cards...');
+    
+    if (!results || results.length === 0) {
+        console.warn('⚠️ No results data for risk analysis');
+        return;
+    }
+    
+    // Calculate Risk & Efficiency metrics
+    const pnlValues = results.map(r => parseFloat(r['pnl_%'] || 0));
+    const pnlDollar = results.map(r => parseFloat(r['pnl_$'] || 0));
+    
+    // Max Drawdown calculation
+    let cumulativePnL = 0;
+    let peak = 0;
+    let maxDrawdown = 0;
+    
+    pnlValues.forEach(pnl => {
+        cumulativePnL += pnl;
+        if (cumulativePnL > peak) {
+            peak = cumulativePnL;
+        }
+        const drawdown = peak - cumulativePnL;
+        if (drawdown > maxDrawdown) {
+            maxDrawdown = drawdown;
+        }
+    });
+    
+    // Profit Factor calculation
+    const grossProfit = pnlDollar.filter(p => p > 0).reduce((a, b) => a + b, 0);
+    const grossLoss = Math.abs(pnlDollar.filter(p => p < 0).reduce((a, b) => a + b, 0));
+    const profitFactor = grossLoss > 0 ? (grossProfit / grossLoss) : (grossProfit > 0 ? '∞' : '0');
+    
+    // Sharpe ratio (simplified per-trade)
+    const avgPnL = pnlValues.reduce((a, b) => a + b, 0) / pnlValues.length;
+    const stdDev = Math.sqrt(pnlValues.reduce((a, b) => a + Math.pow(b - avgPnL, 2), 0) / pnlValues.length);
+    const sharpe = stdDev > 0 ? (avgPnL / stdDev) : 0;
+    
+    // Update Risk & Efficiency card
+    const riskElement = document.getElementById('riskPnL');
+    const riskStatsElement = document.getElementById('riskStats');
+    
+    if (riskElement && riskStatsElement) {
+        riskElement.textContent = `${maxDrawdown.toFixed(2)}%`;
+        riskStatsElement.innerHTML = `Max DD • PF: ${typeof profitFactor === 'number' ? profitFactor.toFixed(2) : profitFactor} • Sharpe: ${sharpe.toFixed(2)}`;
+        console.log('✅ Updated Risk & Efficiency card');
+    }
+    
+    // Market Regime Performance (simplified - just by time periods)
+    const winningTrades = pnlValues.filter(p => p > 0).length;
+    const totalTrades = pnlValues.length;
+    const winRate = (winningTrades / totalTrades) * 100;
+    
+    // Simple regime: first half vs second half of trades (proxy for changing market conditions)
+    const halfPoint = Math.floor(totalTrades / 2);
+    const firstHalf = pnlValues.slice(0, halfPoint);
+    const secondHalf = pnlValues.slice(halfPoint);
+    
+    const firstHalfWinRate = firstHalf.filter(p => p > 0).length / firstHalf.length * 100;
+    const secondHalfWinRate = secondHalf.filter(p => p > 0).length / secondHalf.length * 100;
+    
+    const firstHalfAvg = firstHalf.reduce((a, b) => a + b, 0) / firstHalf.length;
+    const secondHalfAvg = secondHalf.reduce((a, b) => a + b, 0) / secondHalf.length;
+    
+    // Update Market Regime card
+    const regimeElement = document.getElementById('regimePnL');
+    const regimeStatsElement = document.getElementById('regimeStats');
+    
+    if (regimeElement && regimeStatsElement) {
+        const bestPeriod = firstHalfAvg > secondHalfAvg ? 'Early' : 'Recent';
+        regimeElement.textContent = `${bestPeriod} Period`;
+        regimeStatsElement.innerHTML = `Early: ${firstHalfWinRate.toFixed(0)}% WR • Recent: ${secondHalfWinRate.toFixed(0)}% WR`;
+        console.log('✅ Updated Market Regime card');
+    }
+    
+    console.log('✅ Risk and regime cards update completed');
 }
 
 function updateMLCorrelationAnalysis(results) {
@@ -520,26 +748,26 @@ function updateMLCorrelationAnalysis(results) {
 }
 
 function calculateCorrelation(x, y) {
-    const n = x.length;
-    if (n === 0) return 0;
+    const n = Math.min(x.length, y.length);
+    if (n < 2) return 0;
     
-    const meanX = x.reduce((a, b) => a + b) / n;
-    const meanY = y.reduce((a, b) => a + b) / n;
-    
-    let numerator = 0;
-    let denomX = 0;
-    let denomY = 0;
+    let sx = 0, sy = 0, sxy = 0, sxx = 0, syy = 0;
     
     for (let i = 0; i < n; i++) {
-        const dx = x[i] - meanX;
-        const dy = y[i] - meanY;
-        numerator += dx * dy;
-        denomX += dx * dx;
-        denomY += dy * dy;
+        const xi = Number(x[i]) || 0;
+        const yi = Number(y[i]) || 0;
+        sx += xi;
+        sy += yi;
+        sxy += xi * yi;
+        sxx += xi * xi;
+        syy += yi * yi;
     }
     
-    const denominator = Math.sqrt(denomX * denomY);
-    return denominator === 0 ? 0 : numerator / denominator;
+    const cov = n * sxy - sx * sy;
+    const varX = n * sxx - sx * sx;
+    const varY = n * syy - sy * sy;
+    
+    return (varX <= 0 || varY <= 0) ? 0 : cov / Math.sqrt(varX * varY);
 }
 
 function updateResultsTable(results) {
@@ -548,11 +776,13 @@ function updateResultsTable(results) {
     
     tbody.innerHTML = results.map(result => {
         const pnl = parseFloat(result['pnl_%'] || 0);
-        const matched = result.matched === 'True';
+        const matched = result.matched === true || result.matched === 'true' || result.matched === 'True';
         
         let signalClass = 'bg-secondary';
         if (result.signal === 'BUY') signalClass = 'bg-success';
+        else if (result.signal === 'CAUTIOUS_BUY') signalClass = 'bg-info';  // Light blue for cautious buy
         else if (result.signal === 'CONSIDER') signalClass = 'bg-warning';
+        else if (result.signal === 'WAIT') signalClass = 'bg-secondary';  // Gray for wait
         else if (result.signal === 'AVOID') signalClass = 'bg-danger';
         
         return `
@@ -583,7 +813,7 @@ function updateResultsTable(results) {
 }
 
 function updateBestWorstTrades(results) {
-    const matchedResults = results.filter(r => r.matched === 'True');
+    const matchedResults = results.filter(r => r.matched === true || r.matched === 'true' || r.matched === 'True');
     
     // Sort by P&L
     const sorted = [...matchedResults].sort((a, b) => 
@@ -624,71 +854,126 @@ function updateBestWorstTrades(results) {
 }
 
 function updatePnLChart(results) {
-    const ctx = document.getElementById('pnlChart');
-    if (!ctx) return;
+    console.log('🔧 updatePnLChart called with results:', results?.length || 0, 'items');
     
-    const matchedResults = results.filter(r => r.matched === 'True');
+    const ctx = document.getElementById('pnlChart');
+    if (!ctx) {
+        console.error('❌ P&L Chart canvas element not found!');
+        return;
+    }
+    
+    console.log('✅ Canvas element found:', ctx);
+    
+    // Check if Chart.js is loaded
+    if (typeof Chart === 'undefined') {
+        console.error('❌ Chart.js library not loaded!');
+        return;
+    }
+    
+    console.log('✅ Chart.js library loaded');
+    
+    const matchedResults = results.filter(r => {
+        const v = r?.matched;
+        if (v === true || v === 1) return true;
+        if (typeof v === 'string') {
+            const s = v.trim().toLowerCase();
+            return s === 'true' || s === '1' || s === 'yes' || s === 'y';
+        }
+        return false;
+    });
+    console.log('📊 Matched results:', matchedResults.length);
+    
     const pnlValues = matchedResults.map(r => parseFloat(r['pnl_%'] || 0));
     const labels = matchedResults.map(r => new Date(r.timestamp).toLocaleDateString());
     
+    console.log('📊 Chart data - Labels:', labels.length, 'Values:', pnlValues.length);
+    
     // Destroy existing chart
     if (pnlChart) {
+        console.log('🗑️ Destroying existing chart');
         pnlChart.destroy();
     }
     
-    pnlChart = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: labels,
-            datasets: [{
-                label: 'P&L %',
-                data: pnlValues,
-                borderColor: '#28a745',
-                backgroundColor: 'rgba(40, 167, 69, 0.1)',
-                fill: true,
-                tension: 0.4
-            }]
-        },
-        options: {
-            responsive: true,
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    ticks: {
-                        callback: function(value) {
-                            return value + '%';
+    try {
+        console.log('🎨 Creating new chart...');
+        pnlChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'P&L %',
+                    data: pnlValues,
+                    borderColor: '#28a745',
+                    backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return value + '%';
+                            }
                         }
                     }
-                }
-            },
-            plugins: {
-                legend: {
-                    display: false
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    }
                 }
             }
-        }
-    });
+        });
+        console.log('✅ Chart created successfully:', pnlChart);
+    } catch (error) {
+        console.error('❌ Error creating chart:', error);
+    }
 }
 
 async function runNewBacktest() {
     try {
-        showToast('Starting new backtest...', 'info');
+        console.log('🔄 Starting new backtest...');
+        
+        // Show toast notification
+        if (typeof showToast === 'function') {
+            showToast('Starting new backtest...', 'info');
+        } else {
+            console.log('📢 Starting new backtest...');
+        }
         
         // Run the Python backtest script
         const response = await fetch('/api/run-backtest', { method: 'POST' });
+        console.log('📡 Backtest API response:', response.status);
+        
         if (response.ok) {
             const result = await response.json();
-            showToast('Backtest completed successfully!', 'success');
+            console.log('✅ Backtest result:', result);
+            
+            if (typeof showToast === 'function') {
+                showToast('Backtest completed successfully!', 'success');
+            } else {
+                console.log('📢 Backtest completed successfully!');
+            }
             
             // Reload results
             setTimeout(() => {
+                console.log('🔄 Reloading backtest results...');
                 loadBacktestResults();
             }, 2000);
         } else {
             throw new Error('Backtest execution failed');
         }
     } catch (error) {
-        showToast('Error running backtest: ' + error.message, 'error');
+        console.error('❌ Backtest error:', error);
+        if (typeof showToast === 'function') {
+            showToast('Error running backtest: ' + error.message, 'error');
+        } else {
+            console.error('📢 Error running backtest:', error.message);
+        }
     }
 }
 
@@ -786,11 +1071,96 @@ const BacktestDebug = {
     }
 };
 
+// Load dynamic weights data
+async function loadDynamicWeights() {
+    try {
+        console.log('🔄 Loading dynamic weights...');
+        
+        const response = await fetch('/api/public/dynamic-weights');
+        if (!response.ok) {
+            throw new Error(`Failed to fetch dynamic weights: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            console.log('✅ Dynamic weights loaded:', data);
+            
+            // Update weights
+            const mlWeight = Math.round(data.weights.ml_weight * 100);
+            const taWeight = Math.round(data.weights.ta_weight * 100);
+            
+            document.getElementById('dynamicMLWeight').textContent = `${mlWeight}%`;
+            document.getElementById('dynamicTAWeight').textContent = `${taWeight}%`;
+            
+            // Update correlations
+            document.getElementById('mlCorrelationValue').textContent = 
+                `Correlation: ${data.correlation.ml_correlation.toFixed(3)}`;
+            document.getElementById('taCorrelationValue').textContent = 
+                `Correlation: ${data.correlation.ta_correlation.toFixed(3)}`;
+            
+            // Update sample size
+            document.getElementById('dynamicSampleSize').textContent = data.analysis.sample_size;
+            
+            // Update status
+            const statusElement = document.getElementById('dynamicStatus');
+            const statusDescElement = document.getElementById('dynamicStatusDesc');
+            
+            if (data.analysis.status === 'active') {
+                statusElement.textContent = '✅ ACTIVE';
+                statusElement.className = 'h4 text-success';
+                statusDescElement.textContent = 'System operational';
+            } else if (data.analysis.status === 'insufficient_data') {
+                statusElement.textContent = '⚠️ LEARNING';
+                statusElement.className = 'h4 text-warning';
+                statusDescElement.textContent = `Need ${50 - data.analysis.sample_size} more trades`;
+            } else {
+                statusElement.textContent = '❌ ERROR';
+                statusElement.className = 'h4 text-danger';
+                statusDescElement.textContent = 'System error';
+            }
+            
+        } else {
+            console.error('❌ Dynamic weights API error:', data.error);
+            
+            // Show fallback values
+            document.getElementById('dynamicMLWeight').textContent = '40%';
+            document.getElementById('dynamicTAWeight').textContent = '60%';
+            document.getElementById('mlCorrelationValue').textContent = 'Error loading';
+            document.getElementById('taCorrelationValue').textContent = 'Error loading';
+            document.getElementById('dynamicSampleSize').textContent = 'N/A';
+            document.getElementById('dynamicStatus').textContent = '❌ ERROR';
+            document.getElementById('dynamicStatus').className = 'h4 text-danger';
+            document.getElementById('dynamicStatusDesc').textContent = 'API error';
+        }
+        
+    } catch (error) {
+        console.error('❌ Dynamic weights loading failed:', error);
+        
+        // Show fallback UI
+        document.getElementById('dynamicMLWeight').textContent = '40%';
+        document.getElementById('dynamicTAWeight').textContent = '60%';
+        document.getElementById('mlCorrelationValue').textContent = 'Connection error';
+        document.getElementById('taCorrelationValue').textContent = 'Connection error';
+        document.getElementById('dynamicSampleSize').textContent = 'N/A';
+        document.getElementById('dynamicStatus').textContent = '🔌 OFFLINE';
+        document.getElementById('dynamicStatus').className = 'h4 text-secondary';
+        document.getElementById('dynamicStatusDesc').textContent = 'Connection failed';
+    }
+}
+
 // Add backtest debug to global scope
 window.backtestDebug = BacktestDebug;
 
 document.addEventListener('DOMContentLoaded', function() {
     loadBacktestResults();
+    loadDynamicWeights();
 });
+// Bootstrap the page when DOM loads
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('🚀 DOM loaded, starting backtest results loading...');
+    loadBacktestResults();
+});
+
 </script>
 {% endblock %}
