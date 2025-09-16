@@ -503,6 +503,9 @@ async function loadBacktestResults() {
             '<i class="fas fa-exclamation-triangle me-2"></i>' +
             'Error loading backtest results. Please try again.' +
             '</td></tr>';
+        
+        // Still show fallback chart for no data case
+        updatePnLChart([]);
     }
 }
 
@@ -866,7 +869,8 @@ function updatePnLChart(results) {
     
     // Check if Chart.js is loaded
     if (typeof Chart === 'undefined') {
-        console.error('❌ Chart.js library not loaded!');
+        console.log('⚠️ Chart.js library not loaded - using HTML/CSS fallback chart');
+        updatePnLChartFallback(results);
         return;
     }
     
@@ -931,7 +935,207 @@ function updatePnLChart(results) {
         console.log('✅ Chart created successfully:', pnlChart);
     } catch (error) {
         console.error('❌ Error creating chart:', error);
+        updatePnLChartFallback(results);
     }
+}
+
+function updatePnLChartFallback(results) {
+    console.log('🔧 Creating HTML/CSS fallback P&L chart');
+    
+    const canvas = document.getElementById('pnlChart');
+    const container = canvas.parentElement;
+    
+    // Hide the canvas and create HTML chart
+    canvas.style.display = 'none';
+    
+    // Remove existing fallback chart if any
+    const existingChart = container.querySelector('.fallback-chart');
+    if (existingChart) {
+        existingChart.remove();
+    }
+    
+    if (!results || results.length === 0) {
+        const noDataDiv = document.createElement('div');
+        noDataDiv.className = 'fallback-chart text-center p-4';
+        noDataDiv.innerHTML = `
+            <div class="text-muted">
+                <i class="fas fa-chart-line fa-3x mb-3"></i>
+                <p>No backtest data available for chart display</p>
+                <small>Run a backtest to see P&L distribution</small>
+            </div>
+        `;
+        container.appendChild(noDataDiv);
+        return;
+    }
+    
+    // Filter matched results
+    const matchedResults = results.filter(r => {
+        const v = r?.matched;
+        if (v === true || v === 1) return true;
+        if (typeof v === 'string') {
+            const s = v.trim().toLowerCase();
+            return s === 'true' || s === '1' || s === 'yes' || s === 'y';
+        }
+        return false;
+    });
+    
+    if (matchedResults.length === 0) {
+        const noDataDiv = document.createElement('div');
+        noDataDiv.className = 'fallback-chart text-center p-4';
+        noDataDiv.innerHTML = `
+            <div class="text-muted">
+                <i class="fas fa-chart-line fa-3x mb-3"></i>
+                <p>No matched results for chart display</p>
+                <small>${results.length} total results, but none matched execution criteria</small>
+            </div>
+        `;
+        container.appendChild(noDataDiv);
+        return;
+    }
+    
+    const pnlValues = matchedResults.map(r => parseFloat(r['pnl_%'] || 0));
+    
+    // Calculate statistics
+    const avgPnL = pnlValues.reduce((a, b) => a + b, 0) / pnlValues.length;
+    const minPnL = Math.min(...pnlValues);
+    const maxPnL = Math.max(...pnlValues);
+    const positiveCount = pnlValues.filter(p => p > 0).length;
+    const negativeCount = pnlValues.filter(p => p < 0).length;
+    const zeroCount = pnlValues.filter(p => p === 0).length;
+    
+    // Create histogram bins
+    const binCount = Math.min(10, Math.max(5, Math.ceil(Math.sqrt(pnlValues.length))));
+    const binSize = (maxPnL - minPnL) / binCount;
+    const bins = Array(binCount).fill(0);
+    
+    pnlValues.forEach(value => {
+        let binIndex = Math.floor((value - minPnL) / binSize);
+        if (binIndex >= binCount) binIndex = binCount - 1;
+        if (binIndex < 0) binIndex = 0;
+        bins[binIndex]++;
+    });
+    
+    const maxBinCount = Math.max(...bins);
+    
+    // Create the fallback chart
+    const chartDiv = document.createElement('div');
+    chartDiv.className = 'fallback-chart';
+    chartDiv.innerHTML = `
+        <style>
+        .fallback-chart {
+            width: 100%;
+            height: 300px;
+            background: var(--primary-dark);
+            border-radius: 8px;
+            padding: 20px;
+            position: relative;
+        }
+        .chart-title {
+            color: #e9ecef;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        .chart-stats {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .stat-item {
+            text-align: center;
+            color: #adb5bd;
+            font-size: 12px;
+        }
+        .stat-value {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+        .stat-positive { color: var(--success-green); }
+        .stat-negative { color: var(--danger-red); }
+        .stat-neutral { color: var(--text-light); }
+        .histogram {
+            display: flex;
+            align-items: end;
+            height: 120px;
+            gap: 2px;
+            margin-top: 10px;
+            padding: 0 10px;
+        }
+        .histogram-bar {
+            flex: 1;
+            background: linear-gradient(to top, var(--accent-blue), var(--success-green));
+            border-radius: 2px 2px 0 0;
+            min-height: 2px;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+        .histogram-bar:hover {
+            background: linear-gradient(to top, var(--success-green), var(--warning-orange));
+            transform: scaleY(1.1);
+        }
+        .histogram-bar::after {
+            content: attr(data-count);
+            position: absolute;
+            top: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 10px;
+            color: #adb5bd;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .histogram-bar:hover::after {
+            opacity: 1;
+        }
+        </style>
+        
+        <div class="chart-title">P&L Distribution (${matchedResults.length} trades)</div>
+        
+        <div class="chart-stats">
+            <div class="stat-item">
+                <div class="stat-value stat-positive">+${positiveCount}</div>
+                <div>Winners</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value stat-negative">-${negativeCount}</div>
+                <div>Losers</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value stat-neutral">${zeroCount}</div>
+                <div>Breakeven</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value stat-${avgPnL >= 0 ? 'positive' : 'negative'}">${avgPnL.toFixed(2)}%</div>
+                <div>Avg P&L</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value stat-positive">${maxPnL.toFixed(2)}%</div>
+                <div>Best</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value stat-negative">${minPnL.toFixed(2)}%</div>
+                <div>Worst</div>
+            </div>
+        </div>
+        
+        <div class="histogram">
+            ${bins.map((count, i) => {
+                const height = maxBinCount > 0 ? (count / maxBinCount * 100) : 0;
+                const binStart = minPnL + (i * binSize);
+                const binEnd = binStart + binSize;
+                return `<div class="histogram-bar" 
+                           style="height: ${height}%" 
+                           data-count="${count}"
+                           title="${binStart.toFixed(1)}% to ${binEnd.toFixed(1)}%: ${count} trades"></div>`;
+            }).join('')}
+        </div>
+    `;
+    
+    container.appendChild(chartDiv);
+    console.log('✅ Fallback P&L chart created successfully');
 }
 
 async function runNewBacktest() {
