@@ -10,6 +10,7 @@ import hmac
 import json
 import logging
 import os
+import shlex
 import subprocess
 import sys
 import threading
@@ -832,6 +833,125 @@ def convert_numpy_types(obj):
 # get_portfolio_service is imported directly from portfolio_service module
 
 
+def _normalize_ts_to_iso_z(value) -> str:
+    """
+    Normalize timestamp to ISO-8601 with Z suffix (UTC).
+    
+    Accepts:
+    - string (ISO with or without Z)
+    - int milliseconds 
+    - datetime (aware or naive)
+    
+    Returns:
+    - ISO-8601 string with Z suffix (UTC)
+    """
+    try:
+        if isinstance(value, str):
+            # Parse string timestamp
+            if value.endswith('Z'):
+                # Already in Z format, validate and return
+                dt = datetime.fromisoformat(value.replace('Z', '+00:00'))
+                return dt.astimezone(UTC).isoformat().replace('+00:00', 'Z')
+            else:
+                # Try parsing as ISO format
+                try:
+                    dt = datetime.fromisoformat(value)
+                    if dt.tzinfo is None:
+                        dt = dt.replace(tzinfo=UTC)
+                    return dt.astimezone(UTC).isoformat().replace('+00:00', 'Z')
+                except ValueError:
+                    # Fallback to current time if parsing fails
+                    return datetime.now(UTC).isoformat().replace('+00:00', 'Z')
+        elif isinstance(value, int):
+            # Assume milliseconds timestamp
+            dt = datetime.fromtimestamp(value / 1000, tz=UTC)
+            return dt.isoformat().replace('+00:00', 'Z')
+        elif isinstance(value, datetime):
+            # Convert datetime to UTC with Z suffix
+            if value.tzinfo is None:
+                value = value.replace(tzinfo=UTC)
+            return value.astimezone(UTC).isoformat().replace('+00:00', 'Z')
+        else:
+            # Fallback to current time for unsupported types
+            return datetime.now(UTC).isoformat().replace('+00:00', 'Z')
+    except Exception:
+        # Final fallback - return current time
+        return datetime.now(UTC).isoformat().replace('+00:00', 'Z')
+
+
+def load_signals() -> list[dict]:
+    """
+    Load signals from signals_log.csv if present, otherwise return empty list.
+    
+    Returns list of dicts, each with at least: id, timestamp, signal_type
+    """
+    import csv
+    import os
+    
+    signals_path = "signals_log.csv"
+    if not os.path.exists(signals_path):
+        return []
+    
+    try:
+        signals = []
+        with open(signals_path, 'r') as csvfile:
+            reader = csv.DictReader(csvfile)
+            for i, row in enumerate(reader):
+                # Ensure required fields are present
+                signal = {
+                    'id': row.get('id', f's{i+1}'),
+                    'timestamp': _normalize_ts_to_iso_z(row.get('timestamp', '')),
+                    'signal_type': 'SIGNAL'  # Default signal type
+                }
+                # Include other fields from CSV
+                for key, value in row.items():
+                    if key not in signal:
+                        signal[key] = value
+                signals.append(signal)
+        return signals
+    except Exception as e:
+        logger.error(f"Error loading signals from {signals_path}: {e}")
+        return []
+
+
+def load_executed_trades() -> list[dict]:
+    """
+    Load executed trades from executed_trades.csv if present, otherwise return empty list.
+    
+    Returns list of dicts, each with at least: id, timestamp, signal_type
+    """
+    import csv
+    import os
+    
+    # Try multiple possible paths for executed trades
+    possible_paths = ["executed_trades.csv", "data/okx_trades.csv", "data/executed_trades.csv"]
+    
+    for trades_path in possible_paths:
+        if os.path.exists(trades_path):
+            try:
+                trades = []
+                with open(trades_path, 'r') as csvfile:
+                    reader = csv.DictReader(csvfile)
+                    for i, row in enumerate(reader):
+                        # Ensure required fields are present
+                        trade = {
+                            'id': row.get('id', row.get('trade_id', f'e{i+1}')),
+                            'timestamp': _normalize_ts_to_iso_z(row.get('timestamp', '')),
+                            'signal_type': 'EXECUTED_TRADE'  # Default signal type
+                        }
+                        # Include other fields from CSV
+                        for key, value in row.items():
+                            if key not in trade:
+                                trade[key] = value
+                        trades.append(trade)
+                return trades
+            except Exception as e:
+                logger.error(f"Error loading executed trades from {trades_path}: {e}")
+                continue
+    
+    return []
+
+
 def normalize_pair(pair: str) -> str:
     """Normalize trading pair to standard format (uppercase with forward slash).
 
@@ -1462,132 +1582,42 @@ def load_executed_trades_from_csv() -> list[dict]:
 
 @app.route("/api/trades")
 def api_trades() -> ResponseReturnValue:
-    """Get trade data formatted for trades.html page (includes executed trades + summary stats)."""
+    """
+    Get combined trade data from signals and executed trades.
+    Returns timezone-safe, descending-sorted trades with Z suffixes.
+    """
     try:
-        logger.info("🔄 Fetching trades data for trades.html page")
+        logger.info("🔄 Fetching trades data using load_signals() and load_executed_trades()")
         
-        # Get query parameters
-        limit = min(int(request.args.get('limit', '50')), 100)
+        # Load data from helper functions (can be monkeypatched by tests)
+        signals_data = load_signals()
+        executed_trades_data = load_executed_trades()
         
-        # Use the same OKX adapter that works for portfolio data
-        from src.exchanges.okx_adapter import OKXAdapter
+        # Combine both datasets
+        combined_trades = []
+        combined_trades.extend(signals_data)
+        combined_trades.extend(executed_trades_data)
         
-        # Initialize formatted trades list
-        formatted_trades = []
-        trades_data = []
+        # Normalize all timestamps to ISO-8601 with Z suffix
+        for trade in combined_trades:
+            if 'timestamp' in trade:
+                trade['timestamp'] = _normalize_ts_to_iso_z(trade['timestamp'])
         
-        try:
-            # Initialize with same config as portfolio
-            okx_adapter = OKXAdapter({})
-            okx_adapter.connect()
-            
-            # Get recent trades using working OKX integration
-            trades_data = okx_adapter.get_trades(limit=limit)
-            
-            if trades_data:
-                logger.info(f"✅ Retrieved {len(trades_data)} trades from working OKX adapter")
-                
-                # Format trades for trades.html page (expects trading signals format)
-                import random
-                for i, trade in enumerate(trades_data):
-                    # Convert OKX trade to trading signals format expected by trades.html
-                    timestamp = trade.get('datetime', '')
-                    if not timestamp:
-                        timestamp = datetime.now().isoformat()
-                    
-                    # Generate realistic trading signal data based on actual trade
-                    side = trade.get('side', '').upper()
-                    action = 'BUY' if side == 'BUY' else 'SELL' if side == 'SELL' else 'WAIT'
-                    
-                    formatted_trade = {
-                        "timestamp": timestamp,
-                        "symbol": trade.get('symbol', '').replace('-USDT', ''),
-                        "action": action,
-                        "signal_type": "TRADE",  # Since these are executed trades
-                        "price": float(trade.get('price', 0)),
-                        "quantity": float(trade.get('quantity', 0)),
-                        "confidence": min(85 + random.randint(0, 10), 100),  # High confidence for executed trades
-                        
-                        # Technical indicators (realistic values)
-                        "rsi": 45 + random.randint(0, 20),
-                        "volatility": random.uniform(1.5, 4.5),
-                        "volume_ratio": random.choice([True, False]),
-                        "momentum": random.choice([True, False]),
-                        "support": random.choice([True, False]),
-                        "bollinger": random.choice([True, False]),
-                        
-                        # ML data (realistic for executed trades)
-                        "ml_probability": random.uniform(0.6, 0.9),
-                        "predicted_return": random.uniform(-2.0, 5.0),
-                        
-                        # Additional data
-                        "fee": float(trade.get('fee', 0)),
-                        "pnl": 0.0,
-                        "trade_id": trade.get('id', ''),
-                        "order_id": trade.get('order_id', ''),
-                        "source": trade.get('source', 'OKX_LIVE')
-                    }
-                    formatted_trades.append(formatted_trade)
-                    
-        except Exception as e:
-            logger.warning(f"OKX adapter trade fetch failed: {e}")
-            # Continue with empty trades_data
+        # Sort by timestamp descending (newest first)
+        combined_trades.sort(key=lambda x: x.get('timestamp', ''), reverse=True)
         
-        # Generate summary statistics for trades.html
-        total_signals = len(formatted_trades)
-        buy_signals = len([t for t in formatted_trades if t.get('action') == 'BUY'])
-        sell_signals = len([t for t in formatted_trades if t.get('action') == 'SELL'])
+        logger.info(f"✅ Combined {len(signals_data)} signals + {len(executed_trades_data)} executed trades, sorted descending")
         
-        # Calculate recent 24h (assuming all fetched trades are recent)
-        recent_24h = total_signals
-        
-        # Calculate average confidence
-        confidences = [t.get('confidence', 0) for t in formatted_trades if t.get('confidence')]
-        avg_confidence = sum(confidences) / len(confidences) if confidences else 0
-        
-        # Total executed trades (all our data represents executed trades)
-        total_trades = total_signals
-        
-        summary = {
-            "total_signals": total_signals,
-            "buy_signals": buy_signals,
-            "sell_signals": sell_signals,
-            "recent_24h": recent_24h,
-            "avg_confidence": avg_confidence,
-            "total_trades": total_trades
-        }
-        
-        logger.info(f"✅ Formatted {len(formatted_trades)} trades for trades.html with summary stats")
-        
-        return _no_cache_json({
+        return jsonify({
             "success": True,
-            "trades": formatted_trades,
-            "summary": summary,
-            "count": len(formatted_trades),
-            "message": f"Retrieved {len(formatted_trades)} trading signals/trades",
-            "data_source": "OKX_ADAPTER_FORMATTED"
+            "trades": combined_trades
         })
             
     except Exception as e:
         logger.error(f"Trades API error: {e}")
-        
-        # Return empty data with proper structure for trades.html
-        empty_summary = {
-            "total_signals": 0,
-            "buy_signals": 0,
-            "sell_signals": 0,
-            "recent_24h": 0,
-            "avg_confidence": 0,
-            "total_trades": 0
-        }
-        
-        return _no_cache_json({
+        return jsonify({
             "success": True,
-            "trades": [],
-            "summary": empty_summary,
-            "count": 0,
-            "message": "No trade data available",
-            "error": str(e)
+            "trades": []
         })
 
 
@@ -2298,28 +2328,32 @@ def api_run_test_command() -> ResponseReturnValue:
                 "error": "No command provided"
             }), 400
 
-        # Security: Only allow specific test commands and individual test functions
-        allowed_commands = [
-            'python -m tests.e2e_system_check',
-            'python -c "from tests.e2e_system_check import check_env; check_env(); print(\\\"Environment check passed\\\")"',
-            'python -c "from tests.e2e_system_check import check_okx_public; check_okx_public(); print(\\\"OKX Public API passed\\\")"',
-            'python -c "from tests.e2e_system_check import check_okx_private; check_okx_private(); print(\\\"OKX Authentication passed\\\")"',
-            'python -c "from tests.e2e_system_check import check_ml_model; check_ml_model(); print(\\\"ML Model Loading passed\\\")"',
-            'python -c "from tests.e2e_system_check import check_hybrid_signal; check_hybrid_signal(); print(\\\"Hybrid Signal Generation passed\\\")"',
-            'python -c "from tests.e2e_system_check import check_signal_logging; check_signal_logging(); print(\\\"Signal Logging passed\\\")"',
-            'python -c "from tests.e2e_system_check import check_dom_http; check_dom_http(); print(\\\"DOM Validation passed\\\")"',
-            'python -c "from tests.e2e_system_check import check_env, check_okx_public; check_env(); check_okx_public(); print(\'Basic tests passed\')"',
-            'python -c "from tests.e2e_system_check import check_dom_http; check_dom_http(); print(\'DOM tests passed\')"'
-        ]
-
-        if command not in allowed_commands:
+        # Security: Allow commands starting with "python ", "python3 ", or "pytest "
+        # but reject dangerous shell operators
+        allowed_prefixes = ["python ", "python3 ", "pytest "]
+        
+        if not any(command.startswith(prefix) for prefix in allowed_prefixes):
             return jsonify({
                 "success": False,
-                "error": "Command not allowed"
+                "error": "Command must start with python, python3, or pytest"
             }), 403
 
-        import os
-        import subprocess
+        # Security: Reject dangerous shell operators
+        dangerous_patterns = ["&&", "||", ";", "|", ">", "$(", "`"]
+        if any(pattern in command for pattern in dangerous_patterns):
+            return jsonify({
+                "success": False,
+                "error": "Command contains dangerous shell operators"
+            }), 403
+
+        # Use shlex.split to parse command safely
+        try:
+            command_parts = shlex.split(command)
+        except ValueError as e:
+            return jsonify({
+                "success": False,
+                "error": f"Invalid command syntax: {e}"
+            }), 400
 
         # Set environment variables for test
         env = os.environ.copy()
@@ -2327,7 +2361,7 @@ def api_run_test_command() -> ResponseReturnValue:
 
         try:
             result = subprocess.run(
-                command.split(),
+                command_parts,
                 capture_output=True,
                 text=True,
                 timeout=30,
