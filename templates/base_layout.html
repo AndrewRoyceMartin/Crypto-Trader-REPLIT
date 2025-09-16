@@ -7,14 +7,16 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <title>{% block title %}Hybrid Trading Intelligence Platform{% endblock %}</title>
+    <title>{% block title %}Grim Trader v2.0{% endblock %}</title>
     
     <!-- Core CSS -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     
-    <!-- Chart.js for visualizations -->
-    <script defer src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Chart.js removed - using HTML/CSS charts instead -->
+    
+    <!-- Add a favicon to fix 404 error -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📈</text></svg>">
     
     <style>
     /* Navigation and Layout Styles - All colors now from unified style.css */
@@ -116,6 +118,7 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
+        min-height: 80px;
     }
 
     .page-title {
@@ -133,8 +136,9 @@
 
     .header-controls {
         display: flex;
-        gap: 10px;
+        gap: 15px;
         align-items: center;
+        flex-wrap: wrap;
     }
 
     .content-body {
@@ -145,20 +149,24 @@
     .trading-controls {
         background: var(--accent-blue);
         border-radius: 10px;
-        padding: 15px;
-        margin-bottom: 20px;
+        padding: 10px 15px;
         border: 1px solid var(--border-color);
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        white-space: nowrap;
     }
 
     .control-btn {
         border: none;
-        padding: 8px 16px;
+        padding: 8px 12px;
         border-radius: 6px;
         font-weight: 600;
         text-transform: uppercase;
-        font-size: 0.85rem;
+        font-size: 0.8rem;
         transition: all 0.3s ease;
-        margin-right: 10px;
+        cursor: pointer;
+        white-space: nowrap;
     }
 
     .control-btn.start { background: var(--success-green); color: white; }
@@ -191,6 +199,71 @@
         background: rgba(253, 126, 20, 0.2);
         color: var(--warning-orange);
         border: 1px solid var(--warning-orange);
+    }
+
+    /* Mobile Nav Toggle */
+    .mobile-nav-toggle {
+        display: none;
+        background: none;
+        border: 1px solid var(--border-color);
+        color: white;
+        padding: 8px 12px;
+        border-radius: 6px;
+        cursor: pointer;
+    }
+
+    .mobile-nav-toggle:hover {
+        background: var(--accent-blue);
+    }
+
+    /* Responsive Header */
+    @media (max-width: 768px) {
+        .content-header {
+            padding: 15px 20px;
+            flex-direction: column;
+            gap: 15px;
+            align-items: flex-start;
+        }
+
+        .header-controls {
+            width: 100%;
+            justify-content: space-between;
+        }
+
+        .trading-controls {
+            flex: 1;
+            justify-content: center;
+            min-width: 0;
+        }
+
+        .control-btn {
+            padding: 6px 10px;
+            font-size: 0.75rem;
+        }
+
+        .mobile-nav-toggle {
+            display: block;
+        }
+
+        .status-indicator {
+            font-size: 0.75rem;
+            padding: 4px 8px;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .trading-controls {
+            gap: 4px;
+        }
+
+        .control-btn {
+            padding: 6px 8px;
+            font-size: 0.7rem;
+        }
+
+        .control-btn i {
+            display: none; /* Hide icons on very small screens */
+        }
     }
 
     /* Cards and Data Displays */
@@ -320,9 +393,9 @@
     <!-- Navigation Sidebar -->
     <nav class="sidebar" id="sidebar">
         <div class="sidebar-header">
-            <a href="{{ url_for('index') }}" class="sidebar-brand">
+            <a href="{{ url_for('dashboard') }}" class="sidebar-brand">
                 <i class="fas fa-chart-line me-2"></i>
-                Hybrid Trading AI
+                Grim Trader v2.0
             </a>
         </div>
 
@@ -330,14 +403,14 @@
         <div class="nav-section">
             <div class="nav-section-title">Core Features</div>
             <div class="nav-item">
-                <a href="{{ url_for('index') }}" class="nav-link" data-page="dashboard">
+                <a href="{{ url_for('dashboard') }}" class="nav-link" data-page="dashboard">
                     <i class="fas fa-tachometer-alt"></i>
                     Dashboard
                     <span class="nav-badge">Live</span>
                 </a>
             </div>
             <div class="nav-item">
-                <a href="{{ url_for('signals_ml') }}" class="nav-link" data-page="signals">
+                <a href="{{ url_for('signals') }}" class="nav-link" data-page="signals">
                     <i class="fas fa-brain"></i>
                     Signals & ML
                     <span class="nav-badge">AI</span>
@@ -351,14 +424,14 @@
                 </a>
             </div>
             <div class="nav-item">
-                <a href="{{ url_for('backtest_results') }}" class="nav-link" data-page="backtest">
+                <a href="{{ url_for('backtest') }}" class="nav-link" data-page="backtest">
                     <i class="fas fa-chart-bar"></i>
                     Backtest Results
                     <span class="nav-badge">3.8%</span>
                 </a>
             </div>
             <div class="nav-item">
-                <a href="{{ url_for('trading_performance') }}" class="nav-link" data-page="performance">
+                <a href="{{ url_for('performance') }}" class="nav-link" data-page="performance">
                     <i class="fas fa-chart-line"></i>
                     Performance
                     <span class="nav-badge">Live</span>
@@ -370,14 +443,14 @@
         <div class="nav-section">
             <div class="nav-section-title">Portfolio & Analysis</div>
             <div class="nav-item">
-                <a href="{{ url_for('portfolio_advanced') }}" class="nav-link" data-page="portfolio">
+                <a href="{{ url_for('portfolio') }}" class="nav-link" data-page="portfolio">
                     <i class="fas fa-wallet"></i>
                     Portfolio Analytics
                     <span class="nav-badge">26+</span>
                 </a>
             </div>
             <div class="nav-item">
-                <a href="{{ url_for('market_analysis') }}" class="nav-link" data-page="market">
+                <a href="{{ url_for('market') }}" class="nav-link" data-page="market">
                     <i class="fas fa-globe"></i>
                     Market Analysis
                     <span class="nav-badge">298</span>
@@ -428,7 +501,7 @@
         <div class="content-header">
             <div>
                 <h1 class="page-title">{% block page_title %}Dashboard{% endblock %}</h1>
-                <p class="page-subtitle">{% block page_subtitle %}Real-time hybrid trading intelligence{% endblock %}</p>
+                <p class="page-subtitle">{% block page_subtitle %}Real-time trading intelligence{% endblock %}</p>
             </div>
             <div class="header-controls">
                 <button class="mobile-nav-toggle" onclick="toggleMobileNav()">
