@@ -2355,6 +2355,183 @@ def api_run_test_command() -> ResponseReturnValue:
 
 
 # Main application configuration and startup
+@app.route("/api/backtest-health", methods=["GET"])
+def backtest_health():
+    """Health check endpoint for ML backtest outputs validation."""
+    import csv
+    from pathlib import Path
+    
+    # File locations to check in order of preference
+    file_locations = [
+        "ml/backtest_results.json",
+        "data/backtest_results.json", 
+        "ml/backtest_results.csv"
+    ]
+    
+    files_info = {}
+    selected_file = None
+    records = []
+    
+    # Check files in priority order
+    for location in file_locations:
+        path = Path(location)
+        file_key = location.replace('/', '_').replace('.', '_')
+        
+        try:
+            if path.exists():
+                stat = path.stat()
+                files_info[file_key] = {
+                    "exists": True,
+                    "size_bytes": stat.st_size,
+                    "mtime_iso": datetime.fromtimestamp(stat.st_mtime, UTC).isoformat()
+                }
+                
+                # Use first existing file
+                if selected_file is None:
+                    selected_file = location
+                    
+            else:
+                files_info[file_key] = {
+                    "exists": False,
+                    "size_bytes": 0,
+                    "mtime_iso": None
+                }
+        except Exception as e:
+            files_info[file_key] = {
+                "exists": False,
+                "size_bytes": 0,
+                "mtime_iso": None,
+                "error": str(e)
+            }
+    
+    warnings = []
+    errors = []
+    success = False
+    required_fields_ok = False
+    record_count = 0
+    sample = []
+    
+    if selected_file:
+        try:
+            logger.info(f"Reading backtest data from: {selected_file}")
+            
+            if selected_file.endswith('.csv'):
+                # Read CSV file
+                with open(selected_file, 'r', encoding='utf-8') as f:
+                    reader = csv.DictReader(f)
+                    for row in reader:
+                        # Normalize field names
+                        normalized_row = {}
+                        for key, value in row.items():
+                            key_lower = key.lower().strip()
+                            if key_lower in ['timestamp', 'time']:
+                                normalized_row['timestamp'] = value
+                            elif key_lower in ['symbol', 'pair']:
+                                normalized_row['symbol'] = value
+                            elif key_lower in ['signal', 'action']:
+                                normalized_row['signal'] = value
+                            elif key_lower in ['ml_probability', 'ml_prob', 'probability']:
+                                normalized_row['ml_probability'] = value
+                            elif key_lower in ['signal_price', 'entry_price']:
+                                normalized_row['signal_price'] = value
+                            elif key_lower in ['execution_price', 'exec_price', 'fill_price']:
+                                normalized_row['execution_price'] = value
+                            elif key_lower in ['pnl_$', 'pnl_usd', 'pnl_dollar']:
+                                normalized_row['pnl_$'] = value
+                            elif key_lower in ['pnl_%', 'pnl_percent', 'pnl_pct']:
+                                normalized_row['pnl_%'] = value
+                            elif key_lower in ['matched', 'match']:
+                                normalized_row['matched'] = value
+                            else:
+                                # Keep original key
+                                normalized_row[key] = value
+                        
+                        # Compute matched field if missing but prices are present
+                        if 'matched' not in normalized_row and 'signal_price' in normalized_row and 'execution_price' in normalized_row:
+                            try:
+                                signal_price = float(normalized_row['signal_price'])
+                                execution_price = float(normalized_row['execution_price'])
+                                if signal_price > 0:
+                                    slippage = abs(execution_price - signal_price) / signal_price
+                                    normalized_row['matched'] = slippage <= 0.001  # 0.1% tolerance
+                                else:
+                                    normalized_row['matched'] = False
+                            except (ValueError, TypeError):
+                                normalized_row['matched'] = False
+                        
+                        records.append(normalized_row)
+                
+            elif selected_file.endswith('.json'):
+                # Read JSON file
+                with open(selected_file, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                    if isinstance(data, list):
+                        records = data
+                    elif isinstance(data, dict) and 'results' in data:
+                        records = data['results']
+                    else:
+                        errors.append("JSON structure not recognized")
+            
+            record_count = len(records)
+            logger.info(f"Loaded {record_count} backtest records")
+            
+            # Validate schema for at least 1 record
+            if record_count > 0:
+                required_fields = ['timestamp', 'symbol', 'signal', 'ml_probability', 'signal_price']
+                sample_record = records[0]
+                
+                missing_fields = []
+                for field in required_fields:
+                    if field not in sample_record or not sample_record[field]:
+                        missing_fields.append(field)
+                
+                if missing_fields:
+                    errors.append(f"Missing required fields: {', '.join(missing_fields)}")
+                    required_fields_ok = False
+                else:
+                    required_fields_ok = True
+                    
+                    # Additional validation
+                    try:
+                        # Test parsing key fields
+                        float(sample_record['ml_probability'])
+                        float(sample_record['signal_price'])
+                        datetime.fromisoformat(str(sample_record['timestamp']).replace('Z', '+00:00'))
+                    except (ValueError, TypeError) as e:
+                        warnings.append(f"Data type validation warning: {str(e)}")
+                
+                # Provide sample data (up to 2 records)
+                sample = records[:2]
+            else:
+                errors.append("No records found in file")
+                
+            success = record_count > 0 and required_fields_ok and len(errors) == 0
+            
+        except Exception as e:
+            errors.append(f"Error reading file: {str(e)}")
+            logger.error(f"Error reading backtest file {selected_file}: {e}")
+    
+    else:
+        errors.append("No backtest files found in expected locations")
+        warnings.append("Check ml/backtest_results.json, data/backtest_results.json, or ml/backtest_results.csv")
+    
+    response = {
+        "success": success,
+        "files": {
+            "json": files_info.get("ml_backtest_results_json", {"exists": False, "size_bytes": 0, "mtime_iso": None}),
+            "data_json": files_info.get("data_backtest_results_json", {"exists": False, "size_bytes": 0, "mtime_iso": None}),
+            "csv": files_info.get("ml_backtest_results_csv", {"exists": False, "size_bytes": 0, "mtime_iso": None})
+        },
+        "record_count": record_count,
+        "required_fields_ok": required_fields_ok,
+        "warnings": warnings,
+        "errors": errors,
+        "sample": sample
+    }
+    
+    return jsonify(response)
+
+
 @app.route("/api/self-check", methods=["GET"])
 def self_check():
     okx_base = "https://www.okx.com"
@@ -2447,6 +2624,38 @@ def self_check():
         status["dom_http_status"] = str(getattr(locals().get('dom'), 'status_code', "unknown"))
         status["dom_missing_selectors"] = "[]"
         healthy_parts.append(False)
+
+    # --- Backtest health summary ---
+    backtest_health = {"exists": False, "record_count": 0, "required_fields_ok": False}
+    try:
+        # Quick backtest health check (lightweight version)
+        from pathlib import Path
+        
+        backtest_files = ["ml/backtest_results.csv", "ml/backtest_results.json", "data/backtest_results.json"]
+        for file_path in backtest_files:
+            if Path(file_path).exists():
+                backtest_health["exists"] = True
+                break
+        
+        if backtest_health["exists"]:
+            # Quick record count check for CSV (most common)
+            csv_path = Path("ml/backtest_results.csv")
+            if csv_path.exists():
+                try:
+                    import csv
+                    with open(csv_path, 'r') as f:
+                        reader = csv.reader(f)
+                        next(reader, None)  # Skip header
+                        record_count = sum(1 for _ in reader)
+                    backtest_health["record_count"] = record_count
+                    backtest_health["required_fields_ok"] = record_count > 0
+                except Exception:
+                    pass
+        
+        status["backtest"] = backtest_health
+        
+    except Exception as e:
+        status["backtest"] = {"exists": False, "record_count": 0, "required_fields_ok": False, "error": str(e)}
 
     healthy = all(healthy_parts)
     return jsonify({"healthy": healthy, "status": status})

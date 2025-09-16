@@ -118,6 +118,7 @@
 .status-loading { color: #f59e0b; }
 .status-loaded { color: #22c55e; }
 .status-error { color: #ef4444; }
+.status-warning { color: #f59e0b; }
 </style>
 {% endblock %}
 
@@ -384,6 +385,41 @@
 console.log('🔧 Backtest JS loaded');
 window.onerror = (m, s, l, c, e) => console.error('JS error:', m, s, l, c, e);
 
+// Safe toast wrapper - prevents ReferenceError when global toast function isn't present
+function safeToast(message, type = 'info') {
+    if (typeof showToast === 'function') {
+        showToast(message, type);
+    } else if (typeof toast !== 'undefined' && toast.show) {
+        // Bootstrap toast fallback
+        toast.show({title: type.toUpperCase(), message: message});
+    } else {
+        // Console fallback
+        console.log(`📢 ${type.toUpperCase()}: ${message}`);
+    }
+}
+
+// Safe numeric formatting - guards against undefined/NaN values
+function safeNumber(value, defaultValue = 0) {
+    const num = Number(value);
+    return isNaN(num) ? defaultValue : num;
+}
+
+function safeToFixed(value, decimals = 2, fallback = '—') {
+    const num = safeNumber(value);
+    return num === 0 && value === undefined ? fallback : num.toFixed(decimals);
+}
+
+// Safe DOM text setter - prevents errors when elements don't exist
+function safeSetText(elementId, text) {
+    const element = document.getElementById(elementId);
+    if (element) {
+        element.textContent = text;
+        return true;
+    }
+    console.warn(`Element not found: ${elementId}`);
+    return false;
+}
+
 let backtestResults = null;
 let pnlChart = null;
 
@@ -535,16 +571,16 @@ function updateSummaryStats(results) {
         
         // Update main display using summary data from API with error checking
         const avgPnLEl = document.getElementById('avgPnL');
-        if (avgPnLEl) avgPnLEl.textContent = Number(summary.avg_pnl_percent || 0).toFixed(2) + '%';
+        if (avgPnLEl) avgPnLEl.textContent = safeToFixed(summary.avg_pnl_percent) + '%';
         
         const winRateEl = document.getElementById('winRate');
-        if (winRateEl) winRateEl.textContent = Number(summary.win_rate || 0).toFixed(1) + '%';
+        if (winRateEl) winRateEl.textContent = safeToFixed(summary.win_rate, 1) + '%';
         
         const matchRateEl = document.getElementById('matchRate');
         if (matchRateEl) matchRateEl.textContent = '100%'; // All results are matched since they come from real trades
         
         const totalTradesEl = document.getElementById('totalTrades');
-        if (totalTradesEl) totalTradesEl.textContent = summary.total_trades || 0;
+        if (totalTradesEl) totalTradesEl.textContent = safeNumber(summary.total_trades, 0);
         
         console.log('✅ Status cards updated with API summary data');
     } else {
@@ -554,29 +590,29 @@ function updateSummaryStats(results) {
         if (matchedResults.length === 0) {
             // Use all results if no matched field
             const allResults = results;
-            const pnlValues = allResults.map(r => parseFloat(r['pnl_%'] || r['pnl_percent'] || 0));
+            const pnlValues = allResults.map(r => safeNumber(r['pnl_%'] || r['pnl_percent']));
             const avgPnL = pnlValues.length > 0 ? pnlValues.reduce((a, b) => a + b, 0) / pnlValues.length : 0;
             const winningTrades = pnlValues.filter(p => p > 0).length;
             const winRate = pnlValues.length > 0 ? (winningTrades / pnlValues.length) * 100 : 0;
             
             // Update main display
-            document.getElementById('avgPnL').textContent = avgPnL.toFixed(2) + '%';
-            document.getElementById('winRate').textContent = winRate.toFixed(1) + '%';
-            document.getElementById('matchRate').textContent = '100%';
-            document.getElementById('totalTrades').textContent = allResults.length;
+            safeSetText('avgPnL', safeToFixed(avgPnL) + '%');
+            safeSetText('winRate', safeToFixed(winRate, 1) + '%');
+            safeSetText('matchRate', '100%');
+            safeSetText('totalTrades', String(allResults.length));
         } else {
             // Use matched results
-            const pnlValues = matchedResults.map(r => parseFloat(r['pnl_%'] || r['pnl_percent'] || 0));
+            const pnlValues = matchedResults.map(r => safeNumber(r['pnl_%'] || r['pnl_percent']));
             const avgPnL = pnlValues.reduce((a, b) => a + b, 0) / pnlValues.length;
             const winningTrades = pnlValues.filter(p => p > 0).length;
             const winRate = (winningTrades / pnlValues.length) * 100;
             const matchRate = (matchedResults.length / results.length) * 100;
             
             // Update main display
-            document.getElementById('avgPnL').textContent = avgPnL.toFixed(2) + '%';
-            document.getElementById('winRate').textContent = winRate.toFixed(1) + '%';
-            document.getElementById('matchRate').textContent = matchRate.toFixed(1) + '%';
-            document.getElementById('totalTrades').textContent = matchedResults.length;
+            safeSetText('avgPnL', safeToFixed(avgPnL) + '%');
+            safeSetText('winRate', safeToFixed(winRate, 1) + '%');
+            safeSetText('matchRate', safeToFixed(matchRate, 1) + '%');
+            safeSetText('totalTrades', String(matchedResults.length));
         }
     }
     
@@ -620,7 +656,7 @@ function updateSignalTypePerformance(results) {
             console.log(`📊 Signal ${signal} (${mapping.label}): ${signalResults.length} trades`);
             
             if (signalResults.length > 0) {
-                const pnlValues = signalResults.map(r => parseFloat(r['pnl_%'] || 0));
+                const pnlValues = signalResults.map(r => safeNumber(r['pnl_%']));
                 const avgPnL = pnlValues.reduce((a, b) => a + b, 0) / pnlValues.length;
                 const winningTrades = pnlValues.filter(p => p > 0).length;
                 const winRate = (winningTrades / pnlValues.length) * 100;
@@ -632,9 +668,9 @@ function updateSignalTypePerformance(results) {
                 const statsElement = document.getElementById(statsId);
                 
                 if (pnlElement && statsElement) {
-                    pnlElement.textContent = avgPnL.toFixed(2) + '%';
-                    statsElement.textContent = `${signalResults.length} ${mapping.label} trades • ${winRate.toFixed(0)}% win rate`;
-                    console.log(`✅ Updated ${mapping.label}: ${avgPnL.toFixed(2)}% (${signalResults.length} trades)`);
+                    pnlElement.textContent = safeToFixed(avgPnL) + '%';
+                    statsElement.textContent = `${signalResults.length} ${mapping.label} trades • ${safeToFixed(winRate, 0)}% win rate`;
+                    console.log(`✅ Updated ${mapping.label}: ${safeToFixed(avgPnL)}% (${signalResults.length} trades)`);
                 } else {
                     console.error(`❌ Elements not found for ${mapping.label}: ${elementId}, ${statsId}`);
                 }
@@ -772,10 +808,10 @@ function calculateCorrelation(x, y) {
 
 function updateResultsTable(results) {
     const tbody = document.getElementById('backtestTableBody');
-    document.getElementById('resultsCount').textContent = results.length;
+    safeSetText('resultsCount', String(results.length));
     
     tbody.innerHTML = results.map(result => {
-        const pnl = parseFloat(result['pnl_%'] || 0);
+        const pnl = safeNumber(result['pnl_%']);
         const matched = result.matched === true || result.matched === 'true' || result.matched === 'True';
         
         let signalClass = 'bg-secondary';
@@ -785,22 +821,30 @@ function updateResultsTable(results) {
         else if (result.signal === 'WAIT') signalClass = 'bg-secondary';  // Gray for wait
         else if (result.signal === 'AVOID') signalClass = 'bg-danger';
         
+        // Safe date formatting
+        let dateStr = '—';
+        try {
+            dateStr = new Date(result.timestamp).toLocaleString();
+        } catch(e) {
+            dateStr = String(result.timestamp || '—');
+        }
+        
         return `
             <tr>
-                <td>${new Date(result.timestamp).toLocaleString()}</td>
-                <td><strong>${result.symbol}</strong></td>
+                <td>${dateStr}</td>
+                <td><strong>${result.symbol || '—'}</strong></td>
                 <td class="text-center">
-                    <span class="badge ${signalClass}">${result.signal}</span>
+                    <span class="badge ${signalClass}">${result.signal || '—'}</span>
                 </td>
-                <td class="text-end">${result.confidence}</td>
-                <td class="text-end">${(parseFloat(result.ml_probability) * 100).toFixed(1)}%</td>
-                <td class="text-end">$${parseFloat(result.signal_price).toFixed(2)}</td>
-                <td class="text-end">$${parseFloat(result.execution_price || 0).toFixed(2)}</td>
+                <td class="text-end">${result.confidence || '—'}</td>
+                <td class="text-end">${safeToFixed(safeNumber(result.ml_probability) * 100, 1)}%</td>
+                <td class="text-end">$${safeToFixed(safeNumber(result.signal_price))}</td>
+                <td class="text-end">$${safeToFixed(safeNumber(result.execution_price))}</td>
                 <td class="text-end ${pnl >= 0 ? 'text-success' : 'text-danger'}">
-                    $${parseFloat(result['pnl_$'] || 0).toFixed(2)}
+                    $${safeToFixed(safeNumber(result['pnl_$']))}
                 </td>
                 <td class="text-end ${pnl >= 0 ? 'text-success' : 'text-danger'}">
-                    ${pnl.toFixed(2)}%
+                    ${safeToFixed(pnl)}%
                 </td>
                 <td class="text-center">
                     <span class="badge ${matched ? 'bg-success' : 'bg-secondary'}">
@@ -829,7 +873,7 @@ function updateBestWorstTrades(results) {
                 <br><small class="text-muted-xs">${new Date(trade.timestamp).toLocaleDateString()}</small>
             </div>
             <div class="text-success h5 mb-0">
-                ${parseFloat(trade['pnl_%']).toFixed(2)}%
+                ${safeToFixed(safeNumber(trade['pnl_%']))}%
             </div>
         </div>
     `).join('');
@@ -845,7 +889,7 @@ function updateBestWorstTrades(results) {
                 <br><small class="text-muted-xs">${new Date(trade.timestamp).toLocaleDateString()}</small>
             </div>
             <div class="text-warning h5 mb-0">
-                ${parseFloat(trade['pnl_%']).toFixed(2)}%
+                ${safeToFixed(safeNumber(trade['pnl_%']))}%
             </div>
         </div>
     `).join('');
@@ -939,11 +983,7 @@ async function runNewBacktest() {
         console.log('🔄 Starting new backtest...');
         
         // Show toast notification
-        if (typeof showToast === 'function') {
-            showToast('Starting new backtest...', 'info');
-        } else {
-            console.log('📢 Starting new backtest...');
-        }
+        safeToast('Starting new backtest...', 'info');
         
         // Run the Python backtest script
         const response = await fetch('/api/run-backtest', { method: 'POST' });
@@ -953,11 +993,7 @@ async function runNewBacktest() {
             const result = await response.json();
             console.log('✅ Backtest result:', result);
             
-            if (typeof showToast === 'function') {
-                showToast('Backtest completed successfully!', 'success');
-            } else {
-                console.log('📢 Backtest completed successfully!');
-            }
+            safeToast('Backtest completed successfully!', 'success');
             
             // Reload results
             setTimeout(() => {
@@ -969,17 +1005,13 @@ async function runNewBacktest() {
         }
     } catch (error) {
         console.error('❌ Backtest error:', error);
-        if (typeof showToast === 'function') {
-            showToast('Error running backtest: ' + error.message, 'error');
-        } else {
-            console.error('📢 Error running backtest:', error.message);
-        }
+        safeToast('Error running backtest: ' + error.message, 'error');
     }
 }
 
 async function exportBacktestResults() {
     try {
-        showToast('Exporting backtest results...', 'info');
+        safeToast('Exporting backtest results...', 'info');
         
         const response = await fetch('/ml/backtest_results.csv');
         if (response.ok) {
@@ -993,12 +1025,12 @@ async function exportBacktestResults() {
             document.body.removeChild(a);
             window.URL.revokeObjectURL(url);
             
-            showToast('Backtest results exported successfully!', 'success');
+            safeToast('Backtest results exported successfully!', 'success');
         } else {
             throw new Error('Export failed');
         }
     } catch (error) {
-        showToast('Error exporting results: ' + error.message, 'error');
+        safeToast('Error exporting results: ' + error.message, 'error');
     }
 }
 
