@@ -10,6 +10,7 @@ import hmac
 import json
 import logging
 import os
+import secrets
 import subprocess
 import sys
 import threading
@@ -81,18 +82,30 @@ ADMIN_TOKEN = os.getenv("ADMIN_TOKEN", "").strip()
 
 
 def require_admin(f: Any) -> Any:
-    """Decorator to require admin authentication token for protected
-    endpoints."""
+    """Decorator to require admin authentication token for protected endpoints.
+    
+    Supports both X-Admin-Token header and Authorization: Bearer format.
+    Uses constant-time comparison to prevent timing attacks.
+    """
     @wraps(f)
     def _w(*args: Any, **kwargs: Any) -> Any:
-        # Always require ADMIN_TOKEN to be set and header to match
+        # Always require ADMIN_TOKEN to be set
         if not ADMIN_TOKEN:
             logger.error("🚨 ADMIN_TOKEN not configured - blocking access")
             return jsonify({"error": "server misconfigured"}), 500
         
+        # Check both X-Admin-Token header and Authorization: Bearer format
         provided_token = request.headers.get("X-Admin-Token")
-        if not provided_token or provided_token != ADMIN_TOKEN:
-            logger.warning(f"🛡️ Unauthorized access attempt to {request.endpoint} - header_len={len(provided_token or '')}, env_len={len(ADMIN_TOKEN)}, header_sha256={hashlib.sha256((provided_token or '').encode()).hexdigest()[:8]}, env_sha256={hashlib.sha256(ADMIN_TOKEN.encode()).hexdigest()[:8]}")
+        if not provided_token:
+            # Check for Authorization: Bearer format
+            auth_header = request.headers.get("Authorization")
+            if auth_header and auth_header.startswith("Bearer "):
+                provided_token = auth_header[7:]  # Remove "Bearer " prefix
+        
+        # Use constant-time comparison to prevent timing attacks
+        if not provided_token or not secrets.compare_digest(provided_token, ADMIN_TOKEN):
+            # Log unauthorized access attempt without revealing token details
+            logger.warning(f"🛡️ Unauthorized access attempt to {request.endpoint} from {request.remote_addr}")
             return jsonify({"error": "unauthorized"}), 401
             
         return f(*args, **kwargs)
