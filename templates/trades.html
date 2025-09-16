@@ -399,6 +399,50 @@
 let allTradesData = [];
 let filteredData = [];
 
+// Safe debug shim to avoid ReferenceErrors if TradingDebug is not present
+(function ensureTradingDebug() {
+    if (!window.TradingDebug) {
+        const noop = () => {};
+        window.TradingDebug = {
+            log: console.log.bind(console),
+            inspectState: (label, value) => console.log(`🔎 ${label}:`, value),
+            trackError: (e, ctx) => console.error(`❌ ${ctx || 'Error'}`, e),
+            helpers: {
+                testAPI: async (endpoint) => {
+                    try {
+                        const r = await fetch(endpoint, { method: 'GET' });
+                        console.log(`🧪 ${endpoint}`, r.status);
+                        return r.status;
+                    } catch (err) {
+                        console.error(`🧪 ${endpoint} failed`, err);
+                        return 0;
+                    }
+                }
+            }
+        };
+    }
+})();
+
+// Minimal toast utils (no placeholders; only used for error UX)
+let toastContainer = null;
+function initToastContainer() {
+    if (!toastContainer) {
+        toastContainer = document.createElement('div');
+        toastContainer.id = 'toastContainer';
+        toastContainer.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 1000; max-width: 350px;';
+        document.body.appendChild(toastContainer);
+    }
+}
+function showToast(message, type = 'info') {
+    initToastContainer();
+    const toast = document.createElement('div');
+    toast.style.cssText = 'margin-bottom: 8px; padding: 10px 12px; border-radius: 6px; color: #fff; font-size: 0.9rem; box-shadow: 0 2px 8px rgba(0,0,0,0.15);';
+    toast.style.background = type === 'success' ? '#16a34a' : type === 'error' ? '#dc2626' : '#2563eb';
+    toast.textContent = message;
+    toastContainer.appendChild(toast);
+    setTimeout(() => toast.remove(), 3500);
+}
+
 // REPAIR: Enhanced loading skeleton management for trades page
 function hideAllLoadingSkeletons() {
     console.log('🔧 REPAIR: Hiding all trades loading skeletons...');
@@ -421,6 +465,107 @@ function hideAllLoadingSkeletons() {
     });
     
     console.log('✅ All trades loading skeletons hidden successfully');
+}
+
+// Utility: normalize timestamp to Date
+function parseTimestamp(ts) {
+    if (!ts && ts !== 0) return null;
+    if (typeof ts === 'string') {
+        const d = new Date(ts);
+        return isNaN(d.getTime()) ? null : d;
+    }
+    if (typeof ts === 'number') {
+        // seconds vs ms
+        const ms = ts < 1e12 ? ts * 1000 : ts;
+        const d = new Date(ms);
+        return isNaN(d.getTime()) ? null : d;
+    }
+    return null;
+}
+
+function getConfidencePercent(value) {
+    if (value === null || value === undefined) return 0;
+    const n = Number(value);
+    if (!isFinite(n)) return 0;
+    // Treat 0..1 as probability, else assume already percent
+    return n <= 1 ? n * 100 : n;
+}
+
+function normalizeTradesResponse(data) {
+    // Expect either { success, trades, summary } or a direct array
+    if (data && Array.isArray(data.trades)) {
+        const trades = data.trades;
+        const summary = data.summary && typeof data.summary === 'object'
+            ? data.summary
+            : computeSummary(trades);
+        return { trades, summary };
+    }
+    if (Array.isArray(data)) {
+        return { trades: data, summary: computeSummary(data) };
+    }
+    // Some APIs return { items: [] } or { results: [] }
+    if (data && Array.isArray(data.items)) {
+        return { trades: data.items, summary: computeSummary(data.items) };
+    }
+    if (data && Array.isArray(data.results)) {
+        return { trades: data.results, summary: computeSummary(data.results) };
+    }
+    // Fallback to empty
+    return { trades: [], summary: computeSummary([]) };
+}
+
+function computeSummary(trades) {
+    const now = Date.now();
+    const recentCutoff = now - 24 * 60 * 60 * 1000;
+
+    let totalSignals = 0;
+    let buySignals = 0;
+    let sellSignals = 0;
+    let recent24h = 0;
+    let totalTrades = 0;
+    let confSum = 0;
+    let confCount = 0;
+
+    for (const t of trades) {
+        const action = String(t?.action || t?.side || '').toUpperCase();
+        const type = String(t?.signal_type || '').toUpperCase();
+
+        // Count actions
+        if (['BUY', 'SELL', 'WAIT', 'AVOID'].includes(action)) {
+            totalSignals += 1;
+            if (action === 'BUY') buySignals += 1;
+            if (action === 'SELL') sellSignals += 1;
+        }
+
+        // Count executed trades
+        if (type === 'TRADE' || String(t?.status || '').toUpperCase() === 'EXECUTED' || String(t?.status || '').toUpperCase() === 'FILLED') {
+            totalTrades += 1;
+        }
+
+        // 24h recency
+        const d = parseTimestamp(t?.timestamp);
+        if (d && d.getTime() >= recentCutoff) {
+            recent24h += 1;
+        }
+
+        // Confidence
+        const cp = getConfidencePercent(t?.confidence);
+        if (cp > 0) {
+            confSum += cp;
+            confCount += 1;
+        }
+    }
+
+    const avgConfidence = confCount > 0 ? confSum / confCount : 0;
+
+    return {
+        total_signals: totalSignals || trades.length, // fallback to count if signals missing
+        buy_signals: buySignals,
+        sell_signals: sellSignals,
+        recent_24h: recent24h,
+        avg_confidence: avgConfidence,
+        total_trades: totalTrades
+    };
 }
 
 // Initialize page
@@ -476,10 +621,13 @@ window.tradesDebug = TradesDebug;
 document.addEventListener('DOMContentLoaded', function() {
     loadTradesData();
     
-    // Setup filter event listeners
-    document.getElementById('symbol-filter').addEventListener('change', applyFilters);
-    document.getElementById('action-filter').addEventListener('change', applyFilters);
-    document.getElementById('type-filter').addEventListener('change', applyFilters);
+    // Setup filter event listeners safely
+    const sf = document.getElementById('symbol-filter');
+    const af = document.getElementById('action-filter');
+    const tf = document.getElementById('type-filter');
+    sf && sf.addEventListener('change', applyFilters);
+    af && af.addEventListener('change', applyFilters);
+    tf && tf.addEventListener('change', applyFilters);
 });
 
 async function loadTradesData() {
@@ -494,30 +642,31 @@ async function loadTradesData() {
             card.setAttribute('data-loading-state', 'loading');
         });
         
-        const response = await fetch('/api/trades');
-        const data = await response.json();
-        
-        if (data.success) {
-            allTradesData = data.trades;
-            
-            // Add slight delay to show loading animation
-            setTimeout(() => {
-                updateSummaryStats(data.summary);
-                populateSymbolFilter();
-                applyFilters();
-                
-                // REPAIR: Ensure all loading skeletons are properly hidden
-                hideAllLoadingSkeletons();
-                
-                console.log('✅ Trades data loaded with animations:', data.trades.length, 'records');
-            }, 300);
-        } else {
-            console.error('❌ Trades API error:', data.error);
-            showEmptyState();
+        const response = await fetch('/api/trades', { method: 'GET' });
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
         }
+        const data = await response.json();
+        const normalized = normalizeTradesResponse(data);
+        
+        allTradesData = Array.isArray(normalized.trades) ? normalized.trades : [];
+        window.tradesData = allTradesData; // expose for debug
+        
+        // Add slight delay to show loading animation
+        setTimeout(() => {
+            updateSummaryStats(normalized.summary || computeSummary(allTradesData));
+            populateSymbolFilter();
+            applyFilters();
+            
+            // REPAIR: Ensure all loading skeletons are properly hidden
+            hideAllLoadingSkeletons();
+            
+            console.log('✅ Trades data loaded with animations:', allTradesData.length, 'records');
+        }, 300);
         
     } catch (error) {
         console.error('❌ Failed to load trades data:', error);
+        showToast(`Failed to load trades: ${error.message}`, 'error');
         showEmptyState();
     } finally {
         setTimeout(() => showLoading(false), 400);
@@ -525,20 +674,23 @@ async function loadTradesData() {
 }
 
 function updateSummaryStats(summary) {
+    if (!summary) return;
     // Enhanced loading to data transition with animations
     const stats = [
-        { id: 'total-signals', value: summary.total_signals, suffix: '' },
-        { id: 'buy-signals', value: summary.buy_signals, suffix: '' },
-        { id: 'sell-signals', value: summary.sell_signals, suffix: '' },
-        { id: 'recent-24h', value: summary.recent_24h, suffix: '' },
-        { id: 'avg-confidence', value: summary.avg_confidence ? summary.avg_confidence.toFixed(1) : '0.0', suffix: '%' },
-        { id: 'total-trades', value: summary.total_trades, suffix: '' }
+        { id: 'total-signals', value: summary.total_signals ?? 0, suffix: '' },
+        { id: 'buy-signals', value: summary.buy_signals ?? 0, suffix: '' },
+        { id: 'sell-signals', value: summary.sell_signals ?? 0, suffix: '' },
+        { id: 'recent-24h', value: summary.recent_24h ?? 0, suffix: '' },
+        { id: 'avg-confidence', value: (summary.avg_confidence ?? 0).toFixed(1), suffix: '%' },
+        { id: 'total-trades', value: summary.total_trades ?? 0, suffix: '' }
     ];
     
     stats.forEach((stat, index) => {
         setTimeout(() => {
             const element = document.getElementById(stat.id);
+            if (!element) return;
             const parent = element.closest('.stat-card');
+            if (!parent) return;
             
             // Add loading state
             parent.classList.add('stat-loading');
@@ -550,8 +702,10 @@ function updateSummaryStats(summary) {
                 // Trigger animation
                 requestAnimationFrame(() => {
                     const span = element.querySelector('span');
-                    span.style.opacity = '1';
-                    span.style.transform = 'translateY(0)';
+                    if (span) {
+                        span.style.opacity = '1';
+                        span.style.transform = 'translateY(0)';
+                    }
                     parent.classList.remove('stat-loading');
                     parent.classList.add('stat-loaded');
                 });
@@ -561,8 +715,12 @@ function updateSummaryStats(summary) {
 }
 
 function populateSymbolFilter() {
-    const symbols = [...new Set(allTradesData.map(t => t.symbol).filter(s => s && s !== 'N/A'))].sort();
+    const symbols = [...new Set(allTradesData.map(t => (t.symbol || t.pair || '').toString())
+        .filter(s => s && s !== 'N/A')
+        .map(s => s.includes('-') ? s.split('-')[0] : (s.includes('/') ? s.split('/')[0] : s))
+    )].sort();
     const symbolFilter = document.getElementById('symbol-filter');
+    if (!symbolFilter) return;
     
     // Clear existing options except "All Symbols"
     symbolFilter.innerHTML = '<option value="">All Symbols</option>';
@@ -576,18 +734,25 @@ function populateSymbolFilter() {
 }
 
 function applyFilters() {
-    const symbolFilter = document.getElementById('symbol-filter').value;
-    const actionFilter = document.getElementById('action-filter').value;
-    const typeFilter = document.getElementById('type-filter').value;
+    const symbolFilter = document.getElementById('symbol-filter')?.value || '';
+    const actionFilter = document.getElementById('action-filter')?.value || '';
+    const typeFilter = document.getElementById('type-filter')?.value || '';
     
     filteredData = allTradesData.filter(trade => {
-        const symbolMatch = !symbolFilter || trade.symbol === symbolFilter;
-        const actionMatch = !actionFilter || trade.action === actionFilter;
-        const typeMatch = !typeFilter || trade.signal_type === typeFilter;
+        const rawSymbol = (trade.symbol || trade.pair || '').toString();
+        const normalizedSymbol = rawSymbol.includes('-') ? rawSymbol.split('-')[0] : (rawSymbol.includes('/') ? rawSymbol.split('/')[0] : rawSymbol);
+        const symbolMatch = !symbolFilter || normalizedSymbol === symbolFilter;
+
+        const action = String(trade.action || trade.side || '').toUpperCase();
+        const actionMatch = !actionFilter || action === actionFilter;
+
+        const signalType = String(trade.signal_type || (['BUY', 'SELL', 'WAIT', 'AVOID'].includes(action) ? 'SIGNAL' : 'TRADE')).toUpperCase();
+        const typeMatch = !typeFilter || signalType === typeFilter;
         
         return symbolMatch && actionMatch && typeMatch;
     });
     
+    window.filteredTrades = filteredData; // expose for debug
     renderTradesTable();
 }
 
@@ -595,8 +760,9 @@ function renderTradesTable() {
     const tbody = document.getElementById('trades-tbody');
     const table = document.getElementById('trades-table');
     const emptyState = document.getElementById('empty-state');
+    if (!tbody || !table || !emptyState) return;
     
-    if (filteredData.length === 0) {
+    if (!Array.isArray(filteredData) || filteredData.length === 0) {
         table.style.display = 'none';
         emptyState.style.display = 'block';
         return;
@@ -606,51 +772,69 @@ function renderTradesTable() {
     emptyState.style.display = 'none';
     
     tbody.innerHTML = filteredData.map(trade => {
-        const date = new Date(trade.timestamp);
-        const timeStr = date.toLocaleString();
+        const d = parseTimestamp(trade.timestamp);
+        const timeStr = d ? d.toLocaleString() : '—';
         
-        // Signal badge
-        const signalClass = getSignalClass(trade.action);
-        const signalBadge = `<span class="signal-badge ${signalClass}">${trade.action || 'N/A'}</span>`;
+        // Action badge
+        const actionRaw = String(trade.action || trade.side || '').toUpperCase();
+        const actionDisplay = actionRaw || 'N/A';
+        const signalClass = getSignalClass(actionRaw);
+        const signalBadge = `<span class="signal-badge ${signalClass}">${actionDisplay}</span>`;
         
         // Type badge
-        const typeBadge = `<span class="type-badge type-${trade.signal_type.toLowerCase()}">${trade.signal_type}</span>`;
+        const signalType = String(trade.signal_type || (['BUY', 'SELL', 'WAIT', 'AVOID'].includes(actionRaw) ? 'SIGNAL' : 'TRADE')).toUpperCase();
+        const typeBadgeClass = signalType === 'TRADE' ? 'type-trade' : 'type-signal';
+        const typeBadge = `<span class="type-badge ${typeBadgeClass}">${signalType}</span>`;
         
         // Confidence bar
-        const confidence = trade.confidence || 0;
+        const confidence = getConfidencePercent(trade.confidence || 0);
         const confidenceClass = confidence >= 70 ? 'confidence-high' : confidence >= 50 ? 'confidence-medium' : 'confidence-low';
         const confidenceBar = `
             <div class="confidence-bar">
-                <div class="confidence-fill ${confidenceClass}" style="width: ${confidence}%"></div>
+                <div class="confidence-fill ${confidenceClass}" style="width: ${Math.max(0, Math.min(100, confidence))}%"></div>
             </div>
             <small style="color: #9ca3af;">${confidence.toFixed(1)}%</small>
         `;
         
         // Technical indicators
         const technical = [];
-        if (trade.rsi) technical.push(`RSI: ${trade.rsi.toFixed(1)}`);
-        if (trade.volatility) technical.push(`Vol: ${trade.volatility.toFixed(1)}%`);
+        const rsi = Number(trade.rsi);
+        if (isFinite(rsi) && rsi > 0) technical.push(`RSI: ${rsi.toFixed(1)}`);
+        const vol = Number(trade.volatility);
+        if (isFinite(vol) && vol > 0) technical.push(`Vol: ${vol.toFixed(1)}%`);
         if (trade.volume_ratio) technical.push('Volume ✓');
         if (trade.momentum) technical.push('Momentum ✓');
         if (trade.support) technical.push('Support ✓');
         if (trade.bollinger) technical.push('BB ✓');
-        
         const technicalStr = technical.length > 0 ? technical.slice(0, 2).join('<br>') : 'N/A';
         
         // ML data
         let mlData = 'N/A';
         if (trade.ml_probability !== null && trade.ml_probability !== undefined) {
-            mlData = `P: ${(trade.ml_probability * 100).toFixed(1)}%`;
-            if (trade.predicted_return) {
-                mlData += `<br>Return: ${trade.predicted_return.toFixed(1)}%`;
+            const p = Number(trade.ml_probability);
+            const pPct = isFinite(p) ? (p <= 1 ? p * 100 : p) : 0;
+            mlData = `P: ${pPct.toFixed(1)}%`;
+            const pr = Number(trade.predicted_return);
+            if (isFinite(pr)) {
+                mlData += `<br>Return: ${pr.toFixed(1)}%`;
             }
         }
         
         // Price formatting
-        const price = trade.price ? `$${parseFloat(trade.price).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 6})}` : 'N/A';
+        const priceNum = Number(trade.price);
+        const price = isFinite(priceNum) && priceNum > 0
+            ? `$${priceNum.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 6})}`
+            : 'N/A';
         
         // Symbol with tag
-        const symbolDisplay = trade.symbol ? `<span class="symbol-tag">${trade.symbol}</span>` : 'N/A';
+        const rawSymbol = (trade.symbol || trade.pair || '').toString();
+        const cleanSymbol = rawSymbol.includes('-') ? rawSymbol.split('-')[0] : (rawSymbol.includes('/') ? rawSymbol.split('/')[0] : rawSymbol);
+        const symbolDisplay = cleanSymbol ? `<span class="symbol-tag">${cleanSymbol}</span>` : 'N/A';
+        
+        // Status
+        const status = (trade.status || '').toString().toUpperCase();
+        const statusBadgeClass = status === 'FILLED' || status === 'EXECUTED' ? 'bg-success' : status === 'CANCELED' ? 'bg-secondary' : 'bg-info';
+        const statusLabel = status || (signalType === 'SIGNAL' ? 'SIGNAL' : '—');
         
         return `
             <tr>
@@ -665,9 +849,9 @@ function renderTradesTable() {
                 <td><small>${technicalStr}</small></td>
                 <td><small>${mlData}</small></td>
                 <td>
-                    <span class="badge bg-success">
+                    <span class="badge ${statusBadgeClass}">
                         <i class="fas fa-check-circle me-1"></i>
-                        ${trade.status}
+                        ${statusLabel}
                     </span>
                 </td>
             </tr>
@@ -676,7 +860,7 @@ function renderTradesTable() {
 }
 
 function getSignalClass(action) {
-    switch (action?.toUpperCase()) {
+    switch ((action || '').toUpperCase()) {
         case 'BUY': return 'signal-buy';
         case 'SELL': return 'signal-sell';
         case 'WAIT': return 'signal-wait';
@@ -686,9 +870,12 @@ function getSignalClass(action) {
 }
 
 function clearFilters() {
-    document.getElementById('symbol-filter').value = '';
-    document.getElementById('action-filter').value = '';
-    document.getElementById('type-filter').value = '';
+    const sf = document.getElementById('symbol-filter');
+    const af = document.getElementById('action-filter');
+    const tf = document.getElementById('type-filter');
+    if (sf) sf.value = '';
+    if (af) af.value = '';
+    if (tf) tf.value = '';
     applyFilters();
 }
 
@@ -715,9 +902,12 @@ function showLoading(show) {
 }
 
 function showEmptyState() {
-    document.getElementById('loading-spinner').style.display = 'none';
-    document.getElementById('trades-table').style.display = 'none';
-    document.getElementById('empty-state').style.display = 'block';
+    const spinner = document.getElementById('loading-spinner');
+    const table = document.getElementById('trades-table');
+    const emptyState = document.getElementById('empty-state');
+    if (spinner) spinner.style.display = 'none';
+    if (table) table.style.display = 'none';
+    if (emptyState) emptyState.style.display = 'block';
 }
 
 // Auto-refresh every 30 seconds
