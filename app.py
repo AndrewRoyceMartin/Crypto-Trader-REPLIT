@@ -3430,6 +3430,168 @@ def api_run_backtest() -> ResponseReturnValue:
         }), 500
 
 
+@app.route("/api/export-portfolio")
+def api_export_portfolio() -> ResponseReturnValue:
+    """Export current authentic holdings from portfolio service to CSV."""
+    try:
+        logger.info("📊 Exporting authentic portfolio holdings to CSV")
+        
+        # Get authentic portfolio data only
+        portfolio_service = get_portfolio_service()
+        if not portfolio_service:
+            return jsonify({
+                "success": False,
+                "error": "Portfolio service not available"
+            }), 503
+            
+        portfolio_data = portfolio_service.get_portfolio_data()
+        if not portfolio_data or 'holdings' not in portfolio_data:
+            return jsonify({
+                "success": False, 
+                "error": "Holdings data not available"
+            }), 503
+            
+        holdings = portfolio_data.get('holdings', [])
+        if not holdings:
+            return jsonify({
+                "success": False,
+                "error": "No holdings available for export"
+            }), 503
+        
+        # Create CSV content with authentic data only
+        csv_lines = []
+        csv_lines.append("symbol,name,amount,current_price,current_value,cost_basis,pnl_amount,pnl_percentage")
+        
+        for holding in holdings:
+            symbol = holding.get('symbol', '')
+            name = holding.get('name', symbol)
+            amount = float(holding.get('amount', 0) or 0)
+            current_price = float(holding.get('current_price', 0) or 0)
+            current_value = float(holding.get('current_value', 0) or 0)
+            pnl_amount = float(holding.get('pnl_amount', 0) or 0)
+            pnl_percentage = float(holding.get('pnl_percentage', 0) or 0)
+            cost_basis = current_value - pnl_amount
+            
+            csv_lines.append(f"{symbol},{name},{amount:.6f},{current_price:.6f},{current_value:.2f},{cost_basis:.2f},{pnl_amount:.2f},{pnl_percentage:.2f}")
+        
+        csv_content = '\n'.join(csv_lines)
+        
+        # Return CSV response with proper headers
+        response = make_response(csv_content)
+        response.headers['Content-Type'] = 'text/csv'
+        response.headers['Content-Disposition'] = 'attachment; filename=portfolio_export.csv'
+        response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+        
+        logger.info(f"✅ Portfolio exported: {len(holdings)} authentic holdings")
+        return response
+        
+    except Exception as e:
+        logger.error(f"Portfolio export error: {e}")
+        return jsonify({
+            "success": False,
+            "error": "Portfolio export failed"
+        }), 500
+
+
+@app.route("/api/rebalance-portfolio", methods=['POST'])
+def api_rebalance_portfolio() -> ResponseReturnValue:
+    """Analyze portfolio for rebalancing using authentic data only."""
+    try:
+        logger.info("⚖️  Analyzing portfolio for rebalancing with authentic data")
+        
+        # Check if portfolio service is available
+        portfolio_service = get_portfolio_service()
+        if not portfolio_service:
+            return jsonify({
+                "success": False,
+                "error": "Portfolio service not available - cannot perform authentic rebalancing analysis"
+            }), 503
+            
+        # Check if rebalancing provider is available
+        # In a real implementation, this would check for actual rebalancing service
+        try:
+            portfolio_data = portfolio_service.get_portfolio_data()
+            if not portfolio_data or 'holdings' not in portfolio_data:
+                return jsonify({
+                    "success": False,
+                    "error": "Holdings data not available for rebalancing analysis"
+                }), 503
+                
+            holdings = portfolio_data.get('holdings', [])
+            if len(holdings) < 2:
+                return jsonify({
+                    "success": False,
+                    "error": "Insufficient holdings for meaningful rebalancing analysis"
+                }), 400
+                
+            # For now, return a service unavailable response since we don't have 
+            # a real rebalancing provider implemented
+            return jsonify({
+                "success": False,
+                "error": "Rebalancing provider not available - authentic rebalancing requires connected analytics service"
+            }), 503
+            
+        except Exception as e:
+            logger.error(f"Error accessing portfolio for rebalancing: {e}")
+            return jsonify({
+                "success": False,
+                "error": "Portfolio data unavailable for rebalancing"
+            }), 503
+            
+    except Exception as e:
+        logger.error(f"Rebalance analysis error: {e}")
+        return jsonify({
+            "success": False,
+            "error": "Rebalancing analysis failed"
+        }), 500
+
+
+@app.route("/api/equity-curve")
+def api_equity_curve() -> ResponseReturnValue:
+    """Get authentic equity curve data from analytics provider."""
+    try:
+        logger.info("📈 Fetching authentic equity curve data")
+        
+        # Check if portfolio/analytics service is available
+        portfolio_service = get_portfolio_service()
+        if not portfolio_service:
+            return jsonify({
+                "success": False,
+                "error": "Portfolio service not available - cannot provide authentic equity curve"
+            }), 503
+            
+        try:
+            portfolio_data = portfolio_service.get_portfolio_data()
+            if not portfolio_data:
+                return jsonify({
+                    "success": False,
+                    "error": "Portfolio data not available for equity curve"
+                }), 503
+                
+            # For now, return service unavailable since we don't have a dedicated
+            # equity curve analytics provider implemented
+            # In a real implementation, this would connect to an analytics service
+            # that tracks portfolio value over time
+            return jsonify({
+                "success": False,
+                "error": "Equity curve analytics provider not available - authentic data requires historical tracking service"
+            }), 503
+            
+        except Exception as e:
+            logger.error(f"Error accessing portfolio for equity curve: {e}")
+            return jsonify({
+                "success": False,
+                "error": "Portfolio data unavailable for equity curve"
+            }), 503
+            
+    except Exception as e:
+        logger.error(f"Equity curve error: {e}")
+        return jsonify({
+            "success": False,
+            "error": "Equity curve data unavailable"
+        }), 500
+
+
 if __name__ == '__main__':
     import os
     port = int(os.environ.get('PORT', 5000))

@@ -5,6 +5,9 @@
 {% block page_subtitle %}Comprehensive portfolio analysis with 26+ positions and performance tracking{% endblock %}
 
 {% block extra_css %}
+<!-- Chart.js CDN for allocation chart (base layout removed global Chart.js) -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+
 <style>
 .portfolio-header {
     background: linear-gradient(135deg, var(--success-green), var(--accent-blue));
