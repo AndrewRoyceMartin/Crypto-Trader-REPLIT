@@ -359,28 +359,28 @@
             <thead>
                 <tr>
                     <th class="sortable" onclick="sortTable(0, 'string')" style="cursor: pointer;">
-                        Coin <i class="fas fa-sort" style="color: #9ca3af;" id="sort-fas fa-0"></i>
+                        Coin <i class="fas fa-sort" style="color: #9ca3af;" id="sort-fa-0"></i>
                     </th>
                     <th class="sortable" onclick="sortTable(1, 'string')" style="cursor: pointer;">
-                        Category <i class="fas fa-sort" style="color: #9ca3af;" id="sort-fas fa-1"></i>
+                        Category <i class="fas fa-sort" style="color: #9ca3af;" id="sort-fa-1"></i>
                     </th>
                     <th class="text-end sortable" onclick="sortTable(2, 'number')" style="cursor: pointer;">
-                        Price <i class="fas fa-sort" style="color: #9ca3af;" id="sort-fas fa-2"></i>
+                        Price <i class="fas fa-sort" style="color: #9ca3af;" id="sort-fa-2"></i>
                     </th>
                     <th class="text-end sortable" onclick="sortTable(3, 'number')" style="cursor: pointer;">
-                        24h Change <i class="fas fa-sort" style="color: #9ca3af;" id="sort-fas fa-3"></i>
+                        24h Change <i class="fas fa-sort" style="color: #9ca3af;" id="sort-fa-3"></i>
                     </th>
                     <th class="text-end sortable" onclick="sortTable(4, 'number')" style="cursor: pointer;">
-                        24h Volume <i class="fas fa-sort" style="color: #9ca3af;" id="sort-fas fa-4"></i>
+                        24h Volume <i class="fas fa-sort" style="color: #9ca3af;" id="sort-fa-4"></i>
                     </th>
                     <th class="text-center sortable" onclick="sortTable(5, 'string')" style="cursor: pointer;">
-                        Hybrid Signal <i class="fas fa-sort" style="color: #9ca3af;" id="sort-fas fa-5"></i>
+                        Hybrid Signal <i class="fas fa-sort" style="color: #9ca3af;" id="sort-fa-5"></i>
                     </th>
                     <th class="text-center sortable" onclick="sortTable(6, 'number')" style="cursor: pointer;">
-                        Signal Strength <i class="fas fa-sort" style="color: #9ca3af;" id="sort-fas fa-6"></i>
+                        Signal Strength <i class="fas fa-sort" style="color: #9ca3af;" id="sort-fa-6"></i>
                     </th>
                     <th class="text-center sortable" onclick="sortTable(7, 'number')" style="cursor: pointer;">
-                        ML Confidence <i class="fas fa-sort" style="color: #9ca3af;" id="sort-fas fa-7"></i>
+                        ML Confidence <i class="fas fa-sort" style="color: #9ca3af;" id="sort-fa-7"></i>
                     </th>
                     <th class="text-center">Actions</th>
                 </tr>
@@ -401,9 +401,16 @@
 
 {% block extra_js %}
 <script>
+// Global variables
 let marketData = [];
 let filteredData = [];
 let currentSort = { column: -1, direction: 'asc' };
+
+// Helper function for safe number parsing
+function numberOrZero(value) {
+    const parsed = parseFloat(value);
+    return isNaN(parsed) ? 0 : parsed;
+}
 
 // REPAIR: Enhanced loading skeleton management
 function hideAllLoadingSkeletons() {
@@ -479,8 +486,8 @@ async function loadMarketData() {
         
         showToast('Loading market analysis for 298+ trading pairs...', 'info');
         
-        // Load available positions (contains market data)
-        const response = await fetch('/api/available-positions');
+        // Load authentic OKX market pairs data
+        const response = await fetch('/api/market-pairs');
         if (response.ok) {
             const data = await response.json();
             if (data.data && Array.isArray(data.data)) {
@@ -543,7 +550,7 @@ async function loadMarketData() {
 function updateMarketOverview() {
     const buySignals = filteredData.filter(d => d.signal === 'BUY').length;
     const considerSignals = filteredData.filter(d => d.signal === 'CONSIDER').length;
-    const totalVolume = filteredData.reduce((sum, d) => sum + parseFloat(d.volume_24h || 0), 0);
+    const totalVolume = filteredData.reduce((sum, d) => sum + numberOrZero(d.volume_24h), 0);
     
     document.getElementById('totalPairs').textContent = filteredData.length;
     document.getElementById('buySignals').textContent = buySignals;
@@ -561,7 +568,7 @@ function updateMarketOverview() {
 function updateMarketOverviewWithAnimation() {
     const buySignals = filteredData.filter(d => d.signal === 'BUY').length;
     const considerSignals = filteredData.filter(d => d.signal === 'CONSIDER').length;
-    const totalVolume = filteredData.reduce((sum, d) => sum + parseFloat(d.volume_24h || 0), 0);
+    const totalVolume = filteredData.reduce((sum, d) => sum + numberOrZero(d.volume_24h), 0);
     
     // Define the stats data with animations
     const statUpdates = [
@@ -642,7 +649,7 @@ async function updateTopOpportunities() {
     
     for (const pair of topPairs) {
         try {
-            const signalResponse = await fetch(`/api/hybrid-signal?symbol=${pair.symbol}&price=${pair.current_price || pair.price}`);
+            const signalResponse = await fetch(`/api/hybrid-signal?symbol=${encodeURIComponent(pair.symbol)}&price=${encodeURIComponent(pair.current_price || pair.price)}`);
             if (signalResponse.ok) {
                 const signal = await signalResponse.json();
                 if (signal.final_signal === 'BUY' || (signal.final_signal === 'CONSIDER' && signal.hybrid_score > 70)) {
@@ -683,8 +690,8 @@ async function updateTopOpportunities() {
                 <div class="col-md-2">
                     <div class="text-end">
                         <div class="h6 mb-0">$${opp.price}</div>
-                        <small class="${parseFloat(opp.change_24h) >= 0 ? 'text-success' : 'text-danger'}">
-                            ${parseFloat(opp.change_24h) >= 0 ? '+' : ''}${opp.change_24h}%
+                        <small class="${numberOrZero(opp.change_24h) >= 0 ? 'text-success' : 'text-danger'}">
+                            ${numberOrZero(opp.change_24h) >= 0 ? '+' : ''}${opp.change_24h}%
                         </small>
                     </div>
                 </div>
@@ -734,7 +741,7 @@ function updateMarketTable() {
     tbody.innerHTML = displayData.map(pair => {
         // Use authentic OKX data only
         const price = pair.current_price || pair.price || '0.0000';
-        const change = parseFloat(pair.change_24h || '0.00');
+        const change = numberOrZero(pair.change_24h);
         const volume = pair.volume_24h || '0';
         const symbol = pair.symbol || 'UNKNOWN';
         const category = pair.category || 'crypto';
@@ -761,7 +768,7 @@ function updateMarketTable() {
                 <td>
                     <span class="category-badge ${categoryClass}">${category}</span>
                 </td>
-                <td class="text-end">$${parseFloat(price).toFixed(4)}</td>
+                <td class="text-end">$${numberOrZero(price).toFixed(4)}</td>
                 <td class="text-end ${change >= 0 ? 'text-success' : 'text-danger'}">
                     ${change >= 0 ? '+' : ''}${change.toFixed(2)}%
                 </td>
@@ -804,7 +811,7 @@ async function loadMLSignalsForTable() {
     
     for (const pair of displayData) {
         try {
-            const signalResponse = await fetch(`/api/hybrid-signal?symbol=${pair.symbol}&price=${pair.current_price || pair.price}`);
+            const signalResponse = await fetch(`/api/hybrid-signal?symbol=${encodeURIComponent(pair.symbol)}&price=${encodeURIComponent(pair.current_price || pair.price)}`);
             if (signalResponse.ok) {
                 const signal = await signalResponse.json();
                 updateTableRowSignal(pair.symbol, signal);
@@ -876,9 +883,9 @@ function sortMarketData() {
             case 'signal_strength':
                 return b.confidence - a.confidence;
             case 'volume':
-                return parseFloat(b.volume_24h) - parseFloat(a.volume_24h);
+                return numberOrZero(b.volume_24h) - numberOrZero(a.volume_24h);
             case 'price_change':
-                return parseFloat(b.change_24h) - parseFloat(a.change_24h);
+                return numberOrZero(b.change_24h) - numberOrZero(a.change_24h);
             case 'alphabetical':
                 return a.pair.localeCompare(b.pair);
             default:
@@ -972,16 +979,16 @@ function sortTable(columnIndex, dataType) {
                 bVal = b.category || '';
                 break;
             case 2: // Price
-                aVal = parseFloat(a.price) || 0;
-                bVal = parseFloat(b.price) || 0;
+                aVal = numberOrZero(a.price) || numberOrZero(a.current_price);
+                bVal = numberOrZero(b.price) || numberOrZero(b.current_price);
                 break;
             case 3: // 24h Change
-                aVal = parseFloat(a.change_24h) || 0;
-                bVal = parseFloat(b.change_24h) || 0;
+                aVal = numberOrZero(a.change_24h);
+                bVal = numberOrZero(b.change_24h);
                 break;
             case 4: // 24h Volume
-                aVal = parseFloat(a.volume_24h) || 0;
-                bVal = parseFloat(b.volume_24h) || 0;
+                aVal = numberOrZero(a.volume_24h);
+                bVal = numberOrZero(b.volume_24h);
                 break;
             case 5: // Hybrid Signal
                 const signalOrder = { 'BUY': 4, 'CONSIDER': 3, 'WAIT': 2, 'AVOID': 1 };
@@ -989,8 +996,8 @@ function sortTable(columnIndex, dataType) {
                 bVal = signalOrder[b.signal] || 0;
                 break;
             case 6: // Signal Strength
-                aVal = parseFloat(a.confidence) || 0;
-                bVal = parseFloat(b.confidence) || 0;
+                aVal = numberOrZero(a.confidence);
+                bVal = numberOrZero(b.confidence);
                 break;
             case 7: // ML Confidence
                 aVal = parseFloat(a.ml_probability) || 0;
@@ -1018,7 +1025,7 @@ function sortTable(columnIndex, dataType) {
 function updateSortIcons(activeColumn, direction) {
     // Reset all icons
     for (let i = 0; i < 8; i++) {
-        const icon = document.getElementById(`sort-fas fa-${i}`);
+        const icon = document.getElementById(`sort-fa-${i}`);
         if (icon) {
             icon.className = 'fas fa-sort';
             icon.style.color = '#9ca3af';
@@ -1026,7 +1033,7 @@ function updateSortIcons(activeColumn, direction) {
     }
     
     // Set active icon
-    const activeIcon = document.getElementById(`sort-fas fa-${activeColumn}`);
+    const activeIcon = document.getElementById(`sort-fa-${activeColumn}`);
     if (activeIcon) {
         if (direction === 'asc') {
             activeIcon.className = 'fas fa-sort-up text-white';
