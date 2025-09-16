@@ -488,7 +488,9 @@ function getConfidencePercent(value) {
     const n = Number(value);
     if (!isFinite(n)) return 0;
     // Treat 0..1 as probability, else assume already percent
-    return n <= 1 ? n * 100 : n;
+    const percent = n <= 1 ? n * 100 : n;
+    // Clamp to valid 0-100 range
+    return Math.max(0, Math.min(100, percent));
 }
 
 function normalizeTradesResponse(data) {
