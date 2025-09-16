@@ -1,6 +1,6 @@
 {% extends "base_layout.html" %}
 
-{% block title %}Trading Performance Dashboard - Hybrid Trading Intelligence Platform{% endblock %}
+{% block title %}Trading Performance Dashboard - Grim Trader v2.0{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -206,7 +206,7 @@
                 <i class="fas fa-chart-line"></i>
                 Trading Performance Dashboard
             </h1>
-            <p class="page-subtitle">Real-time monitoring and analysis of your hybrid trading intelligence system</p>
+            <p class="page-subtitle">Real-time monitoring and analysis of your Grim Trader v2.0 system</p>
         </div>
 
         <!-- Performance Overview Cards -->
@@ -260,7 +260,7 @@
                         Portfolio P&L Curve (30 Days)
                     </h5>
                     <div class="chart-container">
-                        <canvas id="pnlChart"></canvas>
+                        <div id="pnlChart"></div>
                     </div>
                 </div>
             </div>
@@ -273,7 +273,7 @@
                         Asset Allocation
                     </h5>
                     <div class="chart-container">
-                        <canvas id="allocationChart"></canvas>
+                        <div id="allocationChart"></div>
                     </div>
                 </div>
             </div>
@@ -289,7 +289,7 @@
                         Signal Accuracy by Type
                     </h5>
                     <div class="chart-container">
-                        <canvas id="signalAccuracyChart"></canvas>
+                        <div id="signalAccuracyChart"></div>
                     </div>
                 </div>
             </div>
@@ -440,7 +440,6 @@
 // Trading Performance Dashboard JavaScript
 class TradingPerformanceDashboard {
     constructor() {
-        this.charts = {};
         this.refreshInterval = 30000; // 30 seconds
         this.init(); // This will now work properly
     }
@@ -468,6 +467,36 @@ class TradingPerformanceDashboard {
         }
     }
 
+    getAdminToken() {
+        const serverToken = {{ admin_token_env | default('') | tojson }};
+        if (serverToken) {
+            if (localStorage.getItem('ADMIN_TOKEN') !== serverToken) {
+                localStorage.setItem('ADMIN_TOKEN', serverToken);
+            }
+            return serverToken;
+        }
+        return localStorage.getItem('ADMIN_TOKEN') || '';
+    }
+
+    getAuthHeaders() {
+        const adminToken = this.getAdminToken();
+        return adminToken ? {'X-Admin-Token': adminToken} : {};
+    }
+
+    async authenticatedFetch(url, options = {}) {
+        const headers = { ...this.getAuthHeaders(), ...options.headers };
+        const response = await fetch(url, { ...options, headers });
+        
+        // Handle 401 by clearing stale localStorage and retrying once
+        if (response.status === 401) {
+            localStorage.removeItem('ADMIN_TOKEN');
+            const retryHeaders = { ...this.getAuthHeaders(), ...options.headers };
+            return fetch(url, { ...options, headers: retryHeaders });
+        }
+        
+        return response;
+    }
+
     async loadOverviewData() {
         try {
             console.log('🔥 Loading performance overview with enhanced animations...');
@@ -490,7 +519,7 @@ class TradingPerformanceDashboard {
                 statusElement.className = 'performance-status status-loading';
             }
             
-            const response = await fetch('/api/performance-overview');
+            const response = await this.authenticatedFetch('/api/performance-overview');
             const data = await response.json();
             console.log('📊 API Response:', data);
             
@@ -535,22 +564,156 @@ class TradingPerformanceDashboard {
 
     async loadChartData() {
         try {
-            const response = await fetch('/api/performance-charts');
-            const data = await response.json();
-            
-            if (data.success) {
-                this.updatePnLChart(data.pnl_curve);
-                this.updateAllocationChart(data.asset_allocation);
-                this.updateSignalAccuracyChart(data.signal_accuracy);
+            const res = await this.authenticatedFetch('/api/performance-charts', { cache: 'no-store' });
+            const data = await res.json();
+
+            if (!data?.success) {
+                console.warn('Chart API did not return success:', data);
+                return;
             }
-        } catch (error) {
-            console.error('❌ Error loading chart data:', error);
+            // Pass entire response to the normalizer; it will find pnl_curve
+            this.updatePortfolioChart(data);
+            this.updateAllocationChart(data.asset_allocation);
+            this.updateSignalAccuracyChart(data.signal_accuracy);
+        } catch (err) {
+            console.error('❌ Error loading chart data:', err);
         }
+    }
+
+    updatePortfolioChart(apiData) {
+        console.log('📊 Creating simple HTML/CSS chart from:', apiData);
+        
+        // Extract data from API
+        let chartData = [];
+        if (apiData?.pnl_curve && Array.isArray(apiData.pnl_curve)) {
+            chartData = apiData.pnl_curve.map(item => ({
+                date: item.date || 'Day',
+                value: Number(item.value) || 0
+            }));
+        }
+        
+        if (chartData.length === 0) {
+            console.log('📊 No real chart data available - waiting for OKX data');
+            // Display message instead of sample data
+            document.getElementById('pnlChart').innerHTML = `
+                <div style="width: 100%; height: 300px; background: #1a1a1a; border-radius: 8px; padding: 20px; display: flex; align-items: center; justify-content: center; border: 1px solid #333;">
+                    <div style="text-align: center; color: #adb5bd;">
+                        <div style="font-size: 16px; margin-bottom: 10px;">⏳ Loading Real Portfolio Data</div>
+                        <div style="font-size: 14px; opacity: 0.7;">Fetching live OKX performance data...</div>
+                    </div>
+                </div>
+            `;
+            return;
+        }
+
+        console.log(`📊 Rendering ${chartData.length} data points:`, chartData);
+
+        // Find min/max for scaling
+        const values = chartData.map(d => d.value);
+        const minVal = Math.min(...values);
+        const maxVal = Math.max(...values);
+        const range = Math.max(Math.abs(minVal), Math.abs(maxVal), 1);
+        
+        // Get chart container
+        const chartContainer = document.getElementById('pnlChart');
+        if (!chartContainer) {
+            console.error('❌ Chart container pnlChart not found');
+            return;
+        }
+        
+        // Clear existing content
+        chartContainer.innerHTML = '';
+        
+        // Create simple HTML chart
+        chartContainer.innerHTML = `
+            <div style="width: 100%; height: 300px; background: #1a1a1a; border-radius: 8px; padding: 20px; position: relative; border: 1px solid #333;">
+                <div style="color: #adb5bd; font-size: 14px; margin-bottom: 15px; font-weight: 500;">
+                    Portfolio P&L Performance
+                </div>
+                <div id="chartArea" style="width: 100%; height: 240px; position: relative; background: linear-gradient(180deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%); border-radius: 6px;">
+                    <!-- Chart will be drawn here -->
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-top: 10px; font-size: 11px; color: #666;">
+                    <span>${chartData[0]?.date || 'Start'}</span>
+                    <span style="color: ${chartData[chartData.length - 1]?.value >= 0 ? '#4caf50' : '#f44336'};">
+                        Current: ${chartData[chartData.length - 1]?.value.toFixed(2)}%
+                    </span>
+                    <span>${chartData[chartData.length - 1]?.date || 'Now'}</span>
+                </div>
+            </div>
+        `;
+        
+        // Draw the line chart using CSS and divs
+        const chartArea = document.getElementById('chartArea');
+        const chartWidth = chartArea.offsetWidth - 40;
+        const chartHeight = chartArea.offsetHeight - 40;
+        
+        // Add center line (0% line)
+        const centerY = chartHeight / 2;
+        chartArea.innerHTML += `
+            <div style="position: absolute; left: 20px; right: 20px; top: ${centerY + 20}px; height: 1px; background: rgba(255,255,255,0.2); z-index: 1;"></div>
+            <div style="position: absolute; left: 10px; top: ${centerY + 15}px; color: #666; font-size: 10px; z-index: 2;">0%</div>
+        `;
+        
+        // Create path points
+        const points = chartData.map((point, index) => {
+            const x = 20 + (index / (chartData.length - 1)) * chartWidth;
+            const normalizedValue = point.value / (range * 2); // Scale to -0.5 to 0.5
+            const y = 20 + chartHeight / 2 - (normalizedValue * chartHeight * 0.8); // Invert Y and scale
+            return { x, y, value: point.value, date: point.date };
+        });
+        
+        // Draw line segments
+        for (let i = 0; i < points.length - 1; i++) {
+            const start = points[i];
+            const end = points[i + 1];
+            
+            const dx = end.x - start.x;
+            const dy = end.y - start.y;
+            const length = Math.sqrt(dx * dx + dy * dy);
+            const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+            
+            chartArea.innerHTML += `
+                <div style="
+                    position: absolute;
+                    left: ${start.x}px;
+                    top: ${start.y}px;
+                    width: ${length}px;
+                    height: 2px;
+                    background: linear-gradient(90deg, 
+                        ${start.value >= 0 ? '#4caf50' : '#f44336'}, 
+                        ${end.value >= 0 ? '#4caf50' : '#f44336'});
+                    transform-origin: 0 0;
+                    transform: rotate(${angle}deg);
+                    z-index: 3;
+                "></div>
+            `;
+        }
+        
+        // Add data points
+        points.forEach(point => {
+            chartArea.innerHTML += `
+                <div style="
+                    position: absolute;
+                    left: ${point.x - 3}px;
+                    top: ${point.y - 3}px;
+                    width: 6px;
+                    height: 6px;
+                    background: ${point.value >= 0 ? '#4caf50' : '#f44336'};
+                    border: 2px solid #1a1a1a;
+                    border-radius: 50%;
+                    z-index: 4;
+                    cursor: pointer;
+                " title="${point.date}: ${point.value.toFixed(2)}%"></div>
+            `;
+        });
+        
+        console.log('✅ Simple HTML/CSS chart created successfully!');
     }
 
     async loadSignalData() {
         try {
-            const response = await fetch('/api/signal-tracking');
+            const response = await this.authenticatedFetch('/api/signal-tracking');
             const data = await response.json();
             
             if (data.success) {
@@ -563,15 +726,33 @@ class TradingPerformanceDashboard {
 
     async loadTradeData() {
         try {
-            const response = await fetch('/api/trade-performance');
+            const response = await this.authenticatedFetch('/api/trade-performance');
             const data = await response.json();
             
-            if (data.success) {
+            if (data.success && data.trade_summary) {
                 this.updateTradeSummary(data.trade_summary);
-                this.updateTradesTable(data.trades);
+                this.updateTradesTable(data.trades || []);
+            } else {
+                console.warn('⚠️ Trade performance data not available:', data.error || 'No trade summary');
+                // Set fallback data
+                this.updateTradeSummary({
+                    total_trades: 0,
+                    winning_trades: 0,
+                    losing_trades: 0,
+                    avg_pnl_percent: 0
+                });
+                this.updateTradesTable([]);
             }
         } catch (error) {
             console.error('❌ Error loading trade data:', error);
+            // Set fallback data on error
+            this.updateTradeSummary({
+                total_trades: 0,
+                winning_trades: 0,
+                losing_trades: 0,
+                avg_pnl_percent: 0
+            });
+            this.updateTradesTable([]);
         }
     }
 
@@ -582,7 +763,8 @@ class TradingPerformanceDashboard {
         document.getElementById('totalValue').textContent = `$${metrics.total_value.toLocaleString()}`;
         document.getElementById('totalPnl').textContent = `$${metrics.total_pnl.toLocaleString()}`;
         document.getElementById('totalPnl').className = `metric-value ${metrics.total_pnl >= 0 ? 'text-success' : 'text-danger'}`;
-        document.getElementById('winRate').textContent = `${metrics.win_rate}%`;
+        const wr = Number(metrics.win_rate);
+        document.getElementById('winRate').textContent = isFinite(wr) ? `${wr.toFixed(2)}%` : 'N/A';
         document.getElementById('mlAccuracy').textContent = `${signals.ml_accuracy}%`;
     }
     
@@ -604,7 +786,7 @@ class TradingPerformanceDashboard {
             },
             { 
                 id: 'winRate', 
-                value: `${metrics.win_rate}%`, 
+                value: (() => { const wr = Number(metrics.win_rate); return isFinite(wr) ? `${wr.toFixed(2)}%` : 'N/A'; })(), 
                 className: 'metric-value text-warning' 
             },
             { 
@@ -670,130 +852,72 @@ class TradingPerformanceDashboard {
         }
     }
 
-    updatePnLChart(data) {
-        const ctx = document.getElementById('pnlChart').getContext('2d');
-        
-        if (this.charts.pnl) {
-            this.charts.pnl.destroy();
-        }
-
-        this.charts.pnl = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: data.labels,
-                datasets: [{
-                    label: 'Portfolio Value',
-                    data: data.values,
-                    borderColor: '#36A2EB',
-                    backgroundColor: 'rgba(54, 162, 235, 0.1)',
-                    fill: true,
-                    tension: 0.4
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        labels: { color: '#e9ecef' }
-                    }
-                },
-                scales: {
-                    x: {
-                        ticks: { color: '#adb5bd' },
-                        grid: { color: 'rgba(255, 255, 255, 0.1)' }
-                    },
-                    y: {
-                        ticks: { 
-                            color: '#adb5bd',
-                            callback: function(value) {
-                                return '$' + value.toLocaleString();
-                            }
-                        },
-                        grid: { color: 'rgba(255, 255, 255, 0.1)' }
-                    }
-                }
-            }
-        });
-    }
 
     updateAllocationChart(data) {
-        const ctx = document.getElementById('allocationChart').getContext('2d');
+        console.log('📊 Creating allocation chart from:', data);
         
-        if (this.charts.allocation) {
-            this.charts.allocation.destroy();
-        }
-
-        this.charts.allocation = new Chart(ctx, {
-            type: 'doughnut',
-            data: {
-                labels: data.labels,
-                datasets: [{
-                    data: data.values,
-                    backgroundColor: data.colors
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'bottom',
-                        labels: { 
-                            color: '#e9ecef',
-                            padding: 10,
-                            font: { size: 11 }
-                        }
-                    }
-                }
-            }
-        });
+        const container = document.getElementById('allocationChart');
+        if (!container || !data) return;
+        
+        // Create simple HTML allocation display
+        container.innerHTML = `
+            <div style="padding: 20px; background: #1a1a1a; border-radius: 8px; height: 300px; overflow-y: auto;">
+                <div style="color: #adb5bd; font-size: 14px; margin-bottom: 15px; font-weight: 500;">Portfolio Allocation</div>
+                ${data.labels && data.values ? data.labels.map((label, index) => `
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #333;">
+                        <span style="color: #fff; font-weight: 500;">${label}</span>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <div style="width: 100px; height: 6px; background: #333; border-radius: 3px; overflow: hidden;">
+                                <div style="width: ${data.values[index]}%; height: 100%; background: ${data.colors ? data.colors[index] : '#36A2EB'}; border-radius: 3px;"></div>
+                            </div>
+                            <span style="color: #adb5bd; font-size: 12px; min-width: 40px;">${data.values[index].toFixed(1)}%</span>
+                        </div>
+                    </div>
+                `).join('') : '<div style="color: #666; text-align: center; padding: 20px;">No allocation data available</div>'}
+            </div>
+        `;
+        console.log('✅ Allocation chart created successfully!');
     }
 
     updateSignalAccuracyChart(data) {
-        const ctx = document.getElementById('signalAccuracyChart').getContext('2d');
+        console.log('📊 Creating signal accuracy chart from:', data);
         
-        if (this.charts.signals) {
-            this.charts.signals.destroy();
-        }
-
-        this.charts.signals = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: data.labels,
-                datasets: [{
-                    label: 'Accuracy %',
-                    data: data.accuracy,
-                    backgroundColor: ['#28a745', '#fd7e14', '#6c757d', '#dc3545']
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        labels: { color: '#e9ecef' }
-                    }
-                },
-                scales: {
-                    x: {
-                        ticks: { color: '#adb5bd' },
-                        grid: { color: 'rgba(255, 255, 255, 0.1)' }
-                    },
-                    y: {
-                        ticks: { 
-                            color: '#adb5bd',
-                            callback: function(value) {
-                                return value + '%';
-                            }
-                        },
-                        grid: { color: 'rgba(255, 255, 255, 0.1)' },
-                        min: 0,
-                        max: 100
-                    }
+        const container = document.getElementById('signalAccuracyChart');
+        if (!container || !data) return;
+        
+        // Calculate totals
+        let total = 0;
+        let correct = 0;
+        if (data.labels && data.accuracy) {
+            data.accuracy.forEach((acc, idx) => {
+                if (data.labels[idx] && data.labels[idx].toLowerCase().includes('correct')) {
+                    correct += acc;
                 }
-            }
-        });
+                total += acc;
+            });
+        }
+        const accuracy = total > 0 ? (correct / total * 100) : 0;
+        
+        // Create simple HTML signal accuracy display
+        container.innerHTML = `
+            <div style="padding: 20px; background: #1a1a1a; border-radius: 8px; height: 300px; display: flex; flex-direction: column; justify-content: center; align-items: center;">
+                <div style="color: #adb5bd; font-size: 14px; margin-bottom: 20px; font-weight: 500;">Signal Accuracy</div>
+                <div style="font-size: 3rem; font-weight: bold; color: ${accuracy >= 70 ? '#28a745' : accuracy >= 50 ? '#ffc107' : '#dc3545'}; margin-bottom: 15px;">
+                    ${accuracy.toFixed(1)}%
+                </div>
+                ${data.labels && data.accuracy ? `
+                    <div style="display: flex; gap: 15px; flex-wrap: wrap; justify-content: center; margin-top: 20px;">
+                        ${data.labels.map((label, idx) => `
+                            <div style="text-align: center; padding: 10px; background: rgba(255,255,255,0.05); border-radius: 6px;">
+                                <div style="font-size: 1.2rem; font-weight: bold; color: ${['#28a745', '#fd7e14', '#6c757d', '#dc3545'][idx] || '#36A2EB'};">${data.accuracy[idx].toFixed(1)}%</div>
+                                <div style="color: #adb5bd; font-size: 10px; text-transform: uppercase;">${label}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                ` : '<div style="color: #666; font-size: 14px;">No accuracy data available</div>'}
+            </div>
+        `;
+        console.log('✅ Signal accuracy chart created successfully!');
     }
 
     updateSignalsTable(signals) {
@@ -835,14 +959,14 @@ class TradingPerformanceDashboard {
 
         tbody.innerHTML = trades.map(trade => `
             <tr class="trade-row">
-                <td><strong>${trade.symbol}</strong></td>
-                <td>$${trade.entry_price.toFixed(4)}</td>
-                <td>$${trade.current_price.toFixed(4)}</td>
-                <td>${trade.quantity.toFixed(4)}</td>
-                <td>$${trade.current_value.toFixed(2)}</td>
-                <td class="${trade.pnl >= 0 ? 'text-success' : 'text-danger'}">$${trade.pnl.toFixed(2)}</td>
-                <td class="${trade.pnl_percent >= 0 ? 'text-success' : 'text-danger'}">${trade.pnl_percent.toFixed(2)}%</td>
-                <td><span class="badge ${trade.status === 'WINNING' ? 'bg-success' : 'bg-danger'}">${trade.status}</span></td>
+                <td><strong>${trade.symbol || 'N/A'}</strong></td>
+                <td>$${(trade.entry_price || 0).toFixed(4)}</td>
+                <td>$${(trade.current_price || 0).toFixed(4)}</td>
+                <td>${(trade.quantity || 0).toFixed(4)}</td>
+                <td>$${(trade.current_value || 0).toFixed(2)}</td>
+                <td class="${(trade.pnl || 0) >= 0 ? 'text-success' : 'text-danger'}">$${(trade.pnl || 0).toFixed(2)}</td>
+                <td class="${(trade.pnl_percent || 0) >= 0 ? 'text-success' : 'text-danger'}">${(trade.pnl_percent || 0).toFixed(2)}%</td>
+                <td><span class="badge ${trade.status === 'WINNING' ? 'bg-success' : 'bg-danger'}">${trade.status || 'UNKNOWN'}</span></td>
             </tr>
         `).join('');
     }
@@ -867,11 +991,6 @@ class TradingPerformanceDashboard {
 // Initialize dashboard immediately - force execution
 console.log('🔥 FORCE INIT: Starting dashboard initialization');
 
-// Fallback Chart.js definition if not loaded
-if (typeof Chart === 'undefined') {
-    console.log('⚠️ Chart.js not loaded, creating stub');
-    window.Chart = function() { return { destroy: () => {} }; };
-}
 
 // Force immediate initialization with manual API call
 try {
@@ -881,7 +1000,7 @@ try {
     
     // IMMEDIATE API CALL FOR TESTING
     console.log('🚀 FORCING IMMEDIATE API CALL');
-    fetch('/api/performance-overview')
+    window.performanceDashboard.authenticatedFetch('/api/performance-overview')
         .then(response => response.json())
         .then(data => {
             console.log('🎯 FORCED API RESPONSE:', data);
