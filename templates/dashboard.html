@@ -351,10 +351,23 @@
     display: none;
     align-items: center;
     gap: 10px;
+    font-weight: 500;
   }
   
   .alert-banner.show {
     display: flex;
+  }
+  
+  .alert-banner.success {
+    background: linear-gradient(90deg, var(--bot-active), #059669);
+  }
+  
+  .alert-banner.error {
+    background: linear-gradient(90deg, var(--dashboard-err), #dc2626);
+  }
+  
+  .alert-banner.info {
+    background: linear-gradient(90deg, #3b82f6, #1d4ed8);
   }
 
   /* Responsive Design */
@@ -1009,6 +1022,11 @@
     const banner = document.getElementById('alertBanner');
     const messageEl = document.getElementById('alertMessage');
     
+    if (!banner || !messageEl) {
+      console.error('Alert system: Required DOM elements not found');
+      return;
+    }
+    
     messageEl.textContent = message;
     banner.className = `alert-banner show ${type}`;
     
@@ -1018,8 +1036,13 @@
     }, 5000);
   }
   
+  // Expose alert functions to global scope
+  window.showAlert = showAlert;
   window.hideAlert = function() {
-    document.getElementById('alertBanner').className = 'alert-banner';
+    const banner = document.getElementById('alertBanner');
+    if (banner) {
+      banner.className = 'alert-banner';
+    }
   };
 
   // ---------- Event Listeners ----------
