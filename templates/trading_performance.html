@@ -831,24 +831,42 @@ class TradingPerformanceDashboard {
         const bestEl = document.getElementById('bestPerformer');
         const worstEl = document.getElementById('worstPerformer');
 
-        if (performers.best) {
-            bestEl.innerHTML = `
-                <h4 class="text-success">${performers.best.symbol}</h4>
-                <p class="text-success mb-1">+${performers.best.pnl_percent.toFixed(2)}%</p>
-                <p class="text-muted">$${performers.best.pnl_usd.toFixed(2)}</p>
-            `;
-        } else {
-            bestEl.innerHTML = '<p class="text-muted">No data</p>';
+        // Validate card containers exist
+        if (!bestEl || !worstEl) {
+            console.error('❌ Best/Worst performer card containers not found in DOM');
+            return;
         }
 
-        if (performers.worst) {
-            worstEl.innerHTML = `
-                <h4 class="text-danger">${performers.worst.symbol}</h4>
-                <p class="text-danger mb-1">${performers.worst.pnl_percent.toFixed(2)}%</p>
-                <p class="text-muted">$${performers.worst.pnl_usd.toFixed(2)}</p>
+        // Robust check for best performer data
+        const bestPerformer = performers?.best_performer;
+        if (bestPerformer && bestPerformer.symbol) {
+            const pnlPercent = parseFloat(bestPerformer.pnl_percent) || 0;
+            const currentValue = parseFloat(bestPerformer.current_value) || 0;
+            const pnlSign = pnlPercent >= 0 ? '+' : '';
+            
+            bestEl.innerHTML = `
+                <h4 class="text-success">${bestPerformer.symbol}</h4>
+                <p class="text-success mb-1">${pnlSign}${pnlPercent.toFixed(2)}%</p>
+                <p class="text-muted">$${currentValue.toFixed(2)}</p>
             `;
         } else {
-            worstEl.innerHTML = '<p class="text-muted">No data</p>';
+            bestEl.innerHTML = '<p class="text-muted">No data available</p>';
+        }
+
+        // Robust check for worst performer data
+        const worstPerformer = performers?.worst_performer;
+        if (worstPerformer && worstPerformer.symbol) {
+            const pnlPercent = parseFloat(worstPerformer.pnl_percent) || 0;
+            const currentValue = parseFloat(worstPerformer.current_value) || 0;
+            const pnlSign = pnlPercent >= 0 ? '+' : '';
+            
+            worstEl.innerHTML = `
+                <h4 class="text-danger">${worstPerformer.symbol}</h4>
+                <p class="text-danger mb-1">${pnlSign}${pnlPercent.toFixed(2)}%</p>
+                <p class="text-muted">$${currentValue.toFixed(2)}</p>
+            `;
+        } else {
+            worstEl.innerHTML = '<p class="text-muted">No data available</p>';
         }
     }
 

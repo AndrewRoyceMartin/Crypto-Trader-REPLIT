@@ -1078,31 +1078,43 @@ class TradingApp {
     async updateBestPerformer() {
         try {
             const response = await fetch('/api/best-performer', { cache: 'no-cache' });
-            if (!response.ok) return;
+            if (!response.ok) {
+                console.debug('Best performer API not available, will use performance overview data');
+                return;
+            }
             const data = await response.json();
             
-            if (!data.success || !data.best_performer) return;
+            if (!data.success || !data.best_performer) {
+                console.debug('No best performer data available');
+                return;
+            }
             
             // Update best performer display elements
             this.updateBestPerformerDisplay(data.best_performer);
             
         } catch (error) {
             console.debug('Best performer update failed:', error);
+            
+            // Show fallback message if specific element exists
+            const bestEl = document.getElementById('bestPerformer');
+            if (bestEl) {
+                bestEl.innerHTML = '<p class="text-muted">Data unavailable</p>';
+            }
         }
     }
     
     updateBestPerformerDisplay(performer) {
         // Update best performer elements if they exist
         const elements = {
-            'best-performer-symbol': performer.symbol,
-            'best-performer-name': performer.name,
-            'best-performer-price': this.formatCurrency(safeNum(performer.current_price, 0)),
-            'best-performer-24h': `${safeNum(performer.price_change_24h, 0) >= 0 ? '+' : ''}${safeNum(performer.price_change_24h, 0).toFixed(2)}%`,
-            'best-performer-7d': `${safeNum(performer.price_change_7d, 0) >= 0 ? '+' : ''}${safeNum(performer.price_change_7d, 0).toFixed(2)}%`,
-            'best-performer-pnl': `${safeNum(performer.pnl_percent, 0) >= 0 ? '+' : ''}${safeNum(performer.pnl_percent, 0).toFixed(2)}%`,
-            'best-performer-allocation': `${safeNum(performer.allocation_percent, 0).toFixed(1)}%`,
-            'best-performer-value': this.formatCurrency(safeNum(performer.current_value, 0)),
-            'best-performer-volume': this.formatNumber(safeNum(performer.volume_24h, 0))
+            'best-performer-symbol': performer?.symbol || 'N/A',
+            'best-performer-name': performer?.name || performer?.symbol || 'N/A',
+            'best-performer-price': this.formatCurrency(safeNum(performer?.current_price, 0)),
+            'best-performer-24h': `${safeNum(performer?.price_change_24h, 0) >= 0 ? '+' : ''}${safeNum(performer?.price_change_24h, 0).toFixed(2)}%`,
+            'best-performer-7d': `${safeNum(performer?.price_change_7d, 0) >= 0 ? '+' : ''}${safeNum(performer?.price_change_7d, 0).toFixed(2)}%`,
+            'best-performer-pnl': `${safeNum(performer?.pnl_percent, 0) >= 0 ? '+' : ''}${safeNum(performer?.pnl_percent, 0).toFixed(2)}%`,
+            'best-performer-allocation': `${safeNum(performer?.allocation_percent, 0).toFixed(1)}%`,
+            'best-performer-value': this.formatCurrency(safeNum(performer?.current_value, 0)),
+            'best-performer-volume': this.formatNumber(safeNum(performer?.volume_24h, 0))
         };
         
         Object.entries(elements).forEach(([id, value]) => {
@@ -1121,38 +1133,50 @@ class TradingApp {
         // Update best performer card title if it exists
         const cardTitle = document.getElementById('best-performer-card-title');
         if (cardTitle) {
-            cardTitle.textContent = `Best Performer: ${performer.symbol}`;
+            cardTitle.textContent = `Best Performer: ${performer?.symbol || 'N/A'}`;
         }
     }
     
     async updateWorstPerformer() {
         try {
             const response = await fetch('/api/worst-performer', { cache: 'no-cache' });
-            if (!response.ok) return;
+            if (!response.ok) {
+                console.debug('Worst performer API not available, will use performance overview data');
+                return;
+            }
             const data = await response.json();
             
-            if (!data.success || !data.worst_performer) return;
+            if (!data.success || !data.worst_performer) {
+                console.debug('No worst performer data available');
+                return;
+            }
             
             // Update worst performer display elements
             this.updateWorstPerformerDisplay(data.worst_performer);
             
         } catch (error) {
             console.debug('Worst performer update failed:', error);
+            
+            // Show fallback message if specific element exists
+            const worstEl = document.getElementById('worstPerformer');
+            if (worstEl) {
+                worstEl.innerHTML = '<p class="text-muted">Data unavailable</p>';
+            }
         }
     }
     
     updateWorstPerformerDisplay(performer) {
         // Update worst performer elements if they exist
         const elements = {
-            'worst-performer-symbol': performer.symbol,
-            'worst-performer-name': performer.name,
-            'worst-performer-price': this.formatCurrency(performer.current_price),
-            'worst-performer-24h': `${performer.price_change_24h >= 0 ? '+' : ''}${performer.price_change_24h.toFixed(2)}%`,
-            'worst-performer-7d': `${performer.price_change_7d >= 0 ? '+' : ''}${performer.price_change_7d.toFixed(2)}%`,
-            'worst-performer-pnl': `${performer.pnl_percent >= 0 ? '+' : ''}${performer.pnl_percent.toFixed(2)}%`,
-            'worst-performer-allocation': `${performer.allocation_percent.toFixed(1)}%`,
-            'worst-performer-value': this.formatCurrency(performer.current_value),
-            'worst-performer-volume': this.formatNumber(performer.volume_24h)
+            'worst-performer-symbol': performer?.symbol || 'N/A',
+            'worst-performer-name': performer?.name || performer?.symbol || 'N/A',
+            'worst-performer-price': this.formatCurrency(safeNum(performer?.current_price, 0)),
+            'worst-performer-24h': `${safeNum(performer?.price_change_24h, 0) >= 0 ? '+' : ''}${safeNum(performer?.price_change_24h, 0).toFixed(2)}%`,
+            'worst-performer-7d': `${safeNum(performer?.price_change_7d, 0) >= 0 ? '+' : ''}${safeNum(performer?.price_change_7d, 0).toFixed(2)}%`,
+            'worst-performer-pnl': `${safeNum(performer?.pnl_percent, 0) >= 0 ? '+' : ''}${safeNum(performer?.pnl_percent, 0).toFixed(2)}%`,
+            'worst-performer-allocation': `${safeNum(performer?.allocation_percent, 0).toFixed(1)}%`,
+            'worst-performer-value': this.formatCurrency(safeNum(performer?.current_value, 0)),
+            'worst-performer-volume': this.formatNumber(safeNum(performer?.volume_24h, 0))
         };
         
         Object.entries(elements).forEach(([id, value]) => {
@@ -1171,7 +1195,7 @@ class TradingApp {
         // Update worst performer card title if it exists
         const cardTitle = document.getElementById('worst-performer-card-title');
         if (cardTitle) {
-            cardTitle.textContent = `Worst Performer: ${performer.symbol}`;
+            cardTitle.textContent = `Worst Performer: ${performer?.symbol || 'N/A'}`;
         }
     }
     

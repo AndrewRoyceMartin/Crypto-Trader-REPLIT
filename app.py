@@ -2876,6 +2876,35 @@ def api_best_performer() -> ResponseReturnValue:
         logger.error(f"Error getting best performer: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
+@app.route("/api/worst-performer")
+def api_worst_performer() -> ResponseReturnValue:
+    """Get worst performing asset."""
+    try:
+        portfolio_service = get_portfolio_service()
+        data = portfolio_service.get_portfolio_data(force_refresh=True)
+        holdings = data.get('holdings', [])
+        
+        if not holdings:
+            return jsonify({'success': False, 'error': 'No holdings found'}), 404
+            
+        # Find worst performer by percentage loss
+        worst = min(holdings, key=lambda x: x.get('pnl_percent', 0))
+        
+        return jsonify({
+            'success': True,
+            'worst_performer': {
+                'symbol': worst.get('symbol', ''),
+                'pnl_percent': worst.get('pnl_percent', 0),
+                'pnl': worst.get('pnl', 0),
+                'current_value': worst.get('current_value', 0)
+            },
+            'timestamp': datetime.now().isoformat()
+        })
+        
+    except Exception as e:
+        logger.error(f"Error getting worst performer: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 @app.route("/api/available-positions")
 def api_available_positions() -> ResponseReturnValue:
     """Get available trading positions."""
