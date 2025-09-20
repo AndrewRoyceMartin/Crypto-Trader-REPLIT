@@ -356,6 +356,19 @@
   .alert-banner.show {
     display: flex;
   }
+  
+  /* Alert Type Styling */
+  .alert-banner.success {
+    background: linear-gradient(90deg, var(--dashboard-ok), #16a34a);
+  }
+  
+  .alert-banner.error {
+    background: linear-gradient(90deg, var(--dashboard-err), #dc2626);
+  }
+  
+  .alert-banner.info {
+    background: linear-gradient(90deg, #0ea5e9, #0369a1);
+  }
 
   /* Responsive Design */
   @media (max-width: 768px) {
@@ -383,7 +396,7 @@
   <div id="alertBanner" class="alert-banner">
     <i class="fas fa-exclamation-triangle"></i>
     <span id="alertMessage">Trading bot requires attention</span>
-    <button onclick="hideAlert()" style="margin-left: auto; background: none; border: none; color: white; cursor: pointer;">×</button>
+    <button onclick="window.hideAlert()" style="margin-left: auto; background: none; border: none; color: white; cursor: pointer; font-size: 16px;" title="Dismiss alert">×</button>
   </div>
 
   <!-- Dashboard Header -->
@@ -1009,26 +1022,87 @@
     const banner = document.getElementById('alertBanner');
     const messageEl = document.getElementById('alertMessage');
     
+    // Error handling for required DOM elements
+    if (!banner) {
+      console.error('Alert banner element not found');
+      return;
+    }
+    if (!messageEl) {
+      console.error('Alert message element not found');
+      return;
+    }
+    
+    // Validate message parameter
+    if (!message || typeof message !== 'string') {
+      console.error('Invalid alert message provided');
+      return;
+    }
+    
     messageEl.textContent = message;
     banner.className = `alert-banner show ${type}`;
     
     // Auto-hide after 5 seconds
     setTimeout(() => {
-      banner.className = 'alert-banner';
+      if (banner) {
+        banner.className = 'alert-banner';
+      }
     }, 5000);
   }
   
-  window.hideAlert = function() {
-    document.getElementById('alertBanner').className = 'alert-banner';
-  };
+  function hideAlert() {
+    const banner = document.getElementById('alertBanner');
+    if (banner) {
+      banner.className = 'alert-banner';
+    }
+  }
+  
+  // Make alert functions globally accessible
+  window.showAlert = showAlert;
+  window.hideAlert = hideAlert;
 
   // ---------- Event Listeners ----------
   function setupEventListeners() {
-    document.getElementById('startBot').addEventListener('click', startBot);
-    document.getElementById('stopBot').addEventListener('click', stopBot);
-    document.getElementById('resetBot').addEventListener('click', resetBot);
-    document.getElementById('exportLog').addEventListener('click', exportLog);
-    document.getElementById('strategySelect').addEventListener('change', changeStrategy);
+    try {
+      const startBotEl = document.getElementById('startBot');
+      if (startBotEl) {
+        startBotEl.addEventListener('click', startBot);
+      } else {
+        console.warn('Start bot button not found');
+      }
+      
+      const stopBotEl = document.getElementById('stopBot');
+      if (stopBotEl) {
+        stopBotEl.addEventListener('click', stopBot);
+      } else {
+        console.warn('Stop bot button not found');
+      }
+      
+      const resetBotEl = document.getElementById('resetBot');
+      if (resetBotEl) {
+        resetBotEl.addEventListener('click', resetBot);
+      } else {
+        console.warn('Reset bot button not found');
+      }
+      
+      const exportLogEl = document.getElementById('exportLog');
+      if (exportLogEl) {
+        exportLogEl.addEventListener('click', exportLog);
+      } else {
+        console.warn('Export log button not found');
+      }
+      
+      const strategySelectEl = document.getElementById('strategySelect');
+      if (strategySelectEl) {
+        strategySelectEl.addEventListener('change', changeStrategy);
+      } else {
+        console.warn('Strategy select element not found');
+      }
+      
+      console.log('✅ Event listeners setup completed');
+    } catch (error) {
+      console.error('❌ Error setting up event listeners:', error);
+      showAlert('Error setting up UI controls: ' + error.message, 'error');
+    }
   }
 
   // ---------- Data Loading ----------
@@ -1083,31 +1157,81 @@
 
   // ---------- Initialization ----------
   function initTradingDashboard() {
-    console.log('🤖 Initializing Trading Bot Dashboard...');
-    initAdminToken();
-    
-    // Setup event listeners
-    setupEventListeners();
-    
-    // Initial data load
-    loadAllData();
-    
-    // Setup auto-refresh
-    refreshIntervals.push(setInterval(loadAllData, REFRESH_INTERVAL));
-    refreshIntervals.push(setInterval(() => updateBotStatus(), 1000)); // Update uptime every second
-    
-    // Initialize bot status
-    updateBotStatus({ active: false, mode: 'PAPER' });
-    
-    console.log('✅ Trading Bot Dashboard initialized');
-    showAlert('Trading Bot Dashboard loaded successfully!', 'success');
+    try {
+      console.log('🤖 Initializing Trading Bot Dashboard...');
+      initAdminToken();
+      
+      // Setup event listeners
+      setupEventListeners();
+      
+      // Initial comprehensive data load with error handling
+      Promise.all([
+        updateLivePrices().catch(err => {
+          console.error('❌ Error updating live prices:', err);
+          showAlert('Failed to load live prices: ' + err.message, 'error');
+          return null;
+        }),
+        updatePortfolioSummary().catch(err => {
+          console.error('❌ Error updating portfolio summary:', err);
+          showAlert('Failed to load portfolio summary: ' + err.message, 'error');
+          return null;
+        }), 
+        updateTradeHistory().catch(err => {
+          console.error('❌ Error updating trade history:', err);
+          showAlert('Failed to load trade history: ' + err.message, 'error');
+          return null;
+        }),
+        updateErrorLog().catch(err => {
+          console.error('❌ Error updating error log:', err);
+          showAlert('Failed to load error logs: ' + err.message, 'error');
+          return null;
+        })
+      ]).then((results) => {
+        const failedCount = results.filter(r => r === null).length;
+        if (failedCount === 0) {
+          console.log('✅ All dashboard data loaded successfully');
+          showAlert('Trading Bot Dashboard loaded successfully!', 'success');
+        } else {
+          console.warn(`⚠️ Dashboard loaded with ${failedCount} data loading errors`);
+          showAlert(`Dashboard loaded with ${failedCount} data loading errors`, 'warning');
+        }
+      }).catch(error => {
+        console.error('❌ Critical dashboard initialization error:', error);
+        showAlert('Critical error during dashboard initialization: ' + error.message, 'error');
+      });
+      
+      // Setup auto-refresh
+      refreshIntervals.push(setInterval(loadAllData, REFRESH_INTERVAL));
+      refreshIntervals.push(setInterval(() => updateBotStatus(), 1000)); // Update uptime every second
+      
+      // Initialize bot status
+      updateBotStatus({ active: false, mode: 'PAPER' });
+      
+      console.log('✅ Trading Bot Dashboard initialized');
+      
+    } catch (error) {
+      console.error('❌ Dashboard initialization failed:', error);
+      showAlert('Dashboard initialization failed: ' + error.message, 'error');
+    }
   }
 
-  // Start when DOM is ready
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initTradingDashboard);
-  } else {
-    initTradingDashboard();
+  // Start when DOM is ready with error handling
+  try {
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initTradingDashboard);
+    } else {
+      initTradingDashboard();
+    }
+  } catch (error) {
+    console.error('❌ Critical error during dashboard startup:', error);
+    // Fallback: try to show alert if possible
+    setTimeout(() => {
+      try {
+        showAlert('Critical startup error: ' + error.message, 'error');
+      } catch (e) {
+        console.error('❌ Cannot display startup error alert:', e);
+      }
+    }, 100);
   }
   
 })();
