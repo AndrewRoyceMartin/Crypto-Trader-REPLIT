@@ -13,7 +13,22 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     
-    <!-- Chart.js removed - using HTML/CSS charts instead -->
+    <!-- Chart.js with fallback handling -->
+    <script>
+    // Try to load Chart.js from CDN with fallback handling
+    (function() {
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js';
+        script.async = true;
+        script.onerror = function() {
+            console.warn('Chart.js CDN failed to load - charts will show fallback display');
+        };
+        script.onload = function() {
+            console.log('Chart.js loaded successfully from CDN');
+        };
+        document.head.appendChild(script);
+    })();
+    </script>
     
     <!-- Add a favicon to fix 404 error -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📈</text></svg>">
